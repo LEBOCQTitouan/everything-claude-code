@@ -21,29 +21,20 @@ A Claude Code plugin — a collection of production-ready agents, skills, hooks,
 
 ### Requirements
 
+- Node.js 18+
 - Claude Code CLI v2.1.0+
-- Node.js 18+ (for hooks merge)
-
-### Mac (Homebrew)
 
 ```bash
-brew tap LEBOCQTitouan/everything-claude-code https://github.com/LEBOCQTitouan/everything-claude-code
-brew install --HEAD ecc
+npm install -g @lebocqtitouan/ecc
 ```
 
-### Linux (or Mac without Homebrew)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/install-cli.sh | bash
-```
-
-Installs to `~/.local/share/ecc/` and creates `~/.local/bin/ecc`.
+Works on Mac and Linux.
 
 ---
 
 ### Usage
 
-#### Global install — agents, commands, skills, rules, hooks → `~/.claude/`
+#### Global install — sets up `~/.claude/` with agents, commands, skills, rules, hooks
 
 ```bash
 ecc install typescript          # common + TypeScript rules
@@ -64,7 +55,7 @@ ecc install typescript python   # multiple stacks
 cd /your/project
 ecc init                                        # auto-detect language & template
 ecc init golang                                 # specify language
-ecc init --template go-microservice golang      # specify template too
+ecc init --template go-microservice golang
 ```
 
 Creates:
@@ -182,14 +173,8 @@ everything-claude-code/
 │       ├── session-end.js
 │       └── evaluate-session.js
 │
-├── 11-tests/                        # Test suite
-│   └── run-all.js
-│
-├── Formula/
-│   └── ecc.rb                       # Homebrew formula
-│
-└── scripts/
-    └── install-cli.sh               # curl installer for Linux / Mac without Homebrew
+└── 11-tests/                        # Test suite
+    └── run-all.js
 ```
 
 > ★ = added or heavily modified in this fork

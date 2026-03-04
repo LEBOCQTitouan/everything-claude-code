@@ -1,8 +1,21 @@
 {
-  "name": "everything-claude-code",
-  "version": "1.7.0",
-  "private": true,
+  "name": "@lebocqtitouan/ecc",
+  "version": "1.0.0",
+  "description": "CLI to set up Claude Code configuration — agents, skills, rules, hooks",
   "license": "MIT",
+  "bin": {
+    "ecc": "./install.sh"
+  },
+  "files": [
+    "install.sh",
+    "02-examples",
+    "03-agents",
+    "04-commands",
+    "05-skills",
+    "06-rules",
+    "07-hooks",
+    "10-scripts"
+  ],
   "scripts": {
     "test": "node 11-tests/run-all.js",
     "lint": "markdownlint '**/*.md' --ignore node_modules"
@@ -12,5 +25,10 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LEBOCQTitouan/everything-claude-code.git"
+  },
+  "keywords": ["claude", "claude-code", "ai", "cli", "agents", "hooks"]
 }

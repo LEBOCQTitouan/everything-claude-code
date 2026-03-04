@@ -73,16 +73,19 @@ merge_hooks() {
         echo "Warning: node not found — skipping hooks merge. Add hooks manually from 07-hooks/hooks.json." >&2
         return
     fi
-    node - "$settings_file" "$HOOKS_FILE" <<'NODE'
+    node - "$settings_file" "$HOOKS_FILE" "$SCRIPT_DIR" <<'NODE'
 const fs = require('fs');
 const path = require('path');
-const [, , settingsPath, hooksPath] = process.argv;
+const [, , settingsPath, hooksPath, pluginRoot] = process.argv;
 
 const existing = fs.existsSync(settingsPath)
     ? JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
     : {};
 
-const source = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+// Replace ${CLAUDE_PLUGIN_ROOT} placeholder with the actual install path
+const raw = fs.readFileSync(hooksPath, 'utf8')
+    .replaceAll('${CLAUDE_PLUGIN_ROOT}', pluginRoot);
+const source = JSON.parse(raw);
 
 const merged = { ...existing };
 merged.hooks = merged.hooks || {};
