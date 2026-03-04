@@ -31,7 +31,7 @@ while [ -L "$SCRIPT_PATH" ]; do
     [[ "$SCRIPT_PATH" != /* ]] && SCRIPT_PATH="$link_dir/$SCRIPT_PATH"
 done
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-RULES_DIR="$SCRIPT_DIR/rules"
+RULES_DIR="$SCRIPT_DIR/04-rules"
 
 # --- Parse --target flag ---
 TARGET="claude"
@@ -90,7 +90,7 @@ if [[ "$TARGET" == "claude" ]]; then
         fi
         lang_dir="$RULES_DIR/$lang"
         if [[ ! -d "$lang_dir" ]]; then
-            echo "Warning: rules/$lang/ does not exist, skipping." >&2
+            echo "Warning: 04-rules/$lang/ does not exist, skipping." >&2
             continue
         fi
         echo "Installing $lang rules -> $DEST_DIR/$lang/"

@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "test": "node tests/run-all.js",
+    "test": "node 11-tests/run-all.js",
     "lint": "markdownlint '**/*.md' --ignore node_modules"
   },
   "devDependencies": {

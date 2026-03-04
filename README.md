@@ -40,7 +40,7 @@ cd everything-claude-code
 ### 2. Install agents
 
 ```bash
-cp agents/*.md ~/.claude/agents/
+cp 01-agents/*.md ~/.claude/agents/
 ```
 
 ### 3. Install rules
@@ -49,12 +49,12 @@ Install common rules (always required) + your language stack:
 
 ```bash
 # Common — language-agnostic, always install
-cp -r rules/common/* ~/.claude/rules/
+cp -r 04-rules/common/* ~/.claude/rules/
 
 # Pick your stack (one or more)
-cp -r rules/typescript/* ~/.claude/rules/
-cp -r rules/python/* ~/.claude/rules/
-cp -r rules/golang/* ~/.claude/rules/
+cp -r 04-rules/typescript/* ~/.claude/rules/
+cp -r 04-rules/python/* ~/.claude/rules/
+cp -r 04-rules/golang/* ~/.claude/rules/
 ```
 
 Or use the installer script:
@@ -67,7 +67,7 @@ Or use the installer script:
 ### 4. Install commands
 
 ```bash
-cp commands/*.md ~/.claude/commands/
+cp 02-commands/*.md ~/.claude/commands/
 ```
 
 ### 5. Install skills (selective)
@@ -76,24 +76,24 @@ Install only what you need — avoid loading skills for stacks you don't use:
 
 ```bash
 # Core workflows (recommended for everyone)
-cp -r skills/tdd-workflow ~/.claude/skills/
-cp -r skills/security-review ~/.claude/skills/
-cp -r skills/search-first ~/.claude/skills/
-cp -r skills/continuous-learning ~/.claude/skills/
+cp -r 03-skills/tdd-workflow ~/.claude/skills/
+cp -r 03-skills/security-review ~/.claude/skills/
+cp -r 03-skills/search-first ~/.claude/skills/
+cp -r 03-skills/continuous-learning ~/.claude/skills/
 
 # Add stack-specific skills as needed
-cp -r skills/backend-patterns ~/.claude/skills/
-cp -r skills/frontend-patterns ~/.claude/skills/
-cp -r skills/api-design ~/.claude/skills/
+cp -r 03-skills/backend-patterns ~/.claude/skills/
+cp -r 03-skills/frontend-patterns ~/.claude/skills/
+cp -r 03-skills/api-design ~/.claude/skills/
 ```
 
 ### 6. Configure hooks
 
-Add the hooks from `hooks/hooks.json` to your `~/.claude/settings.json`.
+Add the hooks from `05-hooks/hooks.json` to your `~/.claude/settings.json`.
 
 ### 7. (Optional) Configure MCPs
 
-Copy desired entries from `mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
+Copy desired entries from `07-mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
 
 ---
 
@@ -102,7 +102,7 @@ Copy desired entries from `mcp-configs/mcp-servers.json` to your `~/.claude.json
 ```
 everything-claude-code/
 │
-├── agents/                          # Specialized subagents for delegation
+├── 01-agents/                       # Specialized subagents for delegation
 │   ├── architect.md                 # ★ Hexagonal Architecture + DDD enforcer (system-level)
 │   ├── architect-module.md          # ★ Module-level design within hexagonal boundaries
 │   ├── uncle-bob.md                 # ★ Clean Architecture + Clean Code consultant
@@ -113,7 +113,16 @@ everything-claude-code/
 │   ├── refactor-cleaner.md          # Dead code detection and safe removal
 │   └── doc-updater.md               # Documentation sync
 │
-├── skills/                          # Domain knowledge invoked by agents or commands
+├── 02-commands/                     # Slash commands (/plan, /tdd, /code-review, ...)
+│   ├── plan.md
+│   ├── tdd.md
+│   ├── code-review.md
+│   ├── build-fix.md
+│   ├── e2e.md
+│   ├── refactor-clean.md
+│   └── ...30+ more
+│
+├── 03-skills/                       # Domain knowledge invoked by agents or commands
 │   ├── tdd-workflow/
 │   ├── security-review/
 │   ├── backend-patterns/
@@ -143,16 +152,7 @@ everything-claude-code/
 │   ├── cpp-coding-standards/ + cpp-testing/
 │   └── swift-*/swiftui-patterns/
 │
-├── commands/                        # Slash commands (/plan, /tdd, /code-review, ...)
-│   ├── plan.md
-│   ├── tdd.md
-│   ├── code-review.md
-│   ├── build-fix.md
-│   ├── e2e.md
-│   ├── refactor-clean.md
-│   └── ...30+ more
-│
-├── rules/                           # Always-follow guidelines (copy to ~/.claude/rules/)
+├── 04-rules/                        # Always-follow guidelines (copy to ~/.claude/rules/)
 │   ├── common/                      # Language-agnostic — always install
 │   │   ├── coding-style.md
 │   │   ├── git-workflow.md
@@ -163,10 +163,35 @@ everything-claude-code/
 │   ├── python/
 │   └── golang/
 │
-├── hooks/                           # Trigger-based automations
+├── 05-hooks/                        # Trigger-based automations
 │   └── hooks.json                   # PreToolUse, PostToolUse, Stop, SessionStart events
 │
-├── scripts/                         # Cross-platform Node.js hook implementations
+├── 06-contexts/                     # Dynamic system prompt injection
+│   ├── dev.md
+│   ├── review.md
+│   └── research.md
+│
+├── 07-mcp-configs/
+│   └── mcp-servers.json             # GitHub, Supabase, Vercel, Railway, ...
+│
+├── 08-examples/                     # CLAUDE.md templates for real-world stacks
+│   ├── saas-nextjs-CLAUDE.md
+│   ├── go-microservice-CLAUDE.md
+│   └── django-api-CLAUDE.md
+│
+├── 09-docs/                         # Documentation and reference material
+│   ├── diagrams/                    # Architecture and flow diagrams
+│   │   ├── agent-orchestration.md
+│   │   ├── feature-development.md
+│   │   ├── tdd-workflow.md
+│   │   ├── security-review.md
+│   │   └── refactoring.md
+│   ├── shortform-guide.md           # Setup, foundations, philosophy (read first)
+│   ├── longform-guide.md            # Token optimization, memory, evals, parallelization
+│   ├── security-guide.md            # Security patterns and review
+│   └── token-optimization.md
+│
+├── 10-scripts/                      # Cross-platform Node.js hook implementations
 │   ├── lib/
 │   │   ├── utils.js
 │   │   └── package-manager.js
@@ -175,30 +200,10 @@ everything-claude-code/
 │       ├── session-end.js
 │       └── evaluate-session.js
 │
-├── contexts/                        # Dynamic system prompt injection
-│   ├── dev.md
-│   ├── review.md
-│   └── research.md
+├── 11-tests/                        # Test suite
+│   └── run-all.js
 │
-├── docs/
-│   ├── diagrams/                    # Architecture and flow diagrams
-│   │   ├── agent-orchestration.md   # Full dev flow + agent chain
-│   │   ├── feature-development.md   # Feature lifecycle sequence diagram
-│   │   ├── tdd-workflow.md          # TDD loop with uncle-bob gate
-│   │   ├── security-review.md       # Code review split flow
-│   │   └── refactoring.md           # Safe refactoring loop
-│   └── token-optimization.md
-│
-├── mcp-configs/
-│   └── mcp-servers.json             # GitHub, Supabase, Vercel, Railway, ...
-│
-├── examples/                        # CLAUDE.md templates for real-world stacks
-│   ├── saas-nextjs-CLAUDE.md
-│   ├── go-microservice-CLAUDE.md
-│   └── django-api-CLAUDE.md
-│
-└── tests/
-    └── run-all.js
+└── 12-assets/                       # Static assets
 ```
 
 > ★ = added or heavily modified in this fork
