@@ -22,13 +22,7 @@ A Claude Code plugin — a collection of production-ready agents, skills, hooks,
 ### Requirements
 
 - Claude Code CLI v2.1.0+
-- Node.js (for hooks and scripts)
-
-Check your Claude Code version:
-
-```bash
-claude --version
-```
+- Node.js 18+ (for hooks merge)
 
 ### 1. Clone
 
@@ -37,61 +31,24 @@ git clone https://github.com/LEBOCQTitouan/everything-claude-code.git
 cd everything-claude-code
 ```
 
-### 2. Install agents
-
-```bash
-cp 03-agents/*.md ~/.claude/agents/
-```
-
-### 3. Install rules
-
-Install common rules (always required) + your language stack:
-
-```bash
-# Common — language-agnostic, always install
-cp -r 06-rules/common/* ~/.claude/rules/
-
-# Pick your stack (one or more)
-cp -r 06-rules/typescript/* ~/.claude/rules/
-cp -r 06-rules/python/* ~/.claude/rules/
-cp -r 06-rules/golang/* ~/.claude/rules/
-```
-
-Or use the installer script:
+### 2. Run the installer
 
 ```bash
 ./install.sh typescript          # common + TypeScript
 ./install.sh typescript python   # common + multiple stacks
 ```
 
-### 4. Install commands
+This installs everything in one shot:
 
-```bash
-cp 04-commands/*.md ~/.claude/commands/
-```
+| What | Where |
+|---|---|
+| Agents | `~/.claude/agents/` |
+| Commands | `~/.claude/commands/` |
+| Skills | `~/.claude/skills/` |
+| Rules (common + language) | `~/.claude/rules/` |
+| Hooks | merged into `~/.claude/settings.json` |
 
-### 5. Install skills (selective)
-
-Install only what you need — avoid loading skills for stacks you don't use:
-
-```bash
-# Core workflows (recommended for everyone)
-cp -r 05-skills/tdd-workflow ~/.claude/skills/
-cp -r 05-skills/security-review ~/.claude/skills/
-cp -r 05-skills/search-first ~/.claude/skills/
-cp -r 05-skills/continuous-learning ~/.claude/skills/
-
-# Add stack-specific skills as needed
-cp -r 05-skills/backend-patterns ~/.claude/skills/
-cp -r 05-skills/frontend-patterns ~/.claude/skills/
-cp -r 05-skills/api-design ~/.claude/skills/
-```
-
-### 6. Configure hooks
-
-Add the hooks from `07-hooks/hooks.json` to your `~/.claude/settings.json`.
-
-### 7. (Optional) Configure MCPs
+### 3. (Optional) Configure MCPs
 
 Copy desired entries from `09-mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
 
