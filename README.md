@@ -28,13 +28,34 @@ A Claude Code plugin — a collection of production-ready agents, skills, hooks,
 npm install -g @lebocqtitouan/ecc
 ```
 
-Works on Mac and Linux.
+Works on Mac, Linux, and Windows (PowerShell).
 
 ---
 
-### Usage
+## Shell Autocompletion
 
-#### Global install — sets up `~/.claude/` with agents, commands, skills, rules, hooks
+Supports bash, zsh, fish, and PowerShell. Run once after installing:
+
+```bash
+ecc completion
+```
+
+Then restart your shell, or reload it:
+
+| Shell      | Reload command                            |
+|------------|-------------------------------------------|
+| zsh        | `source ~/.zshrc`                         |
+| bash       | `source ~/.bashrc`                        |
+| fish       | `source ~/.config/fish/config.fish`       |
+| PowerShell | `. $PROFILE`                              |
+
+After reloading, `ecc <TAB>` completes commands, languages, and templates automatically.
+
+---
+
+## Usage
+
+### Global install — sets up `~/.claude/` with agents, commands, skills, rules, hooks
 
 ```bash
 ecc install typescript          # common + TypeScript rules
@@ -49,7 +70,7 @@ ecc install typescript python   # multiple stacks
 | Rules (common + language) | `~/.claude/rules/` |
 | Hooks | merged into `~/.claude/settings.json` |
 
-#### Per-project setup — run from any repo
+### Per-project setup — run from any repo
 
 ```bash
 cd /your/project
@@ -64,7 +85,7 @@ Creates:
 
 Available templates: `saas-nextjs`, `go-microservice`, `django-api`, `rust-api`
 
-#### (Optional) Configure MCPs
+### (Optional) Configure MCPs
 
 Copy desired entries from `09-mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
 

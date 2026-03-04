@@ -1,79 +1,72 @@
 #!/usr/bin/env node
+'use strict';
+
 // Runs automatically after `npm install -g @lebocqtitouan/ecc`.
-// Injects the shell completion line into the user's rc file if not already present.
+// Checks environment health and prints getting-started hints.
+// Never exits with a non-zero code unless Node.js version is fatally too old.
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+const { execFileSync } = require('child_process');
 
-const MARKER = '# ecc shell completion';
+// ---------------------------------------------------------------------------
+// ANSI color helpers — no external dependencies
+// ---------------------------------------------------------------------------
+const green  = (s) => `\x1b[32m${s}\x1b[0m`;
+const yellow = (s) => `\x1b[33m${s}\x1b[0m`;
+const red    = (s) => `\x1b[31m${s}\x1b[0m`;
+const bold   = (s) => `\x1b[1m${s}\x1b[0m`;
+const dim    = (s) => `\x1b[2m${s}\x1b[0m`;
 
-const SHELL_CONFIGS = {
-    zsh:  ['.zshrc', '.zprofile'],
-    bash: ['.bashrc', '.bash_profile', '.profile'],
-    fish: [path.join('.config', 'fish', 'config.fish')],
-};
+const MIN_NODE_MAJOR = 18;
 
-const COMPLETION_LINES = {
-    zsh:  `\n${MARKER}\neval "$(ecc completion zsh)"\n`,
-    bash: `\n${MARKER}\neval "$(ecc completion bash)"\n`,
-    fish: `\n${MARKER}\necc completion fish | source\n`,
-};
-
-function detectShell() {
-    const shell = process.env.SHELL || '';
-    if (shell.includes('zsh'))  return 'zsh';
-    if (shell.includes('fish')) return 'fish';
-    if (shell.includes('bash')) return 'bash';
-    return null;
-}
-
-function findRcFile(shell) {
-    const candidates = SHELL_CONFIGS[shell] || [];
-    for (const rel of candidates) {
-        const full = path.join(os.homedir(), rel);
-        if (fs.existsSync(full)) return full;
+// ---------------------------------------------------------------------------
+// Checks
+// ---------------------------------------------------------------------------
+function checkNodeVersion() {
+    const major = parseInt(process.versions.node.split('.')[0], 10);
+    if (major < MIN_NODE_MAJOR) {
+        console.error(red(`\n  ✖ Node.js ${MIN_NODE_MAJOR}+ is required (found ${process.versions.node})`));
+        console.error(yellow(`    Update at: https://nodejs.org\n`));
+        process.exit(1); // hard failure — ecc cannot run on this Node version
     }
-    // Return the first candidate as default (will be created)
-    return candidates.length ? path.join(os.homedir(), candidates[0]) : null;
 }
 
-function alreadyInstalled(rcFile) {
+function checkBash() {
     try {
-        return fs.readFileSync(rcFile, 'utf8').includes(MARKER);
+        execFileSync('bash', ['--version'], { stdio: 'ignore' });
     } catch {
-        return false;
+        console.warn(yellow('  ⚠ bash not found in PATH'));
+        console.warn(yellow('    ecc requires bash to run. Install bash or ensure it is in your PATH.'));
     }
 }
 
-function install(shell, rcFile) {
-    fs.mkdirSync(path.dirname(rcFile), { recursive: true });
-    fs.appendFileSync(rcFile, COMPLETION_LINES[shell]);
+function checkOmelette() {
+    try {
+        require('omelette');
+    } catch {
+        console.warn(yellow('  ⚠ omelette dependency missing — shell completion will not work'));
+        console.warn(yellow('    Run: npm install -g @lebocqtitouan/ecc  to reinstall cleanly'));
+    }
 }
 
-// --- main ---
-const shell = detectShell();
-
-if (!shell) {
-    console.log('ecc: Could not detect shell — run `eval "$(ecc completion)"` manually to enable tab completion.');
-    process.exit(0);
-}
-
-const rcFile = findRcFile(shell);
-if (!rcFile) {
-    console.log(`ecc: Could not find ${shell} config file — run \`eval "$(ecc completion)"\` manually.`);
-    process.exit(0);
-}
-
-if (alreadyInstalled(rcFile)) {
-    // Already set up, nothing to do
-    process.exit(0);
-}
-
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
 try {
-    install(shell, rcFile);
-    console.log(`ecc: Shell completion enabled in ${rcFile}`);
-    console.log(`     Run \`source ${rcFile}\` or open a new terminal to activate.`);
+    checkNodeVersion();   // exits with code 1 if Node is too old
+    checkBash();
+    checkOmelette();
+
+    console.log('');
+    console.log(bold(green('  ✔ ecc installed successfully')));
+    console.log(dim('    Claude Code configuration manager'));
+    console.log('');
+    console.log(`  ${bold('Getting started:')}`);
+    console.log(`    ${bold('ecc completion')}              enable shell tab-completion`);
+    console.log(`    ${bold('ecc install typescript')}      global Claude setup`);
+    console.log(`    ${bold('ecc init')}                    per-project setup`);
+    console.log(`    ${bold('ecc help')}                    full command reference`);
+    console.log('');
 } catch (err) {
-    console.log(`ecc: Could not write to ${rcFile} — run \`eval "$(ecc completion)"\` manually. (${err.message})`);
+    // Catch-all: a broken postinstall must never block npm install
+    console.warn(yellow(`  ecc: postinstall warning: ${err.message}`));
 }
