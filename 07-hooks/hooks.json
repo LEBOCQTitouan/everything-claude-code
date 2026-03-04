@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/04-skills/continuous-learning-v2/hooks/observe.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/05-skills/continuous-learning-v2/hooks/observe.sh",
             "async": true,
             "timeout": 10
           }
@@ -147,7 +147,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/04-skills/continuous-learning-v2/hooks/observe.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/05-skills/continuous-learning-v2/hooks/observe.sh",
             "async": true,
             "timeout": 10
           }

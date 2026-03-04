@@ -22,14 +22,14 @@ node 11-tests/hooks/hooks.test.js
 
 ```
 01-docs/         Diagrams, guides, and reference documentation
-02-agents/       Specialized subagents (architect, uncle-bob, planner, code-reviewer, ...)
-03-commands/     Slash commands (/tdd, /plan, /code-review, ...)
-04-skills/       Domain knowledge (tdd-workflow, security-review, backend-patterns, ...)
-05-rules/        Always-follow guidelines (common/ + typescript/ + python/ + golang/)
-06-hooks/        Trigger-based automations (hooks.json)
-07-contexts/     Dynamic system prompt injection
-08-mcp-configs/  MCP server configurations
-09-examples/     CLAUDE.md templates for real-world stacks
+02-examples/     CLAUDE.md templates for real-world stacks
+03-agents/       Specialized subagents (architect, uncle-bob, planner, code-reviewer, ...)
+04-commands/     Slash commands (/tdd, /plan, /code-review, ...)
+05-skills/       Domain knowledge (tdd-workflow, security-review, backend-patterns, ...)
+06-rules/        Always-follow guidelines (common/ + typescript/ + python/ + golang/)
+07-hooks/        Trigger-based automations (hooks.json)
+08-contexts/     Dynamic system prompt injection
+09-mcp-configs/  MCP server configurations
 10-scripts/      Cross-platform Node.js utilities for hooks and setup
 11-tests/        Test suite for scripts and utilities
 ```

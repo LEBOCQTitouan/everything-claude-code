@@ -90,7 +90,7 @@ if [[ "$TARGET" == "claude" ]]; then
         fi
         lang_dir="$RULES_DIR/$lang"
         if [[ ! -d "$lang_dir" ]]; then
-            echo "Warning: 05-rules/$lang/ does not exist, skipping." >&2
+            echo "Warning: 06-rules/$lang/ does not exist, skipping." >&2
             continue
         fi
         echo "Installing $lang rules -> $DEST_DIR/$lang/"
