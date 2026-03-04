@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const AGENTS_DIR = path.join(__dirname, '../../agents');
+const AGENTS_DIR = path.join(__dirname, '../../03-agents');
 const REQUIRED_FIELDS = ['model', 'tools'];
 const VALID_MODELS = ['haiku', 'sonnet', 'opus'];
 

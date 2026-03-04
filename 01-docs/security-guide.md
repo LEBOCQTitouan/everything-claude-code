@@ -1,14 +1,12 @@
 # The Shorthand Guide to Securing Your Agent
 
-![Header: The Shorthand Guide to Securing Your Agent](./assets/images/security/00-header.png)
-
 ---
 
 **I built the most-forked Claude Code configuration on GitHub. 50K+ stars, 6K+ forks. That also made it the biggest target.**
 
 When thousands of developers fork your configuration and run it with full system access, you start thinking differently about what goes into those files. I audited community contributions, reviewed pull requests from strangers, and traced what happens when an LLM reads instructions it was never meant to trust. What I found was bad enough to build an entire tool around it.
 
-That tool is AgentShield — 102 security rules, 1280 tests across 5 categories, built specifically because the existing tooling for auditing agent configurations didn't exist. This guide covers what I learned building it, and how to apply it whether you're running Claude Code, Cursor, Codex, OpenClaw, or any custom agent build.
+That tool is AgentShield — 102 security rules, 1280 tests across 5 categories, built specifically because the existing tooling for auditing agent configurations didn't exist. This guide covers what I learned building it, and how to apply it to Claude Code or any custom agent build.
 
 This is not theoretical. The incidents referenced here are real. The attack vectors are active. And if you're running an AI agent with access to your filesystem, your credentials, and your services — this is the guide that tells you what to do about it.
 
@@ -590,6 +588,3 @@ The patterns in this guide aren't complex. They're habits. Build them into your 
 
 ---
 
-*Built from 10 months of maintaining the most-forked agent configuration on GitHub, auditing thousands of community contributions, and building the tools to automate what humans can't catch at scale.*
-
-*Affaan Mustafa ([@affaanmustafa](https://x.com/affaanmustafa)) — Creator of Everything Claude Code and AgentShield*

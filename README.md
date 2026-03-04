@@ -203,7 +203,6 @@ everything-claude-code/
 ├── 11-tests/                        # Test suite
 │   └── run-all.js
 │
-└── 12-assets/                       # Static assets
 ```
 
 > ★ = added or heavily modified in this fork

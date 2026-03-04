@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const HOOKS_FILE = path.join(__dirname, '../../hooks/hooks.json');
+const HOOKS_FILE = path.join(__dirname, '../../07-hooks/hooks.json');
 const VALID_EVENTS = ['PreToolUse', 'PostToolUse', 'PreCompact', 'SessionStart', 'SessionEnd', 'Stop', 'Notification', 'SubagentStop'];
 
 /**
