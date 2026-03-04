@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
-# install.sh — Install everything into ~/.claude/
+# install.sh — Manage Claude Code configuration
 #
-# Usage:
-#   ./install.sh <language> [<language> ...]
+# COMMANDS
 #
-# Examples:
-#   ./install.sh typescript
-#   ./install.sh typescript python golang
+#   install <language> [<language> ...]
+#     Install agents, commands, skills, rules, and hooks globally into ~/.claude/
 #
-# What gets installed:
-#   agents    -> ~/.claude/agents/
-#   commands  -> ~/.claude/commands/
-#   skills    -> ~/.claude/skills/
-#   rules     -> ~/.claude/rules/common/ + ~/.claude/rules/<language>/
-#   hooks     -> merged into ~/.claude/settings.json
+#   init [--template <name>] [<language>]
+#     Set up Claude configuration for the current project directory.
+#     Creates CLAUDE.md (from template) and .claude/settings.json (with hooks).
+#
+# EXAMPLES
+#
+#   ./install.sh install typescript
+#   ./install.sh install typescript python golang
+#   ./install.sh init
+#   ./install.sh init golang
+#   ./install.sh init --template go-microservice golang
 
 set -euo pipefail
 
@@ -33,94 +36,46 @@ COMMANDS_DIR="$SCRIPT_DIR/04-commands"
 SKILLS_DIR="$SCRIPT_DIR/05-skills"
 RULES_DIR="$SCRIPT_DIR/06-rules"
 HOOKS_FILE="$SCRIPT_DIR/07-hooks/hooks.json"
+EXAMPLES_DIR="$SCRIPT_DIR/02-examples"
 
 CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
 
 # ---------------------------------------------------------------------------
-# Usage
+# Helpers
 # ---------------------------------------------------------------------------
-if [[ $# -eq 0 ]]; then
-    echo "Usage: $0 <language> [<language> ...]"
-    echo ""
-    echo "Available languages:"
+die() { echo "Error: $*" >&2; exit 1; }
+
+list_languages() {
     for dir in "$RULES_DIR"/*/; do
         name="$(basename "$dir")"
         [[ "$name" == "common" ]] && continue
         echo "  - $name"
     done
-    exit 1
-fi
+}
 
-# Validate language names (prevent path traversal)
-for lang in "$@"; do
-    if [[ ! "$lang" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        echo "Error: invalid language name '$lang'. Only alphanumeric, dash, and underscore allowed." >&2
-        exit 1
+list_templates() {
+    for f in "$EXAMPLES_DIR"/*-CLAUDE.md; do
+        [[ -f "$f" ]] || continue
+        basename "$f" -CLAUDE.md | sed 's/^/  - /'
+    done
+}
+
+validate_lang() {
+    local lang="$1"
+    [[ "$lang" =~ ^[a-zA-Z0-9_-]+$ ]] || die "Invalid language name '$lang'. Only alphanumeric, dash, and underscore allowed."
+    [[ -d "$RULES_DIR/$lang" ]] || die "06-rules/$lang/ does not exist. Available languages:$(echo; list_languages)"
+}
+
+# Merge hooks from source hooks.json into a settings.json file
+merge_hooks() {
+    local settings_file="$1"
+    if ! command -v node &>/dev/null; then
+        echo "Warning: node not found — skipping hooks merge. Add hooks manually from 07-hooks/hooks.json." >&2
+        return
     fi
-    if [[ ! -d "$RULES_DIR/$lang" ]]; then
-        echo "Error: 06-rules/$lang/ does not exist." >&2
-        echo "Available languages:"
-        for dir in "$RULES_DIR"/*/; do
-            name="$(basename "$dir")"
-            [[ "$name" == "common" ]] && continue
-            echo "  - $name"
-        done
-        exit 1
-    fi
-done
-
-# ---------------------------------------------------------------------------
-# Agents
-# ---------------------------------------------------------------------------
-echo "Installing agents -> $CLAUDE_DIR/agents/"
-mkdir -p "$CLAUDE_DIR/agents"
-cp "$AGENTS_DIR"/*.md "$CLAUDE_DIR/agents/"
-
-# ---------------------------------------------------------------------------
-# Commands
-# ---------------------------------------------------------------------------
-echo "Installing commands -> $CLAUDE_DIR/commands/"
-mkdir -p "$CLAUDE_DIR/commands"
-cp "$COMMANDS_DIR"/*.md "$CLAUDE_DIR/commands/"
-
-# ---------------------------------------------------------------------------
-# Skills (all of them)
-# ---------------------------------------------------------------------------
-echo "Installing skills -> $CLAUDE_DIR/skills/"
-mkdir -p "$CLAUDE_DIR/skills"
-cp -r "$SKILLS_DIR"/. "$CLAUDE_DIR/skills/"
-
-# ---------------------------------------------------------------------------
-# Rules — common + requested languages
-# ---------------------------------------------------------------------------
-RULES_DEST="$CLAUDE_DIR/rules"
-
-if [[ -d "$RULES_DEST" ]] && [[ "$(ls -A "$RULES_DEST" 2>/dev/null)" ]]; then
-    echo "Note: $RULES_DEST/ already exists. Existing files will be overwritten."
-fi
-
-echo "Installing common rules -> $RULES_DEST/common/"
-mkdir -p "$RULES_DEST/common"
-cp -r "$RULES_DIR/common/." "$RULES_DEST/common/"
-
-for lang in "$@"; do
-    echo "Installing $lang rules -> $RULES_DEST/$lang/"
-    mkdir -p "$RULES_DEST/$lang"
-    cp -r "$RULES_DIR/$lang/." "$RULES_DEST/$lang/"
-done
-
-# ---------------------------------------------------------------------------
-# Hooks — merge into ~/.claude/settings.json
-# ---------------------------------------------------------------------------
-SETTINGS_FILE="$CLAUDE_DIR/settings.json"
-
-echo "Merging hooks -> $SETTINGS_FILE"
-
-if ! command -v node &>/dev/null; then
-    echo "Warning: node not found — skipping hooks merge. Add hooks manually from 07-hooks/hooks.json." >&2
-else
-    node - "$SETTINGS_FILE" "$HOOKS_FILE" <<'NODE'
+    node - "$settings_file" "$HOOKS_FILE" <<'NODE'
 const fs = require('fs');
+const path = require('path');
 const [, , settingsPath, hooksPath] = process.argv;
 
 const existing = fs.existsSync(settingsPath)
@@ -129,7 +84,6 @@ const existing = fs.existsSync(settingsPath)
 
 const source = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
 
-// Deep-merge hooks: for each event type, append entries that aren't already present
 const merged = { ...existing };
 merged.hooks = merged.hooks || {};
 
@@ -146,17 +100,197 @@ for (const [event, entries] of Object.entries(source.hooks || {})) {
     }
 }
 
-fs.mkdirSync(require('path').dirname(settingsPath), { recursive: true });
+fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
 fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2) + '\n');
-console.log('Hooks merged successfully.');
 NODE
-fi
+}
 
 # ---------------------------------------------------------------------------
-echo ""
-echo "Done. Installed to $CLAUDE_DIR/"
-echo "  agents:   $CLAUDE_DIR/agents/"
-echo "  commands: $CLAUDE_DIR/commands/"
-echo "  skills:   $CLAUDE_DIR/skills/"
-echo "  rules:    $CLAUDE_DIR/rules/"
-echo "  hooks:    $SETTINGS_FILE"
+# Auto-detect language from project files
+# ---------------------------------------------------------------------------
+detect_language() {
+    local dir="${1:-.}"
+    # Check for lock files / manifests in priority order
+    [[ -f "$dir/package.json" ]]          && { echo "typescript"; return; }
+    [[ -f "$dir/go.mod" ]]                && { echo "golang"; return; }
+    [[ -f "$dir/requirements.txt" ]]      && { echo "python"; return; }
+    [[ -f "$dir/pyproject.toml" ]]        && { echo "python"; return; }
+    [[ -f "$dir/Pipfile" ]]               && { echo "python"; return; }
+    [[ -f "$dir/Cargo.toml" ]]            && { echo "rust"; return; }
+    [[ -f "$dir/pom.xml" ]]               && { echo "java"; return; }
+    [[ -f "$dir/build.gradle" ]]          && { echo "java"; return; }
+    echo ""
+}
+
+# Auto-detect template from project files
+detect_template() {
+    local dir="${1:-.}"
+    # Specific framework detection takes priority
+    if [[ -f "$dir/package.json" ]]; then
+        grep -q '"next"' "$dir/package.json" 2>/dev/null && { echo "saas-nextjs"; return; }
+    fi
+    [[ -f "$dir/go.mod" ]]                && { echo "go-microservice"; return; }
+    [[ -f "$dir/manage.py" ]]             && { echo "django-api"; return; }
+    [[ -f "$dir/Cargo.toml" ]]            && { echo "rust-api"; return; }
+    echo "default"
+}
+
+# ---------------------------------------------------------------------------
+# COMMAND: install
+# ---------------------------------------------------------------------------
+cmd_install() {
+    [[ $# -eq 0 ]] && {
+        echo "Usage: $0 install <language> [<language> ...]"
+        echo ""
+        echo "Available languages:"
+        list_languages
+        exit 1
+    }
+
+    for lang in "$@"; do validate_lang "$lang"; done
+
+    echo "Installing agents   -> $CLAUDE_DIR/agents/"
+    mkdir -p "$CLAUDE_DIR/agents"
+    cp "$AGENTS_DIR"/*.md "$CLAUDE_DIR/agents/"
+
+    echo "Installing commands -> $CLAUDE_DIR/commands/"
+    mkdir -p "$CLAUDE_DIR/commands"
+    cp "$COMMANDS_DIR"/*.md "$CLAUDE_DIR/commands/"
+
+    echo "Installing skills   -> $CLAUDE_DIR/skills/"
+    mkdir -p "$CLAUDE_DIR/skills"
+    cp -r "$SKILLS_DIR"/. "$CLAUDE_DIR/skills/"
+
+    RULES_DEST="$CLAUDE_DIR/rules"
+    if [[ -d "$RULES_DEST" ]] && [[ "$(ls -A "$RULES_DEST" 2>/dev/null)" ]]; then
+        echo "Note: $RULES_DEST/ already exists — files will be overwritten."
+    fi
+
+    echo "Installing rules    -> $RULES_DEST/common/"
+    mkdir -p "$RULES_DEST/common"
+    cp -r "$RULES_DIR/common/." "$RULES_DEST/common/"
+
+    for lang in "$@"; do
+        echo "Installing rules    -> $RULES_DEST/$lang/"
+        mkdir -p "$RULES_DEST/$lang"
+        cp -r "$RULES_DIR/$lang/." "$RULES_DEST/$lang/"
+    done
+
+    echo "Merging hooks       -> $CLAUDE_DIR/settings.json"
+    merge_hooks "$CLAUDE_DIR/settings.json"
+
+    echo ""
+    echo "Done. Installed to $CLAUDE_DIR/"
+    echo "  agents:   $CLAUDE_DIR/agents/"
+    echo "  commands: $CLAUDE_DIR/commands/"
+    echo "  skills:   $CLAUDE_DIR/skills/"
+    echo "  rules:    $CLAUDE_DIR/rules/"
+    echo "  hooks:    $CLAUDE_DIR/settings.json"
+}
+
+# ---------------------------------------------------------------------------
+# COMMAND: init
+# ---------------------------------------------------------------------------
+cmd_init() {
+    local template=""
+    local lang=""
+    local project_dir
+    project_dir="$(pwd)"
+
+    # Parse flags
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --template)
+                [[ -z "${2:-}" ]] && die "--template requires a value."
+                template="$2"; shift 2 ;;
+            --template=*)
+                template="${1#--template=}"; shift ;;
+            -*)
+                die "Unknown flag: $1" ;;
+            *)
+                [[ -z "$lang" ]] || die "Too many arguments. Usage: $0 init [--template <name>] [<language>]"
+                lang="$1"; shift ;;
+        esac
+    done
+
+    # Auto-detect language if not provided
+    if [[ -z "$lang" ]]; then
+        lang="$(detect_language "$project_dir")"
+        if [[ -n "$lang" ]]; then
+            echo "Detected language: $lang"
+        else
+            echo "Warning: could not detect language. CLAUDE.md will use the generic template." >&2
+        fi
+    else
+        validate_lang "$lang"
+    fi
+
+    # Auto-detect template if not provided
+    if [[ -z "$template" ]]; then
+        template="$(detect_template "$project_dir")"
+    fi
+
+    # --- CLAUDE.md ---
+    local claude_md="$project_dir/CLAUDE.md"
+    local template_file="$EXAMPLES_DIR/${template}-CLAUDE.md"
+
+    if [[ -f "$claude_md" ]]; then
+        echo "Warning: CLAUDE.md already exists — skipping. Delete it first to regenerate." >&2
+    else
+        if [[ -f "$template_file" ]]; then
+            echo "Creating CLAUDE.md from template '$template'."
+            cp "$template_file" "$claude_md"
+        else
+            echo "Creating CLAUDE.md from generic template."
+            cp "$EXAMPLES_DIR/CLAUDE.md" "$claude_md"
+        fi
+        echo "  -> Edit $claude_md to describe your project."
+    fi
+
+    # --- .claude/settings.json ---
+    local settings_file="$project_dir/.claude/settings.json"
+    echo "Merging hooks -> $settings_file"
+    merge_hooks "$settings_file"
+
+    echo ""
+    echo "Done. Project configured at $project_dir"
+    echo "  CLAUDE.md              — project instructions for Claude"
+    echo "  .claude/settings.json  — project-local hooks"
+    if [[ -n "$lang" ]] && [[ "$lang" != "$(detect_language "$project_dir")" || true ]]; then
+        echo ""
+        echo "Next: run './install.sh install $lang' once to set up global rules/agents/skills."
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Dispatch
+# ---------------------------------------------------------------------------
+CMD="${1:-}"
+
+case "$CMD" in
+    install)
+        shift
+        cmd_install "$@" ;;
+    init)
+        shift
+        cmd_init "$@" ;;
+    "")
+        echo "Usage: $0 <command> [options]"
+        echo ""
+        echo "Commands:"
+        echo "  install <language> [<language> ...]"
+        echo "      Install agents, commands, skills, rules, and hooks globally into ~/.claude/"
+        echo ""
+        echo "  init [--template <name>] [<language>]"
+        echo "      Set up Claude configuration for the current project."
+        echo "      Creates CLAUDE.md and .claude/settings.json with hooks."
+        echo ""
+        echo "Available languages:"
+        list_languages
+        echo ""
+        echo "Available templates (for --template):"
+        list_templates
+        exit 1 ;;
+    *)
+        die "Unknown command '$CMD'. Run '$0' with no arguments to see usage." ;;
+esac
