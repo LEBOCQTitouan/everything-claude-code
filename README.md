@@ -31,14 +31,14 @@ git clone https://github.com/LEBOCQTitouan/everything-claude-code.git
 cd everything-claude-code
 ```
 
-### 2. Run the installer
+### 2. Global install
+
+Installs agents, commands, skills, rules, and hooks into `~/.claude/`:
 
 ```bash
-./install.sh typescript          # common + TypeScript
-./install.sh typescript python   # common + multiple stacks
+./install.sh install typescript          # common + TypeScript rules
+./install.sh install typescript python   # multiple stacks
 ```
-
-This installs everything in one shot:
 
 | What | Where |
 |---|---|
@@ -48,7 +48,24 @@ This installs everything in one shot:
 | Rules (common + language) | `~/.claude/rules/` |
 | Hooks | merged into `~/.claude/settings.json` |
 
-### 3. (Optional) Configure MCPs
+### 3. Per-project setup
+
+Run from any project directory to add Claude configuration to that repo:
+
+```bash
+cd /path/to/your/project
+/path/to/install.sh init              # auto-detect language & template
+/path/to/install.sh init golang       # specify language
+/path/to/install.sh init --template go-microservice golang
+```
+
+Creates:
+- `CLAUDE.md` — project instructions, pre-filled from the matching template
+- `.claude/settings.json` — project-local hooks
+
+Available templates: `saas-nextjs`, `go-microservice`, `django-api`, `rust-api`
+
+### 4. (Optional) Configure MCPs
 
 Copy desired entries from `09-mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
 
