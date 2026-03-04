@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — Install claude rules while preserving directory structure.
+# install.sh — Install everything into ~/.claude/
 #
 # Usage:
 #   ./install.sh <language> [<language> ...]
@@ -8,26 +8,37 @@
 #   ./install.sh typescript
 #   ./install.sh typescript python golang
 #
-# This script copies rules into ~/.claude/rules/ keeping the common/ and
-# language-specific subdirectories intact so that:
-#   1. Files with the same name in common/ and <language>/ don't overwrite
-#      each other.
-#   2. Relative references (e.g. ../common/coding-style.md) remain valid.
+# What gets installed:
+#   agents    -> ~/.claude/agents/
+#   commands  -> ~/.claude/commands/
+#   skills    -> ~/.claude/skills/
+#   rules     -> ~/.claude/rules/common/ + ~/.claude/rules/<language>/
+#   hooks     -> merged into ~/.claude/settings.json
 
 set -euo pipefail
 
-# Resolve symlinks — needed when invoked as `ecc-install` via npm/bun bin symlink
+# ---------------------------------------------------------------------------
+# Resolve symlinks so SCRIPT_DIR always points to the repo root
+# ---------------------------------------------------------------------------
 SCRIPT_PATH="$0"
 while [ -L "$SCRIPT_PATH" ]; do
     link_dir="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
     SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
-    # Resolve relative symlinks
     [[ "$SCRIPT_PATH" != /* ]] && SCRIPT_PATH="$link_dir/$SCRIPT_PATH"
 done
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-RULES_DIR="$SCRIPT_DIR/06-rules"
 
-# --- Usage ---
+AGENTS_DIR="$SCRIPT_DIR/03-agents"
+COMMANDS_DIR="$SCRIPT_DIR/04-commands"
+SKILLS_DIR="$SCRIPT_DIR/05-skills"
+RULES_DIR="$SCRIPT_DIR/06-rules"
+HOOKS_FILE="$SCRIPT_DIR/07-hooks/hooks.json"
+
+CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
+
+# ---------------------------------------------------------------------------
+# Usage
+# ---------------------------------------------------------------------------
 if [[ $# -eq 0 ]]; then
     echo "Usage: $0 <language> [<language> ...]"
     echo ""
@@ -40,34 +51,112 @@ if [[ $# -eq 0 ]]; then
     exit 1
 fi
 
-DEST_DIR="${CLAUDE_RULES_DIR:-$HOME/.claude/rules}"
-
-# Warn if destination already exists (user may have local customizations)
-if [[ -d "$DEST_DIR" ]] && [[ "$(ls -A "$DEST_DIR" 2>/dev/null)" ]]; then
-    echo "Note: $DEST_DIR/ already exists. Existing files will be overwritten."
-    echo "      Back up any local customizations before proceeding."
-fi
-
-# Always install common rules
-echo "Installing common rules -> $DEST_DIR/common/"
-mkdir -p "$DEST_DIR/common"
-cp -r "$RULES_DIR/common/." "$DEST_DIR/common/"
-
-# Install each requested language
+# Validate language names (prevent path traversal)
 for lang in "$@"; do
-    # Validate language name to prevent path traversal
     if [[ ! "$lang" =~ ^[a-zA-Z0-9_-]+$ ]]; then
         echo "Error: invalid language name '$lang'. Only alphanumeric, dash, and underscore allowed." >&2
-        continue
+        exit 1
     fi
-    lang_dir="$RULES_DIR/$lang"
-    if [[ ! -d "$lang_dir" ]]; then
-        echo "Warning: 06-rules/$lang/ does not exist, skipping." >&2
-        continue
+    if [[ ! -d "$RULES_DIR/$lang" ]]; then
+        echo "Error: 06-rules/$lang/ does not exist." >&2
+        echo "Available languages:"
+        for dir in "$RULES_DIR"/*/; do
+            name="$(basename "$dir")"
+            [[ "$name" == "common" ]] && continue
+            echo "  - $name"
+        done
+        exit 1
     fi
-    echo "Installing $lang rules -> $DEST_DIR/$lang/"
-    mkdir -p "$DEST_DIR/$lang"
-    cp -r "$lang_dir/." "$DEST_DIR/$lang/"
 done
 
-echo "Done. Rules installed to $DEST_DIR/"
+# ---------------------------------------------------------------------------
+# Agents
+# ---------------------------------------------------------------------------
+echo "Installing agents -> $CLAUDE_DIR/agents/"
+mkdir -p "$CLAUDE_DIR/agents"
+cp "$AGENTS_DIR"/*.md "$CLAUDE_DIR/agents/"
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+echo "Installing commands -> $CLAUDE_DIR/commands/"
+mkdir -p "$CLAUDE_DIR/commands"
+cp "$COMMANDS_DIR"/*.md "$CLAUDE_DIR/commands/"
+
+# ---------------------------------------------------------------------------
+# Skills (all of them)
+# ---------------------------------------------------------------------------
+echo "Installing skills -> $CLAUDE_DIR/skills/"
+mkdir -p "$CLAUDE_DIR/skills"
+cp -r "$SKILLS_DIR"/. "$CLAUDE_DIR/skills/"
+
+# ---------------------------------------------------------------------------
+# Rules — common + requested languages
+# ---------------------------------------------------------------------------
+RULES_DEST="$CLAUDE_DIR/rules"
+
+if [[ -d "$RULES_DEST" ]] && [[ "$(ls -A "$RULES_DEST" 2>/dev/null)" ]]; then
+    echo "Note: $RULES_DEST/ already exists. Existing files will be overwritten."
+fi
+
+echo "Installing common rules -> $RULES_DEST/common/"
+mkdir -p "$RULES_DEST/common"
+cp -r "$RULES_DIR/common/." "$RULES_DEST/common/"
+
+for lang in "$@"; do
+    echo "Installing $lang rules -> $RULES_DEST/$lang/"
+    mkdir -p "$RULES_DEST/$lang"
+    cp -r "$RULES_DIR/$lang/." "$RULES_DEST/$lang/"
+done
+
+# ---------------------------------------------------------------------------
+# Hooks — merge into ~/.claude/settings.json
+# ---------------------------------------------------------------------------
+SETTINGS_FILE="$CLAUDE_DIR/settings.json"
+
+echo "Merging hooks -> $SETTINGS_FILE"
+
+if ! command -v node &>/dev/null; then
+    echo "Warning: node not found — skipping hooks merge. Add hooks manually from 07-hooks/hooks.json." >&2
+else
+    node - "$SETTINGS_FILE" "$HOOKS_FILE" <<'NODE'
+const fs = require('fs');
+const [, , settingsPath, hooksPath] = process.argv;
+
+const existing = fs.existsSync(settingsPath)
+    ? JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+    : {};
+
+const source = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+
+// Deep-merge hooks: for each event type, append entries that aren't already present
+const merged = { ...existing };
+merged.hooks = merged.hooks || {};
+
+for (const [event, entries] of Object.entries(source.hooks || {})) {
+    merged.hooks[event] = merged.hooks[event] || [];
+    for (const entry of entries) {
+        const key = JSON.stringify(entry.hooks);
+        const alreadyPresent = merged.hooks[event].some(
+            e => JSON.stringify(e.hooks) === key
+        );
+        if (!alreadyPresent) {
+            merged.hooks[event].push(entry);
+        }
+    }
+}
+
+fs.mkdirSync(require('path').dirname(settingsPath), { recursive: true });
+fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2) + '\n');
+console.log('Hooks merged successfully.');
+NODE
+fi
+
+# ---------------------------------------------------------------------------
+echo ""
+echo "Done. Installed to $CLAUDE_DIR/"
+echo "  agents:   $CLAUDE_DIR/agents/"
+echo "  commands: $CLAUDE_DIR/commands/"
+echo "  skills:   $CLAUDE_DIR/skills/"
+echo "  rules:    $CLAUDE_DIR/rules/"
+echo "  hooks:    $SETTINGS_FILE"
