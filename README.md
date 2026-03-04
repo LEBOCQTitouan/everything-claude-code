@@ -24,20 +24,30 @@ A Claude Code plugin — a collection of production-ready agents, skills, hooks,
 - Claude Code CLI v2.1.0+
 - Node.js 18+ (for hooks merge)
 
-### 1. Clone
+### Mac (Homebrew)
 
 ```bash
-git clone https://github.com/LEBOCQTitouan/everything-claude-code.git
-cd everything-claude-code
+brew tap LEBOCQTitouan/everything-claude-code https://github.com/LEBOCQTitouan/everything-claude-code
+brew install --HEAD ecc
 ```
 
-### 2. Global install
-
-Installs agents, commands, skills, rules, and hooks into `~/.claude/`:
+### Linux (or Mac without Homebrew)
 
 ```bash
-./install.sh install typescript          # common + TypeScript rules
-./install.sh install typescript python   # multiple stacks
+curl -fsSL https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/install-cli.sh | bash
+```
+
+Installs to `~/.local/share/ecc/` and creates `~/.local/bin/ecc`.
+
+---
+
+### Usage
+
+#### Global install — agents, commands, skills, rules, hooks → `~/.claude/`
+
+```bash
+ecc install typescript          # common + TypeScript rules
+ecc install typescript python   # multiple stacks
 ```
 
 | What | Where |
@@ -48,24 +58,22 @@ Installs agents, commands, skills, rules, and hooks into `~/.claude/`:
 | Rules (common + language) | `~/.claude/rules/` |
 | Hooks | merged into `~/.claude/settings.json` |
 
-### 3. Per-project setup
-
-Run from any project directory to add Claude configuration to that repo:
+#### Per-project setup — run from any repo
 
 ```bash
-cd /path/to/your/project
-/path/to/install.sh init              # auto-detect language & template
-/path/to/install.sh init golang       # specify language
-/path/to/install.sh init --template go-microservice golang
+cd /your/project
+ecc init                                        # auto-detect language & template
+ecc init golang                                 # specify language
+ecc init --template go-microservice golang      # specify template too
 ```
 
 Creates:
-- `CLAUDE.md` — project instructions, pre-filled from the matching template
-- `.claude/settings.json` — project-local hooks
+- `CLAUDE.md` — project instructions, pre-filled from the nearest matching template
+- `.claude/settings.json` — project-local hooks merged non-destructively
 
 Available templates: `saas-nextjs`, `go-microservice`, `django-api`, `rust-api`
 
-### 4. (Optional) Configure MCPs
+#### (Optional) Configure MCPs
 
 Copy desired entries from `09-mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
 
@@ -177,6 +185,11 @@ everything-claude-code/
 ├── 11-tests/                        # Test suite
 │   └── run-all.js
 │
+├── Formula/
+│   └── ecc.rb                       # Homebrew formula
+│
+└── scripts/
+    └── install-cli.sh               # curl installer for Linux / Mac without Homebrew
 ```
 
 > ★ = added or heavily modified in this fork
