@@ -350,6 +350,10 @@ COMMANDS
   help [<command>]
       Show help. Pass a command name for detailed usage.
 
+  completion [bash|zsh|fish]
+      Output shell completion script. Auto-detects shell if omitted.
+      Add to shell: eval "\$(ecc completion)"
+
 EXAMPLES
   ecc install typescript
   ecc install typescript python golang
@@ -372,6 +376,171 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
+# COMMAND: completion
+# ---------------------------------------------------------------------------
+cmd_completion() {
+    local shell="${1:-}"
+
+    # Auto-detect shell if not specified
+    if [[ -z "$shell" ]]; then
+        shell="$(basename "${SHELL:-bash}")"
+    fi
+
+    case "$shell" in
+        zsh)
+            cat <<'ZSHCOMP'
+# ecc zsh completion — add to ~/.zshrc:
+#   eval "$(ecc completion zsh)"
+
+_ecc() {
+    local -a commands languages templates
+    commands=(
+        'install:Install agents, commands, skills, rules, and hooks into ~/.claude/'
+        'init:Set up Claude configuration for the current project'
+        'help:Show help for a command'
+        'completion:Output shell completion script'
+    )
+
+    _ecc_languages() {
+        local langs
+        langs=(${(f)"$(ecc --list-languages 2>/dev/null)"})
+        _describe 'language' langs
+    }
+
+    _ecc_templates() {
+        local tpls
+        tpls=(${(f)"$(ecc --list-templates 2>/dev/null)"})
+        _describe 'template' tpls
+    }
+
+    local state
+    _arguments \
+        '1: :->command' \
+        '*: :->args' && return
+
+    case $state in
+        command)
+            _describe 'command' commands ;;
+        args)
+            case $words[2] in
+                install)
+                    _ecc_languages ;;
+                init)
+                    _arguments \
+                        '--template[CLAUDE.md template]:template:_ecc_templates' \
+                        '::language:_ecc_languages' ;;
+                help)
+                    local help_cmds=('install' 'init' 'completion')
+                    _describe 'command' help_cmds ;;
+                completion)
+                    local shells=('bash' 'zsh' 'fish')
+                    _describe 'shell' shells ;;
+            esac ;;
+    esac
+}
+
+compdef _ecc ecc
+ZSHCOMP
+            ;;
+        bash)
+            cat <<'BASHCOMP'
+# ecc bash completion — add to ~/.bashrc:
+#   eval "$(ecc completion bash)"
+
+_ecc_completion() {
+    local cur prev words
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+
+    local commands="install init help completion"
+
+    if [[ $COMP_CWORD -eq 1 ]]; then
+        COMPREPLY=($(compgen -W "$commands" -- "$cur"))
+        return
+    fi
+
+    local cmd="${words[1]}"
+    case "$cmd" in
+        install)
+            local langs
+            langs="$(ecc --list-languages 2>/dev/null | tr '\n' ' ')"
+            COMPREPLY=($(compgen -W "$langs" -- "$cur")) ;;
+        init)
+            if [[ "$prev" == "--template" ]]; then
+                local tpls
+                tpls="$(ecc --list-templates 2>/dev/null | tr '\n' ' ')"
+                COMPREPLY=($(compgen -W "$tpls" -- "$cur"))
+            else
+                local langs
+                langs="$(ecc --list-languages 2>/dev/null | tr '\n' ' ')"
+                COMPREPLY=($(compgen -W "--template $langs" -- "$cur"))
+            fi ;;
+        help)
+            COMPREPLY=($(compgen -W "install init completion" -- "$cur")) ;;
+        completion)
+            COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")) ;;
+    esac
+}
+
+complete -F _ecc_completion ecc
+BASHCOMP
+            ;;
+        fish)
+            cat <<'FISHCOMP'
+# ecc fish completion — add to ~/.config/fish/config.fish:
+#   ecc completion fish | source
+
+complete -c ecc -f
+
+# Commands
+complete -c ecc -n '__fish_use_subcommand' -a install    -d 'Install into ~/.claude/'
+complete -c ecc -n '__fish_use_subcommand' -a init       -d 'Set up current project'
+complete -c ecc -n '__fish_use_subcommand' -a help       -d 'Show help'
+complete -c ecc -n '__fish_use_subcommand' -a completion -d 'Output completion script'
+
+# install: complete with languages
+complete -c ecc -n '__fish_seen_subcommand_from install' \
+    -a "(ecc --list-languages 2>/dev/null)"
+
+# init: --template flag + languages
+complete -c ecc -n '__fish_seen_subcommand_from init' \
+    -l template -d 'CLAUDE.md template' \
+    -a "(ecc --list-templates 2>/dev/null)"
+complete -c ecc -n '__fish_seen_subcommand_from init' \
+    -a "(ecc --list-languages 2>/dev/null)"
+
+# help: complete with command names
+complete -c ecc -n '__fish_seen_subcommand_from help' \
+    -a "install init completion"
+
+# completion: complete with shell names
+complete -c ecc -n '__fish_seen_subcommand_from completion' \
+    -a "bash zsh fish"
+FISHCOMP
+            ;;
+        *)
+            die "Unknown shell '$shell'. Supported: bash, zsh, fish" ;;
+    esac
+}
+
+# Internal helpers used by completion scripts at runtime
+cmd_list_languages() {
+    for dir in "$RULES_DIR"/*/; do
+        name="$(basename "$dir")"
+        [[ "$name" == "common" ]] && continue
+        echo "$name"
+    done
+}
+
+cmd_list_templates() {
+    for f in "$EXAMPLES_DIR"/*-CLAUDE.md; do
+        [[ -f "$f" ]] || continue
+        basename "$f" -CLAUDE.md
+    done
+}
+
+# ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
 CMD="${1:-}"
@@ -383,6 +552,12 @@ case "$CMD" in
         shift; cmd_init "$@" ;;
     help|-h|--help)
         shift; cmd_help "${1:-}" ;;
+    completion)
+        shift; cmd_completion "${1:-}" ;;
+    --list-languages)
+        cmd_list_languages ;;
+    --list-templates)
+        cmd_list_templates ;;
     "")
         cmd_help; exit 1 ;;
     *)
