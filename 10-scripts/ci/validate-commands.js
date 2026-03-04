@@ -8,9 +8,9 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.join(__dirname, '../..');
-const COMMANDS_DIR = path.join(ROOT_DIR, 'commands');
-const AGENTS_DIR = path.join(ROOT_DIR, 'agents');
-const SKILLS_DIR = path.join(ROOT_DIR, 'skills');
+const COMMANDS_DIR = path.join(ROOT_DIR, '04-commands');
+const AGENTS_DIR = path.join(ROOT_DIR, '03-agents');
+const SKILLS_DIR = path.join(ROOT_DIR, '05-skills');
 
 function validateCommands() {
   if (!fs.existsSync(COMMANDS_DIR)) {
@@ -93,7 +93,7 @@ function validateCommands() {
     for (const match of agentPathRefs) {
       const refName = match[1];
       if (!validAgents.has(refName)) {
-        console.error(`ERROR: ${file} - references non-existent agent agents/${refName}.md`);
+        console.error(`ERROR: ${file} - references non-existent agent 03-03-agents/${refName}.md`);
         hasErrors = true;
       }
     }
@@ -103,7 +103,7 @@ function validateCommands() {
     for (const match of skillRefs) {
       const refName = match[1];
       if (!validSkills.has(refName)) {
-        console.warn(`WARN: ${file} - references skill directory skills/${refName}/ (not found locally)`);
+        console.warn(`WARN: ${file} - references skill directory 05-skills/${refName}/ (not found locally)`);
         warnCount++;
       }
     }

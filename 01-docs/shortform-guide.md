@@ -1,7 +1,5 @@
 # The Shorthand Guide to Everything Claude Code
 
-![Header: Anthropic Hackathon Winner - Tips & Tricks for Claude Code](./assets/images/shortform/00-header.png)
-
 ---
 
 **Been an avid Claude Code user since the experimental rollout in Feb, and won the Anthropic x Forum Ventures hackathon with [zenith.chat](https://zenith.chat) alongside [@DRodriguezFX](https://x.com/DRodriguezFX) - completely using Claude Code.**
@@ -15,9 +13,6 @@ Here's my complete setup after 10 months of daily use: skills, hooks, subagents,
 Skills operate like rules, constricted to certain scopes and workflows. They're shorthand to prompts when you need to execute a particular workflow.
 
 After a long session of coding with Opus 4.5, you want to clean out dead code and loose .md files? Run `/refactor-clean`. Need testing? `/tdd`, `/e2e`, `/test-coverage`. Skills can also include codemaps - a way for Claude to quickly navigate your codebase without burning context on exploration.
-
-![Terminal showing chained commands](./assets/images/shortform/02-chaining-commands.jpeg)
-*Chaining commands together*
 
 Commands are skills executed via slash commands. They overlap but are stored differently:
 
@@ -65,9 +60,6 @@ Hooks are trigger-based automations that fire on specific events. Unlike skills,
   ]
 }
 ```
-
-![PostToolUse hook feedback](./assets/images/shortform/03-posttooluse-hook.png)
-*Example of what feedback you get in Claude Code, while running a PostToolUse hook*
 
 **Pro tip:** Use the `hookify` plugin to create hooks conversationally instead of writing JSON manually. Run `/hookify` and describe what you want.
 
@@ -129,17 +121,11 @@ MCPs connect Claude to external services directly. Not a replacement for APIs - 
 
 **Example:** Supabase MCP lets Claude pull specific data, run SQL directly upstream without copy-paste. Same for databases, deployment platforms, etc.
 
-![Supabase MCP listing tables](./assets/images/shortform/04-supabase-mcp.jpeg)
-*Example of the Supabase MCP listing the tables within the public schema*
-
 **Chrome in Claude:** is a built-in plugin MCP that lets Claude autonomously control your browser - clicking around to see how things work.
 
 **CRITICAL: Context Window Management**
 
 Be picky with MCPs. I keep all MCPs in user config but **disable everything unused**. Navigate to `/plugins` and scroll down or run `/mcp`.
-
-![/plugins interface](./assets/images/shortform/05-plugins-interface.jpeg)
-*Using /plugins to navigate to MCPs to see which ones are currently installed and their status*
 
 Your 200k context window before compacting might only be 70k with too many tools enabled. Performance degrades significantly.
 
@@ -167,9 +153,6 @@ claude plugin marketplace add https://github.com/mixedbread-ai/mgrep
 
 # Open Claude, run /plugins, find new marketplace, install from there
 ```
-
-![Marketplaces tab showing mgrep](./assets/images/shortform/06-marketplaces-mgrep.jpeg)
-*Displaying the newly installed Mixedbread-Grep marketplace*
 
 **LSP Plugins** are particularly useful if you run Claude Code outside editors frequently. Language Server Protocol gives Claude real-time type checking, go-to-definition, and intelligent completions without needing an IDE open.
 
@@ -239,9 +222,6 @@ mgrep --web "Next.js 15 app router changes"  # Web search
 
 Set up code review on your PRs with GitHub Actions. Claude can review PRs automatically when configured.
 
-![Claude bot approving a PR](./assets/images/shortform/08-github-pr-review.jpeg)
-*Claude approving a bug fix PR*
-
 ### Sandboxing
 
 Use sandbox mode for risky operations - Claude runs in restricted environment without affecting your actual system.
@@ -264,9 +244,6 @@ I use [Zed](https://zed.dev) - written in Rust, so it's genuinely fast. Opens in
 - **Minimal Resource Usage** - Won't compete with Claude for RAM/CPU during heavy operations. Important when running Opus
 - **Vim Mode** - Full vim keybindings if that's your thing
 
-![Zed Editor with custom commands](./assets/images/shortform/09-zed-editor.jpeg)
-*Zed Editor with custom commands dropdown using CMD+Shift+R. Following mode shown as the bullseye in the bottom right.*
-
 **Editor-Agnostic Tips:**
 
 1. **Split your screen** - Terminal with Claude Code on one side, editor on the other
@@ -278,9 +255,6 @@ I use [Zed](https://zed.dev) - written in Rust, so it's genuinely fast. Opens in
 ### VSCode / Cursor
 
 This is also a viable choice and works well with Claude Code. You can use it in either terminal format, with automatic sync with your editor using `\ide` enabling LSP functionality (somewhat redundant with plugins now). Or you can opt for the extension which is more integrated with the Editor and has a matching UI.
-
-![VS Code Claude Code Extension](./assets/images/shortform/10-vscode-extension.jpeg)
-*The VS Code extension provides a native graphical interface for Claude Code, integrated directly into your IDE.*
 
 ---
 
@@ -363,9 +337,6 @@ This is the key - I have 14 MCPs configured but only ~5-6 enabled per project. K
 
 Shows user, directory, git branch with dirty indicator, context remaining %, model, time, and todo count:
 
-![Custom status line](./assets/images/shortform/11-statusline.jpeg)
-*Example statusline in my Mac root directory*
-
 ```
 affoon:~ ctx:65% Opus 4.5 19:52
 ▌▌ plan mode on (shift+tab to cycle)
@@ -428,4 +399,3 @@ affoon:~ ctx:65% Opus 4.5 19:52
 
 ---
 
-*Won the Anthropic x Forum Ventures hackathon in NYC building [zenith.chat](https://zenith.chat) with [@DRodriguezFX](https://x.com/DRodriguezFX)*

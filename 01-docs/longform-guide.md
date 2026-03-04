@@ -1,13 +1,8 @@
 # The Longform Guide to Everything Claude Code
 
-![Header: The Longform Guide to Everything Claude Code](./assets/images/longform/01-header.png)
-
 ---
 
 > **Prerequisite**: This guide builds on [The Shorthand Guide to Everything Claude Code](./the-shortform-guide.md). Read that first if you haven't set up skills, hooks, subagents, MCPs, and plugins.
-
-![Reference to Shorthand Guide](./assets/images/longform/02-shortform-reference.png)
-*The Shorthand Guide - read it first*
 
 In the shorthand guide, I covered the foundational setup: skills and commands, hooks, subagents, MCPs, plugins, and the configuration patterns that form the backbone of an effective Claude Code workflow. That was the setup guide and the base infrastructure.
 
@@ -38,9 +33,6 @@ With lazy loading, the context window issue is mostly solved. But token usage an
 ### Context and Memory Management
 
 For sharing memory across sessions, a skill or command that summarizes and checks in on progress then saves to a `.tmp` file in your `.claude` folder and appends to it until the end of your session is the best bet. The next day it can use that as context and pick up where you left off, create a new file for each session so you don't pollute old context into new work.
-
-![Session Storage File Tree](./assets/images/longform/03-session-storage.png)
-*Example of session storage -> https://github.com/affaan-m/everything-claude-code/tree/main/examples/sessions*
 
 Claude creates a file summarizing current state. Review it, ask for edits if needed, then start fresh. For the new conversation, just provide the file path. Particularly useful when you're hitting context limits and need to continue complex work. These files should contain:
 - What approaches worked (verifiably with evidence)
@@ -110,9 +102,6 @@ Optimize the tools you use and subagent architecture designed to delegate the ch
 
 **Model Selection Quick Reference:**
 
-![Model Selection Table](./assets/images/longform/04-model-selection.png)
-*Hypothetical setup of subagents on various common tasks and reasoning behind the choices*
-
 | Task Type                 | Model  | Why                                        |
 | ------------------------- | ------ | ------------------------------------------ |
 | Exploration/search        | Haiku  | Fast, cheap, good enough for finding files |
@@ -128,15 +117,9 @@ Default to Sonnet for 90% of coding tasks. Upgrade to Opus when first attempt fa
 
 **Pricing Reference:**
 
-![Claude Model Pricing](./assets/images/longform/05-pricing-table.png)
-*Source: https://platform.claude.com/docs/en/about-claude/pricing*
-
 **Tool-Specific Optimizations:**
 
 Replace grep with mgrep - ~50% token reduction on average compared to traditional grep or ripgrep:
-
-![mgrep Benchmark](./assets/images/longform/06-mgrep-benchmark.png)
-*In our 50-task benchmark, mgrep + Claude Code used ~2x fewer tokens than grep-based workflows at similar or better judged quality. Source: mgrep by @mixedbread-ai*
 
 **Modular Codebase Benefits:**
 
@@ -181,9 +164,6 @@ Main chat for code changes, forks for questions about the codebase and its curre
 
 **On Arbitrary Terminal Counts:**
 
-![Boris on Parallel Terminals](./assets/images/longform/07-boris-parallel.png)
-*Boris (Anthropic) on running multiple Claude instances*
-
 Boris has tips on parallelization. He's suggested things like running 5 Claude instances locally and 5 upstream. I advise against setting arbitrary terminal amounts. The addition of a terminal should be out of true necessity.
 
 Your goal should be: **how much can you get done with the minimum viable amount of parallelization.**
@@ -201,9 +181,6 @@ cd ../project-feature-a && claude
 ```
 
 IF you are to begin scaling your instances AND you have multiple instances of Claude working on code that overlaps with one another, it's imperative you use git worktrees and have a very well-defined plan for each. Use `/rename <name here>` to name all your chats.
-
-![Two Terminal Setup](./assets/images/longform/08-two-terminals.png)
-*Starting Setup: Left Terminal for Coding, Right Terminal for Questions - use /rename and /fork*
 
 **The Cascade Method:**
 
@@ -314,9 +291,6 @@ alias q='cd ~/Desktop/projects'
 
 ## Milestone
 
-![25k+ GitHub Stars](./assets/images/longform/09-25k-stars.png)
-*25,000+ GitHub stars in under a week*
-
 ---
 
 ## Resources
@@ -351,4 +325,3 @@ alias q='cd ~/Desktop/projects'
 
 ---
 
-*Everything covered in both guides is available on GitHub at [everything-claude-code](https://github.com/affaan-m/everything-claude-code)*

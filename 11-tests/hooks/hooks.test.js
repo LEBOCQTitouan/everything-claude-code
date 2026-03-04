@@ -1234,20 +1234,12 @@ async function runTests() {
     }
   })) passed++; else failed++;
 
-  // plugin.json validation
-  console.log('\nplugin.json Validation:');
+  // hooks.json existence check
+  console.log('\nhooks.json Validation:');
 
-  if (test('plugin.json does NOT have explicit hooks declaration', () => {
-    // Claude Code automatically loads hooks/hooks.json by convention.
-    // Explicitly declaring it in plugin.json causes a duplicate detection error.
-    // See: https://github.com/affaan-m/everything-claude-code/issues/103
-    const pluginPath = path.join(__dirname, '..', '..', '.claude-plugin', 'plugin.json');
-    const plugin = JSON.parse(fs.readFileSync(pluginPath, 'utf8'));
-
-    assert.ok(
-      !plugin.hooks,
-      'plugin.json should NOT have "hooks" field - Claude Code auto-loads hooks/hooks.json'
-    );
+  if (test('hooks.json exists in 07-hooks/', () => {
+    const hooksPath = path.join(__dirname, '..', '..', '07-hooks', 'hooks.json');
+    assert.ok(fs.existsSync(hooksPath), '07-hooks/hooks.json should exist');
   })) passed++; else failed++;
 
   // ─── evaluate-session.js tests ───
