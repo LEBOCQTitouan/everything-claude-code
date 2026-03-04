@@ -1,6 +1,6 @@
 {
   "name": "@lebocqtitouan/ecc",
-  "version": "1.0.0",
+  "version": "1.0.1-beta.0",
   "description": "CLI to set up Claude Code configuration — agents, skills, rules, hooks",
   "license": "MIT",
   "bin": {
@@ -30,5 +30,12 @@
     "type": "git",
     "url": "https://github.com/LEBOCQTitouan/everything-claude-code.git"
   },
-  "keywords": ["claude", "claude-code", "ai", "cli", "agents", "hooks"]
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "cli",
+    "agents",
+    "hooks"
+  ]
 }
