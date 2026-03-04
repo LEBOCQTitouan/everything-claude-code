@@ -119,8 +119,29 @@ everything-claude-code/
 │   ├── backend-patterns/
 │   ├── frontend-patterns/
 │   ├── continuous-learning/
+│   ├── continuous-learning-v2/
 │   ├── autonomous-loops/
-│   └── ...50+ more
+│   ├── api-design/
+│   ├── database-migrations/
+│   ├── deployment-patterns/
+│   ├── docker-patterns/
+│   ├── e2e-testing/
+│   ├── eval-harness/
+│   ├── verification-loop/
+│   ├── search-first/
+│   ├── iterative-retrieval/
+│   ├── strategic-compact/
+│   ├── coding-standards/
+│   ├── plankton-code-quality/
+│   ├── security-scan/
+│   ├── postgres-patterns/
+│   ├── golang-patterns/ + golang-testing/
+│   ├── python-patterns/ + python-testing/
+│   ├── django-patterns/ + django-tdd/ + ...
+│   ├── springboot-patterns/ + springboot-tdd/ + ...
+│   ├── java-coding-standards/ + jpa-patterns/
+│   ├── cpp-coding-standards/ + cpp-testing/
+│   └── swift-*/swiftui-patterns/
 │
 ├── commands/                        # Slash commands (/plan, /tdd, /code-review, ...)
 │   ├── plan.md
