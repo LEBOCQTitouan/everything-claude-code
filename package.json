@@ -17,6 +17,7 @@
     "10-scripts"
   ],
   "scripts": {
+    "postinstall": "node 10-scripts/postinstall.js",
     "test": "node 11-tests/run-all.js",
     "lint": "markdownlint '**/*.md' --ignore node_modules"
   },
