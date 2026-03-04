@@ -266,34 +266,125 @@ cmd_init() {
 }
 
 # ---------------------------------------------------------------------------
+# COMMAND: help
+# ---------------------------------------------------------------------------
+cmd_help() {
+    local cmd="${1:-}"
+    case "$cmd" in
+        install)
+            cat <<EOF
+USAGE
+  ecc install <language> [<language> ...]
+
+DESCRIPTION
+  Installs agents, commands, skills, rules, and hooks into ~/.claude/.
+  Always installs common (language-agnostic) rules alongside each language.
+
+ARGUMENTS
+  <language>    One or more language names to install rules for.
+
+OPTIONS
+  (none)
+
+EXAMPLES
+  ecc install typescript
+  ecc install typescript python golang
+
+AVAILABLE LANGUAGES
+$(list_languages)
+
+WHAT GETS INSTALLED
+  ~/.claude/agents/       — subagents (architect, uncle-bob, planner, ...)
+  ~/.claude/commands/     — slash commands (/tdd, /plan, /code-review, ...)
+  ~/.claude/skills/       — domain knowledge (tdd-workflow, security-review, ...)
+  ~/.claude/rules/        — always-follow guidelines (common + <language>)
+  ~/.claude/settings.json — hooks merged non-destructively
+EOF
+            ;;
+        init)
+            cat <<EOF
+USAGE
+  ecc init [--template <name>] [<language>]
+
+DESCRIPTION
+  Sets up Claude configuration for the current project directory.
+  Auto-detects the language and template from project files if not specified.
+
+ARGUMENTS
+  <language>          Language for rule hints in the next-steps message.
+                      Auto-detected from package.json, go.mod, Cargo.toml, etc.
+
+OPTIONS
+  --template <name>   CLAUDE.md template to use. Auto-detected if omitted.
+
+EXAMPLES
+  ecc init
+  ecc init golang
+  ecc init --template go-microservice golang
+
+AVAILABLE TEMPLATES
+$(list_templates)
+
+AUTO-DETECTION
+  Language   package.json → typescript, go.mod → golang, Cargo.toml → rust, ...
+  Template   next in package.json → saas-nextjs, manage.py → django-api, ...
+
+WHAT GETS CREATED
+  CLAUDE.md               — project instructions, pre-filled from template
+  .claude/settings.json   — project-local hooks merged non-destructively
+EOF
+            ;;
+        ""|help)
+            cat <<EOF
+USAGE
+  ecc <command> [options]
+
+COMMANDS
+  install <language> [<language> ...]
+      Install agents, commands, skills, rules, and hooks globally into ~/.claude/
+
+  init [--template <name>] [<language>]
+      Set up Claude configuration for the current project.
+      Creates CLAUDE.md and .claude/settings.json with hooks.
+
+  help [<command>]
+      Show help. Pass a command name for detailed usage.
+
+EXAMPLES
+  ecc install typescript
+  ecc install typescript python golang
+  ecc init
+  ecc init golang
+  ecc init --template go-microservice golang
+  ecc help install
+  ecc help init
+
+AVAILABLE LANGUAGES
+$(list_languages)
+
+AVAILABLE TEMPLATES
+$(list_templates)
+EOF
+            ;;
+        *)
+            die "Unknown command '$cmd'. Run 'ecc help' for usage." ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
 CMD="${1:-}"
 
 case "$CMD" in
     install)
-        shift
-        cmd_install "$@" ;;
+        shift; cmd_install "$@" ;;
     init)
-        shift
-        cmd_init "$@" ;;
+        shift; cmd_init "$@" ;;
+    help|-h|--help)
+        shift; cmd_help "${1:-}" ;;
     "")
-        echo "Usage: $0 <command> [options]"
-        echo ""
-        echo "Commands:"
-        echo "  install <language> [<language> ...]"
-        echo "      Install agents, commands, skills, rules, and hooks globally into ~/.claude/"
-        echo ""
-        echo "  init [--template <name>] [<language>]"
-        echo "      Set up Claude configuration for the current project."
-        echo "      Creates CLAUDE.md and .claude/settings.json with hooks."
-        echo ""
-        echo "Available languages:"
-        list_languages
-        echo ""
-        echo "Available templates (for --template):"
-        list_templates
-        exit 1 ;;
+        cmd_help; exit 1 ;;
     *)
-        die "Unknown command '$CMD'. Run '$0' with no arguments to see usage." ;;
+        die "Unknown command '$CMD'. Run 'ecc help' for usage." ;;
 esac
