@@ -17,6 +17,86 @@ A Claude Code plugin — a collection of production-ready agents, skills, hooks,
 
 ---
 
+## Installation
+
+### Requirements
+
+- Claude Code CLI v2.1.0+
+- Node.js (for hooks and scripts)
+
+Check your Claude Code version:
+
+```bash
+claude --version
+```
+
+### 1. Clone
+
+```bash
+git clone https://github.com/LEBOCQTitouan/everything-claude-code.git
+cd everything-claude-code
+```
+
+### 2. Install agents
+
+```bash
+cp agents/*.md ~/.claude/agents/
+```
+
+### 3. Install rules
+
+Install common rules (always required) + your language stack:
+
+```bash
+# Common — language-agnostic, always install
+cp -r rules/common/* ~/.claude/rules/
+
+# Pick your stack (one or more)
+cp -r rules/typescript/* ~/.claude/rules/
+cp -r rules/python/* ~/.claude/rules/
+cp -r rules/golang/* ~/.claude/rules/
+```
+
+Or use the installer script:
+
+```bash
+./install.sh typescript          # common + TypeScript
+./install.sh typescript python   # common + multiple stacks
+```
+
+### 4. Install commands
+
+```bash
+cp commands/*.md ~/.claude/commands/
+```
+
+### 5. Install skills (selective)
+
+Install only what you need — avoid loading skills for stacks you don't use:
+
+```bash
+# Core workflows (recommended for everyone)
+cp -r skills/tdd-workflow ~/.claude/skills/
+cp -r skills/security-review ~/.claude/skills/
+cp -r skills/search-first ~/.claude/skills/
+cp -r skills/continuous-learning ~/.claude/skills/
+
+# Add stack-specific skills as needed
+cp -r skills/backend-patterns ~/.claude/skills/
+cp -r skills/frontend-patterns ~/.claude/skills/
+cp -r skills/api-design ~/.claude/skills/
+```
+
+### 6. Configure hooks
+
+Add the hooks from `hooks/hooks.json` to your `~/.claude/settings.json`.
+
+### 7. (Optional) Configure MCPs
+
+Copy desired entries from `mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
+
+---
+
 ## Repository Structure
 
 ```
@@ -79,6 +159,15 @@ everything-claude-code/
 │   ├── review.md
 │   └── research.md
 │
+├── docs/
+│   ├── diagrams/                    # Architecture and flow diagrams
+│   │   ├── agent-orchestration.md   # Full dev flow + agent chain
+│   │   ├── feature-development.md   # Feature lifecycle sequence diagram
+│   │   ├── tdd-workflow.md          # TDD loop with uncle-bob gate
+│   │   ├── security-review.md       # Code review split flow
+│   │   └── refactoring.md           # Safe refactoring loop
+│   └── token-optimization.md
+│
 ├── mcp-configs/
 │   └── mcp-servers.json             # GitHub, Supabase, Vercel, Railway, ...
 │
@@ -97,172 +186,40 @@ everything-claude-code/
 
 ## Agent Orchestration
 
-### Full Development Flow
+See the full diagrams in [`docs/diagrams/`](docs/diagrams/):
 
-```mermaid
-flowchart TD
-    USER(["User Request"])
+| Diagram | Description |
+|---|---|
+| [agent-orchestration.md](docs/diagrams/agent-orchestration.md) | Full development flow and architecture agent chain |
+| [feature-development.md](docs/diagrams/feature-development.md) | Feature lifecycle sequence diagram |
+| [tdd-workflow.md](docs/diagrams/tdd-workflow.md) | TDD loop with uncle-bob quality gate |
+| [security-review.md](docs/diagrams/security-review.md) | Code review split across security, quality, Clean Code |
+| [refactoring.md](docs/diagrams/refactoring.md) | Safe refactoring loop with test verification |
 
-    USER --> PLANNER["planner\nBreaks task into phases\nidentifies risks"]
-
-    PLANNER --> ARCH["architect\nDefines hexagonal structure\nBounded contexts, ports, aggregates\nDDD model"]
-
-    ARCH --> ARCHMOD["architect-module\nDesigns module internals\nPattern selection\nCode organization"]
-
-    ARCHMOD --> UB1["uncle-bob\nPre-implementation review\nSOLID + Clean Architecture\nDependency rule audit"]
-
-    UB1 -->|"SOLID violations\nClean Code prescriptions"| ARCHMOD
-    UB1 -->|"Layer violations\nPort contract issues"| ARCH
-
-    UB1 -->|"Design approved"| CODE["Code written\nby Claude Code"]
-
-    CODE --> CR["code-reviewer\nSecurity, quality\nbest practices"]
-    CODE --> UB2["uncle-bob\nPost-implementation\nNaming, functions, tests\nClean Code audit"]
-
-    CR --> REPORT["Merged Review Report\n[Security] findings\n[Clean Code] findings\n[Clean Architecture] findings"]
-    UB2 --> REPORT
-
-    REPORT -->|"Blockers found"| CODE
-    REPORT -->|"All clear"| DONE(["Ready to commit"])
-```
-
-### Architecture Agent Chain
-
-```mermaid
-flowchart LR
-    ARCH["architect\n(Strategic)"]
-    ARCHMOD["architect-module\n(Tactical)"]
-    UB["uncle-bob\n(Consultant)"]
-
-    ARCH -->|"Layer assignment\nPort contracts\nDDD constraints"| ARCHMOD
-    ARCHMOD -->|"Calls after\ndesign proposal"| UB
-    UB -->|"SOLID + Clean Code\nprescriptions"| ARCHMOD
-    UB -->|"Layer/boundary\nviolations"| ARCH
-    ARCHMOD -->|"Escalates boundary\ndecisions"| ARCH
-
-    style ARCH fill:#1a1a2e,color:#fff
-    style ARCHMOD fill:#16213e,color:#fff
-    style UB fill:#0f3460,color:#fff
-```
-
-### Responsibilities Split
+### Agent Responsibilities
 
 | Agent | Scope | Enforces |
 |---|---|---|
-| **architect** | System-wide | Hexagonal Architecture, DDD strategic (bounded contexts, aggregates, ports) |
+| **architect** | System-wide | Hexagonal Architecture, DDD (bounded contexts, aggregates, ports) |
 | **architect-module** | Single layer/module | Module internals, pattern selection, code efficiency |
-| **uncle-bob** | Design + code | SOLID, Clean Architecture dependency rule, Clean Code (naming, functions, tests) |
+| **uncle-bob** | Design + code | SOLID, Clean Architecture dependency rule, Clean Code |
 | **planner** | Feature scope | Implementation phases, risk assessment |
 | **code-reviewer** | Changed code | Security, quality, regressions |
 
 ---
 
-## Complex Task Flows
+## Key Commands
 
-### Feature Development (Full Lifecycle)
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant planner
-    participant architect
-    participant architect-module
-    participant uncle-bob
-    participant code-reviewer
-
-    User->>planner: /plan "Add feature X"
-    planner->>planner: Analyze requirements, risks, phases
-    planner-->>User: Implementation plan (waits for confirmation)
-
-    User->>architect: Confirm → design architecture
-    architect->>architect: Define bounded contexts, aggregates, ports
-    architect->>architect-module: Delegate module design with constraints
-
-    architect-module->>architect-module: Design internals, select patterns
-    architect-module->>uncle-bob: Pre-implementation design review
-    uncle-bob-->>architect-module: SOLID prescriptions
-    uncle-bob-->>architect: Layer violations (if any)
-
-    architect-module-->>User: Approved design
-
-    User->>User: Implement code (guided by /tdd)
-
-    User->>code-reviewer: /code-review
-    code-reviewer->>uncle-bob: Delegate Clean Code audit
-    uncle-bob-->>code-reviewer: [Clean Code] + [Clean Architecture] findings
-    code-reviewer-->>User: Merged report (Security + Quality + Clean Code)
-```
-
-### TDD Workflow
-
-```mermaid
-flowchart TD
-    START(["Feature to implement"]) --> INTERFACE["1. Define interfaces\nDomain ports + types"]
-
-    INTERFACE --> RED["2. RED\nWrite failing tests\nagainst the interface"]
-
-    RED --> GREEN["3. GREEN\nMinimal implementation\nto pass tests"]
-
-    GREEN --> CHECK{Tests pass?}
-    CHECK -->|No| GREEN
-    CHECK -->|Yes| REFACTOR["4. REFACTOR\nClean up\nno behavior change"]
-
-    REFACTOR --> COVERAGE{Coverage ≥ 80%?}
-    COVERAGE -->|No| RED
-    COVERAGE -->|Yes| UB["uncle-bob review\nClean Code audit\non final implementation"]
-
-    UB --> ISSUES{Issues found?}
-    ISSUES -->|CRITICAL/HIGH| REFACTOR
-    ISSUES -->|Clear| DONE(["Commit"])
-```
-
-### Security Review Flow
-
-```mermaid
-flowchart LR
-    CODE["Changed code"] --> CR["code-reviewer"]
-
-    CR --> SEC["Security checklist\nOWASP Top 10\nHardcoded credentials\nSQL injection / XSS\nInput validation"]
-
-    CR --> UB["uncle-bob\nClean Architecture\ndependency rule\nSOLID violations"]
-
-    CR --> QUAL["Quality checklist\nFunctions > 50 lines\nNesting depth > 4\nMissing error handling\nTODO comments"]
-
-    SEC --> MERGE["Merged Report"]
-    UB --> MERGE
-    QUAL --> MERGE
-
-    MERGE --> BLOCK{CRITICAL or HIGH?}
-    BLOCK -->|Yes| FIX["Fix required\nbefore merge"]
-    BLOCK -->|No| APPROVE["Approved"]
-```
-
-### Refactoring Flow
-
-```mermaid
-flowchart TD
-    START(["Refactor request"]) --> ARCH["architect\nValidate current vs\ntarget hexagonal structure"]
-
-    ARCH --> UB["uncle-bob\nAudit existing code\nfor SOLID violations"]
-
-    UB --> PLAN["architect-module\nDesign refactor plan\nwithin approved boundaries"]
-
-    PLAN --> TESTS["Run full test suite\nEstablish baseline"]
-
-    TESTS --> SAFE["Identify SAFE items\n(unused code, dead exports)"]
-    SAFE --> DELETE["Remove one category\nat a time"]
-    DELETE --> VERIFY["Re-run tests"]
-
-    VERIFY --> PASS{Tests pass?}
-    PASS -->|No| REVERT["git checkout -- file\nskip this item"]
-    PASS -->|Yes| MORE{More items?}
-
-    MORE -->|Yes| DELETE
-    MORE -->|No| UB2["uncle-bob final review\nClean Code audit\non refactored code"]
-
-    UB2 --> COMMIT(["Commit"])
-    REVERT --> MORE
-```
+| Command | What it does | Agents involved |
+|---|---|---|
+| `/plan` | Implementation plan, risks, phases | planner |
+| `/tdd` | Test-driven development workflow | tdd-guide |
+| `/code-review` | Security + quality review | code-reviewer + uncle-bob |
+| `/build-fix` | Fix build errors | build-error-resolver |
+| `/e2e` | Generate + run E2E tests | e2e-runner |
+| `/refactor-clean` | Remove dead code safely | refactor-cleaner |
+| `/verify` | Run verification loop | — |
+| `/learn` | Extract patterns from session | — |
 
 ---
 
@@ -283,7 +240,7 @@ model: opus
 
 ### Skills
 
-Domain knowledge invoked by commands or agents. Markdown files describing when to use, how it works, examples:
+Domain knowledge invoked by commands or agents:
 
 ```
 skills/tdd-workflow/SKILL.md
@@ -315,52 +272,6 @@ rules/typescript/      # TS/JS specific
 rules/python/          # Python specific
 rules/golang/          # Go specific
 ```
-
----
-
-## Installation
-
-```bash
-# Clone
-git clone <this-repo>
-cd everything-claude-code
-
-# Copy agents
-cp agents/*.md ~/.claude/agents/
-
-# Copy rules (common + your stack)
-cp -r rules/common/* ~/.claude/rules/
-cp -r rules/typescript/* ~/.claude/rules/   # pick your stack
-
-# Copy commands
-cp commands/*.md ~/.claude/commands/
-
-# Copy skills (selective — only what you need)
-cp -r skills/tdd-workflow ~/.claude/skills/
-cp -r skills/security-review ~/.claude/skills/
-cp -r skills/backend-patterns ~/.claude/skills/
-```
-
-Or use the installer:
-
-```bash
-./install.sh typescript    # installs common + typescript rules
-```
-
----
-
-## Key Commands
-
-| Command | What it does | Agents involved |
-|---|---|---|
-| `/plan` | Implementation plan, risks, phases | planner |
-| `/tdd` | Test-driven development workflow | tdd-guide |
-| `/code-review` | Security + quality review | code-reviewer + uncle-bob |
-| `/build-fix` | Fix build errors | build-error-resolver |
-| `/e2e` | Generate + run E2E tests | e2e-runner |
-| `/refactor-clean` | Remove dead code safely | refactor-cleaner |
-| `/verify` | Run verification loop | — |
-| `/learn` | Extract patterns from session | — |
 
 ---
 
