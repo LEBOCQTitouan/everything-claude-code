@@ -261,7 +261,33 @@ cmd_init() {
     echo "  .claude/settings.json  — project-local hooks"
     if [[ -n "$lang" ]] && [[ "$lang" != "$(detect_language "$project_dir")" || true ]]; then
         echo ""
-        echo "Next: run './install.sh install $lang' once to set up global rules/agents/skills."
+        echo "Next: run 'ecc install $lang' once to set up global rules/agents/skills."
+    fi
+
+    # --- .gitignore prompt ---
+    local gitignore_file="$project_dir/.gitignore"
+    local gitignore_entry=".claude/settings.local.json"
+    local already_ignored=false
+
+    if [[ -f "$gitignore_file" ]] && grep -qF "$gitignore_entry" "$gitignore_file" 2>/dev/null; then
+        already_ignored=true
+    fi
+
+    if [[ "$already_ignored" == false ]]; then
+        echo ""
+        printf "Add '%s' to .gitignore? [Y/n] " "$gitignore_entry"
+        read -r answer </dev/tty
+        case "${answer:-Y}" in
+            [Yy]*)
+                echo "" >> "$gitignore_file"
+                echo "# Claude Code local settings (machine-specific, never commit)" >> "$gitignore_file"
+                echo "$gitignore_entry" >> "$gitignore_file"
+                echo "  .gitignore             — $gitignore_entry added"
+                ;;
+            *)
+                echo "  Skipped .gitignore update."
+                ;;
+        esac
     fi
 }
 
