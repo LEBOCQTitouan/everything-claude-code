@@ -360,6 +360,29 @@ WHAT GETS CREATED
   .claude/settings.json   — project-local hooks merged non-destructively
 EOF
             ;;
+        version)
+            cat <<EOF
+USAGE
+  ecc version
+
+DESCRIPTION
+  Print the installed ecc version number.
+
+ALIASES
+  ecc --version
+  ecc -v
+EOF
+            ;;
+        update)
+            cat <<EOF
+USAGE
+  ecc update
+
+DESCRIPTION
+  Reinstall the latest version of ecc from npm.
+  Equivalent to: npm install -g @lebocqtitouan/ecc@latest
+EOF
+            ;;
         ""|help)
             cat <<EOF
 USAGE
@@ -373,10 +396,16 @@ COMMANDS
       Set up Claude configuration for the current project.
       Creates CLAUDE.md and .claude/settings.json with hooks.
 
+  version
+      Print the installed ecc version.  Aliases: --version, -v
+
+  update
+      Reinstall the latest version of ecc from npm.
+
   help [<command>]
       Show help. Pass a command name for detailed usage.
 
-  completion [bash|zsh|fish]
+  completion [bash|zsh|fish|pwsh]
       Output shell completion script. Auto-detects shell if omitted.
       Add to shell: eval "\$(ecc completion)"
 
@@ -386,6 +415,8 @@ EXAMPLES
   ecc init
   ecc init golang
   ecc init --template go-microservice golang
+  ecc version
+  ecc update
   ecc help install
   ecc help init
 
@@ -456,7 +487,7 @@ _ecc() {
                         '--template[CLAUDE.md template]:template:_ecc_templates' \
                         '::language:_ecc_languages' ;;
                 help)
-                    local help_cmds=('install' 'init' 'completion')
+                    local help_cmds=('install' 'init' 'version' 'update' 'completion')
                     _describe 'command' help_cmds ;;
                 completion)
                     local shells=('bash' 'zsh' 'fish')
@@ -479,7 +510,7 @@ _ecc_completion() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     words=("${COMP_WORDS[@]}")
 
-    local commands="install init help completion"
+    local commands="install init help version update completion"
 
     if [[ $COMP_CWORD -eq 1 ]]; then
         COMPREPLY=($(compgen -W "$commands" -- "$cur"))
@@ -503,7 +534,7 @@ _ecc_completion() {
                 COMPREPLY=($(compgen -W "--template $langs" -- "$cur"))
             fi ;;
         help)
-            COMPREPLY=($(compgen -W "install init completion" -- "$cur")) ;;
+            COMPREPLY=($(compgen -W "install init version update completion" -- "$cur")) ;;
         completion)
             COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")) ;;
     esac
@@ -522,6 +553,8 @@ complete -c ecc -f
 # Commands
 complete -c ecc -n '__fish_use_subcommand' -a install    -d 'Install into ~/.claude/'
 complete -c ecc -n '__fish_use_subcommand' -a init       -d 'Set up current project'
+complete -c ecc -n '__fish_use_subcommand' -a version    -d 'Print installed version'
+complete -c ecc -n '__fish_use_subcommand' -a update     -d 'Update to latest version'
 complete -c ecc -n '__fish_use_subcommand' -a help       -d 'Show help'
 complete -c ecc -n '__fish_use_subcommand' -a completion -d 'Output completion script'
 
@@ -538,7 +571,7 @@ complete -c ecc -n '__fish_seen_subcommand_from init' \
 
 # help: complete with command names
 complete -c ecc -n '__fish_seen_subcommand_from help' \
-    -a "install init completion"
+    -a "install init version update completion"
 
 # completion: complete with shell names
 complete -c ecc -n '__fish_seen_subcommand_from completion' \
@@ -576,6 +609,13 @@ case "$CMD" in
         shift; cmd_install "$@" ;;
     init)
         shift; cmd_init "$@" ;;
+    version|--version|-v)
+        node -e "process.stdout.write(require('$(dirname "$0")/package.json').version+'\n')" 2>/dev/null \
+            || grep '"version"' "$(dirname "$0")/package.json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/' ;;
+    update)
+        pkg=$(node -e "process.stdout.write(require('$(dirname "$0")/package.json').name)" 2>/dev/null || echo "@lebocqtitouan/ecc")
+        echo "Updating $pkg to latest..."
+        npm install -g "$pkg@latest" ;;
     help|-h|--help)
         shift; cmd_help "${1:-}" ;;
     completion)

@@ -7,7 +7,7 @@ const { spawnSync } = require('child_process');
 // ---------------------------------------------------------------------------
 // Completion data — must match install.sh commands/options exactly
 // ---------------------------------------------------------------------------
-const COMMANDS  = ['install', 'init', 'help', 'completion'];
+const COMMANDS  = ['install', 'init', 'help', 'version', 'update', 'completion'];
 const LANGUAGES = ['golang', 'python', 'rust', 'swift', 'typescript'];
 const TEMPLATES = ['django-api', 'go-microservice', 'rust-api', 'saas-nextjs'];
 
@@ -59,6 +59,40 @@ try {
 // ---------------------------------------------------------------------------
 const args = process.argv.slice(2);
 const cmd  = args[0];
+
+// ---------------------------------------------------------------------------
+// `ecc version` / `ecc --version` / `ecc -v`
+// ---------------------------------------------------------------------------
+if (cmd === 'version' || cmd === '--version' || cmd === '-v') {
+    const pkg = require('../package.json');
+    console.log(pkg.version);
+    process.exit(0);
+}
+
+// ---------------------------------------------------------------------------
+// `ecc update` — reinstall latest version from npm
+// ---------------------------------------------------------------------------
+if (cmd === 'update') {
+    const pkg = require('../package.json');
+    console.log('Updating ' + pkg.name + ' to latest...');
+    const upd = spawnSync('npm', ['install', '-g', pkg.name + '@latest'], {
+        stdio: 'inherit',
+        env: process.env,
+    });
+    process.exit(upd.status ?? 0);
+}
+
+// ---------------------------------------------------------------------------
+// `ecc -h` / `ecc --help` — short flags forwarded to the help command
+// ---------------------------------------------------------------------------
+if (cmd === '-h' || cmd === '--help') {
+    const installSh = path.resolve(__dirname, '..', 'install.sh');
+    const r = spawnSync('bash', [installSh, 'help', ...args.slice(1)], {
+        stdio: 'inherit',
+        env: process.env,
+    });
+    process.exit(r.status ?? 0);
+}
 
 // ---------------------------------------------------------------------------
 // Hidden: `ecc completion-server [<prior>...] -- <current>`
