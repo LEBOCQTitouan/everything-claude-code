@@ -108,6 +108,67 @@ fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2) + '\n');
 NODE
 }
 
+# Merge missing ## sections from a template file into an existing CLAUDE.md.
+# Prints the number of sections added.
+merge_claude_md() {
+    local existing="$1"
+    local template="$2"
+
+    local existing_headings
+    existing_headings=$(grep "^## " "$existing" 2>/dev/null)
+
+    local added=0
+    local in_section=0
+    local section_heading=""
+    local section_buf=""
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$line" =~ ^##\  ]]; then
+            if [[ $in_section -eq 1 ]]; then
+                if ! echo "$existing_headings" | grep -qF "$section_heading"; then
+                    printf '\n%s' "$section_buf" >> "$existing"
+                    added=$((added + 1))
+                fi
+            fi
+            section_heading="$line"
+            section_buf="${line}"$'\n'
+            in_section=1
+        elif [[ $in_section -eq 1 ]]; then
+            section_buf+="${line}"$'\n'
+        fi
+    done < "$template"
+
+    # Flush last section
+    if [[ $in_section -eq 1 ]]; then
+        if ! echo "$existing_headings" | grep -qF "$section_heading"; then
+            printf '\n%s' "$section_buf" >> "$existing"
+            added=$((added + 1))
+        fi
+    fi
+
+    echo "$added"
+}
+
+# If project_dir is inside a git repo, ask user whether to commit the written files.
+maybe_git_commit() {
+    local project_dir="$1"
+    shift
+    local files=("$@")
+
+    git -C "$project_dir" rev-parse --git-dir &>/dev/null 2>&1 || return
+
+    printf "Commit changes to git? [Y/n] "
+    local answer
+    read -r answer </dev/tty
+    [[ "${answer:-Y}" =~ ^[Yy]$ ]] || return
+
+    for f in "${files[@]}"; do
+        [[ -e "$project_dir/$f" ]] && git -C "$project_dir" add -- "$project_dir/$f"
+    done
+    git -C "$project_dir" commit -m "chore: initialize Claude Code configuration"
+    echo "Committed."
+}
+
 # ---------------------------------------------------------------------------
 # Auto-detect language from project files
 # ---------------------------------------------------------------------------
@@ -120,8 +181,9 @@ detect_language() {
     [[ -f "$dir/pyproject.toml" ]]        && { echo "python"; return; }
     [[ -f "$dir/Pipfile" ]]               && { echo "python"; return; }
     [[ -f "$dir/Cargo.toml" ]]            && { echo "rust"; return; }
-    [[ -f "$dir/pom.xml" ]]               && { echo "java"; return; }
-    [[ -f "$dir/build.gradle" ]]          && { echo "java"; return; }
+    [[ -f "$dir/Package.swift" ]]         && { echo "swift"; return; }
+    [[ -n "$(ls "$dir"/*.xcodeproj 2>/dev/null)" ]] && { echo "swift"; return; }
+    [[ -f "$dir/Podfile" ]]               && { echo "swift"; return; }
     echo ""
 }
 
@@ -135,6 +197,14 @@ detect_template() {
     [[ -f "$dir/go.mod" ]]                && { echo "go-microservice"; return; }
     [[ -f "$dir/manage.py" ]]             && { echo "django-api"; return; }
     [[ -f "$dir/Cargo.toml" ]]            && { echo "rust-api"; return; }
+    # Language-specific generic fallbacks
+    local detected_lang
+    detected_lang="$(detect_language "$dir")"
+    case "$detected_lang" in
+        typescript) echo "typescript"; return ;;
+        python)     echo "python";     return ;;
+        swift)      echo "swift";      return ;;
+    esac
     echo "default"
 }
 
@@ -235,18 +305,26 @@ cmd_init() {
 
     # --- CLAUDE.md ---
     local claude_md="$project_dir/CLAUDE.md"
-    local template_file="$EXAMPLES_DIR/${template}-CLAUDE.md"
+
+    local tpl_file
+    if [[ -n "$template" ]] && [[ -f "$EXAMPLES_DIR/${template}-CLAUDE.md" ]]; then
+        tpl_file="$EXAMPLES_DIR/${template}-CLAUDE.md"
+    else
+        tpl_file="$EXAMPLES_DIR/CLAUDE.md"
+    fi
 
     if [[ -f "$claude_md" ]]; then
-        echo "Warning: CLAUDE.md already exists — skipping. Delete it first to regenerate." >&2
-    else
-        if [[ -f "$template_file" ]]; then
-            echo "Creating CLAUDE.md from template '$template'."
-            cp "$template_file" "$claude_md"
+        echo "CLAUDE.md already exists — merging missing sections from template '${template:-default}'."
+        local added
+        added=$(merge_claude_md "$claude_md" "$tpl_file")
+        if [[ "$added" -eq 0 ]]; then
+            echo "No new sections to add — CLAUDE.md is already up to date."
         else
-            echo "Creating CLAUDE.md from generic template."
-            cp "$EXAMPLES_DIR/CLAUDE.md" "$claude_md"
+            echo "Added $added new section(s) to CLAUDE.md."
         fi
+    else
+        echo "Creating CLAUDE.md from template '${template:-default}'."
+        cp "$tpl_file" "$claude_md"
         echo "  -> Edit $claude_md to describe your project."
     fi
 
@@ -289,6 +367,11 @@ cmd_init() {
                 ;;
         esac
     fi
+
+    maybe_git_commit "$project_dir" \
+        "CLAUDE.md" \
+        ".claude/settings.json" \
+        ".gitignore"
 }
 
 # ---------------------------------------------------------------------------

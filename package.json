@@ -24,7 +24,10 @@
     "05-skills",
     "06-rules",
     "07-hooks",
-    "10-scripts"
+    "08-contexts",
+    "09-mcp-configs",
+    "10-scripts",
+    "11-tests"
   ],
   "scripts": {
     "postinstall": "node 10-scripts/postinstall.js",
