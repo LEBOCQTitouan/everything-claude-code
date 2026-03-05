@@ -36,7 +36,7 @@
     "omelette": "^0.4.17"
   },
   "devDependencies": {
-    "markdownlint-cli": "^0.47.0"
+    "markdownlint-cli": "^0.48.0"
   },
   "engines": {
     "node": ">=18"
