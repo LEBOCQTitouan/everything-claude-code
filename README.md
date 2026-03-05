@@ -34,20 +34,22 @@ Works on Mac, Linux, and Windows (PowerShell).
 
 ## Shell Autocompletion
 
-Supports bash, zsh, fish, and PowerShell. Run once after installing:
+Supports bash, zsh, fish, and PowerShell.
+
+**Auto-detect (recommended):** Run once after installing — omelette detects your shell and writes to the appropriate rc file:
 
 ```bash
 ecc completion
 ```
 
-Then restart your shell, or reload it:
+**Per-shell manual setup:** Output the completion script for your shell and source it:
 
-| Shell      | Reload command                            |
-|------------|-------------------------------------------|
-| zsh        | `source ~/.zshrc`                         |
-| bash       | `source ~/.bashrc`                        |
-| fish       | `source ~/.config/fish/config.fish`       |
-| PowerShell | `. $PROFILE`                              |
+| Shell      | Setup command                                               | Reload                                    |
+|------------|-------------------------------------------------------------|-------------------------------------------|
+| zsh        | `eval "$(ecc completion zsh)"`  (add to `~/.zshrc`)        | `source ~/.zshrc`                         |
+| bash       | `eval "$(ecc completion bash)"` (add to `~/.bashrc`)       | `source ~/.bashrc`                        |
+| fish       | `ecc completion fish > ~/.config/fish/completions/ecc.fish` | `source ~/.config/fish/config.fish`       |
+| PowerShell | `ecc completion pwsh \| Out-String \| Invoke-Expression`   (add to `$PROFILE`) | `. $PROFILE`   |
 
 After reloading, `ecc <TAB>` completes commands, languages, and templates automatically.
 
