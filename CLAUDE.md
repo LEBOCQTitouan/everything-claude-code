@@ -56,8 +56,21 @@ tests/           Test suite (run with tsx, imports from src/ and dist/)
 - `/quality-gate` - Run quality gate checks
 - `/model-route` - Route to optimal model by task complexity
 
+## npm Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run build` | Compile TypeScript `src/` to `dist/` via `tsc` |
+| `npm run clean` | Remove `dist/` directory |
+| `npm test` | Run all 992 tests via `tsx tests/run-all.js` |
+| `npm run typecheck` | Type-check without emitting (`tsc --noEmit`) |
+| `npm run lint` | Lint all Markdown files with markdownlint |
+
 ## Development Notes
 
+- Source is TypeScript in `src/`, compiled to CommonJS in `dist/`
+- Tests import from `src/` (via tsx) and spawn subprocesses from `dist/`
+- Always run `npm run build` before running tests
 - Agent format: Markdown with YAML frontmatter (name, description, tools, model)
 - Skill format: Markdown with clear sections for when to use, how it works, examples
 - Hook format: JSON with matcher conditions and command/notification hooks

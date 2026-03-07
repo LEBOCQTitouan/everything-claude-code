@@ -195,4 +195,4 @@ All hooks in this plugin use Node.js (`node -e` or `node script.js`) for maximum
 
 - [rules/common/hooks.md](../rules/common/hooks.md) — Hook architecture guidelines
 - [skills/strategic-compact/](../skills/strategic-compact/) — Strategic compaction skill
-- [scripts/hooks/](../scripts/hooks/) — Hook script implementations
+- [src/hooks/](../src/hooks/) — Hook script implementations (TypeScript source)

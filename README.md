@@ -187,16 +187,17 @@ everything-claude-code/
 │   ├── security-guide.md            # Security patterns and review
 │   └── token-optimization.md
 │
-├── scripts/                         # Cross-platform Node.js hook implementations
-│   ├── lib/
-│   │   ├── utils.js
-│   │   └── package-manager.js
-│   └── hooks/
-│       ├── session-start.js
-│       ├── session-end.js
-│       └── evaluate-session.js
+├── src/                             # TypeScript source
+│   ├── lib/                         #   Core libraries (utils, package-manager, session-manager, ...)
+│   ├── hooks/                       #   Hook script implementations (21 hooks)
+│   ├── ci/                          #   CI validators (agents, commands, hooks, rules, skills)
+│   ├── claw.ts                      #   NanoClaw REPL agent
+│   ├── postinstall.ts               #   npm postinstall entry point
+│   └── ...                          #   Other standalone scripts
 │
-└── tests/                           # Test suite
+├── dist/                            # Compiled JS output (npm run build)
+│
+└── tests/                           # Test suite (992 tests, run with tsx)
     └── run-all.js
 ```
 
@@ -277,7 +278,7 @@ Automated triggers on tool events (`PreToolUse`, `PostToolUse`, `Stop`, `Session
   "matcher": "tool == \"Edit\"",
   "hooks": [{
     "type": "command",
-    "command": "node scripts/hooks/post-edit.js"
+    "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/post-edit-format.js\""
   }]
 }
 ```
@@ -298,7 +299,8 @@ rules/golang/          # Go specific
 ## Running Tests
 
 ```bash
-node tests/run-all.js
+npm run build              # compile TypeScript to dist/
+npx tsx tests/run-all.js   # run all 992 tests
 ```
 
 ---
