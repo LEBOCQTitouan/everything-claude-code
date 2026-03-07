@@ -18,21 +18,20 @@
     "bin/",
     "index.d.ts",
     "install.sh",
-    "02-examples",
-    "03-agents",
-    "04-commands",
-    "05-skills",
-    "06-rules",
-    "07-hooks",
-    "08-contexts",
-    "09-mcp-configs",
-    "10-scripts",
-    "11-tests"
+    "examples",
+    "agents",
+    "commands",
+    "skills",
+    "rules",
+    "hooks",
+    "contexts",
+    "mcp-configs",
+    "scripts"
   ],
   "scripts": {
-    "postinstall": "node 10-scripts/postinstall.js",
-    "preuninstall": "node 10-scripts/preuninstall.js",
-    "test": "node 11-tests/run-all.js",
+    "postinstall": "node scripts/postinstall.js",
+    "preuninstall": "node scripts/preuninstall.js",
+    "test": "node tests/run-all.js",
     "lint": "markdownlint '**/*.md' --ignore node_modules"
   },
   "dependencies": {

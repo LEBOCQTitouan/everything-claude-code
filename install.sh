@@ -31,12 +31,12 @@ while [ -L "$SCRIPT_PATH" ]; do
 done
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 
-AGENTS_DIR="$SCRIPT_DIR/03-agents"
-COMMANDS_DIR="$SCRIPT_DIR/04-commands"
-SKILLS_DIR="$SCRIPT_DIR/05-skills"
-RULES_DIR="$SCRIPT_DIR/06-rules"
-HOOKS_FILE="$SCRIPT_DIR/07-hooks/hooks.json"
-EXAMPLES_DIR="$SCRIPT_DIR/02-examples"
+AGENTS_DIR="$SCRIPT_DIR/agents"
+COMMANDS_DIR="$SCRIPT_DIR/commands"
+SKILLS_DIR="$SCRIPT_DIR/skills"
+RULES_DIR="$SCRIPT_DIR/rules"
+HOOKS_FILE="$SCRIPT_DIR/hooks/hooks.json"
+EXAMPLES_DIR="$SCRIPT_DIR/examples"
 
 CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
 
@@ -63,14 +63,14 @@ list_templates() {
 validate_lang() {
     local lang="$1"
     [[ "$lang" =~ ^[a-zA-Z0-9_-]+$ ]] || die "Invalid language name '$lang'. Only alphanumeric, dash, and underscore allowed."
-    [[ -d "$RULES_DIR/$lang" ]] || die "06-rules/$lang/ does not exist. Available languages:$(echo; list_languages)"
+    [[ -d "$RULES_DIR/$lang" ]] || die "rules/$lang/ does not exist. Available languages:$(echo; list_languages)"
 }
 
 # Merge hooks from source hooks.json into a settings.json file
 merge_hooks() {
     local settings_file="$1"
     if ! command -v node &>/dev/null; then
-        echo "Warning: node not found — skipping hooks merge. Add hooks manually from 07-hooks/hooks.json." >&2
+        echo "Warning: node not found — skipping hooks merge. Add hooks manually from hooks/hooks.json." >&2
         return
     fi
     node - "$settings_file" "$HOOKS_FILE" "$SCRIPT_DIR" <<'NODE'

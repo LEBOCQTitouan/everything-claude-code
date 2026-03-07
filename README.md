@@ -89,7 +89,7 @@ Available templates: `saas-nextjs`, `go-microservice`, `django-api`, `rust-api`
 
 ### (Optional) Configure MCPs
 
-Copy desired entries from `09-mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
+Copy desired entries from `mcp-configs/mcp-servers.json` to your `~/.claude.json`. Replace `YOUR_*_HERE` placeholders with actual API keys.
 
 ---
 
@@ -98,7 +98,7 @@ Copy desired entries from `09-mcp-configs/mcp-servers.json` to your `~/.claude.j
 ```
 everything-claude-code/
 │
-├── 03-agents/                       # Specialized subagents for delegation
+├── agents/                          # Specialized subagents for delegation
 │   ├── architect.md                 # ★ Hexagonal Architecture + DDD enforcer (system-level)
 │   ├── architect-module.md          # ★ Module-level design within hexagonal boundaries
 │   ├── uncle-bob.md                 # ★ Clean Architecture + Clean Code consultant
@@ -109,7 +109,7 @@ everything-claude-code/
 │   ├── refactor-cleaner.md          # Dead code detection and safe removal
 │   └── doc-updater.md               # Documentation sync
 │
-├── 04-commands/                     # Slash commands (/plan, /tdd, /code-review, ...)
+├── commands/                        # Slash commands (/plan, /tdd, /code-review, ...)
 │   ├── plan.md
 │   ├── tdd.md
 │   ├── code-review.md
@@ -118,7 +118,7 @@ everything-claude-code/
 │   ├── refactor-clean.md
 │   └── ...34+ more
 │
-├── 05-skills/                       # Domain knowledge invoked by agents or commands
+├── skills/                          # Domain knowledge invoked by agents or commands
 │   ├── tdd-workflow/
 │   ├── security-review/
 │   ├── backend-patterns/
@@ -148,7 +148,7 @@ everything-claude-code/
 │   ├── cpp-coding-standards/ + cpp-testing/
 │   └── swift-*/swiftui-patterns/
 │
-├── 06-rules/                        # Always-follow guidelines (copy to ~/.claude/rules/)
+├── rules/                           # Always-follow guidelines (copy to ~/.claude/rules/)
 │   ├── common/                      # Language-agnostic — always install
 │   │   ├── coding-style.md
 │   │   ├── git-workflow.md
@@ -159,23 +159,23 @@ everything-claude-code/
 │   ├── python/
 │   └── golang/
 │
-├── 07-hooks/                        # Trigger-based automations
+├── hooks/                           # Trigger-based automations
 │   └── hooks.json                   # PreToolUse, PostToolUse, Stop, SessionStart events
 │
-├── 08-contexts/                     # Dynamic system prompt injection
+├── contexts/                        # Dynamic system prompt injection
 │   ├── dev.md
 │   ├── review.md
 │   └── research.md
 │
-├── 09-mcp-configs/
+├── mcp-configs/
 │   └── mcp-servers.json             # GitHub, Supabase, Vercel, Railway, ...
 │
-├── 02-examples/                     # CLAUDE.md templates for real-world stacks
+├── examples/                        # CLAUDE.md templates for real-world stacks
 │   ├── saas-nextjs-CLAUDE.md
 │   ├── go-microservice-CLAUDE.md
 │   └── django-api-CLAUDE.md
 │
-├── 01-docs/                         # Documentation and reference material
+├── docs/                            # Documentation and reference material
 │   ├── diagrams/                    # Architecture and flow diagrams
 │   │   ├── agent-orchestration.md
 │   │   ├── feature-development.md
@@ -187,7 +187,7 @@ everything-claude-code/
 │   ├── security-guide.md            # Security patterns and review
 │   └── token-optimization.md
 │
-├── 10-scripts/                      # Cross-platform Node.js hook implementations
+├── scripts/                         # Cross-platform Node.js hook implementations
 │   ├── lib/
 │   │   ├── utils.js
 │   │   └── package-manager.js
@@ -196,7 +196,7 @@ everything-claude-code/
 │       ├── session-end.js
 │       └── evaluate-session.js
 │
-└── 11-tests/                        # Test suite
+└── tests/                           # Test suite
     └── run-all.js
 ```
 
