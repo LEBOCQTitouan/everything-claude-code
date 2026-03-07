@@ -59,4 +59,13 @@ Show results:
 | Version conflict | Check `package.json` / `Cargo.toml` for version constraints |
 | Build tool misconfiguration | Read config file; compare with working defaults |
 
+## Step 6: Commit After Each Fix
+
+After each error is fixed and verified:
+1. Stage only the files changed for this fix
+2. Commit: `fix: resolve <error description>`
+3. Move to the next error
+
+Never batch multiple error fixes into one commit.
+
 Fix one error at a time for safety. Prefer minimal diffs over refactoring.

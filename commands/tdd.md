@@ -38,11 +38,11 @@ The tdd-guide agent will:
 ## TDD Cycle
 
 ```
-RED → GREEN → REFACTOR → REPEAT
+RED → COMMIT → GREEN → COMMIT → REFACTOR → COMMIT → REPEAT
 
-RED:      Write a failing test
-GREEN:    Write minimal code to pass
-REFACTOR: Improve code, keep tests passing
+RED:      Write a failing test         → commit: "test: add <feature> tests"
+GREEN:    Write minimal code to pass   → commit: "feat: implement <feature>"
+REFACTOR: Improve code, keep tests passing → commit: "refactor: <what changed>"
 REPEAT:   Next feature/scenario
 ```
 

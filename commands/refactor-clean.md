@@ -76,5 +76,6 @@ All tests passing ✅
 
 - **Never delete without running tests first**
 - **One deletion at a time** — Atomic changes make rollback easy
+- **Commit after each batch** — `refactor: remove unused <category>` after each verified deletion
 - **Skip if uncertain** — Better to keep dead code than break production
 - **Don't refactor while cleaning** — Separate concerns (clean first, refactor later)
