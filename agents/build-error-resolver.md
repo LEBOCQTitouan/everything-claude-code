@@ -111,4 +111,11 @@ npx eslint . --fix
 
 ---
 
-**Remember**: Fix the error, verify the build passes, move on. Speed and precision over perfection.
+## Commit Cadence
+
+Commit after each error is fixed and verified:
+- `fix: resolve <error description>` after each successful fix
+- Never batch multiple error fixes into a single commit
+- If fixing one error cascades into fixing others, commit the root fix first
+
+**Remember**: Fix the error, verify the build passes, commit, move on. Speed and precision over perfection.

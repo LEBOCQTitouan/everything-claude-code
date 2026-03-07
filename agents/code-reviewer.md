@@ -223,3 +223,10 @@ When available, also check project-specific conventions from `CLAUDE.md` or proj
 - State management conventions (Zustand, Redux, Context)
 
 Adapt your review to the project's established patterns. When in doubt, match what the rest of the codebase does.
+
+## Commit Cadence
+
+When applying review fixes, commit after each fix:
+- `fix: <issue description>` for each CRITICAL/HIGH fix
+- `refactor: <improvement>` for MEDIUM improvements
+- Never batch unrelated review fixes into a single commit

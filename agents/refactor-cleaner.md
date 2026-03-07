@@ -77,6 +77,14 @@ After each batch:
 - Without proper test coverage
 - On code you don't understand
 
+## Commit Cadence
+
+Commit after each batch of safe deletions:
+- `refactor: remove unused <category>` after each deletion batch
+- `refactor: consolidate duplicate <name>` after merging duplicates
+- Run tests before AND after each commit
+- Never mix deletion and consolidation in the same commit
+
 ## Success Metrics
 
 - All tests passing

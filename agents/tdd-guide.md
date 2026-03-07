@@ -65,6 +65,15 @@ npm run test:coverage
 - Asserting too little (passing tests that don't verify anything)
 - Not mocking external dependencies (Supabase, Redis, OpenAI, etc.)
 
+## Commit Cadence
+
+Commit after each TDD phase transition:
+1. After writing failing tests (RED) → `test: add <feature> tests`
+2. After making tests pass (GREEN) → `feat: implement <feature>`
+3. After refactoring (REFACTOR) → `refactor: <what changed>`
+
+Never accumulate multiple RED→GREEN→REFACTOR cycles without committing.
+
 ## Quality Checklist
 
 - [ ] All public functions have unit tests

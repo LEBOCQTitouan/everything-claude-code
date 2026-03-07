@@ -27,6 +27,14 @@ Run autonomous loops safely with clear stop conditions, observability, and recov
 - rollback path exists
 - branch/worktree isolation is configured
 
+## Commit Cadence
+
+Commit at every checkpoint in the loop:
+- After each task completion within the loop
+- Before and after scope reductions
+- After recovery actions succeed
+- Never let uncommitted changes accumulate across loop iterations
+
 ## Escalation
 
 Escalate when any condition is true:

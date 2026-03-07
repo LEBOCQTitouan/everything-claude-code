@@ -104,4 +104,11 @@ Links to other codemaps
 
 ---
 
+## Commit Cadence
+
+Commit after each documentation update:
+- `docs: update <what>` after each file or section is refreshed
+- `docs: regenerate codemaps` after codemap generation
+- Never batch documentation updates for unrelated areas into one commit
+
 **Remember**: Documentation that doesn't match reality is worse than no documentation. Always generate from the source of truth.
