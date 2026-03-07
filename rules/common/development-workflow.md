@@ -19,19 +19,20 @@ The Feature Implementation Workflow describes the development pipeline: research
    - Identify dependencies and risks
    - Break down into phases
 
-2. **TDD Approach**
+2. **TDD Approach** _(commit at each transition)_
    - Use **tdd-guide** agent
-   - Write tests first (RED)
-   - Implement to pass tests (GREEN)
-   - Refactor (IMPROVE)
+   - Write tests first (RED) → **commit tests**
+   - Implement to pass tests (GREEN) → **commit implementation**
+   - Refactor (IMPROVE) → **commit refactor**
    - Verify 80%+ coverage
 
 3. **Code Review**
    - Use **code-reviewer** agent immediately after writing code
-   - Address CRITICAL and HIGH issues
-   - Fix MEDIUM issues when possible
+   - Address CRITICAL and HIGH issues → **commit each fix**
+   - Fix MEDIUM issues when possible → **commit each fix**
 
-4. **Commit & Push**
-   - Detailed commit messages
+4. **Commit Continuously**
+   - Commit after every logical change — see [git-workflow.md](./git-workflow.md) for cadence rules
    - Follow conventional commits format
+   - Never accumulate uncommitted work across multiple concerns
    - See [git-workflow.md](./git-workflow.md) for commit message format and PR process
