@@ -222,7 +222,7 @@ function runTests() {
 
   if (
     test('module exports all required functions', () => {
-      const claw = require(path.join(__dirname, '..', '..', 'scripts', 'claw.js'));
+      const claw = require(path.join(__dirname, '..', '..', 'src', 'claw'));
       const required = ['getClawDir', 'getSessionPath', 'listSessions', 'loadHistory', 'appendTurn', 'loadECCContext', 'askClaude', 'main'];
       for (const fn of required) {
         assert.strictEqual(typeof claw[fn], 'function', `Should export function ${fn}`);

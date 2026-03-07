@@ -26,15 +26,17 @@
     "hooks",
     "contexts",
     "mcp-configs",
-    "scripts"
+    "dist",
+    "scripts/hooks/run-with-flags-shell.sh",
+    "scripts/codemaps"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist",
     "prebuild": "rm -rf dist",
-    "postinstall": "node scripts/postinstall.js",
-    "preuninstall": "node scripts/preuninstall.js",
-    "test": "node tests/run-all.js",
+    "postinstall": "node dist/postinstall.js",
+    "preuninstall": "node dist/preuninstall.js",
+    "test": "npx tsx tests/run-all.js",
     "lint": "markdownlint '**/*.md' --ignore node_modules",
     "typecheck": "tsc --noEmit"
   },

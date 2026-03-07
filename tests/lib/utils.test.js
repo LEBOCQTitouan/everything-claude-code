@@ -1593,7 +1593,7 @@ function runTests() {
       // At /, git rev-parse --show-toplevel fails → getGitRepoName() = null.
       // path.basename('/') = '' → '' || null = null → getProjectName() = null.
       // So getSessionIdShort('my-custom-fallback') = null || 'my-custom-fallback'.
-      const utilsPath = path.join(__dirname, '..', '..', 'scripts', 'lib', 'utils.js');
+      const utilsPath = path.join(__dirname, '..', '..', 'dist', 'lib', 'utils.js');
       const script = `
       const utils = require('${utilsPath.replace(/'/g, "\\'")}');
       process.stdout.write(utils.getSessionIdShort('my-custom-fallback'));
