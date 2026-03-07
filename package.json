@@ -29,16 +29,23 @@
     "scripts"
   ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "prebuild": "rm -rf dist",
     "postinstall": "node scripts/postinstall.js",
     "preuninstall": "node scripts/preuninstall.js",
     "test": "node tests/run-all.js",
-    "lint": "markdownlint '**/*.md' --ignore node_modules"
+    "lint": "markdownlint '**/*.md' --ignore node_modules",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "omelette": "^0.4.17"
   },
   "devDependencies": {
-    "markdownlint-cli": "^0.48.0"
+    "@types/node": "^25.3.5",
+    "markdownlint-cli": "^0.48.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=18"
