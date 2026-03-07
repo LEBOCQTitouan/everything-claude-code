@@ -173,6 +173,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"stop:uncommitted-reminder\" \"dist/hooks/stop-uncommitted-reminder.js\" \"standard,strict\""
+          }
+        ],
+        "description": "Remind about uncommitted changes at session end"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"stop:check-console-log\" \"dist/hooks/check-console-log.js\" \"standard,strict\""
           }
         ],
