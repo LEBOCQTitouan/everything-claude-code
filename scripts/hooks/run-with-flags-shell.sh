@@ -14,7 +14,7 @@ if [[ -z "$HOOK_ID" || -z "$REL_SCRIPT_PATH" ]]; then
 fi
 
 # Ask Node helper if this hook is enabled
-ENABLED="$(node "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/check-hook-enabled.js" "$HOOK_ID" "$PROFILES_CSV" 2>/dev/null || echo yes)"
+ENABLED="$(node "${CLAUDE_PLUGIN_ROOT}/dist/hooks/check-hook-enabled.js" "$HOOK_ID" "$PROFILES_CSV" 2>/dev/null || echo yes)"
 if [[ "$ENABLED" != "yes" ]]; then
   printf '%s' "$INPUT"
   exit 0
