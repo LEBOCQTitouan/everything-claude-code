@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-const sessionManager = require('../../scripts/lib/session-manager');
+const sessionManager = require('../../10-scripts/lib/session-manager');
 
 // Test helper
 function test(name, fn) {
@@ -1165,9 +1165,9 @@ src/main.ts
       process.env.HOME = tmpDir;
       process.env.USERPROFILE = tmpDir;
       // Re-require to pick up new HOME
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshSM = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshSM = require('../../10-scripts/lib/session-manager');
       const result = freshSM.getAllSessions();
       assert.deepStrictEqual(result.sessions, [], 'Should return empty sessions array');
       assert.strictEqual(result.total, 0, 'Total should be 0');
@@ -1175,8 +1175,8 @@ src/main.ts
     } finally {
       process.env.HOME = origHome;
       process.env.USERPROFILE = origUserProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       cleanup(tmpDir);
     }
   })) passed++; else failed++;
@@ -1193,16 +1193,16 @@ src/main.ts
       process.env.HOME = tmpDir;
       process.env.USERPROFILE = tmpDir;
       // Re-require to pick up new HOME
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshSM = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshSM = require('../../10-scripts/lib/session-manager');
       const result = freshSM.getSessionById('anything');
       assert.strictEqual(result, null, 'Should return null when sessions dir does not exist');
     } finally {
       process.env.HOME = origHome;
       process.env.USERPROFILE = origUserProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       cleanup(tmpDir);
     }
   })) passed++; else failed++;
@@ -1245,9 +1245,9 @@ src/main.ts
 
       process.env.HOME = isoHome;
       process.env.USERPROFILE = isoHome;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshSM = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshSM = require('../../10-scripts/lib/session-manager');
 
       const result = freshSM.getAllSessions({ limit: 100 });
       assert.strictEqual(result.total, 2, 'Should find both sessions');
@@ -1262,8 +1262,8 @@ src/main.ts
     } finally {
       process.env.HOME = savedHome;
       process.env.USERPROFILE = savedProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1331,9 +1331,9 @@ src/main.ts
     process.env.HOME = isoHome;
     process.env.USERPROFILE = isoHome;
     try {
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshManager = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshManager = require('../../10-scripts/lib/session-manager');
       const result = freshManager.getAllSessions({ limit: 100 });
 
       // Should have only the real session, not the broken symlink
@@ -1343,8 +1343,8 @@ src/main.ts
     } finally {
       process.env.HOME = origHome;
       process.env.USERPROFILE = origUserProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1368,9 +1368,9 @@ src/main.ts
     try {
       process.env.HOME = isoHome;
       process.env.USERPROFILE = isoHome;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshSM = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshSM = require('../../10-scripts/lib/session-manager');
 
       // Search by the short ID "deadbeef" — should match the broken symlink
       const result = freshSM.getSessionById('deadbeef');
@@ -1379,8 +1379,8 @@ src/main.ts
     } finally {
       process.env.HOME = origHome;
       process.env.USERPROFILE = origUserProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1429,9 +1429,9 @@ src/main.ts
     process.env.HOME = isoHome;
     process.env.USERPROFILE = isoHome;
     try {
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshManager = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshManager = require('../../10-scripts/lib/session-manager');
       const result = freshManager.getAllSessions({ limit: 100 });
 
       // Should find only the real file, not either subdirectory
@@ -1442,8 +1442,8 @@ src/main.ts
     } finally {
       process.env.HOME = origHome;
       process.env.USERPROFILE = origUserProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1793,9 +1793,9 @@ file.ts
     process.env.HOME = isoHome;
     process.env.USERPROFILE = isoHome;
     try {
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshManager = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshManager = require('../../10-scripts/lib/session-manager');
       // Object limit: Number({}) → NaN → fallback to 50
       const objResult = freshManager.getAllSessions({ limit: {} });
       assert.strictEqual(objResult.limit, 50,
@@ -1814,8 +1814,8 @@ file.ts
     } finally {
       process.env.HOME = origHome;
       process.env.USERPROFILE = origUserProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1838,9 +1838,9 @@ file.ts
     process.env.HOME = isoHome;
     process.env.USERPROFILE = isoHome;
     try {
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshManager = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshManager = require('../../10-scripts/lib/session-manager');
       const result = freshManager.getAllSessions({ limit: 100 });
       assert.strictEqual(result.total, 1,
         'Should find only 1 valid session (non-matching .tmp files skipped via !metadata continue)');
@@ -1849,8 +1849,8 @@ file.ts
     } finally {
       process.env.HOME = origHome;
       process.env.USERPROFILE = origUserProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -2376,9 +2376,9 @@ file.ts
       delete process.env.CLAUDE_DIR;
 
       // Clear require cache for fresh module with new HOME
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      const freshSM = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      const freshSM = require('../../10-scripts/lib/session-manager');
 
       // Create old-format session file (no short ID)
       const oldFile = path.join(sessionsDir, '2026-01-15-session.tmp');
@@ -2401,8 +2401,8 @@ file.ts
       if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile;
       else delete process.env.USERPROFILE;
       if (origDir) process.env.CLAUDE_DIR = origDir;
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -2499,9 +2499,9 @@ file.ts
       process.env.HOME = homeDir;
       process.env.USERPROFILE = homeDir; // Windows: os.homedir() uses USERPROFILE
       delete process.env.CLAUDE_DIR;
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
-      const freshSM = require('../../scripts/lib/session-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
+      const freshSM = require('../../10-scripts/lib/session-manager');
 
       // Create a session file with valid date
       const sessionsDir = path.join(homeDir, '.claude', 'sessions');
@@ -2539,8 +2539,8 @@ file.ts
       if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile;
       else delete process.env.USERPROFILE;
       if (origDir) process.env.CLAUDE_DIR = origDir;
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      delete require.cache[require.resolve('../../scripts/lib/session-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-manager')];
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   })) passed++; else failed++;

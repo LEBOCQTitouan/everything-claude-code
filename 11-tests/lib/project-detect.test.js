@@ -19,7 +19,7 @@ const {
   getRustDeps,
   getComposerDeps,
   getElixirDeps
-} = require('../../scripts/lib/project-detect');
+} = require('../../10-scripts/lib/project-detect');
 
 // Test helper
 function test(name, fn) {

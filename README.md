@@ -116,7 +116,7 @@ everything-claude-code/
 │   ├── build-fix.md
 │   ├── e2e.md
 │   ├── refactor-clean.md
-│   └── ...30+ more
+│   └── ...34+ more
 │
 ├── 05-skills/                       # Domain knowledge invoked by agents or commands
 │   ├── tdd-workflow/

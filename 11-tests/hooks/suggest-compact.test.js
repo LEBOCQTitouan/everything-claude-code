@@ -13,7 +13,7 @@ const fs = require('fs');
 const os = require('os');
 const { spawnSync } = require('child_process');
 
-const compactScript = path.join(__dirname, '..', '..', 'scripts', 'hooks', 'suggest-compact.js');
+const compactScript = path.join(__dirname, '..', '..', '10-scripts', 'hooks', 'suggest-compact.js');
 
 // Test helpers
 function test(name, fn) {

@@ -43,6 +43,14 @@ node 11-tests/hooks/hooks.test.js
 - `/build-fix` - Fix build errors
 - `/learn` - Extract patterns from sessions
 - `/skill-create` - Generate skills from git history
+- `/update-codemaps` - Regenerate architectural codemaps
+- `/claw` - Start NanoClaw persistent REPL
+- `/evolve` - Analyze instincts and suggest evolved structures
+- `/harness-audit` - Audit agent harness setup
+- `/loop-start` - Start autonomous agent loop
+- `/loop-status` - Check loop status
+- `/quality-gate` - Run quality gate checks
+- `/model-route` - Route to optimal model by task complexity
 
 ## Development Notes
 

@@ -21,7 +21,7 @@ const origUserProfile = process.env.USERPROFILE;
 process.env.HOME = tmpHome;
 process.env.USERPROFILE = tmpHome; // Windows: os.homedir() uses USERPROFILE
 
-const aliases = require('../../scripts/lib/session-aliases');
+const aliases = require('../../10-scripts/lib/session-aliases');
 
 // Test helper
 function test(name, fn) {
@@ -1002,9 +1002,9 @@ function runTests() {
       process.env.HOME = isoHome;
       process.env.USERPROFILE = isoHome;
       // Re-require to pick up new HOME
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshAliases = require('../../scripts/lib/session-aliases');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshAliases = require('../../10-scripts/lib/session-aliases');
 
       // Set up a valid alias
       freshAliases.setAlias('title-save-fail', '/path/session', 'Original Title');
@@ -1023,8 +1023,8 @@ function runTests() {
       try { fs.chmodSync(isoClaudeDir, 0o755); } catch { /* best-effort */ }
       process.env.HOME = savedHome;
       process.env.USERPROFILE = savedProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1045,9 +1045,9 @@ function runTests() {
     try {
       process.env.HOME = isoHome;
       process.env.USERPROFILE = isoHome;
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshAliases = require('../../scripts/lib/session-aliases');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshAliases = require('../../10-scripts/lib/session-aliases');
 
       // Create an alias first (writes the file)
       freshAliases.setAlias('to-delete', '/path/session', 'Test');
@@ -1065,8 +1065,8 @@ function runTests() {
       try { fs.chmodSync(isoClaudeDir, 0o755); } catch { /* best-effort */ }
       process.env.HOME = savedHome;
       process.env.USERPROFILE = savedProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1087,9 +1087,9 @@ function runTests() {
     try {
       process.env.HOME = isoHome;
       process.env.USERPROFILE = isoHome;
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshAliases = require('../../scripts/lib/session-aliases');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshAliases = require('../../10-scripts/lib/session-aliases');
 
       // Create aliases — one to keep, one to remove
       freshAliases.setAlias('keep-me', '/sessions/real', 'Kept');
@@ -1110,8 +1110,8 @@ function runTests() {
       try { fs.chmodSync(isoClaudeDir, 0o755); } catch { /* best-effort */ }
       process.env.HOME = savedHome;
       process.env.USERPROFILE = savedProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1132,9 +1132,9 @@ function runTests() {
     try {
       process.env.HOME = isoHome;
       process.env.USERPROFILE = isoHome;
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshAliases = require('../../scripts/lib/session-aliases');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshAliases = require('../../10-scripts/lib/session-aliases');
 
       // Make .claude dir read-only BEFORE any setAlias call
       fs.chmodSync(isoClaudeDir, 0o555);
@@ -1147,8 +1147,8 @@ function runTests() {
       try { fs.chmodSync(isoClaudeDir, 0o755); } catch { /* best-effort */ }
       process.env.HOME = savedHome;
       process.env.USERPROFILE = savedProfile;
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++; else failed++;
@@ -1252,9 +1252,9 @@ function runTests() {
     process.env.USERPROFILE = isoHome;
 
     try {
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshAliases = require('../../scripts/lib/session-aliases');
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshAliases = require('../../10-scripts/lib/session-aliases');
 
       const result = freshAliases.saveAliases({ aliases: { x: 1 }, version: '1.0' });
       assert.strictEqual(result, false, 'Should return false when save fails');
@@ -1264,8 +1264,8 @@ function runTests() {
     } finally {
       process.env.HOME = origH;
       process.env.USERPROFILE = origP;
-      delete require.cache[require.resolve('../../scripts/lib/session-aliases')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/session-aliases')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       try { fs.chmodSync(claudeDir, 0o755); } catch { /* best-effort */ }
       fs.rmSync(isoHome, { recursive: true, force: true });
     }

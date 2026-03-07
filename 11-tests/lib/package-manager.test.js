@@ -10,7 +10,7 @@ const fs = require('fs');
 const os = require('os');
 
 // Import the modules
-const pm = require('../../scripts/lib/package-manager');
+const pm = require('../../10-scripts/lib/package-manager');
 
 // Test helper
 function test(name, fn) {
@@ -728,7 +728,7 @@ function runTests() {
 
   if (test('successfully saves preferred package manager', () => {
     // This writes to ~/.claude/package-manager.json — read original to restore
-    const utils = require('../../scripts/lib/utils');
+    const utils = require('../../10-scripts/lib/utils');
     const configPath = path.join(utils.getClaudeDir(), 'package-manager.json');
     const original = utils.readFile(configPath);
     try {
@@ -1287,9 +1287,9 @@ function runTests() {
       delete process.env.CLAUDE_PACKAGE_MANAGER;
 
       // Re-require to pick up new HOME
-      delete require.cache[require.resolve('../../scripts/lib/package-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshPM = require('../../scripts/lib/package-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/package-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshPM = require('../../10-scripts/lib/package-manager');
 
       // Empty project dir: no lock file, no package.json, no project config
       const result = freshPM.getPackageManager({ projectDir: projDir });
@@ -1300,8 +1300,8 @@ function runTests() {
       process.env.USERPROFILE = origUserProfile;
       if (origPM !== undefined) process.env.CLAUDE_PACKAGE_MANAGER = origPM;
 
-      delete require.cache[require.resolve('../../scripts/lib/package-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/package-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       cleanupTestDir(tmpDir);
     }
   })) passed++;
@@ -1330,9 +1330,9 @@ function runTests() {
       delete process.env.CLAUDE_PACKAGE_MANAGER;
 
       // Re-require to pick up new HOME
-      delete require.cache[require.resolve('../../scripts/lib/package-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshPM = require('../../scripts/lib/package-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/package-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshPM = require('../../10-scripts/lib/package-manager');
 
       // Empty project dir: no lock file, no package.json, no project config
       const result = freshPM.getPackageManager({ projectDir: projDir });
@@ -1345,8 +1345,8 @@ function runTests() {
       process.env.USERPROFILE = origUserProfile;
       if (origPM !== undefined) process.env.CLAUDE_PACKAGE_MANAGER = origPM;
 
-      delete require.cache[require.resolve('../../scripts/lib/package-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/package-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       cleanupTestDir(tmpDir);
     }
   })) passed++;
@@ -1368,9 +1368,9 @@ function runTests() {
     try {
       process.env.HOME = isoHome;
       process.env.USERPROFILE = isoHome;
-      delete require.cache[require.resolve('../../scripts/lib/package-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
-      const freshPm = require('../../scripts/lib/package-manager');
+      delete require.cache[require.resolve('../../10-scripts/lib/package-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
+      const freshPm = require('../../10-scripts/lib/package-manager');
       // Make .claude directory read-only — can't create new files (package-manager.json)
       fs.chmodSync(claudeDir, 0o555);
       assert.throws(() => {
@@ -1384,8 +1384,8 @@ function runTests() {
       }
       process.env.HOME = savedHome;
       process.env.USERPROFILE = savedProfile;
-      delete require.cache[require.resolve('../../scripts/lib/package-manager')];
-      delete require.cache[require.resolve('../../scripts/lib/utils')];
+      delete require.cache[require.resolve('../../10-scripts/lib/package-manager')];
+      delete require.cache[require.resolve('../../10-scripts/lib/utils')];
       fs.rmSync(isoHome, { recursive: true, force: true });
     }
   })) passed++;

@@ -14,13 +14,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const {
-  getLearnedSkillsDir,
-  ensureDir,
-  readFile,
-  countInFile,
-  log
-} = require('../lib/utils');
+const { getLearnedSkillsDir, ensureDir, readFile, countInFile, log } = require('../lib/utils');
 
 // Read hook input from stdin (Claude Code provides transcript_path via stdin JSON)
 const MAX_STDIN = 1024 * 1024;
@@ -54,7 +48,7 @@ async function main() {
 
   // Get script directory to find config
   const scriptDir = __dirname;
-  const configFile = path.join(scriptDir, '..', '..', 'skills', 'continuous-learning', 'config.json');
+  const configFile = path.join(scriptDir, '..', '..', '05-skills', 'continuous-learning', 'config.json');
 
   // Default configuration
   let minSessionLength = 10;

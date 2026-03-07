@@ -22,7 +22,7 @@ const {
   askClaude,
   isValidSessionName,
   handleClear
-} = require(path.join(__dirname, '..', '..', 'scripts', 'claw.js'));
+} = require(path.join(__dirname, '..', '..', '10-scripts', 'claw.js'));
 
 // Test helper — matches ECC's custom test pattern
 function test(name, fn) {
@@ -190,7 +190,7 @@ function runTests() {
   console.log('\nREPL/Meta:');
 
   if (test('module exports all required functions', () => {
-    const claw = require(path.join(__dirname, '..', '..', 'scripts', 'claw.js'));
+    const claw = require(path.join(__dirname, '..', '..', '10-scripts', 'claw.js'));
     const required = [
       'getClawDir', 'getSessionPath', 'listSessions', 'loadHistory',
       'appendTurn', 'loadECCContext', 'askClaude', 'main'
