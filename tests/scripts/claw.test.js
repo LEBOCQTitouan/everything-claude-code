@@ -12,7 +12,7 @@ const fs = require('fs');
 const os = require('os');
 
 const { getClawDir, getSessionPath, listSessions, loadHistory, appendTurn, loadECCContext, buildPrompt, askClaude, isValidSessionName, handleClear } = require(
-  path.join(__dirname, '..', '..', 'scripts', 'claw.js')
+  path.join(__dirname, '..', '..', 'src', 'claw')
 );
 
 // Test helper — matches ECC's custom test pattern

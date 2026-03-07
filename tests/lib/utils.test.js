@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Import the module
-const utils = require('../../scripts/lib/utils');
+const utils = require('../../src/lib/utils');
 
 // Test helper
 function test(name, fn) {
@@ -909,7 +909,7 @@ function runTests() {
   // Use execFileSync with input option instead of shell echo|pipe for Windows compat
   console.log('\nreadStdinJson():');
 
-  const stdinScript = 'const u=require("./scripts/lib/utils");u.readStdinJson({timeoutMs:2000}).then(d=>{process.stdout.write(JSON.stringify(d))})';
+  const stdinScript = 'const u=require("./dist/lib/utils");u.readStdinJson({timeoutMs:2000}).then(d=>{process.stdout.write(JSON.stringify(d))})';
   const stdinOpts = { encoding: 'utf8', cwd: path.join(__dirname, '..', '..'), timeout: 5000 };
 
   if (
@@ -1231,7 +1231,7 @@ function runTests() {
       // To test multi-chunk behavior, we send >64KB (Node default highWaterMark=16KB)
       // which should arrive in multiple chunks. With maxSize=100, only the first chunk(s)
       // totaling under 100 bytes should be captured; subsequent chunks are dropped.
-      const script = 'const u=require("./scripts/lib/utils");u.readStdinJson({timeoutMs:2000,maxSize:100}).then(d=>{process.stdout.write(JSON.stringify(d))})';
+      const script = 'const u=require("./dist/lib/utils");u.readStdinJson({timeoutMs:2000,maxSize:100}).then(d=>{process.stdout.write(JSON.stringify(d))})';
       // Generate 100KB of data (arrives in multiple chunks)
       const bigInput = '{"k":"' + 'X'.repeat(100000) + '"}';
       const result = execFileSync('node', ['-e', script], { ...stdinOpts, input: bigInput });
@@ -1245,7 +1245,7 @@ function runTests() {
   if (
     test('readStdinJson with maxSize large enough preserves valid JSON', () => {
       const { execFileSync } = require('child_process');
-      const script = 'const u=require("./scripts/lib/utils");u.readStdinJson({timeoutMs:2000,maxSize:1024}).then(d=>{process.stdout.write(JSON.stringify(d))})';
+      const script = 'const u=require("./dist/lib/utils");u.readStdinJson({timeoutMs:2000,maxSize:1024}).then(d=>{process.stdout.write(JSON.stringify(d))})';
       const input = JSON.stringify({ key: 'value' });
       const result = execFileSync('node', ['-e', script], { ...stdinOpts, input });
       assert.deepStrictEqual(JSON.parse(result), { key: 'value' });
@@ -1377,7 +1377,7 @@ function runTests() {
       // Spawn a subprocess that reads from stdin, but close the pipe immediately
       // to trigger an error or early-end condition
       const { execFileSync } = require('child_process');
-      const script = 'const u=require("./scripts/lib/utils");u.readStdinJson({timeoutMs:2000}).then(d=>{process.stdout.write(JSON.stringify(d))})';
+      const script = 'const u=require("./dist/lib/utils");u.readStdinJson({timeoutMs:2000}).then(d=>{process.stdout.write(JSON.stringify(d))})';
       // Pipe stdin from /dev/null — this sends EOF immediately (no data)
       const result = execFileSync('node', ['-e', script], {
         encoding: 'utf8',
@@ -1398,7 +1398,7 @@ function runTests() {
       // We test this by verifying the code structure works: send valid JSON, the end event
       // fires, settled=true, any late error is safely ignored
       const { execFileSync } = require('child_process');
-      const script = 'const u=require("./scripts/lib/utils");u.readStdinJson({timeoutMs:2000}).then(d=>{process.stdout.write(JSON.stringify(d))})';
+      const script = 'const u=require("./dist/lib/utils");u.readStdinJson({timeoutMs:2000}).then(d=>{process.stdout.write(JSON.stringify(d))})';
       const result = execFileSync('node', ['-e', script], {
         encoding: 'utf8',
         input: '{"test":"settled-guard"}',

@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { getClaudeDir, ensureDir, readFile, log } from './utils';
 
-function getAliasesPath(): string {
+export function getAliasesPath(): string {
   return path.join(getClaudeDir(), 'session-aliases.json');
 }
 
@@ -258,17 +258,11 @@ export function listAliases(options: ListAliasesOptions = {}): AliasInfo[] {
     title: info.title
   }));
 
-  aliases.sort((a, b) =>
-    (new Date(b.updatedAt || b.createdAt || '').getTime() || 0) -
-    (new Date(a.updatedAt || a.createdAt || '').getTime() || 0)
-  );
+  aliases.sort((a, b) => (new Date(b.updatedAt || b.createdAt || '').getTime() || 0) - (new Date(a.updatedAt || a.createdAt || '').getTime() || 0));
 
   if (search) {
     const searchLower = search.toLowerCase();
-    aliases = aliases.filter(a =>
-      a.name.toLowerCase().includes(searchLower) ||
-      (a.title && a.title.toLowerCase().includes(searchLower))
-    );
+    aliases = aliases.filter(a => a.name.toLowerCase().includes(searchLower) || (a.title && a.title.toLowerCase().includes(searchLower)));
   }
 
   if (limit && limit > 0) {

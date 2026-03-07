@@ -27,7 +27,7 @@ const testFiles = [
 ];
 
 const BOX_W = 58; // inner width between ║ delimiters
-const boxLine = (s) => `║${s.padEnd(BOX_W)}║`;
+const boxLine = s => `║${s.padEnd(BOX_W)}║`;
 
 console.log('╔' + '═'.repeat(BOX_W) + '╗');
 console.log(boxLine('           Everything Claude Code - Test Suite'));
@@ -48,7 +48,7 @@ for (const testFile of testFiles) {
 
   console.log(`\n━━━ Running ${testFile} ━━━`);
 
-  const result = spawnSync('node', [testPath], {
+  const result = spawnSync('npx', ['tsx', testPath], {
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe']
   });

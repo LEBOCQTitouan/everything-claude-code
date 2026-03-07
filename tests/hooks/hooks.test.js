@@ -82,7 +82,8 @@ async function runTests() {
   let passed = 0;
   let failed = 0;
 
-  const scriptsDir = path.join(__dirname, '..', '..', 'scripts', 'hooks');
+  const scriptsDir = path.join(__dirname, '..', '..', 'dist', 'hooks');
+  const srcHooksDir = path.join(__dirname, '..', '..', 'src', 'hooks');
 
   // session-start.js tests
   console.log('session-start.js:');
@@ -275,7 +276,7 @@ async function runTests() {
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       // Get the expected session ID (project name fallback)
-      const utils = require('../../scripts/lib/utils');
+      const utils = require('../../src/lib/utils');
       const expectedId = utils.getSessionIdShort();
       const sessionFile = path.join(sessionsDir, `${today}-${expectedId}-session.tmp`);
 
@@ -1405,7 +1406,7 @@ async function runTests() {
       const checkHooks = hookArray => {
         for (const entry of hookArray) {
           for (const hook of entry.hooks) {
-            if (hook.type === 'command' && hook.command.includes('scripts/hooks/')) {
+            if (hook.type === 'command' && (hook.command.includes('dist/hooks/') || hook.command.includes('scripts/hooks/'))) {
               // Check for the literal string "${CLAUDE_PLUGIN_ROOT}" in the command
               const hasPluginRoot = hook.command.includes('${CLAUDE_PLUGIN_ROOT}');
               assert.ok(hasPluginRoot, `Script paths should use CLAUDE_PLUGIN_ROOT: ${hook.command.substring(0, 80)}...`);
@@ -1754,10 +1755,10 @@ async function runTests() {
 
   if (
     await asyncTest('source code does not pass shell option to execFileSync (security)', async () => {
-      const formatSource = fs.readFileSync(path.join(scriptsDir, 'post-edit-format.js'), 'utf8');
+      const formatSource = fs.readFileSync(path.join(srcHooksDir, 'post-edit-format.ts'), 'utf8');
       // Strip comments to avoid matching "shell: true" in comment text
       const codeOnly = formatSource.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
-      assert.ok(!codeOnly.includes('shell:'), 'post-edit-format.js should not pass shell option in code');
+      assert.ok(!codeOnly.includes('shell:'), 'post-edit-format.ts should not pass shell option in code');
       assert.ok(formatSource.includes('npx.cmd'), 'Should use npx.cmd for Windows cross-platform safety');
     })
   )
@@ -1791,10 +1792,10 @@ async function runTests() {
 
   if (
     await asyncTest('source code does not pass shell option to execFileSync (security)', async () => {
-      const typecheckSource = fs.readFileSync(path.join(scriptsDir, 'post-edit-typecheck.js'), 'utf8');
+      const typecheckSource = fs.readFileSync(path.join(srcHooksDir, 'post-edit-typecheck.ts'), 'utf8');
       // Strip comments to avoid matching "shell: true" in comment text
       const codeOnly = typecheckSource.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
-      assert.ok(!codeOnly.includes('shell:'), 'post-edit-typecheck.js should not pass shell option in code');
+      assert.ok(!codeOnly.includes('shell:'), 'post-edit-typecheck.ts should not pass shell option in code');
       assert.ok(typecheckSource.includes('npx.cmd'), 'Should use npx.cmd for Windows cross-platform safety');
     })
   )
@@ -1821,14 +1822,14 @@ async function runTests() {
 
   // Helper: create a patched evaluate-session.js wrapper that resolves
   // require('../lib/utils') to the real utils.js and uses a custom config path
-  const realUtilsPath = path.resolve(__dirname, '..', '..', 'scripts', 'lib', 'utils.js');
+  const realUtilsPath = path.resolve(__dirname, '..', '..', 'dist', 'lib', 'utils.js');
   function createEvalWrapper(testDir, configPath) {
     const wrapperScript = path.join(testDir, 'eval-wrapper.js');
     let src = fs.readFileSync(path.join(scriptsDir, 'evaluate-session.js'), 'utf8');
     // Patch require to use absolute path (the temp dir doesn't have ../lib/utils)
-    src = src.replace(/require\('\.\.\/lib\/utils'\)/, `require(${JSON.stringify(realUtilsPath)})`);
+    src = src.replace(/require\(["']\.\.\/lib\/utils["']\)/, `require(${JSON.stringify(realUtilsPath)})`);
     // Patch config file path to point to our test config
-    src = src.replace(/const configFile = path\.join\(scriptDir.*?config\.json'\);/, `const configFile = ${JSON.stringify(configPath)};`);
+    src = src.replace(/const configFile = .*?config\.json["']\)?;/, `const configFile = ${JSON.stringify(configPath)};`);
     fs.writeFileSync(wrapperScript, src);
     return wrapperScript;
   }
@@ -1977,7 +1978,7 @@ async function runTests() {
       fs.mkdirSync(sessionsDir, { recursive: true });
 
       // Get the expected filename
-      const utils = require('../../scripts/lib/utils');
+      const utils = require('../../src/lib/utils');
       const today = utils.getDateString();
 
       // Create a pre-existing session file with known timestamp
@@ -2008,7 +2009,7 @@ async function runTests() {
       const sessionsDir = path.join(testDir, '.claude', 'sessions');
       fs.mkdirSync(sessionsDir, { recursive: true });
 
-      const utils = require('../../scripts/lib/utils');
+      const utils = require('../../src/lib/utils');
       const today = utils.getDateString();
 
       const shortId = 'update02';
@@ -2046,7 +2047,7 @@ async function runTests() {
       const sessionsDir = path.join(testDir, '.claude', 'sessions');
       fs.mkdirSync(sessionsDir, { recursive: true });
 
-      const utils = require('../../scripts/lib/utils');
+      const utils = require('../../src/lib/utils');
       const today = utils.getDateString();
 
       const shortId = 'update03';
@@ -2465,7 +2466,7 @@ async function runTests() {
   if (
     await asyncTest('source has expected exclusion patterns', async () => {
       // The EXCLUDED_PATTERNS array includes .test.ts, .spec.ts, etc.
-      const source = fs.readFileSync(path.join(scriptsDir, 'check-console-log.js'), 'utf8');
+      const source = fs.readFileSync(path.join(srcHooksDir, 'check-console-log.ts'), 'utf8');
       // Verify the exclusion patterns exist (regex escapes use \. so check for the pattern names)
       assert.ok(source.includes('EXCLUDED_PATTERNS'), 'Should have exclusion patterns array');
       assert.ok(/\.test\\\./.test(source), 'Should have test file exclusion pattern');
@@ -2512,7 +2513,7 @@ async function runTests() {
 
   if (
     await asyncTest('source uses cwd based on file directory for npx', async () => {
-      const formatSource = fs.readFileSync(path.join(scriptsDir, 'post-edit-format.js'), 'utf8');
+      const formatSource = fs.readFileSync(path.join(srcHooksDir, 'post-edit-format.ts'), 'utf8');
       assert.ok(formatSource.includes('cwd:'), 'Should set cwd option for execFileSync');
       assert.ok(formatSource.includes('path.dirname'), 'cwd should use path.dirname of the file');
       assert.ok(formatSource.includes('path.resolve'), 'cwd should resolve the file path first');
@@ -4241,7 +4242,7 @@ Some random content without the expected ### Context to Load section
       // utils.js line 215: setTimeout fires because stdin 'end' never arrives.
       // Line 225: data.trim() is empty → resolves with {}.
       // Exercises: removeAllListeners, process.stdin.unref(), and the empty-data timeout resolution.
-      const script = 'const u=require("./scripts/lib/utils");u.readStdinJson({timeoutMs:100}).then(d=>{process.stdout.write(JSON.stringify(d));process.exit(0)})';
+      const script = 'const u=require("./dist/lib/utils");u.readStdinJson({timeoutMs:100}).then(d=>{process.stdout.write(JSON.stringify(d));process.exit(0)})';
       return new Promise((resolve, reject) => {
         const child = spawn('node', ['-e', script], {
           cwd: path.resolve(__dirname, '..', '..'),
@@ -4275,7 +4276,7 @@ Some random content without the expected ### Context to Load section
     await asyncTest('readStdinJson resolves with {} when timeout fires with invalid partial JSON', async () => {
       // utils.js lines 224-228: setTimeout fires, data.trim() is non-empty,
       // JSON.parse(data) throws → catch at line 226 resolves with {}.
-      const script = 'const u=require("./scripts/lib/utils");u.readStdinJson({timeoutMs:100}).then(d=>{process.stdout.write(JSON.stringify(d));process.exit(0)})';
+      const script = 'const u=require("./dist/lib/utils");u.readStdinJson({timeoutMs:100}).then(d=>{process.stdout.write(JSON.stringify(d));process.exit(0)})';
       return new Promise((resolve, reject) => {
         const child = spawn('node', ['-e', script], {
           cwd: path.resolve(__dirname, '..', '..'),

@@ -163,7 +163,7 @@ async function runTests() {
   let passed = 0;
   let failed = 0;
 
-  const scriptsDir = path.join(__dirname, '..', '..', 'scripts', 'hooks');
+  const scriptsDir = path.join(__dirname, '..', '..', 'dist', 'hooks');
   const hooksJsonPath = path.join(__dirname, '..', '..', 'hooks', 'hooks.json');
   const hooks = JSON.parse(fs.readFileSync(hooksJsonPath, 'utf8'));
 
@@ -261,11 +261,10 @@ async function runTests() {
 
   if (
     await asyncTest('blocking hooks output BLOCKED message', async () => {
-      // Test the dev server blocking hook — must send a matching command
-      const blockingCommand = hooks.hooks.PreToolUse[0].hooks[0].command;
-      const match = blockingCommand.match(/^node -e "(.+)"$/s);
+      // Test the dev server blocking hook script directly
+      const hookScript = path.join(scriptsDir, 'pre-bash-dev-server-block.js');
 
-      const proc = spawn('node', ['-e', match[1]], {
+      const proc = spawn('node', [hookScript], {
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
@@ -317,10 +316,9 @@ async function runTests() {
   if (
     await asyncTest('blocking hooks exit with code 2', async () => {
       // The dev server blocker blocks when a dev server command is detected
-      const blockingCommand = hooks.hooks.PreToolUse[0].hooks[0].command;
-      const match = blockingCommand.match(/^node -e "(.+)"$/s);
+      const hookScript = path.join(scriptsDir, 'pre-bash-dev-server-block.js');
 
-      const proc = spawn('node', ['-e', match[1]], {
+      const proc = spawn('node', [hookScript], {
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
@@ -422,14 +420,10 @@ async function runTests() {
 
   if (
     await asyncTest('PostToolUse PR hook extracts PR URL', async () => {
-      // Find the PR logging hook
-      const prHook = hooks.hooks.PostToolUse.find(h => h.description && h.description.includes('PR URL'));
+      // Test the PR hook script directly
+      const hookScript = path.join(scriptsDir, 'post-bash-pr-created.js');
 
-      assert.ok(prHook, 'PR hook should exist');
-
-      const match = prHook.hooks[0].command.match(/^node -e "(.+)"$/s);
-
-      const proc = spawn('node', ['-e', match[1]], {
+      const proc = spawn('node', [hookScript], {
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
@@ -734,8 +728,8 @@ async function runTests() {
       assert.strictEqual(typeof asyncHook.hooks[0].timeout, 'number', 'Timeout should be a number');
       assert.ok(asyncHook.hooks[0].timeout > 0, 'Timeout should be positive');
 
-      const match = asyncHook.hooks[0].command.match(/^node -e "(.+)"$/s);
-      assert.ok(match, 'Async hook command should be node -e format');
+      const isValid = asyncHook.hooks[0].command.startsWith('node ') || asyncHook.hooks[0].command.startsWith('bash ');
+      assert.ok(isValid, 'Async hook command should be node or bash format');
     })
   )
     passed++;
@@ -750,14 +744,10 @@ async function runTests() {
           for (const hook of hookDef.hooks) {
             assert.ok(hook.command, `Hook in ${hookType} should have command field`);
 
-            const isInline = hook.command.startsWith('node -e');
-            const isFilePath = hook.command.startsWith('node "');
-            const isShellScript = hook.command.endsWith('.sh');
+            const isNode = hook.command.startsWith('node ');
+            const isBash = hook.command.startsWith('bash ');
 
-            assert.ok(
-              isInline || isFilePath || isShellScript,
-              `Hook command in ${hookType} should be inline (node -e), file path (node "), or shell script (.sh), got: ${hook.command.substring(0, 80)}`
-            );
+            assert.ok(isNode || isBash, `Hook command in ${hookType} should start with node or bash, got: ${hook.command.substring(0, 80)}`);
           }
         }
       }

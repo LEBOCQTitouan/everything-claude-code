@@ -13,7 +13,7 @@ const fs = require('fs');
 const os = require('os');
 const { execFileSync } = require('child_process');
 
-const validatorsDir = path.join(__dirname, '..', '..', 'scripts', 'ci');
+const validatorsDir = path.join(__dirname, '..', '..', 'dist', 'ci');
 
 // Test helpers
 function test(name, fn) {

@@ -13,7 +13,7 @@ const fs = require('fs');
 const os = require('os');
 const { spawnSync } = require('child_process');
 
-const evaluateScript = path.join(__dirname, '..', '..', 'scripts', 'hooks', 'evaluate-session.js');
+const evaluateScript = path.join(__dirname, '..', '..', 'dist', 'hooks', 'evaluate-session.js');
 
 // Test helpers
 function test(name, fn) {

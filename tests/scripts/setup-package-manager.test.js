@@ -12,7 +12,7 @@ const fs = require('fs');
 const os = require('os');
 const { execFileSync } = require('child_process');
 
-const SCRIPT = path.join(__dirname, '..', '..', 'scripts', 'setup-package-manager.js');
+const SCRIPT = path.join(__dirname, '..', '..', 'dist', 'setup-package-manager.js');
 
 // Run the script with given args, return { stdout, stderr, code }
 function run(args = [], env = {}) {
