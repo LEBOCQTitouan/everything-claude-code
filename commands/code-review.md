@@ -37,4 +37,9 @@ Comprehensive security and quality review of uncommitted changes:
 
 4. Block commit if CRITICAL or HIGH issues found
 
+5. When applying fixes from the review:
+   - `fix: <issue description>` for each CRITICAL/HIGH fix
+   - `refactor: <improvement>` for each MEDIUM improvement
+   - Commit each fix separately — never batch unrelated review fixes
+
 Never approve code with security vulnerabilities!

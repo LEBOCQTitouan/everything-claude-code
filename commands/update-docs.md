@@ -76,6 +76,16 @@ Skipped:  docs/API.md (no changes detected)
 ──────────────────────────────
 ```
 
+## Step 8: Commit Documentation Changes
+
+After documentation updates are complete:
+
+1. Stage only the documentation files changed
+2. Commit: `docs: update <what was changed>`
+3. If multiple unrelated docs were updated, commit each separately
+
+Never batch documentation updates for unrelated areas into one commit.
+
 ## Rules
 
 - **Single source of truth**: Always generate from code, never manually edit generated sections

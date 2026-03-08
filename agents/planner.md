@@ -210,3 +210,13 @@ Each phase should be mergeable independently. Avoid plans that require all phase
 - Phases that cannot be delivered independently
 
 **Remember**: A great plan is specific, actionable, and considers both the happy path and edge cases. The best plans enable confident, incremental implementation.
+
+## Commit Cadence
+
+When generating plans, include commit steps after each phase:
+
+- `feat: implement <phase description>` after each phase passes build + tests
+- `test: add <phase> tests` after writing tests for a phase
+- `docs: update <what>` after documentation created during a phase
+- Never accumulate changes across multiple phases without committing
+- Each phase must be committed before starting the next phase

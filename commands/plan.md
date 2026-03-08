@@ -100,6 +100,16 @@ If you want changes, respond with:
 - "different approach: [alternative]"
 - "skip phase 2 and do phase 3 first"
 
+## Commit After Each Phase
+
+When executing an approved plan, commit after each completed phase:
+
+1. After each phase implementation passes build + tests: `feat: <phase description>`
+2. After each phase's tests are written: `test: add <phase> tests`
+3. Before moving to the next phase, verify all changes are committed
+
+Never accumulate changes across multiple plan phases without committing.
+
 ## Integration with Other Commands
 
 After planning:

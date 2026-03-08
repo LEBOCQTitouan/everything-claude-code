@@ -64,3 +64,4 @@ All ECC agents that modify code MUST commit after each logical change:
 - **code-reviewer**: commit after each review fix applied
 - **doc-updater**: commit after documentation updates
 - **loop-operator**: commit at each checkpoint
+- **planner**: include commit steps in generated plans after each phase
