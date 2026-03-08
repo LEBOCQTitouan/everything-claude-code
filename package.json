@@ -32,6 +32,9 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "use:dev": "npm run build && npm link",
+    "use:latest": "npm install -g @lebocqtitouan/ecc@latest",
     "clean": "rm -rf dist",
     "prebuild": "rm -rf dist",
     "postinstall": "node dist/postinstall.js",
