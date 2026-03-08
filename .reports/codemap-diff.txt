@@ -1,0 +1,34 @@
+Codemap Generation Report — 2026-03-08
+=======================================
+
+Status: INITIAL GENERATION (no previous codemaps existed)
+
+Files Generated:
+  docs/CODEMAPS/INDEX.md          (~300 tokens)
+  docs/CODEMAPS/architecture.md   (~900 tokens)
+  docs/CODEMAPS/backend.md        (~800 tokens)
+  docs/CODEMAPS/data.md           (~400 tokens)
+  docs/CODEMAPS/dependencies.md   (~500 tokens)
+
+Source Files Scanned: 47 TypeScript files in src/
+Test Files Scanned: 23 test files
+Total Assertions: 1089 passing
+
+Architecture Notes:
+  - No frontend (CLI-only tool)
+  - No database (file-based storage)
+  - Single runtime dependency (omelette)
+  - 28 hook implementations across 5 lifecycle events
+  - Install pipeline: detect → manifest → merge → gitignore
+
+Recent Changes (since last major update):
+  - NEW: src/lib/ansi.ts — shared ANSI color module
+  - NEW: src/lib/detect.ts — existing setup detection
+  - NEW: src/lib/manifest.ts — artifact tracking
+  - NEW: src/lib/merge.ts — conflict resolution
+  - NEW: src/lib/gitignore.ts — gitignore management
+  - REWRITTEN: src/lib/smart-merge.ts — LCS diff + side-by-side display
+  - REFACTORED: src/postinstall.ts — uses shared ansi.ts
+  - REFACTORED: src/skill-create-output.ts — uses shared ansi.ts
+
+No staleness warnings (first generation).
