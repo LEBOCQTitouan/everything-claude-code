@@ -58,6 +58,11 @@ tests/           Test suite (run with tsx, imports from src/ and dist/)
 - `/loop-status` - Check loop status
 - `/quality-gate` - Run quality gate checks
 - `/model-route` - Route to optimal model by task complexity
+- `/doc-suite` - Full documentation suite (analyze + generate + validate + coverage)
+- `/doc-analyze` - Analyze codebase for documentation needs
+- `/doc-generate` - Generate doc comments, summaries, glossary, changelog
+- `/doc-validate` - Validate documentation accuracy and quality scoring
+- `/doc-coverage` - Documentation coverage metrics and regression detection
 
 ## npm Scripts
 

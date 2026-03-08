@@ -112,3 +112,17 @@ Commit after each documentation update:
 - Never batch documentation updates for unrelated areas into one commit
 
 **Remember**: Documentation that doesn't match reality is worse than no documentation. Always generate from the source of truth.
+
+## Related Agents
+
+For deep documentation analysis, generation, validation, and coverage beyond codemaps and READMEs:
+
+| Agent | Purpose | When to Use |
+|-------|---------|-------------|
+| `doc-orchestrator` | Coordinates full doc pipeline | `/doc-suite` command |
+| `doc-analyzer` | Codebase structure + public API analysis | `/doc-analyze` command |
+| `doc-generator` | Doc comments, summaries, glossary, changelog | `/doc-generate` command |
+| `doc-validator` | Accuracy checking, quality scoring | `/doc-validate` command |
+| `doc-reporter` | Coverage metrics, trends, regressions | `/doc-coverage` command |
+
+This agent (doc-updater) handles quick doc refreshes — codemaps, README updates, guide maintenance. The doc-* agents handle comprehensive documentation suites.
