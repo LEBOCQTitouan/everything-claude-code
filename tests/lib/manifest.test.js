@@ -10,18 +10,7 @@ const path = require('path');
 const os = require('os');
 
 const { readManifest, writeManifest, createManifest, updateManifest, isEccManaged, isEccManagedRule, diffFileList, getManifestFilename } = require('../../src/lib/manifest');
-
-function test(name, fn) {
-  try {
-    fn();
-    console.log(`  ✓ ${name}`);
-    return true;
-  } catch (err) {
-    console.log(`  ✗ ${name}`);
-    console.log(`    Error: ${err.message}`);
-    return false;
-  }
-}
+const { test, describe } = require('../harness');
 
 function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-manifest-test-'));
@@ -41,249 +30,178 @@ function sampleArtifacts() {
   };
 }
 
-function runTests() {
-  console.log('\n=== Testing manifest.ts ===\n');
-  let passed = 0;
-  let failed = 0;
+async function runTests() {
+  describe('Testing manifest.ts');
 
   const tmpDir = makeTempDir();
 
   try {
     // --- readManifest ---
-    console.log('readManifest:');
+    describe('readManifest');
 
-    if (
-      test('returns null for non-existent directory', () => {
-        const result = readManifest(path.join(tmpDir, 'nonexistent'));
-        assert.strictEqual(result, null);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns null for non-existent directory', () => {
+      const result = readManifest(path.join(tmpDir, 'nonexistent'));
+      assert.strictEqual(result, null);
+    });
 
-    if (
-      test('returns null for corrupted JSON', () => {
-        const dir = path.join(tmpDir, 'corrupted');
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, '.ecc-manifest.json'), 'not json');
-        assert.strictEqual(readManifest(dir), null);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns null for corrupted JSON', () => {
+      const dir = path.join(tmpDir, 'corrupted');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, '.ecc-manifest.json'), 'not json');
+      assert.strictEqual(readManifest(dir), null);
+    });
 
-    if (
-      test('returns null for JSON without required fields', () => {
-        const dir = path.join(tmpDir, 'incomplete');
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, '.ecc-manifest.json'), JSON.stringify({ foo: 'bar' }));
-        assert.strictEqual(readManifest(dir), null);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns null for JSON without required fields', () => {
+      const dir = path.join(tmpDir, 'incomplete');
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, '.ecc-manifest.json'), JSON.stringify({ foo: 'bar' }));
+      assert.strictEqual(readManifest(dir), null);
+    });
 
-    if (
-      test('reads valid manifest', () => {
-        const dir = path.join(tmpDir, 'valid');
-        fs.mkdirSync(dir, { recursive: true });
-        const manifest = createManifest('1.0.0', ['typescript'], sampleArtifacts());
-        fs.writeFileSync(path.join(dir, '.ecc-manifest.json'), JSON.stringify(manifest));
-        const result = readManifest(dir);
-        assert.ok(result);
-        assert.strictEqual(result.version, '1.0.0');
-        assert.deepStrictEqual(result.languages, ['typescript']);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('reads valid manifest', () => {
+      const dir = path.join(tmpDir, 'valid');
+      fs.mkdirSync(dir, { recursive: true });
+      const manifest = createManifest('1.0.0', ['typescript'], sampleArtifacts());
+      fs.writeFileSync(path.join(dir, '.ecc-manifest.json'), JSON.stringify(manifest));
+      const result = readManifest(dir);
+      assert.ok(result);
+      assert.strictEqual(result.version, '1.0.0');
+      assert.deepStrictEqual(result.languages, ['typescript']);
+    });
 
     // --- writeManifest ---
-    console.log('\nwriteManifest:');
+    describe('writeManifest');
 
-    if (
-      test('writes manifest to directory', () => {
-        const dir = path.join(tmpDir, 'write-test');
-        const manifest = createManifest('1.0.0', ['typescript'], sampleArtifacts());
-        writeManifest(dir, manifest);
-        assert.ok(fs.existsSync(path.join(dir, '.ecc-manifest.json')));
-        const read = readManifest(dir);
-        assert.strictEqual(read.version, '1.0.0');
-      })
-    )
-      passed++;
-    else failed++;
+    await test('writes manifest to directory', () => {
+      const dir = path.join(tmpDir, 'write-test');
+      const manifest = createManifest('1.0.0', ['typescript'], sampleArtifacts());
+      writeManifest(dir, manifest);
+      assert.ok(fs.existsSync(path.join(dir, '.ecc-manifest.json')));
+      const read = readManifest(dir);
+      assert.strictEqual(read.version, '1.0.0');
+    });
 
-    if (
-      test('creates parent directories if needed', () => {
-        const dir = path.join(tmpDir, 'deep', 'nested', 'dir');
-        const manifest = createManifest('1.0.0', ['typescript'], sampleArtifacts());
-        writeManifest(dir, manifest);
-        assert.ok(fs.existsSync(path.join(dir, '.ecc-manifest.json')));
-      })
-    )
-      passed++;
-    else failed++;
+    await test('creates parent directories if needed', () => {
+      const dir = path.join(tmpDir, 'deep', 'nested', 'dir');
+      const manifest = createManifest('1.0.0', ['typescript'], sampleArtifacts());
+      writeManifest(dir, manifest);
+      assert.ok(fs.existsSync(path.join(dir, '.ecc-manifest.json')));
+    });
 
     // --- createManifest ---
-    console.log('\ncreateManifest:');
+    describe('createManifest');
 
-    if (
-      test('creates manifest with correct structure', () => {
-        const manifest = createManifest('2.0.0', ['golang', 'python'], sampleArtifacts());
-        assert.strictEqual(manifest.version, '2.0.0');
-        assert.deepStrictEqual(manifest.languages, ['golang', 'python']);
-        assert.ok(manifest.installedAt);
-        assert.ok(manifest.updatedAt);
-        assert.deepStrictEqual(manifest.artifacts.agents, ['planner.md', 'architect.md']);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('creates manifest with correct structure', () => {
+      const manifest = createManifest('2.0.0', ['golang', 'python'], sampleArtifacts());
+      assert.strictEqual(manifest.version, '2.0.0');
+      assert.deepStrictEqual(manifest.languages, ['golang', 'python']);
+      assert.ok(manifest.installedAt);
+      assert.ok(manifest.updatedAt);
+      assert.deepStrictEqual(manifest.artifacts.agents, ['planner.md', 'architect.md']);
+    });
 
-    if (
-      test('does not share references with input', () => {
-        const arts = sampleArtifacts();
-        const manifest = createManifest('1.0.0', ['ts'], arts);
-        arts.agents.push('new.md');
-        assert.strictEqual(manifest.artifacts.agents.length, 2);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('does not share references with input', () => {
+      const arts = sampleArtifacts();
+      const manifest = createManifest('1.0.0', ['ts'], arts);
+      arts.agents.push('new.md');
+      assert.strictEqual(manifest.artifacts.agents.length, 2);
+    });
 
     // --- updateManifest ---
-    console.log('\nupdateManifest:');
+    describe('updateManifest');
 
-    if (
-      test('preserves installedAt, updates updatedAt', () => {
-        const original = createManifest('1.0.0', ['typescript'], sampleArtifacts());
-        const originalInstalledAt = original.installedAt;
+    await test('preserves installedAt, updates updatedAt', () => {
+      const original = createManifest('1.0.0', ['typescript'], sampleArtifacts());
+      const originalInstalledAt = original.installedAt;
 
-        // Small delay to ensure timestamp differs
-        const updated = updateManifest(original, '1.1.0', ['golang'], sampleArtifacts());
-        assert.strictEqual(updated.installedAt, originalInstalledAt);
-        assert.strictEqual(updated.version, '1.1.0');
-      })
-    )
-      passed++;
-    else failed++;
+      // Small delay to ensure timestamp differs
+      const updated = updateManifest(original, '1.1.0', ['golang'], sampleArtifacts());
+      assert.strictEqual(updated.installedAt, originalInstalledAt);
+      assert.strictEqual(updated.version, '1.1.0');
+    });
 
-    if (
-      test('merges languages (union)', () => {
-        const original = createManifest('1.0.0', ['typescript'], sampleArtifacts());
-        const updated = updateManifest(original, '1.1.0', ['golang'], sampleArtifacts());
-        assert.ok(updated.languages.includes('typescript'));
-        assert.ok(updated.languages.includes('golang'));
-      })
-    )
-      passed++;
-    else failed++;
+    await test('merges languages (union)', () => {
+      const original = createManifest('1.0.0', ['typescript'], sampleArtifacts());
+      const updated = updateManifest(original, '1.1.0', ['golang'], sampleArtifacts());
+      assert.ok(updated.languages.includes('typescript'));
+      assert.ok(updated.languages.includes('golang'));
+    });
 
-    if (
-      test('does not mutate original manifest', () => {
-        const original = createManifest('1.0.0', ['typescript'], sampleArtifacts());
-        updateManifest(original, '2.0.0', ['golang'], sampleArtifacts());
-        assert.strictEqual(original.version, '1.0.0');
-        assert.deepStrictEqual(original.languages, ['typescript']);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('does not mutate original manifest', () => {
+      const original = createManifest('1.0.0', ['typescript'], sampleArtifacts());
+      updateManifest(original, '2.0.0', ['golang'], sampleArtifacts());
+      assert.strictEqual(original.version, '1.0.0');
+      assert.deepStrictEqual(original.languages, ['typescript']);
+    });
 
     // --- isEccManaged ---
-    console.log('\nisEccManaged:');
+    describe('isEccManaged');
 
-    if (
-      test('returns false for null manifest', () => {
-        assert.strictEqual(isEccManaged(null, 'agents', 'planner.md'), false);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns false for null manifest', () => {
+      assert.strictEqual(isEccManaged(null, 'agents', 'planner.md'), false);
+    });
 
-    if (
-      test('returns true for managed file', () => {
-        const manifest = createManifest('1.0.0', ['ts'], sampleArtifacts());
-        assert.strictEqual(isEccManaged(manifest, 'agents', 'planner.md'), true);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns true for managed file', () => {
+      const manifest = createManifest('1.0.0', ['ts'], sampleArtifacts());
+      assert.strictEqual(isEccManaged(manifest, 'agents', 'planner.md'), true);
+    });
 
-    if (
-      test('returns false for unmanaged file', () => {
-        const manifest = createManifest('1.0.0', ['ts'], sampleArtifacts());
-        assert.strictEqual(isEccManaged(manifest, 'agents', 'custom-agent.md'), false);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns false for unmanaged file', () => {
+      const manifest = createManifest('1.0.0', ['ts'], sampleArtifacts());
+      assert.strictEqual(isEccManaged(manifest, 'agents', 'custom-agent.md'), false);
+    });
 
     // --- isEccManagedRule ---
-    console.log('\nisEccManagedRule:');
+    describe('isEccManagedRule');
 
-    if (
-      test('returns true for managed rule', () => {
-        const manifest = createManifest('1.0.0', ['ts'], sampleArtifacts());
-        assert.strictEqual(isEccManagedRule(manifest, 'common', 'coding-style.md'), true);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns true for managed rule', () => {
+      const manifest = createManifest('1.0.0', ['ts'], sampleArtifacts());
+      assert.strictEqual(isEccManagedRule(manifest, 'common', 'coding-style.md'), true);
+    });
 
-    if (
-      test('returns false for unknown group', () => {
-        const manifest = createManifest('1.0.0', ['ts'], sampleArtifacts());
-        assert.strictEqual(isEccManagedRule(manifest, 'rust', 'rules.md'), false);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns false for unknown group', () => {
+      const manifest = createManifest('1.0.0', ['ts'], sampleArtifacts());
+      assert.strictEqual(isEccManagedRule(manifest, 'rust', 'rules.md'), false);
+    });
 
     // --- diffFileList ---
-    console.log('\ndiffFileList:');
+    describe('diffFileList');
 
-    if (
-      test('computes diff correctly', () => {
-        const diff = diffFileList(['a.md', 'b.md', 'c.md'], ['b.md', 'c.md', 'd.md']);
-        assert.deepStrictEqual(diff.added, ['d.md']);
-        assert.deepStrictEqual(diff.updated, ['b.md', 'c.md']);
-        assert.deepStrictEqual(diff.removed, ['a.md']);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('computes diff correctly', () => {
+      const diff = diffFileList(['a.md', 'b.md', 'c.md'], ['b.md', 'c.md', 'd.md']);
+      assert.deepStrictEqual(diff.added, ['d.md']);
+      assert.deepStrictEqual(diff.updated, ['b.md', 'c.md']);
+      assert.deepStrictEqual(diff.removed, ['a.md']);
+    });
 
-    if (
-      test('handles empty lists', () => {
-        const diff = diffFileList([], ['a.md']);
-        assert.deepStrictEqual(diff.added, ['a.md']);
-        assert.deepStrictEqual(diff.updated, []);
-        assert.deepStrictEqual(diff.removed, []);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('handles empty lists', () => {
+      const diff = diffFileList([], ['a.md']);
+      assert.deepStrictEqual(diff.added, ['a.md']);
+      assert.deepStrictEqual(diff.updated, []);
+      assert.deepStrictEqual(diff.removed, []);
+    });
 
     // --- getManifestFilename ---
-    console.log('\ngetManifestFilename:');
+    describe('getManifestFilename');
 
-    if (
-      test('returns .ecc-manifest.json', () => {
-        assert.strictEqual(getManifestFilename(), '.ecc-manifest.json');
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns .ecc-manifest.json', () => {
+      assert.strictEqual(getManifestFilename(), '.ecc-manifest.json');
+    });
   } finally {
     cleanup(tmpDir);
   }
-
-  console.log(`\nPassed: ${passed}`);
-  console.log(`Failed: ${failed}`);
-  console.log(`Total:  ${passed + failed}\n`);
-  if (failed > 0) process.exit(1);
 }
 
-runTests();
+module.exports = { runTests };
+
+if (require.main === module) {
+  const { getResults, resetCounters } = require('../harness');
+  resetCounters();
+  runTests().then(() => {
+    const r = getResults();
+    console.log('\nPassed: ' + r.passed);
+    console.log('Failed: ' + r.failed);
+    console.log('Total:  ' + (r.passed + r.failed));
+    if (r.failed > 0) process.exit(1);
+  });
+}

@@ -34,11 +34,11 @@ const testFiles = [
   'lib/merge.test.js',
   'lib/gitignore.test.js',
   'lib/ansi.test.js',
-  'lib/smart-merge.test.js',
+  'lib/smart-merge.test.js'
 ];
 
 const BOX_W = 58;
-const boxLine = (s) => `\u2551${s.padEnd(BOX_W)}\u2551`;
+const boxLine = s => `\u2551${s.padEnd(BOX_W)}\u2551`;
 
 async function main() {
   console.log('\u2554' + '\u2550'.repeat(BOX_W) + '\u2557');
@@ -57,6 +57,7 @@ async function main() {
       continue;
     }
 
+    const fileStart = Date.now();
     console.log(`\n\u2501\u2501\u2501 Running ${testFile} \u2501\u2501\u2501`);
 
     // Snapshot process.env before each file
@@ -78,10 +79,11 @@ async function main() {
     grandPassed += fileResults.passed;
     grandFailed += fileResults.failed;
 
+    const fileMs = Date.now() - fileStart;
     if (fileResults.passed > 0 || fileResults.failed > 0) {
       console.log(`\nPassed: ${fileResults.passed}`);
       console.log(`Failed: ${fileResults.failed}`);
-      console.log(`Total:  ${fileResults.passed + fileResults.failed}`);
+      console.log(`Total:  ${fileResults.passed + fileResults.failed} (${fileMs}ms)`);
     }
 
     // Restore process.env
@@ -103,9 +105,7 @@ async function main() {
   console.log('\u2560' + '\u2550'.repeat(BOX_W) + '\u2563');
   console.log(boxLine(`  Total Tests: ${String(grandTotal).padStart(4)}`));
   console.log(boxLine(`  Passed:      ${String(grandPassed).padStart(4)}  \u2713`));
-  console.log(
-    boxLine(`  Failed:      ${String(grandFailed).padStart(4)}  ${grandFailed > 0 ? '\u2717' : ' '}`)
-  );
+  console.log(boxLine(`  Failed:      ${String(grandFailed).padStart(4)}  ${grandFailed > 0 ? '\u2717' : ' '}`));
   console.log('\u255A' + '\u2550'.repeat(BOX_W) + '\u255D');
 
   process.exit(grandFailed > 0 ? 1 : 0);

@@ -11,18 +11,7 @@ const os = require('os');
 const { spawnSync } = require('child_process');
 
 const { isGitRepo, ensureGitignoreEntries, ECC_GITIGNORE_ENTRIES, findTrackedEccFiles } = require('../../src/lib/gitignore');
-
-function test(name, fn) {
-  try {
-    fn();
-    console.log(`  ✓ ${name}`);
-    return true;
-  } catch (err) {
-    console.log(`  ✗ ${name}`);
-    console.log(`    Error: ${err.message}`);
-    return false;
-  }
-}
+const { test, describe } = require('../harness');
 
 function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-gitignore-test-'));
@@ -39,239 +28,196 @@ function initGitRepo(dir) {
   spawnSync('git', ['config', 'user.name', 'Test'], { cwd: dir, stdio: 'pipe' });
 }
 
-function runTests() {
-  console.log('\n=== Testing gitignore.ts ===\n');
-  let passed = 0;
-  let failed = 0;
+async function runTests() {
+  describe('Testing gitignore.ts');
 
   // --- isGitRepo ---
-  console.log('isGitRepo:');
+  describe('isGitRepo');
 
   const tmpDir1 = makeTempDir();
   try {
-    if (
-      test('returns false for non-git directory', () => {
-        assert.strictEqual(isGitRepo(tmpDir1), false);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns false for non-git directory', () => {
+      assert.strictEqual(isGitRepo(tmpDir1), false);
+    });
   } finally {
     cleanup(tmpDir1);
   }
 
   const tmpDir2 = makeTempDir();
   try {
-    if (
-      test('returns true for git repo', () => {
-        initGitRepo(tmpDir2);
-        assert.strictEqual(isGitRepo(tmpDir2), true);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns true for git repo', () => {
+      initGitRepo(tmpDir2);
+      assert.strictEqual(isGitRepo(tmpDir2), true);
+    });
   } finally {
     cleanup(tmpDir2);
   }
 
   // --- ECC_GITIGNORE_ENTRIES ---
-  console.log('\nECC_GITIGNORE_ENTRIES:');
+  describe('ECC_GITIGNORE_ENTRIES');
 
-  if (
-    test('contains expected entries', () => {
-      const patterns = ECC_GITIGNORE_ENTRIES.map(e => e.pattern);
-      assert.ok(patterns.includes('.claude/settings.local.json'));
-      assert.ok(patterns.includes('.claude/.ecc-manifest.json'));
-      assert.ok(patterns.includes('docs/CODEMAPS/'));
-      assert.ok(patterns.includes('.reports/'));
-      assert.ok(patterns.includes('.claude/plans/'));
-    })
-  )
-    passed++;
-  else failed++;
+  await test('contains expected entries', () => {
+    const patterns = ECC_GITIGNORE_ENTRIES.map(e => e.pattern);
+    assert.ok(patterns.includes('.claude/settings.local.json'));
+    assert.ok(patterns.includes('.claude/.ecc-manifest.json'));
+    assert.ok(patterns.includes('docs/CODEMAPS/'));
+    assert.ok(patterns.includes('.reports/'));
+    assert.ok(patterns.includes('.claude/plans/'));
+  });
 
-  if (
-    test('each entry has pattern and comment', () => {
-      for (const entry of ECC_GITIGNORE_ENTRIES) {
-        assert.ok(entry.pattern, `Entry missing pattern`);
-        assert.ok(entry.comment, `Entry ${entry.pattern} missing comment`);
-      }
-    })
-  )
-    passed++;
-  else failed++;
+  await test('each entry has pattern and comment', () => {
+    for (const entry of ECC_GITIGNORE_ENTRIES) {
+      assert.ok(entry.pattern, `Entry missing pattern`);
+      assert.ok(entry.comment, `Entry ${entry.pattern} missing comment`);
+    }
+  });
 
   // --- ensureGitignoreEntries ---
-  console.log('\nensureGitignoreEntries:');
+  describe('ensureGitignoreEntries');
 
   const tmpDir3 = makeTempDir();
   try {
-    if (
-      test('skips non-git repos', () => {
-        const result = ensureGitignoreEntries(tmpDir3);
-        assert.strictEqual(result.skipped, true);
-        assert.strictEqual(result.added.length, 0);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('skips non-git repos', () => {
+      const result = ensureGitignoreEntries(tmpDir3);
+      assert.strictEqual(result.skipped, true);
+      assert.strictEqual(result.added.length, 0);
+    });
   } finally {
     cleanup(tmpDir3);
   }
 
   const tmpDir4 = makeTempDir();
   try {
-    if (
-      test('creates .gitignore with ECC entries in git repo', () => {
-        initGitRepo(tmpDir4);
-        const result = ensureGitignoreEntries(tmpDir4);
-        assert.strictEqual(result.skipped, false);
-        assert.strictEqual(result.added.length, ECC_GITIGNORE_ENTRIES.length);
+    await test('creates .gitignore with ECC entries in git repo', () => {
+      initGitRepo(tmpDir4);
+      const result = ensureGitignoreEntries(tmpDir4);
+      assert.strictEqual(result.skipped, false);
+      assert.strictEqual(result.added.length, ECC_GITIGNORE_ENTRIES.length);
 
-        const content = fs.readFileSync(path.join(tmpDir4, '.gitignore'), 'utf8');
-        assert.ok(content.includes('# ECC (Everything Claude Code) generated files'));
-        assert.ok(content.includes('.claude/settings.local.json'));
-        assert.ok(content.includes('docs/CODEMAPS/'));
-      })
-    )
-      passed++;
-    else failed++;
+      const content = fs.readFileSync(path.join(tmpDir4, '.gitignore'), 'utf8');
+      assert.ok(content.includes('# ECC (Everything Claude Code) generated files'));
+      assert.ok(content.includes('.claude/settings.local.json'));
+      assert.ok(content.includes('docs/CODEMAPS/'));
+    });
   } finally {
     cleanup(tmpDir4);
   }
 
   const tmpDir5 = makeTempDir();
   try {
-    if (
-      test('appends to existing .gitignore', () => {
-        initGitRepo(tmpDir5);
-        fs.writeFileSync(path.join(tmpDir5, '.gitignore'), 'node_modules/\n.env\n');
+    await test('appends to existing .gitignore', () => {
+      initGitRepo(tmpDir5);
+      fs.writeFileSync(path.join(tmpDir5, '.gitignore'), 'node_modules/\n.env\n');
 
-        const result = ensureGitignoreEntries(tmpDir5);
-        assert.strictEqual(result.added.length, ECC_GITIGNORE_ENTRIES.length);
+      const result = ensureGitignoreEntries(tmpDir5);
+      assert.strictEqual(result.added.length, ECC_GITIGNORE_ENTRIES.length);
 
-        const content = fs.readFileSync(path.join(tmpDir5, '.gitignore'), 'utf8');
-        assert.ok(content.includes('node_modules/'));
-        assert.ok(content.includes('.env'));
-        assert.ok(content.includes('.claude/settings.local.json'));
-      })
-    )
-      passed++;
-    else failed++;
+      const content = fs.readFileSync(path.join(tmpDir5, '.gitignore'), 'utf8');
+      assert.ok(content.includes('node_modules/'));
+      assert.ok(content.includes('.env'));
+      assert.ok(content.includes('.claude/settings.local.json'));
+    });
   } finally {
     cleanup(tmpDir5);
   }
 
   const tmpDir6 = makeTempDir();
   try {
-    if (
-      test('does not duplicate existing entries', () => {
-        initGitRepo(tmpDir6);
-        fs.writeFileSync(path.join(tmpDir6, '.gitignore'), '.claude/settings.local.json\n');
+    await test('does not duplicate existing entries', () => {
+      initGitRepo(tmpDir6);
+      fs.writeFileSync(path.join(tmpDir6, '.gitignore'), '.claude/settings.local.json\n');
 
-        const result = ensureGitignoreEntries(tmpDir6);
-        assert.ok(result.alreadyPresent.includes('.claude/settings.local.json'));
-        assert.strictEqual(result.added.length, ECC_GITIGNORE_ENTRIES.length - 1);
+      const result = ensureGitignoreEntries(tmpDir6);
+      assert.ok(result.alreadyPresent.includes('.claude/settings.local.json'));
+      assert.strictEqual(result.added.length, ECC_GITIGNORE_ENTRIES.length - 1);
 
-        const content = fs.readFileSync(path.join(tmpDir6, '.gitignore'), 'utf8');
-        const occurrences = content.split('.claude/settings.local.json').length - 1;
-        assert.strictEqual(occurrences, 1);
-      })
-    )
-      passed++;
-    else failed++;
+      const content = fs.readFileSync(path.join(tmpDir6, '.gitignore'), 'utf8');
+      const occurrences = content.split('.claude/settings.local.json').length - 1;
+      assert.strictEqual(occurrences, 1);
+    });
   } finally {
     cleanup(tmpDir6);
   }
 
   const tmpDir7 = makeTempDir();
   try {
-    if (
-      test('is idempotent (running twice produces same result)', () => {
-        initGitRepo(tmpDir7);
+    await test('is idempotent (running twice produces same result)', () => {
+      initGitRepo(tmpDir7);
 
-        ensureGitignoreEntries(tmpDir7);
-        const content1 = fs.readFileSync(path.join(tmpDir7, '.gitignore'), 'utf8');
+      ensureGitignoreEntries(tmpDir7);
+      const content1 = fs.readFileSync(path.join(tmpDir7, '.gitignore'), 'utf8');
 
-        const result2 = ensureGitignoreEntries(tmpDir7);
-        const content2 = fs.readFileSync(path.join(tmpDir7, '.gitignore'), 'utf8');
+      const result2 = ensureGitignoreEntries(tmpDir7);
+      const content2 = fs.readFileSync(path.join(tmpDir7, '.gitignore'), 'utf8');
 
-        assert.strictEqual(content1, content2);
-        assert.strictEqual(result2.added.length, 0);
-        assert.strictEqual(result2.alreadyPresent.length, ECC_GITIGNORE_ENTRIES.length);
-      })
-    )
-      passed++;
-    else failed++;
+      assert.strictEqual(content1, content2);
+      assert.strictEqual(result2.added.length, 0);
+      assert.strictEqual(result2.alreadyPresent.length, ECC_GITIGNORE_ENTRIES.length);
+    });
   } finally {
     cleanup(tmpDir7);
   }
 
   const tmpDir8 = makeTempDir();
   try {
-    if (
-      test('supports custom entries', () => {
-        initGitRepo(tmpDir8);
-        const customEntries = [{ pattern: 'custom/path', comment: 'Custom path' }];
+    await test('supports custom entries', () => {
+      initGitRepo(tmpDir8);
+      const customEntries = [{ pattern: 'custom/path', comment: 'Custom path' }];
 
-        const result = ensureGitignoreEntries(tmpDir8, customEntries);
-        assert.strictEqual(result.added.length, 1);
-        assert.ok(result.added.includes('custom/path'));
+      const result = ensureGitignoreEntries(tmpDir8, customEntries);
+      assert.strictEqual(result.added.length, 1);
+      assert.ok(result.added.includes('custom/path'));
 
-        const content = fs.readFileSync(path.join(tmpDir8, '.gitignore'), 'utf8');
-        assert.ok(content.includes('custom/path'));
-      })
-    )
-      passed++;
-    else failed++;
+      const content = fs.readFileSync(path.join(tmpDir8, '.gitignore'), 'utf8');
+      assert.ok(content.includes('custom/path'));
+    });
   } finally {
     cleanup(tmpDir8);
   }
 
   // --- findTrackedEccFiles ---
-  console.log('\nfindTrackedEccFiles:');
+  describe('findTrackedEccFiles');
 
   const tmpDir9 = makeTempDir();
   try {
-    if (
-      test('returns empty for non-git repo', () => {
-        const result = findTrackedEccFiles(tmpDir9);
-        assert.deepStrictEqual(result, []);
-      })
-    )
-      passed++;
-    else failed++;
+    await test('returns empty for non-git repo', () => {
+      const result = findTrackedEccFiles(tmpDir9);
+      assert.deepStrictEqual(result, []);
+    });
   } finally {
     cleanup(tmpDir9);
   }
 
   const tmpDir10 = makeTempDir();
   try {
-    if (
-      test('detects tracked ECC files', () => {
-        initGitRepo(tmpDir10);
+    await test('detects tracked ECC files', () => {
+      initGitRepo(tmpDir10);
 
-        // Create and track a file that should be gitignored
-        const claudeDir = path.join(tmpDir10, '.claude');
-        fs.mkdirSync(claudeDir, { recursive: true });
-        fs.writeFileSync(path.join(claudeDir, 'settings.local.json'), '{}');
-        spawnSync('git', ['add', '.claude/settings.local.json'], { cwd: tmpDir10, stdio: 'pipe' });
-        spawnSync('git', ['commit', '-m', 'add settings'], { cwd: tmpDir10, stdio: 'pipe' });
+      // Create and track a file that should be gitignored
+      const claudeDir = path.join(tmpDir10, '.claude');
+      fs.mkdirSync(claudeDir, { recursive: true });
+      fs.writeFileSync(path.join(claudeDir, 'settings.local.json'), '{}');
+      spawnSync('git', ['add', '.claude/settings.local.json'], { cwd: tmpDir10, stdio: 'pipe' });
+      spawnSync('git', ['commit', '-m', 'add settings'], { cwd: tmpDir10, stdio: 'pipe' });
 
-        const result = findTrackedEccFiles(tmpDir10);
-        assert.ok(result.includes('.claude/settings.local.json'));
-      })
-    )
-      passed++;
-    else failed++;
+      const result = findTrackedEccFiles(tmpDir10);
+      assert.ok(result.includes('.claude/settings.local.json'));
+    });
   } finally {
     cleanup(tmpDir10);
   }
-
-  console.log(`\nPassed: ${passed}`);
-  console.log(`Failed: ${failed}`);
-  console.log(`Total:  ${passed + failed}\n`);
-  if (failed > 0) process.exit(1);
 }
 
-runTests();
+module.exports = { runTests };
+
+if (require.main === module) {
+  const { getResults, resetCounters } = require('../harness');
+  resetCounters();
+  runTests().then(() => {
+    const r = getResults();
+    console.log('\nPassed: ' + r.passed);
+    console.log('Failed: ' + r.failed);
+    console.log('Total:  ' + (r.passed + r.failed));
+    if (r.failed > 0) process.exit(1);
+  });
+}

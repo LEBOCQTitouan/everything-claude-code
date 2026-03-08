@@ -12,29 +12,7 @@ const os = require('os');
 const { mergeDirectory, mergeSkills, mergeRules, mergeHooks, isLegacyEccHook, combineMergeReports, defaultMergeOptions } = require('../../src/lib/merge');
 
 const { createManifest } = require('../../src/lib/manifest');
-
-function test(name, fn) {
-  try {
-    const result = fn();
-    if (result && typeof result.then === 'function') {
-      return result
-        .then(() => {
-          console.log(`  ✓ ${name}`);
-          return true;
-        })
-        .catch(err => {
-          console.log(`  ✗ ${name}\n    Error: ${err.message}`);
-          return false;
-        });
-    }
-    console.log(`  ✓ ${name}`);
-    return true;
-  } catch (err) {
-    console.log(`  ✗ ${name}`);
-    console.log(`    Error: ${err.message}`);
-    return false;
-  }
-}
+const { test, describe } = require('../harness');
 
 function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-merge-test-'));
@@ -55,9 +33,8 @@ function sampleArtifacts() {
 }
 
 async function runTests() {
-  console.log('\n=== Testing merge.ts ===\n');
-  let passed = 0;
-  let failed = 0;
+  describe('Testing merge.ts');
+
 
   const tmpDir = makeTempDir();
 
@@ -65,10 +42,10 @@ async function runTests() {
     const nonInteractiveOpts = { ...defaultMergeOptions(), interactive: false };
 
     // --- mergeDirectory ---
-    console.log('mergeDirectory:');
+  describe('mergeDirectory');
 
-    if (
-      await test('adds new files to empty destination', async () => {
+
+    await test('adds new files to empty destination', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-1');
         fs.mkdirSync(srcDir, { recursive: true });
@@ -80,13 +57,9 @@ async function runTests() {
         assert.strictEqual(report.updated.length, 0);
         assert.ok(fs.existsSync(path.join(destDir, 'planner.md')));
         assert.ok(fs.existsSync(path.join(destDir, 'architect.md')));
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('updates ECC-managed files', async () => {
+    await test('updates ECC-managed files', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-2');
         fs.mkdirSync(destDir, { recursive: true });
@@ -98,13 +71,9 @@ async function runTests() {
         assert.ok(report.updated.includes('planner.md'));
         const content = fs.readFileSync(path.join(destDir, 'planner.md'), 'utf8');
         assert.strictEqual(content, '# Planner');
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('updates changed files in non-interactive mode', async () => {
+    await test('updates changed files in non-interactive mode', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-3');
         fs.mkdirSync(destDir, { recursive: true });
@@ -116,13 +85,9 @@ async function runTests() {
         assert.ok(report.updated.includes('planner.md'));
         const content = fs.readFileSync(path.join(destDir, 'planner.md'), 'utf8');
         assert.strictEqual(content, '# Planner');
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('reports unchanged files separately', async () => {
+    await test('reports unchanged files separately', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-unchanged');
         fs.mkdirSync(destDir, { recursive: true });
@@ -137,13 +102,9 @@ async function runTests() {
         assert.ok(report.unchanged.includes('architect.md'));
         assert.strictEqual(report.added.length, 0);
         assert.strictEqual(report.updated.length, 0);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('applyAll accept updates all remaining files', async () => {
+    await test('applyAll accept updates all remaining files', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-applyall');
         fs.mkdirSync(destDir, { recursive: true });
@@ -155,13 +116,9 @@ async function runTests() {
 
         assert.strictEqual(report.updated.length, 2);
         assert.strictEqual(report.skipped.length, 0);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('applyAll keep skips all remaining files', async () => {
+    await test('applyAll keep skips all remaining files', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-keepall');
         fs.mkdirSync(destDir, { recursive: true });
@@ -173,13 +130,9 @@ async function runTests() {
 
         assert.strictEqual(report.skipped.length, 2);
         assert.strictEqual(report.updated.length, 0);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('force mode overwrites everything', async () => {
+    await test('force mode overwrites everything', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-4');
         fs.mkdirSync(destDir, { recursive: true });
@@ -191,13 +144,9 @@ async function runTests() {
         assert.ok(report.updated.includes('planner.md'));
         const content = fs.readFileSync(path.join(destDir, 'planner.md'), 'utf8');
         assert.strictEqual(content, '# Planner');
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('dry-run does not write files', async () => {
+    await test('dry-run does not write files', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-5-dryrun');
 
@@ -206,25 +155,18 @@ async function runTests() {
 
         assert.strictEqual(report.added.length, 2);
         assert.ok(!fs.existsSync(destDir));
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('handles non-existent source dir', async () => {
+    await test('handles non-existent source dir', async () => {
         const report = await mergeDirectory(path.join(tmpDir, 'nonexistent-src'), path.join(tmpDir, 'dest-x'), null, 'agents', nonInteractiveOpts);
         assert.strictEqual(report.added.length, 0);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
     // --- mergeSkills ---
-    console.log('\nmergeSkills:');
+  describe('mergeSkills');
 
-    if (
-      await test('adds new skills', async () => {
+
+    await test('adds new skills', async () => {
         const srcDir = path.join(tmpDir, 'src-skills');
         const destDir = path.join(tmpDir, 'dest-skills-1');
         fs.mkdirSync(path.join(srcDir, 'tdd-workflow'), { recursive: true });
@@ -235,13 +177,9 @@ async function runTests() {
         assert.strictEqual(report.added.length, 1);
         assert.ok(fs.existsSync(path.join(destDir, 'tdd-workflow', 'SKILL.md')));
         assert.ok(fs.existsSync(path.join(destDir, 'tdd-workflow', 'extra.md')));
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('updates ECC-managed skills atomically', async () => {
+    await test('updates ECC-managed skills atomically', async () => {
         const srcDir = path.join(tmpDir, 'src-skills');
         const destDir = path.join(tmpDir, 'dest-skills-2');
         fs.mkdirSync(path.join(destDir, 'tdd-workflow'), { recursive: true });
@@ -253,16 +191,13 @@ async function runTests() {
         assert.ok(report.updated.includes('tdd-workflow'));
         const content = fs.readFileSync(path.join(destDir, 'tdd-workflow', 'SKILL.md'), 'utf8');
         assert.strictEqual(content, '# TDD');
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
     // --- mergeRules ---
-    console.log('\nmergeRules:');
+  describe('mergeRules');
 
-    if (
-      await test('adds rules by group', async () => {
+
+    await test('adds rules by group', async () => {
         const srcDir = path.join(tmpDir, 'src-rules');
         const destDir = path.join(tmpDir, 'dest-rules-1');
         fs.mkdirSync(path.join(srcDir, 'common'), { recursive: true });
@@ -274,16 +209,13 @@ async function runTests() {
         assert.strictEqual(report.added.length, 2);
         assert.ok(report.added.includes('common/coding-style.md'));
         assert.ok(report.added.includes('typescript/ts-rules.md'));
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
     // --- mergeHooks ---
-    console.log('\nmergeHooks:');
+  describe('mergeHooks');
 
-    if (
-      await test('adds hooks to empty settings', () => {
+
+    await test('adds hooks to empty settings', () => {
         const hooksDir = path.join(tmpDir, 'hooks-src');
         const settingsDir = path.join(tmpDir, 'hooks-dest-1');
         fs.mkdirSync(hooksDir, { recursive: true });
@@ -303,13 +235,9 @@ async function runTests() {
 
         const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf8'));
         assert.strictEqual(settings.hooks.PreToolUse.length, 1);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('deduplicates hooks', () => {
+    await test('deduplicates hooks', () => {
         const hooksDir = path.join(tmpDir, 'hooks-src');
         const settingsDir = path.join(tmpDir, 'hooks-dest-2');
         fs.mkdirSync(settingsDir, { recursive: true });
@@ -330,13 +258,9 @@ async function runTests() {
 
         const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf8'));
         assert.strictEqual(settings.hooks.PreToolUse.length, 1);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('preserves non-hook keys in settings', () => {
+    await test('preserves non-hook keys in settings', () => {
         const hooksDir = path.join(tmpDir, 'hooks-src');
         const settingsDir = path.join(tmpDir, 'hooks-dest-3');
         fs.mkdirSync(settingsDir, { recursive: true });
@@ -355,13 +279,9 @@ async function runTests() {
         const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf8'));
         assert.strictEqual(settings.customKey, 'preserved');
         assert.deepStrictEqual(settings.allowedTools, ['Read', 'Write']);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('replaces CLAUDE_PLUGIN_ROOT placeholder', () => {
+    await test('replaces CLAUDE_PLUGIN_ROOT placeholder', () => {
         const hooksDir = path.join(tmpDir, 'hooks-placeholder');
         const settingsDir = path.join(tmpDir, 'hooks-dest-4');
         fs.mkdirSync(hooksDir, { recursive: true });
@@ -381,16 +301,13 @@ async function runTests() {
         const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf8'));
         assert.ok(settings.hooks.Stop[0].hooks[0].command.includes('/my/plugin'));
         assert.ok(!settings.hooks.Stop[0].hooks[0].command.includes('CLAUDE_PLUGIN_ROOT'));
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
     // --- combineMergeReports ---
-    console.log('\ncombineMergeReports:');
+  describe('combineMergeReports');
 
-    if (
-      test('combines multiple reports', () => {
+
+    await test('combines multiple reports', () => {
         const r1 = { added: ['a'], updated: ['b'], unchanged: [], skipped: [], smartMerged: [], errors: [] };
         const r2 = { added: ['c'], updated: [], unchanged: [], skipped: ['d'], smartMerged: ['e'], errors: [] };
         const combined = combineMergeReports(r1, r2);
@@ -398,16 +315,13 @@ async function runTests() {
         assert.deepStrictEqual(combined.updated, ['b']);
         assert.deepStrictEqual(combined.skipped, ['d']);
         assert.deepStrictEqual(combined.smartMerged, ['e']);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
     // --- isLegacyEccHook ---
-    console.log('\nisLegacyEccHook:');
+  describe('isLegacyEccHook');
 
-    if (
-      test('detects scripts/hooks/ legacy path', () => {
+
+    await test('detects scripts/hooks/ legacy path', () => {
         assert.strictEqual(
           isLegacyEccHook({
             matcher: '*',
@@ -415,13 +329,9 @@ async function runTests() {
           }),
           true
         );
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      test('detects inline node -e legacy hooks', () => {
+    await test('detects inline node -e legacy hooks', () => {
         assert.strictEqual(
           isLegacyEccHook({
             matcher: 'Bash',
@@ -429,13 +339,9 @@ async function runTests() {
           }),
           true
         );
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      test('does not flag current run-with-flags hooks', () => {
+    await test('does not flag current run-with-flags hooks', () => {
         assert.strictEqual(
           isLegacyEccHook({
             matcher: 'Bash',
@@ -443,13 +349,9 @@ async function runTests() {
           }),
           false
         );
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      test('does not flag user-custom hooks', () => {
+    await test('does not flag user-custom hooks', () => {
         assert.strictEqual(
           isLegacyEccHook({
             matcher: 'Bash',
@@ -457,13 +359,9 @@ async function runTests() {
           }),
           false
         );
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      test('does not flag run-with-flags-shell.sh hooks', () => {
+    await test('does not flag run-with-flags-shell.sh hooks', () => {
         assert.strictEqual(
           isLegacyEccHook({
             matcher: '*',
@@ -471,16 +369,13 @@ async function runTests() {
           }),
           false
         );
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
     // --- mergeHooks legacy cleanup ---
-    console.log('\nmergeHooks legacy cleanup:');
+  describe('mergeHooks legacy cleanup');
 
-    if (
-      await test('removes legacy hooks during merge', () => {
+
+    await test('removes legacy hooks during merge', () => {
         const hooksDir = path.join(tmpDir, 'hooks-src');
         const settingsDir = path.join(tmpDir, 'hooks-dest-legacy');
         fs.mkdirSync(settingsDir, { recursive: true });
@@ -510,13 +405,9 @@ async function runTests() {
           'User hook preserved'
         );
         assert.ok(!stopHooks.some(h => h.description === 'Legacy'), 'Legacy hook removed');
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
-    if (
-      await test('removes all 10 legacy hooks from realistic settings.json', () => {
+    await test('removes all 10 legacy hooks from realistic settings.json', () => {
         const hooksDir = path.join(tmpDir, 'hooks-src');
         const settingsDir = path.join(tmpDir, 'hooks-dest-realistic');
         fs.mkdirSync(settingsDir, { recursive: true });
@@ -573,33 +464,34 @@ async function runTests() {
         // Non-hook settings preserved
         assert.deepStrictEqual(settings.allowedTools, ['Read', 'Write']);
         assert.strictEqual(settings.customSetting, true);
-      })
-    )
-      passed++;
-    else failed++;
+      });
 
     // --- defaultMergeOptions ---
-    console.log('\ndefaultMergeOptions:');
+  describe('defaultMergeOptions');
 
-    if (
-      test('returns correct defaults', () => {
+
+    await test('returns correct defaults', () => {
         const opts = defaultMergeOptions();
         assert.strictEqual(opts.dryRun, false);
         assert.strictEqual(opts.force, false);
         assert.strictEqual(opts.interactive, true);
         assert.strictEqual(opts.applyAll, null);
-      })
-    )
-      passed++;
-    else failed++;
+      });
   } finally {
     cleanup(tmpDir);
   }
-
-  console.log(`\nPassed: ${passed}`);
-  console.log(`Failed: ${failed}`);
-  console.log(`Total:  ${passed + failed}\n`);
-  if (failed > 0) process.exit(1);
 }
 
-runTests();
+module.exports = { runTests };
+
+if (require.main === module) {
+  const { getResults, resetCounters } = require('../harness');
+  resetCounters();
+  runTests().then(() => {
+    const r = getResults();
+    console.log('\nPassed: ' + r.passed);
+    console.log('Failed: ' + r.failed);
+    console.log('Total:  ' + (r.passed + r.failed));
+    if (r.failed > 0) process.exit(1);
+  });
+}
