@@ -14,7 +14,7 @@ const {
   mergeSkills,
   mergeRules,
   mergeHooks,
-  printMergeReport,
+  isLegacyEccHook,
   combineMergeReports,
   defaultMergeOptions,
 } = require('../../src/lib/merge');
@@ -306,6 +306,77 @@ async function runTests() {
       assert.deepStrictEqual(combined.updated, ['b']);
       assert.deepStrictEqual(combined.skipped, ['d']);
       assert.deepStrictEqual(combined.smartMerged, ['e']);
+    })) passed++; else failed++;
+
+    // --- isLegacyEccHook ---
+    console.log('\nisLegacyEccHook:');
+
+    if (test('detects scripts/hooks/ legacy path', () => {
+      assert.strictEqual(isLegacyEccHook({
+        matcher: '*',
+        hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/check-console-log.js"' }],
+      }), true);
+    })) passed++; else failed++;
+
+    if (test('detects inline node -e legacy hooks', () => {
+      assert.strictEqual(isLegacyEccHook({
+        matcher: 'Bash',
+        hooks: [{ type: 'command', command: 'node -e "const cmd = ...; if (/dev-server/.test(cmd)) ..."' }],
+      }), true);
+    })) passed++; else failed++;
+
+    if (test('does not flag current run-with-flags hooks', () => {
+      assert.strictEqual(isLegacyEccHook({
+        matcher: 'Bash',
+        hooks: [{ type: 'command', command: 'node "/plugin/dist/hooks/run-with-flags.js" "pre:bash:dev-server-block" "dist/hooks/pre-bash-dev-server-block.js" "standard,strict"' }],
+      }), false);
+    })) passed++; else failed++;
+
+    if (test('does not flag user-custom hooks', () => {
+      assert.strictEqual(isLegacyEccHook({
+        matcher: 'Bash',
+        hooks: [{ type: 'command', command: 'node my-custom-hook.js' }],
+      }), false);
+    })) passed++; else failed++;
+
+    if (test('does not flag run-with-flags-shell.sh hooks', () => {
+      assert.strictEqual(isLegacyEccHook({
+        matcher: '*',
+        hooks: [{ type: 'command', command: 'bash "/plugin/scripts/hooks/run-with-flags-shell.sh" "pre:observe" "skills/continuous-learning-v2/hooks/observe.sh"' }],
+      }), false);
+    })) passed++; else failed++;
+
+    // --- mergeHooks legacy cleanup ---
+    console.log('\nmergeHooks legacy cleanup:');
+
+    if (await test('removes legacy hooks during merge', () => {
+      const hooksDir = path.join(tmpDir, 'hooks-src');
+      const settingsDir = path.join(tmpDir, 'hooks-dest-legacy');
+      fs.mkdirSync(settingsDir, { recursive: true });
+
+      // Pre-populate with a legacy hook and a user-custom hook
+      fs.writeFileSync(path.join(settingsDir, 'settings.json'), JSON.stringify({
+        hooks: {
+          Stop: [
+            { matcher: '*', hooks: [{ type: 'command', command: 'node "/ecc/scripts/hooks/check-console-log.js"' }], description: 'Legacy' },
+            { matcher: '*', hooks: [{ type: 'command', command: 'node my-custom-stop-hook.js' }], description: 'User custom' },
+          ],
+        },
+      }));
+
+      const result = mergeHooks(
+        path.join(hooksDir, 'hooks.json'),
+        path.join(settingsDir, 'settings.json'),
+        '/plugin/root',
+      );
+
+      assert.strictEqual(result.legacyRemoved, 1);
+
+      const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf8'));
+      // Legacy hook removed, user hook preserved, new hook added
+      const stopHooks = settings.hooks.Stop;
+      assert.ok(stopHooks.some(h => h.description === 'User custom'), 'User hook preserved');
+      assert.ok(!stopHooks.some(h => h.description === 'Legacy'), 'Legacy hook removed');
     })) passed++; else failed++;
 
     // --- defaultMergeOptions ---

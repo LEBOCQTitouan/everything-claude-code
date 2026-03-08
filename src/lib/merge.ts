@@ -349,14 +349,64 @@ export async function mergeRules(
 }
 
 /**
+ * Check if a hook entry is a legacy ECC hook that should be removed.
+ * Legacy hooks reference `scripts/hooks/` (a path that no longer exists)
+ * or use inline `node -e` one-liners from older ECC versions.
+ */
+export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
+  const hooks = entry.hooks;
+  if (!Array.isArray(hooks)) return false;
+
+  for (const hook of hooks) {
+    const cmd = (hook as Record<string, unknown>).command;
+    if (typeof cmd !== 'string') continue;
+
+    // Legacy path: scripts/hooks/ (was never correct in npm package)
+    if (cmd.includes('scripts/hooks/') && !cmd.includes('run-with-flags-shell.sh')) {
+      return true;
+    }
+
+    // Legacy inline one-liners from old ECC versions
+    if (cmd.includes('node -e') && (
+      cmd.includes('dev-server') ||
+      cmd.includes('tmux') ||
+      cmd.includes('git push') ||
+      cmd.includes('console.log') ||
+      cmd.includes('check-console') ||
+      cmd.includes('pr-created') ||
+      cmd.includes('build-complete')
+    )) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Remove legacy ECC hook entries from a hooks object.
+ * Returns the number of entries removed.
+ */
+function removeLegacyHooks(hooks: Record<string, Array<Record<string, unknown>>>): number {
+  let removed = 0;
+  for (const event of Object.keys(hooks)) {
+    if (!Array.isArray(hooks[event])) continue;
+    const original = hooks[event].length;
+    hooks[event] = hooks[event].filter(entry => !isLegacyEccHook(entry));
+    removed += original - hooks[event].length;
+  }
+  return removed;
+}
+
+/**
  * Merge hooks from source hooks.json into destination settings.json.
- * Preserves all existing keys and deduplicates hooks.
+ * Preserves all existing keys, removes legacy ECC hooks, and deduplicates.
  */
 export function mergeHooks(
   hooksJsonPath: string,
   settingsJsonPath: string,
   pluginRoot: string,
-): { added: number; existing: number } {
+): { added: number; existing: number; legacyRemoved: number } {
   const existing = fs.existsSync(settingsJsonPath)
     ? JSON.parse(fs.readFileSync(settingsJsonPath, 'utf8'))
     : {};
@@ -367,6 +417,9 @@ export function mergeHooks(
 
   const merged = { ...existing };
   merged.hooks = merged.hooks || {};
+
+  // Clean up legacy ECC hooks before merging new ones
+  const legacyRemoved = removeLegacyHooks(merged.hooks);
 
   let added = 0;
   let alreadyPresent = 0;
@@ -390,7 +443,7 @@ export function mergeHooks(
   fs.mkdirSync(path.dirname(settingsJsonPath), { recursive: true });
   fs.writeFileSync(settingsJsonPath, JSON.stringify(merged, null, 2) + '\n');
 
-  return { added, existing: alreadyPresent };
+  return { added, existing: alreadyPresent, legacyRemoved };
 }
 
 /**

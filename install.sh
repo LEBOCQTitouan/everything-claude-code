@@ -3,8 +3,9 @@
 #
 # COMMANDS
 #
-#   install <language> [<language> ...]
+#   install [<language> ...]
 #     Install agents, commands, skills, rules, and hooks globally into ~/.claude/
+#     Auto-detects the project language if none specified.
 #
 #   init [--template <name>] [<language>]
 #     Set up Claude configuration for the current project directory.
@@ -89,6 +90,20 @@ const source = JSON.parse(raw);
 
 const merged = { ...existing };
 merged.hooks = merged.hooks || {};
+
+// Remove legacy ECC hooks (scripts/hooks/ paths and inline one-liners)
+for (const event of Object.keys(merged.hooks)) {
+    if (!Array.isArray(merged.hooks[event])) continue;
+    merged.hooks[event] = merged.hooks[event].filter(entry => {
+        if (!Array.isArray(entry.hooks)) return true;
+        return !entry.hooks.some(h => {
+            const cmd = h.command || '';
+            if (cmd.includes('scripts/hooks/') && !cmd.includes('run-with-flags-shell.sh')) return true;
+            if (cmd.includes('node -e') && /dev-server|tmux|git push|console\.log|check-console|pr-created|build-complete/.test(cmd)) return true;
+            return false;
+        });
+    });
+}
 
 for (const [event, entries] of Object.entries(source.hooks || {})) {
     merged.hooks[event] = merged.hooks[event] || [];
@@ -226,13 +241,22 @@ cmd_install() {
         esac
     done
 
-    [[ ${#langs[@]} -eq 0 ]] && {
-        echo "Usage: $0 install <language> [<language> ...] [--dry-run] [--force]"
-        echo ""
-        echo "Available languages:"
-        list_languages
-        exit 1
-    }
+    # Auto-detect language if none provided
+    if [[ ${#langs[@]} -eq 0 ]]; then
+        local detected
+        detected="$(detect_language "$(pwd)")"
+        if [[ -n "$detected" ]]; then
+            echo "Detected language: $detected"
+            langs+=("$detected")
+        else
+            echo "Usage: $0 install [<language> ...] [--dry-run] [--force]"
+            echo ""
+            echo "No language specified and auto-detection failed."
+            echo "Available languages:"
+            list_languages
+            exit 1
+        fi
+    fi
 
     for lang in "${langs[@]}"; do validate_lang "$lang"; done
 
@@ -415,26 +439,28 @@ cmd_help() {
         install)
             cat <<EOF
 USAGE
-  ecc install <language> [<language> ...] [--dry-run] [--force]
+  ecc install [<language> ...] [--dry-run] [--force]
 
 DESCRIPTION
   Installs agents, commands, skills, rules, and hooks into ~/.claude/.
-  Detects existing setup and merges intelligently:
+  Auto-detects the project language if none specified (from package.json,
+  go.mod, Cargo.toml, etc.). Detects existing setup and merges intelligently:
     - ECC-managed files are updated automatically
     - User-custom files prompt for conflict resolution
     - Smart merge with Claude is available for complex conflicts
 
 ARGUMENTS
-  <language>    One or more language names to install rules for.
+  <language>    One or more language names. Auto-detected if omitted.
 
 OPTIONS
   --dry-run     Report what would change without writing any files
   --force       Overwrite all files (including user-custom ones)
 
 EXAMPLES
+  ecc install                          (auto-detect language)
   ecc install typescript
   ecc install typescript python golang
-  ecc install typescript --dry-run
+  ecc install --dry-run
   ecc install typescript --force
 
 AVAILABLE LANGUAGES

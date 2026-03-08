@@ -176,7 +176,9 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
   // Step 5: Merge hooks
   if (!opts.dryRun) {
     const hooksResult = mergeHooks(path.join(pluginRoot, 'hooks', 'hooks.json'), path.join(claudeDir, 'settings.json'), pluginRoot);
-    console.error(`  Hooks: ${hooksResult.added} added, ${hooksResult.existing} already present`);
+    const hookParts = [`${hooksResult.added} added`, `${hooksResult.existing} already present`];
+    if (hooksResult.legacyRemoved > 0) hookParts.push(`${hooksResult.legacyRemoved} legacy removed`);
+    console.error(`  Hooks: ${hookParts.join(', ')}`);
   } else {
     console.error('  Hooks: (dry-run, skipped)');
   }
