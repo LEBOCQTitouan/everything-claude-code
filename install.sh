@@ -229,15 +229,17 @@ detect_template() {
 cmd_install() {
     local dry_run=""
     local force=""
+    local no_interactive=""
     local langs=()
 
     # Parse flags and languages
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --dry-run) dry_run="--dry-run"; shift ;;
-            --force)   force="--force"; shift ;;
-            -*)        die "Unknown flag: $1" ;;
-            *)         langs+=("$1"); shift ;;
+            --dry-run)        dry_run="--dry-run"; shift ;;
+            --force)          force="--force"; shift ;;
+            --no-interactive) no_interactive="--no-interactive"; shift ;;
+            -*)               die "Unknown flag: $1" ;;
+            *)                langs+=("$1"); shift ;;
         esac
     done
 
@@ -263,7 +265,7 @@ cmd_install() {
     # Try the Node.js orchestrator (detection + merge + manifest)
     local orchestrator="$SCRIPT_DIR/dist/install-orchestrator.js"
     if command -v node &>/dev/null && [[ -f "$orchestrator" ]]; then
-        node "$orchestrator" install "${langs[@]}" $dry_run $force
+        node "$orchestrator" install "${langs[@]}" $dry_run $force $no_interactive
         return $?
     fi
 
@@ -453,8 +455,9 @@ ARGUMENTS
   <language>    One or more language names. Auto-detected if omitted.
 
 OPTIONS
-  --dry-run     Report what would change without writing any files
-  --force       Overwrite all files (including user-custom ones)
+  --dry-run          Report what would change without writing any files
+  --force            Overwrite all files without prompting
+  --no-interactive   Accept all changes without interactive review
 
 EXAMPLES
   ecc install                          (auto-detect language)
@@ -462,6 +465,7 @@ EXAMPLES
   ecc install typescript python golang
   ecc install --dry-run
   ecc install typescript --force
+  ecc install --no-interactive
 
 AVAILABLE LANGUAGES
 $(list_languages)
