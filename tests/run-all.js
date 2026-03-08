@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
- * Run all tests
+ * Single-process test runner.
+ * Imports all test files in one tsx process to eliminate per-file startup overhead.
  *
- * Usage: node tests/run-all.js
+ * Usage: npx tsx tests/run-all.js
  */
 
-const { spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { getResults, resetCounters } = require('./harness');
 
 const testsDir = __dirname;
 const testFiles = [
@@ -33,60 +34,81 @@ const testFiles = [
   'lib/merge.test.js',
   'lib/gitignore.test.js',
   'lib/ansi.test.js',
-  'lib/smart-merge.test.js'
+  'lib/smart-merge.test.js',
 ];
 
-const BOX_W = 58; // inner width between ║ delimiters
-const boxLine = s => `║${s.padEnd(BOX_W)}║`;
+const BOX_W = 58;
+const boxLine = (s) => `\u2551${s.padEnd(BOX_W)}\u2551`;
 
-console.log('╔' + '═'.repeat(BOX_W) + '╗');
-console.log(boxLine('           Everything Claude Code - Test Suite'));
-console.log('╚' + '═'.repeat(BOX_W) + '╝');
-console.log();
+async function main() {
+  console.log('\u2554' + '\u2550'.repeat(BOX_W) + '\u2557');
+  console.log(boxLine('           Everything Claude Code - Test Suite'));
+  console.log('\u255A' + '\u2550'.repeat(BOX_W) + '\u255D');
+  console.log();
 
-let totalPassed = 0;
-let totalFailed = 0;
-let totalTests = 0;
+  let grandPassed = 0;
+  let grandFailed = 0;
 
-for (const testFile of testFiles) {
-  const testPath = path.join(testsDir, testFile);
+  for (const testFile of testFiles) {
+    const testPath = path.join(testsDir, testFile);
 
-  if (!fs.existsSync(testPath)) {
-    console.log(`⚠ Skipping ${testFile} (file not found)`);
-    continue;
+    if (!fs.existsSync(testPath)) {
+      console.log(`\u26A0 Skipping ${testFile} (file not found)`);
+      continue;
+    }
+
+    console.log(`\n\u2501\u2501\u2501 Running ${testFile} \u2501\u2501\u2501`);
+
+    // Snapshot process.env before each file
+    const envSnapshot = { ...process.env };
+
+    resetCounters();
+
+    try {
+      const mod = require(testPath);
+      if (typeof mod.runTests === 'function') {
+        await mod.runTests();
+      }
+    } catch (err) {
+      console.log(`  FATAL: ${testFile} threw: ${err.message}`);
+      grandFailed++;
+    }
+
+    const fileResults = getResults();
+    grandPassed += fileResults.passed;
+    grandFailed += fileResults.failed;
+
+    if (fileResults.passed > 0 || fileResults.failed > 0) {
+      console.log(`\nPassed: ${fileResults.passed}`);
+      console.log(`Failed: ${fileResults.failed}`);
+      console.log(`Total:  ${fileResults.passed + fileResults.failed}`);
+    }
+
+    // Restore process.env
+    for (const key of Object.keys(process.env)) {
+      if (!(key in envSnapshot)) delete process.env[key];
+    }
+    for (const [key, val] of Object.entries(envSnapshot)) {
+      process.env[key] = val;
+    }
+
+    // Clear require cache for this test file to prevent module-level side effects
+    delete require.cache[require.resolve(testPath)];
   }
 
-  console.log(`\n━━━ Running ${testFile} ━━━`);
+  const grandTotal = grandPassed + grandFailed;
 
-  const result = spawnSync('npx', ['tsx', testPath], {
-    encoding: 'utf8',
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
+  console.log('\n\u2554' + '\u2550'.repeat(BOX_W) + '\u2557');
+  console.log(boxLine('                     Final Results'));
+  console.log('\u2560' + '\u2550'.repeat(BOX_W) + '\u2563');
+  console.log(boxLine(`  Total Tests: ${String(grandTotal).padStart(4)}`));
+  console.log(boxLine(`  Passed:      ${String(grandPassed).padStart(4)}  \u2713`));
+  console.log(
+    boxLine(`  Failed:      ${String(grandFailed).padStart(4)}  ${grandFailed > 0 ? '\u2717' : ' '}`)
+  );
+  console.log('\u255A' + '\u2550'.repeat(BOX_W) + '\u255D');
 
-  const stdout = result.stdout || '';
-  const stderr = result.stderr || '';
-
-  // Show both stdout and stderr so hook warnings are visible
-  if (stdout) console.log(stdout);
-  if (stderr) console.log(stderr);
-
-  // Parse results from combined output
-  const combined = stdout + stderr;
-  const passedMatch = combined.match(/Passed:\s*(\d+)/);
-  const failedMatch = combined.match(/Failed:\s*(\d+)/);
-
-  if (passedMatch) totalPassed += parseInt(passedMatch[1], 10);
-  if (failedMatch) totalFailed += parseInt(failedMatch[1], 10);
+  process.exit(grandFailed > 0 ? 1 : 0);
 }
 
-totalTests = totalPassed + totalFailed;
-
-console.log('\n╔' + '═'.repeat(BOX_W) + '╗');
-console.log(boxLine('                     Final Results'));
-console.log('╠' + '═'.repeat(BOX_W) + '╣');
-console.log(boxLine(`  Total Tests: ${String(totalTests).padStart(4)}`));
-console.log(boxLine(`  Passed:      ${String(totalPassed).padStart(4)}  ✓`));
-console.log(boxLine(`  Failed:      ${String(totalFailed).padStart(4)}  ${totalFailed > 0 ? '✗' : ' '}`));
-console.log('╚' + '═'.repeat(BOX_W) + '╝');
-
-process.exit(totalFailed > 0 ? 1 : 0);
+main();
