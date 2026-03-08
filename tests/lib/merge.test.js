@@ -334,8 +334,8 @@ async function runTests() {
 
     if (
       test('combines multiple reports', () => {
-        const r1 = { added: ['a'], updated: ['b'], skipped: [], smartMerged: [], errors: [] };
-        const r2 = { added: ['c'], updated: [], skipped: ['d'], smartMerged: ['e'], errors: [] };
+        const r1 = { added: ['a'], updated: ['b'], unchanged: [], skipped: [], smartMerged: [], errors: [] };
+        const r2 = { added: ['c'], updated: [], unchanged: [], skipped: ['d'], smartMerged: ['e'], errors: [] };
         const combined = combineMergeReports(r1, r2);
         assert.deepStrictEqual(combined.added, ['a', 'c']);
         assert.deepStrictEqual(combined.updated, ['b']);

@@ -16,6 +16,7 @@ export type ConflictApplyAll = ConflictChoice | null;
 export interface MergeReport {
   added: string[];
   updated: string[];
+  unchanged: string[];
   skipped: string[];
   smartMerged: string[];
   errors: string[];
@@ -24,7 +25,7 @@ export interface MergeReport {
 export interface MergeOptions {
   dryRun: boolean;
   force: boolean;
-  interactive: boolean;    // prompt user on conflicts
+  interactive: boolean; // prompt user on conflicts
   applyAll: ConflictApplyAll; // cached choice for "apply to all"
 }
 
@@ -36,7 +37,7 @@ export function defaultMergeOptions(): MergeOptions {
     dryRun: false,
     force: false,
     interactive: true,
-    applyAll: null,
+    applyAll: null
   };
 }
 
@@ -44,18 +45,14 @@ export function defaultMergeOptions(): MergeOptions {
  * Prompt user for conflict resolution choice.
  * Returns the choice and whether to apply to all.
  */
-export async function promptConflict(
-  filename: string,
-  existingPath: string,
-  incomingPath: string,
-): Promise<{ choice: ConflictChoice; applyAll: boolean }> {
+export async function promptConflict(filename: string, existingPath: string, incomingPath: string): Promise<{ choice: ConflictChoice; applyAll: boolean }> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stderr, // stderr so it's visible to user
-    terminal: true,
+    terminal: true
   });
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     console.error(`\nConflict: ${filename} already exists and is not ECC-managed.`);
     console.error('  [o] Overwrite with ECC version');
     console.error('  [k] Keep existing (skip)');
@@ -66,7 +63,7 @@ export async function promptConflict(
     console.error('  [O/K/M] Apply choice to all remaining conflicts');
 
     function ask(): void {
-      rl.question('  Choice: ', (answer) => {
+      rl.question('  Choice: ', answer => {
         const trimmed = answer.trim();
 
         switch (trimmed) {
@@ -112,13 +109,7 @@ export async function promptConflict(
 /**
  * Handle a single file conflict resolution.
  */
-async function resolveConflict(
-  filename: string,
-  srcPath: string,
-  destPath: string,
-  options: MergeOptions,
-  report: MergeReport,
-): Promise<MergeOptions> {
+async function resolveConflict(filename: string, srcPath: string, destPath: string, options: MergeOptions, report: MergeReport): Promise<MergeOptions> {
   // Non-interactive: skip
   if (!options.interactive) {
     report.skipped.push(filename);
@@ -132,9 +123,7 @@ async function resolveConflict(
 
   // Interactive prompt
   const { choice, applyAll } = await promptConflict(filename, destPath, srcPath);
-  const newOptions = applyAll
-    ? { ...options, applyAll: choice }
-    : options;
+  const newOptions = applyAll ? { ...options, applyAll: choice } : options;
 
   return applyChoice(choice, filename, srcPath, destPath, newOptions, report);
 }
@@ -142,14 +131,7 @@ async function resolveConflict(
 /**
  * Apply a conflict resolution choice.
  */
-function applyChoice(
-  choice: ConflictChoice,
-  filename: string,
-  srcPath: string,
-  destPath: string,
-  options: MergeOptions,
-  report: MergeReport,
-): MergeOptions {
+function applyChoice(choice: ConflictChoice, filename: string, srcPath: string, destPath: string, options: MergeOptions, report: MergeReport): MergeOptions {
   switch (choice) {
     case 'overwrite':
       if (!options.dryRun) {
@@ -191,14 +173,8 @@ function applyChoice(
  * Merge a directory of files from source to destination.
  * Uses manifest to determine ownership.
  */
-export async function mergeDirectory(
-  srcDir: string,
-  destDir: string,
-  manifest: EccManifest | null,
-  artifactType: 'agents' | 'commands',
-  options: MergeOptions,
-): Promise<MergeReport> {
-  const report: MergeReport = { added: [], updated: [], skipped: [], smartMerged: [], errors: [] };
+export async function mergeDirectory(srcDir: string, destDir: string, manifest: EccManifest | null, artifactType: 'agents' | 'commands', options: MergeOptions): Promise<MergeReport> {
+  const report: MergeReport = { added: [], updated: [], unchanged: [], skipped: [], smartMerged: [], errors: [] };
 
   if (!fs.existsSync(srcDir)) return report;
 
@@ -238,17 +214,13 @@ export async function mergeDirectory(
  * Merge skills directory (skill-level granularity, not file-level).
  * Each skill is a directory that is merged atomically.
  */
-export async function mergeSkills(
-  srcDir: string,
-  destDir: string,
-  manifest: EccManifest | null,
-  options: MergeOptions,
-): Promise<MergeReport> {
-  const report: MergeReport = { added: [], updated: [], skipped: [], smartMerged: [], errors: [] };
+export async function mergeSkills(srcDir: string, destDir: string, manifest: EccManifest | null, options: MergeOptions): Promise<MergeReport> {
+  const report: MergeReport = { added: [], updated: [], unchanged: [], skipped: [], smartMerged: [], errors: [] };
 
   if (!fs.existsSync(srcDir)) return report;
 
-  const srcSkills = fs.readdirSync(srcDir, { withFileTypes: true })
+  const srcSkills = fs
+    .readdirSync(srcDir, { withFileTypes: true })
     .filter(e => e.isDirectory())
     .map(e => e.name);
 
@@ -280,11 +252,9 @@ export async function mergeSkills(
       currentOptions = await resolveConflict(
         skillName + '/',
         path.join(srcSkillDir, 'SKILL.md'),
-        fs.existsSync(path.join(destSkillDir, 'SKILL.md'))
-          ? path.join(destSkillDir, 'SKILL.md')
-          : destSkillDir,
+        fs.existsSync(path.join(destSkillDir, 'SKILL.md')) ? path.join(destSkillDir, 'SKILL.md') : destSkillDir,
         currentOptions,
-        report,
+        report
       );
 
       // If overwrite was chosen for the skill, copy the whole directory
@@ -302,14 +272,8 @@ export async function mergeSkills(
 /**
  * Merge rules directory, grouped by subdirectory.
  */
-export async function mergeRules(
-  srcDir: string,
-  destDir: string,
-  manifest: EccManifest | null,
-  groups: string[],
-  options: MergeOptions,
-): Promise<MergeReport> {
-  const report: MergeReport = { added: [], updated: [], skipped: [], smartMerged: [], errors: [] };
+export async function mergeRules(srcDir: string, destDir: string, manifest: EccManifest | null, groups: string[], options: MergeOptions): Promise<MergeReport> {
+  const report: MergeReport = { added: [], updated: [], unchanged: [], skipped: [], smartMerged: [], errors: [] };
 
   let currentOptions = { ...options };
 
@@ -367,15 +331,16 @@ export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
     }
 
     // Legacy inline one-liners from old ECC versions
-    if (cmd.includes('node -e') && (
-      cmd.includes('dev-server') ||
-      cmd.includes('tmux') ||
-      cmd.includes('git push') ||
-      cmd.includes('console.log') ||
-      cmd.includes('check-console') ||
-      cmd.includes('pr-created') ||
-      cmd.includes('build-complete')
-    )) {
+    if (
+      cmd.includes('node -e') &&
+      (cmd.includes('dev-server') ||
+        cmd.includes('tmux') ||
+        cmd.includes('git push') ||
+        cmd.includes('console.log') ||
+        cmd.includes('check-console') ||
+        cmd.includes('pr-created') ||
+        cmd.includes('build-complete'))
+    ) {
       return true;
     }
   }
@@ -402,17 +367,10 @@ function removeLegacyHooks(hooks: Record<string, Array<Record<string, unknown>>>
  * Merge hooks from source hooks.json into destination settings.json.
  * Preserves all existing keys, removes legacy ECC hooks, and deduplicates.
  */
-export function mergeHooks(
-  hooksJsonPath: string,
-  settingsJsonPath: string,
-  pluginRoot: string,
-): { added: number; existing: number; legacyRemoved: number } {
-  const existing = fs.existsSync(settingsJsonPath)
-    ? JSON.parse(fs.readFileSync(settingsJsonPath, 'utf8'))
-    : {};
+export function mergeHooks(hooksJsonPath: string, settingsJsonPath: string, pluginRoot: string): { added: number; existing: number; legacyRemoved: number } {
+  const existing = fs.existsSync(settingsJsonPath) ? JSON.parse(fs.readFileSync(settingsJsonPath, 'utf8')) : {};
 
-  const raw = fs.readFileSync(hooksJsonPath, 'utf8')
-    .replaceAll('${CLAUDE_PLUGIN_ROOT}', pluginRoot);
+  const raw = fs.readFileSync(hooksJsonPath, 'utf8').replaceAll('${CLAUDE_PLUGIN_ROOT}', pluginRoot);
   const source = JSON.parse(raw);
 
   const merged = { ...existing };
@@ -428,9 +386,7 @@ export function mergeHooks(
     merged.hooks[event] = merged.hooks[event] || [];
     for (const entry of entries as Array<Record<string, unknown>>) {
       const key = JSON.stringify(entry.hooks);
-      const exists = merged.hooks[event].some(
-        (e: Record<string, unknown>) => JSON.stringify(e.hooks) === key,
-      );
+      const exists = merged.hooks[event].some((e: Record<string, unknown>) => JSON.stringify(e.hooks) === key);
       if (!exists) {
         merged.hooks[event].push(entry);
         added++;
@@ -469,6 +425,7 @@ export function printMergeReport(label: string, report: MergeReport): void {
   const parts: string[] = [];
   if (report.added.length > 0) parts.push(`${report.added.length} added`);
   if (report.updated.length > 0) parts.push(`${report.updated.length} updated`);
+  if (report.unchanged.length > 0) parts.push(`${report.unchanged.length} unchanged`);
   if (report.skipped.length > 0) parts.push(`${report.skipped.length} skipped`);
   if (report.smartMerged.length > 0) parts.push(`${report.smartMerged.length} smart-merged`);
   if (report.errors.length > 0) parts.push(`${report.errors.length} errors`);
@@ -487,8 +444,9 @@ export function combineMergeReports(...reports: MergeReport[]): MergeReport {
   return {
     added: reports.flatMap(r => r.added),
     updated: reports.flatMap(r => r.updated),
+    unchanged: reports.flatMap(r => r.unchanged),
     skipped: reports.flatMap(r => r.skipped),
     smartMerged: reports.flatMap(r => r.smartMerged),
-    errors: reports.flatMap(r => r.errors),
+    errors: reports.flatMap(r => r.errors)
   };
 }

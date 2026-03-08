@@ -197,6 +197,7 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
   console.error('\nSummary:');
   console.error(`  Added:        ${combined.added.length}`);
   console.error(`  Updated:      ${combined.updated.length}`);
+  console.error(`  Unchanged:    ${combined.unchanged.length}`);
   console.error(`  Skipped:      ${combined.skipped.length}`);
   console.error(`  Smart-merged: ${combined.smartMerged.length}`);
   if (combined.errors.length > 0) {
