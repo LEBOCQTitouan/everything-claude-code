@@ -46,6 +46,7 @@ tests/           Test suite (run with tsx, imports from src/ and dist/)
 - `/plan` - Implementation planning
 - `/e2e` - Generate and run E2E tests
 - `/code-review` - Quality review (includes uncle-bob Clean Code audit)
+- `/arch-review` - Architecture quality audit (layering, coupling, dependency direction, DDD compliance)
 - `/build-fix` - Fix build errors
 - `/learn` - Extract patterns from sessions
 - `/skill-create` - Generate skills from git history
