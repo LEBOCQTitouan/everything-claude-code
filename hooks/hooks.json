@@ -155,6 +155,18 @@
         "description": "Warn about console.log statements after edits"
       },
       {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit-write:doc-coverage-reminder\" \"dist/hooks/doc-coverage-reminder.js\" \"standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Remind about undocumented exports after source file edits"
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
