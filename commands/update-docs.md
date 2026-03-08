@@ -92,3 +92,9 @@ Never batch documentation updates for unrelated areas into one commit.
 - **Preserve manual sections**: Only update generated sections; leave hand-written prose intact
 - **Mark generated content**: Use `<!-- AUTO-GENERATED -->` markers around generated sections
 - **Don't create docs unprompted**: Only create new doc files if the command explicitly requests it
+
+## See Also
+
+For comprehensive documentation analysis, generation, validation, and coverage reporting, use `/doc-suite`. It goes deeper than `/update-docs` by analyzing all source code, writing doc comments, scoring quality, and tracking coverage per module.
+
+Individual phases: `/doc-analyze`, `/doc-generate`, `/doc-validate`, `/doc-coverage`.
