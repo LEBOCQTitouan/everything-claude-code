@@ -9,13 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
-
-// ANSI color helpers
-const green  = (s: string) => `\x1b[32m${s}\x1b[0m`;
-const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
-const red    = (s: string) => `\x1b[31m${s}\x1b[0m`;
-const bold   = (s: string) => `\x1b[1m${s}\x1b[0m`;
-const dim    = (s: string) => `\x1b[2m${s}\x1b[0m`;
+import { green, yellow, red, bold, dim } from './lib/ansi';
 
 function checkNodeVersion(): void {
   let minMajor = 18;
@@ -26,7 +20,9 @@ function checkNodeVersion(): void {
     const enginesNode = pkg.engines?.node || '>=18';
     const match = enginesNode.match(/(\d+)/);
     if (match) minMajor = parseInt(match[1], 10);
-  } catch { /* use fallback */ }
+  } catch {
+    /* use fallback */
+  }
 
   const major = parseInt(process.versions.node.split('.')[0], 10);
   if (major < minMajor) {
@@ -52,7 +48,9 @@ function checkDependencies(): void {
       dependencies?: Record<string, string>;
     };
     deps = pkg.dependencies || {};
-  } catch { /* skip dependency check if package.json unreadable */ }
+  } catch {
+    /* skip dependency check if package.json unreadable */
+  }
 
   for (const dep of Object.keys(deps)) {
     try {

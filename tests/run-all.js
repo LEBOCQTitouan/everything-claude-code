@@ -27,7 +27,13 @@ const testFiles = [
   'ci/validate-no-personal-paths.test.js',
   'scripts/claw.test.js',
   'scripts/setup-package-manager.test.js',
-  'scripts/skill-create-output.test.js'
+  'scripts/skill-create-output.test.js',
+  'lib/detect.test.js',
+  'lib/manifest.test.js',
+  'lib/merge.test.js',
+  'lib/gitignore.test.js',
+  'lib/ansi.test.js',
+  'lib/smart-merge.test.js'
 ];
 
 const BOX_W = 58; // inner width between ║ delimiters
