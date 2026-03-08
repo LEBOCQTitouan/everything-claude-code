@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { generateDiff, readFileForMerge, isClaudeAvailable, computeLineDiff, formatSideBySideDiff } = require('../../src/lib/smart-merge');
+const { generateDiff, readFileForMerge, isClaudeAvailable, computeLineDiff, formatSideBySideDiff, contentsDiffer } = require('../../src/lib/smart-merge');
 
 const { stripAnsi } = require('../../src/lib/ansi');
 
@@ -260,6 +260,55 @@ function runTests() {
     if (
       test('returns null for non-existent file', () => {
         assert.strictEqual(readFileForMerge(path.join(tmpDir, 'missing.md')), null);
+      })
+    )
+      passed++;
+    else failed++;
+
+    // --- contentsDiffer ---
+    console.log('\ncontentsDiffer:');
+
+    if (
+      test('returns true when dest does not exist', () => {
+        const src = path.join(tmpDir, 'cd-src.md');
+        fs.writeFileSync(src, 'hello');
+        assert.strictEqual(contentsDiffer(src, path.join(tmpDir, 'nonexistent.md')), true);
+      })
+    )
+      passed++;
+    else failed++;
+
+    if (
+      test('returns false when files are identical', () => {
+        const src = path.join(tmpDir, 'cd-identical-src.md');
+        const dest = path.join(tmpDir, 'cd-identical-dest.md');
+        fs.writeFileSync(src, 'same content');
+        fs.writeFileSync(dest, 'same content');
+        assert.strictEqual(contentsDiffer(src, dest), false);
+      })
+    )
+      passed++;
+    else failed++;
+
+    if (
+      test('returns true when files differ', () => {
+        const src = path.join(tmpDir, 'cd-diff-src.md');
+        const dest = path.join(tmpDir, 'cd-diff-dest.md');
+        fs.writeFileSync(src, 'new content');
+        fs.writeFileSync(dest, 'old content');
+        assert.strictEqual(contentsDiffer(src, dest), true);
+      })
+    )
+      passed++;
+    else failed++;
+
+    if (
+      test('returns true for trailing newline difference', () => {
+        const src = path.join(tmpDir, 'cd-nl-src.md');
+        const dest = path.join(tmpDir, 'cd-nl-dest.md');
+        fs.writeFileSync(src, 'content\n');
+        fs.writeFileSync(dest, 'content');
+        assert.strictEqual(contentsDiffer(src, dest), true);
       })
     )
       passed++;

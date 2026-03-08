@@ -219,11 +219,7 @@ export function formatSideBySideDiff(diffLines: DiffLine[], filename: string): s
  * Format diff as colored unified output (fallback for narrow terminals).
  */
 function formatUnifiedDiff(diffLines: DiffLine[], filename: string): string {
-  const lines: string[] = [
-    bold(`--- existing/${filename}`),
-    bold(`+++ incoming/${filename}`),
-    dim('\u2500'.repeat(40)),
-  ];
+  const lines: string[] = [bold(`--- existing/${filename}`), bold(`+++ incoming/${filename}`), dim('\u2500'.repeat(40))];
 
   for (const dl of diffLines) {
     switch (dl.type) {
@@ -298,16 +294,12 @@ export function isClaudeAvailable(): boolean {
 /**
  * Merge two file versions using Claude CLI.
  */
-export function smartMerge(
-  existingContent: string,
-  incomingContent: string,
-  filename: string,
-): SmartMergeResult {
+export function smartMerge(existingContent: string, incomingContent: string, filename: string): SmartMergeResult {
   if (!isClaudeAvailable()) {
     return {
       success: false,
       merged: null,
-      error: 'Claude CLI not available. Install it with: npm install -g @anthropic-ai/claude-code',
+      error: 'Claude CLI not available. Install it with: npm install -g @anthropic-ai/claude-code'
     };
   }
 
@@ -317,14 +309,14 @@ export function smartMerge(
     const result = spawnSync('claude', ['-p', prompt, '--no-input'], {
       stdio: ['pipe', 'pipe', 'pipe'],
       encoding: 'utf8',
-      timeout: 60_000,
+      timeout: 60_000
     });
 
     if (result.status !== 0) {
       return {
         success: false,
         merged: null,
-        error: `Claude exited with status ${result.status}: ${result.stderr || ''}`.trim(),
+        error: `Claude exited with status ${result.status}: ${result.stderr || ''}`.trim()
       };
     }
 
@@ -338,8 +330,24 @@ export function smartMerge(
     return {
       success: false,
       merged: null,
-      error: `Failed to invoke Claude: ${(err as Error).message}`,
+      error: `Failed to invoke Claude: ${(err as Error).message}`
     };
+  }
+}
+
+/**
+ * Check if two files have different content.
+ * Returns true if dest doesn't exist (new file = "differs").
+ * Uses Buffer.compare for byte-level accuracy.
+ */
+export function contentsDiffer(srcPath: string, destPath: string): boolean {
+  try {
+    const destBuf = fs.readFileSync(destPath);
+    const srcBuf = fs.readFileSync(srcPath);
+    return Buffer.compare(srcBuf, destBuf) !== 0;
+  } catch {
+    // dest doesn't exist or read error → treat as different
+    return true;
   }
 }
 
