@@ -212,15 +212,40 @@ detect_template() {
 # COMMAND: install
 # ---------------------------------------------------------------------------
 cmd_install() {
-    [[ $# -eq 0 ]] && {
-        echo "Usage: $0 install <language> [<language> ...]"
+    local dry_run=""
+    local force=""
+    local langs=()
+
+    # Parse flags and languages
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dry-run) dry_run="--dry-run"; shift ;;
+            --force)   force="--force"; shift ;;
+            -*)        die "Unknown flag: $1" ;;
+            *)         langs+=("$1"); shift ;;
+        esac
+    done
+
+    [[ ${#langs[@]} -eq 0 ]] && {
+        echo "Usage: $0 install <language> [<language> ...] [--dry-run] [--force]"
         echo ""
         echo "Available languages:"
         list_languages
         exit 1
     }
 
-    for lang in "$@"; do validate_lang "$lang"; done
+    for lang in "${langs[@]}"; do validate_lang "$lang"; done
+
+    # Try the Node.js orchestrator (detection + merge + manifest)
+    local orchestrator="$SCRIPT_DIR/dist/install-orchestrator.js"
+    if command -v node &>/dev/null && [[ -f "$orchestrator" ]]; then
+        node "$orchestrator" install "${langs[@]}" $dry_run $force
+        return $?
+    fi
+
+    # Fallback: legacy cp-based install (no detection/merge/manifest)
+    echo "Warning: Node.js orchestrator not available — using legacy install (overwrites all)." >&2
+    echo ""
 
     echo "Installing agents   -> $CLAUDE_DIR/agents/"
     mkdir -p "$CLAUDE_DIR/agents"
@@ -235,15 +260,11 @@ cmd_install() {
     cp -r "$SKILLS_DIR"/. "$CLAUDE_DIR/skills/"
 
     RULES_DEST="$CLAUDE_DIR/rules"
-    if [[ -d "$RULES_DEST" ]] && [[ "$(ls -A "$RULES_DEST" 2>/dev/null)" ]]; then
-        echo "Note: $RULES_DEST/ already exists — files will be overwritten."
-    fi
-
     echo "Installing rules    -> $RULES_DEST/common/"
     mkdir -p "$RULES_DEST/common"
     cp -r "$RULES_DIR/common/." "$RULES_DEST/common/"
 
-    for lang in "$@"; do
+    for lang in "${langs[@]}"; do
         echo "Installing rules    -> $RULES_DEST/$lang/"
         mkdir -p "$RULES_DEST/$lang"
         cp -r "$RULES_DIR/$lang/." "$RULES_DEST/$lang/"
@@ -254,11 +275,6 @@ cmd_install() {
 
     echo ""
     echo "Done. Installed to $CLAUDE_DIR/"
-    echo "  agents:   $CLAUDE_DIR/agents/"
-    echo "  commands: $CLAUDE_DIR/commands/"
-    echo "  skills:   $CLAUDE_DIR/skills/"
-    echo "  rules:    $CLAUDE_DIR/rules/"
-    echo "  hooks:    $CLAUDE_DIR/settings.json"
 }
 
 # ---------------------------------------------------------------------------
@@ -267,6 +283,9 @@ cmd_install() {
 cmd_init() {
     local template=""
     local lang=""
+    local no_gitignore=""
+    local dry_run=""
+    local force=""
     local project_dir
     project_dir="$(pwd)"
 
@@ -278,10 +297,16 @@ cmd_init() {
                 template="$2"; shift 2 ;;
             --template=*)
                 template="${1#--template=}"; shift ;;
+            --no-gitignore)
+                no_gitignore="--no-gitignore"; shift ;;
+            --dry-run)
+                dry_run="--dry-run"; shift ;;
+            --force)
+                force="--force"; shift ;;
             -*)
                 die "Unknown flag: $1" ;;
             *)
-                [[ -z "$lang" ]] || die "Too many arguments. Usage: $0 init [--template <name>] [<language>]"
+                [[ -z "$lang" ]] || die "Too many arguments. Usage: $0 init [--template <name>] [<language>] [--no-gitignore] [--dry-run] [--force]"
                 lang="$1"; shift ;;
         esac
     done
@@ -342,30 +367,37 @@ cmd_init() {
         echo "Next: run 'ecc install $lang' once to set up global rules/agents/skills."
     fi
 
-    # --- .gitignore prompt ---
-    local gitignore_file="$project_dir/.gitignore"
-    local gitignore_entry=".claude/settings.local.json"
-    local already_ignored=false
-
-    if [[ -f "$gitignore_file" ]] && grep -qF "$gitignore_entry" "$gitignore_file" 2>/dev/null; then
-        already_ignored=true
-    fi
-
-    if [[ "$already_ignored" == false ]]; then
+    # --- .gitignore management via orchestrator ---
+    local orchestrator="$SCRIPT_DIR/dist/install-orchestrator.js"
+    if [[ -z "$no_gitignore" ]] && command -v node &>/dev/null && [[ -f "$orchestrator" ]]; then
         echo ""
-        printf "Add '%s' to .gitignore? [Y/n] " "$gitignore_entry"
-        read -r answer </dev/tty
-        case "${answer:-Y}" in
-            [Yy]*)
-                echo "" >> "$gitignore_file"
-                echo "# Claude Code local settings (machine-specific, never commit)" >> "$gitignore_file"
-                echo "$gitignore_entry" >> "$gitignore_file"
-                echo "  .gitignore             — $gitignore_entry added"
-                ;;
-            *)
-                echo "  Skipped .gitignore update."
-                ;;
-        esac
+        node "$orchestrator" init $no_gitignore $dry_run $force
+    elif [[ -z "$no_gitignore" ]]; then
+        # Fallback: legacy single-entry gitignore
+        local gitignore_file="$project_dir/.gitignore"
+        local gitignore_entry=".claude/settings.local.json"
+        local already_ignored=false
+
+        if [[ -f "$gitignore_file" ]] && grep -qF "$gitignore_entry" "$gitignore_file" 2>/dev/null; then
+            already_ignored=true
+        fi
+
+        if [[ "$already_ignored" == false ]]; then
+            echo ""
+            printf "Add '%s' to .gitignore? [Y/n] " "$gitignore_entry"
+            read -r answer </dev/tty
+            case "${answer:-Y}" in
+                [Yy]*)
+                    echo "" >> "$gitignore_file"
+                    echo "# Claude Code local settings (machine-specific, never commit)" >> "$gitignore_file"
+                    echo "$gitignore_entry" >> "$gitignore_file"
+                    echo "  .gitignore             — $gitignore_entry added"
+                    ;;
+                *)
+                    echo "  Skipped .gitignore update."
+                    ;;
+            esac
+        fi
     fi
 
     maybe_git_commit "$project_dir" \
@@ -383,41 +415,49 @@ cmd_help() {
         install)
             cat <<EOF
 USAGE
-  ecc install <language> [<language> ...]
+  ecc install <language> [<language> ...] [--dry-run] [--force]
 
 DESCRIPTION
   Installs agents, commands, skills, rules, and hooks into ~/.claude/.
-  Always installs common (language-agnostic) rules alongside each language.
+  Detects existing setup and merges intelligently:
+    - ECC-managed files are updated automatically
+    - User-custom files prompt for conflict resolution
+    - Smart merge with Claude is available for complex conflicts
 
 ARGUMENTS
   <language>    One or more language names to install rules for.
 
 OPTIONS
-  (none)
+  --dry-run     Report what would change without writing any files
+  --force       Overwrite all files (including user-custom ones)
 
 EXAMPLES
   ecc install typescript
   ecc install typescript python golang
+  ecc install typescript --dry-run
+  ecc install typescript --force
 
 AVAILABLE LANGUAGES
 $(list_languages)
 
 WHAT GETS INSTALLED
-  ~/.claude/agents/       — subagents (architect, uncle-bob, planner, ...)
-  ~/.claude/commands/     — slash commands (/tdd, /plan, /code-review, ...)
-  ~/.claude/skills/       — domain knowledge (tdd-workflow, security-review, ...)
-  ~/.claude/rules/        — always-follow guidelines (common + <language>)
-  ~/.claude/settings.json — hooks merged non-destructively
+  ~/.claude/agents/           — subagents (architect, uncle-bob, planner, ...)
+  ~/.claude/commands/         — slash commands (/tdd, /plan, /code-review, ...)
+  ~/.claude/skills/           — domain knowledge (tdd-workflow, security-review, ...)
+  ~/.claude/rules/            — always-follow guidelines (common + <language>)
+  ~/.claude/settings.json     — hooks merged non-destructively
+  ~/.claude/.ecc-manifest.json — tracks installed artifacts for future merges
 EOF
             ;;
         init)
             cat <<EOF
 USAGE
-  ecc init [--template <name>] [<language>]
+  ecc init [--template <name>] [<language>] [--no-gitignore] [--dry-run] [--force]
 
 DESCRIPTION
   Sets up Claude configuration for the current project directory.
   Auto-detects the language and template from project files if not specified.
+  Manages .gitignore to exclude ECC-generated runtime files.
 
 ARGUMENTS
   <language>          Language for rule hints in the next-steps message.
@@ -425,11 +465,15 @@ ARGUMENTS
 
 OPTIONS
   --template <name>   CLAUDE.md template to use. Auto-detected if omitted.
+  --no-gitignore      Skip .gitignore management
+  --dry-run           Report what would change without writing any files
+  --force             Overwrite all files (including user-custom ones)
 
 EXAMPLES
   ecc init
   ecc init golang
   ecc init --template go-microservice golang
+  ecc init --no-gitignore
 
 AVAILABLE TEMPLATES
 $(list_templates)
@@ -438,9 +482,11 @@ AUTO-DETECTION
   Language   package.json → typescript, go.mod → golang, Cargo.toml → rust, ...
   Template   next in package.json → saas-nextjs, manage.py → django-api, ...
 
-WHAT GETS CREATED
-  CLAUDE.md               — project instructions, pre-filled from template
-  .claude/settings.json   — project-local hooks merged non-destructively
+WHAT GETS CREATED/UPDATED
+  CLAUDE.md                   — project instructions, pre-filled from template
+  .claude/settings.json       — project-local hooks merged non-destructively
+  .gitignore                  — ECC-generated files excluded from git
+  .claude/.ecc-manifest.json  — tracks installed artifacts
 EOF
             ;;
         version)
