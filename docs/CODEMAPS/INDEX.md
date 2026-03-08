@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-08 | Files scanned: 47 src + 23 tests | Token estimate: ~300 -->
+<!-- Generated: 2026-03-08 | Files scanned: 48 src + 27 tests | Token estimate: ~350 -->
 
 # Codemap Index — Everything Claude Code (ECC)
 
@@ -13,9 +13,9 @@
 
 ## Quick Stats
 
-- **Source:** 47 TypeScript files in `src/` (~5,000 LOC)
-- **Tests:** 23 test files, 1089 assertions passing
-- **Content:** 18 agents, 40+ commands, 71 skills, 5 rule groups
+- **Source:** 48 TypeScript files in `src/` (~7,000 LOC)
+- **Tests:** 27 test files, 1238 assertions passing (single-process runner)
+- **Content:** 24 agents, 46 commands, 69 skills, 5 rule groups
 - **Runtime dep:** 1 (`omelette`)
 - **Build:** `tsc` → CommonJS in `dist/`
 
@@ -26,4 +26,15 @@ bin/ecc.js           → CLI entry (shell completion)
 install.sh           → Bash orchestrator (install/init)
 src/postinstall.ts   → npm postinstall health checks
 src/install-orchestrator.ts → Node.js install pipeline
+```
+
+## Agent Ecosystem
+
+```
+Orchestrators:  doc-orchestrator, arch-reviewer, loop-operator
+Reviewers:      code-reviewer, python-reviewer, go-reviewer, security-reviewer, database-reviewer, uncle-bob
+Architects:     architect, architect-module
+Builders:       build-error-resolver, go-build-resolver, tdd-guide, e2e-runner
+Doc system:     doc-analyzer, doc-generator, doc-validator, doc-reporter
+Utilities:      planner, refactor-cleaner, harness-optimizer, doc-updater, chief-of-staff
 ```

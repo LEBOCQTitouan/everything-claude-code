@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-08 | Files scanned: 47 | Token estimate: ~800 -->
+<!-- Generated: 2026-03-08 | Files scanned: 48 | Token estimate: ~900 -->
 
 # Backend — Core Library & Hooks
 
@@ -48,25 +48,30 @@ manifest.ts (155 LOC)
   └─ readManifest → createManifest / updateManifest → writeManifest
   └─ isEccManaged, isEccManagedRule, diffFileList
 
-merge.ts (494 LOC)
+merge.ts (647 LOC)
   └─ mergeDirectory (agents/commands per-file)
   └─ mergeSkills (per-skill-directory)
   └─ mergeRules (grouped by language)
-  └─ mergeHooks (dedup + legacy cleanup)
-  └─ promptConflict → overwrite/keep/diff/smart-merge
+  └─ Interactive diff review: promptFileReview → reviewFile → applyReviewChoice
+  └─ Per-category applyAll scoping (A/K/M resets between agents/commands/skills)
+  └─ Pre-scan with contentsDiffer → skip unchanged files
+  └─ printCategoryHeader: "--- Agents (3 changed out of 19) ---"
+  └─ ReviewChoice: 'accept' | 'keep' | 'smart-merge'
 
-smart-merge.ts (355 LOC)
+smart-merge.ts (363 LOC)
   └─ computeLineDiff (LCS algorithm, O(n*m) guard at 1M)
   └─ formatSideBySideDiff (colored, paired blocks)
   └─ generateDiff (public API, unchanged signature)
   └─ smartMerge → Claude CLI invocation
+  └─ contentsDiffer (Buffer.compare byte-level)
+  └─ readFileForMerge (null for missing files)
 
 gitignore.ts (153 LOC)
   └─ ensureGitignoreEntries (append-only)
   └─ findTrackedEccFiles → gitUntrack
 ```
 
-## Hook Implementations (`src/hooks/`, 28 files)
+## Hook Implementations (`src/hooks/`, 23 files)
 
 ```
 Lifecycle:
@@ -88,12 +93,14 @@ Post-Tool:
   post-edit-format.ts → auto-format after edits
   post-edit-typecheck.ts → type-check TS edits
   post-edit-console-warn.ts → console.log detection
+  doc-coverage-reminder.ts → undocumented export nudge
+  quality-gate.ts → quality assurance checks
 
 Evaluation:
   evaluate-session.ts → session quality & learning
   cost-tracker.ts → API cost tracking per model
-  quality-gate.ts → quality assurance checks
   stop-uncommitted-reminder.ts → remind to commit
+  check-console-log.ts → console.log scan at session end
 
 Execution:
   run-with-flags.ts → profile-gated hook execution
@@ -109,4 +116,16 @@ validate-hooks.ts → hooks.json schema
 validate-skills.ts → skill directory structure
 validate-rules.ts → rules structure
 validate-no-personal-paths.ts → prevent /Users/xxx leaks
+```
+
+## Doc System Agents (5 agents, parallel pipeline)
+
+```
+doc-orchestrator (sonnet) → coordinates pipeline
+  ├─ Phase 1: doc-analyzer (sonnet) → structure, API surface, domain concepts
+  ├─ Phase 2 (parallel per module):
+  │    ├─ doc-generator (haiku) → doc comments, summaries, glossary, changelog
+  │    ├─ doc-validator (sonnet) → accuracy, quality scoring, contradictions
+  │    └─ doc-reporter (haiku) → coverage %, diffs, regressions
+  └─ Phase 3: index assembly + cross-references
 ```

@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-08 | Files scanned: 47 | Token estimate: ~400 -->
+<!-- Generated: 2026-03-08 | Files scanned: 48 | Token estimate: ~500 -->
 
 # Data Structures & Storage
 
@@ -24,6 +24,22 @@ interface EccManifest {
     hookDescriptions: string[];
   };
 }
+```
+
+### Merge Report
+
+```typescript
+interface MergeReport {
+  added: string[];
+  updated: string[];
+  skipped: string[];
+  unchanged: string[];       // files identical to source
+  smartMerged: string[];
+  errors: string[];
+}
+
+type ReviewChoice = 'accept' | 'keep' | 'smart-merge';
+type ReviewApplyAll = ReviewChoice | null;
 ```
 
 ### Session Metadata
@@ -52,18 +68,6 @@ interface DetectionResult {
   hooks: Array<{ event: string; description: string }>;
   claudeMdSections: string[];
   hasSettingsJson: boolean;
-}
-```
-
-### Merge Report
-
-```typescript
-interface MergeReport {
-  added: string[];
-  updated: string[];
-  skipped: string[];
-  smartMerged: string[];
-  errors: string[];
 }
 ```
 
