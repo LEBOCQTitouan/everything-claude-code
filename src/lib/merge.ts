@@ -1,17 +1,24 @@
 /**
  * Merge strategies for ECC installation.
- * Handles directory merges, settings merges, and conflict resolution.
+ * Handles directory merges, settings merges, and interactive diff review.
  */
 
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import { isEccManaged, isEccManagedRule } from './manifest';
-import { generateDiff, smartMerge, isClaudeAvailable } from './smart-merge';
+import { generateDiff, smartMerge, isClaudeAvailable, contentsDiffer } from './smart-merge';
+import { bold, dim, green, yellow, cyan } from './ansi';
 import type { EccManifest } from './manifest';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export type ConflictChoice = 'overwrite' | 'keep' | 'diff' | 'smart-merge';
 export type ConflictApplyAll = ConflictChoice | null;
+
+export type ReviewChoice = 'accept' | 'keep' | 'smart-merge';
+export type ReviewApplyAll = ReviewChoice | null;
 
 export interface MergeReport {
   added: string[];
@@ -25,8 +32,8 @@ export interface MergeReport {
 export interface MergeOptions {
   dryRun: boolean;
   force: boolean;
-  interactive: boolean; // prompt user on conflicts
-  applyAll: ConflictApplyAll; // cached choice for "apply to all"
+  interactive: boolean;
+  applyAll: ReviewApplyAll;
 }
 
 /**
@@ -41,14 +48,414 @@ export function defaultMergeOptions(): MergeOptions {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Empty report helper
+// ---------------------------------------------------------------------------
+
+function emptyReport(): MergeReport {
+  return { added: [], updated: [], unchanged: [], skipped: [], smartMerged: [], errors: [] };
+}
+
+// ---------------------------------------------------------------------------
+// Interactive file review prompt
+// ---------------------------------------------------------------------------
+
 /**
+ * Count lines added/removed between two strings for a compact summary.
+ */
+function diffStats(existingContent: string, incomingContent: string): { added: number; removed: number } {
+  const existingLines = existingContent.split('\n');
+  const incomingLines = incomingContent.split('\n');
+  const { computeLineDiff } = require('./smart-merge');
+  const diffLines = computeLineDiff(existingLines, incomingLines);
+  let added = 0;
+  let removed = 0;
+  for (const line of diffLines) {
+    if (line.type === 'added') added++;
+    if (line.type === 'removed') removed++;
+  }
+  return { added, removed };
+}
+
+/**
+ * Prompt user for interactive file review.
+ * Shows diff for existing files or preview for new files, then asks for action.
+ */
+export async function promptFileReview(
+  filename: string,
+  srcPath: string,
+  destPath: string | null,
+  context: {
+    isNew: boolean;
+    progress: { current: number; total: number };
+  }
+): Promise<{ choice: ReviewChoice; applyAll: boolean }> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stderr,
+    terminal: true
+  });
+
+  return new Promise(resolve => {
+    const { current, total } = context.progress;
+    const prefix = dim(`[${current}/${total}]`);
+
+    if (context.isNew) {
+      // New file: show preview
+      const preview = fs.readFileSync(srcPath, 'utf8').split('\n').slice(0, 10);
+      console.error(`\n${prefix} ${green('NEW')}: ${bold(filename)}`);
+      console.error(dim('  Preview:'));
+      for (const line of preview) {
+        console.error(dim(`    ${line}`));
+      }
+      if (fs.readFileSync(srcPath, 'utf8').split('\n').length > 10) {
+        console.error(dim('    ...'));
+      }
+      console.error('');
+      console.error(`  ${green('[a]')} Accept  ${dim('[s]')} Skip  ${dim('[p]')} Preview full  ${cyan('[A/S]')} All remaining`);
+    } else {
+      // Changed file: show diff summary + diff
+      const existing = fs.readFileSync(destPath!, 'utf8');
+      const incoming = fs.readFileSync(srcPath, 'utf8');
+      const stats = diffStats(existing, incoming);
+      const statsStr = `${green(`+${stats.added}`)} ${dim('/')} ${yellow(`-${stats.removed}`)} lines`;
+
+      console.error(`\n${prefix} ${yellow('CHANGED')}: ${bold(filename)} (${statsStr})`);
+      console.error(generateDiff(existing, incoming, filename));
+      console.error('');
+
+      const mergeHint = isClaudeAvailable() ? `  ${dim('[m]')} Smart merge` : '';
+      const mergeAllHint = isClaudeAvailable() ? '/M' : '';
+      console.error(`  ${green('[a]')} Accept  ${dim('[k]')} Keep existing${mergeHint}  ${cyan(`[A/K${mergeAllHint}]`)} All remaining`);
+    }
+
+    function ask(): void {
+      rl.question('  Choice [a]: ', answer => {
+        const trimmed = answer.trim();
+
+        switch (trimmed) {
+          case 'a':
+          case '':
+            rl.close();
+            return resolve({ choice: 'accept', applyAll: false });
+          case 'A':
+            rl.close();
+            return resolve({ choice: 'accept', applyAll: true });
+          case 's':
+          case 'k':
+            rl.close();
+            return resolve({ choice: 'keep', applyAll: false });
+          case 'S':
+          case 'K':
+            rl.close();
+            return resolve({ choice: 'keep', applyAll: true });
+          case 'p':
+            if (context.isNew) {
+              console.error('\n' + fs.readFileSync(srcPath, 'utf8') + '\n');
+            } else {
+              const existing = fs.readFileSync(destPath!, 'utf8');
+              const incoming = fs.readFileSync(srcPath, 'utf8');
+              console.error('\n' + generateDiff(existing, incoming, filename) + '\n');
+            }
+            return ask();
+          case 'm':
+          case 'M':
+            if (!context.isNew && isClaudeAvailable()) {
+              rl.close();
+              return resolve({ choice: 'smart-merge', applyAll: trimmed === 'M' });
+            }
+            if (context.isNew) {
+              console.error('  Smart merge not available for new files.');
+            } else {
+              console.error('  Claude CLI not available.');
+            }
+            return ask();
+          default:
+            if (context.isNew) {
+              console.error('  Invalid choice. Try a/s/p or A/S.');
+            } else {
+              console.error('  Invalid choice. Try a/k/m/p or A/K/M.');
+            }
+            return ask();
+        }
+      });
+    }
+
+    ask();
+  });
+}
+
+/**
+ * Apply a review choice to a file.
+ * Returns updated options (with applyAll set if user chose "all").
+ */
+function applyReviewChoice(choice: ReviewChoice, filename: string, srcPath: string, destPath: string, options: MergeOptions, report: MergeReport, isNew: boolean): MergeOptions {
+  switch (choice) {
+    case 'accept':
+      if (!options.dryRun) {
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.copyFileSync(srcPath, destPath);
+      }
+      if (isNew) {
+        report.added.push(filename);
+      } else {
+        report.updated.push(filename);
+      }
+      break;
+
+    case 'keep':
+      report.skipped.push(filename);
+      break;
+
+    case 'smart-merge': {
+      const existing = fs.readFileSync(destPath, 'utf8');
+      const incoming = fs.readFileSync(srcPath, 'utf8');
+      const result = smartMerge(existing, incoming, filename);
+
+      if (result.success && result.merged) {
+        if (!options.dryRun) {
+          fs.writeFileSync(destPath, result.merged, 'utf8');
+        }
+        report.smartMerged.push(filename);
+      } else {
+        console.error(`  Smart merge failed: ${result.error}. Keeping existing.`);
+        report.skipped.push(filename);
+      }
+      break;
+    }
+  }
+  return options;
+}
+
+/**
+ * Review a single file interactively (or apply cached/force/non-interactive logic).
+ * Handles the decision tree: force → non-interactive → unchanged → applyAll → prompt.
+ */
+async function reviewFile(
+  filename: string,
+  srcPath: string,
+  destPath: string,
+  isNew: boolean,
+  options: MergeOptions,
+  report: MergeReport,
+  progress: { current: number; total: number }
+): Promise<MergeOptions> {
+  // Force mode: always accept
+  if (options.force) {
+    return applyReviewChoice('accept', filename, srcPath, destPath, options, report, isNew);
+  }
+
+  // Apply-all cached choice (explicit user decision takes priority)
+  if (options.applyAll !== null) {
+    return applyReviewChoice(options.applyAll, filename, srcPath, destPath, options, report, isNew);
+  }
+
+  // Non-interactive or dry-run: accept all (no prompts)
+  if (!options.interactive || options.dryRun) {
+    return applyReviewChoice('accept', filename, srcPath, destPath, options, report, isNew);
+  }
+
+  // Interactive prompt
+  const { choice, applyAll } = await promptFileReview(filename, srcPath, isNew ? null : destPath, {
+    isNew,
+    progress
+  });
+  const newOptions = applyAll ? { ...options, applyAll: choice } : options;
+
+  return applyReviewChoice(choice, filename, srcPath, destPath, newOptions, report, isNew);
+}
+
+// ---------------------------------------------------------------------------
+// Category header
+// ---------------------------------------------------------------------------
+
+/**
+ * Print a category header showing how many files need review.
+ */
+function printCategoryHeader(label: string, totalFiles: number, changedFiles: number): void {
+  if (changedFiles === 0) {
+    console.error(`\n${dim(`--- ${label} (${totalFiles} files, all unchanged) ---`)}`);
+  } else {
+    console.error(`\n${bold(`--- ${label} (${changedFiles} changed out of ${totalFiles}) ---`)}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Merge functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Merge a directory of files from source to destination.
+ * In interactive mode, shows diffs and prompts for each changed file.
+ */
+export async function mergeDirectory(srcDir: string, destDir: string, _manifest: EccManifest | null, artifactType: 'agents' | 'commands', options: MergeOptions): Promise<MergeReport> {
+  const report = emptyReport();
+
+  if (!fs.existsSync(srcDir)) return report;
+
+  const srcFiles = fs.readdirSync(srcDir).filter(f => f.endsWith('.md'));
+  if (!options.dryRun) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+
+  // Pre-scan: identify which files need review (new or changed)
+  const filesToReview: Array<{ filename: string; srcPath: string; destPath: string; isNew: boolean }> = [];
+  for (const filename of srcFiles) {
+    const srcPath = path.join(srcDir, filename);
+    const destPath = path.join(destDir, filename);
+
+    if (!fs.existsSync(destPath)) {
+      filesToReview.push({ filename, srcPath, destPath, isNew: true });
+    } else if (contentsDiffer(srcPath, destPath)) {
+      filesToReview.push({ filename, srcPath, destPath, isNew: false });
+    } else {
+      report.unchanged.push(filename);
+    }
+  }
+
+  // Show category header in interactive mode
+  if (options.interactive && !options.dryRun) {
+    const label = artifactType.charAt(0).toUpperCase() + artifactType.slice(1);
+    printCategoryHeader(label, srcFiles.length, filesToReview.length);
+  }
+
+  // Review each changed file
+  let currentOptions = { ...options };
+  for (let i = 0; i < filesToReview.length; i++) {
+    const { filename, srcPath, destPath, isNew } = filesToReview[i];
+    currentOptions = await reviewFile(filename, srcPath, destPath, isNew, currentOptions, report, { current: i + 1, total: filesToReview.length });
+  }
+
+  return report;
+}
+
+/**
+ * Merge skills directory (skill-level granularity, not file-level).
+ * Each skill is a directory that is merged atomically.
+ */
+export async function mergeSkills(srcDir: string, destDir: string, _manifest: EccManifest | null, options: MergeOptions): Promise<MergeReport> {
+  const report = emptyReport();
+
+  if (!fs.existsSync(srcDir)) return report;
+
+  const srcSkills = fs
+    .readdirSync(srcDir, { withFileTypes: true })
+    .filter(e => e.isDirectory())
+    .map(e => e.name);
+
+  if (!options.dryRun) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+
+  // Pre-scan: identify which skills need review
+  const skillsToReview: Array<{ skillName: string; srcSkillDir: string; destSkillDir: string; isNew: boolean; srcSkillMd: string; destSkillMd: string }> = [];
+  for (const skillName of srcSkills) {
+    const srcSkillDir = path.join(srcDir, skillName);
+    const destSkillDir = path.join(destDir, skillName);
+    const srcSkillMd = path.join(srcSkillDir, 'SKILL.md');
+    const destSkillMd = path.join(destSkillDir, 'SKILL.md');
+
+    if (!fs.existsSync(destSkillDir)) {
+      skillsToReview.push({ skillName, srcSkillDir, destSkillDir, isNew: true, srcSkillMd, destSkillMd });
+    } else if (fs.existsSync(srcSkillMd) && contentsDiffer(srcSkillMd, destSkillMd)) {
+      skillsToReview.push({ skillName, srcSkillDir, destSkillDir, isNew: false, srcSkillMd, destSkillMd });
+    } else {
+      report.unchanged.push(skillName);
+    }
+  }
+
+  // Show category header in interactive mode
+  if (options.interactive && !options.dryRun) {
+    printCategoryHeader('Skills', srcSkills.length, skillsToReview.length);
+  }
+
+  let currentOptions = { ...options };
+  for (let i = 0; i < skillsToReview.length; i++) {
+    const { skillName, srcSkillDir, destSkillDir, isNew, srcSkillMd, destSkillMd } = skillsToReview[i];
+
+    // Use SKILL.md for diff display, but copy entire directory on accept
+    const prevUpdated = report.updated.length;
+    const prevAdded = report.added.length;
+    const prevSmartMerged = report.smartMerged.length;
+
+    currentOptions = await reviewFile(skillName, srcSkillMd, isNew ? path.join(destSkillDir, 'SKILL.md') : destSkillMd, isNew, currentOptions, report, {
+      current: i + 1,
+      total: skillsToReview.length
+    });
+
+    // If the file was accepted (added/updated/smart-merged), copy the whole skill directory
+    const wasAccepted = report.updated.length > prevUpdated || report.added.length > prevAdded || report.smartMerged.length > prevSmartMerged;
+
+    if (wasAccepted && !currentOptions.dryRun) {
+      copyDirRecursive(srcSkillDir, destSkillDir);
+    }
+  }
+
+  return report;
+}
+
+/**
+ * Merge rules directory, grouped by subdirectory.
+ */
+export async function mergeRules(srcDir: string, destDir: string, _manifest: EccManifest | null, groups: string[], options: MergeOptions): Promise<MergeReport> {
+  const report = emptyReport();
+
+  // Pre-scan all groups
+  const filesToReview: Array<{ label: string; srcPath: string; destPath: string; isNew: boolean }> = [];
+  for (const group of groups) {
+    const srcGroupDir = path.join(srcDir, group);
+    const destGroupDir = path.join(destDir, group);
+
+    if (!fs.existsSync(srcGroupDir)) continue;
+
+    const srcFiles = fs.readdirSync(srcGroupDir).filter(f => f.endsWith('.md'));
+    if (!options.dryRun) {
+      fs.mkdirSync(destGroupDir, { recursive: true });
+    }
+
+    for (const filename of srcFiles) {
+      const srcPath = path.join(srcGroupDir, filename);
+      const destPath = path.join(destGroupDir, filename);
+      const label = `${group}/${filename}`;
+
+      if (!fs.existsSync(destPath)) {
+        filesToReview.push({ label, srcPath, destPath, isNew: true });
+      } else if (contentsDiffer(srcPath, destPath)) {
+        filesToReview.push({ label, srcPath, destPath, isNew: false });
+      } else {
+        report.unchanged.push(label);
+      }
+    }
+  }
+
+  // Count total rule files for header
+  const totalRuleFiles = filesToReview.length + report.unchanged.length;
+
+  if (options.interactive && !options.dryRun) {
+    printCategoryHeader('Rules', totalRuleFiles, filesToReview.length);
+  }
+
+  let currentOptions = { ...options };
+  for (let i = 0; i < filesToReview.length; i++) {
+    const { label, srcPath, destPath, isNew } = filesToReview[i];
+    currentOptions = await reviewFile(label, srcPath, destPath, isNew, currentOptions, report, { current: i + 1, total: filesToReview.length });
+  }
+
+  return report;
+}
+
+// ---------------------------------------------------------------------------
+// Legacy conflict resolution (deprecated)
+// ---------------------------------------------------------------------------
+
+/**
+ * @deprecated Use promptFileReview instead.
  * Prompt user for conflict resolution choice.
- * Returns the choice and whether to apply to all.
  */
 export async function promptConflict(filename: string, existingPath: string, incomingPath: string): Promise<{ choice: ConflictChoice; applyAll: boolean }> {
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stderr, // stderr so it's visible to user
+    output: process.stderr,
     terminal: true
   });
 
@@ -81,7 +488,6 @@ export async function promptConflict(filename: string, existingPath: string, inc
             rl.close();
             return resolve({ choice: 'keep', applyAll: true });
           case 'd': {
-            // Show diff then re-ask
             const existing = fs.readFileSync(existingPath, 'utf8');
             const incoming = fs.readFileSync(incomingPath, 'utf8');
             console.error('\n' + generateDiff(existing, incoming, filename) + '\n');
@@ -106,216 +512,12 @@ export async function promptConflict(filename: string, existingPath: string, inc
   });
 }
 
-/**
- * Handle a single file conflict resolution.
- */
-async function resolveConflict(filename: string, srcPath: string, destPath: string, options: MergeOptions, report: MergeReport): Promise<MergeOptions> {
-  // Non-interactive: skip
-  if (!options.interactive) {
-    report.skipped.push(filename);
-    return options;
-  }
-
-  // Apply-all cached choice
-  if (options.applyAll !== null) {
-    return applyChoice(options.applyAll, filename, srcPath, destPath, options, report);
-  }
-
-  // Interactive prompt
-  const { choice, applyAll } = await promptConflict(filename, destPath, srcPath);
-  const newOptions = applyAll ? { ...options, applyAll: choice } : options;
-
-  return applyChoice(choice, filename, srcPath, destPath, newOptions, report);
-}
-
-/**
- * Apply a conflict resolution choice.
- */
-function applyChoice(choice: ConflictChoice, filename: string, srcPath: string, destPath: string, options: MergeOptions, report: MergeReport): MergeOptions {
-  switch (choice) {
-    case 'overwrite':
-      if (!options.dryRun) {
-        fs.copyFileSync(srcPath, destPath);
-      }
-      report.updated.push(filename);
-      break;
-
-    case 'keep':
-      report.skipped.push(filename);
-      break;
-
-    case 'smart-merge': {
-      const existing = fs.readFileSync(destPath, 'utf8');
-      const incoming = fs.readFileSync(srcPath, 'utf8');
-      const result = smartMerge(existing, incoming, filename);
-
-      if (result.success && result.merged) {
-        if (!options.dryRun) {
-          fs.writeFileSync(destPath, result.merged, 'utf8');
-        }
-        report.smartMerged.push(filename);
-      } else {
-        console.error(`  Smart merge failed: ${result.error}. Keeping existing.`);
-        report.skipped.push(filename);
-      }
-      break;
-    }
-
-    case 'diff':
-      // Diff is handled in promptConflict — shouldn't reach here
-      report.skipped.push(filename);
-      break;
-  }
-  return options;
-}
-
-/**
- * Merge a directory of files from source to destination.
- * Uses manifest to determine ownership.
- */
-export async function mergeDirectory(srcDir: string, destDir: string, manifest: EccManifest | null, artifactType: 'agents' | 'commands', options: MergeOptions): Promise<MergeReport> {
-  const report: MergeReport = { added: [], updated: [], unchanged: [], skipped: [], smartMerged: [], errors: [] };
-
-  if (!fs.existsSync(srcDir)) return report;
-
-  const srcFiles = fs.readdirSync(srcDir).filter(f => f.endsWith('.md'));
-  if (!options.dryRun) {
-    fs.mkdirSync(destDir, { recursive: true });
-  }
-
-  let currentOptions = { ...options };
-
-  for (const filename of srcFiles) {
-    const srcPath = path.join(srcDir, filename);
-    const destPath = path.join(destDir, filename);
-
-    if (!fs.existsSync(destPath)) {
-      // New file — add it
-      if (!currentOptions.dryRun) {
-        fs.copyFileSync(srcPath, destPath);
-      }
-      report.added.push(filename);
-    } else if (isEccManaged(manifest, artifactType, filename) || currentOptions.force) {
-      // ECC-managed or force mode — update it
-      if (!currentOptions.dryRun) {
-        fs.copyFileSync(srcPath, destPath);
-      }
-      report.updated.push(filename);
-    } else {
-      // Conflict: file exists but not in manifest
-      currentOptions = await resolveConflict(filename, srcPath, destPath, currentOptions, report);
-    }
-  }
-
-  return report;
-}
-
-/**
- * Merge skills directory (skill-level granularity, not file-level).
- * Each skill is a directory that is merged atomically.
- */
-export async function mergeSkills(srcDir: string, destDir: string, manifest: EccManifest | null, options: MergeOptions): Promise<MergeReport> {
-  const report: MergeReport = { added: [], updated: [], unchanged: [], skipped: [], smartMerged: [], errors: [] };
-
-  if (!fs.existsSync(srcDir)) return report;
-
-  const srcSkills = fs
-    .readdirSync(srcDir, { withFileTypes: true })
-    .filter(e => e.isDirectory())
-    .map(e => e.name);
-
-  if (!options.dryRun) {
-    fs.mkdirSync(destDir, { recursive: true });
-  }
-
-  let currentOptions = { ...options };
-
-  for (const skillName of srcSkills) {
-    const srcSkillDir = path.join(srcDir, skillName);
-    const destSkillDir = path.join(destDir, skillName);
-
-    if (!fs.existsSync(destSkillDir)) {
-      // New skill — copy entire directory
-      if (!currentOptions.dryRun) {
-        copyDirRecursive(srcSkillDir, destSkillDir);
-      }
-      report.added.push(skillName);
-    } else if (isEccManaged(manifest, 'skills', skillName) || currentOptions.force) {
-      // ECC-managed skill — replace entire directory
-      if (!currentOptions.dryRun) {
-        copyDirRecursive(srcSkillDir, destSkillDir);
-      }
-      report.updated.push(skillName);
-    } else {
-      // Conflict: skill exists but not in manifest
-      // For skills, we can't smart-merge a whole directory, so just overwrite/keep
-      currentOptions = await resolveConflict(
-        skillName + '/',
-        path.join(srcSkillDir, 'SKILL.md'),
-        fs.existsSync(path.join(destSkillDir, 'SKILL.md')) ? path.join(destSkillDir, 'SKILL.md') : destSkillDir,
-        currentOptions,
-        report
-      );
-
-      // If overwrite was chosen for the skill, copy the whole directory
-      if (report.updated.includes(skillName + '/')) {
-        if (!currentOptions.dryRun) {
-          copyDirRecursive(srcSkillDir, destSkillDir);
-        }
-      }
-    }
-  }
-
-  return report;
-}
-
-/**
- * Merge rules directory, grouped by subdirectory.
- */
-export async function mergeRules(srcDir: string, destDir: string, manifest: EccManifest | null, groups: string[], options: MergeOptions): Promise<MergeReport> {
-  const report: MergeReport = { added: [], updated: [], unchanged: [], skipped: [], smartMerged: [], errors: [] };
-
-  let currentOptions = { ...options };
-
-  for (const group of groups) {
-    const srcGroupDir = path.join(srcDir, group);
-    const destGroupDir = path.join(destDir, group);
-
-    if (!fs.existsSync(srcGroupDir)) continue;
-
-    const srcFiles = fs.readdirSync(srcGroupDir).filter(f => f.endsWith('.md'));
-    if (!currentOptions.dryRun) {
-      fs.mkdirSync(destGroupDir, { recursive: true });
-    }
-
-    for (const filename of srcFiles) {
-      const srcPath = path.join(srcGroupDir, filename);
-      const destPath = path.join(destGroupDir, filename);
-      const label = `${group}/${filename}`;
-
-      if (!fs.existsSync(destPath)) {
-        if (!currentOptions.dryRun) {
-          fs.copyFileSync(srcPath, destPath);
-        }
-        report.added.push(label);
-      } else if (isEccManagedRule(manifest, group, filename) || currentOptions.force) {
-        if (!currentOptions.dryRun) {
-          fs.copyFileSync(srcPath, destPath);
-        }
-        report.updated.push(label);
-      } else {
-        currentOptions = await resolveConflict(label, srcPath, destPath, currentOptions, report);
-      }
-    }
-  }
-
-  return report;
-}
+// ---------------------------------------------------------------------------
+// Hooks merge (unchanged — not interactive, deduplication-based)
+// ---------------------------------------------------------------------------
 
 /**
  * Check if a hook entry is a legacy ECC hook that should be removed.
- * Legacy hooks reference `scripts/hooks/` (a path that no longer exists)
- * or use inline `node -e` one-liners from older ECC versions.
  */
 export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
   const hooks = entry.hooks;
@@ -325,12 +527,10 @@ export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
     const cmd = (hook as Record<string, unknown>).command;
     if (typeof cmd !== 'string') continue;
 
-    // Legacy path: scripts/hooks/ (was never correct in npm package)
     if (cmd.includes('scripts/hooks/') && !cmd.includes('run-with-flags-shell.sh')) {
       return true;
     }
 
-    // Legacy inline one-liners from old ECC versions
     if (
       cmd.includes('node -e') &&
       (cmd.includes('dev-server') ||
@@ -348,10 +548,6 @@ export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
   return false;
 }
 
-/**
- * Remove legacy ECC hook entries from a hooks object.
- * Returns the number of entries removed.
- */
 function removeLegacyHooks(hooks: Record<string, Array<Record<string, unknown>>>): number {
   let removed = 0;
   for (const event of Object.keys(hooks)) {
@@ -365,7 +561,6 @@ function removeLegacyHooks(hooks: Record<string, Array<Record<string, unknown>>>
 
 /**
  * Merge hooks from source hooks.json into destination settings.json.
- * Preserves all existing keys, removes legacy ECC hooks, and deduplicates.
  */
 export function mergeHooks(hooksJsonPath: string, settingsJsonPath: string, pluginRoot: string): { added: number; existing: number; legacyRemoved: number } {
   const existing = fs.existsSync(settingsJsonPath) ? JSON.parse(fs.readFileSync(settingsJsonPath, 'utf8')) : {};
@@ -376,7 +571,6 @@ export function mergeHooks(hooksJsonPath: string, settingsJsonPath: string, plug
   const merged = { ...existing };
   merged.hooks = merged.hooks || {};
 
-  // Clean up legacy ECC hooks before merging new ones
   const legacyRemoved = removeLegacyHooks(merged.hooks);
 
   let added = 0;
@@ -402,9 +596,10 @@ export function mergeHooks(hooksJsonPath: string, settingsJsonPath: string, plug
   return { added, existing: alreadyPresent, legacyRemoved };
 }
 
-/**
- * Recursively copy a directory.
- */
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
 function copyDirRecursive(src: string, dest: string): void {
   fs.mkdirSync(dest, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
@@ -419,7 +614,7 @@ function copyDirRecursive(src: string, dest: string): void {
 }
 
 /**
- * Print a merge report to stderr (visible to user).
+ * Print a merge report to stderr.
  */
 export function printMergeReport(label: string, report: MergeReport): void {
   const parts: string[] = [];

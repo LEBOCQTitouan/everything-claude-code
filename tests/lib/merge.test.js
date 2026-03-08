@@ -104,18 +104,75 @@ async function runTests() {
     else failed++;
 
     if (
-      await test('skips user-custom files in non-interactive mode', async () => {
+      await test('updates changed files in non-interactive mode', async () => {
         const srcDir = path.join(tmpDir, 'src-agents');
         const destDir = path.join(tmpDir, 'dest-agents-3');
         fs.mkdirSync(destDir, { recursive: true });
         fs.writeFileSync(path.join(destDir, 'planner.md'), '# Custom Planner');
 
-        // No manifest = all files are "unmanaged"
+        // Non-interactive mode accepts all changed files (no manifest distinction)
         const report = await mergeDirectory(srcDir, destDir, null, 'agents', nonInteractiveOpts);
 
-        assert.ok(report.skipped.includes('planner.md'));
+        assert.ok(report.updated.includes('planner.md'));
         const content = fs.readFileSync(path.join(destDir, 'planner.md'), 'utf8');
-        assert.strictEqual(content, '# Custom Planner');
+        assert.strictEqual(content, '# Planner');
+      })
+    )
+      passed++;
+    else failed++;
+
+    if (
+      await test('reports unchanged files separately', async () => {
+        const srcDir = path.join(tmpDir, 'src-agents');
+        const destDir = path.join(tmpDir, 'dest-agents-unchanged');
+        fs.mkdirSync(destDir, { recursive: true });
+        // Write identical content to dest
+        fs.writeFileSync(path.join(destDir, 'planner.md'), '# Planner');
+        fs.writeFileSync(path.join(destDir, 'architect.md'), '# Architect');
+
+        const report = await mergeDirectory(srcDir, destDir, null, 'agents', nonInteractiveOpts);
+
+        assert.strictEqual(report.unchanged.length, 2);
+        assert.ok(report.unchanged.includes('planner.md'));
+        assert.ok(report.unchanged.includes('architect.md'));
+        assert.strictEqual(report.added.length, 0);
+        assert.strictEqual(report.updated.length, 0);
+      })
+    )
+      passed++;
+    else failed++;
+
+    if (
+      await test('applyAll accept updates all remaining files', async () => {
+        const srcDir = path.join(tmpDir, 'src-agents');
+        const destDir = path.join(tmpDir, 'dest-agents-applyall');
+        fs.mkdirSync(destDir, { recursive: true });
+        fs.writeFileSync(path.join(destDir, 'planner.md'), '# Old Planner');
+        fs.writeFileSync(path.join(destDir, 'architect.md'), '# Old Architect');
+
+        const opts = { ...nonInteractiveOpts, applyAll: 'accept' };
+        const report = await mergeDirectory(srcDir, destDir, null, 'agents', opts);
+
+        assert.strictEqual(report.updated.length, 2);
+        assert.strictEqual(report.skipped.length, 0);
+      })
+    )
+      passed++;
+    else failed++;
+
+    if (
+      await test('applyAll keep skips all remaining files', async () => {
+        const srcDir = path.join(tmpDir, 'src-agents');
+        const destDir = path.join(tmpDir, 'dest-agents-keepall');
+        fs.mkdirSync(destDir, { recursive: true });
+        fs.writeFileSync(path.join(destDir, 'planner.md'), '# Old Planner');
+        fs.writeFileSync(path.join(destDir, 'architect.md'), '# Old Architect');
+
+        const opts = { ...nonInteractiveOpts, applyAll: 'keep' };
+        const report = await mergeDirectory(srcDir, destDir, null, 'agents', opts);
+
+        assert.strictEqual(report.skipped.length, 2);
+        assert.strictEqual(report.updated.length, 0);
       })
     )
       passed++;
