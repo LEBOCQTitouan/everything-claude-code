@@ -379,6 +379,70 @@ async function runTests() {
       assert.ok(!stopHooks.some(h => h.description === 'Legacy'), 'Legacy hook removed');
     })) passed++; else failed++;
 
+    if (await test('removes all 10 legacy hooks from realistic settings.json', () => {
+      const hooksDir = path.join(tmpDir, 'hooks-src');
+      const settingsDir = path.join(tmpDir, 'hooks-dest-realistic');
+      fs.mkdirSync(settingsDir, { recursive: true });
+
+      // Realistic legacy settings.json matching the actual user's ~/.claude/settings.json
+      const legacySettings = {
+        hooks: {
+          PreToolUse: [
+            { matcher: 'Write', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/doc-file-warning.js"' }] },
+            { matcher: 'Edit|Write', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/suggest-compact.js"' }] },
+          ],
+          PreCompact: [
+            { matcher: '*', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/pre-compact.js"' }] },
+          ],
+          SessionStart: [
+            { matcher: '*', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/session-start.js"' }] },
+          ],
+          PostToolUse: [
+            { matcher: 'Edit', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/post-edit-format.js"' }] },
+            { matcher: 'Edit', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/post-edit-typecheck.js"' }] },
+            { matcher: 'Edit', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/post-edit-console-warn.js"' }] },
+            // User-custom hook that must be preserved
+            { matcher: 'Bash', hooks: [{ type: 'command', command: 'python3 my-custom-hook.py' }], description: 'My custom hook' },
+          ],
+          Stop: [
+            { matcher: '*', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/check-console-log.js"' }] },
+            { matcher: '*', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/session-end.js"' }] },
+            { matcher: '*', hooks: [{ type: 'command', command: 'node "/opt/homebrew/lib/node_modules/@lebocqtitouan/ecc/scripts/hooks/evaluate-session.js"' }] },
+          ],
+        },
+        // Non-hook keys must be preserved
+        allowedTools: ['Read', 'Write'],
+        customSetting: true,
+      };
+
+      fs.writeFileSync(path.join(settingsDir, 'settings.json'), JSON.stringify(legacySettings));
+
+      const result = mergeHooks(
+        path.join(hooksDir, 'hooks.json'),
+        path.join(settingsDir, 'settings.json'),
+        '/plugin/root',
+      );
+
+      // All 10 legacy entries removed
+      assert.strictEqual(result.legacyRemoved, 10);
+      // New hook from hooks-src added
+      assert.strictEqual(result.added, 1);
+
+      const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf8'));
+
+      // User-custom hook preserved
+      const postHooks = settings.hooks.PostToolUse || [];
+      assert.ok(postHooks.some(h => h.description === 'My custom hook'), 'User custom hook preserved');
+
+      // No legacy scripts/hooks/ references remain
+      const allCommands = JSON.stringify(settings.hooks);
+      assert.ok(!allCommands.includes('scripts/hooks/'), 'No legacy paths remain');
+
+      // Non-hook settings preserved
+      assert.deepStrictEqual(settings.allowedTools, ['Read', 'Write']);
+      assert.strictEqual(settings.customSetting, true);
+    })) passed++; else failed++;
+
     // --- defaultMergeOptions ---
     console.log('\ndefaultMergeOptions:');
 
