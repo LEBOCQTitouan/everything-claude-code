@@ -34,7 +34,9 @@ const testFiles = [
   'lib/merge.test.js',
   'lib/gitignore.test.js',
   'lib/ansi.test.js',
-  'lib/smart-merge.test.js'
+  'lib/smart-merge.test.js',
+  'hooks/doc-coverage-reminder.test.js',
+  'ci/validate-doc-agents.test.js'
 ];
 
 const BOX_W = 58;
