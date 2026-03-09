@@ -108,7 +108,7 @@ Per-module purpose, key exports, dependencies, and documentation coverage.
 
 ### src/lib/project-detect
 
-**Purpose:** Detect project language and framework from file patterns. 12 language rules, 25+ framework rules covering TypeScript, Python, Go, Rust, Java, Swift, and more.
+**Purpose:** Detect project language and framework from file patterns. 12 language rules, 24 framework rules covering TypeScript, Python, Go, Rust, Java, Swift, and more.
 
 **Key exports:** `detectProjectType()`, `LANGUAGE_RULES`, `FRAMEWORK_RULES`, `getPackageJsonDeps()`
 

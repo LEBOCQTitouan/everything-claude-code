@@ -34,18 +34,18 @@
 
 The foundation layer. Every hook, CI script, and standalone script imports from here.
 
-- **utils.ts** (482 LOC) -- Cross-platform file I/O, command execution, git helpers, date formatting, stdin JSON reader. Hub module imported by 8+ hooks.
-- **ansi.ts** (46 LOC) -- Zero-dependency ANSI color utilities with NO_COLOR support.
-- **package-manager.ts** (365 LOC) -- Detect, configure, and generate commands for npm/pnpm/yarn/bun. 6-level detection priority chain.
-- **detect.ts** (240 LOC) -- Scan existing Claude Code setup (agents, commands, skills, rules, hooks). Read-only, no side effects.
-- **smart-merge.ts** (366 LOC) -- LCS-based diff algorithm, side-by-side terminal formatter, Claude CLI smart merge.
-- **manifest.ts** (137 LOC) -- ECC installation manifest tracking (version, artifacts, ownership). Immutable update pattern.
-- **merge.ts** (671 LOC) -- Interactive file merge strategies for installation (directory, skills, rules, hooks). Largest lib module.
-- **project-detect.ts** (345 LOC) -- Language detection (12 languages) and framework detection (25+ frameworks) from markers and dependencies.
-- **gitignore.ts** (150 LOC) -- Append-only gitignore section management for ECC-generated files.
-- **hook-flags.ts** (85 LOC) -- Hook enable/disable controls via profiles (minimal/standard/strict) and ECC_DISABLED_HOOKS env var.
-- **session-aliases.ts** (480 LOC) -- Session alias CRUD with atomic file writes, backup/restore, and rollback on failure.
-- **session-manager.ts** (390 LOC) -- Session file CRUD, markdown metadata parsing, pagination, and stats computation.
+- **utils.ts** (481 LOC) -- Cross-platform file I/O, command execution, git helpers, date formatting, stdin JSON reader. Hub module imported by 8+ hooks.
+- **ansi.ts** (45 LOC) -- Zero-dependency ANSI color utilities with NO_COLOR support.
+- **package-manager.ts** (364 LOC) -- Detect, configure, and generate commands for npm/pnpm/yarn/bun. 6-level detection priority chain.
+- **detect.ts** (239 LOC) -- Scan existing Claude Code setup (agents, commands, skills, rules, hooks). Read-only, no side effects.
+- **smart-merge.ts** (365 LOC) -- LCS-based diff algorithm, side-by-side terminal formatter, Claude CLI smart merge.
+- **manifest.ts** (136 LOC) -- ECC installation manifest tracking (version, artifacts, ownership). Immutable update pattern.
+- **merge.ts** (670 LOC) -- Interactive file merge strategies for installation (directory, skills, rules, hooks). Largest lib module.
+- **project-detect.ts** (344 LOC) -- Language detection (12 languages) and framework detection (24 frameworks) from markers and dependencies.
+- **gitignore.ts** (149 LOC) -- Append-only gitignore section management for ECC-generated files.
+- **hook-flags.ts** (84 LOC) -- Hook enable/disable controls via profiles (minimal/standard/strict) and ECC_DISABLED_HOOKS env var.
+- **session-aliases.ts** (479 LOC) -- Session alias CRUD with atomic file writes, backup/restore, and rollback on failure.
+- **session-manager.ts** (389 LOC) -- Session file CRUD, markdown metadata parsing, pagination, and stats computation.
 
 ### hooks/ -- Claude Code Hook Scripts (21 files)
 
@@ -91,9 +91,9 @@ Run during CI to ensure artifact quality. No public exports, standalone executab
 ### Standalone Scripts (6 files)
 
 - **install-orchestrator.ts** (301 LOC) -- Full install/init flow: detect existing setup, read manifest, merge artifacts, write manifest, manage gitignore
-- **claw.ts** (394 LOC) -- NanoClaw REPL: session-aware interactive Claude CLI wrapper with branching, search, export, compaction
+- **claw.ts** (554 LOC) -- NanoClaw REPL: session-aware interactive Claude CLI wrapper with branching, search, export, compaction
 - **setup-package-manager.ts** (198 LOC) -- Interactive package manager configuration with detect/list/set modes
-- **skill-create-output.ts** (236 LOC) -- Terminal UI formatter for /skill-create (animated progress, box drawing, pattern display)
+- **skill-create-output.ts** (248 LOC) -- Terminal UI formatter for /skill-create (animated progress, box drawing, pattern display)
 - **postinstall.ts** (83 LOC) -- Post-install health checks (Node version, bash, dependencies) and getting-started hints
 - **preuninstall.ts** (39 LOC) -- Clean up shell completion files (fish, bash, zsh) on uninstall
 

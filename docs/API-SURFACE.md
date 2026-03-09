@@ -160,12 +160,12 @@ All exported symbols from `src/lib/` and standalone scripts with exports. Hooks 
 
 ## project-detect
 
-`src/lib/project-detect.ts` -- Language and framework detection across 12 languages and 25+ frameworks.
+`src/lib/project-detect.ts` -- Language and framework detection across 12 languages and 24 frameworks.
 
 | Symbol | Kind | Documented | Description |
 |--------|------|------------|-------------|
 | `LANGUAGE_RULES` | const | Yes | Language detection rules (12 languages) |
-| `FRAMEWORK_RULES` | const | Yes | Framework detection rules (25+ frameworks) |
+| `FRAMEWORK_RULES` | const | Yes | Framework detection rules (24 frameworks) |
 | `getPackageJsonDeps()` | function | Yes | Extract npm dependency names |
 | `getPythonDeps()` | function | Yes | Extract Python dependency names |
 | `getGoDeps()` | function | Yes | Extract Go module paths |
