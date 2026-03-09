@@ -276,7 +276,7 @@ async function runTests() {
       assert.deepStrictEqual(settings.allowedTools, ['Read', 'Write']);
     });
 
-    await test('replaces ECC_ROOT placeholder', () => {
+    await test('preserves bin-based commands without placeholder replacement', () => {
       const hooksDir = path.join(tmpDir, 'hooks-placeholder');
       const settingsDir = path.join(tmpDir, 'hooks-dest-4');
       fs.mkdirSync(hooksDir, { recursive: true });
@@ -286,16 +286,15 @@ async function runTests() {
         path.join(hooksDir, 'hooks.json'),
         JSON.stringify({
           hooks: {
-            Stop: [{ matcher: '*', hooks: [{ type: 'command', command: 'node "${ECC_ROOT}/dist/test.js"' }], description: 'Test' }]
+            Stop: [{ matcher: '*', hooks: [{ type: 'command', command: 'ecc-hook "stop:test" "dist/hooks/test.js"' }], description: 'Test' }]
           }
         })
       );
 
-      mergeHooks(path.join(hooksDir, 'hooks.json'), path.join(settingsDir, 'settings.json'), '/my/ecc');
+      mergeHooks(path.join(hooksDir, 'hooks.json'), path.join(settingsDir, 'settings.json'));
 
       const settings = JSON.parse(fs.readFileSync(path.join(settingsDir, 'settings.json'), 'utf8'));
-      assert.ok(settings.hooks.Stop[0].hooks[0].command.includes('/my/ecc'));
-      assert.ok(!settings.hooks.Stop[0].hooks[0].command.includes('ECC_ROOT'));
+      assert.strictEqual(settings.hooks.Stop[0].hooks[0].command, 'ecc-hook "stop:test" "dist/hooks/test.js"');
     });
 
     // --- combineMergeReports ---
@@ -334,11 +333,61 @@ async function runTests() {
       );
     });
 
-    await test('does not flag current run-with-flags hooks', () => {
+    await test('detects absolute-path run-with-flags.js hooks as legacy', () => {
       assert.strictEqual(
         isLegacyEccHook({
           matcher: 'Bash',
           hooks: [{ type: 'command', command: 'node "/plugin/dist/hooks/run-with-flags.js" "pre:bash:dev-server-block" "dist/hooks/pre-bash-dev-server-block.js" "standard,strict"' }]
+        }),
+        true
+      );
+    });
+
+    await test('detects unresolved ${ECC_ROOT} placeholder as legacy', () => {
+      assert.strictEqual(
+        isLegacyEccHook({
+          matcher: 'Bash',
+          hooks: [{ type: 'command', command: 'node "${ECC_ROOT}/dist/hooks/run-with-flags.js" "pre:bash:test" "dist/hooks/test.js"' }]
+        }),
+        true
+      );
+    });
+
+    await test('detects unresolved ${CLAUDE_PLUGIN_ROOT} placeholder as legacy', () => {
+      assert.strictEqual(
+        isLegacyEccHook({
+          matcher: 'Bash',
+          hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js" "pre:bash:test" "dist/hooks/test.js"' }]
+        }),
+        true
+      );
+    });
+
+    await test('detects absolute-path run-with-flags-shell.sh hooks as legacy', () => {
+      assert.strictEqual(
+        isLegacyEccHook({
+          matcher: '*',
+          hooks: [{ type: 'command', command: 'bash "/plugin/scripts/hooks/run-with-flags-shell.sh" "pre:observe" "skills/continuous-learning-v2/hooks/observe.sh"' }]
+        }),
+        true
+      );
+    });
+
+    await test('does not flag current ecc-hook bin commands', () => {
+      assert.strictEqual(
+        isLegacyEccHook({
+          matcher: 'Bash',
+          hooks: [{ type: 'command', command: 'ecc-hook "pre:bash:dev-server-block" "dist/hooks/pre-bash-dev-server-block.js" "standard,strict"' }]
+        }),
+        false
+      );
+    });
+
+    await test('does not flag current ecc-shell-hook bin commands', () => {
+      assert.strictEqual(
+        isLegacyEccHook({
+          matcher: '*',
+          hooks: [{ type: 'command', command: 'ecc-shell-hook "pre:observe" "skills/continuous-learning-v2/hooks/observe.sh" "standard,strict"' }]
         }),
         false
       );
@@ -349,16 +398,6 @@ async function runTests() {
         isLegacyEccHook({
           matcher: 'Bash',
           hooks: [{ type: 'command', command: 'node my-custom-hook.js' }]
-        }),
-        false
-      );
-    });
-
-    await test('does not flag run-with-flags-shell.sh hooks', () => {
-      assert.strictEqual(
-        isLegacyEccHook({
-          matcher: '*',
-          hooks: [{ type: 'command', command: 'bash "/plugin/scripts/hooks/run-with-flags-shell.sh" "pre:observe" "skills/continuous-learning-v2/hooks/observe.sh"' }]
         }),
         false
       );

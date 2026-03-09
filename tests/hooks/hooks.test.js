@@ -1077,7 +1077,7 @@ async function runTests() {
     assert.ok(hooks.hooks.PreCompact, 'Should have PreCompact hooks');
   });
 
-  await test('all hook commands use node or are skill shell scripts', () => {
+  await test('all hook commands use ecc-hook or ecc-shell-hook bin entries', () => {
     const hooksPath = path.join(__dirname, '..', '..', 'hooks', 'hooks.json');
     const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
 
@@ -1085,9 +1085,8 @@ async function runTests() {
       for (const entry of hookArray) {
         for (const hook of entry.hooks) {
           if (hook.type === 'command') {
-            const isNode = hook.command.startsWith('node');
-            const isBashRunner = /^(bash|sh)\s/.test(hook.command) && (hook.command.includes('/skills/') || hook.command.includes('/scripts/') || hook.command.includes('/skills/'));
-            assert.ok(isNode || isBashRunner, `Hook command should start with 'node' or be a bash runner: ${hook.command.substring(0, 80)}...`);
+            const useBin = hook.command.startsWith('ecc-hook') || hook.command.startsWith('ecc-shell-hook');
+            assert.ok(useBin, `Hook command should use bin entries: ${hook.command.substring(0, 80)}`);
           }
         }
       }
@@ -1098,18 +1097,20 @@ async function runTests() {
     }
   });
 
-  await test('script references use ECC_ROOT variable', () => {
+  await test('hook commands use ecc-hook or ecc-shell-hook bin entries', () => {
     const hooksPath = path.join(__dirname, '..', '..', 'hooks', 'hooks.json');
     const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
 
     const checkHooks = hookArray => {
       for (const entry of hookArray) {
         for (const hook of entry.hooks) {
-          if (hook.type === 'command' && (hook.command.includes('dist/hooks/') || hook.command.includes('scripts/hooks/'))) {
-            // Check for the literal string "${ECC_ROOT}" in the command
-            const hasEccRoot = hook.command.includes('${ECC_ROOT}');
-            assert.ok(hasEccRoot, `Script paths should use ECC_ROOT: ${hook.command.substring(0, 80)}...`);
-          }
+          if (hook.type !== 'command') continue;
+          // Every command should start with ecc-hook or ecc-shell-hook (bin entries)
+          const useBin = hook.command.startsWith('ecc-hook') || hook.command.startsWith('ecc-shell-hook');
+          assert.ok(useBin, `Hook commands should use bin entries: ${hook.command.substring(0, 80)}`);
+          // No unresolved placeholders
+          assert.ok(!hook.command.includes('${ECC_ROOT}'), `No ECC_ROOT placeholder: ${hook.command.substring(0, 80)}`);
+          assert.ok(!hook.command.includes('${CLAUDE_PLUGIN_ROOT}'), `No CLAUDE_PLUGIN_ROOT placeholder: ${hook.command.substring(0, 80)}`);
         }
       }
     };

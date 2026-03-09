@@ -615,8 +615,8 @@ async function runTests() {
     assert.strictEqual(typeof asyncHook.hooks[0].timeout, 'number', 'Timeout should be a number');
     assert.ok(asyncHook.hooks[0].timeout > 0, 'Timeout should be positive');
 
-    const isValid = asyncHook.hooks[0].command.startsWith('node ') || asyncHook.hooks[0].command.startsWith('bash ');
-    assert.ok(isValid, 'Async hook command should be node or bash format');
+    const useBin = asyncHook.hooks[0].command.startsWith('ecc-hook') || asyncHook.hooks[0].command.startsWith('ecc-shell-hook');
+    assert.ok(useBin, 'Async hook command should use ecc-hook or ecc-shell-hook bin entry');
   });
 
   await test('all hook commands in hooks.json are valid format', async () => {
@@ -627,10 +627,8 @@ async function runTests() {
         for (const hook of hookDef.hooks) {
           assert.ok(hook.command, `Hook in ${hookType} should have command field`);
 
-          const isNode = hook.command.startsWith('node ');
-          const isBash = hook.command.startsWith('bash ');
-
-          assert.ok(isNode || isBash, `Hook command in ${hookType} should start with node or bash, got: ${hook.command.substring(0, 80)}`);
+          const useBin = hook.command.startsWith('ecc-hook') || hook.command.startsWith('ecc-shell-hook');
+          assert.ok(useBin, `Hook command in ${hookType} should use bin entries, got: ${hook.command.substring(0, 80)}`);
         }
       }
     }
