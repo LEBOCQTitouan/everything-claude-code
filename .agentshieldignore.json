@@ -1,0 +1,54 @@
+[
+  {
+    "file": "commands/update-docs.md",
+    "pattern": "Hardcoded Database connection string",
+    "reason": "Documentation example showing env var format, not a real credential"
+  },
+  {
+    "file": "CLAUDE.md",
+    "pattern": "auto-run instruction",
+    "reason": "Build instructions use 'Always run' phrasing intentionally"
+  },
+  {
+    "file": "CLAUDE.md",
+    "pattern": "AUTO-GENERATED",
+    "reason": "Legitimate doc marker for generated sections, not hidden instruction"
+  },
+  {
+    "file": "CLAUDE.md",
+    "pattern": "system prompt",
+    "reason": "Documentation references to system prompts, not extraction attempt"
+  },
+  {
+    "pattern": "Agent has Bash access",
+    "reason": "Agents that fix builds, run tests, or review code legitimately need Bash"
+  },
+  {
+    "pattern": "full escalation chain",
+    "reason": "Build-fixers and reviewers need find+read+write+execute to do their job"
+  },
+  {
+    "pattern": "Suspicious instruction in comment",
+    "reason": "HTML comments are legitimate doc markers (DIAGRAM, AUTO-GENERATED)"
+  },
+  {
+    "pattern": "Agent definition is \\d+ characters",
+    "reason": "Detailed agent definitions are intentional, not hidden instructions"
+  },
+  {
+    "pattern": "Explorer/search agent has write access",
+    "reason": "Reviewers that also fix issues need Write access by design"
+  },
+  {
+    "pattern": "Agent processes external content",
+    "reason": "Security reviewer processes code for vulnerabilities by design"
+  },
+  {
+    "pattern": "No permissions block configured",
+    "reason": "This is a shared config repo, not a deployed project — no settings.json"
+  },
+  {
+    "pattern": "Read-only agent uses expensive model",
+    "reason": "Planner and uncle-bob need deep reasoning (Opus), not just file search"
+  }
+]

@@ -38,7 +38,9 @@ const testFiles = [
   'hooks/doc-coverage-reminder.test.js',
   'ci/validate-doc-agents.test.js',
   'ci/validate-plan-tdd.test.js',
-  'ci/validate-custom-diagrams.test.js'
+  'ci/validate-custom-diagrams.test.js',
+  'scripts/security-scan.test.js',
+  'ci/validate-security-scan.test.js'
 ];
 
 const BOX_W = 58;

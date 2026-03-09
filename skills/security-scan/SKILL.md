@@ -159,7 +159,27 @@ Add to your CI pipeline:
 - Missing descriptions on MCP servers
 - Prohibitive instructions correctly flagged as good practice
 
+## False Positive Suppression
+
+Use `scripts/security-scan.js` to run scans with automatic false-positive filtering:
+
+```bash
+# Interactive mode — scan, display, and offer to suppress false positives
+node scripts/security-scan.js --path .
+
+# Non-interactive mode (for CI)
+node scripts/security-scan.js --path . --no-interactive
+```
+
+Suppression rules are stored in `.agentshieldignore.json` at the project root. Each entry needs:
+- At least one matcher: `file`, `pattern` (regex), or `severity`
+- A `reason` field explaining why it's a false positive
+
+After marking false positives interactively, the wrapper re-runs the full scan to show updated results.
+
 ## Links
 
 - **GitHub**: [github.com/affaan-m/agentshield](https://github.com/affaan-m/agentshield)
 - **npm**: [npmjs.com/package/ecc-agentshield](https://www.npmjs.com/package/ecc-agentshield)
+- **Wrapper**: `scripts/security-scan.js`
+- **Ignore file**: `.agentshieldignore.json`
