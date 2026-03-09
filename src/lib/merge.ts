@@ -568,10 +568,10 @@ function removeLegacyHooks(hooks: Record<string, Array<Record<string, unknown>>>
 /**
  * Merge hooks from source hooks.json into destination settings.json.
  */
-export function mergeHooks(hooksJsonPath: string, settingsJsonPath: string, eccRoot: string): { added: number; existing: number; legacyRemoved: number } {
+export function mergeHooks(hooksJsonPath: string, settingsJsonPath: string, _eccRoot?: string): { added: number; existing: number; legacyRemoved: number } {
   const existing = fs.existsSync(settingsJsonPath) ? JSON.parse(fs.readFileSync(settingsJsonPath, 'utf8')) : {};
 
-  const raw = fs.readFileSync(hooksJsonPath, 'utf8').replaceAll('${ECC_ROOT}', eccRoot).replaceAll('${CLAUDE_PLUGIN_ROOT}', eccRoot); // backwards compat
+  const raw = fs.readFileSync(hooksJsonPath, 'utf8');
   const source = JSON.parse(raw);
 
   const merged = { ...existing };
