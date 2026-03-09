@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-08 | Files scanned: 48 | Token estimate: ~900 -->
+<!-- Generated: 2026-03-09 | Files scanned: 48 | Token estimate: ~900 -->
 
 # Backend — Core Library & Hooks
 
@@ -118,7 +118,7 @@ validate-rules.ts → rules structure
 validate-no-personal-paths.ts → prevent /Users/xxx leaks
 ```
 
-## Doc System Agents (5 agents, parallel pipeline)
+## Doc System Agents (6 agents, parallel pipeline)
 
 ```
 doc-orchestrator (sonnet) → coordinates pipeline
@@ -126,6 +126,7 @@ doc-orchestrator (sonnet) → coordinates pipeline
   ├─ Phase 2 (parallel per module):
   │    ├─ doc-generator (haiku) → doc comments, summaries, glossary, changelog
   │    ├─ doc-validator (sonnet) → accuracy, quality scoring, contradictions
-  │    └─ doc-reporter (haiku) → coverage %, diffs, regressions
+  │    ├─ doc-reporter (haiku) → coverage %, diffs, regressions
+  │    └─ diagram-generator (haiku) → Mermaid diagrams from analysis + CUSTOM.md registry
   └─ Phase 3: index assembly + cross-references
 ```

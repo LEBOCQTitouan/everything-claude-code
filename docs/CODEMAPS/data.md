@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-08 | Files scanned: 48 | Token estimate: ~500 -->
+<!-- Generated: 2026-03-09 | Files scanned: 48 | Token estimate: ~500 -->
 
 # Data Structures & Storage
 

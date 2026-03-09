@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-08 | Files scanned: 48 src + 27 tests | Token estimate: ~350 -->
+<!-- Generated: 2026-03-09 | Files scanned: 48 src + 27 tests | Token estimate: ~350 -->
 
 # Codemap Index — Everything Claude Code (ECC)
 
@@ -13,9 +13,9 @@
 
 ## Quick Stats
 
-- **Source:** 48 TypeScript files in `src/` (~7,000 LOC)
-- **Tests:** 27 test files, 1260 assertions passing (single-process runner)
-- **Content:** 24 agents, 46 commands, 69 skills, 5 rule groups
+- **Source:** 48 TypeScript files in `src/` (~5,200 LOC)
+- **Tests:** 27 test files, 1272 assertions passing (single-process runner)
+- **Content:** 25 agents, 47 commands, 70 skills, 5 rule groups
 - **Runtime dep:** 1 (`omelette`)
 - **Build:** `tsc` → CommonJS in `dist/`
 
@@ -35,6 +35,6 @@ Orchestrators:  doc-orchestrator, arch-reviewer, loop-operator
 Reviewers:      code-reviewer, python-reviewer, go-reviewer, security-reviewer, database-reviewer, uncle-bob
 Architects:     architect, architect-module
 Builders:       build-error-resolver, go-build-resolver, tdd-guide, e2e-runner
-Doc system:     doc-analyzer, doc-generator, doc-validator, doc-reporter
+Doc system:     doc-analyzer, doc-generator, doc-validator, doc-reporter, diagram-generator
 Utilities:      planner, refactor-cleaner, harness-optimizer, doc-updater, chief-of-staff
 ```
