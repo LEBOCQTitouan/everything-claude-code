@@ -1,32 +1,44 @@
 # Agent Orchestration
 
-## Full Development Flow
+## Full Development Flow (/plan)
 
 ```mermaid
 flowchart TD
-    USER(["User Request"])
+    USER(["User: /plan"])
 
-    USER --> PLANNER["planner<br/>Breaks task into phases<br/>identifies risks"]
+    USER --> PLANNER["planner<br/>Breaks task into phases<br/>Test Targets per phase<br/>E2E assessment"]
 
-    PLANNER --> ARCH["architect<br/>Defines hexagonal structure<br/>Bounded contexts, ports, aggregates<br/>DDD model"]
+    PLANNER --> CONFIRM{User confirms?}
+    CONFIRM -->|"no / modify"| PLANNER
 
-    ARCH --> ARCHMOD["architect-module<br/>Designs module internals<br/>Pattern selection<br/>Code organization"]
+    CONFIRM -->|"yes"| PHASE["For each phase:"]
 
-    ARCHMOD --> UB1["uncle-bob<br/>Pre-implementation review<br/>SOLID + Clean Architecture<br/>Dependency rule audit"]
+    subgraph tdd["TDD Execution Loop"]
+        PHASE --> SCAFFOLD["SCAFFOLD<br/>Create interface stubs"]
+        SCAFFOLD --> RED["RED<br/>tdd-guide writes<br/>failing tests"]
+        RED --> REDC["Commit:<br/>test: add phase tests"]
+        REDC --> GREEN["GREEN<br/>tdd-guide implements<br/>minimal code"]
+        GREEN --> GREENC["Commit:<br/>feat: implement phase"]
+        GREENC --> REFACTOR["REFACTOR<br/>Improve code"]
+        REFACTOR --> REFACTORC["Commit:<br/>refactor: improve phase"]
+        REFACTORC --> GATE{"Build + full<br/>test suite pass?"}
+        GATE -->|"no"| GREEN
+        GATE -->|"yes"| NEXT{More phases?}
+        NEXT -->|"yes"| PHASE
+    end
 
-    UB1 -->|"SOLID violations<br/>Clean Code prescriptions"| ARCHMOD
-    UB1 -->|"Layer violations<br/>Port contract issues"| ARCH
+    NEXT -->|"no"| E2E{"E2E needed?<br/>(from plan assessment)"}
+    E2E -->|"yes"| E2EWRITE["e2e-runner<br/>Write + run E2E tests"]
+    E2E -->|"no"| E2ERUN["Run existing<br/>E2E suite"]
+    E2EWRITE --> CR
+    E2ERUN --> CR
 
-    UB1 -->|"Design approved"| CODE["Code written<br/>by Claude Code"]
+    CR["code-reviewer<br/>Mandatory review<br/>on full diff"]
 
-    CODE --> CR["code-reviewer<br/>Security, quality<br/>best practices"]
-    CODE --> UB2["uncle-bob<br/>Post-implementation<br/>Naming, functions, tests<br/>Clean Code audit"]
-
-    CR --> REPORT["Merged Review Report<br/>[Security] findings<br/>[Clean Code] findings<br/>[Clean Architecture] findings"]
-    UB2 --> REPORT
-
-    REPORT -->|"Blockers found"| CODE
-    REPORT -->|"All clear"| DONE(["Ready to commit"])
+    CR --> ISSUES{CRITICAL/HIGH?}
+    ISSUES -->|"yes"| FIX["Fix issues<br/>+ commit"]
+    FIX --> CR
+    ISSUES -->|"no"| DONE(["Done"])
 ```
 
 ## Architecture Agent Chain
