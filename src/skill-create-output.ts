@@ -79,10 +79,19 @@ interface Instinct {
   confidence: number;
 }
 
+/**
+ * Terminal UI formatter for the /skill-create command.
+ * Renders animated progress, analysis results, discovered patterns, instincts,
+ * and output paths using box-drawing characters and ANSI colors.
+ */
 export class SkillCreateOutput {
   repoName: string;
   width: number;
 
+  /**
+   * @param repoName - Repository name to display in the header
+   * @param options - Optional configuration (width defaults to 70)
+   */
   constructor(repoName: string, options: { width?: number } = {}) {
     this.repoName = repoName;
     this.width = options.width || 70;
@@ -198,6 +207,10 @@ ${chalk.yellow('4.')} Evolve into skills: ${chalk.cyan('/evolve')}
   }
 }
 
+/**
+ * Demo function that renders sample skill-create output with mock data.
+ * Used for visual testing and as a usage example.
+ */
 async function demo(): Promise<void> {
   const out = new SkillCreateOutput('PMX');
 
