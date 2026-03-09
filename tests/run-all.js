@@ -40,7 +40,8 @@ const testFiles = [
   'ci/validate-plan-tdd.test.js',
   'ci/validate-custom-diagrams.test.js',
   'scripts/security-scan.test.js',
-  'ci/validate-security-scan.test.js'
+  'ci/validate-security-scan.test.js',
+  'lib/config-audit.test.js'
 ];
 
 const BOX_W = 58;

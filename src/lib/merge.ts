@@ -522,8 +522,21 @@ export async function promptConflict(filename: string, existingPath: string, inc
 // Hooks merge (unchanged — not interactive, deduplication-based)
 // ---------------------------------------------------------------------------
 
+/** Known ECC package identifiers in npm paths. */
+const ECC_PACKAGE_IDENTIFIERS = ['@lebocqtitouan/ecc/', 'everything-claude-code/'];
+
 /**
  * Check if a hook entry is a legacy ECC hook that should be removed.
+ *
+ * Detects legacy hooks via:
+ * 1. Absolute paths containing the ECC package identifier (catches numbered-prefix
+ *    variants like `10-scripts/`, `05-skills/`, and any future path changes)
+ * 2. Old-style `scripts/hooks/` paths
+ * 3. Unresolved placeholder commands
+ * 4. Absolute-path `run-with-flags.js` / `run-with-flags-shell.sh` (not via wrapper)
+ * 5. Inline `node -e` one-liners
+ *
+ * Current `ecc-hook` / `ecc-shell-hook` wrapper commands are NOT flagged.
  */
 export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
   const hooks = entry.hooks;
@@ -532,6 +545,24 @@ export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
   for (const hook of hooks) {
     const cmd = (hook as Record<string, unknown>).command;
     if (typeof cmd !== 'string') continue;
+
+    // Current wrapper commands are NOT legacy
+    if (cmd.startsWith('ecc-hook ') || cmd.startsWith('ecc-shell-hook ')) {
+      continue;
+    }
+
+    // Absolute path containing ECC package identifier — catches all historical
+    // path variants (scripts/, 10-scripts/, 05-skills/, dist/, etc.)
+    let matchesEccPackage = false;
+    for (const identifier of ECC_PACKAGE_IDENTIFIERS) {
+      if (cmd.includes(identifier)) {
+        matchesEccPackage = true;
+        break;
+      }
+    }
+    if (matchesEccPackage) {
+      return true;
+    }
 
     // Old-style scripts/hooks/ direct paths (pre-run-with-flags era)
     if (cmd.includes('scripts/hooks/') && !cmd.includes('run-with-flags-shell.sh')) {
@@ -544,12 +575,12 @@ export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
     }
 
     // Resolved absolute-path commands from old installations (node "/abs/path/dist/hooks/run-with-flags.js")
-    if (cmd.includes('/dist/hooks/run-with-flags.js') && !cmd.startsWith('ecc-hook')) {
+    if (cmd.includes('/dist/hooks/run-with-flags.js')) {
       return true;
     }
 
     // Resolved absolute-path shell hook commands
-    if (cmd.includes('/scripts/hooks/run-with-flags-shell.sh') && !cmd.startsWith('ecc-shell-hook')) {
+    if (cmd.includes('/scripts/hooks/run-with-flags-shell.sh')) {
       return true;
     }
 

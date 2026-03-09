@@ -11,6 +11,7 @@ import { detect, generateReport } from './lib/detect';
 import { readManifest, writeManifest, createManifest, updateManifest } from './lib/manifest';
 import { mergeDirectory, mergeSkills, mergeRules, mergeHooks, printMergeReport, combineMergeReports, defaultMergeOptions } from './lib/merge';
 import { ensureGitignoreEntries, findTrackedEccFiles, gitUntrack } from './lib/gitignore';
+import { auditEccConfig, printConfigAudit } from './lib/config-audit';
 import type { MergeOptions } from './lib/merge';
 import type { EccManifest } from './lib/manifest';
 
@@ -149,7 +150,12 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
   }
   console.error('');
 
-  // Step 3: Set up merge options
+  // Step 3: Audit current config before merging
+  const audit = auditEccConfig(eccRoot, claudeDir);
+  printConfigAudit(audit);
+  console.error('');
+
+  // Step 4: Set up merge options
   const mergeOpts: MergeOptions = {
     ...defaultMergeOptions(),
     dryRun: opts.dryRun,
@@ -157,7 +163,7 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
     interactive: opts.interactive
   };
 
-  // Step 4: Merge each artifact type
+  // Step 5: Merge each artifact type
   console.error('Installing ECC artifacts:');
 
   const agentsReport = await mergeDirectory(path.join(eccRoot, 'agents'), path.join(claudeDir, 'agents'), existingManifest, 'agents', mergeOpts);
@@ -173,7 +179,7 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
   const rulesReport = await mergeRules(path.join(eccRoot, 'rules'), path.join(claudeDir, 'rules'), existingManifest, ruleGroups, mergeOpts);
   printMergeReport('Rules', rulesReport);
 
-  // Step 5: Merge hooks
+  // Step 6: Merge hooks
   if (!opts.dryRun) {
     const hooksResult = mergeHooks(path.join(eccRoot, 'hooks', 'hooks.json'), path.join(claudeDir, 'settings.json'), eccRoot);
     const hookParts = [`${hooksResult.added} added`, `${hooksResult.existing} already present`];
@@ -183,7 +189,7 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
     console.error('  Hooks: (dry-run, skipped)');
   }
 
-  // Step 6: Write/update manifest
+  // Step 7: Write/update manifest
   const sourceArtifacts = collectSourceArtifacts(eccRoot, languages);
 
   if (!opts.dryRun) {
@@ -192,7 +198,7 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
     console.error(`\nManifest ${existingManifest ? 'updated' : 'created'} at ${claudeDir}/.ecc-manifest.json`);
   }
 
-  // Step 7: Summary
+  // Step 8: Summary
   const combined = combineMergeReports(agentsReport, commandsReport, skillsReport, rulesReport);
   console.error('\nSummary:');
   console.error(`  Added:        ${combined.added.length}`);

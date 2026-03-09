@@ -88,14 +88,21 @@ const source = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
 const merged = { ...existing };
 merged.hooks = merged.hooks || {};
 
-// Remove legacy ECC hooks (scripts/hooks/ paths and inline one-liners)
+// Remove legacy/stale ECC hooks — mirrors isLegacyEccHook() in src/lib/merge.ts
 for (const event of Object.keys(merged.hooks)) {
     if (!Array.isArray(merged.hooks[event])) continue;
     merged.hooks[event] = merged.hooks[event].filter(entry => {
         if (!Array.isArray(entry.hooks)) return true;
         return !entry.hooks.some(h => {
             const cmd = h.command || '';
+            // Current wrapper commands are NOT legacy
+            if (cmd.startsWith('ecc-hook ') || cmd.startsWith('ecc-shell-hook ')) return false;
+            // Absolute path containing ECC package identifier (catches 10-scripts/, 05-skills/, etc.)
+            if (cmd.includes('@lebocqtitouan/ecc/') || cmd.includes('everything-claude-code/')) return true;
             if (cmd.includes('scripts/hooks/') && !cmd.includes('run-with-flags-shell.sh')) return true;
+            if (cmd.includes('${ECC_ROOT}') || cmd.includes('${CLAUDE_PLUGIN_ROOT}')) return true;
+            if (cmd.includes('/dist/hooks/run-with-flags.js')) return true;
+            if (cmd.includes('/scripts/hooks/run-with-flags-shell.sh')) return true;
             if (cmd.includes('node -e') && /dev-server|tmux|git push|console\.log|check-console|pr-created|build-complete/.test(cmd)) return true;
             return false;
         });
