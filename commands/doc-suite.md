@@ -8,15 +8,16 @@ Comprehensive documentation analysis, generation, validation, and coverage repor
 
 ## What This Command Does
 
-1. **Analyze** — scan codebase structure, identify public API surface, detect domain concepts, map dependencies
+1. **Analyze** — scan codebase structure, identify public API surface, detect domain concepts, map dependencies, detect diagram opportunities
 2. **Generate** — write missing doc comments into source, produce module summaries, glossary, changelog, usage examples
-3. **Validate** — check doc accuracy against code, score quality, detect contradictions and duplicates
-4. **Report** — calculate coverage per module, compare against baseline, flag staleness and regressions
+3. **Diagrams** — generate Mermaid diagrams from analysis data, inline markers, and manifest
+4. **Validate** — check doc accuracy against code, score quality, detect contradictions and duplicates
+5. **Report** — calculate coverage per module, compare against baseline, flag staleness and regressions
 
 ## Arguments
 
 - `--scope=<path>` — limit analysis to a subdirectory (default: project root)
-- `--phase=<analyze|generate|validate|coverage|all>` — run a specific phase (default: all)
+- `--phase=<analyze|generate|validate|coverage|diagrams|all>` — run a specific phase (default: all)
 - `--base=<branch|commit>` — baseline for coverage diff (default: previous run)
 - `--dry-run` — show what would be written without writing
 - `--comments-only` — only add doc comments to source files
@@ -39,10 +40,12 @@ Single markdown files in `docs/`:
 | `DOC-QUALITY.md` | Quality scores, contradictions, issues |
 | `DOC-COVERAGE.md` | Coverage %, trends, staleness report |
 | `CHANGELOG.md` | Generated from git conventional commits |
+| `diagrams/INDEX.md` | Catalog of all generated Mermaid diagrams |
+| `diagrams/<id>.md` | Individual diagram files (flowchart, sequence, class, etc.) |
 
 ### Large codebases (50+ source files)
 
-Folders with `INDEX.md` + per-module files. Each folder (api-surface/, module-summaries/, glossary/, doc-quality/, doc-coverage/) has an index linking to individual module docs.
+Folders with `INDEX.md` + per-module files. Each folder (api-surface/, module-summaries/, glossary/, doc-quality/, doc-coverage/, diagrams/) has an index linking to individual module docs.
 
 All files are cross-linked with relative paths.
 
@@ -50,12 +53,12 @@ All files are cross-linked with relative paths.
 
 ```
 Phase 1: doc-analyzer (sequential)
-    ↓ produces module list + structure decision
-Phase 2: doc-generator + doc-validator + doc-reporter (parallel, per-module)
-    ↓ each agent writes to its own files
+    ↓ produces module list + structure decision + diagram manifest
+Phase 2: doc-generator + doc-validator + doc-reporter + diagram-generator (parallel)
+    ↓ each agent writes to its own files/directories
 Phase 3: doc-orchestrator assembles INDEX.md files + cross-references
     ↓
-Console: summary with coverage %, quality grade, files written
+Console: summary with coverage %, quality grade, diagrams generated, files written
 ```
 
 ## Example Usage
@@ -70,6 +73,7 @@ User: /doc-suite
   Coverage:            73% (B)
   Quality grade:       B (7.4/10)
   Doc comments added:  18
+  Diagrams generated:  6
   Issues found:        7 (2 HIGH, 3 MEDIUM, 2 LOW)
   Files written:       24
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -77,6 +81,7 @@ User: /doc-suite
   Start here: docs/ARCHITECTURE.md
   Coverage:   docs/DOC-COVERAGE.md
   Quality:    docs/DOC-QUALITY.md
+  Diagrams:   docs/diagrams/INDEX.md
 ```
 
 ## Individual Phase Commands
@@ -84,6 +89,7 @@ User: /doc-suite
 Run phases independently:
 - `/doc-analyze` — analysis only
 - `/doc-generate` — generation only (requires analysis first)
+- `/doc-diagrams` — diagram generation only (requires analysis first)
 - `/doc-validate` — validation only (requires analysis first)
 - `/doc-coverage` — coverage reporting only (requires analysis first)
 
@@ -112,6 +118,7 @@ Use `/update-docs` for quick config-based doc refreshes. Use `/doc-suite` for co
 - Orchestrator: `agents/doc-orchestrator.md`
 - Analyzer: `agents/doc-analyzer.md`
 - Generator: `agents/doc-generator.md`
+- Diagram Generator: `agents/diagram-generator.md`
 - Validator: `agents/doc-validator.md`
 - Reporter: `agents/doc-reporter.md`
-- Skills: `skills/doc-analysis/`, `skills/doc-quality-scoring/`
+- Skills: `skills/doc-analysis/`, `skills/doc-quality-scoring/`, `skills/diagram-generation/`

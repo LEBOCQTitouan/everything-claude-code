@@ -58,9 +58,10 @@ tests/           Test suite (run with tsx, imports from src/ and dist/)
 - `/loop-status` - Check loop status
 - `/quality-gate` - Run quality gate checks
 - `/model-route` - Route to optimal model by task complexity
-- `/doc-suite` - Full documentation suite (analyze + generate + validate + coverage)
+- `/doc-suite` - Full documentation suite (analyze + generate + validate + coverage + diagrams)
 - `/doc-analyze` - Analyze codebase for documentation needs
 - `/doc-generate` - Generate doc comments, summaries, glossary, changelog
+- `/doc-diagrams` - Generate Mermaid diagrams from analysis data and inline markers
 - `/doc-validate` - Validate documentation accuracy and quality scoring
 - `/doc-coverage` - Documentation coverage metrics and regression detection
 

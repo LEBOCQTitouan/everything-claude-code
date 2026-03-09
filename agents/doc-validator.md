@@ -84,6 +84,27 @@ For code examples in documentation:
 
 **Limitations**: Only verify standalone snippets. Skip examples requiring external state or setup.
 
+### Step 6: Mermaid Diagram Validation
+
+If `docs/diagrams/` exists, validate all generated Mermaid diagrams:
+
+1. Scan `docs/diagrams/*.md` and inline `DIAGRAM-START`/`DIAGRAM-END` fences in `docs/**/*.md`
+2. Extract each Mermaid code block
+3. Check for common syntax errors (per `skills/diagram-generation/SKILL.md` § Common Mistakes):
+   - Unquoted special characters in node labels
+   - Spaces in node IDs
+   - Missing `end` for subgraphs
+   - Invalid arrow syntax
+   - Duplicate node IDs
+   - Undefined node references
+4. Cross-reference diagram nodes against actual module/type names in the codebase
+5. Flag diagrams with:
+   - **HIGH**: References to modules/types that don't exist (stale diagram)
+   - **MEDIUM**: Syntax errors that would break Mermaid rendering
+   - **LOW**: Style issues (labels too long, too many nodes without subgraphs)
+
+Add diagram findings to the quality report alongside other issues.
+
 ## Output Structure
 
 Based on codebase size, write to `docs/`:
