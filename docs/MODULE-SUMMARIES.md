@@ -15,7 +15,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** postinstall, skill-create-output
 
-**Doc coverage:** 9% (1/11) — [Details](API-SURFACE.md#ansi) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (11/11) — [Details](API-SURFACE.md#ansi) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -29,7 +29,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** install-orchestrator
 
-**Doc coverage:** 66% (8/12) — [Details](API-SURFACE.md#detect) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (12/12) — [Details](API-SURFACE.md#detect) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -43,7 +43,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** install-orchestrator
 
-**Doc coverage:** 85% (6/7) — [Details](API-SURFACE.md#gitignore) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (7/7) — [Details](API-SURFACE.md#gitignore) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -57,7 +57,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** run-with-flags, check-hook-enabled
 
-**Doc coverage:** 0% (0/8) — [Details](API-SURFACE.md#hook-flags) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (8/8) — [Details](API-SURFACE.md#hook-flags) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -71,7 +71,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** install-orchestrator
 
-**Doc coverage:** 80% (8/10) — [Details](API-SURFACE.md#manifest) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (10/10) — [Details](API-SURFACE.md#manifest) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -85,7 +85,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** install-orchestrator
 
-**Doc coverage:** 62% (10/16) — [Details](API-SURFACE.md#merge) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (16/16) — [Details](API-SURFACE.md#merge) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -99,7 +99,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** session-start hook, setup-package-manager script
 
-**Doc coverage:** 66% (10/15) — [Details](API-SURFACE.md#package-manager) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (15/15) — [Details](API-SURFACE.md#package-manager) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -113,7 +113,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** session-start hook
 
-**Doc coverage:** 30% (3/10) — [Details](API-SURFACE.md#project-detect) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (10/10) — [Details](API-SURFACE.md#project-detect) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -127,7 +127,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** session-start hook
 
-**Doc coverage:** 52% (11/21) — [Details](API-SURFACE.md#session-aliases) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (21/21) — [Details](API-SURFACE.md#session-aliases) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -141,7 +141,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** None directly (used by claw.ts and session-aliases)
 
-**Doc coverage:** 65% (13/20) — [Details](API-SURFACE.md#session-manager) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (20/20) — [Details](API-SURFACE.md#session-manager) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -155,7 +155,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** merge (via install-orchestrator)
 
-**Doc coverage:** 77% (7/9) — [Details](API-SURFACE.md#smart-merge) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (9/9) — [Details](API-SURFACE.md#smart-merge) | [Quality](DOC-QUALITY.md)
 
 ---
 
@@ -169,7 +169,7 @@ Per-module purpose, key exports, and dependencies.
 
 **Dependents:** 8 hooks, install-orchestrator (indirectly)
 
-**Doc coverage:** 74% (26/35) — [Details](API-SURFACE.md#utils) | [Quality](DOC-QUALITY.md)
+**Doc coverage:** 100% (35/35) — [Details](API-SURFACE.md#utils) | [Quality](DOC-QUALITY.md)
 
 See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glossary](GLOSSARY.md) | [Coverage](DOC-COVERAGE.md)
 

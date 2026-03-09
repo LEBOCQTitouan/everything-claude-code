@@ -14,6 +14,7 @@ import { getSessionsDir, readFile, log } from './utils';
 // Session filename pattern
 const SESSION_FILENAME_REGEX = /^(\d{4}-\d{2}-\d{2})(?:-([a-z0-9]{8,}))?-session\.tmp$/;
 
+/** Parsed session filename with extracted date, short ID, and datetime. */
 export interface SessionFilename {
   filename: string;
   shortId: string;
@@ -58,6 +59,7 @@ export function getSessionContent(sessionPath: string): string | null {
   return readFile(sessionPath);
 }
 
+/** Parsed metadata from session markdown content (title, dates, tasks, notes). */
 export interface SessionMetadata {
   title: string | null;
   date: string | null;
@@ -123,6 +125,7 @@ export function parseSessionMetadata(content: string | null): SessionMetadata {
   return metadata;
 }
 
+/** Computed statistics for a session — item counts, line count, and flags. */
 export interface SessionStats {
   totalItems: number;
   completedItems: number;
@@ -136,13 +139,12 @@ export interface SessionStats {
  * Calculate statistics for a session
  */
 export function getSessionStats(sessionPathOrContent: string): SessionStats {
-  const looksLikePath = typeof sessionPathOrContent === 'string' &&
+  const looksLikePath =
+    typeof sessionPathOrContent === 'string' &&
     !sessionPathOrContent.includes('\n') &&
     sessionPathOrContent.endsWith('.tmp') &&
     (sessionPathOrContent.startsWith('/') || /^[A-Za-z]:[/\\]/.test(sessionPathOrContent));
-  const content = looksLikePath
-    ? getSessionContent(sessionPathOrContent)
-    : sessionPathOrContent;
+  const content = looksLikePath ? getSessionContent(sessionPathOrContent) : sessionPathOrContent;
 
   const metadata = parseSessionMetadata(content);
 
@@ -156,6 +158,7 @@ export function getSessionStats(sessionPathOrContent: string): SessionStats {
   };
 }
 
+/** Session list entry with file metadata (path, size, timestamps). */
 export interface SessionListItem extends SessionFilename {
   sessionPath: string;
   hasContent: boolean;
@@ -164,6 +167,7 @@ export interface SessionListItem extends SessionFilename {
   createdTime: Date;
 }
 
+/** Options for filtering and paginating session listings. */
 export interface GetAllSessionsOptions {
   limit?: number;
   offset?: number;
@@ -171,6 +175,7 @@ export interface GetAllSessionsOptions {
   search?: string | null;
 }
 
+/** Paginated result of session listing with total count and hasMore flag. */
 export interface SessionListResult {
   sessions: SessionListItem[];
   total: number;
@@ -183,12 +188,7 @@ export interface SessionListResult {
  * Get all sessions with optional filtering and pagination
  */
 export function getAllSessions(options: GetAllSessionsOptions = {}): SessionListResult {
-  const {
-    limit: rawLimit = 50,
-    offset: rawOffset = 0,
-    date = null,
-    search = null
-  } = options;
+  const { limit: rawLimit = 50, offset: rawOffset = 0, date = null, search = null } = options;
 
   const offsetNum = Number(rawOffset);
   const offset = Number.isNaN(offsetNum) ? 0 : Math.max(0, Math.floor(offsetNum));
@@ -245,6 +245,7 @@ export function getAllSessions(options: GetAllSessionsOptions = {}): SessionList
   };
 }
 
+/** Full session detail including optional content, parsed metadata, and stats. */
 export interface SessionDetail extends SessionFilename {
   sessionPath: string;
   size: number;

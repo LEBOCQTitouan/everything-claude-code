@@ -10,18 +10,18 @@ Module-to-module import relationships with documentation status annotations.
 All 12 library modules are **self-contained** — none imports from another lib module. They depend only on Node.js built-ins and the `omelette` package.
 
 ```
-ansi            (9% documented)   ── no deps
-detect          (66% documented)  ── no deps
-gitignore       (85% documented)  ── no deps
-hook-flags      (0% documented)   ── no deps
-manifest        (80% documented)  ── no deps
-merge           (62% documented)  ── no deps
-package-manager (66% documented)  ── no deps
-project-detect  (30% documented)  ── no deps
-session-aliases (52% documented)  ── no deps
-session-manager (65% documented)  ── no deps
-smart-merge     (77% documented)  ── no deps
-utils           (74% documented)  ── no deps
+ansi            (100% documented)  ── no deps
+detect          (100% documented)  ── no deps
+gitignore       (100% documented)  ── no deps
+hook-flags      (100% documented)  ── no deps
+manifest        (100% documented)  ── no deps
+merge           (100% documented)  ── no deps
+package-manager (100% documented)  ── no deps
+project-detect  (100% documented)  ── no deps
+session-aliases (100% documented)  ── no deps
+session-manager (100% documented)  ── no deps
+smart-merge     (100% documented)  ── no deps
+utils           (100% documented)  ── no deps
 ```
 
 ## Root Scripts → Library
@@ -58,9 +58,9 @@ check-hook-enabled      ──→ hook-flags
 | **utils** | 8 hooks + 0 scripts = 8 | Core utility hub |
 | **hook-flags** | 2 hooks = 2 | Hook system infrastructure |
 | **package-manager** | 1 hook + 1 script = 2 | Package manager detection |
+| **ansi** | 2 scripts = 2 | Terminal color output |
 | **project-detect** | 1 hook = 1 | Language detection |
 | **session-aliases** | 1 hook = 1 | Session alias management |
-| **ansi** | 2 scripts = 2 | Terminal color output |
 | **detect** | 1 script = 1 | ECC setup scanning |
 | **gitignore** | 1 script = 1 | .gitignore management |
 | **manifest** | 1 script = 1 | Artifact tracking |
@@ -77,7 +77,7 @@ No module exceeds fan-in of 10. No circular dependencies detected.
                        │      │      │      │
                        ▼      ▼      ▼      ▼
                    detect  manifest  merge  gitignore
-                   (66%)   (80%)    (62%)  (85%)
+                   (100%)  (100%)   (100%)  (100%)
 
 ┌──────────────────────────────────────────────────────────┐
 │                    session-start hook                      │
@@ -85,7 +85,7 @@ No module exceeds fan-in of 10. No circular dependencies detected.
    │             │                │                │
    ▼             ▼                ▼                ▼
 utils       package-mgr     project-detect   session-aliases
-(74%)         (66%)           (30%)            (52%)
+(100%)        (100%)          (100%)           (100%)
 
 ┌──────────────────────────────────────────────────────────┐
 │         8 hooks (check-console-log, cost-tracker,        │
@@ -94,7 +94,7 @@ utils       package-mgr     project-detect   session-aliases
 └──────────────────────┬───────────────────────────────────┘
                        │
                        ▼
-                     utils (74% documented)
+                     utils (100% documented)
 ```
 
 See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Coverage](DOC-COVERAGE.md)

@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { commandExists, getClaudeDir, readFile, writeFile } from './utils';
 
+/** Configuration for a package manager — commands for install, run, exec, test, build, and dev. */
 export interface PackageManagerConfig {
   name: string;
   lockFile: string;
@@ -20,6 +21,7 @@ export interface PackageManagerConfig {
   devCmd: string;
 }
 
+/** Supported package managers with their command configurations. */
 export const PACKAGE_MANAGERS: Record<string, PackageManagerConfig> = {
   npm: {
     name: 'npm',
@@ -63,6 +65,7 @@ export const PACKAGE_MANAGERS: Record<string, PackageManagerConfig> = {
   }
 };
 
+/** Priority order for detecting package managers from lock files. */
 export const DETECTION_PRIORITY = ['pnpm', 'bun', 'yarn', 'npm'] as const;
 
 function getConfigPath(): string {
@@ -155,12 +158,14 @@ export function getAvailablePackageManagers(): string[] {
   return available;
 }
 
+/** Detected or configured package manager with its config and detection source. */
 export interface PackageManagerResult {
   name: string;
   config: PackageManagerConfig;
   source: string;
 }
 
+/** Options for package manager detection — optional project directory override. */
 export interface GetPackageManagerOptions {
   projectDir?: string;
 }
@@ -352,12 +357,7 @@ export function getCommandPattern(action: string): string {
     patterns.push('npm run build', 'pnpm( run)? build', 'yarn build', 'bun run build');
   } else {
     const escaped = escapeRegex(trimmedAction);
-    patterns.push(
-      `npm run ${escaped}`,
-      `pnpm( run)? ${escaped}`,
-      `yarn ${escaped}`,
-      `bun run ${escaped}`
-    );
+    patterns.push(`npm run ${escaped}`, `pnpm( run)? ${escaped}`, `yarn ${escaped}`, `bun run ${escaped}`);
   }
 
   return `(${patterns.join('|')})`;

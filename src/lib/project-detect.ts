@@ -104,6 +104,7 @@ function hasFileWithExtension(projectDir: string, extensions: string[]): boolean
   }
 }
 
+/** Extract all dependency names from package.json (dependencies + devDependencies). */
 export function getPackageJsonDeps(projectDir: string): string[] {
   try {
     const pkgPath = path.join(projectDir, 'package.json');
@@ -118,6 +119,7 @@ export function getPackageJsonDeps(projectDir: string): string[] {
   }
 }
 
+/** Extract Python dependency names from requirements.txt and pyproject.toml. */
 export function getPythonDeps(projectDir: string): string[] {
   const deps: string[] = [];
 
@@ -166,6 +168,7 @@ export function getPythonDeps(projectDir: string): string[] {
   return deps;
 }
 
+/** Extract Go module dependency paths from go.mod require block. */
 export function getGoDeps(projectDir: string): string[] {
   try {
     const modPath = path.join(projectDir, 'go.mod');
@@ -188,6 +191,7 @@ export function getGoDeps(projectDir: string): string[] {
   }
 }
 
+/** Extract Rust crate names from Cargo.toml [dependencies] sections. */
 export function getRustDeps(projectDir: string): string[] {
   try {
     const cargoPath = path.join(projectDir, 'Cargo.toml');
@@ -211,6 +215,7 @@ export function getRustDeps(projectDir: string): string[] {
   }
 }
 
+/** Extract PHP dependency names from composer.json (require + require-dev). */
 export function getComposerDeps(projectDir: string): string[] {
   try {
     const composerPath = path.join(projectDir, 'composer.json');
@@ -225,6 +230,7 @@ export function getComposerDeps(projectDir: string): string[] {
   }
 }
 
+/** Extract Elixir dependency names from mix.exs deps block. */
 export function getElixirDeps(projectDir: string): string[] {
   try {
     const mixPath = path.join(projectDir, 'mix.exs');
@@ -241,6 +247,7 @@ export function getElixirDeps(projectDir: string): string[] {
   }
 }
 
+/** Result of project type detection — detected languages, frameworks, and primary type. */
 export interface ProjectType {
   languages: string[];
   frameworks: string[];

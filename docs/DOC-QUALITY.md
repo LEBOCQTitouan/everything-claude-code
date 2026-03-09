@@ -3,51 +3,42 @@
 
 # Documentation Quality Report
 
-## Overall Grade: C (5.9/10)
+## Overall Grade: A (9.2/10)
 
 ### Dimension Breakdown
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| Presence | 6 | 59% of public items documented (103/174) |
-| Accuracy | 8 | No contradictions detected between docs and code |
-| Completeness | 5 | Many docs have description only, missing @param/@returns |
-| Clarity | 7 | Clear naming, consistent terminology where docs exist |
-| Currency | 5 | Several modules recently changed without doc updates |
+| Presence | 10 | 100% of public items documented (174/174) |
+| Accuracy | 9 | No contradictions detected between docs and code |
+| Completeness | 8 | All exports have JSDoc descriptions; some lack @param/@returns |
+| Clarity | 9 | Clear naming, consistent terminology, concise descriptions |
+| Currency | 10 | All modules have current documentation matching latest code |
 
 ### Per-Module Quality
 
 | Module | Presence | Completeness | Overall | Grade |
 |--------|----------|--------------|---------|-------|
-| gitignore | 85% | Good | 8.0 | B |
-| manifest | 80% | Good | 7.5 | B |
-| smart-merge | 77% | Good | 7.2 | B |
-| utils | 74% | Mixed | 6.8 | C |
-| detect | 66% | Mixed | 6.2 | C |
-| package-manager | 66% | Mixed | 6.2 | C |
-| session-manager | 65% | Mixed | 6.0 | C |
-| merge | 62% | Mixed | 5.8 | C |
-| session-aliases | 52% | Sparse | 5.0 | C |
-| project-detect | 30% | Sparse | 3.5 | D |
-| ansi | 9% | Minimal | 1.5 | F |
-| hook-flags | 0% | None | 0.5 | F |
+| gitignore | 100% | Good | 9.5 | A |
+| manifest | 100% | Good | 9.5 | A |
+| smart-merge | 100% | Good | 9.5 | A |
+| utils | 100% | Good | 9.2 | A |
+| detect | 100% | Good | 9.2 | A |
+| package-manager | 100% | Good | 9.2 | A |
+| session-manager | 100% | Good | 9.2 | A |
+| merge | 100% | Good | 9.2 | A |
+| session-aliases | 100% | Good | 9.0 | A |
+| project-detect | 100% | Good | 9.0 | A |
+| ansi | 100% | Good | 9.0 | A |
+| hook-flags | 100% | Good | 9.0 | A |
 
 ### Issues Found
 
 | Severity | Module | Issue |
 |----------|--------|-------|
-| HIGH | hook-flags | 0/8 exports documented — entire module undocumented |
-| HIGH | ansi | 10/11 color constants undocumented (only stripAnsi has JSDoc) |
-| HIGH | project-detect | 7/10 exports undocumented including core `detectProjectType()` |
-| MEDIUM | session-aliases | 10/21 exports missing docs — newer functions (rename, cleanup, getForSession) |
-| MEDIUM | session-manager | 7/20 exports missing docs — utility functions (getTitle, getSize, write, append, delete) |
-| MEDIUM | utils | 9/35 exports missing docs — grep, replace, git operations |
-| MEDIUM | merge | 6/16 exports missing docs — type aliases and combineMergeReports |
-| MEDIUM | package-manager | 5/15 exports missing docs — project-level PM functions |
-| LOW | detect | 4/12 missing — detect(), generateReport(), detectHooks(), detectClaudeMd() |
-| LOW | smart-merge | 2/9 missing — contentsDiffer(), readFileForMerge() |
-| LOW | gitignore | 1/7 missing — findTrackedEccFiles() |
-| LOW | manifest | 2/10 missing — diffFileList(), getManifestFilename() |
+| LOW | utils | Some functions have description-only JSDoc without @param/@returns |
+| LOW | session-manager | Some functions have description-only JSDoc without @param/@returns |
+| LOW | merge | Type aliases have brief descriptions; could include value documentation |
 
 ### Contradictions
 
@@ -57,12 +48,23 @@ No contradictions detected between JSDoc and code signatures.
 
 No conflicting duplicate descriptions detected.
 
-### Priority Recommendations
+### Improvement from Previous Run
 
-1. **Document hook-flags** — most-imported undocumented module (2 dependents)
-2. **Document ansi color constants** — widely used but only `stripAnsi` has JSDoc
-3. **Document project-detect exports** — `detectProjectType()` is a key API with no docs
-4. **Add @param/@returns to existing docs** — many functions have description-only JSDoc
+| Metric | Previous | Current | Change |
+|--------|----------|---------|--------|
+| Overall grade | C (5.9/10) | A (9.2/10) | +3.3 |
+| Coverage | 59% (103/174) | 100% (174/174) | +41% |
+| HIGH issues | 3 | 0 | -3 |
+| MEDIUM issues | 5 | 0 | -5 |
+| LOW issues | 4 | 3 | -1 |
+| Modules at 100% | 0 | 12 | +12 |
+| Modules at F grade | 2 | 0 | -2 |
+
+### Remaining Recommendations
+
+1. **Add @param/@returns to core functions** — `readFile()`, `writeFile()`, `runCommand()`, etc.
+2. **Document error conditions** — which functions throw vs return null/false
+3. **Add @example tags** — for complex functions like `computeLineDiff()`, `smartMerge()`
 
 See also: [API Surface](API-SURFACE.md) | [Coverage](DOC-COVERAGE.md) | [Module Summaries](MODULE-SUMMARIES.md)
 

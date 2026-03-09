@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { getClaudeDir, ensureDir, readFile, log } from './utils';
 
+/** Get the path to the session aliases JSON file. */
 export function getAliasesPath(): string {
   return path.join(getClaudeDir(), 'session-aliases.json');
 }
@@ -140,6 +141,7 @@ export function saveAliases(aliases: AliasesData): boolean {
   }
 }
 
+/** Resolved alias with session path, creation date, and optional title. */
 export interface ResolvedAlias {
   alias: string;
   sessionPath: string;
@@ -172,6 +174,7 @@ export function resolveAlias(alias: string): ResolvedAlias | null {
   };
 }
 
+/** Result of setting or updating an alias, including whether it was newly created. */
 export interface SetAliasResult {
   success: boolean;
   error?: string;
@@ -230,6 +233,7 @@ export function setAlias(alias: string, sessionPath: string, title: string | nul
   return { success: false, error: 'Failed to save alias' };
 }
 
+/** Alias information returned when listing aliases. */
 export interface AliasInfo {
   name: string;
   sessionPath: string;
@@ -238,6 +242,7 @@ export interface AliasInfo {
   title: string | null;
 }
 
+/** Options for filtering and limiting alias listings. */
 export interface ListAliasesOptions {
   search?: string | null;
   limit?: number | null;
@@ -272,6 +277,7 @@ export function listAliases(options: ListAliasesOptions = {}): AliasInfo[] {
   return aliases;
 }
 
+/** Result of deleting an alias, including the deleted session path. */
 export interface DeleteAliasResult {
   success: boolean;
   error?: string;
@@ -299,6 +305,7 @@ export function deleteAlias(alias: string): DeleteAliasResult {
   return { success: false, error: 'Failed to delete alias' };
 }
 
+/** Result of renaming an alias from old name to new name. */
 export interface RenameAliasResult {
   success: boolean;
   error?: string;
@@ -366,6 +373,7 @@ export function resolveSessionAlias(aliasOrId: string): string {
   return aliasOrId;
 }
 
+/** Result of updating an alias title. */
 export interface UpdateTitleResult {
   success: boolean;
   error?: string;
@@ -397,6 +405,7 @@ export function updateAliasTitle(alias: string, title: string | null): UpdateTit
   return { success: false, error: 'Failed to update alias title' };
 }
 
+/** Alias info for a specific session — name, creation date, and title. */
 export interface SessionAliasInfo {
   name: string;
   createdAt: string;
@@ -423,6 +432,7 @@ export function getAliasesForSession(sessionPath: string): SessionAliasInfo[] {
   return aliases;
 }
 
+/** Result of cleaning up aliases pointing to non-existent sessions. */
 export interface CleanupResult {
   success?: boolean;
   totalChecked: number;

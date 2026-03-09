@@ -6,6 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 
+/** ECC installation manifest — tracks version, languages, and installed artifacts. */
 export interface EccManifest {
   version: string;
   installedAt: string;
@@ -20,6 +21,7 @@ export interface EccManifest {
   };
 }
 
+/** Diff between two file lists — files added, updated (in both), and removed. */
 export interface ManifestDiff {
   added: string[];
   updated: string[];
@@ -58,11 +60,7 @@ export function writeManifest(dir: string, manifest: EccManifest): void {
 /**
  * Create a fresh manifest for a new installation.
  */
-export function createManifest(
-  version: string,
-  languages: string[],
-  artifacts: EccManifest['artifacts'],
-): EccManifest {
+export function createManifest(version: string, languages: string[], artifacts: EccManifest['artifacts']): EccManifest {
   const now = new Date().toISOString();
   return {
     version,
@@ -73,23 +71,16 @@ export function createManifest(
       agents: [...artifacts.agents],
       commands: [...artifacts.commands],
       skills: [...artifacts.skills],
-      rules: Object.fromEntries(
-        Object.entries(artifacts.rules).map(([k, v]) => [k, [...v]]),
-      ),
-      hookDescriptions: [...artifacts.hookDescriptions],
-    },
+      rules: Object.fromEntries(Object.entries(artifacts.rules).map(([k, v]) => [k, [...v]])),
+      hookDescriptions: [...artifacts.hookDescriptions]
+    }
   };
 }
 
 /**
  * Update an existing manifest with new data (returns new object, does not mutate).
  */
-export function updateManifest(
-  existing: EccManifest,
-  version: string,
-  languages: string[],
-  artifacts: EccManifest['artifacts'],
-): EccManifest {
+export function updateManifest(existing: EccManifest, version: string, languages: string[], artifacts: EccManifest['artifacts']): EccManifest {
   return {
     ...existing,
     version,
@@ -99,22 +90,16 @@ export function updateManifest(
       agents: [...artifacts.agents],
       commands: [...artifacts.commands],
       skills: [...artifacts.skills],
-      rules: Object.fromEntries(
-        Object.entries(artifacts.rules).map(([k, v]) => [k, [...v]]),
-      ),
-      hookDescriptions: [...artifacts.hookDescriptions],
-    },
+      rules: Object.fromEntries(Object.entries(artifacts.rules).map(([k, v]) => [k, [...v]])),
+      hookDescriptions: [...artifacts.hookDescriptions]
+    }
   };
 }
 
 /**
  * Check if a specific artifact is managed by ECC.
  */
-export function isEccManaged(
-  manifest: EccManifest | null,
-  artifactType: 'agents' | 'commands' | 'skills',
-  filename: string,
-): boolean {
+export function isEccManaged(manifest: EccManifest | null, artifactType: 'agents' | 'commands' | 'skills', filename: string): boolean {
   if (!manifest) return false;
   return manifest.artifacts[artifactType].includes(filename);
 }
@@ -122,11 +107,7 @@ export function isEccManaged(
 /**
  * Check if a rule file is managed by ECC.
  */
-export function isEccManagedRule(
-  manifest: EccManifest | null,
-  group: string,
-  filename: string,
-): boolean {
+export function isEccManagedRule(manifest: EccManifest | null, group: string, filename: string): boolean {
   if (!manifest) return false;
   const groupRules = manifest.artifacts.rules[group];
   if (!groupRules) return false;
@@ -143,7 +124,7 @@ export function diffFileList(existing: string[], incoming: string[]): ManifestDi
   return {
     added: incoming.filter(f => !existingSet.has(f)),
     updated: incoming.filter(f => existingSet.has(f)),
-    removed: existing.filter(f => !incomingSet.has(f)),
+    removed: existing.filter(f => !incomingSet.has(f))
   };
 }
 

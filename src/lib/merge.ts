@@ -14,12 +14,17 @@ import type { EccManifest } from './manifest';
 // Types
 // ---------------------------------------------------------------------------
 
+/** User action for resolving a file conflict (legacy flow). */
 export type ConflictChoice = 'overwrite' | 'keep' | 'diff' | 'smart-merge';
+/** Cached conflict choice to apply to all remaining files, or null for per-file prompting. */
 export type ConflictApplyAll = ConflictChoice | null;
 
+/** User action for interactive file review. */
 export type ReviewChoice = 'accept' | 'keep' | 'smart-merge';
+/** Cached review choice to apply to all remaining files, or null for per-file prompting. */
 export type ReviewApplyAll = ReviewChoice | null;
 
+/** Report of files added, updated, unchanged, skipped, smart-merged, and errored during a merge. */
 export interface MergeReport {
   added: string[];
   updated: string[];
@@ -29,6 +34,7 @@ export interface MergeReport {
   errors: string[];
 }
 
+/** Options controlling merge behavior — dry run, force, interactive mode, and cached choice. */
 export interface MergeOptions {
   dryRun: boolean;
   force: boolean;

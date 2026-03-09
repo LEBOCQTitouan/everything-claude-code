@@ -30,6 +30,8 @@ Generated from git conventional commits.
 
 ### Documentation
 
+- Add JSDoc comments to all 174 public exports across 12 modules (59% → 100% coverage)
+- Update doc suite — ARCHITECTURE, API-SURFACE, MODULE-SUMMARIES, DOC-QUALITY, DOC-COVERAGE, DEPENDENCY-GRAPH
 - Update CLAUDE.md with doc system commands and test counts
 - Regenerate codemaps for doc system and test runner changes
 - Add /arch-review to CLAUDE.md key commands

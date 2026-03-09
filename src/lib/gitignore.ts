@@ -18,9 +18,10 @@ export const ECC_GITIGNORE_ENTRIES: ReadonlyArray<{ pattern: string; comment: st
   { pattern: '.claude/.ecc-manifest.json', comment: 'ECC installation manifest' },
   { pattern: 'docs/CODEMAPS/', comment: 'Generated architecture docs (regeneratable via /update-codemaps)' },
   { pattern: '.reports/', comment: 'Analysis reports (generated, not source of truth)' },
-  { pattern: '.claude/plans/', comment: 'Autonomous loop plans (ephemeral)' },
+  { pattern: '.claude/plans/', comment: 'Autonomous loop plans (ephemeral)' }
 ];
 
+/** Result of ensuring gitignore entries — patterns added, already present, and skip flag. */
 export interface GitignoreResult {
   added: string[];
   alreadyPresent: string[];
@@ -33,7 +34,7 @@ export interface GitignoreResult {
 export function isGitRepo(dir: string): boolean {
   const result = spawnSync('git', ['rev-parse', '--git-dir'], {
     cwd: dir,
-    stdio: 'pipe',
+    stdio: 'pipe'
   });
   return result.status === 0;
 }
@@ -44,7 +45,7 @@ export function isGitRepo(dir: string): boolean {
 export function isGitTracked(dir: string, filePath: string): boolean {
   const result = spawnSync('git', ['ls-files', '--error-unmatch', filePath], {
     cwd: dir,
-    stdio: 'pipe',
+    stdio: 'pipe'
   });
   return result.status === 0;
 }
@@ -55,7 +56,7 @@ export function isGitTracked(dir: string, filePath: string): boolean {
 export function gitUntrack(dir: string, filePath: string): boolean {
   const result = spawnSync('git', ['rm', '--cached', '-r', filePath], {
     cwd: dir,
-    stdio: 'pipe',
+    stdio: 'pipe'
   });
   return result.status === 0;
 }
@@ -65,9 +66,10 @@ export function gitUntrack(dir: string, filePath: string): boolean {
  */
 function parseGitignorePatterns(content: string): Set<string> {
   return new Set(
-    content.split('\n')
+    content
+      .split('\n')
       .map(line => line.trim())
-      .filter(line => line.length > 0 && !line.startsWith('#')),
+      .filter(line => line.length > 0 && !line.startsWith('#'))
   );
 }
 
@@ -76,18 +78,13 @@ function parseGitignorePatterns(content: string): Set<string> {
  * Creates .gitignore if it doesn't exist (only in git repos).
  * Returns a report of what was added.
  */
-export function ensureGitignoreEntries(
-  projectDir: string,
-  entries: ReadonlyArray<{ pattern: string; comment: string }> = ECC_GITIGNORE_ENTRIES,
-): GitignoreResult {
+export function ensureGitignoreEntries(projectDir: string, entries: ReadonlyArray<{ pattern: string; comment: string }> = ECC_GITIGNORE_ENTRIES): GitignoreResult {
   if (!isGitRepo(projectDir)) {
     return { added: [], alreadyPresent: [], skipped: true };
   }
 
   const gitignorePath = path.join(projectDir, '.gitignore');
-  const existingContent = fs.existsSync(gitignorePath)
-    ? fs.readFileSync(gitignorePath, 'utf8')
-    : '';
+  const existingContent = fs.existsSync(gitignorePath) ? fs.readFileSync(gitignorePath, 'utf8') : '';
 
   const existingPatterns = parseGitignorePatterns(existingContent);
   const added: string[] = [];
@@ -139,7 +136,7 @@ export function findTrackedEccFiles(projectDir: string): string[] {
         const result = spawnSync('git', ['ls-files', entry.pattern], {
           cwd: projectDir,
           stdio: 'pipe',
-          encoding: 'utf8',
+          encoding: 'utf8'
         });
         if (result.status === 0 && result.stdout.trim().length > 0) {
           tracked.push(entry.pattern);

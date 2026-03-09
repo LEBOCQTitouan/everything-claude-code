@@ -21,18 +21,18 @@
 
 | Module | LOC | Purpose | Doc Coverage |
 |--------|-----|---------|--------------|
-| [utils](API-SURFACE.md#utils) | 473 | Platform, file I/O, git, shell | 74% |
-| [session-aliases](API-SURFACE.md#session-aliases) | 469 | Session alias CRUD | 52% |
-| [session-manager](API-SURFACE.md#session-manager) | 388 | Session listing, metadata | 65% |
-| [package-manager](API-SURFACE.md#package-manager) | 364 | npm/yarn/pnpm/bun detection | 66% |
-| [smart-merge](API-SURFACE.md#smart-merge) | 363 | LCS diff, Claude merge | 77% |
-| [project-detect](API-SURFACE.md#project-detect) | 337 | Language/framework detection | 30% |
-| [detect](API-SURFACE.md#detect) | 234 | Scan existing ECC setup | 66% |
-| [gitignore](API-SURFACE.md#gitignore) | 153 | .gitignore management | 85% |
-| [manifest](API-SURFACE.md#manifest) | 155 | ECC artifact tracking | 80% |
-| [merge](API-SURFACE.md#merge) | 647 | Install merge + interactive review | 62% |
-| [hook-flags](API-SURFACE.md#hook-flags) | 68 | Hook profile gating | 0% |
-| [ansi](API-SURFACE.md#ansi) | 39 | Terminal colors | 9% |
+| [utils](API-SURFACE.md#utils) | 473 | Platform, file I/O, git, shell | 100% |
+| [session-aliases](API-SURFACE.md#session-aliases) | 469 | Session alias CRUD | 100% |
+| [session-manager](API-SURFACE.md#session-manager) | 388 | Session listing, metadata | 100% |
+| [package-manager](API-SURFACE.md#package-manager) | 364 | npm/yarn/pnpm/bun detection | 100% |
+| [smart-merge](API-SURFACE.md#smart-merge) | 363 | LCS diff, Claude merge | 100% |
+| [project-detect](API-SURFACE.md#project-detect) | 337 | Language/framework detection | 100% |
+| [detect](API-SURFACE.md#detect) | 234 | Scan existing ECC setup | 100% |
+| [gitignore](API-SURFACE.md#gitignore) | 153 | .gitignore management | 100% |
+| [manifest](API-SURFACE.md#manifest) | 155 | ECC artifact tracking | 100% |
+| [merge](API-SURFACE.md#merge) | 647 | Install merge + interactive review | 100% |
+| [hook-flags](API-SURFACE.md#hook-flags) | 68 | Hook profile gating | 100% |
+| [ansi](API-SURFACE.md#ansi) | 39 | Terminal colors | 100% |
 
 ### Hooks (`src/hooks/` — 23 implementations, 1,551 LOC)
 

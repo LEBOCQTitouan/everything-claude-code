@@ -7,12 +7,14 @@ import { spawnSync } from 'child_process';
 import fs from 'fs';
 import { red, green, dim, bold, stripAnsi } from './ansi';
 
+/** Result of a Claude-powered smart merge — success flag, merged content, and error. */
 export interface SmartMergeResult {
   success: boolean;
   merged: string | null;
   error: string | null;
 }
 
+/** A single diff line — type indicates same, removed, or added. */
 export interface DiffLine {
   type: 'same' | 'removed' | 'added';
   text: string;

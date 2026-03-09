@@ -8,9 +8,11 @@ import path from 'path';
 import os from 'os';
 import { execSync, spawnSync, type ExecSyncOptions } from 'child_process';
 
-// Platform detection
+/** Whether the current platform is Windows. */
 export const isWindows = process.platform === 'win32';
+/** Whether the current platform is macOS. */
 export const isMacOS = process.platform === 'darwin';
+/** Whether the current platform is Linux. */
 export const isLinux = process.platform === 'linux';
 
 /**
@@ -131,11 +133,13 @@ export function getDateTimeString(): string {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
+/** A file matched by findFiles — includes path and modification timestamp. */
 export interface FileMatch {
   path: string;
   mtime: number;
 }
 
+/** Options for findFiles — max age in days and recursive search flag. */
 export interface FindFilesOptions {
   maxAge?: number | null;
   recursive?: boolean;
@@ -202,6 +206,7 @@ export function findFiles(dir: string, pattern: string, options: FindFilesOption
   return results;
 }
 
+/** Options for readStdinJson — timeout and max input size. */
 export interface ReadStdinJsonOptions {
   timeoutMs?: number;
   maxSize?: number;
@@ -213,7 +218,7 @@ export interface ReadStdinJsonOptions {
 export async function readStdinJson(options: ReadStdinJsonOptions = {}): Promise<Record<string, unknown>> {
   const { timeoutMs = 5000, maxSize = 1024 * 1024 } = options;
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     let data = '';
     let settled = false;
 
@@ -326,6 +331,7 @@ export function commandExists(cmd: string): boolean {
   }
 }
 
+/** Result of running a shell command — success flag and output string. */
 export interface CommandResult {
   success: boolean;
   output: string;
@@ -388,6 +394,7 @@ export function getGitModifiedFiles(patterns: string[] = []): string[] {
   return files;
 }
 
+/** Options for replaceInFile — whether to replace all occurrences. */
 export interface ReplaceInFileOptions {
   all?: boolean;
 }
@@ -437,6 +444,7 @@ export function countInFile(filePath: string, pattern: string | RegExp): number 
   return matches ? matches.length : 0;
 }
 
+/** A line matched by grepFile — includes line number and content. */
 export interface GrepMatch {
   lineNumber: number;
   content: string;

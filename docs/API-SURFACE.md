@@ -9,19 +9,19 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 
 | Module | Exports | Documented | Coverage |
 |--------|---------|------------|----------|
-| utils | 35 | 26 | 74% |
-| session-aliases | 21 | 11 | 52% |
-| session-manager | 20 | 13 | 65% |
-| merge | 16 | 10 | 62% |
-| package-manager | 15 | 10 | 66% |
-| detect | 12 | 8 | 66% |
-| ansi | 11 | 1 | 9% |
-| manifest | 10 | 8 | 80% |
-| project-detect | 10 | 3 | 30% |
-| smart-merge | 9 | 7 | 77% |
-| hook-flags | 8 | 0 | 0% |
-| gitignore | 7 | 6 | 85% |
-| **Total** | **174** | **103** | **59%** |
+| utils | 35 | 35 | 100% |
+| session-aliases | 21 | 21 | 100% |
+| session-manager | 20 | 20 | 100% |
+| merge | 16 | 16 | 100% |
+| package-manager | 15 | 15 | 100% |
+| detect | 12 | 12 | 100% |
+| ansi | 11 | 11 | 100% |
+| manifest | 10 | 10 | 100% |
+| project-detect | 10 | 10 | 100% |
+| smart-merge | 9 | 9 | 100% |
+| hook-flags | 8 | 8 | 100% |
+| gitignore | 7 | 7 | 100% |
+| **Total** | **174** | **174** | **100%** |
 
 ---
 
@@ -29,16 +29,16 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 
 | Symbol | Type | Documented |
 |--------|------|------------|
-| `bold` | const | No |
-| `dim` | const | No |
-| `red` | const | No |
-| `green` | const | No |
-| `yellow` | const | No |
-| `cyan` | const | No |
-| `white` | const | No |
-| `magenta` | const | No |
-| `gray` | const | No |
-| `bgCyan` | const | No |
+| `bold` | const | Yes |
+| `dim` | const | Yes |
+| `red` | const | Yes |
+| `green` | const | Yes |
+| `yellow` | const | Yes |
+| `cyan` | const | Yes |
+| `white` | const | Yes |
+| `magenta` | const | Yes |
+| `gray` | const | Yes |
+| `bgCyan` | const | Yes |
 | `stripAnsi()` | function | Yes |
 
 ## detect
@@ -53,10 +53,10 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `detectCommands()` | function | Yes |
 | `detectSkills()` | function | Yes |
 | `detectRules()` | function | Yes |
-| `detectHooks()` | function | No |
-| `detectClaudeMd()` | function | No |
-| `detect()` | function | No |
-| `generateReport()` | function | No |
+| `detectHooks()` | function | Yes |
+| `detectClaudeMd()` | function | Yes |
+| `detect()` | function | Yes |
+| `generateReport()` | function | Yes |
 
 ## gitignore
 
@@ -68,20 +68,20 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `isGitTracked()` | function | Yes |
 | `gitUntrack()` | function | Yes |
 | `ensureGitignoreEntries()` | function | Yes |
-| `findTrackedEccFiles()` | function | No |
+| `findTrackedEccFiles()` | function | Yes |
 
 ## hook-flags
 
 | Symbol | Type | Documented |
 |--------|------|------------|
-| `HookProfile` | type | No |
-| `VALID_PROFILES` | const | No |
-| `normalizeId()` | function | No |
-| `getHookProfile()` | function | No |
-| `getDisabledHookIds()` | function | No |
-| `parseProfiles()` | function | No |
-| `IsHookEnabledOptions` | interface | No |
-| `isHookEnabled()` | function | No |
+| `HookProfile` | type | Yes |
+| `VALID_PROFILES` | const | Yes |
+| `normalizeId()` | function | Yes |
+| `getHookProfile()` | function | Yes |
+| `getDisabledHookIds()` | function | Yes |
+| `parseProfiles()` | function | Yes |
+| `IsHookEnabledOptions` | interface | Yes |
+| `isHookEnabled()` | function | Yes |
 
 ## manifest
 
@@ -95,17 +95,17 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `updateManifest()` | function | Yes |
 | `isEccManaged()` | function | Yes |
 | `isEccManagedRule()` | function | Yes |
-| `diffFileList()` | function | No |
-| `getManifestFilename()` | function | No |
+| `diffFileList()` | function | Yes |
+| `getManifestFilename()` | function | Yes |
 
 ## merge
 
 | Symbol | Type | Documented |
 |--------|------|------------|
-| `ConflictChoice` | type | No |
-| `ConflictApplyAll` | type | No |
-| `ReviewChoice` | type | No |
-| `ReviewApplyAll` | type | No |
+| `ConflictChoice` | type | Yes |
+| `ConflictApplyAll` | type | Yes |
+| `ReviewChoice` | type | Yes |
+| `ReviewApplyAll` | type | Yes |
 | `MergeReport` | interface | Yes |
 | `MergeOptions` | interface | Yes |
 | `defaultMergeOptions()` | function | Yes |
@@ -117,7 +117,7 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `isLegacyEccHook()` | function | Yes |
 | `mergeHooks()` | function | Yes |
 | `printMergeReport()` | function | Yes |
-| `combineMergeReports()` | function | No |
+| `combineMergeReports()` | function | Yes |
 
 ## package-manager
 
@@ -133,26 +133,26 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `GetPackageManagerOptions` | interface | Yes |
 | `getPackageManager()` | function | Yes |
 | `setPreferredPackageManager()` | function | Yes |
-| `setProjectPackageManager()` | function | No |
-| `getRunCommand()` | function | No |
-| `getExecCommand()` | function | No |
-| `getSelectionPrompt()` | function | No |
-| `getCommandPattern()` | function | No |
+| `setProjectPackageManager()` | function | Yes |
+| `getRunCommand()` | function | Yes |
+| `getExecCommand()` | function | Yes |
+| `getSelectionPrompt()` | function | Yes |
+| `getCommandPattern()` | function | Yes |
 
 ## project-detect
 
 | Symbol | Type | Documented |
 |--------|------|------------|
-| `LANGUAGE_RULES` | const | No |
-| `FRAMEWORK_RULES` | const | No |
-| `getPackageJsonDeps()` | function | No |
-| `getPythonDeps()` | function | No |
-| `getGoDeps()` | function | No |
-| `getRustDeps()` | function | No |
+| `LANGUAGE_RULES` | const | Yes |
+| `FRAMEWORK_RULES` | const | Yes |
+| `getPackageJsonDeps()` | function | Yes |
+| `getPythonDeps()` | function | Yes |
+| `getGoDeps()` | function | Yes |
+| `getRustDeps()` | function | Yes |
 | `getComposerDeps()` | function | Yes |
 | `getElixirDeps()` | function | Yes |
 | `ProjectType` | interface | Yes |
-| `detectProjectType()` | function | No |
+| `detectProjectType()` | function | Yes |
 
 ## session-aliases
 
@@ -166,19 +166,19 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `SetAliasResult` | interface | Yes |
 | `setAlias()` | function | Yes |
 | `AliasInfo` | interface | Yes |
-| `ListAliasesOptions` | interface | No |
+| `ListAliasesOptions` | interface | Yes |
 | `listAliases()` | function | Yes |
 | `DeleteAliasResult` | interface | Yes |
 | `deleteAlias()` | function | Yes |
-| `RenameAliasResult` | interface | No |
-| `renameAlias()` | function | No |
-| `resolveSessionAlias()` | function | No |
-| `UpdateTitleResult` | interface | No |
-| `updateAliasTitle()` | function | No |
-| `SessionAliasInfo` | interface | No |
-| `getAliasesForSession()` | function | No |
-| `CleanupResult` | interface | No |
-| `cleanupAliases()` | function | No |
+| `RenameAliasResult` | interface | Yes |
+| `renameAlias()` | function | Yes |
+| `resolveSessionAlias()` | function | Yes |
+| `UpdateTitleResult` | interface | Yes |
+| `updateAliasTitle()` | function | Yes |
+| `SessionAliasInfo` | interface | Yes |
+| `getAliasesForSession()` | function | Yes |
+| `CleanupResult` | interface | Yes |
+| `cleanupAliases()` | function | Yes |
 
 ## session-manager
 
@@ -193,17 +193,17 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `SessionStats` | interface | Yes |
 | `getSessionStats()` | function | Yes |
 | `SessionListItem` | interface | Yes |
-| `GetAllSessionsOptions` | interface | No |
+| `GetAllSessionsOptions` | interface | Yes |
 | `SessionListResult` | interface | Yes |
 | `getAllSessions()` | function | Yes |
 | `SessionDetail` | interface | Yes |
 | `getSessionById()` | function | Yes |
-| `getSessionTitle()` | function | No |
-| `getSessionSize()` | function | No |
-| `writeSessionContent()` | function | No |
-| `appendSessionContent()` | function | No |
-| `deleteSession()` | function | No |
-| `sessionExists()` | function | No |
+| `getSessionTitle()` | function | Yes |
+| `getSessionSize()` | function | Yes |
+| `writeSessionContent()` | function | Yes |
+| `appendSessionContent()` | function | Yes |
+| `deleteSession()` | function | Yes |
+| `sessionExists()` | function | Yes |
 
 ## smart-merge
 
@@ -216,16 +216,16 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `generateDiff()` | function | Yes |
 | `isClaudeAvailable()` | function | Yes |
 | `smartMerge()` | function | Yes |
-| `contentsDiffer()` | function | No |
-| `readFileForMerge()` | function | No |
+| `contentsDiffer()` | function | Yes |
+| `readFileForMerge()` | function | Yes |
 
 ## utils
 
 | Symbol | Type | Documented |
 |--------|------|------------|
-| `isWindows` | const | No |
-| `isMacOS` | const | No |
-| `isLinux` | const | No |
+| `isWindows` | const | Yes |
+| `isMacOS` | const | Yes |
+| `isLinux` | const | Yes |
 | `getHomeDir()` | function | Yes |
 | `getClaudeDir()` | function | Yes |
 | `getSessionsDir()` | function | Yes |
@@ -251,13 +251,13 @@ All exported symbols from `src/lib/`. Hooks and CI validators are scripts with n
 | `commandExists()` | function | Yes |
 | `CommandResult` | interface | Yes |
 | `runCommand()` | function | Yes |
-| `isGitRepo()` | function | No |
-| `getGitModifiedFiles()` | function | No |
-| `ReplaceInFileOptions` | interface | No |
-| `replaceInFile()` | function | No |
-| `countInFile()` | function | No |
-| `GrepMatch` | interface | No |
-| `grepFile()` | function | No |
+| `isGitRepo()` | function | Yes |
+| `getGitModifiedFiles()` | function | Yes |
+| `ReplaceInFileOptions` | interface | Yes |
+| `replaceInFile()` | function | Yes |
+| `countInFile()` | function | Yes |
+| `GrepMatch` | interface | Yes |
+| `grepFile()` | function | Yes |
 
 See also: [Architecture](ARCHITECTURE.md) | [Module Summaries](MODULE-SUMMARIES.md) | [Quality Report](DOC-QUALITY.md) | [Coverage](DOC-COVERAGE.md)
 

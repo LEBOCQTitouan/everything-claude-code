@@ -6,29 +6,33 @@
 import fs from 'fs';
 import path from 'path';
 
+/** An agent file detected during setup scan — filename and optional name from frontmatter. */
 export interface DetectedAgent {
   filename: string;
   name: string | null; // extracted from frontmatter
 }
 
+/** A skill directory detected during setup scan — dirname and whether SKILL.md exists. */
 export interface DetectedSkill {
   dirname: string;
   hasSkillMd: boolean;
 }
 
+/** A hook detected from settings.json — event type, description, and matcher pattern. */
 export interface DetectedHook {
   event: string;
   description: string;
   matcher: string;
 }
 
+/** Complete detection result — all agents, commands, skills, rules, hooks, and config state. */
 export interface DetectionResult {
   agents: DetectedAgent[];
-  commands: string[];       // filenames
+  commands: string[]; // filenames
   skills: DetectedSkill[];
   rules: Record<string, string[]>; // subdirectory -> filenames
   hooks: DetectedHook[];
-  claudeMdHeadings: string[];      // ## headings found in CLAUDE.md
+  claudeMdHeadings: string[]; // ## headings found in CLAUDE.md
   hasSettingsJson: boolean;
   hasClaudeMd: boolean;
 }
@@ -59,7 +63,8 @@ function extractFrontmatterName(filePath: string): string | null {
 function listMdFiles(dir: string): string[] {
   try {
     if (!fs.existsSync(dir)) return [];
-    return fs.readdirSync(dir)
+    return fs
+      .readdirSync(dir)
       .filter(f => f.endsWith('.md'))
       .sort();
   } catch {
@@ -74,7 +79,7 @@ export function detectAgents(dir: string): DetectedAgent[] {
   const agentsDir = path.join(dir, 'agents');
   return listMdFiles(agentsDir).map(filename => ({
     filename,
-    name: extractFrontmatterName(path.join(agentsDir, filename)),
+    name: extractFrontmatterName(path.join(agentsDir, filename))
   }));
 }
 
@@ -92,11 +97,12 @@ export function detectSkills(dir: string): DetectedSkill[] {
   const skillsDir = path.join(dir, 'skills');
   try {
     if (!fs.existsSync(skillsDir)) return [];
-    return fs.readdirSync(skillsDir, { withFileTypes: true })
+    return fs
+      .readdirSync(skillsDir, { withFileTypes: true })
       .filter(e => e.isDirectory())
       .map(e => ({
         dirname: e.name,
-        hasSkillMd: fs.existsSync(path.join(skillsDir, e.name, 'SKILL.md')),
+        hasSkillMd: fs.existsSync(path.join(skillsDir, e.name, 'SKILL.md'))
       }))
       .sort((a, b) => a.dirname.localeCompare(b.dirname));
   } catch {
@@ -141,8 +147,8 @@ export function detectHooks(dir: string): DetectedHook[] {
         for (const entry of entries) {
           hooks.push({
             event,
-            description: (entry as Record<string, unknown>).description as string || '',
-            matcher: (entry as Record<string, unknown>).matcher as string || '*',
+            description: ((entry as Record<string, unknown>).description as string) || '',
+            matcher: ((entry as Record<string, unknown>).matcher as string) || '*'
           });
         }
       }
@@ -161,7 +167,8 @@ export function detectClaudeMd(projectDir: string): string[] {
   try {
     if (!fs.existsSync(claudeMdPath)) return [];
     const content = fs.readFileSync(claudeMdPath, 'utf8');
-    return content.split('\n')
+    return content
+      .split('\n')
       .filter(line => line.startsWith('## '))
       .map(line => line.trim());
   } catch {
@@ -181,7 +188,7 @@ export function detect(dir: string, projectDir?: string): DetectionResult {
     hooks: detectHooks(dir),
     claudeMdHeadings: projectDir ? detectClaudeMd(projectDir) : [],
     hasSettingsJson: fs.existsSync(path.join(dir, 'settings.json')),
-    hasClaudeMd: projectDir ? fs.existsSync(path.join(projectDir, 'CLAUDE.md')) : false,
+    hasClaudeMd: projectDir ? fs.existsSync(path.join(projectDir, 'CLAUDE.md')) : false
   };
 }
 
@@ -224,9 +231,7 @@ export function generateReport(result: DetectionResult): string {
     lines.push(`  settings.json: exists`);
   }
 
-  if (result.agents.length === 0 && result.commands.length === 0 &&
-      result.skills.length === 0 && ruleGroups.length === 0 &&
-      result.hooks.length === 0) {
+  if (result.agents.length === 0 && result.commands.length === 0 && result.skills.length === 0 && ruleGroups.length === 0 && result.hooks.length === 0) {
     lines.push('  (no existing configuration found)');
   }
 
