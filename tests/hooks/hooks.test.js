@@ -1098,7 +1098,7 @@ async function runTests() {
     }
   });
 
-  await test('script references use CLAUDE_PLUGIN_ROOT variable', () => {
+  await test('script references use ECC_ROOT variable', () => {
     const hooksPath = path.join(__dirname, '..', '..', 'hooks', 'hooks.json');
     const hooks = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
 
@@ -1106,9 +1106,9 @@ async function runTests() {
       for (const entry of hookArray) {
         for (const hook of entry.hooks) {
           if (hook.type === 'command' && (hook.command.includes('dist/hooks/') || hook.command.includes('scripts/hooks/'))) {
-            // Check for the literal string "${CLAUDE_PLUGIN_ROOT}" in the command
-            const hasPluginRoot = hook.command.includes('${CLAUDE_PLUGIN_ROOT}');
-            assert.ok(hasPluginRoot, `Script paths should use CLAUDE_PLUGIN_ROOT: ${hook.command.substring(0, 80)}...`);
+            // Check for the literal string "${ECC_ROOT}" in the command
+            const hasEccRoot = hook.command.includes('${ECC_ROOT}');
+            assert.ok(hasEccRoot, `Script paths should use ECC_ROOT: ${hook.command.substring(0, 80)}...`);
           }
         }
       }
