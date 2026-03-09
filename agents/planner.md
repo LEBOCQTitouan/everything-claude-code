@@ -71,13 +71,31 @@ Create detailed steps with:
 2. **[Step Name]** (File: path/to/file.ts)
    ...
 
+#### Test Targets for Phase 1
+- **Interfaces to scaffold**: [types/interfaces with file paths]
+- **Unit tests**: [behaviors to test, test file paths]
+- **Integration tests**: [service/API interactions to test]
+- **Edge cases**: [null handling, empty inputs, error paths]
+- **Expected test file**: path/to/file.test.ts
+
 ### Phase 2: [Phase Name]
 ...
+
+#### Test Targets for Phase 2
+- ...
+
+## E2E Assessment
+Analyze the scope of changes and determine whether new E2E tests are needed:
+- **Touches user-facing flows?** (yes/no — CLI commands, API endpoints, UI components)
+- **Crosses 3+ modules end-to-end?** (yes/no)
+- **New E2E tests needed?** (yes/no)
+- If yes: list the E2E scenarios and which phases they apply to
+- If no: existing E2E suite will be run as a gate after all phases
 
 ## Testing Strategy
 - Unit tests: [files to test]
 - Integration tests: [flows to test]
-- E2E tests: [user journeys to test]
+- E2E tests: [user journeys to test, or "run existing suite only"]
 
 ## Risks & Mitigations
 - **Risk**: [Description]
@@ -138,6 +156,13 @@ Stripe Checkout, and webhook events keep subscription status in sync.
    - Dependencies: Step 1 (needs subscriptions table)
    - Risk: High — webhook signature verification is critical
 
+#### Test Targets for Phase 1
+- **Interfaces to scaffold**: `SubscriptionRecord`, `WebhookEvent` in `src/types/billing.ts`
+- **Unit tests**: webhook event parsing, subscription status mapping, signature verification
+- **Integration tests**: database insert/update for subscriptions table
+- **Edge cases**: invalid signature, duplicate events, unknown event types
+- **Expected test file**: `src/app/api/webhooks/stripe/route.test.ts`
+
 ### Phase 2: Checkout Flow (2 files)
 3. **Create checkout API route** (File: src/app/api/checkout/route.ts)
    - Action: Create Stripe Checkout session with price_id and success/cancel URLs
@@ -151,6 +176,13 @@ Stripe Checkout, and webhook events keep subscription status in sync.
    - Dependencies: Step 3
    - Risk: Low
 
+#### Test Targets for Phase 2
+- **Interfaces to scaffold**: `CheckoutRequest`, `CheckoutSession` in `src/types/billing.ts`
+- **Unit tests**: price_id validation, session creation params, unauthenticated rejection
+- **Integration tests**: checkout session creation with Stripe test keys
+- **Edge cases**: invalid price_id, expired session, unauthenticated user
+- **Expected test file**: `src/app/api/checkout/route.test.ts`
+
 ### Phase 3: Feature Gating (1 file)
 5. **Add tier-based middleware** (File: src/middleware.ts)
    - Action: Check subscription tier on protected routes, redirect free users
@@ -158,10 +190,26 @@ Stripe Checkout, and webhook events keep subscription status in sync.
    - Dependencies: Steps 1-2 (needs subscription data)
    - Risk: Medium — must handle edge cases (expired, past_due)
 
+#### Test Targets for Phase 3
+- **Interfaces to scaffold**: `TierConfig`, `GatingResult` in `src/types/billing.ts`
+- **Unit tests**: tier checking for each route, redirect logic, status edge cases
+- **Integration tests**: middleware applied to protected route returns 403 for free users
+- **Edge cases**: expired subscription, past_due status, missing subscription record
+- **Expected test file**: `src/middleware.test.ts`
+
+## E2E Assessment
+- **Touches user-facing flows?** Yes — pricing page, checkout redirect, gated features
+- **Crosses 3+ modules end-to-end?** Yes — pricing UI → checkout API → webhook → middleware
+- **New E2E tests needed?** Yes
+- **E2E scenarios** (after Phase 3):
+  1. Free user sees pricing page, clicks upgrade, completes Stripe checkout (test mode), gains Pro access
+  2. Pro user accesses gated feature successfully
+  3. Free user is redirected when accessing gated feature
+
 ## Testing Strategy
-- Unit tests: Webhook event parsing, tier checking logic
-- Integration tests: Checkout session creation, webhook processing
-- E2E tests: Full upgrade flow (Stripe test mode)
+- Unit tests: Webhook event parsing, tier checking logic, checkout params
+- Integration tests: Checkout session creation, webhook processing, middleware gating
+- E2E tests: Full upgrade flow (Stripe test mode) — new tests written after Phase 3
 
 ## Risks & Mitigations
 - **Risk**: Webhook events arrive out of order
@@ -213,10 +261,13 @@ Each phase should be mergeable independently. Avoid plans that require all phase
 
 ## Commit Cadence
 
-When generating plans, include commit steps after each phase:
+Each phase follows the TDD cycle with three commits:
 
-- `feat: implement <phase description>` after each phase passes build + tests
-- `test: add <phase> tests` after writing tests for a phase
-- `docs: update <what>` after documentation created during a phase
+1. `test: add <phase> tests` — after writing failing tests (RED)
+2. `feat: implement <phase>` — after tests pass (GREEN)
+3. `refactor: improve <phase>` — after refactoring (REFACTOR, only if changes made)
+4. `docs: update <what>` — after documentation created during a phase (if applicable)
+
 - Never accumulate changes across multiple phases without committing
 - Each phase must be committed before starting the next phase
+- Build + full test suite must pass after each commit
