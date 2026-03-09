@@ -13,10 +13,10 @@ List project registry entries and per-project instinct/observation counts for co
 Run the instinct CLI using the plugin root path:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/continuous-learning-v2/scripts/instinct-cli.py" projects
+python3 "${ECC_ROOT}/skills/continuous-learning-v2/scripts/instinct-cli.py" projects
 ```
 
-Or if `CLAUDE_PLUGIN_ROOT` is not set (manual installation):
+Or if `ECC_ROOT` is not set (manual installation):
 
 ```bash
 python3 ~/.claude/skills/continuous-learning-v2/scripts/instinct-cli.py projects
