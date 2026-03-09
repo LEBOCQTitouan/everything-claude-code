@@ -36,7 +36,8 @@ const testFiles = [
   'lib/ansi.test.js',
   'lib/smart-merge.test.js',
   'hooks/doc-coverage-reminder.test.js',
-  'ci/validate-doc-agents.test.js'
+  'ci/validate-doc-agents.test.js',
+  'ci/validate-plan-tdd.test.js'
 ];
 
 const BOX_W = 58;
