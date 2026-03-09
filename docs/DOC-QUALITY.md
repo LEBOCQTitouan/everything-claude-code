@@ -3,69 +3,186 @@
 
 # Documentation Quality Report
 
-## Overall Grade: A (9.2/10)
+## Overall Grade: B (7.8/10)
+
+The previous report (grade A, 9.2/10) overstated quality by not detecting cross-document contradictions or verifying factual claims. This revised audit found 3 HIGH issues, 5 MEDIUM issues, and 5 LOW issues across source docs, README, CLAUDE.md, and generated documentation.
 
 ### Dimension Breakdown
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
-| Presence | 10 | 100% of public items documented (174/174) |
-| Accuracy | 9 | No contradictions detected between docs and code |
-| Completeness | 8 | All exports have JSDoc descriptions; some lack @param/@returns |
+| Presence | 10 | 100% of lib/ public items documented (174/174) |
+| Accuracy | 6 | 3 factual contradictions across docs; LOC counts off by 1-2; framework count overstated |
+| Completeness | 7 | JSDoc present on all exports but most lack `@param`/`@returns`/`@throws` |
 | Clarity | 9 | Clear naming, consistent terminology, concise descriptions |
-| Currency | 10 | All modules have current documentation matching latest code |
+| Currency | 7 | README test count (992) stale vs CLAUDE.md (1238); LOC counts minor drift |
 
 ### Per-Module Quality
 
 | Module | Presence | Completeness | Overall | Grade |
 |--------|----------|--------------|---------|-------|
-| gitignore | 100% | Good | 9.5 | A |
-| manifest | 100% | Good | 9.5 | A |
-| smart-merge | 100% | Good | 9.5 | A |
-| utils | 100% | Good | 9.2 | A |
-| detect | 100% | Good | 9.2 | A |
-| package-manager | 100% | Good | 9.2 | A |
-| session-manager | 100% | Good | 9.2 | A |
-| merge | 100% | Good | 9.2 | A |
-| session-aliases | 100% | Good | 9.0 | A |
-| project-detect | 100% | Good | 9.0 | A |
-| ansi | 100% | Good | 9.0 | A |
+| gitignore | 100% | Good | 9.0 | A |
+| manifest | 100% | Good | 9.0 | A |
+| smart-merge | 100% | Good | 9.0 | A |
 | hook-flags | 100% | Good | 9.0 | A |
+| ansi | 100% | Good | 9.0 | A |
+| detect | 100% | Good | 8.5 | B |
+| package-manager | 100% | Good | 8.5 | B |
+| session-manager | 100% | Partial | 8.0 | B |
+| utils | 100% | Partial | 8.0 | B |
+| merge | 100% | Partial | 7.5 | B |
+| session-aliases | 100% | Partial | 7.5 | B |
+| project-detect | 100% | Partial | 7.5 | B |
 
-### Issues Found
+---
 
-| Severity | Module | Issue |
-|----------|--------|-------|
-| LOW | utils | Some functions have description-only JSDoc without @param/@returns |
-| LOW | session-manager | Some functions have description-only JSDoc without @param/@returns |
-| LOW | merge | Type aliases have brief descriptions; could include value documentation |
+## Issues
 
-### Contradictions
+### HIGH Severity
 
-No contradictions detected between JSDoc and code signatures.
+| # | File:Line | Issue |
+|---|-----------|-------|
+| H1 | [README.md:200,303](../README.md) vs [CLAUDE.md:76](../CLAUDE.md) | **Test count contradiction.** README says "992 tests" (two locations). CLAUDE.md says "1238 tests". Only one can be correct. The CLAUDE.md `npm Scripts` table is auto-generated and likely reflects the actual current count. README is stale. |
+| H2 | [docs/MODULE-SUMMARIES.md:84](MODULE-SUMMARIES.md) vs [src/lib/merge.ts:9-11](../src/lib/merge.ts) | **False dependency claim.** MODULE-SUMMARIES says merge.ts has "Dependencies: None (uses smart-merge internally via dynamic import path)". In reality, merge.ts has static imports: `import { generateDiff, smartMerge, isClaudeAvailable, contentsDiffer } from './smart-merge'` and `import { bold, dim, green, yellow, cyan } from './ansi'`. [DEPENDENCY-GRAPH.md](DEPENDENCY-GRAPH.md) correctly lists these. |
+| H3 | [docs/ARCHITECTURE.md:42](ARCHITECTURE.md), [docs/API-SURFACE.md:118](API-SURFACE.md) | **LOC count off.** Both docs say merge.ts is "671 LOC". Actual line count is 670. Minor but factually wrong. |
 
-### Duplicate Documentation
+### MEDIUM Severity
 
-No conflicting duplicate descriptions detected.
+| # | File:Line | Issue |
+|---|-----------|-------|
+| M1 | [docs/ARCHITECTURE.md:43](ARCHITECTURE.md), [docs/API-SURFACE.md:163,168](API-SURFACE.md) | **Framework count overstated.** Docs claim "25+ frameworks" in project-detect.ts. Actual `FRAMEWORK_RULES` array contains exactly 23 entries. |
+| M2 | [docs/MODULE-SUMMARIES.md:108](MODULE-SUMMARIES.md) | **Inconsistent framework count.** MODULE-SUMMARIES says "24+ framework rules" while ARCHITECTURE.md and API-SURFACE.md say "25+". Neither is correct (actual: 23). |
+| M3 | [docs/ARCHITECTURE.md:156](ARCHITECTURE.md) | **Agent count outdated.** Diagram Manifest says "10+ agent markdown files". The `agents/` directory actually contains 25 agent files. |
+| M4 | [src/lib/merge.ts:586-588](../src/lib/merge.ts) | **Undocumented parameter.** `mergeHooks()` has an `_eccRoot?: string` parameter (unused, prefixed with `_`) not mentioned in its JSDoc. While prefixed to indicate intentional non-use, the parameter is still part of the public signature. |
+| M5 | [docs/ARCHITECTURE.md:45](ARCHITECTURE.md) | **LOC count stale.** Claims gitignore.ts is 150 LOC; actual is 149. Claims hook-flags.ts is 85 LOC; actual is 84. Claims utils.ts is 482 LOC; actual is 481. Claims manifest.ts is 137 LOC; actual is 136. All off by 1, suggesting docs were generated one commit behind. |
 
-### Improvement from Previous Run
+### LOW Severity
 
-| Metric | Previous | Current | Change |
-|--------|----------|---------|--------|
-| Overall grade | C (5.9/10) | A (9.2/10) | +3.3 |
-| Coverage | 59% (103/174) | 100% (174/174) | +41% |
-| HIGH issues | 3 | 0 | -3 |
-| MEDIUM issues | 5 | 0 | -5 |
-| LOW issues | 4 | 3 | -1 |
-| Modules at 100% | 0 | 12 | +12 |
-| Modules at F grade | 2 | 0 | -2 |
+| # | File:Line | Issue |
+|---|-----------|-------|
+| L1 | [src/lib/utils.ts](../src/lib/utils.ts) | **Missing `@param`/`@returns` on most functions.** Functions like `readFile()`, `writeFile()`, `runCommand()`, `findFiles()`, `ensureDir()` have description-only JSDoc without structured parameter or return documentation. |
+| L2 | [src/lib/session-manager.ts](../src/lib/session-manager.ts) | **Missing `@param`/`@returns` on most functions.** `getAllSessions()`, `getSessionById()`, `parseSessionMetadata()`, etc. lack structured parameter docs. |
+| L3 | [src/lib/merge.ts](../src/lib/merge.ts) | **Type aliases have minimal docs.** `ConflictChoice`, `ReviewChoice`, etc. have one-line descriptions without documenting individual union members. |
+| L4 | [src/lib/session-aliases.ts](../src/lib/session-aliases.ts) | **Missing `@throws` annotations.** `setPreferredPackageManager()`, `setProjectPackageManager()` throw but lack `@throws` in JSDoc. Similarly, `setAlias()` validates but error conditions are not documented in JSDoc. |
+| L5 | No code examples in JSDoc | **No `@example` tags anywhere.** Complex functions like `computeLineDiff()`, `smartMerge()`, `findFiles()`, `readStdinJson()` would benefit from inline examples. |
 
-### Remaining Recommendations
+---
 
-1. **Add @param/@returns to core functions** — `readFile()`, `writeFile()`, `runCommand()`, etc.
-2. **Document error conditions** — which functions throw vs return null/false
-3. **Add @example tags** — for complex functions like `computeLineDiff()`, `smartMerge()`
+## Contradictions
 
-See also: [API Surface](API-SURFACE.md) | [Coverage](DOC-COVERAGE.md) | [Module Summaries](MODULE-SUMMARIES.md)
+| # | Location 1 | Location 2 | Conflict | Likely Correct |
+|---|------------|------------|----------|----------------|
+| C1 | [README.md:200](../README.md) ("992 tests") | [CLAUDE.md:76](../CLAUDE.md) ("1238 tests") | Different test counts for the same test suite | CLAUDE.md (auto-generated from package.json) |
+| C2 | [MODULE-SUMMARIES.md:84](MODULE-SUMMARIES.md) ("Dependencies: None") | [DEPENDENCY-GRAPH.md:41-43](DEPENDENCY-GRAPH.md) (merge imports smart-merge, ansi, manifest) | Contradictory dependency claims for merge module | DEPENDENCY-GRAPH.md (matches actual imports) |
+| C3 | [ARCHITECTURE.md:43](ARCHITECTURE.md) ("25+ frameworks") | [MODULE-SUMMARIES.md:108](MODULE-SUMMARIES.md) ("24+ framework rules") | Inconsistent framework rule count | Neither -- actual count is 23 |
+
+---
+
+## Duplicate Documentation
+
+| Symbol | Location 1 | Location 2 | Status |
+|--------|------------|------------|--------|
+| `isGitRepo()` | [API-SURFACE.md#gitignore](API-SURFACE.md#gitignore) ("Check if directory is inside a git repository") | [API-SURFACE.md#utils](API-SURFACE.md#utils) ("Check if cwd is a git repository") | OK -- different functions with different signatures (`dir: string` vs no params). Descriptions correctly distinguish them. |
+| `promptConflict()` | [API-SURFACE.md:133](API-SURFACE.md) (listed as exported) | [agents/doc-validator.md:84](../agents/doc-validator.md) (mentioned as "deprecated `promptConflict()`") | OK -- both note it exists; API surface correctly marks it as deprecated. |
+
+No conflicting duplicate descriptions detected across documentation.
+
+---
+
+## Example Verification
+
+No `@example` tags or standalone code examples were found in JSDoc comments across `src/lib/`. The `docs/` markdown files contain no runnable code examples referencing library functions.
+
+The README contains usage examples for CLI commands (`ecc install`, `ecc init`) which are shell commands, not library API examples. These are syntactically correct.
+
+---
+
+## Mermaid Diagram Validation
+
+All 5 diagrams in `docs/diagrams/` were validated for syntax correctness and cross-referenced against actual codebase entities.
+
+### Syntax Check
+
+| Diagram | Type | Syntax | Issues |
+|---------|------|--------|--------|
+| [agent-orchestration.md](diagrams/agent-orchestration.md) | flowchart TD + flowchart LR | Valid | None |
+| [feature-development.md](diagrams/feature-development.md) | sequenceDiagram | Valid | None |
+| [tdd-workflow.md](diagrams/tdd-workflow.md) | flowchart TD | Valid | None |
+| [security-review.md](diagrams/security-review.md) | flowchart LR | Valid | None |
+| [refactoring.md](diagrams/refactoring.md) | flowchart TD | Valid | None |
+
+All diagrams pass Mermaid syntax validation:
+- No spaces in node IDs
+- All subgraphs properly closed (no subgraphs used)
+- Quoted strings used for labels with special characters
+- Arrow syntax is valid throughout
+- No duplicate node IDs within a single diagram
+
+### Entity Cross-Reference
+
+| Node in Diagram | Matches Actual Agent? | Notes |
+|-----------------|----------------------|-------|
+| `planner` | Yes | `agents/planner.md` exists |
+| `architect` | Yes | `agents/architect.md` exists |
+| `architect-module` | Yes | `agents/architect-module.md` exists |
+| `uncle-bob` | Yes | `agents/uncle-bob.md` exists |
+| `code-reviewer` | Yes | `agents/code-reviewer.md` exists |
+| `tdd-guide` | Referenced as "/tdd" | `agents/tdd-guide.md` exists; diagram references the command not agent directly |
+
+No stale references found. All agent names in diagrams correspond to existing agent files.
+
+---
+
+## Scoring Methodology
+
+| Dimension | Weight | Raw Score | Weighted |
+|-----------|--------|-----------|----------|
+| Presence | 25% | 10 | 2.50 |
+| Accuracy | 25% | 6 | 1.50 |
+| Completeness | 20% | 7 | 1.40 |
+| Clarity | 15% | 9 | 1.35 |
+| Currency | 15% | 7 | 1.05 |
+| **Total** | 100% | | **7.80** |
+
+Grade mapping: A (9-10), B (7-8), C (5-6), D (3-4), F (0-2).
+
+---
+
+## Comparison with Previous Run
+
+| Metric | Previous (v1) | Current (v2) | Change |
+|--------|---------------|--------------|--------|
+| Overall grade | A (9.2/10) | B (7.8/10) | -1.4 (deeper audit) |
+| HIGH issues | 0 | 3 | +3 (previously undetected) |
+| MEDIUM issues | 0 | 5 | +5 (previously undetected) |
+| LOW issues | 3 | 5 | +2 |
+| Contradictions | 0 | 3 | +3 |
+| Presence score | 10 | 10 | -- |
+| Accuracy score | 9 | 6 | -3 (cross-doc checks added) |
+
+The previous report validated only JSDoc-to-signature matching within individual files. This audit additionally checked cross-document consistency (README vs CLAUDE.md vs generated docs vs actual code metrics), factual claims (LOC counts, framework counts, test counts), and dependency accuracy.
+
+---
+
+## Recommendations
+
+### Priority 1 -- Fix Contradictions
+
+1. **Reconcile test count** -- Update README.md to match the actual test count (currently 1238 per CLAUDE.md)
+2. **Fix MODULE-SUMMARIES.md merge dependencies** -- Change "Dependencies: None" to list smart-merge, ansi, manifest (type-only)
+3. **Fix framework count** -- Change "25+" to "23" in ARCHITECTURE.md and API-SURFACE.md; change "24+" to "23" in MODULE-SUMMARIES.md
+
+### Priority 2 -- Improve Completeness
+
+4. **Add `@param`/`@returns` to core functions** -- Start with the 7 most-imported utils functions
+5. **Add `@throws` annotations** -- Document which functions throw vs return null/false/error
+6. **Add `@example` tags** -- For `computeLineDiff()`, `smartMerge()`, `findFiles()`, `readStdinJson()`
+
+### Priority 3 -- Keep Current
+
+7. **Re-run LOC counts** after each release to prevent 1-line drift
+8. **Update agent count** in ARCHITECTURE.md diagram manifest (10+ -> 25)
+
+See also: [API Surface](API-SURFACE.md) | [Coverage](DOC-COVERAGE.md) | [Module Summaries](MODULE-SUMMARIES.md) | [Architecture](ARCHITECTURE.md)
 
 <!-- END AUTO-GENERATED -->
