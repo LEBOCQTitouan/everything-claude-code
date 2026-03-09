@@ -1,17 +1,21 @@
 ---
-description: Restate requirements, assess risks, and create step-by-step implementation plan. WAIT for user CONFIRM before touching any code.
+description: Restate requirements, assess risks, create step-by-step plan, then execute with TDD after user confirmation. Includes mandatory code review.
 ---
 
 # Plan Command
 
-This command invokes the **planner** agent to create a comprehensive implementation plan before writing any code.
+This command invokes the **planner** agent to create a comprehensive implementation plan, then executes it using TDD after user confirmation.
 
 ## What This Command Does
 
 1. **Restate Requirements** - Clarify what needs to be built
 2. **Identify Risks** - Surface potential issues and blockers
-3. **Create Step Plan** - Break down implementation into phases
-4. **Wait for Confirmation** - MUST receive user approval before proceeding
+3. **Create Step Plan** - Break down implementation into phases with test targets
+4. **E2E Assessment** - Determine if new E2E tests are needed based on scope
+5. **Wait for Confirmation** - MUST receive user approval before proceeding
+6. **Execute with TDD** - After confirmation, implement each phase using RED → GREEN → REFACTOR
+7. **Run E2E Tests** - Write new E2E tests if flagged, then run full E2E suite
+8. **Code Review** - Mandatory code review on all changes
 
 ## When to Use
 
@@ -100,24 +104,105 @@ If you want changes, respond with:
 - "different approach: [alternative]"
 - "skip phase 2 and do phase 3 first"
 
-## Commit After Each Phase
+## Execution Mode (Post-Confirmation)
 
-When executing an approved plan, commit after each completed phase:
+After the user confirms the plan, execute automatically using TDD:
 
-1. After each phase implementation passes build + tests: `feat: <phase description>`
-2. After each phase's tests are written: `test: add <phase> tests`
-3. Before moving to the next phase, verify all changes are committed
+### TDD Execution Loop
+
+For each phase in the approved plan:
+
+#### 1. SCAFFOLD
+- Read the phase's **Test Targets** from the plan
+- Create interface/type stubs that `throw new Error('Not implemented')` or return obviously wrong values
+- This gives tests something to import
+
+#### 2. RED — Write Failing Tests
+- Write unit tests and integration tests listed in the phase's Test Targets
+- Include happy path, edge cases, and error scenarios
+- Run the test command — **verify tests FAIL** for the right reason (not import errors)
+- If tests do not fail: fix the scaffold (ensure stubs throw or return wrong values)
+- Commit: `test: add <phase> tests`
+
+#### 3. GREEN — Implement Minimal Code
+- Write the minimal implementation to make all tests pass
+- Run the test command — **verify tests PASS**
+- Run the build command — **verify build passes**
+- Commit: `feat: implement <phase>`
+
+#### 4. REFACTOR — Improve Code
+- Improve naming, extract constants, reduce duplication
+- Run tests again — **verify tests still PASS**
+- If no meaningful refactoring needed, skip this step
+- Commit: `refactor: improve <phase>`
+
+#### 5. GATE — Phase Complete
+- Run the full test suite (not just this phase's tests)
+- Run the build command
+- If either fails: **STOP and fix before proceeding to the next phase**
+- If both pass: proceed to the next phase
+
+### E2E Testing
+
+After all phases complete:
+
+1. Check the plan's **E2E Assessment** section
+2. **If new E2E tests are needed**: write them now using the e2e-runner agent, targeting the scenarios listed in the plan. Commit: `test: add E2E tests for <feature>`
+3. **Run the full E2E suite** (existing + newly written). If failures: fix before proceeding.
+
+### Mandatory Code Review
+
+After all phases and E2E tests pass:
+
+1. Invoke the **code-reviewer** agent on the full diff since the first phase commit
+2. Address all CRITICAL and HIGH issues — commit each fix
+3. Address MEDIUM issues when possible — commit each fix
+
+### Progress Tracking
+
+During execution, track progress for each phase:
+
+```
+Phase 1: Database Schema
+  [x] SCAFFOLD — interfaces created
+  [x] RED — 5 tests written, all failing
+  [x] GREEN — implementation passes all tests
+  [x] REFACTOR — extracted constants
+  [x] GATE — full suite passes
+
+Phase 2: Notification Service
+  [x] SCAFFOLD — interfaces created
+  [ ] RED — writing tests...
+```
+
+### Handling Failures
+
+- **Tests don't fail in RED**: Fix the scaffold — stubs must throw or return wrong values
+- **Tests don't pass in GREEN**: Debug implementation, do not modify tests (unless tests are wrong)
+- **Build fails**: Use `/build-fix` to resolve, then re-run gate
+- **Full suite regresses**: A previous phase broke — fix before continuing
+- **Context window running low**: For plans with 5+ phases, suggest executing in batches
+
+## Commit Cadence
+
+Each phase produces up to 3 commits following the TDD cycle:
+
+1. `test: add <phase> tests` — after RED (failing tests written)
+2. `feat: implement <phase>` — after GREEN (tests pass)
+3. `refactor: improve <phase>` — after REFACTOR (if changes made)
 
 Never accumulate changes across multiple plan phases without committing.
 
 ## Integration with Other Commands
 
-After planning:
-- Use `/tdd` to implement with test-driven development
-- Use `/build-fix` if build errors occur
-- Use `/code-review` to review completed implementation
+- Use `/build-fix` if build errors occur during execution
+- `/tdd` can be used standalone for TDD without a formal plan
+- `/orchestrate feature` includes security review in addition to the plan+TDD+review pipeline
 
 ## Related Agents
 
-This command invokes the `planner` agent located at:
-`~/.claude/agents/planner.md`
+This command invokes:
+- `planner` agent — plan generation (`~/.claude/agents/planner.md`)
+- `tdd-guide` agent — TDD execution per phase (`~/.claude/agents/tdd-guide.md`)
+- `e2e-runner` agent — E2E test writing and execution (`~/.claude/agents/e2e-runner.md`)
+- `code-reviewer` agent — mandatory post-execution review (`~/.claude/agents/code-reviewer.md`)
