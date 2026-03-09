@@ -9,10 +9,12 @@ Sequential agent workflow for complex tasks.
 ## Workflow Types
 
 ### feature
-Full feature implementation workflow:
+Full feature implementation workflow with security review:
 ```
 planner -> tdd-guide -> code-reviewer -> security-reviewer
 ```
+
+> **Note**: `/plan` now includes built-in TDD execution and mandatory code review after confirmation. Use `/orchestrate feature` when you also need a security review, or `/plan` alone for the plan → TDD → code review pipeline.
 
 ### bugfix
 Bug investigation and fix workflow:

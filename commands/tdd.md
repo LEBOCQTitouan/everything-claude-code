@@ -311,8 +311,8 @@ Never skip the RED phase. Never write code before tests.
 
 ## Integration with Other Commands
 
-- Use `/plan` first to understand what to build
-- Use `/tdd` to implement with tests
+- `/plan` includes built-in TDD execution after confirmation — use `/plan` for plan + TDD + code review in one flow
+- Use `/tdd` standalone for TDD without a formal plan
 - Use `/build-fix` if build errors occur
 - Use `/code-review` to review implementation
 - Use `/test-coverage` to verify coverage

@@ -14,24 +14,32 @@ The Feature Implementation Workflow describes the development pipeline: research
    - Prefer adopting or porting a proven approach over writing net-new code when it meets the requirement.
 
 1. **Plan First**
-   - Use **planner** agent to create implementation plan
-   - Generate planning docs before coding: PRD, architecture, system_design, tech_doc, task_list
+   - Use **planner** agent via `/plan` to create implementation plan
+   - Plan includes test targets per phase and E2E assessment
    - Identify dependencies and risks
    - Break down into phases
+   - **Wait for user confirmation before executing**
 
-2. **TDD Approach** _(commit at each transition)_
-   - Use **tdd-guide** agent
+2. **TDD Approach** _(automatic after plan confirmation)_
+   - `/plan` now executes TDD per phase after confirmation
    - Write tests first (RED) → **commit tests**
    - Implement to pass tests (GREEN) → **commit implementation**
    - Refactor (IMPROVE) → **commit refactor**
    - Verify 80%+ coverage
+   - Gate: full test suite + build must pass between phases
+   - Use `/tdd` standalone for TDD without a formal plan
 
-3. **Code Review**
-   - Use **code-reviewer** agent immediately after writing code
+3. **E2E Testing** _(after all phases)_
+   - Plan's E2E assessment determines if new E2E tests are needed
+   - If yes: write E2E tests for flagged scenarios → **commit E2E tests**
+   - Run full E2E suite (existing + new)
+
+4. **Code Review** _(mandatory)_
+   - **code-reviewer** agent runs automatically after all phases complete
    - Address CRITICAL and HIGH issues → **commit each fix**
    - Fix MEDIUM issues when possible → **commit each fix**
 
-4. **Commit Continuously**
+5. **Commit Continuously**
    - Commit after every logical change — see [git-workflow.md](./git-workflow.md) for cadence rules
    - Follow conventional commits format
    - Never accumulate uncommitted work across multiple concerns
