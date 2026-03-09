@@ -55,10 +55,25 @@ Add a `## Diagram Manifest` section to `docs/ARCHITECTURE.md`:
 
 Manifest diagrams are written to `docs/diagrams/<id>.md`.
 
+### Custom Registry
+
+Register diagrams in `docs/diagrams/CUSTOM.md` so they are regenerated on every run:
+
+```markdown
+| File | Type | Title | Source Context | Description |
+|------|------|-------|---------------|-------------|
+| agent-orchestration.md | flowchart | Agent Orchestration | agents/*.md, commands/plan.md | Full development flow |
+```
+
+Fields: `File` (filename in `docs/diagrams/`), `Type` (Mermaid type), `Title`, `Source Context` (comma-separated globs), `Description`.
+
+Custom-registered diagrams are regenerated from their source context files, unlike manual diagrams which are never touched.
+
 ## When to Use
 
 - After `/doc-analyze` to visualize the codebase structure
 - When adding `<!-- DIAGRAM: ... -->` markers to doc files
+- When adding entries to `docs/diagrams/CUSTOM.md`
 - As part of the full `/doc-suite`
 - After major refactoring to update architectural diagrams
 
@@ -68,3 +83,4 @@ Manifest diagrams are written to `docs/diagrams/<id>.md`.
 - Prerequisite: `/doc-analyze`
 - Agent: `agents/diagram-generator.md`
 - Skill: `skills/diagram-generation/SKILL.md`
+- Custom registry: `docs/diagrams/CUSTOM.md`

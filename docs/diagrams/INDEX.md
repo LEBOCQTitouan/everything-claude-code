@@ -16,13 +16,13 @@ Generated from codebase analysis data (`docs/ARCHITECTURE.md`, `docs/DEPENDENCY-
 | [Doc-Suite Pipeline](doc-suite-pipeline.md) | flowchart TD | `/doc-suite` phased agent pipeline: analysis, generation, validation, assembly |
 | [Build Pipeline](build-pipeline.md) | flowchart LR | TypeScript compilation, testing, linting, and publishing |
 
-## Manual Diagrams
+## Custom-Registered Diagrams
 
-Created and maintained by hand. These are not overwritten by the diagram generator.
+Registered in [`CUSTOM.md`](CUSTOM.md). Regenerated from source context on every `/doc-suite` or `/doc-diagrams` run.
 
 | Diagram | Type | Description |
 |---------|------|-------------|
-| [Agent Orchestration](agent-orchestration.md) | flowchart TD + LR | Full development flow with planner, architect, uncle-bob, and code-reviewer agents |
+| [Agent Orchestration](agent-orchestration.md) | flowchart TD + LR | Full development flow with planner, TDD execution, E2E assessment, and code-reviewer agents |
 | [Feature Development](feature-development.md) | sequence | Feature lifecycle from `/plan` through design, implementation, and review |
 | [TDD Workflow](tdd-workflow.md) | flowchart TD | RED-GREEN-REFACTOR cycle with coverage gates and uncle-bob review |
 | [Security Review](security-review.md) | flowchart LR | Code review pipeline: security, clean code, and quality checklists |
