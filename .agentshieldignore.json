@@ -50,5 +50,9 @@
   {
     "pattern": "Read-only agent uses expensive model",
     "reason": "Planner and uncle-bob need deep reasoning (Opus), not just file search"
+  },
+  {
+    "pattern": "System prompt extraction attempt",
+    "reason": "Agent docs reference output rules and system prompts as legitimate instructions"
   }
 ]
