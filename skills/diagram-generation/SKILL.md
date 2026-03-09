@@ -188,7 +188,7 @@ Use these rules to decide which diagrams to generate:
 3. **Missing `end` for subgraphs:** Every `subgraph` must have a matching `end`
 4. **Invalid arrow syntax:** Use `-->` (solid), `-.->` (dotted), `==>` (thick). Not `->` or `-->`
 5. **Duplicate node IDs:** Each ID must be unique within the diagram. Use prefixes for disambiguation
-6. **Long labels:** Keep labels under 40 characters. Use `\n` for line breaks in flowchart labels
+6. **Long labels:** Keep labels under 40 characters. Use `<br/>` for line breaks in node labels (`\n` does NOT work in Mermaid)
 7. **Undefined references:** Every node referenced in an arrow must be defined somewhere in the diagram
 8. **classDiagram methods:** Use `+method()` for public, `-method()` for private, `#method()` for protected
 

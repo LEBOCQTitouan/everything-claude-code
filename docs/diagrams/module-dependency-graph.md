@@ -7,7 +7,7 @@ Import relationships between all `src/` modules, with `utils` as the primary hub
 ```mermaid
 flowchart LR
     subgraph lib["src/lib/"]
-        utils["utils\n(482 LOC, hub)"]
+        utils["utils<br/>(482 LOC, hub)"]
         ansi["ansi"]
         hookFlags["hook-flags"]
         detect["detect"]
@@ -24,7 +24,7 @@ flowchart LR
     subgraph hooks["src/hooks/ (21 scripts)"]
         runWithFlags["run-with-flags"]
         sessionStart["session-start"]
-        hooksUtils["8 hooks\n(console, cost, eval, ...)"]
+        hooksUtils["8 hooks<br/>(console, cost, eval, ...)"]
         hooksSelf["10 self-contained hooks"]
     end
 

@@ -6,23 +6,23 @@
 flowchart TD
     USER(["User Request"])
 
-    USER --> PLANNER["planner\nBreaks task into phases\nidentifies risks"]
+    USER --> PLANNER["planner<br/>Breaks task into phases<br/>identifies risks"]
 
-    PLANNER --> ARCH["architect\nDefines hexagonal structure\nBounded contexts, ports, aggregates\nDDD model"]
+    PLANNER --> ARCH["architect<br/>Defines hexagonal structure<br/>Bounded contexts, ports, aggregates<br/>DDD model"]
 
-    ARCH --> ARCHMOD["architect-module\nDesigns module internals\nPattern selection\nCode organization"]
+    ARCH --> ARCHMOD["architect-module<br/>Designs module internals<br/>Pattern selection<br/>Code organization"]
 
-    ARCHMOD --> UB1["uncle-bob\nPre-implementation review\nSOLID + Clean Architecture\nDependency rule audit"]
+    ARCHMOD --> UB1["uncle-bob<br/>Pre-implementation review<br/>SOLID + Clean Architecture<br/>Dependency rule audit"]
 
-    UB1 -->|"SOLID violations\nClean Code prescriptions"| ARCHMOD
-    UB1 -->|"Layer violations\nPort contract issues"| ARCH
+    UB1 -->|"SOLID violations<br/>Clean Code prescriptions"| ARCHMOD
+    UB1 -->|"Layer violations<br/>Port contract issues"| ARCH
 
-    UB1 -->|"Design approved"| CODE["Code written\nby Claude Code"]
+    UB1 -->|"Design approved"| CODE["Code written<br/>by Claude Code"]
 
-    CODE --> CR["code-reviewer\nSecurity, quality\nbest practices"]
-    CODE --> UB2["uncle-bob\nPost-implementation\nNaming, functions, tests\nClean Code audit"]
+    CODE --> CR["code-reviewer<br/>Security, quality<br/>best practices"]
+    CODE --> UB2["uncle-bob<br/>Post-implementation<br/>Naming, functions, tests<br/>Clean Code audit"]
 
-    CR --> REPORT["Merged Review Report\n[Security] findings\n[Clean Code] findings\n[Clean Architecture] findings"]
+    CR --> REPORT["Merged Review Report<br/>[Security] findings<br/>[Clean Code] findings<br/>[Clean Architecture] findings"]
     UB2 --> REPORT
 
     REPORT -->|"Blockers found"| CODE
@@ -33,15 +33,15 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    ARCH["architect\n(Strategic)"]
-    ARCHMOD["architect-module\n(Tactical)"]
-    UB["uncle-bob\n(Consultant)"]
+    ARCH["architect<br/>(Strategic)"]
+    ARCHMOD["architect-module<br/>(Tactical)"]
+    UB["uncle-bob<br/>(Consultant)"]
 
-    ARCH -->|"Layer assignment\nPort contracts\nDDD constraints"| ARCHMOD
-    ARCHMOD -->|"Calls after\ndesign proposal"| UB
-    UB -->|"SOLID + Clean Code\nprescriptions"| ARCHMOD
-    UB -->|"Layer/boundary\nviolations"| ARCH
-    ARCHMOD -->|"Escalates boundary\ndecisions"| ARCH
+    ARCH -->|"Layer assignment<br/>Port contracts<br/>DDD constraints"| ARCHMOD
+    ARCHMOD -->|"Calls after<br/>design proposal"| UB
+    UB -->|"SOLID + Clean Code<br/>prescriptions"| ARCHMOD
+    UB -->|"Layer/boundary<br/>violations"| ARCH
+    ARCHMOD -->|"Escalates boundary<br/>decisions"| ARCH
 
     style ARCH fill:#1a1a2e,color:#fff
     style ARCHMOD fill:#16213e,color:#fff

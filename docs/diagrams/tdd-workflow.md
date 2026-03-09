@@ -2,19 +2,19 @@
 
 ```mermaid
 flowchart TD
-    START(["Feature to implement"]) --> INTERFACE["1. Define interfaces\nDomain ports + types"]
+    START(["Feature to implement"]) --> INTERFACE["1. Define interfaces<br/>Domain ports + types"]
 
-    INTERFACE --> RED["2. RED\nWrite failing tests\nagainst the interface"]
+    INTERFACE --> RED["2. RED<br/>Write failing tests<br/>against the interface"]
 
-    RED --> GREEN["3. GREEN\nMinimal implementation\nto pass tests"]
+    RED --> GREEN["3. GREEN<br/>Minimal implementation<br/>to pass tests"]
 
     GREEN --> CHECK{Tests pass?}
     CHECK -->|No| GREEN
-    CHECK -->|Yes| REFACTOR["4. REFACTOR\nClean up\nno behavior change"]
+    CHECK -->|Yes| REFACTOR["4. REFACTOR<br/>Clean up<br/>no behavior change"]
 
     REFACTOR --> COVERAGE{Coverage ≥ 80%?}
     COVERAGE -->|No| RED
-    COVERAGE -->|Yes| UB["uncle-bob review\nClean Code audit\non final implementation"]
+    COVERAGE -->|Yes| UB["uncle-bob review<br/>Clean Code audit<br/>on final implementation"]
 
     UB --> ISSUES{Issues found?}
     ISSUES -->|CRITICAL/HIGH| REFACTOR

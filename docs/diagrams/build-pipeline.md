@@ -6,19 +6,19 @@ From TypeScript source to compiled output, testing, linting, and publishing.
 
 ```mermaid
 flowchart LR
-    SRC["src/**/*.ts\n(46 files)"] -->|"tsc -p\ntsconfig.build.json"| DIST["dist/**/*.js\n(CommonJS)"]
+    SRC["src/**/*.ts<br/>(46 files)"] -->|"tsc -p<br/>tsconfig.build.json"| DIST["dist/**/*.js<br/>(CommonJS)"]
 
-    DIST --> BIN["bin/ecc.js\nbin/ecc-hook.js\n(CLI entries)"]
-    DIST --> LIFECYCLE["dist/postinstall.js\ndist/preuninstall.js\n(npm lifecycle)"]
-    DIST --> HOOKS_OUT["dist/hooks/*.js\n(21 hook scripts)"]
+    DIST --> BIN["bin/ecc.js<br/>bin/ecc-hook.js<br/>(CLI entries)"]
+    DIST --> LIFECYCLE["dist/postinstall.js<br/>dist/preuninstall.js<br/>(npm lifecycle)"]
+    DIST --> HOOKS_OUT["dist/hooks/*.js<br/>(21 hook scripts)"]
 
     subgraph validation["Validation"]
-        DIST --> TEST["npm test\n1238 tests via tsx\ntests/run-all.js"]
-        DIST --> TYPECHECK["npm run typecheck\ntsc --noEmit"]
-        SRC --> LINT["npm run lint\nmarkdownlint"]
+        DIST --> TEST["npm test<br/>1238 tests via tsx<br/>tests/run-all.js"]
+        DIST --> TYPECHECK["npm run typecheck<br/>tsc --noEmit"]
+        SRC --> LINT["npm run lint<br/>markdownlint"]
     end
 
-    TEST --> PUBLISH["npm publish\n@lebocqtitouan/ecc"]
+    TEST --> PUBLISH["npm publish<br/>@lebocqtitouan/ecc"]
     TYPECHECK --> PUBLISH
     LINT --> PUBLISH
 ```

@@ -6,29 +6,29 @@ The `ecc install` pipeline from CLI entry through detection, merging, and file-s
 
 ```mermaid
 flowchart TD
-    CLI["bin/ecc.js\n(CLI entry)"] --> INSTALL_SH["install.sh\n(bash orchestrator)"]
+    CLI["bin/ecc.js<br/>(CLI entry)"] --> INSTALL_SH["install.sh<br/>(bash orchestrator)"]
     INSTALL_SH --> ORCH["install-orchestrator.ts"]
 
-    ORCH --> DETECT["detect(claudeDir)\nScan existing setup"]
-    ORCH --> MANIFEST_R["readManifest()\nLoad .ecc-manifest.json"]
+    ORCH --> DETECT["detect(claudeDir)<br/>Scan existing setup"]
+    ORCH --> MANIFEST_R["readManifest()<br/>Load .ecc-manifest.json"]
 
     DETECT --> MERGE_PHASE["Merge Phase"]
     MANIFEST_R --> MERGE_PHASE
 
-    MERGE_PHASE --> AGENTS["mergeDirectory()\nagents/"]
-    MERGE_PHASE --> COMMANDS["mergeDirectory()\ncommands/"]
-    MERGE_PHASE --> SKILLS["mergeSkills()\nskills/"]
-    MERGE_PHASE --> RULES["mergeRules()\nrules/"]
-    MERGE_PHASE --> HOOKS["mergeHooks()\nhooks.json → settings.json"]
+    MERGE_PHASE --> AGENTS["mergeDirectory()<br/>agents/"]
+    MERGE_PHASE --> COMMANDS["mergeDirectory()<br/>commands/"]
+    MERGE_PHASE --> SKILLS["mergeSkills()<br/>skills/"]
+    MERGE_PHASE --> RULES["mergeRules()<br/>rules/"]
+    MERGE_PHASE --> HOOKS["mergeHooks()<br/>hooks.json → settings.json"]
 
-    AGENTS --> FS["~/.claude/\n(file system output)"]
+    AGENTS --> FS["~/.claude/<br/>(file system output)"]
     COMMANDS --> FS
     SKILLS --> FS
     RULES --> FS
     HOOKS --> FS
 
-    FS --> MANIFEST_W["writeManifest()\nCreate/update manifest"]
-    FS --> GITIGNORE["ensureGitignoreEntries()\nManage .gitignore"]
+    FS --> MANIFEST_W["writeManifest()<br/>Create/update manifest"]
+    FS --> GITIGNORE["ensureGitignoreEntries()<br/>Manage .gitignore"]
 ```
 
 ## Related

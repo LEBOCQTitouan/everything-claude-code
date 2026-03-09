@@ -6,27 +6,27 @@ The `/doc-suite` command pipeline: `doc-orchestrator` delegates to specialized a
 
 ```mermaid
 flowchart TD
-    USER(["User: /doc-suite"]) --> ORCH["doc-orchestrator\n(coordinator)"]
+    USER(["User: /doc-suite"]) --> ORCH["doc-orchestrator<br/>(coordinator)"]
 
     subgraph phase1["Phase 1: Analysis (sequential)"]
-        ORCH --> ANALYZER["doc-analyzer\nScan source files\nBuild ARCHITECTURE.md\nAPI-SURFACE.md\nDEPENDENCY-GRAPH.md"]
+        ORCH --> ANALYZER["doc-analyzer<br/>Scan source files<br/>Build ARCHITECTURE.md<br/>API-SURFACE.md<br/>DEPENDENCY-GRAPH.md"]
     end
 
     subgraph phase2["Phase 2: Generation (parallel)"]
-        ANALYZER --> GEN["doc-generator\nModule summaries\nGlossary, Changelog"]
-        ANALYZER --> VAL["doc-validator\nAccuracy scoring\nQuality checks"]
-        ANALYZER --> REP["doc-reporter\nCoverage metrics\nRegression detection"]
-        ANALYZER --> DIAG["diagram-generator\nMermaid diagrams\nfrom manifest + markers"]
+        ANALYZER --> GEN["doc-generator<br/>Module summaries<br/>Glossary, Changelog"]
+        ANALYZER --> VAL["doc-validator<br/>Accuracy scoring<br/>Quality checks"]
+        ANALYZER --> REP["doc-reporter<br/>Coverage metrics<br/>Regression detection"]
+        ANALYZER --> DIAG["diagram-generator<br/>Mermaid diagrams<br/>from manifest + markers"]
     end
 
     subgraph phase3["Phase 3: Assembly (sequential)"]
-        GEN --> IDX["doc-orchestrator\nBuild INDEX.md files\nCross-references\nLink integrity check"]
+        GEN --> IDX["doc-orchestrator<br/>Build INDEX.md files<br/>Cross-references<br/>Link integrity check"]
         VAL --> IDX
         REP --> IDX
         DIAG --> IDX
     end
 
-    IDX --> SUMMARY(["Console Summary\nModules, Coverage, Grade\nDiagrams, Issues"])
+    IDX --> SUMMARY(["Console Summary<br/>Modules, Coverage, Grade<br/>Diagrams, Issues"])
 ```
 
 ## Related
