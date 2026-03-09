@@ -2,7 +2,7 @@
 
 ---
 
-> **Prerequisite**: This guide builds on [The Shorthand Guide to Everything Claude Code](./the-shortform-guide.md). Read that first if you haven't set up skills, hooks, subagents, MCPs, and plugins.
+> **Prerequisite**: This guide builds on [The Shorthand Guide to Everything Claude Code](./shortform-guide.md). Read that first if you haven't set up skills, hooks, subagents, MCPs, and plugins.
 
 In the shorthand guide, I covered the foundational setup: skills and commands, hooks, subagents, MCPs, plugins, and the configuration patterns that form the backbone of an effective Claude Code workflow. That was the setup guide and the base infrastructure.
 

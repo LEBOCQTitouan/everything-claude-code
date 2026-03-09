@@ -568,9 +568,8 @@ The patterns in this guide aren't complex. They're habits. Build them into your 
 **ECC Ecosystem:**
 - [AgentShield on npm](https://www.npmjs.com/package/ecc-agentshield) — Zero-install agent security scanning
 - [Everything Claude Code](https://github.com/affaan-m/everything-claude-code) — 50K+ stars, production-ready agent configurations
-- [The Shorthand Guide](./the-shortform-guide.md) — Setup and configuration fundamentals
-- [The Longform Guide](./the-longform-guide.md) — Advanced patterns and optimization
-- [The OpenClaw Guide](./the-openclaw-guide.md) — Security lessons from the agent frontier
+- [The Shorthand Guide](./shortform-guide.md) — Setup and configuration fundamentals
+- [The Longform Guide](./longform-guide.md) — Advanced patterns and optimization
 
 **Industry Frameworks & Research:**
 - [OWASP Top 10 for Agentic Applications (2026)](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/) — Industry-standard risk framework for autonomous AI agents

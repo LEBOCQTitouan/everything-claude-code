@@ -395,7 +395,7 @@ affoon:~ ctx:65% Opus 4.5 19:52
 
 ---
 
-**Note:** This is a subset of detail. See the [Longform Guide](./the-longform-guide.md) for advanced patterns.
+**Note:** This is a subset of detail. See the [Longform Guide](./longform-guide.md) for advanced patterns.
 
 ---
 
