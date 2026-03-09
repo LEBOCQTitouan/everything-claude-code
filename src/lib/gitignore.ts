@@ -17,7 +17,6 @@ export const ECC_GITIGNORE_ENTRIES: ReadonlyArray<{ pattern: string; comment: st
   { pattern: '.claude/settings.local.json', comment: 'Claude Code local settings (machine-specific)' },
   { pattern: '.claude/.ecc-manifest.json', comment: 'ECC installation manifest' },
   { pattern: 'docs/CODEMAPS/', comment: 'Generated architecture docs (regeneratable via /update-codemaps)' },
-  { pattern: '.reports/', comment: 'Analysis reports (generated, not source of truth)' },
   { pattern: '.claude/plans/', comment: 'Autonomous loop plans (ephemeral)' }
 ];
 

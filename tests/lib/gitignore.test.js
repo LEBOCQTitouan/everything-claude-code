@@ -61,7 +61,6 @@ async function runTests() {
     assert.ok(patterns.includes('.claude/settings.local.json'));
     assert.ok(patterns.includes('.claude/.ecc-manifest.json'));
     assert.ok(patterns.includes('docs/CODEMAPS/'));
-    assert.ok(patterns.includes('.reports/'));
     assert.ok(patterns.includes('.claude/plans/'));
   });
 

@@ -10,7 +10,7 @@ Analyze the codebase structure and generate token-lean architecture documentatio
 
 ## Step 2: Generate Codemaps
 
-Create or update codemaps in `docs/CODEMAPS/` (or `.reports/codemaps/`):
+Create or update codemaps in `docs/CODEMAPS/`:
 
 | File | Contents |
 |------|----------|
@@ -54,14 +54,6 @@ Add a freshness header to each codemap:
 ```markdown
 <!-- Generated: 2026-02-11 | Files scanned: 142 | Token estimate: ~800 -->
 ```
-
-## Step 5: Save Analysis Report
-
-Write a summary to `.reports/codemap-diff.txt`:
-- Files added/removed/modified since last scan
-- New dependencies detected
-- Architecture changes (new routes, new services, etc.)
-- Staleness warnings for docs not updated in 90+ days
 
 ## Tips
 
