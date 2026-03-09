@@ -278,7 +278,7 @@ Automated triggers on tool events (`PreToolUse`, `PostToolUse`, `Stop`, `Session
   "matcher": "tool == \"Edit\"",
   "hooks": [{
     "type": "command",
-    "command": "node \"${ECC_ROOT}/dist/hooks/post-edit-format.js\""
+    "command": "ecc-hook \"post:edit:format\" \"dist/hooks/post-edit-format.js\" \"standard,strict\""
   }]
 }
 ```
