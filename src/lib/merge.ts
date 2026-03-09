@@ -533,10 +533,27 @@ export function isLegacyEccHook(entry: Record<string, unknown>): boolean {
     const cmd = (hook as Record<string, unknown>).command;
     if (typeof cmd !== 'string') continue;
 
+    // Old-style scripts/hooks/ direct paths (pre-run-with-flags era)
     if (cmd.includes('scripts/hooks/') && !cmd.includes('run-with-flags-shell.sh')) {
       return true;
     }
 
+    // Unresolved placeholder commands (${ECC_ROOT} or ${CLAUDE_PLUGIN_ROOT} still present)
+    if (cmd.includes('${ECC_ROOT}') || cmd.includes('${CLAUDE_PLUGIN_ROOT}')) {
+      return true;
+    }
+
+    // Resolved absolute-path commands from old installations (node "/abs/path/dist/hooks/run-with-flags.js")
+    if (cmd.includes('/dist/hooks/run-with-flags.js') && !cmd.startsWith('ecc-hook')) {
+      return true;
+    }
+
+    // Resolved absolute-path shell hook commands
+    if (cmd.includes('/scripts/hooks/run-with-flags-shell.sh') && !cmd.startsWith('ecc-shell-hook')) {
+      return true;
+    }
+
+    // Inline node -e one-liners from pre-hook-runner era
     if (
       cmd.includes('node -e') &&
       (cmd.includes('dev-server') ||
