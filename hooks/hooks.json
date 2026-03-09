@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"pre:bash:dev-server-block\" \"dist/hooks/pre-bash-dev-server-block.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"pre:bash:dev-server-block\" \"dist/hooks/pre-bash-dev-server-block.js\" \"standard,strict\""
           }
         ],
         "description": "Block dev servers outside tmux - ensures you can access logs"
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"pre:bash:tmux-reminder\" \"dist/hooks/pre-bash-tmux-reminder.js\" \"strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"pre:bash:tmux-reminder\" \"dist/hooks/pre-bash-tmux-reminder.js\" \"strict\""
           }
         ],
         "description": "Reminder to use tmux for long-running commands"
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"pre:bash:git-push-reminder\" \"dist/hooks/pre-bash-git-push-reminder.js\" \"strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"pre:bash:git-push-reminder\" \"dist/hooks/pre-bash-git-push-reminder.js\" \"strict\""
           }
         ],
         "description": "Reminder before git push to review changes"
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"pre:write:doc-file-warning\" \"dist/hooks/doc-file-warning.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"pre:write:doc-file-warning\" \"dist/hooks/doc-file-warning.js\" \"standard,strict\""
           }
         ],
         "description": "Doc file warning: warn about non-standard documentation files (exit code 0; warns only)"
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"pre:edit-write:suggest-compact\" \"dist/hooks/suggest-compact.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"pre:edit-write:suggest-compact\" \"dist/hooks/suggest-compact.js\" \"standard,strict\""
           }
         ],
         "description": "Suggest manual compaction at logical intervals"
@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run-with-flags-shell.sh\" \"pre:observe\" \"skills/continuous-learning-v2/hooks/observe.sh\" \"standard,strict\"",
+            "command": "bash \"${ECC_ROOT}/scripts/hooks/run-with-flags-shell.sh\" \"pre:observe\" \"skills/continuous-learning-v2/hooks/observe.sh\" \"standard,strict\"",
             "async": true,
             "timeout": 10
           }
@@ -71,7 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"pre:compact\" \"dist/hooks/pre-compact.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"pre:compact\" \"dist/hooks/pre-compact.js\" \"standard,strict\""
           }
         ],
         "description": "Save state before context compaction"
@@ -83,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"session:start\" \"dist/hooks/session-start.js\" \"minimal,standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"session:start\" \"dist/hooks/session-start.js\" \"minimal,standard,strict\""
           }
         ],
         "description": "Load previous context and detect package manager on new session"
@@ -95,7 +95,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"post:bash:pr-created\" \"dist/hooks/post-bash-pr-created.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"post:bash:pr-created\" \"dist/hooks/post-bash-pr-created.js\" \"standard,strict\""
           }
         ],
         "description": "Log PR URL and provide review command after PR creation"
@@ -105,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"post:bash:build-complete\" \"dist/hooks/post-bash-build-complete.js\" \"standard,strict\"",
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"post:bash:build-complete\" \"dist/hooks/post-bash-build-complete.js\" \"standard,strict\"",
             "async": true,
             "timeout": 30
           }
@@ -117,7 +117,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"post:quality-gate\" \"dist/hooks/quality-gate.js\" \"standard,strict\"",
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"post:quality-gate\" \"dist/hooks/quality-gate.js\" \"standard,strict\"",
             "async": true,
             "timeout": 30
           }
@@ -129,7 +129,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit:format\" \"dist/hooks/post-edit-format.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit:format\" \"dist/hooks/post-edit-format.js\" \"standard,strict\""
           }
         ],
         "description": "Auto-format JS/TS files after edits (auto-detects Biome or Prettier)"
@@ -139,7 +139,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit:typecheck\" \"dist/hooks/post-edit-typecheck.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit:typecheck\" \"dist/hooks/post-edit-typecheck.js\" \"standard,strict\""
           }
         ],
         "description": "TypeScript check after editing .ts/.tsx files"
@@ -149,7 +149,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit:console-warn\" \"dist/hooks/post-edit-console-warn.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit:console-warn\" \"dist/hooks/post-edit-console-warn.js\" \"standard,strict\""
           }
         ],
         "description": "Warn about console.log statements after edits"
@@ -159,7 +159,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit-write:doc-coverage-reminder\" \"dist/hooks/doc-coverage-reminder.js\" \"standard,strict\"",
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"post:edit-write:doc-coverage-reminder\" \"dist/hooks/doc-coverage-reminder.js\" \"standard,strict\"",
             "async": true,
             "timeout": 5
           }
@@ -171,7 +171,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/run-with-flags-shell.sh\" \"post:observe\" \"skills/continuous-learning-v2/hooks/observe.sh\" \"standard,strict\"",
+            "command": "bash \"${ECC_ROOT}/scripts/hooks/run-with-flags-shell.sh\" \"post:observe\" \"skills/continuous-learning-v2/hooks/observe.sh\" \"standard,strict\"",
             "async": true,
             "timeout": 10
           }
@@ -185,7 +185,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"stop:uncommitted-reminder\" \"dist/hooks/stop-uncommitted-reminder.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"stop:uncommitted-reminder\" \"dist/hooks/stop-uncommitted-reminder.js\" \"standard,strict\""
           }
         ],
         "description": "Remind about uncommitted changes at session end"
@@ -195,7 +195,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"stop:check-console-log\" \"dist/hooks/check-console-log.js\" \"standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"stop:check-console-log\" \"dist/hooks/check-console-log.js\" \"standard,strict\""
           }
         ],
         "description": "Check for console.log in modified files after each response"
@@ -205,7 +205,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"stop:session-end\" \"dist/hooks/session-end.js\" \"minimal,standard,strict\"",
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"stop:session-end\" \"dist/hooks/session-end.js\" \"minimal,standard,strict\"",
             "async": true,
             "timeout": 10
           }
@@ -217,7 +217,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"stop:evaluate-session\" \"dist/hooks/evaluate-session.js\" \"minimal,standard,strict\"",
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"stop:evaluate-session\" \"dist/hooks/evaluate-session.js\" \"minimal,standard,strict\"",
             "async": true,
             "timeout": 10
           }
@@ -229,7 +229,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"stop:cost-tracker\" \"dist/hooks/cost-tracker.js\" \"minimal,standard,strict\"",
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"stop:cost-tracker\" \"dist/hooks/cost-tracker.js\" \"minimal,standard,strict\"",
             "async": true,
             "timeout": 10
           }
@@ -243,7 +243,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/run-with-flags.js\" \"session:end:marker\" \"dist/hooks/session-end-marker.js\" \"minimal,standard,strict\""
+            "command": "node \"${ECC_ROOT}/dist/hooks/run-with-flags.js\" \"session:end:marker\" \"dist/hooks/session-end-marker.js\" \"minimal,standard,strict\""
           }
         ],
         "description": "Session end lifecycle marker (non-blocking)"
