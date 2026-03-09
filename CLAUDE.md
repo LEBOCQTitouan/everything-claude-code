@@ -36,7 +36,7 @@ rules/           Always-follow guidelines (common/ + typescript/ + python/ + gol
 hooks/           Trigger-based automations (hooks.json)
 contexts/        Dynamic system prompt injection
 mcp-configs/     MCP server configurations
-schemas/         JSON schemas (hooks, plugin, package-manager)
+schemas/         JSON schemas (hooks, package-manager)
 tests/           Test suite (run with tsx, imports from src/ and dist/)
 ```
 

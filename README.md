@@ -9,7 +9,7 @@
 
 ## What This Is
 
-A Claude Code plugin — a collection of production-ready agents, skills, hooks, commands, and rules for software development. This fork adds an opinionated architecture layer on top of the upstream:
+A collection of production-ready agents, skills, hooks, commands, and rules for software development with Claude Code. This fork adds an opinionated architecture layer on top of the upstream:
 
 - **Hexagonal Architecture + DDD** enforced by a strategic architect agent
 - **Clean Architecture + Clean Code** enforced by an Uncle Bob consultant agent
@@ -278,7 +278,7 @@ Automated triggers on tool events (`PreToolUse`, `PostToolUse`, `Stop`, `Session
   "matcher": "tool == \"Edit\"",
   "hooks": [{
     "type": "command",
-    "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hooks/post-edit-format.js\""
+    "command": "node \"${ECC_ROOT}/dist/hooks/post-edit-format.js\""
   }]
 }
 ```
