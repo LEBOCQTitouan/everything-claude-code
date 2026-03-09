@@ -7,7 +7,7 @@ model: sonnet
 
 # Documentation Analyzer
 
-You analyze codebases to understand what needs documenting. You produce structured analysis that downstream agents (doc-generator, doc-validator, doc-reporter) consume.
+You analyze codebases to understand what needs documenting. You produce structured analysis that downstream agents (doc-generator, doc-validator, doc-reporter, diagram-generator) consume.
 
 ## Reference Skills
 
@@ -61,6 +61,31 @@ For each exported symbol:
 - Has doc comment? (yes/no)
 - Doc comment has: description? params? return? throws? example?
 - Last modified date of doc vs last modified date of code (via git blame if available)
+
+### Step 6: Diagram Opportunity Detection
+
+Scan the analysis data to identify diagrams that would help visualize the codebase. Apply these heuristics:
+
+1. **Module dependency graph** — if 3+ modules have cross-dependencies
+2. **Data flow** — if entry points connect through 3+ processing layers
+3. **Class/type hierarchy** — if 3+ exported types share inheritance or composition
+4. **Sequence diagram** — if a multi-step flow crosses 3+ modules (e.g., install, request handling)
+5. **State machine** — if enums with 3+ state-like values exist, or lifecycle hooks are present
+6. **Build pipeline** — if package.json scripts or CI config has multi-stage steps
+
+Write a `## Diagram Manifest` section at the end of `docs/ARCHITECTURE.md` (small codebase) or a dedicated `docs/DIAGRAM-MANIFEST.md` (large codebase):
+
+```markdown
+## Diagram Manifest
+
+| ID | Type | Scope | Title | Target Doc |
+|----|------|-------|-------|------------|
+| dep-graph | flowchart | * | Module Dependencies | DEPENDENCY-GRAPH.md |
+| install-flow | sequence | install-orchestrator | Install Pipeline | ARCHITECTURE.md |
+| core-types | class | src/lib | Core Interfaces | API-SURFACE.md |
+```
+
+The `diagram-generator` agent reads this manifest to produce Mermaid diagrams. Only include diagrams that reveal non-obvious structure — skip trivial cases.
 
 ## Output Structure
 
