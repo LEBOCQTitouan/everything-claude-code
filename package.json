@@ -6,7 +6,9 @@
   "main": "./bin/ecc.js",
   "types": "./index.d.ts",
   "bin": {
-    "ecc": "./bin/ecc.js"
+    "ecc": "./bin/ecc.js",
+    "ecc-hook": "./bin/ecc-hook.js",
+    "ecc-shell-hook": "./bin/ecc-shell-hook.sh"
   },
   "exports": {
     ".": {
