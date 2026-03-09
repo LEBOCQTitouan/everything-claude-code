@@ -57,9 +57,9 @@ function parseArgs(args: string[]): { command: string; languages: string[]; opti
 }
 
 /**
- * Get the ECC plugin root directory (where install.sh / package.json lives).
+ * Get the ECC root directory (where install.sh / package.json lives).
  */
-function getPluginRoot(): string {
+function getEccRoot(): string {
   // When running from dist/, go up one level
   return path.resolve(__dirname, '..');
 }
@@ -68,7 +68,7 @@ function getPluginRoot(): string {
  * Get ECC version from package.json.
  */
 function getVersion(): string {
-  const pkgPath = path.join(getPluginRoot(), 'package.json');
+  const pkgPath = path.join(getEccRoot(), 'package.json');
   try {
     return JSON.parse(fs.readFileSync(pkgPath, 'utf8')).version || '0.0.0';
   } catch {
@@ -79,12 +79,12 @@ function getVersion(): string {
 /**
  * Collect the list of ECC source artifacts for manifest tracking.
  */
-function collectSourceArtifacts(pluginRoot: string, languages: string[]): EccManifest['artifacts'] {
-  const agentsDir = path.join(pluginRoot, 'agents');
-  const commandsDir = path.join(pluginRoot, 'commands');
-  const skillsDir = path.join(pluginRoot, 'skills');
-  const rulesDir = path.join(pluginRoot, 'rules');
-  const hooksFile = path.join(pluginRoot, 'hooks', 'hooks.json');
+function collectSourceArtifacts(eccRoot: string, languages: string[]): EccManifest['artifacts'] {
+  const agentsDir = path.join(eccRoot, 'agents');
+  const commandsDir = path.join(eccRoot, 'commands');
+  const skillsDir = path.join(eccRoot, 'skills');
+  const rulesDir = path.join(eccRoot, 'rules');
+  const hooksFile = path.join(eccRoot, 'hooks', 'hooks.json');
 
   const agents = fs.existsSync(agentsDir) ? fs.readdirSync(agentsDir).filter(f => f.endsWith('.md')) : [];
 
@@ -127,7 +127,7 @@ function collectSourceArtifacts(pluginRoot: string, languages: string[]): EccMan
  * Run the global install flow.
  */
 async function installGlobal(languages: string[], opts: OrchestratorOptions): Promise<boolean> {
-  const pluginRoot = getPluginRoot();
+  const eccRoot = getEccRoot();
   const claudeDir = process.env.CLAUDE_DIR || path.join(process.env.HOME || '', '.claude');
   const version = getVersion();
 
@@ -160,22 +160,22 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
   // Step 4: Merge each artifact type
   console.error('Installing ECC artifacts:');
 
-  const agentsReport = await mergeDirectory(path.join(pluginRoot, 'agents'), path.join(claudeDir, 'agents'), existingManifest, 'agents', mergeOpts);
+  const agentsReport = await mergeDirectory(path.join(eccRoot, 'agents'), path.join(claudeDir, 'agents'), existingManifest, 'agents', mergeOpts);
   printMergeReport('Agents', agentsReport);
 
-  const commandsReport = await mergeDirectory(path.join(pluginRoot, 'commands'), path.join(claudeDir, 'commands'), existingManifest, 'commands', mergeOpts);
+  const commandsReport = await mergeDirectory(path.join(eccRoot, 'commands'), path.join(claudeDir, 'commands'), existingManifest, 'commands', mergeOpts);
   printMergeReport('Commands', commandsReport);
 
-  const skillsReport = await mergeSkills(path.join(pluginRoot, 'skills'), path.join(claudeDir, 'skills'), existingManifest, mergeOpts);
+  const skillsReport = await mergeSkills(path.join(eccRoot, 'skills'), path.join(claudeDir, 'skills'), existingManifest, mergeOpts);
   printMergeReport('Skills', skillsReport);
 
   const ruleGroups = ['common', ...languages];
-  const rulesReport = await mergeRules(path.join(pluginRoot, 'rules'), path.join(claudeDir, 'rules'), existingManifest, ruleGroups, mergeOpts);
+  const rulesReport = await mergeRules(path.join(eccRoot, 'rules'), path.join(claudeDir, 'rules'), existingManifest, ruleGroups, mergeOpts);
   printMergeReport('Rules', rulesReport);
 
   // Step 5: Merge hooks
   if (!opts.dryRun) {
-    const hooksResult = mergeHooks(path.join(pluginRoot, 'hooks', 'hooks.json'), path.join(claudeDir, 'settings.json'), pluginRoot);
+    const hooksResult = mergeHooks(path.join(eccRoot, 'hooks', 'hooks.json'), path.join(claudeDir, 'settings.json'), eccRoot);
     const hookParts = [`${hooksResult.added} added`, `${hooksResult.existing} already present`];
     if (hooksResult.legacyRemoved > 0) hookParts.push(`${hooksResult.legacyRemoved} legacy removed`);
     console.error(`  Hooks: ${hookParts.join(', ')}`);
@@ -184,7 +184,7 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
   }
 
   // Step 6: Write/update manifest
-  const sourceArtifacts = collectSourceArtifacts(pluginRoot, languages);
+  const sourceArtifacts = collectSourceArtifacts(eccRoot, languages);
 
   if (!opts.dryRun) {
     const newManifest = existingManifest ? updateManifest(existingManifest, version, languages, sourceArtifacts) : createManifest(version, languages, sourceArtifacts);

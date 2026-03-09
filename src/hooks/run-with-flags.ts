@@ -28,7 +28,11 @@ function readStdinRaw(): Promise<string> {
   });
 }
 
-function getPluginRoot(): string {
+function getEccRoot(): string {
+  if (process.env.ECC_ROOT && process.env.ECC_ROOT.trim()) {
+    return process.env.ECC_ROOT;
+  }
+  // Backwards-compatible fallback for existing installations
   if (process.env.CLAUDE_PLUGIN_ROOT && process.env.CLAUDE_PLUGIN_ROOT.trim()) {
     return process.env.CLAUDE_PLUGIN_ROOT;
   }
@@ -49,8 +53,8 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  const pluginRoot = getPluginRoot();
-  const scriptPath = path.join(pluginRoot, relScriptPath);
+  const eccRoot = getEccRoot();
+  const scriptPath = path.join(eccRoot, relScriptPath);
 
   if (!fs.existsSync(scriptPath)) {
     process.stderr.write(`[Hook] Script not found for ${hookId}: ${scriptPath}\n`);
@@ -62,7 +66,7 @@ async function main(): Promise<void> {
     input: raw,
     encoding: 'utf8',
     env: process.env,
-    cwd: process.cwd(),
+    cwd: process.cwd()
   });
 
   if (result.stdout) process.stdout.write(result.stdout);
