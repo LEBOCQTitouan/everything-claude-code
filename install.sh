@@ -77,16 +77,16 @@ merge_hooks() {
     node - "$settings_file" "$HOOKS_FILE" "$SCRIPT_DIR" <<'NODE'
 const fs = require('fs');
 const path = require('path');
-const [, , settingsPath, hooksPath, pluginRoot] = process.argv;
+const [, , settingsPath, hooksPath, eccRoot] = process.argv;
 
 const existing = fs.existsSync(settingsPath)
     ? JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
     : {};
 
-// Replace ${CLAUDE_PLUGIN_ROOT} placeholder with the actual install path
+// Replace ${ECC_ROOT} (and legacy ${CLAUDE_PLUGIN_ROOT}) with the actual install path
 const raw = fs.readFileSync(hooksPath, 'utf8')
-    .replaceAll('${CLAUDE_PLUGIN_ROOT}', pluginRoot);
-const source = JSON.parse(raw);
+    .replaceAll('${ECC_ROOT}', eccRoot)
+    .replaceAll('${CLAUDE_PLUGIN_ROOT}', eccRoot);
 
 const merged = { ...existing };
 merged.hooks = merged.hooks || {};
