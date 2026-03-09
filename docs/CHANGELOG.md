@@ -4,12 +4,14 @@
 
 <!-- AUTO-GENERATED -->
 
-Generated from 529 git conventional commits. Grouped by type and version.
+Generated from 579 git conventional commits. Grouped by type and version.
 
 ## Unreleased (post-1.0.13)
 
 ### Features
 
+- Add TDD execution flow to /plan command
+- Add TDD-ready plan format to planner agent
 - Integrate diagram-generator into doc-suite pipeline
 - Extend doc-analyzer with diagram opportunity detection
 - Add /doc-diagrams command
@@ -28,6 +30,7 @@ Generated from 529 git conventional commits. Grouped by type and version.
 
 ### Fixes
 
+- Replace `\n` with `<br/>` in Mermaid diagram labels
 - Add self-resolving ECC_ROOT fallback to run-with-flags-shell.sh
 - Detect and remove legacy ECC_ROOT and absolute-path hooks during merge
 
@@ -41,17 +44,21 @@ Generated from 529 git conventional commits. Grouped by type and version.
 
 ### Documentation
 
+- Update cross-references for /plan TDD integration
+- Generate Mermaid diagrams from codebase analysis
+- Add JSDoc comments to claw.ts and skill-create-output.ts (API coverage 90% → ~99%)
 - Update README hook example to use ecc-hook bin command
 - Remove plugin references from README and CLAUDE.md
 - Add JSDoc to all 174 public exports and update doc suite (59% to 100%)
 - Generate documentation suite for codebase
-- Update test count in CLAUDE.md scripts table (1202 to 1238)
+- Update test count in CLAUDE.md scripts table (1202 to 1260)
 - Regenerate codemaps for doc system and test runner changes
 - Update CLAUDE.md and doc-updater with doc system references
 - Update CLAUDE.md for single-process test runner
 
 ### Tests
 
+- Add CI validators for plan-TDD integration (validate-plan-tdd.test.js)
 - Update hook and merge tests for bin-based hook commands
 - Update assertions for ECC_ROOT rename
 - Add doc system hook and validation tests
@@ -289,7 +296,7 @@ Generated from 529 git conventional commits. Grouped by type and version.
 
 ### Tests
 
-- 1238 total tests across all modules
+- 1260 total tests across all modules
 - Edge-case coverage for session-manager, session-aliases, hooks, validators
 - Cross-platform Windows/macOS/Linux compatibility tests
 
@@ -299,7 +306,7 @@ Generated from 529 git conventional commits. Grouped by type and version.
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
-| Unreleased | -- | Diagram generator, doc system, bin-based hooks, ECC_ROOT rename |
+| Unreleased | -- | Plan-TDD integration, diagram generator, doc system, bin-based hooks, ECC_ROOT rename |
 | 1.0.13 | 2025 | Doc system, interactive diff review, single-process tests, arch-review |
 | 1.0.12 | 2025 | Auto-detect language, remove legacy hooks |
 | 1.0.11 | 2025 | Smart plugin detection, merge, gitignore management |

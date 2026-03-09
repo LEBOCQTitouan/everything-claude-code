@@ -13,7 +13,7 @@ All exported symbols from `src/lib/` and standalone scripts with exports. Hooks 
 | utils | 35 | 35 | 100% |
 | session-aliases | 21 | 21 | 100% |
 | session-manager | 20 | 20 | 100% |
-| claw | 20 | 3 | 15% |
+| claw | 21 | 20 | 95% |
 | merge | 16 | 16 | 100% |
 | package-manager | 15 | 15 | 100% |
 | detect | 12 | 12 | 100% |
@@ -23,10 +23,10 @@ All exported symbols from `src/lib/` and standalone scripts with exports. Hooks 
 | smart-merge | 9 | 9 | 100% |
 | hook-flags | 8 | 8 | 100% |
 | gitignore | 7 | 7 | 100% |
-| skill-create-output | 3 | 0 | 0% |
-| **Total** | **197** | **177** | **90%** |
+| skill-create-output | 2 | 2 | 100% |
+| **Total** | **197** | **196** | **99%** |
 
-**Note:** lib/ modules are 100% documented (174/174). The undocumented exports are in standalone scripts (claw.ts, skill-create-output.ts) which export utility functions without JSDoc.
+**Note:** lib/ modules are 100% documented (174/174). Standalone scripts are now nearly fully documented. The only undocumented export is `main()` in claw.ts.
 
 ---
 
@@ -294,26 +294,27 @@ All exported symbols from `src/lib/` and standalone scripts with exports. Hooks 
 
 | Symbol | Kind | Documented | Description |
 |--------|------|------------|-------------|
-| `isValidSessionName()` | function | No | Validate session name format |
-| `getClawDir()` | function | No | Get ~/.claude/claw/ directory |
-| `getSessionPath()` | function | No | Get path for a named session |
-| `listSessions()` | function | No | List saved session names |
-| `loadHistory()` | function | No | Load session history from file |
-| `appendTurn()` | function | No | Append a turn to session file |
-| `loadECCContext()` | function | No | Load ECC skills as context |
-| `buildPrompt()` | function | No | Build full prompt with system/history/user |
-| `askClaude()` | function | Yes | Call claude CLI (documented) |
-| `parseTurns()` | function | No | Parse history into Turn objects |
-| `estimateTokenCount()` | function | No | Estimate token count from text length |
-| `getSessionMetrics()` | function | No | Get turn counts and token estimates |
-| `searchSessions()` | function | No | Search across sessions by keyword |
-| `compactSession()` | function | No | Compact old turns, keep recent |
-| `exportSession()` | function | No | Export session to md/json/txt |
-| `branchSession()` | function | No | Branch session into new session |
-| `handleClear()` | function | No | Clear session handler |
-| `handleHistory()` | function | No | Print history handler |
-| `handleSessions()` | function | No | List sessions handler |
-| `handleHelp()` | function | No | Print help handler |
+| `isValidSessionName()` | function | Yes | Validate session name against allowed format |
+| `getClawDir()` | function | Yes | Get path to ~/.claude/claw/ directory |
+| `getSessionPath()` | function | Yes | Get file path for a named session |
+| `listSessions()` | function | Yes | List all saved session names by scanning .md files |
+| `loadHistory()` | function | Yes | Load conversation history from session file |
+| `appendTurn()` | function | Yes | Append a conversation turn in NanoClaw markdown format |
+| `loadECCContext()` | function | Yes | Load ECC skill files as context strings |
+| `buildPrompt()` | function | Yes | Build full prompt combining system context, history, and user message |
+| `askClaude()` | function | Yes | Call claude CLI with argument array (no shell interpolation) |
+| `parseTurns()` | function | Yes | Parse session history into structured Turn objects |
+| `estimateTokenCount()` | function | Yes | Estimate token count using 4-chars-per-token heuristic |
+| `getSessionMetrics()` | function | Yes | Compute usage metrics (turn counts, character count, token estimate) |
+| `searchSessions()` | function | Yes | Search across sessions for keyword with context snippets |
+| `compactSession()` | function | Yes | Compact session retaining only recent turns |
+| `exportSession()` | function | Yes | Export session to md/json/txt format |
+| `branchSession()` | function | Yes | Branch (duplicate) session into new named session |
+| `handleClear()` | function | Yes | Clear all history from session file |
+| `handleHistory()` | function | Yes | Print full conversation history to stdout |
+| `handleSessions()` | function | Yes | Print all saved session names to stdout |
+| `handleHelp()` | function | Yes | Print NanoClaw REPL help text |
+| `main()` | function | No | REPL entry point |
 
 ## skill-create-output (standalone)
 
@@ -321,9 +322,8 @@ All exported symbols from `src/lib/` and standalone scripts with exports. Hooks 
 
 | Symbol | Kind | Documented | Description |
 |--------|------|------------|-------------|
-| `SkillCreateOutput` | class | No | Output formatter class with header/patterns/instincts/footer |
-| `demo()` | function | No | Demo function showing sample output |
-| `main()` (via export) | function | No | Entry point alias for demo |
+| `SkillCreateOutput` | class | Yes | Terminal UI formatter with animated progress, box drawing, and ANSI colors |
+| `demo()` | function | Yes | Demo function rendering sample skill-create output with mock data |
 
 See also: [Architecture](ARCHITECTURE.md) | [Dependencies](DEPENDENCY-GRAPH.md) | [Glossary](GLOSSARY.md)
 

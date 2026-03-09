@@ -63,6 +63,11 @@ A directory containing `SKILL.md` that provides domain knowledge to Claude Code.
 - **Related:** [Agent](#agent), [Command](#command), [Artifact](#artifact)
 - **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-skills.ts`](../src/ci/validate-skills.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts), [`claw.ts`](../src/claw.ts)
 
+### Test Targets
+A structured subsection in each phase of a [planner](#agent) output that specifies what to scaffold and test before implementation. Includes interfaces to scaffold, unit tests, integration tests, edge cases, and expected test file paths. Consumed by the `/plan` [Command](#command) TDD execution loop to drive the RED phase.
+- **Related:** [Agent](#agent), [Command](#command)
+- **Files:** [`planner.md`](../agents/planner.md), [`plan.md`](../commands/plan.md), [`validate-plan-tdd.test.js`](../tests/ci/validate-plan-tdd.test.js)
+
 ## Infrastructure Terms
 
 ### Apply All

@@ -236,6 +236,8 @@ Per-module purpose, key exports, dependencies, and documentation coverage.
 | validate-skills | Check skill directories contain SKILL.md | fs |
 | validate-no-personal-paths | Prevent shipping user-specific absolute paths | fs |
 
+**Test coverage:** [`validate-plan-tdd.test.js`](../tests/ci/validate-plan-tdd.test.js) validates that planner output includes `test_targets` sections and that the `/plan` command TDD execution flow consumes them correctly.
+
 **Doc coverage:** N/A (no public exports; all validators have file-level JSDoc headers)
 
 ---
@@ -319,10 +321,12 @@ Per-module purpose, key exports, dependencies, and documentation coverage.
 | lib/ | 12 | 174 | 174 | 100% |
 | claw (standalone) | 1 | 20 | 20 | 100% |
 | skill-create-output (standalone) | 1 | 3 | 3 | 100% |
-| **Total (exported)** | **14** | **197** | **197** | **100%** |
+| **Total (exported)** | **14** | **197** | **195** | **~99%** |
 | hooks/ | 21 | 0 (scripts) | N/A | N/A |
 | ci/ | 6 | 0 (scripts) | N/A | N/A |
 | standalone (no exports) | 4 | 0 (scripts) | N/A | N/A |
+
+**Note:** API coverage rose from 90% to ~99% after JSDoc was added to `claw.ts` and `skill-create-output.ts`. Two minor exports remain undocumented.
 
 See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glossary](GLOSSARY.md) | [Coverage](DOC-COVERAGE.md)
 

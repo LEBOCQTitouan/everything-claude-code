@@ -15,6 +15,7 @@
 | **Source files** | 46 `.ts` files under `src/` |
 | **Codebase size** | Small (46 source files) |
 | **Entry points** | `bin/ecc.js` (CLI), `dist/postinstall.js`, `dist/preuninstall.js`, `dist/install-orchestrator.js`, `dist/claw.js` |
+| **Test count** | 1260 (26 test files, single-process runner) |
 | **Build** | `tsc -p tsconfig.build.json` to `dist/` |
 
 ## Source Directory Layout

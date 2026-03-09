@@ -3,19 +3,19 @@
 
 # Documentation Coverage Report
 
-## Overall Coverage: 90% (A)
+## Overall Coverage: 99% (A+)
 
 | Metric | Value |
 |--------|-------|
 | Total public exports | 197 |
-| Documented | 177 |
-| Undocumented | 20 |
-| Coverage | 89.8% |
-| Quality grade | A |
-| Modules with 0% coverage | 1 (skill-create-output) |
-| Modules with 100% coverage | 12 (all lib/) |
+| Documented | 196 |
+| Undocumented | 1 |
+| Coverage | 99.5% |
+| Quality grade | A+ |
+| Modules with 0% coverage | 0 |
+| Modules with 100% coverage | 13 (all lib/ + skill-create-output) |
 
-**Note:** The 12 `lib/` modules are 100% documented (174/174). All undocumented exports are in standalone scripts: `claw.ts` (17/20 undocumented) and `skill-create-output.ts` (3/3 undocumented).
+**Note:** The 12 `lib/` modules remain at 100% coverage (174/174). The standalone script `skill-create-output.ts` is now fully documented (2/2). The only undocumented export is `main()` in `claw.ts` (20/21 documented).
 
 ## Per-Module Coverage
 
@@ -23,8 +23,8 @@
 |--------|-----------|-------|------------|----------|-------|
 | utils | lib/ | 35 | 35 | 100% | A |
 | session-aliases | lib/ | 21 | 21 | 100% | A |
+| claw | src/ | 21 | 20 | 95% | A |
 | session-manager | lib/ | 20 | 20 | 100% | A |
-| claw | src/ | 20 | 3 | 15% | F |
 | merge | lib/ | 16 | 16 | 100% | A |
 | package-manager | lib/ | 15 | 15 | 100% | A |
 | detect | lib/ | 12 | 12 | 100% | A |
@@ -34,42 +34,29 @@
 | smart-merge | lib/ | 9 | 9 | 100% | A |
 | hook-flags | lib/ | 8 | 8 | 100% | A |
 | gitignore | lib/ | 7 | 7 | 100% | A |
-| skill-create-output | src/ | 3 | 0 | 0% | F |
+| skill-create-output | src/ | 2 | 2 | 100% | A |
 
-**Grading scale:** A (90-100%), B (80-89%), C (70-79%), D (60-69%), F (<60%)
+**Grading scale:** A+ (99-100%), A (90-98%), B (80-89%), C (70-79%), D (60-69%), F (<60%)
 
 ## Coverage by Symbol Type
 
 | Type | Total | Documented | Coverage |
 |------|-------|------------|----------|
-| Functions | 128 | 108 | 84.4% |
+| Functions | 127 | 126 | 99.2% |
 | Interfaces/Types | 43 | 43 | 100% |
 | Constants | 24 | 24 | 100% |
-| Classes | 1 | 0 | 0% |
-| **All** | **197** | **177** | **89.8%** |
+| Classes | 1 | 1 | 100% |
+| **All** | **197** | **196** | **99.5%** |
 
-Functions are the only symbol type below 100% coverage. All 20 undocumented functions reside in standalone scripts (`claw.ts` and `skill-create-output.ts`), not in the shared library. The single undocumented class is `SkillCreateOutput` in `skill-create-output.ts`.
+Functions are nearly fully covered: the sole undocumented function is `main()` in `claw.ts`, which is a CLI entry point. The `SkillCreateOutput` class in `skill-create-output.ts` is now documented.
 
-## Undocumented Priority List (Top 10)
+## Undocumented Priority List
 
-Ordered by importance: hub-module exports first, frequently imported symbols next, leaf/internal exports last.
+Only 1 undocumented export remains across the entire codebase.
 
 | # | Export | Module | Kind | Importance | Reason |
 |---|--------|--------|------|------------|--------|
-| 1 | `SkillCreateOutput` | skill-create-output | class | High | Public API class for /skill-create command output formatting |
-| 2 | `demo()` | skill-create-output | function | Medium | Entry point / demo runner for skill-create UI |
-| 3 | `main()` | skill-create-output | function | Medium | Module entry point (alias for demo) |
-| 4 | `isValidSessionName()` | claw | function | Medium | Input validation used by branching and REPL startup |
-| 5 | `getClawDir()` | claw | function | Medium | Directory resolution used by all session operations |
-| 6 | `buildPrompt()` | claw | function | Medium | Core prompt assembly logic for Claude CLI calls |
-| 7 | `parseTurns()` | claw | function | Medium | Parser for session history format (used by metrics, compact, export) |
-| 8 | `compactSession()` | claw | function | Medium | Session compaction logic (user-facing /compact command) |
-| 9 | `exportSession()` | claw | function | Medium | Multi-format session export (md/json/txt) |
-| 10 | `branchSession()` | claw | function | Medium | Session branching with validation |
-
-**Remaining undocumented claw exports** (lower priority): `getSessionPath()`, `listSessions()`, `loadHistory()`, `appendTurn()`, `loadECCContext()`, `estimateTokenCount()`, `getSessionMetrics()`, `searchSessions()`, `handleClear()`, `handleHistory()`, `handleSessions()`, `handleHelp()`.
-
-See [API-SURFACE.md](API-SURFACE.md) for detailed export listings per module.
+| 1 | `main()` | claw | function | Low | CLI entry point; orchestrates the REPL loop. Low priority since it is not imported by other modules. |
 
 ## Staleness Report
 
@@ -89,10 +76,10 @@ Staleness detection compares the date of the last code change against the last d
 | hook-flags | 2026-03-09 | Current | All 8 exports documented same day |
 | session-aliases | 2026-03-09 | Current | All 21 exports documented same day |
 | session-manager | 2026-03-09 | Current | All 20 exports documented same day |
-| claw | 2026-03-07 | Stale | 17 exports lack JSDoc; only `askClaude()` documented |
-| skill-create-output | 2026-03-08 | Stale | 0/3 exports documented |
+| claw | 2026-03-09 | Current | 20/21 exports documented; only `main()` lacks JSDoc |
+| skill-create-output | 2026-03-09 | Current | All 2 exports documented same day |
 
-**Stale documentation detected in 2 modules.** Both are standalone scripts (not lib/) and the staleness is due to missing documentation rather than documentation falling behind code changes.
+**No stale documentation detected.** All modules have up-to-date JSDoc. The only gap is `main()` in `claw.ts`, which has never been documented.
 
 ## Trend (vs Previous Run)
 
@@ -100,17 +87,22 @@ Previous baseline: `docs/DOC-COVERAGE.md` dated 2026-03-09 (earlier run).
 
 | Metric | Previous | Current | Change |
 |--------|----------|---------|--------|
-| Total exports counted | 174 | 197 | +23 |
-| Documented exports | 174 | 177 | +3 |
-| Undocumented exports | 0 | 20 | +20 |
-| Overall coverage | 100% | 89.8% | -10.2% |
-| Quality grade | A (9.2/10) | A | -- |
-| Modules at F | 0 | 2 | +2 |
-| Modules at 100% | 12 | 12 | -- |
+| Total exports counted | 197 | 197 | -- |
+| Documented exports | 177 | 196 | +19 |
+| Undocumented exports | 20 | 1 | -19 |
+| Overall coverage | 89.8% | 99.5% | +9.7% |
+| Quality grade | A | A+ | Upgraded |
+| Modules at F | 2 | 0 | -2 |
+| Modules at 100% | 12 | 13 | +1 |
 
-**Analysis:** The previous run reported 174 exports at 100% coverage but only counted `lib/` modules. This run includes standalone script exports (`claw.ts` with 20 exports, `skill-create-output.ts` with 3 exports), giving a more complete picture. The lib/ modules remain at 100% coverage. Overall coverage dropped to 89.8% because standalone scripts were added to scope.
+**Analysis:** Coverage improved from 89.8% to 99.5% (+9.7 percentage points). Two modules were upgraded from F to A/A+:
 
-**Recommendation:** Add JSDoc to the 20 undocumented exports in `claw.ts` and 3 in `skill-create-output.ts` to restore 100% coverage across the entire codebase.
+- **claw.ts**: 15% (F) -> 95% (A). 17 JSDoc comments were added, covering all exports except `main()`. Export count adjusted from 20 to 21 (one export was previously missed).
+- **skill-create-output.ts**: 0% (F) -> 100% (A). Both public exports (`SkillCreateOutput` class, `demo` function) are now documented. Export count adjusted from 3 to 2 (`main()` was removed or is no longer a separate counted export).
+
+A new test file `validate-plan-tdd.test.js` was added with 18 tests, bringing the total test count from 1242 to 1260.
+
+**Recommendation:** The single remaining undocumented export (`main()` in `claw.ts`) is a low-priority CLI entry point. Adding a one-line JSDoc would bring coverage to 100%.
 
 ## Scope Notes
 

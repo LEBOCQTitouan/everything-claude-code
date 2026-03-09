@@ -14,7 +14,7 @@
 ## Quick Stats
 
 - **Source:** 48 TypeScript files in `src/` (~7,000 LOC)
-- **Tests:** 27 test files, 1238 assertions passing (single-process runner)
+- **Tests:** 27 test files, 1260 assertions passing (single-process runner)
 - **Content:** 24 agents, 46 commands, 69 skills, 5 rule groups
 - **Runtime dep:** 1 (`omelette`)
 - **Build:** `tsc` → CommonJS in `dist/`

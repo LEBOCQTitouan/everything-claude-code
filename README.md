@@ -197,7 +197,7 @@ everything-claude-code/
 │
 ├── dist/                            # Compiled JS output (npm run build)
 │
-└── tests/                           # Test suite (992 tests, run with tsx)
+└── tests/                           # Test suite (1260 tests, run with tsx)
     └── run-all.js
 ```
 
@@ -300,7 +300,7 @@ rules/golang/          # Go specific
 
 ```bash
 npm run build              # compile TypeScript to dist/
-npx tsx tests/run-all.js   # run all 992 tests
+npx tsx tests/run-all.js   # run all 1260 tests
 ```
 
 ---

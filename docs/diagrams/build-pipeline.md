@@ -13,7 +13,7 @@ flowchart LR
     DIST --> HOOKS_OUT["dist/hooks/*.js<br/>(21 hook scripts)"]
 
     subgraph validation["Validation"]
-        DIST --> TEST["npm test<br/>1238 tests via tsx<br/>tests/run-all.js"]
+        DIST --> TEST["npm test<br/>1260 tests via tsx<br/>tests/run-all.js"]
         DIST --> TYPECHECK["npm run typecheck<br/>tsc --noEmit"]
         SRC --> LINT["npm run lint<br/>markdownlint"]
     end
