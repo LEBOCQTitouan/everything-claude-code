@@ -4,12 +4,13 @@
 
 <!-- AUTO-GENERATED -->
 
-Generated from 579 git conventional commits. Grouped by type and version.
+Generated from 585 git conventional commits. Grouped by type and version.
 
 ## Unreleased (post-1.0.13)
 
 ### Features
 
+- Add custom diagram registry for doc-suite regeneration
 - Add TDD execution flow to /plan command
 - Add TDD-ready plan format to planner agent
 - Integrate diagram-generator into doc-suite pipeline
@@ -30,6 +31,9 @@ Generated from 579 git conventional commits. Grouped by type and version.
 
 ### Fixes
 
+- Update agent-orchestration diagram for /plan TDD flow
+- Correct stale LOC and framework counts in docs
+- Repair 5 broken links in guide files
 - Replace `\n` with `<br/>` in Mermaid diagram labels
 - Add self-resolving ECC_ROOT fallback to run-with-flags-shell.sh
 - Detect and remove legacy ECC_ROOT and absolute-path hooks during merge
@@ -44,6 +48,8 @@ Generated from 579 git conventional commits. Grouped by type and version.
 
 ### Documentation
 
+- Update codemaps for diagram-generator and custom registry
+- Regenerate documentation suite after plan-TDD integration
 - Update cross-references for /plan TDD integration
 - Generate Mermaid diagrams from codebase analysis
 - Add JSDoc comments to claw.ts and skill-create-output.ts (API coverage 90% → ~99%)
@@ -306,7 +312,7 @@ Generated from 579 git conventional commits. Grouped by type and version.
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
-| Unreleased | -- | Plan-TDD integration, diagram generator, doc system, bin-based hooks, ECC_ROOT rename |
+| Unreleased | -- | Plan-TDD integration, diagram generator, custom diagram registry, doc system (6 agents), bin-based hooks, ECC_ROOT rename |
 | 1.0.13 | 2025 | Doc system, interactive diff review, single-process tests, arch-review |
 | 1.0.12 | 2025 | Auto-detect language, remove legacy hooks |
 | 1.0.11 | 2025 | Smart plugin detection, merge, gitignore management |

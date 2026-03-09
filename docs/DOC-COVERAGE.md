@@ -14,29 +14,54 @@
 | Quality grade | A+ |
 | Modules with 0% coverage | 0 |
 | Modules with 100% coverage | 13 (all lib/ + skill-create-output) |
+| Test files | 27 |
+| Total tests | 1272 |
 
-**Note:** The 12 `lib/` modules remain at 100% coverage (174/174). The standalone script `skill-create-output.ts` is now fully documented (2/2). The only undocumented export is `main()` in `claw.ts` (20/21 documented).
+**Note:** The 12 `lib/` modules remain at 100% coverage (174/174). The standalone script `skill-create-output.ts` is fully documented (2/2). The only undocumented export is `main()` in `claw.ts` (20/21 documented).
 
 ## Per-Module Coverage
 
 | Module | Directory | Total | Documented | Coverage | Grade |
 |--------|-----------|-------|------------|----------|-------|
-| utils | lib/ | 35 | 35 | 100% | A |
-| session-aliases | lib/ | 21 | 21 | 100% | A |
+| utils | lib/ | 35 | 35 | 100% | A+ |
+| session-aliases | lib/ | 21 | 21 | 100% | A+ |
 | claw | src/ | 21 | 20 | 95% | A |
-| session-manager | lib/ | 20 | 20 | 100% | A |
-| merge | lib/ | 16 | 16 | 100% | A |
-| package-manager | lib/ | 15 | 15 | 100% | A |
-| detect | lib/ | 12 | 12 | 100% | A |
-| ansi | lib/ | 11 | 11 | 100% | A |
-| project-detect | lib/ | 10 | 10 | 100% | A |
-| manifest | lib/ | 10 | 10 | 100% | A |
-| smart-merge | lib/ | 9 | 9 | 100% | A |
-| hook-flags | lib/ | 8 | 8 | 100% | A |
-| gitignore | lib/ | 7 | 7 | 100% | A |
-| skill-create-output | src/ | 2 | 2 | 100% | A |
+| session-manager | lib/ | 20 | 20 | 100% | A+ |
+| merge | lib/ | 16 | 16 | 100% | A+ |
+| package-manager | lib/ | 15 | 15 | 100% | A+ |
+| detect | lib/ | 12 | 12 | 100% | A+ |
+| ansi | lib/ | 11 | 11 | 100% | A+ |
+| project-detect | lib/ | 10 | 10 | 100% | A+ |
+| manifest | lib/ | 10 | 10 | 100% | A+ |
+| smart-merge | lib/ | 9 | 9 | 100% | A+ |
+| hook-flags | lib/ | 8 | 8 | 100% | A+ |
+| gitignore | lib/ | 7 | 7 | 100% | A+ |
+| skill-create-output | src/ | 2 | 2 | 100% | A+ |
 
 **Grading scale:** A+ (99-100%), A (90-98%), B (80-89%), C (70-79%), D (60-69%), F (<60%)
+
+## Cross-Reference Coverage
+
+All modules with public exports are referenced in the three core documentation files.
+
+| Module | MODULE-SUMMARIES.md | API-SURFACE.md | DEPENDENCY-GRAPH.md |
+|--------|:-------------------:|:--------------:|:-------------------:|
+| utils | Yes | Yes | Yes |
+| session-aliases | Yes | Yes | Yes |
+| session-manager | Yes | Yes | Yes |
+| merge | Yes | Yes | Yes |
+| package-manager | Yes | Yes | Yes |
+| detect | Yes | Yes | Yes |
+| ansi | Yes | Yes | Yes |
+| project-detect | Yes | Yes | Yes |
+| manifest | Yes | Yes | Yes |
+| smart-merge | Yes | Yes | Yes |
+| hook-flags | Yes | Yes | Yes |
+| gitignore | Yes | Yes | Yes |
+| claw | Yes | Yes | Yes |
+| skill-create-output | Yes | Yes | Yes |
+
+**Cross-reference coverage: 100%** (14/14 modules present in all three docs)
 
 ## Coverage by Symbol Type
 
@@ -88,19 +113,19 @@ Previous baseline: `docs/DOC-COVERAGE.md` dated 2026-03-09 (earlier run).
 | Metric | Previous | Current | Change |
 |--------|----------|---------|--------|
 | Total exports counted | 197 | 197 | -- |
-| Documented exports | 177 | 196 | +19 |
-| Undocumented exports | 20 | 1 | -19 |
-| Overall coverage | 89.8% | 99.5% | +9.7% |
-| Quality grade | A | A+ | Upgraded |
-| Modules at F | 2 | 0 | -2 |
-| Modules at 100% | 12 | 13 | +1 |
+| Documented exports | 196 | 196 | -- |
+| Undocumented exports | 1 | 1 | -- |
+| Overall coverage | 99.5% | 99.5% | -- |
+| Quality grade | A+ | A+ | -- |
+| Modules at 100% | 13 | 13 | -- |
+| Test files | 26 | 27 | +1 |
+| Total tests | 1260 | 1272 | +12 |
 
-**Analysis:** Coverage improved from 89.8% to 99.5% (+9.7 percentage points). Two modules were upgraded from F to A/A+:
+**Analysis:** JSDoc coverage is stable at 99.5% (A+) with no regressions. No source files in `src/lib/` or standalone scripts were modified since the last run. All 174 lib exports and 22 out of 23 standalone script exports remain documented.
 
-- **claw.ts**: 15% (F) -> 95% (A). 17 JSDoc comments were added, covering all exports except `main()`. Export count adjusted from 20 to 21 (one export was previously missed).
-- **skill-create-output.ts**: 0% (F) -> 100% (A). Both public exports (`SkillCreateOutput` class, `demo` function) are now documented. Export count adjusted from 3 to 2 (`main()` was removed or is no longer a separate counted export).
+**Test suite update:** A new test file `validate-custom-diagrams.test.js` was added with 12 tests, bringing the total from 1260 to 1272 across 27 test files.
 
-A new test file `validate-plan-tdd.test.js` was added with 18 tests, bringing the total test count from 1242 to 1260.
+**No regressions detected.**
 
 **Recommendation:** The single remaining undocumented export (`main()` in `claw.ts`) is a low-priority CLI entry point. Adding a one-line JSDoc would bring coverage to 100%.
 
@@ -108,6 +133,7 @@ A new test file `validate-plan-tdd.test.js` was added with 18 tests, bringing th
 
 - **In scope:** All `export`-ed symbols from `src/lib/*.ts` and standalone scripts (`src/claw.ts`, `src/skill-create-output.ts`)
 - **Out of scope:** Hooks (`src/hooks/*.ts`) and CI validators (`src/ci/*.ts`) are standalone scripts with no public exports
+- **Out of scope:** Install scripts (`src/install-orchestrator.ts`, `src/postinstall.ts`, `src/preuninstall.ts`, `src/setup-package-manager.ts`) have no public exports
 - **Documentation definition:** A symbol is "documented" if it has a JSDoc/TSDoc comment (`/** ... */`) immediately preceding its declaration
 
 See also: [API Surface](API-SURFACE.md) | [Architecture](ARCHITECTURE.md) | [Dependencies](DEPENDENCY-GRAPH.md)

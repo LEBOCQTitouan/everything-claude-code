@@ -2,7 +2,7 @@
 
 # Module Dependency Graph
 
-Import relationships between all `src/` modules, with `utils` as the primary hub (fan-in 11).
+Import relationships between all `src/` modules, with `utils` as the primary hub (fan-in 12).
 
 ```mermaid
 flowchart LR
@@ -21,18 +21,21 @@ flowchart LR
         merge["merge"]
     end
 
-    subgraph hooks["src/hooks/ (21 scripts)"]
+    subgraph hooks["src/hooks/ (23 scripts)"]
         runWithFlags["run-with-flags"]
         sessionStart["session-start"]
+        checkEnabled["check-hook-enabled"]
         hooksUtils["8 hooks<br/>(console, cost, eval, ...)"]
-        hooksSelf["10 self-contained hooks"]
+        hooksSelf["12 self-contained hooks"]
     end
 
     subgraph standalone["src/ standalone"]
         orchestrator["install-orchestrator"]
         postinstall["postinstall"]
+        preuninstall["preuninstall"]
         setupPm["setup-package-manager"]
         skillCreate["skill-create-output"]
+        claw["claw"]
     end
 
     pkgMgr --> utils
@@ -52,6 +55,7 @@ flowchart LR
     skillCreate --> ansi
 
     runWithFlags --> hookFlags
+    checkEnabled --> hookFlags
     sessionStart --> utils
     sessionStart --> pkgMgr
     sessionStart --> projectDetect

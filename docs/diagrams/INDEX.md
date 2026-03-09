@@ -10,10 +10,10 @@ Generated from codebase analysis data (`docs/ARCHITECTURE.md`, `docs/DEPENDENCY-
 
 | Diagram | Type | Description |
 |---------|------|-------------|
-| [Module Dependency Graph](module-dependency-graph.md) | flowchart LR | Import relationships across all `src/` modules with `utils` as the primary hub |
+| [Module Dependency Graph](module-dependency-graph.md) | flowchart LR | Import relationships across all `src/` modules with `utils` as the primary hub (fan-in 12) |
 | [Install Data Flow](install-data-flow.md) | flowchart TD | `ecc install` pipeline: CLI entry through detection, merging, and file-system output |
 | [Hook Execution Flow](hook-execution-flow.md) | sequence | How Claude Code triggers hooks via `ecc-hook` and `run-with-flags.js` with profile gating |
-| [Doc-Suite Pipeline](doc-suite-pipeline.md) | flowchart TD | `/doc-suite` phased agent pipeline: analysis, generation, validation, assembly |
+| [Doc-Suite Pipeline](doc-suite-pipeline.md) | flowchart TD | `/doc-suite` 6-agent phased pipeline: analysis, generation, validation, diagrams, assembly |
 | [Build Pipeline](build-pipeline.md) | flowchart LR | TypeScript compilation, testing, linting, and publishing |
 
 ## Custom-Registered Diagrams

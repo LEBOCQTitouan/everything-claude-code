@@ -180,7 +180,7 @@ Per-module purpose, key exports, dependencies, and documentation coverage.
 
 ### Overview
 
-21 hook scripts implementing Claude Code lifecycle events. Each is a standalone Node.js script that reads JSON from stdin and writes to stdout/stderr. No public exports -- all hooks are invoked via `run-with-flags.ts` which gates execution by profile.
+23 hook scripts (including 2 runners) implementing Claude Code lifecycle events. Each is a standalone Node.js script that reads JSON from stdin and writes to stdout/stderr. No public exports -- all hooks are invoked via `run-with-flags.ts` which gates execution by profile.
 
 **Dependencies (from lib/):**
 - `utils`: session-start, session-end, evaluate-session, suggest-compact, pre-compact, check-console-log, stop-uncommitted-reminder, cost-tracker, post-edit-console-warn
@@ -321,12 +321,12 @@ Per-module purpose, key exports, dependencies, and documentation coverage.
 | lib/ | 12 | 174 | 174 | 100% |
 | claw (standalone) | 1 | 20 | 20 | 100% |
 | skill-create-output (standalone) | 1 | 3 | 3 | 100% |
-| **Total (exported)** | **14** | **197** | **195** | **~99%** |
-| hooks/ | 21 | 0 (scripts) | N/A | N/A |
+| **Total (exported)** | **14** | **197** | **196** | **~99%** |
+| hooks/ | 23 | 0 (scripts) | N/A | N/A |
 | ci/ | 6 | 0 (scripts) | N/A | N/A |
 | standalone (no exports) | 4 | 0 (scripts) | N/A | N/A |
 
-**Note:** API coverage rose from 90% to ~99% after JSDoc was added to `claw.ts` and `skill-create-output.ts`. Two minor exports remain undocumented.
+**Note:** API coverage rose from 90% to ~99% after JSDoc was added to `claw.ts` and `skill-create-output.ts`. One export remains undocumented (`main()` in claw.ts).
 
 See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glossary](GLOSSARY.md) | [Coverage](DOC-COVERAGE.md)
 

@@ -2,7 +2,7 @@
 
 # Doc-Suite Agent Pipeline
 
-The `/doc-suite` command pipeline: `doc-orchestrator` delegates to specialized agents in phased execution with parallelism in Phase 2.
+The `/doc-suite` 6-agent pipeline: `doc-orchestrator` delegates to 5 specialized agents in phased execution with parallelism in Phase 2.
 
 ```mermaid
 flowchart TD

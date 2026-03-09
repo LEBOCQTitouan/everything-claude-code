@@ -6,14 +6,14 @@ From TypeScript source to compiled output, testing, linting, and publishing.
 
 ```mermaid
 flowchart LR
-    SRC["src/**/*.ts<br/>(46 files)"] -->|"tsc -p<br/>tsconfig.build.json"| DIST["dist/**/*.js<br/>(CommonJS)"]
+    SRC["src/**/*.ts<br/>(48 files)"] -->|"tsc -p<br/>tsconfig.build.json"| DIST["dist/**/*.js<br/>(CommonJS)"]
 
     DIST --> BIN["bin/ecc.js<br/>bin/ecc-hook.js<br/>(CLI entries)"]
     DIST --> LIFECYCLE["dist/postinstall.js<br/>dist/preuninstall.js<br/>(npm lifecycle)"]
-    DIST --> HOOKS_OUT["dist/hooks/*.js<br/>(21 hook scripts)"]
+    DIST --> HOOKS_OUT["dist/hooks/*.js<br/>(23 hook scripts)"]
 
     subgraph validation["Validation"]
-        DIST --> TEST["npm test<br/>1260 tests via tsx<br/>tests/run-all.js"]
+        DIST --> TEST["npm test<br/>1272 tests via tsx<br/>tests/run-all.js"]
         DIST --> TYPECHECK["npm run typecheck<br/>tsc --noEmit"]
         SRC --> LINT["npm run lint<br/>markdownlint"]
     end

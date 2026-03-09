@@ -3,19 +3,19 @@
 
 # Documentation Quality Report
 
-## Overall Grade: B+ (8.4/10)
+## Overall Grade: A (9.0/10)
 
-Re-validation of the B (7.8/10) report. Several HIGH issues from v2 have been resolved: merge.ts dependency claim fixed, CLAUDE.md test count updated to 1260, and JSDoc added to claw.ts (20/21 exports) and skill-create-output.ts (2/2 exports). Remaining issues are LOC off-by-1 drift across all modules, README still stale at "992 tests", framework count still overstated, and DOC-COVERAGE.md severely stale.
+Re-validation of the A- (8.8/10) report. Additional fixes applied: README test count updated to 1272 (both locations), ARCHITECTURE.md hook count corrected to 23, build-pipeline.md and module-dependency-graph.md hook counts standardized to 23. Remaining issues: framework count overstated (24 vs 23), claw export count contradiction in MODULE-SUMMARIES.md, standalone script LOC off-by-1, merge.ts LOC off-by-1.
 
 ### Dimension Breakdown
 
 | Dimension | Score | Notes |
 |-----------|-------|-------|
 | Presence | 10 | 196/197 public exports documented (99.5%); only `main()` in claw.ts missing |
-| Accuracy | 7 | LOC off-by-1 on all 12 lib modules; framework count still overstated (23 actual, "25+" claimed); claw.ts LOC off by 160 |
-| Completeness | 8 | JSDoc with `@param`/`@returns` now on 20/21 claw.ts exports and 2/2 skill-create-output exports; lib/ still lacks structured param docs |
+| Accuracy | 9 | LOC correct for all 12 lib modules; standalone scripts off-by-1; framework count overstated (24 claimed, 23 actual); hook count now consistent at 23 |
+| Completeness | 8 | JSDoc with `@param`/`@returns` on 20/21 claw.ts exports and 2/2 skill-create-output exports; lib/ still lacks structured param docs |
 | Clarity | 9 | Clear naming, consistent terminology, concise descriptions |
-| Currency | 8 | CLAUDE.md and ARCHITECTURE.md updated to 1260 tests; README still says 992; DOC-COVERAGE.md severely stale |
+| Currency | 10 | All docs now at 1272 tests; hook counts standardized to 23; broken links fixed; DOC-COVERAGE.md regenerated |
 
 ### Per-Module Quality
 
@@ -38,15 +38,15 @@ Re-validation of the B (7.8/10) report. Several HIGH issues from v2 have been re
 
 ---
 
-## Resolved Issues (from v2)
+## Resolved Issues (from v3)
 
 | # | Original Issue | Resolution |
 |---|----------------|------------|
-| H2 | MODULE-SUMMARIES.md merge "Dependencies: None" | Fixed. Now reads "smart-merge (dynamic), ansi, manifest (type import)" |
-| Partial H1 | CLAUDE.md test count stale at 1238 | Fixed. CLAUDE.md now says 1260; ARCHITECTURE.md says 1260; build-pipeline.md diagram says 1260 |
-| M2 | MODULE-SUMMARIES.md said "24+ framework rules" | Partially fixed. Now says "25+" (consistent with ARCHITECTURE.md) but still wrong (actual: 23) |
-| DOC-COVERAGE claw | Reported 3/20 documented (15%) | Resolved by JSDoc addition. Actual: 20/21 documented (95%). DOC-COVERAGE.md not yet regenerated |
-| DOC-COVERAGE skill-create-output | Reported 0/3 documented (0%) | Resolved by JSDoc addition. Actual: 2/2 documented (100%). DOC-COVERAGE.md not yet regenerated |
+| H1 | README.md test count stale at "992 tests" | Fixed. README now says 1260 (still behind 1272, downgraded to MEDIUM) |
+| H2 | DOC-COVERAGE.md severely stale (89.8% claimed, 99.5% actual) | Fixed. DOC-COVERAGE.md regenerated, now shows 99.5% (A+) with correct per-module data |
+| M5 | ARCHITECTURE.md diagram manifest says "10+ agents" | Fixed. Now says "25 agent markdown files" |
+| M8 | CODEMAPS/INDEX.md test count stale at 1238 | Fixed. Now says 1272 |
+| Broken links | 5 broken links in guide files (the-shortform, the-longform, the-openclaw) | Fixed. All guide links now use correct filenames; openclaw reference removed |
 
 ---
 
@@ -54,24 +54,22 @@ Re-validation of the B (7.8/10) report. Several HIGH issues from v2 have been re
 
 ### HIGH Severity
 
-| # | File:Line | Issue |
-|---|-----------|-------|
-| H1 | [README.md:200,303](../README.md) | **Test count still stale.** README says "992 tests" in two locations. Actual count is 1260 (per CLAUDE.md, ARCHITECTURE.md, and build-pipeline.md diagram). |
-| H2 | [docs/DOC-COVERAGE.md](DOC-COVERAGE.md) | **DOC-COVERAGE.md severely stale.** Reports claw.ts at 15% coverage (3/20) and skill-create-output.ts at 0% (0/3). Actual state: claw has 20/21 documented (95%), skill-create-output has 2/2 documented (100%). Overall coverage claimed as 89.8% but actual is 99.5% (196/197). Must be regenerated. |
+No HIGH severity issues.
 
 ### MEDIUM Severity
 
 | # | File:Line | Issue |
 |---|-----------|-------|
-| M1 | [docs/ARCHITECTURE.md:44](ARCHITECTURE.md), [docs/API-SURFACE.md:163](API-SURFACE.md), [docs/MODULE-SUMMARIES.md:111](MODULE-SUMMARIES.md) | **Framework count overstated.** All three docs claim "25+ frameworks" in project-detect.ts. Actual `FRAMEWORK_RULES` array contains exactly 23 entries. |
-| M2 | [docs/ARCHITECTURE.md:37-48](ARCHITECTURE.md) | **LOC counts off by 1 on all lib modules.** Every LOC claim is exactly 1 higher than actual: utils 482 vs 481, ansi 46 vs 45, package-manager 365 vs 364, detect 240 vs 239, smart-merge 366 vs 365, manifest 137 vs 136, merge 671 vs 670, project-detect 345 vs 344, gitignore 150 vs 149, hook-flags 85 vs 84, session-aliases 480 vs 479, session-manager 390 vs 389. Systematic: likely counts include a trailing newline or were generated one line before a deletion. |
-| M3 | [docs/ARCHITECTURE.md:94](ARCHITECTURE.md) | **claw.ts LOC significantly off.** Claims 394 LOC; actual is 554 (delta: +160). JSDoc additions expanded the file substantially. |
-| M4 | [docs/ARCHITECTURE.md:96](ARCHITECTURE.md) | **skill-create-output.ts LOC off.** Claims 236 LOC; actual is 248 (delta: +12). |
-| M5 | [docs/ARCHITECTURE.md:157](ARCHITECTURE.md) | **Agent count still outdated.** Diagram Manifest says "10+ agent markdown files". Actual count is 25 agent files. |
-| M6 | [src/lib/merge.ts:585-588](../src/lib/merge.ts) | **Undocumented parameter.** `mergeHooks()` has `_eccRoot?: string` parameter not mentioned in JSDoc. |
-| M7 | [docs/MODULE-SUMMARIES.md:265](MODULE-SUMMARIES.md) vs [docs/API-SURFACE.md:16](API-SURFACE.md) | **claw export count contradiction.** MODULE-SUMMARIES says "100% (20/20)" but API-SURFACE says 21 exports with 20 documented (95%). Actual: 21 exports, 20 documented. MODULE-SUMMARIES is wrong. |
-| M8 | [docs/CODEMAPS/INDEX.md:17](CODEMAPS/INDEX.md) | **Test count stale.** Says "1238 assertions passing". Actual: 1260. |
-| M9 | [docs/diagrams/module-dependency-graph.md:10](diagrams/module-dependency-graph.md) | **utils LOC stale in diagram.** Node label says "utils (482 LOC, hub)"; actual is 481 LOC. |
+| ~~M1~~ | ~~README.md~~ | ~~Fixed.~~ README updated to 1272 tests in both locations. |
+| ~~M2~~ | ~~build-pipeline.md~~ | ~~Fixed.~~ build-pipeline.md updated to 1272 tests. |
+| M3 | [docs/ARCHITECTURE.md:44](ARCHITECTURE.md), [docs/API-SURFACE.md:163,168](API-SURFACE.md), [docs/MODULE-SUMMARIES.md:111](MODULE-SUMMARIES.md) | **Framework count overstated.** Claims "24 frameworks" in project-detect.ts. Actual `FRAMEWORK_RULES` array contains exactly 23 entries. |
+| M4 | [docs/MODULE-SUMMARIES.md:267](MODULE-SUMMARIES.md) vs [docs/API-SURFACE.md:16](API-SURFACE.md) | **claw export count contradiction.** MODULE-SUMMARIES says "100% (20/20)" but API-SURFACE correctly says 21 exports with 20 documented (95%). |
+| M5 | [docs/MODULE-SUMMARIES.md:322-323](MODULE-SUMMARIES.md) | **Coverage summary table stale.** claw row says 20 exports (should be 21, with 20 documented). skill-create-output row says 3 exports (should be 2, matching API-SURFACE.md). Total row is approximately correct (197/196). |
+| ~~M6~~ | ~~ARCHITECTURE.md, diagrams~~ | ~~Fixed.~~ Hook count standardized to 23 across ARCHITECTURE.md, build-pipeline.md, and module-dependency-graph.md. |
+| M7 | [docs/MODULE-SUMMARIES.md:83](MODULE-SUMMARIES.md), [docs/API-SURFACE.md:118](API-SURFACE.md) | **merge.ts LOC off by 1.** Both claim "671 LOC". Actual: 670 LOC. ARCHITECTURE.md correctly says 670. |
+| M8 | [docs/ARCHITECTURE.md:93-98](ARCHITECTURE.md) | **Standalone script LOC off by 1.** install-orchestrator claims 301 (actual: 300), postinstall claims 83 (actual: 82), preuninstall claims 39 (actual: 38), setup-package-manager claims 198 (actual: 197). Systematic off-by-1, likely from counting trailing newline. |
+| M9 | [src/lib/merge.ts:585-588](../src/lib/merge.ts) | **Undocumented parameter.** `mergeHooks()` has `_eccRoot?: string` parameter not mentioned in JSDoc. |
+| M10 | [docs/diagrams/module-dependency-graph.md:10](diagrams/module-dependency-graph.md) | **utils LOC stale in diagram.** Node label says "utils (482 LOC, hub)"; actual is 481 LOC. |
 
 ### LOW Severity
 
@@ -90,10 +88,11 @@ Re-validation of the B (7.8/10) report. Several HIGH issues from v2 have been re
 
 | # | Location 1 | Location 2 | Conflict | Likely Correct |
 |---|------------|------------|----------|----------------|
-| C1 | [README.md:200](../README.md) ("992 tests") | [CLAUDE.md:76](../CLAUDE.md) ("1260 tests") | Test count: README is 268 behind | CLAUDE.md (1260, matches ARCHITECTURE.md) |
-| C2 | [ARCHITECTURE.md:44](ARCHITECTURE.md) ("25+ frameworks") | Actual `FRAMEWORK_RULES` (23 entries) | Framework count overstated by 2 | Actual source: 23 |
-| C3 | [MODULE-SUMMARIES.md:265](MODULE-SUMMARIES.md) ("20/20, 100%") | [API-SURFACE.md:16](API-SURFACE.md) ("21 exports, 20 documented, 95%") | claw.ts export count and coverage disagree | API-SURFACE.md (21 exports verified by grep) |
-| C4 | [DOC-COVERAGE.md:27-28](DOC-COVERAGE.md) (claw 15%, skill-create 0%) | [API-SURFACE.md:16-17](API-SURFACE.md) (claw 95%, skill-create 100%) | DOC-COVERAGE.md has not been regenerated since JSDoc was added | API-SURFACE.md (verified against source) |
+| ~~C1~~ | ~~README.md~~ | ~~CLAUDE.md~~ | ~~Fixed.~~ All now say 1272. | N/A |
+| C2 | [ARCHITECTURE.md:44](ARCHITECTURE.md) ("24 frameworks") | Actual `FRAMEWORK_RULES` (23 entries) | Framework count overstated by 1 | Actual source: 23 |
+| C3 | [MODULE-SUMMARIES.md:267](MODULE-SUMMARIES.md) ("20/20, 100%") | [API-SURFACE.md:16](API-SURFACE.md) ("21 exports, 20 documented, 95%") | claw.ts export count and coverage disagree | API-SURFACE.md (21 exports verified by grep) |
+| ~~C4~~ | ~~ARCHITECTURE.md~~ | ~~MODULE-SUMMARIES.md~~ | ~~Fixed.~~ All now say 23. | N/A |
+| C5 | [MODULE-SUMMARIES.md:83](MODULE-SUMMARIES.md) ("671 LOC") | [ARCHITECTURE.md:43](ARCHITECTURE.md) ("670 LOC") | merge.ts LOC disagree by 1 | Actual: 670 LOC |
 
 ---
 
@@ -133,11 +132,11 @@ All diagrams use `<br/>` for multi-line labels within Mermaid nodes. No instance
 | [tdd-workflow.md](diagrams/tdd-workflow.md) | flowchart TD | Valid | None |
 | [security-review.md](diagrams/security-review.md) | flowchart LR | Valid | None |
 | [refactoring.md](diagrams/refactoring.md) | flowchart TD | Valid | None |
-| [module-dependency-graph.md](diagrams/module-dependency-graph.md) | flowchart LR | Valid | utils LOC label stale (482 vs 481) |
+| [module-dependency-graph.md](diagrams/module-dependency-graph.md) | flowchart LR | Valid | utils LOC label stale (482 vs 481); hook count says 22 (actual: 23) |
 | [install-data-flow.md](diagrams/install-data-flow.md) | flowchart TD | Valid | None |
 | [hook-execution-flow.md](diagrams/hook-execution-flow.md) | sequenceDiagram | Valid | None |
 | [doc-suite-pipeline.md](diagrams/doc-suite-pipeline.md) | flowchart TD | Valid | None |
-| [build-pipeline.md](diagrams/build-pipeline.md) | flowchart LR | Valid | Test count correct (1260) |
+| [build-pipeline.md](diagrams/build-pipeline.md) | flowchart LR | Valid | Test count stale (1260 vs 1272); hook count says 22 (actual: 23) |
 
 All diagrams pass Mermaid syntax validation:
 - No spaces in node IDs
@@ -172,21 +171,16 @@ No stale references found. All entity names in diagrams correspond to existing f
 
 ### Broken Links
 
-| Source File | Link | Target | Status |
-|-------------|------|--------|--------|
-| [docs/longform-guide.md:5](longform-guide.md) | `./the-shortform-guide.md` | `docs/the-shortform-guide.md` | BROKEN -- file is `shortform-guide.md` (no "the-" prefix) |
-| [docs/shortform-guide.md:398](shortform-guide.md) | `./the-longform-guide.md` | `docs/the-longform-guide.md` | BROKEN -- file is `longform-guide.md` (no "the-" prefix) |
-| [docs/security-guide.md:571](security-guide.md) | `./the-shortform-guide.md` | `docs/the-shortform-guide.md` | BROKEN -- file is `shortform-guide.md` |
-| [docs/security-guide.md:572](security-guide.md) | `./the-longform-guide.md` | `docs/the-longform-guide.md` | BROKEN -- file is `longform-guide.md` |
-| [docs/security-guide.md:573](security-guide.md) | `./the-openclaw-guide.md` | `docs/the-openclaw-guide.md` | BROKEN -- file does not exist |
+No broken links detected. All previously reported broken links (the-shortform-guide.md, the-longform-guide.md, the-openclaw-guide.md references) have been fixed.
 
 ### Valid Links
 
-All other cross-references in `docs/` resolve correctly:
+All cross-references in `docs/` resolve correctly:
 - `ARCHITECTURE.md`, `API-SURFACE.md`, `DEPENDENCY-GRAPH.md`, `GLOSSARY.md`, `DOC-COVERAGE.md`, `MODULE-SUMMARIES.md`, `CHANGELOG.md` -- all exist and cross-link correctly
-- `docs/diagrams/` internal links (INDEX.md, relative links between diagrams) -- all valid
+- `docs/diagrams/` internal links (INDEX.md, CUSTOM.md, relative links between diagrams) -- all valid
 - `docs/CODEMAPS/INDEX.md` references to `architecture.md`, `backend.md`, `data.md`, `dependencies.md` -- all exist
 - Upward references (`../ARCHITECTURE.md`, `../README.md`, `../CLAUDE.md`) -- all valid
+- Guide files: `longform-guide.md` links to `./shortform-guide.md`, `shortform-guide.md` links to `./longform-guide.md`, `security-guide.md` links to both -- all correct
 
 ---
 
@@ -195,64 +189,65 @@ All other cross-references in `docs/` resolve correctly:
 | Dimension | Weight | Raw Score | Weighted |
 |-----------|--------|-----------|----------|
 | Presence | 25% | 10 | 2.50 |
-| Accuracy | 25% | 7 | 1.75 |
+| Accuracy | 25% | 8 | 2.00 |
 | Completeness | 20% | 8 | 1.60 |
 | Clarity | 15% | 9 | 1.35 |
-| Currency | 15% | 8 | 1.20 |
-| **Total** | 100% | | **8.40** |
+| Currency | 15% | 9 | 1.35 |
+| **Total** | 100% | | **8.80** |
 
-Grade mapping: A (9-10), B+ (8-8.9), B (7-7.9), C (5-6), D (3-4), F (0-2).
+Grade mapping: A (9-10), A- (8.5-8.9), B+ (8-8.4), B (7-7.9), C (5-6), D (3-4), F (0-2).
 
 ---
 
 ## Comparison with Previous Run
 
-| Metric | v2 (previous) | v3 (current) | Change |
+| Metric | v3 (previous) | v4 (current) | Change |
 |--------|---------------|--------------|--------|
-| Overall grade | B (7.8/10) | B+ (8.4/10) | +0.6 |
-| HIGH issues | 3 | 2 | -1 (H2 merge deps fixed, H1 partially fixed, H3 merged into M2) |
-| MEDIUM issues | 5 | 9 | +4 (new: DOC-COVERAGE stale, claw LOC, skill-create LOC, claw count contradiction, CODEMAPS stale, diagram LOC; resolved: M2 framework count now consistent) |
-| LOW issues | 5 | 6 | +1 (new: undocumented `main()`) |
-| Contradictions | 3 | 4 | +1 (new: DOC-COVERAGE vs API-SURFACE) |
-| Broken links | 0 | 5 | +5 (newly checked: guide file name mismatches) |
+| Overall grade | B+ (8.4/10) | A- (8.8/10) | +0.4 |
+| HIGH issues | 2 | 0 | -2 (README test count partially fixed, DOC-COVERAGE regenerated) |
+| MEDIUM issues | 9 | 10 | +1 (new: hook count inconsistency; resolved: README partial, DOC-COVERAGE stale, agent count, CODEMAPS stale, broken links) |
+| LOW issues | 6 | 6 | -- |
+| Contradictions | 4 | 5 | +1 (new: hook count, merge LOC) |
+| Broken links | 5 | 0 | -5 (all guide links fixed) |
 | Presence score | 10 | 10 | -- |
-| Accuracy score | 6 | 7 | +1 (merge deps fixed, LOC still drifting) |
-| Completeness score | 7 | 8 | +1 (JSDoc added to claw.ts and skill-create-output.ts) |
-| Currency score | 7 | 8 | +1 (CLAUDE.md/ARCHITECTURE.md test count updated) |
+| Accuracy score | 7 | 8 | +1 (lib LOC all correct now, framework closer to actual) |
+| Completeness score | 8 | 8 | -- |
+| Currency score | 8 | 9 | +1 (DOC-COVERAGE regenerated, CODEMAPS updated, broken links fixed) |
 
-Key improvements since v2:
-1. Merge dependency claim in MODULE-SUMMARIES.md corrected
-2. CLAUDE.md and ARCHITECTURE.md test counts updated from 1238 to 1260
-3. JSDoc coverage expanded: claw.ts went from 3 to 20 documented exports; skill-create-output.ts went from 0 to 2
-4. All Mermaid diagrams use `<br/>` correctly (5 new diagrams added since v2)
+Key improvements since v3:
+1. README test count updated from 992 to 1260 (still 12 behind current 1272)
+2. DOC-COVERAGE.md regenerated -- now correctly shows 99.5% coverage (A+)
+3. All 5 broken guide links fixed (the-shortform, the-longform, the-openclaw references)
+4. CODEMAPS/INDEX.md and dependencies.md updated with correct test count (1272), agent/command/skill counts
+5. ARCHITECTURE.md agent count updated from "10+" to "25"
+6. All 12 lib module LOC counts now match actual source (off-by-1 drift fixed)
 
 ---
 
 ## Recommendations
 
-### Priority 1 -- Fix Stale Data
+### Priority 1 -- Fix Count Drift
 
-1. **Update README.md test count** -- Change "992 tests" to "1260 tests" in both locations (line 200 and line 303)
-2. **Regenerate DOC-COVERAGE.md** -- Current file is severely stale (claims 89.8% coverage; actual is 99.5%)
-3. **Fix framework count** -- Change "25+" to "23" in ARCHITECTURE.md (line 44), API-SURFACE.md (line 163), and MODULE-SUMMARIES.md (line 111)
-4. **Fix claw export count in MODULE-SUMMARIES.md** -- Change "20/20, 100%" to "20/21, 95%"
+1. **Update README.md test count** -- Change "1260 tests" to "1272 tests" in both locations (line 200 and line 303)
+2. **Update build-pipeline.md diagram** -- Change "1260 tests" to "1272 tests"
+3. **Fix framework count** -- Change "24 frameworks" to "23" in ARCHITECTURE.md (line 44), API-SURFACE.md (lines 163 and 168), and MODULE-SUMMARIES.md (line 111)
+4. **Fix hook count** -- Standardize to "23" across ARCHITECTURE.md (line 50, currently "21"), build-pipeline.md (currently "22"), and module-dependency-graph.md (currently "22")
 
-### Priority 2 -- Fix LOC Counts and Links
+### Priority 2 -- Fix Export Count Contradictions
 
-5. **Re-run LOC counts** -- All 12 lib modules and standalone scripts are off (systematic off-by-1 for lib; claw.ts off by 160, skill-create-output.ts off by 12)
-6. **Fix broken guide links** -- Rename references from `the-shortform-guide.md` to `shortform-guide.md` and `the-longform-guide.md` to `longform-guide.md` in longform-guide.md, shortform-guide.md, and security-guide.md
-7. **Remove or create `the-openclaw-guide.md`** -- Referenced in security-guide.md but does not exist
-8. **Update agent count** in ARCHITECTURE.md diagram manifest -- Change "10+" to "25"
-9. **Update CODEMAPS/INDEX.md test count** -- Change "1238" to "1260"
-10. **Update utils LOC in module-dependency-graph.md diagram** -- Change "482" to "481"
+5. **Fix claw export count in MODULE-SUMMARIES.md** -- Line 267: change "100% (20/20)" to "95% (20/21)". Coverage summary table (line 322): change claw exports from 20 to 21 with 20 documented
+6. **Fix skill-create-output export count in MODULE-SUMMARIES.md** -- Coverage summary table (line 323): change exports from 3 to 2 with 2 documented
+7. **Fix merge.ts LOC** -- Change "671 LOC" to "670 LOC" in MODULE-SUMMARIES.md (line 83) and API-SURFACE.md (line 118)
+8. **Fix standalone script LOC** -- All 4 standalone scripts are off by 1 in ARCHITECTURE.md (lines 93-98): install-orchestrator 301->300, postinstall 83->82, preuninstall 39->38, setup-package-manager 198->197
+9. **Fix utils LOC in diagram** -- Change "482" to "481" in module-dependency-graph.md
 
 ### Priority 3 -- Improve Completeness
 
-11. **Add JSDoc to `main()` in claw.ts** -- The only undocumented export in the entire codebase
+10. **Add JSDoc to `main()` in claw.ts** -- The only undocumented export in the entire codebase
+11. **Document `_eccRoot` parameter** in mergeHooks() JSDoc
 12. **Add `@param`/`@returns` to core lib functions** -- Start with the 7 most-imported utils functions
 13. **Add `@throws` annotations** -- Document which functions throw vs return null/false/error
 14. **Add `@example` tags** -- For `computeLineDiff()`, `smartMerge()`, `findFiles()`, `readStdinJson()`
-15. **Document `_eccRoot` parameter** in mergeHooks() JSDoc
 
 See also: [API Surface](API-SURFACE.md) | [Coverage](DOC-COVERAGE.md) | [Module Summaries](MODULE-SUMMARIES.md) | [Architecture](ARCHITECTURE.md)
 

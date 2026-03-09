@@ -24,14 +24,24 @@ A file managed by ECC -- [Agents](#agent), [Commands](#command), [Skills](#skill
 - **Files:** [`manifest.ts`](../src/lib/manifest.ts), [`detect.ts`](../src/lib/detect.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts)
 
 ### Command
-A markdown slash command file (e.g., `/tdd`, `/plan`). Commands are validated for non-empty content and valid cross-references to other commands, [Agents](#agent), and [Skills](#skill).
+A markdown slash command file (e.g., `/tdd`, `/plan`, `/doc-diagrams`). Commands are validated for non-empty content and valid cross-references to other commands, [Agents](#agent), and [Skills](#skill).
 - **Related:** [Agent](#agent), [Skill](#skill)
 - **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-commands.ts`](../src/ci/validate-commands.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts)
+
+### Custom Diagram Registry
+A manifest file (`docs/diagrams/CUSTOM.md`) that tracks manually created or customized Mermaid diagrams. Prevents the doc-suite regeneration pipeline from overwriting user-maintained diagrams. Referenced by the [Diagram Generator](#diagram-generator) agent during doc-suite runs.
+- **Related:** [Diagram Generator](#diagram-generator), [Artifact](#artifact)
+- **Files:** [`docs/diagrams/CUSTOM.md`](../docs/diagrams/CUSTOM.md)
+
+### Diagram Generator
+A doc-system [Agent](#agent) (`diagram-generator.md`) that analyzes codebase structure and generates Mermaid diagrams (module dependency graphs, data flow, sequence diagrams). Part of the 6-agent doc system alongside doc-orchestrator, doc-analyzer, doc-generator, doc-validator, and doc-reporter. Respects the [Custom Diagram Registry](#custom-diagram-registry) to avoid overwriting user-maintained diagrams.
+- **Related:** [Custom Diagram Registry](#custom-diagram-registry), [Agent](#agent)
+- **Files:** [`agents/diagram-generator.md`](../agents/diagram-generator.md), [`skills/diagram-generation/`](../skills/diagram-generation/), [`commands/doc-diagrams.md`](../commands/doc-diagrams.md)
 
 ### Hook
 A Claude Code lifecycle event handler. Each hook is a Node.js script that reads JSON from stdin, performs an action, and writes to stdout/stderr. Execution is gated by [Hook Profiles](#hook-profile) via [Run With Flags](#run-with-flags).
 - **Related:** [Hook Profile](#hook-profile), [Run With Flags](#run-with-flags), [Stdin Passthrough](#stdin-passthrough)
-- **Files:** 21 hook scripts in [`src/hooks/`](../src/hooks/), [`hooks.json`](../hooks/hooks.json), [`hook-flags.ts`](../src/lib/hook-flags.ts), [`run-with-flags.ts`](../src/hooks/run-with-flags.ts), [`validate-hooks.ts`](../src/ci/validate-hooks.ts), [`detect.ts`](../src/lib/detect.ts)
+- **Files:** 23 hook scripts in [`src/hooks/`](../src/hooks/), [`hooks.json`](../hooks/hooks.json), [`hook-flags.ts`](../src/lib/hook-flags.ts), [`run-with-flags.ts`](../src/hooks/run-with-flags.ts), [`validate-hooks.ts`](../src/ci/validate-hooks.ts), [`detect.ts`](../src/lib/detect.ts)
 
 ### Manifest
 JSON file (`.ecc-manifest.json`) tracking which [Artifacts](#artifact) ECC installed, their version, languages, and timestamps. Used to distinguish ECC-managed vs user-custom files during updates. Updated immutably.
@@ -128,7 +138,7 @@ AI-assisted file merging using `claude -p` CLI. Sends existing and incoming cont
 ### Stdin Passthrough
 The pattern used by all [Hooks](#hook): read JSON from stdin, perform side effects (logging, checking, formatting), then write the original stdin data to stdout unchanged. This allows hooks to be chained without data loss.
 - **Related:** [Hook](#hook), [Run With Flags](#run-with-flags)
-- **Files:** All 21 hook scripts in [`src/hooks/`](../src/hooks/)
+- **Files:** All 23 hook scripts in [`src/hooks/`](../src/hooks/)
 
 ### Turn
 A single conversation exchange in a [NanoClaw](#nanoclaw) session, consisting of a timestamp, role (User/Assistant), and content. Stored in markdown format and parsed by `parseTurns()`.
