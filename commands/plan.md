@@ -1,10 +1,16 @@
 ---
-description: Restate requirements, assess risks, create step-by-step plan, then execute with TDD after user confirmation. Includes mandatory code review.
+description: Restate requirements, assess risks, create step-by-step plan, then execute with TDD after user confirmation. Supports feature, refactor, and security modes.
 ---
 
 # Plan Command
 
 This command invokes the **planner** agent to create a comprehensive implementation plan, then executes it using TDD after user confirmation.
+
+## Modes
+
+- `/plan <description>` — Feature implementation (default)
+- `/plan refactor <description>` — Safe refactoring workflow (architect → changes → tests)
+- `/plan security <description>` — Security-focused workflow (security-reviewer → fixes → tests)
 
 ## What This Command Does
 
@@ -15,18 +21,22 @@ This command invokes the **planner** agent to create a comprehensive implementat
 5. **Wait for Confirmation** - MUST receive user approval before proceeding
 6. **Execute with TDD** - After confirmation, implement each phase using RED → GREEN → REFACTOR
 7. **Run E2E Tests** - Write new E2E tests if flagged, then run full E2E suite
-8. **Code Review** - Mandatory code review on all changes
+
+After all phases complete, run `/verify` for comprehensive quality and architecture review.
 
 ## When to Use
 
 Use `/plan` when:
 - Starting a new feature
 - Making significant architectural changes
-- Working on complex refactoring
+- Working on complex refactoring (`/plan refactor`)
+- Security hardening (`/plan security`)
 - Multiple files/components will be affected
 - Requirements are unclear or ambiguous
 
 ## How It Works
+
+### Feature Mode (default)
 
 The planner agent will:
 
@@ -36,6 +46,42 @@ The planner agent will:
 4. **Assess risks** and potential blockers
 5. **Estimate complexity** (High/Medium/Low)
 6. **Present the plan** and WAIT for your explicit confirmation
+
+### Refactor Mode
+
+Agent chain: **architect** → implementation → **tdd-guide** → verify
+
+1. Architect agent analyzes current structure and proposes refactoring approach
+2. Break into phases with test targets
+3. After confirmation: TDD execution per phase
+4. Handoff document between agents:
+
+```markdown
+## HANDOFF: [previous-agent] -> [next-agent]
+
+### Context
+[Summary of what was done]
+
+### Findings
+[Key discoveries or decisions]
+
+### Files Modified
+[List of files touched]
+
+### Open Questions
+[Unresolved items for next agent]
+
+### Recommendations
+[Suggested next steps]
+```
+
+### Security Mode
+
+Agent chain: **security-reviewer** → fixes → **tdd-guide** → verify
+
+1. Security reviewer audits codebase for vulnerabilities
+2. Break findings into prioritized fix phases
+3. After confirmation: TDD execution per fix phase
 
 ## Example Usage
 
@@ -87,10 +133,6 @@ Agent (planner):
 - LOW: Real-time subscription overhead
 
 ## Estimated Complexity: MEDIUM
-- Backend: 4-6 hours
-- Frontend: 3-4 hours
-- Testing: 2-3 hours
-- Total: 9-13 hours
 
 **WAITING FOR CONFIRMATION**: Proceed with this plan? (yes/no/modify)
 ```
@@ -139,8 +181,17 @@ For each phase in the approved plan:
 #### 5. GATE — Phase Complete
 - Run the full test suite (not just this phase's tests)
 - Run the build command
+- Tag checkpoint: `git tag checkpoint/<phase-name>` (lightweight, for rollback reference)
 - If either fails: **STOP and fix before proceeding to the next phase**
 - If both pass: proceed to the next phase
+
+### Coverage Targets
+
+| Code Type | Target |
+|-----------|--------|
+| Critical paths (financial, auth, security) | 100% |
+| Public API surface | 90%+ |
+| General code | 80%+ |
 
 ### E2E Testing
 
@@ -149,14 +200,6 @@ After all phases complete:
 1. Check the plan's **E2E Assessment** section
 2. **If new E2E tests are needed**: write them now using the e2e-runner agent, targeting the scenarios listed in the plan. Commit: `test: add E2E tests for <feature>`
 3. **Run the full E2E suite** (existing + newly written). If failures: fix before proceeding.
-
-### Mandatory Code Review
-
-After all phases and E2E tests pass:
-
-1. Invoke the **code-reviewer** agent on the full diff since the first phase commit
-2. Address all CRITICAL and HIGH issues — commit each fix
-3. Address MEDIUM issues when possible — commit each fix
 
 ### Progress Tracking
 
@@ -168,7 +211,7 @@ Phase 1: Database Schema
   [x] RED — 5 tests written, all failing
   [x] GREEN — implementation passes all tests
   [x] REFACTOR — extracted constants
-  [x] GATE — full suite passes
+  [x] GATE — full suite passes, checkpoint tagged
 
 Phase 2: Notification Service
   [x] SCAFFOLD — interfaces created
@@ -193,16 +236,35 @@ Each phase produces up to 3 commits following the TDD cycle:
 
 Never accumulate changes across multiple plan phases without committing.
 
+## TDD Best Practices
+
+**DO:**
+- Write the test FIRST, before any implementation
+- Run tests and verify they FAIL before implementing
+- Write minimal code to make tests pass
+- Refactor only after tests are green
+- Add edge cases and error scenarios
+- Aim for 80%+ coverage (100% for critical code)
+
+**DON'T:**
+- Write implementation before tests
+- Skip running tests after each change
+- Write too much code at once
+- Ignore failing tests
+- Test implementation details (test behavior)
+- Mock everything (prefer integration tests)
+
 ## Integration with Other Commands
 
 - Use `/build-fix` if build errors occur during execution
-- `/tdd` can be used standalone for TDD without a formal plan
-- `/orchestrate feature` includes security review in addition to the plan+TDD+review pipeline
+- Use `/verify` after plan completes for comprehensive review (code + architecture)
+- Use `/e2e` for standalone E2E test generation
 
 ## Related Agents
 
 This command invokes:
-- `planner` agent — plan generation (`~/.claude/agents/planner.md`)
-- `tdd-guide` agent — TDD execution per phase (`~/.claude/agents/tdd-guide.md`)
-- `e2e-runner` agent — E2E test writing and execution (`~/.claude/agents/e2e-runner.md`)
-- `code-reviewer` agent — mandatory post-execution review (`~/.claude/agents/code-reviewer.md`)
+- `planner` agent — plan generation
+- `tdd-guide` agent — TDD execution per phase
+- `e2e-runner` agent — E2E test writing and execution
+- `architect` agent — refactor mode analysis
+- `security-reviewer` agent — security mode audit
