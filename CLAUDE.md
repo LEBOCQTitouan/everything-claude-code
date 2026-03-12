@@ -40,30 +40,27 @@ schemas/         JSON schemas (hooks, package-manager)
 tests/           Test suite (run with tsx, imports from src/ and dist/)
 ```
 
-## Key Commands
+## Commands
 
-- `/tdd` - Test-driven development workflow
-- `/plan` - Implementation planning
-- `/e2e` - Generate and run E2E tests
-- `/code-review` - Quality review (includes uncle-bob Clean Code audit)
-- `/arch-review` - Architecture quality audit (layering, coupling, dependency direction, DDD compliance)
-- `/build-fix` - Fix build errors
-- `/learn` - Extract patterns from sessions
-- `/skill-create` - Generate skills from git history
-- `/update-codemaps` - Regenerate architectural codemaps
-- `/claw` - Start NanoClaw persistent REPL
-- `/evolve` - Analyze instincts and suggest evolved structures
-- `/harness-audit` - Audit agent harness setup
-- `/loop-start` - Start autonomous agent loop
-- `/loop-status` - Check loop status
-- `/quality-gate` - Run quality gate checks
-- `/model-route` - Route to optimal model by task complexity
-- `/doc-suite` - Full documentation suite (analyze + generate + validate + coverage + diagrams)
-- `/doc-analyze` - Analyze codebase for documentation needs
-- `/doc-generate` - Generate doc comments, summaries, glossary, changelog
-- `/doc-diagrams` - Generate Mermaid diagrams from analysis data and inline markers
-- `/doc-validate` - Validate documentation accuracy and quality scoring
-- `/doc-coverage` - Documentation coverage metrics and regression detection
+5 commands cover the entire coding workflow:
+
+| Command | Purpose |
+|---------|---------|
+| `/plan` | Plan → TDD (with commits per iteration) → E2E if needed. Modes: `feature` (default), `refactor`, `security` |
+| `/build-fix` | Fix build/type errors reactively |
+| `/verify` | Build + tests + lint + code review + architecture review + coverage + dead code scan |
+| `/e2e` | Generate and run E2E tests with Playwright |
+| `/doc-suite` | Full documentation: source sync, analyze, generate, validate, diagrams, coverage, codemaps |
+
+```
+Got a feature?     →  /plan
+Build broken?      →  /build-fix
+Ready to ship?     →  /verify
+Need E2E?          →  /e2e
+Need docs?         →  /doc-suite
+```
+
+Archived commands are in `commands/_archive/` for reference. All agents and skills remain available.
 
 ## npm Scripts
 
