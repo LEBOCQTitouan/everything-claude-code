@@ -234,6 +234,8 @@ cmd_install() {
     local dry_run=""
     local force=""
     local no_interactive=""
+    local clean=""
+    local clean_all=""
     local langs=()
 
     # Parse flags and languages
@@ -242,6 +244,8 @@ cmd_install() {
             --dry-run)        dry_run="--dry-run"; shift ;;
             --force)          force="--force"; shift ;;
             --no-interactive) no_interactive="--no-interactive"; shift ;;
+            --clean)          clean="--clean"; shift ;;
+            --clean-all)      clean_all="--clean-all"; shift ;;
             -*)               die "Unknown flag: $1" ;;
             *)                langs+=("$1"); shift ;;
         esac
@@ -269,11 +273,20 @@ cmd_install() {
     # Try the Node.js orchestrator (detection + merge + manifest)
     local orchestrator="$SCRIPT_DIR/dist/install-orchestrator.js"
     if command -v node &>/dev/null && [[ -f "$orchestrator" ]]; then
-        node "$orchestrator" install "${langs[@]}" $dry_run $force $no_interactive
+        node "$orchestrator" install "${langs[@]}" $dry_run $force $no_interactive $clean $clean_all
         return $?
     fi
 
     # Fallback: legacy cp-based install (no detection/merge/manifest)
+    if [[ -n "$clean" ]]; then
+        echo "Warning: --clean requires the Node.js orchestrator (manifest-aware). Use --clean-all instead." >&2
+    fi
+    if [[ -n "$clean_all" ]]; then
+        echo "Cleaning all ECC artifacts (--clean-all, legacy fallback)..." >&2
+        rm -rf "$CLAUDE_DIR/agents" "$CLAUDE_DIR/commands" "$CLAUDE_DIR/skills" "$CLAUDE_DIR/rules"
+        rm -f "$CLAUDE_DIR/.ecc-manifest.json"
+        echo "Cleaned." >&2
+    fi
     echo "Warning: Node.js orchestrator not available — using legacy install (overwrites all)." >&2
     echo ""
 
@@ -445,7 +458,7 @@ cmd_help() {
         install)
             cat <<EOF
 USAGE
-  ecc install [<language> ...] [--dry-run] [--force]
+  ecc install [<language> ...] [--dry-run] [--force] [--clean] [--clean-all]
 
 DESCRIPTION
   Installs agents, commands, skills, rules, and hooks into ~/.claude/.
@@ -462,6 +475,11 @@ OPTIONS
   --dry-run          Report what would change without writing any files
   --force            Overwrite all files without prompting
   --no-interactive   Accept all changes without interactive review
+  --clean            Remove manifest-tracked ECC files before reinstalling
+                     (safe — only removes files ECC previously installed)
+  --clean-all        Remove ALL ECC directories before reinstalling
+                     (nuclear — wipes agents/, commands/, skills/, rules/,
+                      removes ECC hooks from settings.json and manifest)
 
 EXAMPLES
   ecc install                          (auto-detect language)
@@ -470,6 +488,9 @@ EXAMPLES
   ecc install --dry-run
   ecc install typescript --force
   ecc install --no-interactive
+  ecc install --clean                  (remove old ECC files, then reinstall)
+  ecc install --clean --dry-run        (preview what --clean would remove)
+  ecc install --clean-all --force      (full wipe + reinstall, no prompts)
 
 AVAILABLE LANGUAGES
 $(list_languages)

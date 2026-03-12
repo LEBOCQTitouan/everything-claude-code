@@ -12,6 +12,7 @@ import { readManifest, writeManifest, createManifest, updateManifest } from './l
 import { mergeDirectory, mergeSkills, mergeRules, mergeHooks, printMergeReport, combineMergeReports, defaultMergeOptions } from './lib/merge';
 import { ensureGitignoreEntries, findTrackedEccFiles, gitUntrack } from './lib/gitignore';
 import { auditEccConfig, printConfigAudit } from './lib/config-audit';
+import { cleanFromManifest, cleanAll, printCleanReport } from './lib/clean';
 import type { MergeOptions } from './lib/merge';
 import type { EccManifest } from './lib/manifest';
 
@@ -20,6 +21,8 @@ interface OrchestratorOptions {
   force: boolean;
   noGitignore: boolean;
   interactive: boolean;
+  clean: boolean;
+  cleanAll: boolean;
 }
 
 function parseArgs(args: string[]): { command: string; languages: string[]; options: OrchestratorOptions } {
@@ -27,7 +30,9 @@ function parseArgs(args: string[]): { command: string; languages: string[]; opti
     dryRun: false,
     force: false,
     noGitignore: false,
-    interactive: process.stdin.isTTY === true
+    interactive: process.stdin.isTTY === true,
+    clean: false,
+    cleanAll: false
   };
 
   const positional: string[] = [];
@@ -45,6 +50,12 @@ function parseArgs(args: string[]): { command: string; languages: string[]; opti
         break;
       case '--no-interactive':
         options.interactive = false;
+        break;
+      case '--clean':
+        options.clean = true;
+        break;
+      case '--clean-all':
+        options.cleanAll = true;
         break;
       default:
         positional.push(args[i]);
@@ -134,6 +145,26 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
 
   if (opts.dryRun) {
     console.error('[DRY RUN] No files will be written.\n');
+  }
+
+  // Step 0: Clean if requested
+  if (opts.cleanAll) {
+    console.error('Cleaning all ECC artifacts (--clean-all)...');
+    const report = cleanAll(claudeDir, opts.dryRun);
+    printCleanReport(report, opts.dryRun);
+    console.error('');
+  } else if (opts.clean) {
+    const existingManifestForClean = readManifest(claudeDir);
+    if (existingManifestForClean) {
+      console.error('Cleaning manifest-tracked ECC artifacts (--clean)...');
+      const report = cleanFromManifest(claudeDir, existingManifestForClean, opts.dryRun);
+      printCleanReport(report, opts.dryRun);
+      console.error('');
+    } else {
+      console.error('Warning: --clean requested but no manifest found at ' + claudeDir + '/.ecc-manifest.json');
+      console.error('  Use --clean-all to remove entire ECC directories without a manifest.');
+      console.error('');
+    }
   }
 
   // Step 1: Detect existing setup
