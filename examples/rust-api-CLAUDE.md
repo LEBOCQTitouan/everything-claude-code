@@ -266,11 +266,10 @@ cargo fmt -- --check
 # Planning
 /plan "Add order fulfillment with Stripe payment"
 
-# Development with TDD
-/tdd                    # cargo test-based TDD workflow
+# Development with TDD (built into /plan)
 
 # Review
-/code-review            # Rust-specific code review
+/verify                 # Code review
 /security-scan          # Dependency audit + unsafe scan
 
 # Verification

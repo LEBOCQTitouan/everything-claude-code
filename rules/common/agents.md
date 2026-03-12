@@ -16,13 +16,17 @@ Located in `~/.claude/agents/`:
 | refactor-cleaner | Dead code cleanup | Code maintenance |
 | doc-updater | Documentation | Updating docs |
 
-## Immediate Agent Usage
+## Command → Agent Mapping
 
-No user prompt needed:
-1. Complex feature requests - Use **planner** agent
-2. Code just written/modified - Use **code-reviewer** agent
-3. Bug fix or new feature - Use **tdd-guide** agent
-4. Architectural decision - Use **architect** agent
+Agents are invoked automatically by the 5 commands:
+
+| Command | Agents Used |
+|---------|------------|
+| `/plan` | planner, tdd-guide, architect (refactor mode), security-reviewer (security mode) |
+| `/build-fix` | build-error-resolver |
+| `/verify` | code-reviewer, arch-reviewer, go-reviewer, python-reviewer (auto-detected) |
+| `/e2e` | e2e-runner |
+| `/doc-suite` | doc-orchestrator, doc-analyzer, doc-generator, doc-validator, doc-reporter |
 
 ## Parallel Task Execution
 

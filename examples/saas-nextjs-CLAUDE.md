@@ -128,9 +128,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Testing Strategy
 
 ```bash
-/tdd                    # Unit + integration tests for new features
+/plan                   # Unit + integration tests for new features (TDD built in)
 /e2e                    # Playwright tests for auth flow, billing, dashboard
-/test-coverage          # Verify 80%+ coverage
+/verify                 # Includes coverage analysis
 ```
 
 ### Critical E2E Flows
@@ -146,16 +146,14 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 # Planning a feature
 /plan "Add team invitations with email notifications"
 
-# Developing with TDD
-/tdd
+# Developing with TDD (built into /plan)
 
 # Before committing
-/code-review
+/verify
 /security-scan
 
 # Before release
 /e2e
-/test-coverage
 ```
 
 ## Git Workflow

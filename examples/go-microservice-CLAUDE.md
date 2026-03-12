@@ -218,9 +218,9 @@ OTEL_ENDPOINT=        # OpenTelemetry collector
 ## Testing Strategy
 
 ```bash
-/go-test             # TDD workflow for Go
-/go-review           # Go-specific code review
-/go-build            # Fix build errors
+/plan                # TDD with Go patterns
+/verify              # Code review (auto-detects Go)
+/build-fix           # Fix build errors (auto-detects Go)
 ```
 
 ### Test Commands
@@ -247,11 +247,10 @@ go test ./... -race -count=1
 # Planning
 /plan "Add rate limiting to user endpoints"
 
-# Development
-/go-test                  # TDD with Go-specific patterns
+# Development (TDD built into /plan)
 
 # Review
-/go-review                # Go idioms, error handling, concurrency
+/verify                   # Code review (auto-detects Go)
 /security-scan            # Secrets and vulnerabilities
 
 # Before merge

@@ -288,13 +288,11 @@ pytest --lf
 # Planning
 /plan "Add order refund system with Stripe integration"
 
-# Development with TDD
-/tdd                    # pytest-based TDD workflow
+# Development with TDD (built into /plan)
 
 # Review
-/python-review          # Python-specific code review
+/verify                 # Code review (auto-detects Python)
 /security-scan          # Django security audit
-/code-review            # General quality check
 
 # Verification
 /verify                 # Build, lint, test, security scan

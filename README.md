@@ -109,14 +109,13 @@ everything-claude-code/
 │   ├── refactor-cleaner.md          # Dead code detection and safe removal
 │   └── doc-updater.md               # Documentation sync
 │
-├── commands/                        # Slash commands (/plan, /tdd, /code-review, ...)
-│   ├── plan.md
-│   ├── tdd.md
-│   ├── code-review.md
-│   ├── build-fix.md
-│   ├── e2e.md
-│   ├── refactor-clean.md
-│   └── ...34+ more
+├── commands/                        # Slash commands (5 essential commands)
+│   ├── plan.md                     # Plan → TDD → E2E (feature/refactor/security modes)
+│   ├── build-fix.md                # Fix build/type errors
+│   ├── verify.md                   # Build + tests + code review + arch review
+│   ├── e2e.md                      # E2E test generation and execution
+│   ├── doc-suite.md                # Full documentation pipeline
+│   └── _archive/                   # 41 archived commands (still readable)
 │
 ├── skills/                          # Domain knowledge invoked by agents or commands
 │   ├── tdd-workflow/
@@ -229,18 +228,27 @@ See the full diagrams in [`docs/diagrams/`](docs/diagrams/):
 
 ---
 
-## Key Commands
+## Commands
+
+5 commands cover the entire coding workflow:
 
 | Command | What it does | Agents involved |
 |---|---|---|
-| `/plan` | Implementation plan, risks, phases | planner |
-| `/tdd` | Test-driven development workflow | tdd-guide |
-| `/code-review` | Security + quality review | code-reviewer + uncle-bob |
-| `/build-fix` | Fix build errors | build-error-resolver |
+| `/plan` | Plan → TDD → E2E. Modes: feature, refactor, security | planner, tdd-guide, architect, security-reviewer |
+| `/build-fix` | Fix build/type errors reactively | build-error-resolver |
+| `/verify` | Build + tests + lint + code review + arch review | code-reviewer, arch-reviewer, go/python-reviewer |
 | `/e2e` | Generate + run E2E tests | e2e-runner |
-| `/refactor-clean` | Remove dead code safely | refactor-cleaner |
-| `/verify` | Run verification loop | — |
-| `/learn` | Extract patterns from session | — |
+| `/doc-suite` | Full documentation pipeline | doc-orchestrator, doc-analyzer, doc-generator |
+
+```
+Got a feature?     →  /plan
+Build broken?      →  /build-fix
+Ready to ship?     →  /verify
+Need E2E?          →  /e2e
+Need docs?         →  /doc-suite
+```
+
+41 archived commands are in `commands/_archive/` for reference. All agents and skills remain available.
 
 ---
 

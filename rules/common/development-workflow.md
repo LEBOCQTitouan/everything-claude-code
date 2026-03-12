@@ -21,21 +21,20 @@ The Feature Implementation Workflow describes the development pipeline: research
    - **Wait for user confirmation before executing**
 
 2. **TDD Approach** _(automatic after plan confirmation)_
-   - `/plan` now executes TDD per phase after confirmation
+   - `/plan` executes TDD per phase after confirmation
    - Write tests first (RED) → **commit tests**
    - Implement to pass tests (GREEN) → **commit implementation**
    - Refactor (IMPROVE) → **commit refactor**
    - Verify 80%+ coverage
    - Gate: full test suite + build must pass between phases
-   - Use `/tdd` standalone for TDD without a formal plan
 
 3. **E2E Testing** _(after all phases)_
    - Plan's E2E assessment determines if new E2E tests are needed
    - If yes: write E2E tests for flagged scenarios → **commit E2E tests**
    - Run full E2E suite (existing + new)
 
-4. **Code Review** _(mandatory)_
-   - **code-reviewer** agent runs automatically after all phases complete
+4. **Verify** _(mandatory before shipping)_
+   - Run `/verify` for comprehensive quality gate: build + tests + lint + code review + architecture review
    - Address CRITICAL and HIGH issues → **commit each fix**
    - Fix MEDIUM issues when possible → **commit each fix**
 

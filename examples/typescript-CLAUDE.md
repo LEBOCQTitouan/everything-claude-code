@@ -128,9 +128,8 @@ npm start               # Run compiled output
 ## ECC Workflow
 
 ```bash
-/tdd           # Test-driven development workflow
-/plan          # Implementation planning
-/code-review   # Quality review
+/plan          # Implementation planning (includes TDD workflow)
+/verify        # Quality review
 /build-fix     # Fix TypeScript / build errors
 ```
 
