@@ -15,6 +15,19 @@ You are an expert planning specialist focused on creating comprehensive, actiona
 - Suggest optimal implementation order
 - Consider edge cases and error scenarios
 
+## Input Modes
+
+The planner may receive input in two forms:
+
+1. **Raw description** — a free-form feature request (traditional mode)
+2. **Single User Story** — from the `requirements-analyst` agent, containing formal "As a / I want / So that" format with acceptance criteria and edge cases
+
+When receiving a User Story as input:
+- Use the story's **acceptance criteria** (Given/When/Then) as **success criteria** for the plan
+- Use the story's **edge cases** as **test targets** in the Test Targets sections
+- Use the story's **estimated scope** (files affected) as a starting point for architecture review
+- Reference the story ID (e.g., "US-2") in the plan title for traceability
+
 ## Planning Process
 
 ### 1. Requirements Analysis
