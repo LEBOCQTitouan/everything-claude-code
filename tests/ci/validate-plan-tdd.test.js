@@ -24,10 +24,7 @@ async function runTests() {
 
   await test('planner includes Test Targets subsection in plan format', () => {
     const content = fs.readFileSync(plannerPath, 'utf8');
-    assert.ok(
-      content.includes('#### Test Targets'),
-      'Plan format must include "#### Test Targets" subsections per phase'
-    );
+    assert.ok(content.includes('#### Test Targets'), 'Plan format must include "#### Test Targets" subsections per phase');
   });
 
   await test('planner Test Targets includes required fields', () => {
@@ -40,10 +37,7 @@ async function runTests() {
 
   await test('planner includes E2E Assessment section', () => {
     const content = fs.readFileSync(plannerPath, 'utf8');
-    assert.ok(
-      content.includes('## E2E Assessment'),
-      'Plan format must include "## E2E Assessment" section'
-    );
+    assert.ok(content.includes('## E2E Assessment'), 'Plan format must include "## E2E Assessment" section');
   });
 
   await test('planner E2E Assessment includes scope questions', () => {
@@ -76,10 +70,7 @@ async function runTests() {
 
   await test('plan command includes Execution Mode section', () => {
     const content = fs.readFileSync(planCmdPath, 'utf8');
-    assert.ok(
-      content.includes('## Execution Mode'),
-      'Plan command must include "## Execution Mode" section'
-    );
+    assert.ok(content.includes('## Execution Mode'), 'Plan command must include "## Execution Mode" section');
   });
 
   await test('plan command includes TDD cycle keywords', () => {
@@ -92,18 +83,12 @@ async function runTests() {
 
   await test('plan command includes E2E Testing section', () => {
     const content = fs.readFileSync(planCmdPath, 'utf8');
-    assert.ok(
-      content.includes('### E2E Testing'),
-      'Plan command must include "### E2E Testing" section'
-    );
+    assert.ok(content.includes('### E2E Testing'), 'Plan command must include "### E2E Testing" section');
   });
 
   await test('plan command includes Mandatory Code Review section', () => {
     const content = fs.readFileSync(planCmdPath, 'utf8');
-    assert.ok(
-      content.includes('### Mandatory Code Review'),
-      'Plan command must include "### Mandatory Code Review" section'
-    );
+    assert.ok(content.includes('### Mandatory Code Review'), 'Plan command must include "### Mandatory Code Review" section');
   });
 
   await test('plan command references tdd-guide agent', () => {
@@ -124,37 +109,12 @@ async function runTests() {
   describe('Cross-reference consistency');
 
   await test('development-workflow.md references /plan TDD integration', () => {
-    const content = fs.readFileSync(
-      path.join(ROOT, 'rules', 'common', 'development-workflow.md'),
-      'utf8'
-    );
-    assert.ok(
-      content.includes('/plan') || content.includes('plan confirmation'),
-      'development-workflow.md should reference /plan TDD integration'
-    );
+    const content = fs.readFileSync(path.join(ROOT, 'rules', 'common', 'development-workflow.md'), 'utf8');
+    assert.ok(content.includes('/plan') || content.includes('plan confirmation'), 'development-workflow.md should reference /plan TDD integration');
   });
 
-  await test('tdd.md references /plan TDD integration', () => {
-    const content = fs.readFileSync(
-      path.join(ROOT, 'commands', 'tdd.md'),
-      'utf8'
-    );
-    assert.ok(
-      content.includes('/plan') && content.includes('TDD execution'),
-      'tdd.md should reference /plan built-in TDD execution'
-    );
-  });
-
-  await test('orchestrate.md references /plan TDD integration', () => {
-    const content = fs.readFileSync(
-      path.join(ROOT, 'commands', 'orchestrate.md'),
-      'utf8'
-    );
-    assert.ok(
-      content.includes('/plan') && content.includes('TDD'),
-      'orchestrate.md should reference /plan TDD integration'
-    );
-  });
+  // tdd.md and orchestrate.md were archived to commands/_archive/ during
+  // the 5-command simplification. TDD is now built into /plan directly.
 }
 
 module.exports = { runTests };
