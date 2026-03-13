@@ -30,7 +30,7 @@ docs/            Diagrams, guides, and reference documentation
 docs/CODEMAPS/   Token-lean architecture maps (see docs/CODEMAPS/INDEX.md)
 examples/        CLAUDE.md templates for real-world stacks
 agents/          Specialized subagents (architect, uncle-bob, planner, code-reviewer, ...)
-commands/        Slash commands (/plan, /build-fix, /verify, /e2e, /doc-suite)
+commands/        Slash commands (/plan, /build-fix, /verify, /e2e, /doc-suite, /audit)
 skills/          Domain knowledge (tdd-workflow, security-review, backend-patterns, ...)
 rules/           Always-follow guidelines (common/ + typescript/ + python/ + golang/)
 hooks/           Trigger-based automations (hooks.json)
@@ -42,7 +42,7 @@ tests/           Test suite (run with tsx, imports from src/ and dist/)
 
 ## Commands
 
-5 commands cover the entire coding workflow:
+6 commands cover the entire coding workflow:
 
 | Command | Purpose |
 |---------|---------|
@@ -51,6 +51,7 @@ tests/           Test suite (run with tsx, imports from src/ and dist/)
 | `/verify` | Build + tests + lint + code review + architecture review + coverage + dead code scan |
 | `/e2e` | Generate and run E2E tests with Playwright |
 | `/doc-suite` | Plan-first documentation pipeline: plan, source sync, analyze, generate, validate, diagrams, coverage, codemaps, README sync, CLAUDE.md challenge |
+| `/audit` | Codebase health audit: architecture, evolution, testing, security, observability, error handling, conventions |
 
 ```
 Got a feature?     →  /plan
@@ -58,6 +59,7 @@ Build broken?      →  /build-fix
 Ready to ship?     →  /verify
 Need E2E?          →  /e2e
 Need docs?         →  /doc-suite
+Need health check? →  /audit
 ```
 
 Archived commands are in `commands/_archive/` for reference. All agents and skills remain available.
@@ -70,7 +72,7 @@ Archived commands are in `commands/_archive/` for reference. All agents and skil
 | `npm run build` | Compile TypeScript `src/` to `dist/` via `tsc` |
 | `npm run dev` | Watch-mode TypeScript compilation (`tsc --watch`) |
 | `npm run clean` | Remove `dist/` directory |
-| `npm test` | Run all 1362 tests via `tsx tests/run-all.js` (single-process) |
+| `npm test` | Run all 1401 tests via `tsx tests/run-all.js` (single-process) |
 | `npm run typecheck` | Type-check without emitting (`tsc --noEmit`) |
 | `npm run lint` | Lint all Markdown files with markdownlint |
 | `npm run use:dev` | Build and `npm link` for local development |

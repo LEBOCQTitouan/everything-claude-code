@@ -107,14 +107,21 @@ everything-claude-code/
 │   ├── tdd-guide.md                 # Test-driven development workflow
 │   ├── security-reviewer.md         # OWASP / vulnerability analysis
 │   ├── refactor-cleaner.md          # Dead code detection and safe removal
-│   └── doc-updater.md               # Documentation sync
+│   ├── doc-updater.md               # Documentation sync
+│   ├── audit-orchestrator.md        # Codebase health audit orchestrator
+│   ├── evolution-analyst.md         # Git history mining (hotspots, bus factor)
+│   ├── test-auditor.md              # Test architecture quality analyst
+│   ├── observability-auditor.md     # Logging/monitoring consistency audit
+│   ├── error-handling-auditor.md    # Error handling architecture analyst
+│   └── convention-auditor.md        # Naming/pattern consistency analyst
 │
-├── commands/                        # Slash commands (5 essential commands)
+├── commands/                        # Slash commands (6 essential commands)
 │   ├── plan.md                     # Plan → TDD → E2E (feature/refactor/security modes)
 │   ├── build-fix.md                # Fix build/type errors
 │   ├── verify.md                   # Build + tests + code review + arch review
 │   ├── e2e.md                      # E2E test generation and execution
 │   ├── doc-suite.md                # Full documentation pipeline
+│   ├── audit.md                    # Codebase health audit (7 domains)
 │   └── _archive/                   # 41 archived commands (still readable)
 │
 ├── skills/                          # Domain knowledge invoked by agents or commands
@@ -196,7 +203,7 @@ everything-claude-code/
 │
 ├── dist/                            # Compiled JS output (npm run build)
 │
-└── tests/                           # Test suite (1362 tests, run with tsx)
+└── tests/                           # Test suite (1401 tests, run with tsx)
     └── run-all.js
 ```
 
@@ -230,7 +237,7 @@ See the full diagrams in [`docs/diagrams/`](docs/diagrams/):
 
 ## Commands
 
-5 commands cover the entire coding workflow:
+6 commands cover the entire coding workflow:
 
 | Command | What it does | Agents involved |
 |---|---|---|
@@ -239,6 +246,7 @@ See the full diagrams in [`docs/diagrams/`](docs/diagrams/):
 | `/verify` | Build + tests + lint + code review + arch review | code-reviewer, arch-reviewer, go/python-reviewer |
 | `/e2e` | Generate + run E2E tests | e2e-runner |
 | `/doc-suite` | Plan-first documentation pipeline (9 phases) | doc-orchestrator, doc-analyzer, doc-generator, doc-validator |
+| `/audit` | Codebase health audit (7 domains) | audit-orchestrator, evolution-analyst, test-auditor, observability-auditor, error-handling-auditor, convention-auditor |
 
 ```
 Got a feature?     →  /plan
@@ -246,9 +254,12 @@ Build broken?      →  /build-fix
 Ready to ship?     →  /verify
 Need E2E?          →  /e2e
 Need docs?         →  /doc-suite
+Need health check? →  /audit
 ```
 
 41 archived commands are in `commands/_archive/` for reference. All agents and skills remain available.
+
+**Distinction**: `/verify` = "Is this ready to ship?" (fast, change-scoped, pass/fail). `/audit` = "What is the long-term health?" (deep, codebase-wide, git-history-aware, report-generating).
 
 ---
 
@@ -308,7 +319,7 @@ rules/golang/          # Go specific
 
 ```bash
 npm run build              # compile TypeScript to dist/
-npx tsx tests/run-all.js   # run all 1362 tests
+npx tsx tests/run-all.js   # run all 1401 tests
 ```
 
 ---

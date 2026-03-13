@@ -110,6 +110,31 @@ Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, 
 
 Detection: Structural analysis of class/function responsibilities, interface design, dependency direction.
 
+### 11. Dependency Metrics
+
+Quantitative stability and abstractness metrics per module.
+
+- **Instability**: `I = Ce / (Ca + Ce)` where Ce = efferent coupling (outgoing deps), Ca = afferent coupling (incoming deps). Range 0 (maximally stable) to 1 (maximally unstable).
+- **Abstractness**: `A = abstract_symbols / total_symbols` where abstract_symbols = interfaces, abstract classes, type definitions. Range 0 (fully concrete) to 1 (fully abstract).
+- **Distance from main sequence**: `D = |A + I - 1|`. Modules should cluster near the line A + I = 1.
+
+**Zones**:
+- **Zone of Pain** (low A, low I): Concrete and stable — hard to change, everything depends on it. Flag with HIGH if D > 0.3.
+- **Zone of Uselessness** (high A, high I): Abstract and unstable — interfaces nobody implements. Flag with MEDIUM if D > 0.3.
+
+Detection: Count imports into (Ca) and out of (Ce) each top-level module. Count type/interface definitions vs concrete implementations.
+
+### 12. Boundary Coherence
+
+Types and state should not leak across bounded context boundaries.
+
+- **Type leakage**: Types appearing in the public API of more than one bounded context — HIGH
+- **God state**: Shared mutable state (global variables, singleton stores) accessed from multiple modules — CRITICAL
+- **God DTOs**: Data transfer objects with fields from multiple contexts (e.g., `UserOrderPaymentDTO`) — HIGH
+- **Missing anti-corruption layers**: Direct use of external/third-party types without a translation layer at the boundary — MEDIUM
+
+Detection: Map types to their defining module. Search for imports of those types from other contexts. Check for shared state patterns (global stores, static mutable variables).
+
 ## Architecture Score
 
 | Score | Criteria |
