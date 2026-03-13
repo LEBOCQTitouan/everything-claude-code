@@ -196,7 +196,7 @@ everything-claude-code/
 │
 ├── dist/                            # Compiled JS output (npm run build)
 │
-└── tests/                           # Test suite (1272 tests, run with tsx)
+└── tests/                           # Test suite (1362 tests, run with tsx)
     └── run-all.js
 ```
 
@@ -238,7 +238,7 @@ See the full diagrams in [`docs/diagrams/`](docs/diagrams/):
 | `/build-fix` | Fix build/type errors reactively | build-error-resolver |
 | `/verify` | Build + tests + lint + code review + arch review | code-reviewer, arch-reviewer, go/python-reviewer |
 | `/e2e` | Generate + run E2E tests | e2e-runner |
-| `/doc-suite` | Full documentation pipeline | doc-orchestrator, doc-analyzer, doc-generator |
+| `/doc-suite` | Plan-first documentation pipeline (9 phases) | doc-orchestrator, doc-analyzer, doc-generator, doc-validator |
 
 ```
 Got a feature?     →  /plan
@@ -308,7 +308,7 @@ rules/golang/          # Go specific
 
 ```bash
 npm run build              # compile TypeScript to dist/
-npx tsx tests/run-all.js   # run all 1272 tests
+npx tsx tests/run-all.js   # run all 1362 tests
 ```
 
 ---

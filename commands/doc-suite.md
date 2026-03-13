@@ -1,13 +1,16 @@
 ---
-description: Full documentation suite — source sync, analyze, generate, validate, diagrams, coverage reporting, and codemaps. Single documentation command.
+description: Full documentation suite — plan, source sync, analyze, generate, validate, diagrams, coverage reporting, codemaps, README sync, and CLAUDE.md challenge. Single documentation command.
 ---
 
 # Documentation Suite
+
+**FIRST ACTION**: Unless `--skip-plan` is passed, call the `EnterPlanMode` tool immediately. This enters Claude Code plan mode which restricts tools to read-only exploration while you scan the codebase and draft a documentation plan. After presenting the plan, call `ExitPlanMode` to proceed with execution after user approval.
 
 Comprehensive documentation analysis, generation, validation, and coverage reporting. Produces interlinked documentation in `docs/` that helps humans and AI understand the codebase.
 
 ## What This Command Does
 
+0. **Plan** — scan codebase, draft documentation plan manifest, display DOCUMENTATION GUIDELINES, wait for approval
 1. **Source Sync** — sync docs from source-of-truth files (package.json, .env, openapi.yaml, Dockerfile)
 2. **Analyze** — scan codebase structure, identify public API surface, detect domain concepts, map dependencies, detect diagram opportunities
 3. **Generate** — write missing doc comments into source, produce module summaries, glossary, changelog, usage examples
@@ -15,16 +18,42 @@ Comprehensive documentation analysis, generation, validation, and coverage repor
 5. **Validate** — check doc accuracy against code, score quality, detect contradictions and duplicates
 6. **Report** — calculate coverage per module, compare against baseline, flag staleness and regressions
 7. **Codemaps** — generate token-lean architecture maps in `docs/CODEMAPS/`
+8. **README Sync** — update README.md with current project state
+9. **CLAUDE.md Challenge** — verify every factual claim in CLAUDE.md against the codebase
 
 ## Arguments
 
 - `--scope=<path>` — limit analysis to a subdirectory (default: project root)
-- `--phase=<sync|analyze|generate|validate|coverage|diagrams|codemaps|all>` — run a specific phase (default: all)
+- `--phase=<plan|sync|analyze|generate|validate|coverage|diagrams|codemaps|readme|claude-md|all>` — run a specific phase (default: all)
 - `--base=<branch|commit>` — baseline for coverage diff (default: previous run)
 - `--dry-run` — show what would be written without writing
 - `--comments-only` — only add doc comments to source files
+- `--skip-plan` — skip Phase 0 plan approval and execute directly (backward compat)
+
+## Reference Skills
+
+- `skills/doc-guidelines/SKILL.md` — CAPITALISED documentation guidelines and quality gate thresholds
+- `skills/doc-quality-scoring/SKILL.md` — scoring rubric (Presence, Accuracy, Completeness, Clarity, Currency)
 
 ## Phase Details
+
+### Phase 0: Plan
+
+**Only runs if `--skip-plan` is NOT passed.** Enters plan mode for user review before execution.
+
+1. **Lightweight codebase scan**:
+   - Glob source files to count and classify (small vs large codebase)
+   - Inventory existing docs in `docs/`
+   - Check for `README.md`, `CLAUDE.md`, `.env.example`, `openapi.yaml`, `Dockerfile`
+2. **Produce plan manifest**:
+   - Files to create (with estimated purpose)
+   - Files to update (with what changes)
+   - Phases to run (which are relevant for this codebase)
+   - Estimated scope (number of modules, files)
+3. **Display DOCUMENTATION GUIDELINES** from `skills/doc-guidelines/SKILL.md`:
+   - Show all CAPITALISED rules
+   - Highlight which guidelines are currently unmet
+4. **Wait for user approval**, then call `ExitPlanMode`
 
 ### Phase 1: Source Sync
 
@@ -79,6 +108,7 @@ Produces `docs/diagrams/INDEX.md` catalog with all generated Mermaid diagrams.
 - Duplicate concept detection
 - Code example verification (compile and run)
 - Quality report with grades A-F per module
+- File size validation per `skills/doc-guidelines/SKILL.md` thresholds
 
 ### Phase 6: Report
 
@@ -105,6 +135,59 @@ Codemap format rules:
 - **< 1000 tokens** per codemap for efficient context loading
 - **Diff detection** — if changes >30%, show diff and request approval before overwriting
 - **Metadata header**: `<!-- Generated: YYYY-MM-DD | Files scanned: N | Token estimate: ~N -->`
+
+### Phase 8: README Sync
+
+Update `README.md` with current project state:
+
+- Project description and badges
+- Commands table (verify all commands still exist, update descriptions)
+- Repository structure tree (add new directories, remove deleted ones)
+- Test count (from latest test run)
+- Agent list (scan `agents/` for current agents)
+- Installation and usage instructions (verify accuracy)
+
+Uses `doc-updater` agent scoped to `README.md`.
+
+### Phase 9: CLAUDE.md Challenge
+
+Verify every factual claim in `CLAUDE.md` against the codebase:
+
+- **Test commands**: Do `npm run build`, `npm test`, individual test commands actually work?
+- **npm scripts table**: Does it match `package.json` scripts?
+- **Directory structure**: Do listed directories exist? Are descriptions accurate?
+- **Command table**: Do listed commands match `commands/*.md`?
+- **File counts**: Are stated counts (test count, agent count) accurate?
+- **Development notes**: Are all stated conventions still true?
+
+Severity levels:
+- **HIGH**: Commands or scripts that would fail if copy-pasted
+- **MEDIUM**: Outdated counts, missing entries, stale descriptions
+- **LOW**: Minor wording drift, style inconsistencies
+
+Auto-fix non-controversial items (counts, directory listings). Flag ambiguous findings for user review.
+
+Uses `doc-validator` agent with `--target=CLAUDE.md`.
+
+## Quality Gates
+
+After all phases complete, check quality gates from `skills/doc-guidelines/SKILL.md`:
+
+### Blocking (pipeline fails)
+
+| Condition | Threshold |
+|-----------|-----------|
+| Accuracy score | < 4 (out of 10) |
+| CLAUDE.md contradictions | Any HIGH severity |
+
+### Warning (pipeline passes with warnings)
+
+| Condition | Threshold |
+|-----------|-----------|
+| Quality grade | Below B (< 7.0/10) |
+| Staleness | Any doc > 90 days stale |
+| File size violation | Outside 20-500 line range |
+| Coverage | Below 70% documented exports |
 
 ## Output
 
@@ -136,6 +219,8 @@ Folders with `INDEX.md` + per-module files. All files are cross-linked with rela
 ## Execution Flow
 
 ```
+Phase 0: Plan (unless --skip-plan) — scan codebase, draft manifest, show guidelines, wait for approval
+    |
 Phase 1: Source Sync (sequential — reads config files, updates generated sections)
     |
 Phase 2: doc-analyzer (sequential — produces module list + structure decision + diagram manifest)
@@ -144,9 +229,16 @@ Phase 3-6: doc-generator + diagram-generator + doc-validator + doc-reporter (par
     |
 Phase 7: Codemaps (sequential — reads project structure, generates/updates CODEMAPS/)
     |
+Phase 8: README Sync (sequential — doc-updater scoped to README.md)
+    |
+Phase 9: CLAUDE.md Challenge (sequential — doc-validator with --target=CLAUDE.md)
+    |
+Quality Gates: Check blocking/warning thresholds from doc-guidelines skill
+    |
 Final: doc-orchestrator assembles INDEX.md files + cross-references
     |
-Console: summary with coverage %, quality grade, diagrams generated, files written
+Console: summary with coverage %, quality grade, diagrams generated, files written,
+         README sync status, CLAUDE.md results, quality gate outcome, top 3 guidelines
 ```
 
 ## Example Usage
@@ -154,22 +246,60 @@ Console: summary with coverage %, quality grade, diagrams generated, files writt
 ```
 User: /doc-suite
 
+[Phase 0: Plan mode — scans codebase, presents plan manifest]
+
+Documentation Plan
+  Source files:        47 (small codebase)
+  Existing docs:       8 files in docs/
+  Phases to run:       all (1-9)
+  Files to create:     6
+  Files to update:     12
+
+  DOCUMENTATION GUIDELINES:
+  - ALWAYS DOCUMENT PUBLIC API ENDPOINTS AND THEIR REQUEST/RESPONSE SCHEMAS
+  - ALWAYS DOCUMENT ENVIRONMENT VARIABLES WITH REQUIRED VS OPTIONAL STATUS
+  - ALWAYS DOCUMENT SETUP AND ONBOARDING STEPS
+  ... (7 more)
+
+  Currently unmet: 3 guidelines (ADRs, error codes, deployment procedures)
+
+Approve? [y/n]
+
+User: y
+
+[Phases 1-9 execute]
+
 Documentation Suite Complete
-  Source Sync:       3 files updated (scripts, env vars, contributing)
-  Modules analyzed:  12
-  Coverage:          73% (B)
-  Quality grade:     B (7.4/10)
-  Doc comments added: 18
-  Diagrams generated: 6
-  Codemaps updated:  4 (architecture, backend, data, dependencies)
-  Issues found:      7 (2 HIGH, 3 MEDIUM, 2 LOW)
-  Files written:     28
+  Source Sync:         3 files updated (scripts, env vars, contributing)
+  Modules analyzed:    12
+  Coverage:            73% (B)
+  Quality grade:       B (7.4/10)
+  Doc comments added:  18
+  Diagrams generated:  6
+  Codemaps updated:    4 (architecture, backend, data, dependencies)
+  README synced:       yes (test count, commands table, structure updated)
+  CLAUDE.md challenge: 2 fixes applied, 0 flagged
+  Quality gates:       PASSED (1 warning: coverage below 70% in hooks/)
+  Issues found:        7 (2 HIGH, 3 MEDIUM, 2 LOW)
+
+  Top guidelines to address:
+  1. ALWAYS DOCUMENT ERROR CODES AND THEIR MEANINGS
+  2. ALWAYS DOCUMENT DEPLOYMENT AND ROLLBACK PROCEDURES
+  3. ALWAYS DOCUMENT ARCHITECTURAL DECISIONS AS ADRS
 
   Start here: docs/ARCHITECTURE.md
   Coverage:   docs/DOC-COVERAGE.md
   Quality:    docs/DOC-QUALITY.md
   Diagrams:   docs/diagrams/INDEX.md
   Codemaps:   docs/CODEMAPS/architecture.md
+```
+
+### Skip plan mode
+
+```
+User: /doc-suite --skip-plan
+
+[Phases 1-9 execute directly without approval step]
 ```
 
 ## When to Use
@@ -188,4 +318,4 @@ Documentation Suite Complete
 - Diagram Generator: `agents/diagram-generator.md`
 - Validator: `agents/doc-validator.md`
 - Reporter: `agents/doc-reporter.md`
-- Skills: `skills/doc-analysis/`, `skills/doc-quality-scoring/`, `skills/diagram-generation/`
+- Skills: `skills/doc-analysis/`, `skills/doc-quality-scoring/`, `skills/doc-guidelines/`, `skills/diagram-generation/`

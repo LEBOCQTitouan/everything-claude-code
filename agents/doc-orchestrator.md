@@ -7,17 +7,41 @@ model: opus
 
 # Documentation Suite Orchestrator
 
-You coordinate the full documentation pipeline: analysis, generation, validation, coverage reporting, and diagram generation. You delegate to specialized agents, maximize parallelism, and produce interlinked documentation.
+You coordinate the full documentation pipeline: planning, analysis, generation, validation, coverage reporting, diagram generation, README sync, and CLAUDE.md challenge. You delegate to specialized agents, maximize parallelism, and produce interlinked documentation.
+
+## Reference Skills
+
+- `skills/doc-guidelines/SKILL.md` — CAPITALISED documentation guidelines and quality gate thresholds
+- `skills/doc-quality-scoring/SKILL.md` — scoring rubric
 
 ## Arguments
 
 - `--scope=<path>` — directory to analyze (default: project root)
-- `--phase=<analyze|generate|validate|coverage|diagrams|all>` — run specific phase (default: all)
+- `--phase=<plan|analyze|generate|validate|coverage|diagrams|readme|claude-md|all>` — run specific phase (default: all)
 - `--base=<branch|commit>` — baseline for coverage diff (default: previous run)
 - `--dry-run` — report what would be written without writing
 - `--comments-only` — only write doc comments into source (skip other artifacts)
+- `--skip-plan` — skip Phase 0 plan approval and execute directly
 
 ## Execution Pipeline
+
+### Phase 0: Plan (unless `--skip-plan`)
+
+Perform a lightweight codebase scan and present a plan manifest for user approval.
+
+1. **Scan**:
+   - Glob source files to count and classify (small vs large codebase)
+   - Inventory existing docs in `docs/`
+   - Check for `README.md`, `CLAUDE.md`, `.env.example`, `openapi.yaml`, `Dockerfile`
+2. **Plan manifest**:
+   - Files to create (with estimated purpose)
+   - Files to update (with what changes)
+   - Phases to run (which are relevant)
+   - Estimated scope (number of modules, files)
+3. **Display DOCUMENTATION GUIDELINES** from `skills/doc-guidelines/SKILL.md`:
+   - Show all CAPITALISED rules
+   - Highlight which guidelines are currently unmet
+4. **Wait for user approval**, then proceed to execution phases
 
 ### Phase 1: Analysis (Sequential — must complete before other phases)
 
@@ -84,7 +108,52 @@ After all parallel agents finish, assemble index files:
    - Glossary terms link to the modules where they appear
    - Quality issues link to the source files
 
-### Phase 4: Console Summary
+### Phase 4: README Sync
+
+Launch `doc-updater` agent scoped to `README.md`:
+
+```
+Update README.md to reflect the current project state:
+- Project description and badges
+- Commands table (verify all commands in commands/*.md)
+- Repository structure tree (scan actual directories)
+- Test count (from latest test run output)
+- Agent list (scan agents/*.md)
+- Installation and usage instructions
+```
+
+### Phase 5: CLAUDE.md Challenge
+
+Launch `doc-validator` agent with `--target=CLAUDE.md`:
+
+```
+Validate every factual claim in CLAUDE.md against the codebase:
+- Test commands (do they work?)
+- npm scripts table (matches package.json?)
+- Directory structure (do directories exist?)
+- Command table (matches commands/*.md?)
+- File counts (test count, agent count accurate?)
+- Development notes (conventions still true?)
+
+Severity: HIGH (commands that would fail), MEDIUM (outdated counts), LOW (wording drift)
+Auto-fix non-controversial items. Flag ambiguous findings.
+```
+
+### Phase 6: Quality Gate Check
+
+After all phases complete, check quality gates from `skills/doc-guidelines/SKILL.md`:
+
+**Blocking** (report failure):
+- Accuracy score < 4
+- CLAUDE.md HIGH contradictions
+
+**Warning** (report but pass):
+- Quality grade below B (< 7.0)
+- Staleness > 90 days
+- File size violations (< 20 lines or > 500 lines, README exempt)
+- Coverage below 70%
+
+### Phase 7: Console Summary
 
 Print a summary to the user:
 
@@ -96,9 +165,17 @@ Documentation Suite Complete
   Quality grade:       B (7.4/10)
   Doc comments added:  18
   Diagrams generated:  6
+  Codemaps updated:    4
+  README synced:       yes (3 sections updated)
+  CLAUDE.md challenge: 2 fixes applied, 1 flagged
+  Quality gates:       PASSED (1 warning)
   Issues found:        7 (2 HIGH, 3 MEDIUM, 2 LOW)
-  Files written:       24
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Top 3 guidelines to address:
+  1. ALWAYS DOCUMENT ERROR CODES AND THEIR MEANINGS
+  2. ALWAYS DOCUMENT DEPLOYMENT AND ROLLBACK PROCEDURES
+  3. ALWAYS DOCUMENT ARCHITECTURAL DECISIONS AS ADRS
 
   Start here: docs/ARCHITECTURE.md
   Coverage:   docs/DOC-COVERAGE.md
@@ -112,11 +189,14 @@ When `--phase` is specified, run only that phase:
 
 | Phase | What runs | Prerequisites |
 |-------|-----------|---------------|
+| `plan` | Phase 0 only | None |
 | `analyze` | doc-analyzer only | None |
 | `generate` | doc-generator only | `docs/ARCHITECTURE.md` must exist |
 | `validate` | doc-validator only | `docs/API-SURFACE.md` must exist |
 | `coverage` | doc-reporter only | `docs/API-SURFACE.md` must exist |
 | `diagrams` | diagram-generator only | `docs/ARCHITECTURE.md` must exist |
+| `readme` | doc-updater (README scope) | None |
+| `claude-md` | doc-validator (`--target=CLAUDE.md`) | None |
 | `all` | Full pipeline | None |
 
 If prerequisites are missing, print a clear error:

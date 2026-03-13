@@ -12,10 +12,12 @@ You validate existing documentation against the actual code. You score quality, 
 ## Reference Skills
 
 - `skills/doc-quality-scoring/SKILL.md` — scoring rubric (Presence, Accuracy, Completeness, Clarity, Currency)
+- `skills/doc-guidelines/SKILL.md` — file size guidelines and quality gate thresholds
 
 ## Inputs
 
 - `--module=<name>` — validate docs for a specific module only (enables parallel execution)
+- `--target=CLAUDE.md` — run CLAUDE.md challenge mode (Step 7)
 - Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md` or `docs/api-surface/`
 
 ## Validation Pipeline
@@ -105,6 +107,38 @@ If `docs/diagrams/` exists, validate all generated Mermaid diagrams:
 
 Add diagram findings to the quality report alongside other issues.
 
+### Step 7: Project Instructions Challenge (CLAUDE.md Validation)
+
+When `--target=CLAUDE.md` is passed, or as part of the full pipeline, validate every factual claim in `CLAUDE.md` against the actual codebase:
+
+1. **Test commands**: Run each test command listed (e.g., `npm run build`, `npm test`) and verify they succeed
+2. **npm scripts table**: Compare the scripts table against actual `package.json` scripts — flag missing, extra, or misdescribed scripts
+3. **Directory structure**: Verify each listed directory exists and descriptions are accurate
+4. **Command table**: Cross-reference the commands table against actual files in `commands/*.md` — flag missing or extra commands
+5. **File counts**: Verify stated counts (test count, agent count, command count) against actual counts
+6. **Development notes**: Verify stated conventions (file naming, test harness, format descriptions) against actual patterns
+
+Severity levels:
+- **HIGH**: Commands or scripts that would fail if copy-pasted (e.g., wrong test command, non-existent script)
+- **MEDIUM**: Outdated counts, missing entries in tables, stale descriptions
+- **LOW**: Minor wording drift, style inconsistencies, non-functional discrepancies
+
+**Auto-fix**: Non-controversial items (updated counts, corrected directory listings) are fixed automatically. Ambiguous findings are flagged for user review.
+
+### Step 8: File Size Validation
+
+Apply file size guidelines from `skills/doc-guidelines/SKILL.md`:
+
+1. Scan all documentation files (`docs/**/*.md`, `README.md`, `CLAUDE.md`)
+2. Count lines per file
+3. Flag violations:
+   - **WARNING**: Files < 20 lines (potentially insufficient content)
+   - **WARNING**: Files > 300 lines (recommend splitting)
+   - **HIGH**: Files > 500 lines (must split for readability)
+   - **EXEMPT**: `README.md` has no maximum
+
+Include file size findings in the quality report.
+
 ## Output Structure
 
 Based on codebase size, write to `docs/`:
@@ -142,6 +176,20 @@ Based on codebase size, write to `docs/`:
 | HIGH | src/lib/merge.ts:45 | @param `manifest` removed from code but still in doc |
 | MEDIUM | src/hooks/session.ts | 3 exported functions missing doc comments |
 | LOW | README.md:120 | Example uses deprecated `promptConflict()` |
+
+### CLAUDE.md Challenge Results
+
+| Severity | Claim | Finding |
+|----------|-------|---------|
+| MEDIUM | "1272 tests" | Actual count: 1362 |
+| LOW | "commands/ Slash commands (/tdd, /plan, ...)" | /tdd is archived, should reference current commands |
+
+### File Size Violations
+
+| File | Lines | Issue |
+|------|-------|-------|
+| docs/ARCHITECTURE.md | 12 | Below minimum (20 lines) |
+| docs/MODULE-SUMMARIES.md | 520 | Above maximum (500 lines) — split recommended |
 
 ### Contradictions
 
