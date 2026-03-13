@@ -4,6 +4,8 @@ description: Restate requirements, assess risks, create step-by-step plan, then 
 
 # Plan Command
 
+**FIRST ACTION**: Call the `EnterPlanMode` tool immediately. This enters Claude Code plan mode which restricts tools to read-only exploration while you research and design the plan. After writing the plan, call `ExitPlanMode` to present it for user approval. Once the user approves, you exit plan mode and gain full tool access for TDD execution.
+
 This command invokes the **planner** agent to create a comprehensive implementation plan, then executes it using TDD after user confirmation.
 
 ## Modes
