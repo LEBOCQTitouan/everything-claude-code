@@ -46,7 +46,7 @@ tests/           Test suite (run with tsx, imports from src/ and dist/)
 
 | Command | Purpose |
 |---------|---------|
-| `/plan` | Plan → TDD (with commits per iteration) → E2E if needed. Modes: `feature` (default), `refactor`, `security` |
+| `/plan` | Plan → TDD (with commits per iteration) → E2E if needed. Modes: `stories` (default), `refactor`, `security` |
 | `/build-fix` | Fix build/type errors reactively |
 | `/verify` | Build + tests + lint + code review + architecture review + coverage + dead code scan |
 | `/e2e` | Generate and run E2E tests with Playwright |
