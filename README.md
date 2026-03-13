@@ -195,7 +195,7 @@ everything-claude-code/
 │
 ├── src/                             # TypeScript source
 │   ├── lib/                         #   Core libraries (utils, package-manager, session-manager, ...)
-│   ├── hooks/                       #   Hook script implementations (21 hooks)
+│   ├── hooks/                       #   Hook script implementations (23 hooks)
 │   ├── ci/                          #   CI validators (agents, commands, hooks, rules, skills)
 │   ├── claw.ts                      #   NanoClaw REPL agent
 │   ├── postinstall.ts               #   npm postinstall entry point

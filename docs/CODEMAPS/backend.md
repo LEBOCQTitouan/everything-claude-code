@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-09 | Files scanned: 48 | Token estimate: ~900 -->
+<!-- Generated: 2026-03-14 | Files scanned: 50 | Token estimate: ~1000 -->
 
 # Backend — Core Library & Hooks
 
@@ -29,7 +29,7 @@ session-aliases.ts (469 LOC)
   └─ loadAliases → createAlias / deleteAlias / listAliases
 
 project-detect.ts (337 LOC)
-  └─ detectLanguages (12 rules) → detectFrameworks (24 rules)
+  └─ detectLanguages (12 rules) → detectFrameworks (23 rules)
   └─ detectProjectType → { languages, frameworks, primary }
 
 hook-flags.ts (68 LOC)
@@ -69,6 +69,17 @@ smart-merge.ts (363 LOC)
 gitignore.ts (153 LOC)
   └─ ensureGitignoreEntries (append-only)
   └─ findTrackedEccFiles → gitUntrack
+
+clean.ts (226 LOC)
+  └─ cleanFromManifest (surgical: manifest-tracked files only)
+  └─ cleanAll (nuclear: entire directories + hooks from settings.json)
+  └─ printCleanReport
+
+config-audit.ts (413 LOC)
+  └─ isEccManagedHook (4-tier detection: wrapper, package ID, source match, legacy)
+  └─ diffHooks (settings.json vs hooks.json → stale/missing/matching/user)
+  └─ auditEccConfig (agents + commands + hooks → ConfigAudit)
+  └─ printConfigAudit, printHooksDiff
 ```
 
 ## Hook Implementations (`src/hooks/`, 23 files)
@@ -116,6 +127,18 @@ validate-hooks.ts → hooks.json schema
 validate-skills.ts → skill directory structure
 validate-rules.ts → rules structure
 validate-no-personal-paths.ts → prevent /Users/xxx leaks
+```
+
+## Audit System Agents (6 agents, parallel domains)
+
+```
+audit-orchestrator (opus) → coordinates 7 audit domains
+  ├─ evolution-analyst (opus) → git history mining, hotspots, bus factor
+  ├─ test-auditor (opus) → test architecture quality analysis
+  ├─ observability-auditor (sonnet) → logging/monitoring consistency
+  ├─ error-handling-auditor (sonnet) → error handling architecture
+  ├─ convention-auditor (sonnet) → naming/pattern consistency
+  └─ security-reviewer (opus) → security vulnerability analysis
 ```
 
 ## Doc System Agents (6 agents, parallel pipeline)

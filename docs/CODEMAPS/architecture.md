@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-09 | Files scanned: 48 src + 27 tests | Token estimate: ~950 -->
+<!-- Generated: 2026-03-14 | Files scanned: 50 src + 32 tests | Token estimate: ~950 -->
 
 # Architecture Overview
 
@@ -18,6 +18,8 @@ User CLI
   │         │    ├─ manifest.ts   → track ECC artifacts
   │         │    ├─ merge.ts      → interactive diff review + conflict resolution
   │         │    ├─ smart-merge.ts → LCS diff + Claude merge + contentsDiffer
+  │         │    ├─ clean.ts        → surgical/nuclear artifact cleanup
+  │         │    ├─ config-audit.ts → source-of-truth config diffing
   │         │    └─ gitignore.ts  → auto-manage .gitignore
   │         └─ cmd_init → project-level CLAUDE.md + hooks
   │
@@ -29,10 +31,14 @@ User CLI
   │    └─ doc-orchestrator → doc-analyzer → doc-generator → doc-validator → doc-reporter
   │                                       → diagram-generator (reads CUSTOM.md registry)
   │
+  ├─ Audit system agents (6-agent pipeline)
+  │    └─ audit-orchestrator → evolution-analyst, test-auditor, observability-auditor,
+  │                            error-handling-auditor, convention-auditor, security-reviewer
+  │
   └─ Content directories (copied to ~/.claude/)
-       ├─ agents/    (25 specialized agents)
-       ├─ commands/  (47 slash commands)
-       ├─ skills/    (70 skill directories)
+       ├─ agents/    (30 specialized agents)
+       ├─ commands/  (6 active + 41 archived)
+       ├─ skills/    (67 skill directories)
        ├─ rules/     (common + language-specific)
        └─ contexts/  (3 context files)
 ```
@@ -63,7 +69,7 @@ src/**/*.ts  →  tsc (tsconfig.build.json)  →  dist/**/*.js (CommonJS)
 ```
 tests/harness.js       → shared test()/describe()/getResults() harness
 tests/run-all.js       → single-process runner (require, no subprocess per file)
-tests/**/*.test.js     → 27 test files exporting runTests() (1272 assertions)
+tests/**/*.test.js     → 32 test files exporting runTests() (1401 assertions)
                          env snapshot/restore + require.cache cleanup between files
 ```
 

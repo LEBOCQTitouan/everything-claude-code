@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-09 | Files scanned: 48 src + 27 tests | Token estimate: ~350 -->
+<!-- Generated: 2026-03-14 | Files scanned: 50 src + 32 tests | Token estimate: ~400 -->
 
 # Codemap Index — Everything Claude Code (ECC)
 
@@ -13,9 +13,9 @@
 
 ## Quick Stats
 
-- **Source:** 48 TypeScript files in `src/` (~5,200 LOC)
-- **Tests:** 27 test files, 1272 assertions passing (single-process runner)
-- **Content:** 25 agents, 47 commands, 70 skills, 5 rule groups
+- **Source:** 50 TypeScript files in `src/` (~5,800 LOC)
+- **Tests:** 32 test files, 1401 assertions passing (single-process runner)
+- **Content:** 30 agents, 6 commands (+ 41 archived), 67 skills, 5 rule groups
 - **Runtime dep:** 1 (`omelette`)
 - **Build:** `tsc` → CommonJS in `dist/`
 
@@ -31,10 +31,11 @@ src/install-orchestrator.ts → Node.js install pipeline
 ## Agent Ecosystem
 
 ```
-Orchestrators:  doc-orchestrator, arch-reviewer, loop-operator
+Orchestrators:  doc-orchestrator, arch-reviewer, audit-orchestrator
 Reviewers:      code-reviewer, python-reviewer, go-reviewer, security-reviewer, database-reviewer, uncle-bob
 Architects:     architect, architect-module
 Builders:       build-error-resolver, go-build-resolver, tdd-guide, e2e-runner
 Doc system:     doc-analyzer, doc-generator, doc-validator, doc-reporter, diagram-generator
-Utilities:      planner, refactor-cleaner, harness-optimizer, doc-updater, chief-of-staff
+Audit system:   evolution-analyst, test-auditor, observability-auditor, error-handling-auditor, convention-auditor
+Utilities:      planner, requirements-analyst, refactor-cleaner, harness-optimizer, doc-updater
 ```

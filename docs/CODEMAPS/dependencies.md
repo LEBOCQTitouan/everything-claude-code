@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-09 | Files scanned: 48 | Token estimate: ~500 -->
+<!-- Generated: 2026-03-14 | Files scanned: 50 | Token estimate: ~500 -->
 
 # Dependencies & External Integrations
 
@@ -31,9 +31,9 @@
 
 | Path | Purpose |
 |------|---------|
-| `~/.claude/agents/` | Agent definitions (25 agents) |
-| `~/.claude/commands/` | Slash commands (47 commands) |
-| `~/.claude/skills/` | Skill directories (70 skills) |
+| `~/.claude/agents/` | Agent definitions (30 agents) |
+| `~/.claude/commands/` | Slash commands (6 active + 41 archived) |
+| `~/.claude/skills/` | Skill directories (67 skills) |
 | `~/.claude/rules/` | Rules by language group |
 | `~/.claude/settings.json` | Hooks configuration |
 | `~/.claude/.ecc-manifest.json` | ECC manifest tracking |
@@ -48,9 +48,9 @@ Published as `@lebocqtitouan/ecc`. Included files:
 ```
 bin/         → CLI entry point
 dist/        → Compiled JS
-agents/      → 25 agent definitions
-commands/    → 47 slash commands
-skills/      → 70 skill directories
+agents/      → 30 agent definitions
+commands/    → 6 active + 41 archived slash commands
+skills/      → 67 skill directories
 rules/       → Language-specific rules
 hooks/       → hooks.json registry
 contexts/    → Context injection files
