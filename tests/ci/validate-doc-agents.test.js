@@ -12,26 +12,13 @@ const { test, describe } = require('../harness');
 
 const ROOT = path.join(__dirname, '..', '..');
 
-const DOC_AGENTS = [
-  'agents/doc-analyzer.md',
-  'agents/doc-generator.md',
-  'agents/doc-validator.md',
-  'agents/doc-reporter.md',
-  'agents/doc-orchestrator.md',
-];
+const DOC_AGENTS = ['agents/doc-analyzer.md', 'agents/doc-generator.md', 'agents/doc-validator.md', 'agents/doc-reporter.md', 'agents/doc-orchestrator.md'];
 
-const DOC_COMMANDS = [
-  'commands/doc-suite.md',
-  'commands/doc-analyze.md',
-  'commands/doc-generate.md',
-  'commands/doc-validate.md',
-  'commands/doc-coverage.md',
-];
+// doc-analyze, doc-generate, doc-validate, doc-coverage were archived to
+// commands/_archive/ during the 5-command simplification. Only doc-suite remains.
+const DOC_COMMANDS = ['commands/doc-suite.md'];
 
-const DOC_SKILLS = [
-  'skills/doc-analysis/SKILL.md',
-  'skills/doc-quality-scoring/SKILL.md',
-];
+const DOC_SKILLS = ['skills/doc-analysis/SKILL.md', 'skills/doc-quality-scoring/SKILL.md'];
 
 function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---/);
