@@ -106,6 +106,55 @@ async function runTests() {
     assert.ok(content.includes('code-reviewer'), 'Plan command must reference code-reviewer agent');
   });
 
+  describe('Requirements-analyst agent');
+
+  const analystPath = path.join(ROOT, 'agents', 'requirements-analyst.md');
+
+  await test('agents/requirements-analyst.md exists', () => {
+    assert.ok(fs.existsSync(analystPath), 'Missing: agents/requirements-analyst.md');
+  });
+
+  await test('requirements-analyst includes User Story format', () => {
+    const content = fs.readFileSync(analystPath, 'utf8');
+    assert.ok(content.includes('As a'), 'Missing "As a" in User Story format');
+    assert.ok(content.includes('Acceptance Criteria'), 'Missing "Acceptance Criteria" in User Story format');
+  });
+
+  await test('requirements-analyst includes challenge behavior', () => {
+    const content = fs.readFileSync(analystPath, 'utf8');
+    assert.ok(content.includes('challenge') || content.includes('Challenge'), 'Missing challenge behavior');
+    assert.ok(content.includes('alignment') || content.includes('align'), 'Missing alignment checking');
+    assert.ok(content.includes('push') || content.includes('Push'), 'Missing push-the-need behavior');
+  });
+
+  await test('requirements-analyst includes codebase validation', () => {
+    const content = fs.readFileSync(analystPath, 'utf8');
+    assert.ok(content.includes('Explore'), 'Missing Explore agent invocation for codebase validation');
+  });
+
+  await test('requirements-analyst includes dependency analysis', () => {
+    const content = fs.readFileSync(analystPath, 'utf8');
+    assert.ok(content.includes('Dependency') || content.includes('dependency'), 'Missing dependency analysis');
+    assert.ok(content.includes('Layer') || content.includes('DAG'), 'Missing Layer/DAG concept');
+  });
+
+  describe('Plan command stories mode');
+
+  await test('plan command includes Stories Mode section', () => {
+    const content = fs.readFileSync(planCmdPath, 'utf8');
+    assert.ok(content.includes('### Stories Mode'), 'Plan command must include "### Stories Mode" section');
+  });
+
+  await test('plan command references requirements-analyst agent', () => {
+    const content = fs.readFileSync(planCmdPath, 'utf8');
+    assert.ok(content.includes('requirements-analyst'), 'Plan command must reference requirements-analyst agent');
+  });
+
+  await test('plan command includes Recap Report section', () => {
+    const content = fs.readFileSync(planCmdPath, 'utf8');
+    assert.ok(content.includes('### Recap Report'), 'Plan command must include "### Recap Report" section');
+  });
+
   describe('Cross-reference consistency');
 
   await test('development-workflow.md references /plan TDD integration', () => {
