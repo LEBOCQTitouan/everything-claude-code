@@ -10,21 +10,22 @@ This command invokes the **planner** agent to create a comprehensive implementat
 
 ## Modes
 
-- `/plan <description>` — Feature implementation (default)
+- `/plan <description>` — Stories mode (default): decomposes into User Stories with dependency DAG, then plans and executes each story (parallel when possible)
 - `/plan refactor <description>` — Safe refactoring workflow (architect → changes → tests)
 - `/plan security <description>` — Security-focused workflow (security-reviewer → fixes → tests)
 
 ## What This Command Does
 
-1. **Restate Requirements** - Clarify what needs to be built
-2. **Identify Risks** - Surface potential issues and blockers
-3. **Create Step Plan** - Break down implementation into phases with test targets
-4. **E2E Assessment** - Determine if new E2E tests are needed based on scope
+1. **Decompose into User Stories** - Requirements-analyst agent breaks input into formal User Stories with acceptance criteria, challenges the user's thinking, and validates against the codebase
+2. **Dependency Analysis** - Analyze story dependencies and produce a DAG (parallel vs sequential layers)
+3. **Plan Each Story** - Planner agent creates implementation plan per story with test targets
+4. **Full Plan Recap** - Present ALL per-story plans consolidated for user review before any code is written
 5. **Wait for Confirmation** - MUST receive user approval before proceeding
-6. **Execute with TDD** - After confirmation, implement each phase using RED → GREEN → REFACTOR
+6. **Execute with TDD** - After confirmation, implement each story using RED → GREEN → REFACTOR (parallel for independent stories via worktree isolation)
 7. **Run E2E Tests** - Write new E2E tests if flagged, then run full E2E suite
+8. **Recap Report** - Comprehensive summary of all stories, their status, and execution results
 
-After all phases complete, run `/verify` for comprehensive quality and architecture review.
+After all stories complete, run `/verify` for comprehensive quality and architecture review.
 
 ## When to Use
 
@@ -76,6 +77,43 @@ Agent chain: **architect** → implementation → **tdd-guide** → verify
 ### Recommendations
 [Suggested next steps]
 ```
+
+### Stories Mode (default)
+
+The default mode. Decomposes the request into User Stories before planning.
+
+#### Flow
+
+1. **Requirements Analysis**: Invoke `requirements-analyst` agent with the raw input
+   - Agent explores the codebase, drafts User Stories, challenges assumptions
+   - Iterates with the user via `AskUserQuestion` until stories are clear
+   - Outputs: formal User Stories + dependency DAG + Challenges & Decisions log
+   - Persists stories to `docs/user-stories/YYYY-MM-DD-<slug>.md`
+
+2. **User Confirms Stories**: Present the stories and DAG. Wait for explicit confirmation.
+
+3. **Plan Each Story**: For each User Story, invoke the `planner` agent
+   - Independent stories (same DAG layer) can be planned in parallel
+   - Each planner invocation uses the story's acceptance criteria as success criteria and edge cases as test targets
+
+4. **Full Plan Recap**: Present ALL per-story plans consolidated:
+   - For each US: phases, files to modify, test targets, estimated scope
+   - Cross-story analysis: shared files, potential conflicts, integration points
+   - Execution order: which layer, parallel vs sequential
+
+5. **User Confirms All Plans**: Wait for explicit confirmation before any code is written.
+
+6. **Parallel TDD Execution**: Stories in the same DAG layer launch via `Agent` tool with `isolation: "worktree"` and `run_in_background: true`
+   - Each story follows the standard TDD Execution Loop (SCAFFOLD → RED → GREEN → REFACTOR → GATE)
+   - **Layer completion gate**: After all stories in a layer finish, merge worktrees, run full test suite
+   - If regression detected: **STOP and fix** before proceeding to next layer
+   - **Sequential fallback**: If files overlap between stories or worktrees are unavailable, execute sequentially instead
+
+7. **Fail-open**: If one story fails, others in the same layer continue. Failures are reported in the recap.
+
+#### Single-Story Degeneration
+
+If the requirements-analyst produces only 1 story, the flow degenerates to today's behavior — a single planner invocation followed by standard TDD execution (no worktrees needed).
 
 ### Security Mode
 
@@ -211,6 +249,38 @@ After all phases and E2E tests pass, run `/verify` which invokes the `code-revie
 2. Address MEDIUM issues when possible — commit each fix
 3. Architecture review runs automatically as part of `/verify`
 
+### Recap Report
+
+After all stories complete (or fail), produce a comprehensive recap:
+
+```markdown
+# Plan Recap: [Feature Title]
+
+## Story Execution Summary
+
+| Story | Status | Phases | Tests Added | Files Modified | Commits |
+|-------|--------|--------|-------------|----------------|---------|
+| US-1: [Title] | completed | 3 | 8 | 5 | 4 |
+| US-2: [Title] | completed | 2 | 5 | 3 | 3 |
+| US-3: [Title] | failed (RED) | 1/3 | 2 | 1 | 1 |
+
+## Execution Timeline
+
+- **Layer 0**: US-1, US-2 (parallel) — completed
+- **Layer 1**: US-3 (sequential, depends on US-1) — failed at RED phase
+
+## Aggregated Changes
+- **Total files modified**: [list]
+- **Total tests added**: [count]
+- **Commits**: [list with hashes and messages]
+
+## Issues & Recommendations
+- [Issue 1 and recommended action]
+- [Issue 2 and recommended action]
+```
+
+Update `docs/user-stories/US-RECAP.md` with final statuses (`completed`, `active`, or note failures).
+
 ### Progress Tracking
 
 During execution, track progress for each phase:
@@ -273,7 +343,8 @@ Never accumulate changes across multiple plan phases without committing.
 ## Related Agents
 
 This command invokes:
-- `planner` agent — plan generation
+- `requirements-analyst` agent — User Story decomposition, product challenge, codebase validation, dependency DAG
+- `planner` agent — plan generation (one invocation per User Story)
 - `tdd-guide` agent — TDD execution per phase
 - `e2e-runner` agent — E2E test writing and execution
 - `architect` agent — refactor mode analysis
