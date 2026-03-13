@@ -201,6 +201,14 @@ After all phases complete:
 2. **If new E2E tests are needed**: write them now using the e2e-runner agent, targeting the scenarios listed in the plan. Commit: `test: add E2E tests for <feature>`
 3. **Run the full E2E suite** (existing + newly written). If failures: fix before proceeding.
 
+### Mandatory Code Review
+
+After all phases and E2E tests pass, run `/verify` which invokes the `code-reviewer` agent on the full diff:
+
+1. Address all CRITICAL and HIGH issues — commit each fix
+2. Address MEDIUM issues when possible — commit each fix
+3. Architecture review runs automatically as part of `/verify`
+
 ### Progress Tracking
 
 During execution, track progress for each phase:
