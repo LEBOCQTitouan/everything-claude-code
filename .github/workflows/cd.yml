@@ -17,15 +17,12 @@ jobs:
     name: Auto-tag release
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Guard 1: skip version-bump commits (prevent infinite loop)
+    if: >-
+      !contains(github.event.head_commit.message, '[skip cd]') &&
+      github.actor != 'github-actions[bot]'
 
     steps:
-      # Guard 1: skip version-bump commits (prevent infinite loop)
-      - name: Skip version-bump commits
-        if: >-
-          contains(github.event.head_commit.message, '[skip cd]') ||
-          github.actor == 'github-actions[bot]'
-        run: echo "Version-bump commit — skipping." && exit 0
-
       # Guard 2: check for `release` label on merged PR
       - name: Check for release label
         id: gate
@@ -37,6 +34,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --state merged \
             --base main \
+            --limit 100 \
             --json labels,mergeCommit \
             --jq ".[] | select(.mergeCommit.oid == \"$COMMIT_SHA\") | .labels[].name" \
             2>/dev/null || true)
@@ -67,19 +65,31 @@ jobs:
         run: |
           CURRENT=$(grep -m1 '^version' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
           echo "Current: $CURRENT"
-          NUM="${CURRENT##*[^0-9]}"
-          PREFIX="${CURRENT%"$NUM"}"
-          NEXT="${PREFIX}$((NUM + 1))"
+          # Split on last dot to correctly handle multi-digit segments
+          PREFIX="${CURRENT%.*}"
+          LAST="${CURRENT##*.}"
+          # Extract trailing number from last segment (handles alpha.1 → alpha.2)
+          NUM=$(echo "$LAST" | grep -oE '[0-9]+$')
+          NON_NUM="${LAST%"$NUM"}"
+          NEXT="${PREFIX}.${NON_NUM}$((NUM + 1))"
           echo "Next: $NEXT"
           echo "next=$NEXT" >> "$GITHUB_OUTPUT"
 
       - name: Bump all version files
         if: steps.gate.outputs.release == 'true'
-        run: bash scripts/bump-version.sh "${{ steps.version.outputs.next }}"
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: bash scripts/bump-version.sh "$NEXT"
 
       - name: Commit, tag, and push
         if: steps.gate.outputs.release == 'true'
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
         run: |
+          if ! [[ "$NEXT" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+            echo "::error::Invalid version: $NEXT"
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add \
@@ -92,7 +102,7 @@ jobs:
             npm/ecc-linux-x64/package.json \
             npm/ecc-linux-arm64/package.json \
             npm/ecc-win32-x64/package.json
-          NEXT="${{ steps.version.outputs.next }}"
           git commit -m "chore: bump version to v${NEXT} [skip cd]"
           git tag "v${NEXT}"
-          git push origin HEAD:main "v${NEXT}"
+          git push origin HEAD:main
+          git push origin "v${NEXT}"
