@@ -2,6 +2,7 @@ pub mod audit;
 pub mod claw;
 pub mod config;
 pub mod detect;
+pub mod detection;
 pub mod hook;
 pub mod install;
 pub mod merge;

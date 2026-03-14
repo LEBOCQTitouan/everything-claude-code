@@ -182,6 +182,7 @@ dependencies = [
  "ecc-domain",
  "ecc-ports",
  "ecc-test-support",
+ "regex",
  "serde",
  "serde_json",
 ]
