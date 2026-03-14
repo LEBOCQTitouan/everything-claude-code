@@ -26,9 +26,8 @@ pub struct FileToReview {
 // Constants
 // ---------------------------------------------------------------------------
 
-/// Known ECC package identifiers in npm paths.
-pub const ECC_PACKAGE_IDENTIFIERS: &[&str] =
-    &["@lebocqtitouan/ecc/", "everything-claude-code/"];
+// Re-export from shared location for backwards compatibility.
+pub use super::ECC_PACKAGE_IDENTIFIERS;
 
 // ---------------------------------------------------------------------------
 // Pure functions
