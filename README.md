@@ -324,6 +324,34 @@ npx tsx tests/run-all.js   # run all 1401 tests
 
 ---
 
+## Local CI Testing
+
+Run GitHub Actions workflows locally using [nektos/act](https://github.com/nektos/act).
+
+### Install act
+
+```bash
+brew install act           # macOS
+# or see https://nektosact.com/installation/ for other platforms
+```
+
+### Set up secrets
+
+```bash
+cp .secrets.example .secrets
+# Edit .secrets and fill in your NPM_TOKEN (required for release.yml)
+```
+
+### Available targets
+
+| Command | Description |
+|---------|-------------|
+| `make ci` | Run all workflows locally |
+| `make ci-dry` | List all jobs (dry-run) |
+| `make ci-job JOB=validate` | Run a specific job |
+
+---
+
 ## Credits
 
 Original project: **[affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code)** by [@affaanmustafa](https://x.com/affaanmustafa).
