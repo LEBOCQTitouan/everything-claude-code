@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 // Types
 // ---------------------------------------------------------------------------
 
+/// Severity level for an audit finding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
     Critical,
@@ -12,6 +13,7 @@ pub enum Severity {
     Low,
 }
 
+/// A single issue discovered during an audit check.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditFinding {
     pub id: String,
@@ -21,6 +23,7 @@ pub struct AuditFinding {
     pub fix: String,
 }
 
+/// Result of a single named audit check (pass/fail with findings).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditCheckResult {
     pub name: String,
@@ -28,6 +31,7 @@ pub struct AuditCheckResult {
     pub findings: Vec<AuditFinding>,
 }
 
+/// Aggregated audit report with scored grade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditReport {
     pub checks: Vec<AuditCheckResult>,
@@ -44,12 +48,14 @@ pub struct HooksDiff {
     pub user_hooks: Vec<HookDiffEntry>,
 }
 
+/// A single hook entry in a diff comparison.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HookDiffEntry {
     pub event: String,
     pub entry: serde_json::Value,
 }
 
+/// Audit summary for a single artifact type (agents, commands, etc.).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArtifactAudit {
     pub matching: Vec<String>,
@@ -57,6 +63,7 @@ pub struct ArtifactAudit {
     pub missing: Vec<String>,
 }
 
+/// Full configuration audit comparing installed artifacts and hooks against source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConfigAudit {
     pub agents: ArtifactAudit,

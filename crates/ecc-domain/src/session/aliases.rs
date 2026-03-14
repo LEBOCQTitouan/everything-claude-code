@@ -124,6 +124,7 @@ fn is_reserved(name: &str) -> bool {
     RESERVED_NAMES.contains(&name.to_lowercase().as_str())
 }
 
+/// Validate an alias name. Returns `None` if valid, or `Some(error_message)` if invalid.
 pub fn validate_alias_name(name: &str) -> Option<String> {
     if name.is_empty() {
         return Some("Alias name cannot be empty".to_string());

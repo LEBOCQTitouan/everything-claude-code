@@ -4,6 +4,7 @@ use std::path::PathBuf;
 // Types
 // ---------------------------------------------------------------------------
 
+/// Summary of a merge operation across one artifact category.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MergeReport {
     pub added: Vec<String>,
@@ -14,6 +15,7 @@ pub struct MergeReport {
     pub errors: Vec<String>,
 }
 
+/// A file that differs between source and destination, pending user review.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileToReview {
     pub filename: String,

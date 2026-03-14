@@ -1,42 +1,52 @@
 //! Zero-dependency ANSI color utilities.
 //! Respects `NO_COLOR` env var convention (checked at call site).
 
+/// Wrap text in bold ANSI escape codes.
 pub fn bold(text: &str, enabled: bool) -> String {
     wrap(text, "1", enabled)
 }
 
+/// Wrap text in dim ANSI escape codes.
 pub fn dim(text: &str, enabled: bool) -> String {
     wrap(text, "2", enabled)
 }
 
+/// Wrap text in red ANSI escape codes.
 pub fn red(text: &str, enabled: bool) -> String {
     wrap(text, "31", enabled)
 }
 
+/// Wrap text in green ANSI escape codes.
 pub fn green(text: &str, enabled: bool) -> String {
     wrap(text, "32", enabled)
 }
 
+/// Wrap text in yellow ANSI escape codes.
 pub fn yellow(text: &str, enabled: bool) -> String {
     wrap(text, "33", enabled)
 }
 
+/// Wrap text in cyan ANSI escape codes.
 pub fn cyan(text: &str, enabled: bool) -> String {
     wrap(text, "36", enabled)
 }
 
+/// Wrap text in white ANSI escape codes.
 pub fn white(text: &str, enabled: bool) -> String {
     wrap(text, "37", enabled)
 }
 
+/// Wrap text in magenta ANSI escape codes.
 pub fn magenta(text: &str, enabled: bool) -> String {
     wrap(text, "35", enabled)
 }
 
+/// Wrap text in gray ANSI escape codes.
 pub fn gray(text: &str, enabled: bool) -> String {
     wrap(text, "90", enabled)
 }
 
+/// Wrap text in cyan background ANSI escape codes.
 pub fn bg_cyan(text: &str, enabled: bool) -> String {
     wrap(text, "46", enabled)
 }
