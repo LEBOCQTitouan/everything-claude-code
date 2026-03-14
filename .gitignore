@@ -47,5 +47,8 @@ CLAUDE.local.md
 # Session templates (not committed)
 examples/sessions/*.tmp
 
+# Compiled TypeScript output (stale, migrated to Rust)
+dist/
+
 # Local drafts
 marketing/
