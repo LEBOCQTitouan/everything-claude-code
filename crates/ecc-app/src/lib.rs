@@ -9,4 +9,5 @@ pub mod install;
 pub mod merge;
 pub mod session;
 pub mod smart_merge;
+pub mod validate;
 pub mod version;
