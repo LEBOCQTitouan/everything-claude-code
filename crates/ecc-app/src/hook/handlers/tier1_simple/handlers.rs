@@ -443,3 +443,552 @@ pub fn suggest_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
     HookResult::passthrough(stdin)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hook::HookPorts;
+    use ecc_ports::shell::CommandOutput;
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+
+    fn make_ports<'a>(
+        fs: &'a InMemoryFileSystem,
+        shell: &'a MockExecutor,
+        env: &'a MockEnvironment,
+        term: &'a BufferedTerminal,
+    ) -> HookPorts<'a> {
+        HookPorts {
+            fs,
+            shell,
+            env,
+            terminal: term,
+        }
+    }
+
+    // --- check_hook_enabled ---
+
+    #[test]
+    fn check_hook_enabled_enabled_hook_returns_yes() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = check_hook_enabled("some-hook", &ports);
+        assert_eq!(result.stdout, "yes");
+        assert_eq!(result.exit_code, 0);
+    }
+
+    #[test]
+    fn check_hook_enabled_disabled_hook_returns_no() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "some-hook");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = check_hook_enabled("some-hook", &ports);
+        assert_eq!(result.stdout, "no");
+    }
+
+    #[test]
+    fn check_hook_enabled_empty_stdin_always_returns_yes() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "some-hook");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        // empty check_id → always enabled regardless of disabled list
+        let result = check_hook_enabled("", &ports);
+        assert_eq!(result.stdout, "yes");
+    }
+
+    #[test]
+    fn check_hook_enabled_parses_json_hook_id() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "json-hook");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"hook_id":"json-hook"}"#;
+        let result = check_hook_enabled(stdin, &ports);
+        assert_eq!(result.stdout, "no");
+    }
+
+    // --- session_end_marker ---
+
+    #[test]
+    fn session_end_marker_passthrough() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = session_end_marker("session data", &ports);
+        assert_eq!(result.stdout, "session data");
+        assert!(result.stderr.is_empty());
+        assert_eq!(result.exit_code, 0);
+    }
+
+    // --- check_console_log ---
+
+    #[test]
+    fn check_console_log_passthrough_when_not_git_repo() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new(); // no responses → run_command returns Err
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = check_console_log("stdin", &ports);
+        assert_eq!(result.stdout, "stdin");
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn check_console_log_warns_on_console_log_in_ts_file() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("src/app.ts", "const x = 1;\nconsole.log(x);\n");
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["rev-parse", "--git-dir"],
+                CommandOutput {
+                    stdout: ".git".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "git",
+                &["diff", "--name-only", "--diff-filter=ACMR"],
+                CommandOutput {
+                    stdout: "src/app.ts\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = check_console_log("stdin", &ports);
+        assert!(result.stderr.contains("console.log found in src/app.ts"));
+        assert!(result.stderr.contains("Remove console.log"));
+    }
+
+    #[test]
+    fn check_console_log_skips_spec_files() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("src/app.spec.ts", "console.log('test');");
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["rev-parse", "--git-dir"],
+                CommandOutput {
+                    stdout: ".git".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "git",
+                &["diff", "--name-only", "--diff-filter=ACMR"],
+                CommandOutput {
+                    stdout: "src/app.spec.ts\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = check_console_log("stdin", &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn check_console_log_passthrough_when_no_console_log_present() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("src/app.ts", "const x = 1;\n");
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["rev-parse", "--git-dir"],
+                CommandOutput {
+                    stdout: ".git".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "git",
+                &["diff", "--name-only", "--diff-filter=ACMR"],
+                CommandOutput {
+                    stdout: "src/app.ts\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = check_console_log("stdin", &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- stop_uncommitted_reminder ---
+
+    #[test]
+    fn stop_uncommitted_reminder_passthrough_when_not_git() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = stop_uncommitted_reminder("stdin", &ports);
+        assert_eq!(result.stdout, "stdin");
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn stop_uncommitted_reminder_passthrough_on_clean_repo() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["rev-parse", "--git-dir"],
+                CommandOutput {
+                    stdout: ".git".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "git",
+                &["status", "--porcelain"],
+                CommandOutput {
+                    stdout: String::new(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = stop_uncommitted_reminder("stdin", &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn stop_uncommitted_reminder_warns_with_staged_and_unstaged() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["rev-parse", "--git-dir"],
+                CommandOutput {
+                    stdout: ".git".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "git",
+                &["status", "--porcelain"],
+                CommandOutput {
+                    // M at col 0 = staged, ?? = untracked
+                    stdout: "M  src/lib.rs\n?? new.txt\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = stop_uncommitted_reminder("stdin", &ports);
+        assert!(result.stderr.contains("uncommitted changes"));
+        assert!(result.stderr.contains("Staged: 1"));
+        assert!(result.stderr.contains("Unstaged/untracked: 1"));
+    }
+
+    // --- pre_bash_git_push_reminder ---
+
+    #[test]
+    fn pre_bash_git_push_reminder_warns_on_git_push() {
+        let stdin = r#"{"tool_input":{"command":"git push origin main"}}"#;
+        let result = pre_bash_git_push_reminder(stdin);
+        assert!(result.stderr.contains("Review changes before push"));
+        assert_eq!(result.exit_code, 0);
+    }
+
+    #[test]
+    fn pre_bash_git_push_reminder_passthrough_for_other_git_commands() {
+        let stdin = r#"{"tool_input":{"command":"git commit -m 'msg'"}}"#;
+        let result = pre_bash_git_push_reminder(stdin);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- post_bash_pr_created ---
+
+    #[test]
+    fn post_bash_pr_created_logs_pr_url_and_review_command() {
+        let stdin = r#"{"tool_input":{"command":"gh pr create --title t"},"tool_output":{"output":"https://github.com/owner/repo/pull/99\n"}}"#;
+        let result = post_bash_pr_created(stdin);
+        assert!(result.stderr.contains("PR created"));
+        assert!(result.stderr.contains("99"));
+        assert!(result.stderr.contains("owner/repo"));
+    }
+
+    #[test]
+    fn post_bash_pr_created_passthrough_non_pr_command() {
+        let stdin = r#"{"tool_input":{"command":"echo hello"}}"#;
+        let result = post_bash_pr_created(stdin);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn post_bash_pr_created_passthrough_pr_cmd_without_url_in_output() {
+        let stdin = r#"{"tool_input":{"command":"gh pr create"},"tool_output":{"output":"Draft saved\n"}}"#;
+        let result = post_bash_pr_created(stdin);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- post_bash_build_complete ---
+
+    #[test]
+    fn post_bash_build_complete_warns_on_npm_run_build() {
+        let stdin = r#"{"tool_input":{"command":"npm run build"}}"#;
+        let result = post_bash_build_complete(stdin);
+        assert!(result.stderr.contains("Build completed"));
+    }
+
+    #[test]
+    fn post_bash_build_complete_warns_on_pnpm_build() {
+        let stdin = r#"{"tool_input":{"command":"pnpm build"}}"#;
+        let result = post_bash_build_complete(stdin);
+        assert!(result.stderr.contains("Build completed"));
+    }
+
+    #[test]
+    fn post_bash_build_complete_passthrough_for_non_build_command() {
+        let stdin = r#"{"tool_input":{"command":"cargo test"}}"#;
+        let result = post_bash_build_complete(stdin);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- doc_file_warning ---
+
+    #[test]
+    fn doc_file_warning_warns_for_non_standard_md() {
+        let stdin = r#"{"tool_input":{"file_path":"scratch.md"}}"#;
+        let result = doc_file_warning(stdin);
+        assert!(result.stderr.contains("Non-standard documentation"));
+        assert!(result.stderr.contains("scratch.md"));
+    }
+
+    #[test]
+    fn doc_file_warning_passthrough_for_readme() {
+        let stdin = r#"{"tool_input":{"file_path":"README.md"}}"#;
+        let result = doc_file_warning(stdin);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn doc_file_warning_passthrough_for_claude_md() {
+        let stdin = r#"{"tool_input":{"file_path":"CLAUDE.md"}}"#;
+        let result = doc_file_warning(stdin);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn doc_file_warning_passthrough_for_docs_dir() {
+        let stdin = r#"{"tool_input":{"file_path":"docs/guide.md"}}"#;
+        let result = doc_file_warning(stdin);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn doc_file_warning_passthrough_for_non_doc_extension() {
+        let stdin = r#"{"tool_input":{"file_path":"src/main.rs"}}"#;
+        let result = doc_file_warning(stdin);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn doc_file_warning_passthrough_when_file_path_absent() {
+        let result = doc_file_warning("{}");
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- doc_coverage_reminder ---
+
+    #[test]
+    fn doc_coverage_reminder_warns_on_undocumented_exports() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("src/lib.rs", "pub fn alpha() {}\npub fn beta() {}\n");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
+        let result = doc_coverage_reminder(stdin, &ports);
+        assert!(result.stderr.contains("DocCoverage"));
+        assert!(result.stderr.contains("lib.rs"));
+    }
+
+    #[test]
+    fn doc_coverage_reminder_passthrough_for_non_source_extension() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"README.md"}}"#;
+        let result = doc_coverage_reminder(stdin, &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn doc_coverage_reminder_passthrough_when_file_missing() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"src/missing.rs"}}"#;
+        let result = doc_coverage_reminder(stdin, &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn doc_coverage_reminder_passthrough_when_all_documented() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("src/lib.rs", "/// Documented\npub fn foo() {}\n");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
+        let result = doc_coverage_reminder(stdin, &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- post_edit_console_warn ---
+
+    #[test]
+    fn post_edit_console_warn_warns_when_console_log_present() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("src/index.ts", "const y = 2;\nconsole.log(y);\n");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"src/index.ts"}}"#;
+        let result = post_edit_console_warn(stdin, &ports);
+        assert!(result.stderr.contains("console.log found in src/index.ts"));
+        assert!(result.stderr.contains("Remove console.log"));
+    }
+
+    #[test]
+    fn post_edit_console_warn_passthrough_for_rust_file() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("src/lib.rs", "println!(\"hello\");");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
+        let result = post_edit_console_warn(stdin, &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn post_edit_console_warn_passthrough_when_no_console_log_in_js() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("src/app.js", "const x = 1;\n");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"src/app.js"}}"#;
+        let result = post_edit_console_warn(stdin, &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- suggest_compact ---
+
+    #[test]
+    fn suggest_compact_no_warning_below_threshold() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "sess-a");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        // count=1, default threshold=50 → no warning
+        let result = suggest_compact("{}", &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn suggest_compact_warns_at_threshold() {
+        // Counter file holds "49" → next count = 50 = threshold
+        let fs = InMemoryFileSystem::new()
+            .with_file("/tmp/claude-tool-count-sess-b", "49");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "sess-b");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = suggest_compact("{}", &ports);
+        assert!(result.stderr.contains("50 tool calls reached"));
+    }
+
+    #[test]
+    fn suggest_compact_warns_at_periodic_checkpoint() {
+        // Counter holds "74" → next = 75 = threshold(50) + 25 → periodic reminder
+        let fs = InMemoryFileSystem::new()
+            .with_file("/tmp/claude-tool-count-sess-c", "74");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "sess-c");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = suggest_compact("{}", &ports);
+        assert!(result.stderr.contains("75 tool calls"));
+        assert!(result.stderr.contains("checkpoint"));
+    }
+
+    #[test]
+    fn suggest_compact_custom_threshold_triggers_at_that_count() {
+        // COMPACT_THRESHOLD=5, counter = "4" → next = 5 → warning
+        let fs = InMemoryFileSystem::new()
+            .with_file("/tmp/claude-tool-count-sess-d", "4");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_SESSION_ID", "sess-d")
+            .with_var("COMPACT_THRESHOLD", "5");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = suggest_compact("{}", &ports);
+        assert!(result.stderr.contains("5 tool calls reached"));
+    }
+}
