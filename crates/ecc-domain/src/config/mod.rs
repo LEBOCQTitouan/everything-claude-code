@@ -5,3 +5,4 @@ pub mod detect;
 pub mod gitignore;
 pub mod manifest;
 pub mod merge;
+pub mod validate;
