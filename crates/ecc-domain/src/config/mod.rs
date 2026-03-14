@@ -1,3 +1,8 @@
+//! Configuration management domain types.
+//!
+//! Covers manifest parsing, audit checks, deny rules, merge operations,
+//! cleanup, validation, and gitignore handling for ECC configuration files.
+
 pub mod audit;
 pub mod clean;
 pub mod deny_rules;
