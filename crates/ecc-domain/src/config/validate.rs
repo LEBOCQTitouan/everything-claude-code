@@ -28,32 +28,28 @@ pub fn extract_frontmatter(content: &str) -> Option<HashMap<String, String>> {
 
 /// Validate a single hook entry object.
 ///
-/// Returns `true` if there are errors, `false` if the entry is valid.
-/// Errors are printed to stderr.
-pub fn validate_hook_entry(hook: &serde_json::Value, label: &str) -> bool {
-    let mut has_errors = false;
+/// Returns a list of error messages. Empty means the entry is valid.
+pub fn check_hook_entry(hook: &serde_json::Value, label: &str) -> Vec<String> {
+    let mut errors = Vec::new();
 
     match hook.get("type").and_then(|v| v.as_str()) {
         Some(t) if !t.is_empty() => {}
         _ => {
-            eprintln!("ERROR: {} missing or invalid 'type' field", label);
-            has_errors = true;
+            errors.push(format!("{label} missing or invalid 'type' field"));
         }
     }
 
     if let Some(a) = hook.get("async")
         && !a.is_boolean()
     {
-        eprintln!("ERROR: {} 'async' must be a boolean", label);
-        has_errors = true;
+        errors.push(format!("{label} 'async' must be a boolean"));
     }
 
     if let Some(t) = hook.get("timeout") {
         match t.as_f64() {
             Some(v) if v >= 0.0 => {}
             _ => {
-                eprintln!("ERROR: {} 'timeout' must be a non-negative number", label);
-                has_errors = true;
+                errors.push(format!("{label} 'timeout' must be a non-negative number"));
             }
         }
     }
@@ -65,17 +61,15 @@ pub fn validate_hook_entry(hook: &serde_json::Value, label: &str) -> bool {
                 .iter()
                 .all(|v| matches!(v, serde_json::Value::String(s) if !s.is_empty()))
             {
-                eprintln!("ERROR: {} invalid 'command' array entries", label);
-                has_errors = true;
+                errors.push(format!("{label} invalid 'command' array entries"));
             }
         }
         _ => {
-            eprintln!("ERROR: {} missing or invalid 'command' field", label);
-            has_errors = true;
+            errors.push(format!("{label} missing or invalid 'command' field"));
         }
     }
 
-    has_errors
+    errors
 }
 
 #[cfg(test)]
@@ -112,7 +106,7 @@ mod tests {
         assert_eq!(fm.get("model").unwrap(), "");
     }
 
-    // --- validate_hook_entry ---
+    // --- check_hook_entry ---
 
     #[test]
     fn valid_hook_entry() {
@@ -120,7 +114,7 @@ mod tests {
             "type": "command",
             "command": "echo hello"
         });
-        assert!(!validate_hook_entry(&hook, "test"));
+        assert!(check_hook_entry(&hook, "test").is_empty());
     }
 
     #[test]
@@ -128,7 +122,7 @@ mod tests {
         let hook = serde_json::json!({
             "command": "echo hello"
         });
-        assert!(validate_hook_entry(&hook, "test"));
+        assert!(!check_hook_entry(&hook, "test").is_empty());
     }
 
     #[test]
@@ -136,7 +130,7 @@ mod tests {
         let hook = serde_json::json!({
             "type": "command"
         });
-        assert!(validate_hook_entry(&hook, "test"));
+        assert!(!check_hook_entry(&hook, "test").is_empty());
     }
 
     #[test]
@@ -146,7 +140,7 @@ mod tests {
             "command": "echo hello",
             "async": "yes"
         });
-        assert!(validate_hook_entry(&hook, "test"));
+        assert!(!check_hook_entry(&hook, "test").is_empty());
     }
 
     #[test]
@@ -155,7 +149,7 @@ mod tests {
             "type": "command",
             "command": ["echo", "hello"]
         });
-        assert!(!validate_hook_entry(&hook, "test"));
+        assert!(check_hook_entry(&hook, "test").is_empty());
     }
 
     #[test]
@@ -165,6 +159,6 @@ mod tests {
             "command": "echo hello",
             "timeout": -5
         });
-        assert!(validate_hook_entry(&hook, "test"));
+        assert!(!check_hook_entry(&hook, "test").is_empty());
     }
 }

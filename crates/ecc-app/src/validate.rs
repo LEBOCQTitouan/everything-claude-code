@@ -1,6 +1,6 @@
 //! Validate use case — validates content files (agents, commands, hooks, skills, rules, paths).
 
-use ecc_domain::config::validate::{extract_frontmatter, validate_hook_entry};
+use ecc_domain::config::validate::{check_hook_entry, extract_frontmatter};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
@@ -48,51 +48,9 @@ fn validate_agents(root: &Path, fs: &dyn FileSystem) -> bool {
         .filter(|f| f.to_string_lossy().ends_with(".md"))
         .collect();
 
-    let required_fields = ["model", "tools"];
-    let valid_models = ["haiku", "sonnet", "opus"];
     let mut has_errors = false;
-
     for file in &md_files {
-        let content = match fs.read_to_string(file) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("ERROR: {} - {}", file.display(), e);
-                has_errors = true;
-                continue;
-            }
-        };
-
-        let frontmatter = match extract_frontmatter(&content) {
-            Some(fm) => fm,
-            None => {
-                let name = file.file_name().unwrap_or_default().to_string_lossy();
-                eprintln!("ERROR: {} - Missing frontmatter", name);
-                has_errors = true;
-                continue;
-            }
-        };
-
-        let name = file.file_name().unwrap_or_default().to_string_lossy();
-
-        for field in &required_fields {
-            match frontmatter.get(*field) {
-                Some(v) if !v.trim().is_empty() => {}
-                _ => {
-                    eprintln!("ERROR: {} - Missing required field: {}", name, field);
-                    has_errors = true;
-                }
-            }
-        }
-
-        if let Some(model) = frontmatter.get("model")
-            && !valid_models.contains(&model.as_str())
-        {
-            eprintln!(
-                "ERROR: {} - Invalid model '{}'. Must be one of: {}",
-                name,
-                model,
-                valid_models.join(", ")
-            );
+        if !validate_agent_file(file, fs) {
             has_errors = true;
         }
     }
@@ -103,6 +61,55 @@ fn validate_agents(root: &Path, fs: &dyn FileSystem) -> bool {
 
     println!("Validated {} agent files", md_files.len());
     true
+}
+
+fn validate_agent_file(file: &Path, fs: &dyn FileSystem) -> bool {
+    let required_fields = ["model", "tools"];
+    let valid_models = ["haiku", "sonnet", "opus"];
+
+    let content = match fs.read_to_string(file) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("ERROR: {} - {}", file.display(), e);
+            return false;
+        }
+    };
+
+    let frontmatter = match extract_frontmatter(&content) {
+        Some(fm) => fm,
+        None => {
+            let name = file.file_name().unwrap_or_default().to_string_lossy();
+            eprintln!("ERROR: {} - Missing frontmatter", name);
+            return false;
+        }
+    };
+
+    let name = file.file_name().unwrap_or_default().to_string_lossy();
+    let mut valid = true;
+
+    for field in &required_fields {
+        match frontmatter.get(*field) {
+            Some(v) if !v.trim().is_empty() => {}
+            _ => {
+                eprintln!("ERROR: {} - Missing required field: {}", name, field);
+                valid = false;
+            }
+        }
+    }
+
+    if let Some(model) = frontmatter.get("model")
+        && !valid_models.contains(&model.as_str())
+    {
+        eprintln!(
+            "ERROR: {} - Invalid model '{}'. Must be one of: {}",
+            name,
+            model,
+            valid_models.join(", ")
+        );
+        valid = false;
+    }
+
+    valid
 }
 
 fn validate_commands(root: &Path, fs: &dyn FileSystem) -> bool {
@@ -207,35 +214,9 @@ fn validate_hooks(root: &Path, fs: &dyn FileSystem) -> bool {
             };
 
             for (i, matcher) in matchers.iter().enumerate() {
-                let obj = match matcher.as_object() {
-                    Some(o) => o,
-                    None => {
-                        eprintln!("ERROR: {}[{}] is not an object", event_type, i);
-                        has_errors = true;
-                        continue;
-                    }
-                };
-
-                if obj.get("matcher").and_then(|v| v.as_str()).is_none() {
-                    eprintln!("ERROR: {}[{}] missing 'matcher' field", event_type, i);
+                if !validate_hook_matcher(matcher, event_type, i) {
                     has_errors = true;
                 }
-
-                match obj.get("hooks").and_then(|v| v.as_array()) {
-                    Some(hooks) => {
-                        for (j, hook) in hooks.iter().enumerate() {
-                            let label = format!("{}[{}].hooks[{}]", event_type, i, j);
-                            if validate_hook_entry(hook, &label) {
-                                has_errors = true;
-                            }
-                        }
-                    }
-                    None => {
-                        eprintln!("ERROR: {}[{}] missing 'hooks' array", event_type, i);
-                        has_errors = true;
-                    }
-                }
-
                 total_matchers += 1;
             }
         }
@@ -247,6 +228,44 @@ fn validate_hooks(root: &Path, fs: &dyn FileSystem) -> bool {
 
     println!("Validated {} hook matchers", total_matchers);
     true
+}
+
+fn validate_hook_matcher(matcher: &serde_json::Value, event_type: &str, idx: usize) -> bool {
+    let obj = match matcher.as_object() {
+        Some(o) => o,
+        None => {
+            eprintln!("ERROR: {}[{}] is not an object", event_type, idx);
+            return false;
+        }
+    };
+
+    let mut valid = true;
+
+    if obj.get("matcher").and_then(|v| v.as_str()).is_none() {
+        eprintln!("ERROR: {}[{}] missing 'matcher' field", event_type, idx);
+        valid = false;
+    }
+
+    match obj.get("hooks").and_then(|v| v.as_array()) {
+        Some(hooks) => {
+            for (j, hook) in hooks.iter().enumerate() {
+                let label = format!("{}[{}].hooks[{}]", event_type, idx, j);
+                let errors = check_hook_entry(hook, &label);
+                for err in &errors {
+                    eprintln!("ERROR: {err}");
+                }
+                if !errors.is_empty() {
+                    valid = false;
+                }
+            }
+        }
+        None => {
+            eprintln!("ERROR: {}[{}] missing 'hooks' array", event_type, idx);
+            valid = false;
+        }
+    }
+
+    valid
 }
 
 fn validate_skills(root: &Path, fs: &dyn FileSystem) -> bool {
