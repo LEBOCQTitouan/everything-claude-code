@@ -1,110 +1,380 @@
+use ecc_ports::fs::FileSystem;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::Path;
 
-/// ECC manifest tracking installed artifacts.
-/// Stored at `~/.claude/.ecc-manifest.json`.
+/// Manifest filename constant.
+pub const MANIFEST_FILENAME: &str = ".ecc-manifest.json";
+
+/// ECC installation manifest — tracks version, languages, and installed artifacts.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Manifest {
+#[serde(rename_all = "camelCase")]
+pub struct EccManifest {
     pub version: String,
     pub installed_at: String,
+    pub updated_at: String,
     #[serde(default)]
-    pub files: BTreeMap<String, FileEntry>,
+    pub languages: Vec<String>,
+    pub artifacts: Artifacts,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct FileEntry {
-    pub hash: String,
-    pub source: FileSource,
+/// Artifact lists tracked by the manifest.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Artifacts {
+    #[serde(default)]
+    pub agents: Vec<String>,
+    #[serde(default)]
+    pub commands: Vec<String>,
+    #[serde(default)]
+    pub skills: Vec<String>,
+    #[serde(default)]
+    pub rules: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    pub hook_descriptions: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum FileSource {
-    Ecc,
-    User,
-    Merged,
+/// Diff between two file lists — files added, updated (in both), and removed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManifestDiff {
+    pub added: Vec<String>,
+    pub updated: Vec<String>,
+    pub removed: Vec<String>,
 }
 
-impl Manifest {
-    pub fn new(version: &str, installed_at: &str) -> Self {
-        Self {
-            version: version.to_string(),
-            installed_at: installed_at.to_string(),
-            files: BTreeMap::new(),
+/// Read an existing manifest from a directory via the FileSystem port.
+/// Returns None if not found or corrupted.
+pub fn read_manifest(fs: &dyn FileSystem, dir: &Path) -> Option<EccManifest> {
+    let manifest_path = dir.join(MANIFEST_FILENAME);
+    let content = fs.read_to_string(&manifest_path).ok()?;
+    let parsed: serde_json::Value = serde_json::from_str(&content).ok()?;
+    // Basic validation: must have version and artifacts
+    if parsed.get("version").is_none() || parsed.get("artifacts").is_none() {
+        return None;
+    }
+    serde_json::from_value(parsed).ok()
+}
+
+/// Write a manifest to a directory via the FileSystem port.
+pub fn write_manifest(
+    fs: &dyn FileSystem,
+    dir: &Path,
+    manifest: &EccManifest,
+) -> Result<(), ecc_ports::fs::FsError> {
+    fs.create_dir_all(dir)?;
+    let manifest_path = dir.join(MANIFEST_FILENAME);
+    let json = serde_json::to_string_pretty(manifest).expect("manifest serialization should not fail");
+    fs.write(&manifest_path, &format!("{json}\n"))
+}
+
+/// Create a fresh manifest for a new installation.
+/// `now` is the ISO 8601 timestamp to use.
+pub fn create_manifest(
+    version: &str,
+    now: &str,
+    languages: &[String],
+    artifacts: Artifacts,
+) -> EccManifest {
+    EccManifest {
+        version: version.to_string(),
+        installed_at: now.to_string(),
+        updated_at: now.to_string(),
+        languages: languages.to_vec(),
+        artifacts,
+    }
+}
+
+/// Update an existing manifest with new data (returns new object, does not mutate).
+/// `now` is the ISO 8601 timestamp to use.
+pub fn update_manifest(
+    existing: &EccManifest,
+    version: &str,
+    now: &str,
+    languages: &[String],
+    artifacts: Artifacts,
+) -> EccManifest {
+    // Merge languages: union of existing + new, preserving order
+    let mut merged_languages = existing.languages.clone();
+    for lang in languages {
+        if !merged_languages.contains(lang) {
+            merged_languages.push(lang.clone());
         }
     }
 
-    pub fn add_file(&self, path: &str, hash: &str, source: FileSource) -> Self {
-        let mut files = self.files.clone();
-        files.insert(
-            path.to_string(),
-            FileEntry {
-                hash: hash.to_string(),
-                source,
-            },
-        );
-        Self {
-            version: self.version.clone(),
-            installed_at: self.installed_at.clone(),
-            files,
-        }
+    EccManifest {
+        version: version.to_string(),
+        installed_at: existing.installed_at.clone(),
+        updated_at: now.to_string(),
+        languages: merged_languages,
+        artifacts,
     }
+}
 
-    pub fn remove_file(&self, path: &str) -> Self {
-        let mut files = self.files.clone();
-        files.remove(path);
-        Self {
-            version: self.version.clone(),
-            installed_at: self.installed_at.clone(),
-            files,
-        }
+/// Check if a specific artifact is managed by ECC.
+pub fn is_ecc_managed(
+    manifest: Option<&EccManifest>,
+    artifact_type: &str,
+    filename: &str,
+) -> bool {
+    let manifest = match manifest {
+        Some(m) => m,
+        None => return false,
+    };
+
+    let list = match artifact_type {
+        "agents" => &manifest.artifacts.agents,
+        "commands" => &manifest.artifacts.commands,
+        "skills" => &manifest.artifacts.skills,
+        _ => return false,
+    };
+
+    list.iter().any(|f| f == filename)
+}
+
+/// Check if a rule file is managed by ECC.
+pub fn is_ecc_managed_rule(
+    manifest: Option<&EccManifest>,
+    group: &str,
+    filename: &str,
+) -> bool {
+    let manifest = match manifest {
+        Some(m) => m,
+        None => return false,
+    };
+
+    match manifest.artifacts.rules.get(group) {
+        Some(rules) => rules.iter().any(|f| f == filename),
+        None => false,
     }
+}
 
-    pub fn get_file(&self, path: &str) -> Option<&FileEntry> {
-        self.files.get(path)
-    }
+/// Diff two lists of filenames to compute what changed.
+pub fn diff_file_list(existing: &[String], incoming: &[String]) -> ManifestDiff {
+    use std::collections::HashSet;
+    let existing_set: HashSet<&str> = existing.iter().map(String::as_str).collect();
+    let incoming_set: HashSet<&str> = incoming.iter().map(String::as_str).collect();
 
-    pub fn file_count(&self) -> usize {
-        self.files.len()
+    ManifestDiff {
+        added: incoming
+            .iter()
+            .filter(|f| !existing_set.contains(f.as_str()))
+            .cloned()
+            .collect(),
+        updated: incoming
+            .iter()
+            .filter(|f| existing_set.contains(f.as_str()))
+            .cloned()
+            .collect(),
+        removed: existing
+            .iter()
+            .filter(|f| !incoming_set.contains(f.as_str()))
+            .cloned()
+            .collect(),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ecc_test_support::InMemoryFileSystem;
+    use std::path::Path;
+
+    fn sample_artifacts() -> Artifacts {
+        Artifacts {
+            agents: vec!["agent1.md".into(), "agent2.md".into()],
+            commands: vec!["cmd1.md".into()],
+            skills: vec!["skill1".into()],
+            rules: {
+                let mut m = BTreeMap::new();
+                m.insert("common".into(), vec!["rule1.md".into()]);
+                m
+            },
+            hook_descriptions: vec!["hook1".into()],
+        }
+    }
+
+    // --- create_manifest ---
 
     #[test]
-    fn new_manifest_is_empty() {
-        let m = Manifest::new("4.0.0", "2026-03-14");
-        assert_eq!(m.file_count(), 0);
+    fn create_manifest_sets_timestamps() {
+        let m = create_manifest("4.0.0", "2026-03-14T00:00:00Z", &[], Artifacts::default());
         assert_eq!(m.version, "4.0.0");
+        assert_eq!(m.installed_at, "2026-03-14T00:00:00Z");
+        assert_eq!(m.updated_at, "2026-03-14T00:00:00Z");
     }
 
     #[test]
-    fn add_file_returns_new_manifest() {
-        let m = Manifest::new("4.0.0", "2026-03-14");
-        let m2 = m.add_file("agents/foo.md", "abc123", FileSource::Ecc);
-        assert_eq!(m.file_count(), 0); // original unchanged
-        assert_eq!(m2.file_count(), 1);
+    fn create_manifest_copies_languages() {
+        let langs = vec!["typescript".into(), "rust".into()];
+        let m = create_manifest("4.0.0", "now", &langs, Artifacts::default());
+        assert_eq!(m.languages, langs);
     }
 
     #[test]
-    fn remove_file_returns_new_manifest() {
-        let m = Manifest::new("4.0.0", "2026-03-14")
-            .add_file("a.md", "hash1", FileSource::Ecc)
-            .add_file("b.md", "hash2", FileSource::User);
-        let m2 = m.remove_file("a.md");
-        assert_eq!(m.file_count(), 2);
-        assert_eq!(m2.file_count(), 1);
-        assert!(m2.get_file("a.md").is_none());
+    fn create_manifest_copies_artifacts() {
+        let arts = sample_artifacts();
+        let m = create_manifest("4.0.0", "now", &[], arts.clone());
+        assert_eq!(m.artifacts, arts);
+    }
+
+    // --- update_manifest ---
+
+    #[test]
+    fn update_manifest_preserves_installed_at() {
+        let original = create_manifest("3.0.0", "2025-01-01T00:00:00Z", &[], Artifacts::default());
+        let updated = update_manifest(&original, "4.0.0", "2026-03-14T00:00:00Z", &[], Artifacts::default());
+        assert_eq!(updated.installed_at, "2025-01-01T00:00:00Z");
+        assert_eq!(updated.updated_at, "2026-03-14T00:00:00Z");
     }
 
     #[test]
-    fn roundtrip_json() {
-        let m = Manifest::new("4.0.0", "2026-03-14")
-            .add_file("agents/foo.md", "abc", FileSource::Ecc);
-        let json = serde_json::to_string_pretty(&m).unwrap();
-        let m2: Manifest = serde_json::from_str(&json).unwrap();
-        assert_eq!(m, m2);
+    fn update_manifest_merges_languages() {
+        let original = create_manifest("3.0.0", "now", &["typescript".into()], Artifacts::default());
+        let updated = update_manifest(
+            &original,
+            "4.0.0",
+            "now",
+            &["rust".into(), "typescript".into()],
+            Artifacts::default(),
+        );
+        assert_eq!(updated.languages, vec!["typescript", "rust"]);
+    }
+
+    #[test]
+    fn update_manifest_replaces_artifacts() {
+        let original = create_manifest("3.0.0", "now", &[], sample_artifacts());
+        let new_arts = Artifacts {
+            agents: vec!["new-agent.md".into()],
+            ..Artifacts::default()
+        };
+        let updated = update_manifest(&original, "4.0.0", "now", &[], new_arts.clone());
+        assert_eq!(updated.artifacts, new_arts);
+    }
+
+    // --- is_ecc_managed ---
+
+    #[test]
+    fn is_ecc_managed_none_manifest() {
+        assert!(!is_ecc_managed(None, "agents", "agent1.md"));
+    }
+
+    #[test]
+    fn is_ecc_managed_found() {
+        let m = create_manifest("4.0.0", "now", &[], sample_artifacts());
+        assert!(is_ecc_managed(Some(&m), "agents", "agent1.md"));
+    }
+
+    #[test]
+    fn is_ecc_managed_not_found() {
+        let m = create_manifest("4.0.0", "now", &[], sample_artifacts());
+        assert!(!is_ecc_managed(Some(&m), "agents", "nonexistent.md"));
+    }
+
+    #[test]
+    fn is_ecc_managed_invalid_type() {
+        let m = create_manifest("4.0.0", "now", &[], sample_artifacts());
+        assert!(!is_ecc_managed(Some(&m), "invalid", "agent1.md"));
+    }
+
+    // --- is_ecc_managed_rule ---
+
+    #[test]
+    fn is_ecc_managed_rule_found() {
+        let m = create_manifest("4.0.0", "now", &[], sample_artifacts());
+        assert!(is_ecc_managed_rule(Some(&m), "common", "rule1.md"));
+    }
+
+    #[test]
+    fn is_ecc_managed_rule_wrong_group() {
+        let m = create_manifest("4.0.0", "now", &[], sample_artifacts());
+        assert!(!is_ecc_managed_rule(Some(&m), "typescript", "rule1.md"));
+    }
+
+    #[test]
+    fn is_ecc_managed_rule_none_manifest() {
+        assert!(!is_ecc_managed_rule(None, "common", "rule1.md"));
+    }
+
+    // --- diff_file_list ---
+
+    #[test]
+    fn diff_file_list_all_new() {
+        let diff = diff_file_list(&[], &["a.md".into(), "b.md".into()]);
+        assert_eq!(diff.added, vec!["a.md", "b.md"]);
+        assert!(diff.updated.is_empty());
+        assert!(diff.removed.is_empty());
+    }
+
+    #[test]
+    fn diff_file_list_all_removed() {
+        let diff = diff_file_list(&["a.md".into(), "b.md".into()], &[]);
+        assert!(diff.added.is_empty());
+        assert!(diff.updated.is_empty());
+        assert_eq!(diff.removed, vec!["a.md", "b.md"]);
+    }
+
+    #[test]
+    fn diff_file_list_mixed() {
+        let existing = vec!["a.md".into(), "b.md".into(), "c.md".into()];
+        let incoming = vec!["b.md".into(), "c.md".into(), "d.md".into()];
+        let diff = diff_file_list(&existing, &incoming);
+        assert_eq!(diff.added, vec!["d.md"]);
+        assert_eq!(diff.updated, vec!["b.md", "c.md"]);
+        assert_eq!(diff.removed, vec!["a.md"]);
+    }
+
+    #[test]
+    fn diff_file_list_identical() {
+        let list = vec!["a.md".into(), "b.md".into()];
+        let diff = diff_file_list(&list, &list);
+        assert!(diff.added.is_empty());
+        assert_eq!(diff.updated, vec!["a.md", "b.md"]);
+        assert!(diff.removed.is_empty());
+    }
+
+    // --- read/write manifest via port ---
+
+    #[test]
+    fn read_manifest_not_found() {
+        let fs = InMemoryFileSystem::new();
+        assert!(read_manifest(&fs, Path::new("/project/.claude")).is_none());
+    }
+
+    #[test]
+    fn read_manifest_invalid_json() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/project/.claude/.ecc-manifest.json",
+            "not json",
+        );
+        assert!(read_manifest(&fs, Path::new("/project/.claude")).is_none());
+    }
+
+    #[test]
+    fn read_manifest_missing_version() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/project/.claude/.ecc-manifest.json",
+            r#"{"artifacts": {}}"#,
+        );
+        assert!(read_manifest(&fs, Path::new("/project/.claude")).is_none());
+    }
+
+    #[test]
+    fn write_and_read_manifest_roundtrip() {
+        let fs = InMemoryFileSystem::new();
+        let dir = Path::new("/project/.claude");
+        let original = create_manifest("4.0.0", "2026-03-14T00:00:00Z", &["rust".into()], sample_artifacts());
+        write_manifest(&fs, dir, &original).unwrap();
+        let read_back = read_manifest(&fs, dir).unwrap();
+        assert_eq!(read_back, original);
+    }
+
+    #[test]
+    fn json_uses_camel_case() {
+        let m = create_manifest("4.0.0", "now", &[], Artifacts::default());
+        let json = serde_json::to_string(&m).unwrap();
+        assert!(json.contains("installedAt"));
+        assert!(json.contains("updatedAt"));
+        assert!(json.contains("hookDescriptions"));
+        assert!(!json.contains("installed_at"));
     }
 }
