@@ -40,17 +40,23 @@ pub struct InstallOptions {
     pub languages: Vec<String>,
 }
 
+impl Default for InstallOptions {
+    fn default() -> Self {
+        Self {
+            dry_run: false,
+            force: false,
+            no_gitignore: false,
+            interactive: true,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        }
+    }
+}
+
 /// Default install options — interactive, no flags.
 pub fn default_install_options() -> InstallOptions {
-    InstallOptions {
-        dry_run: false,
-        force: false,
-        no_gitignore: false,
-        interactive: true,
-        clean: false,
-        clean_all: false,
-        languages: vec![],
-    }
+    InstallOptions::default()
 }
 
 /// Context bundling all ports for install operations.

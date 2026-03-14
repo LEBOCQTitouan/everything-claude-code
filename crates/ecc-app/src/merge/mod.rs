@@ -44,14 +44,20 @@ pub struct MergeOptions {
     pub apply_all: Option<ReviewChoice>,
 }
 
+impl Default for MergeOptions {
+    fn default() -> Self {
+        Self {
+            dry_run: false,
+            force: false,
+            interactive: true,
+            apply_all: None,
+        }
+    }
+}
+
 /// Create default merge options (interactive, no dry-run, no force).
 pub fn default_merge_options() -> MergeOptions {
-    MergeOptions {
-        dry_run: false,
-        force: false,
-        interactive: true,
-        apply_all: None,
-    }
+    MergeOptions::default()
 }
 
 /// Context bundling all port references for merge operations.
