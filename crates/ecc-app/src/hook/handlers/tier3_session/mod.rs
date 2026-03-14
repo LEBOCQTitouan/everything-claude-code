@@ -38,8 +38,12 @@ pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let sessions_dir = home.join(".claude").join("sessions");
     let learned_dir = home.join(".claude").join("learned-skills");
 
-    let _ = ports.fs.create_dir_all(&sessions_dir);
-    let _ = ports.fs.create_dir_all(&learned_dir);
+    if let Err(e) = ports.fs.create_dir_all(&sessions_dir) {
+        warn!("Cannot create sessions dir: {}", e);
+    }
+    if let Err(e) = ports.fs.create_dir_all(&learned_dir) {
+        warn!("Cannot create learned-skills dir: {}", e);
+    }
 
     let mut stderr_parts: Vec<String> = Vec::new();
 
@@ -121,7 +125,9 @@ pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .or_else(|| ports.env.var("CLAUDE_TRANSCRIPT_PATH"));
 
     let sessions_dir = home.join(".claude").join("sessions");
-    let _ = ports.fs.create_dir_all(&sessions_dir);
+    if let Err(e) = ports.fs.create_dir_all(&sessions_dir) {
+        warn!("Cannot create sessions dir: {}", e);
+    }
 
     let today = format_date(&datetime_from_epoch(epoch_secs()));
     let short_id = ports
@@ -225,7 +231,9 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     };
 
     let sessions_dir = home.join(".claude").join("sessions");
-    let _ = ports.fs.create_dir_all(&sessions_dir);
+    if let Err(e) = ports.fs.create_dir_all(&sessions_dir) {
+        warn!("Cannot create sessions dir: {}", e);
+    }
 
     let compaction_log = sessions_dir.join("compaction-log.txt");
     let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
@@ -302,7 +310,9 @@ pub fn evaluate_session(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     let learned_dir = home.join(".claude").join("learned-skills");
-    let _ = ports.fs.create_dir_all(&learned_dir);
+    if let Err(e) = ports.fs.create_dir_all(&learned_dir) {
+        warn!("Cannot create learned-skills dir: {}", e);
+    }
 
     let msg = format!(
         "[ContinuousLearning] Session has {} messages - evaluate for extractable patterns\n\
@@ -359,7 +369,9 @@ pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .unwrap_or_else(|| "default".to_string());
 
     let metrics_dir = home.join(".claude").join("metrics");
-    let _ = ports.fs.create_dir_all(&metrics_dir);
+    if let Err(e) = ports.fs.create_dir_all(&metrics_dir) {
+        warn!("Cannot create metrics dir: {}", e);
+    }
 
     let cost = estimate_cost(&model, input_tokens, output_tokens);
     let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
