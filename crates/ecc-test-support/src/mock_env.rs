@@ -30,6 +30,11 @@ impl MockEnvironment {
         self
     }
 
+    pub fn with_home_none(mut self) -> Self {
+        self.home = None;
+        self
+    }
+
     pub fn with_platform(mut self, platform: Platform) -> Self {
         self.platform = platform;
         self

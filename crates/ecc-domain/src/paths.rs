@@ -50,6 +50,16 @@ pub fn manifest_filename() -> &'static str {
     MANIFEST_FILENAME
 }
 
+/// Get the Claw REPL directory path from a home directory.
+pub fn claw_dir(home: &Path) -> PathBuf {
+    claude_dir(home).join("claw")
+}
+
+/// Get a specific Claw session file path.
+pub fn claw_session_path(home: &Path, session_name: &str) -> PathBuf {
+    claw_dir(home).join("sessions").join(format!("{session_name}.md"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,6 +160,35 @@ mod tests {
     fn empty_path_home() {
         let home = Path::new("");
         assert_eq!(claude_dir(home), PathBuf::from(".claude"));
+    }
+
+    #[test]
+    fn claw_dir_path() {
+        let home = Path::new("/home/user");
+        assert_eq!(claw_dir(home), PathBuf::from("/home/user/.claude/claw"));
+    }
+
+    #[test]
+    fn claw_session_path_basic() {
+        let home = Path::new("/home/user");
+        assert_eq!(
+            claw_session_path(home, "my-session"),
+            PathBuf::from("/home/user/.claude/claw/sessions/my-session.md")
+        );
+    }
+
+    #[test]
+    fn claw_dir_under_claude() {
+        let home = Path::new("/home/user");
+        let path = claw_dir(home);
+        assert!(path.starts_with(claude_dir(home)));
+    }
+
+    #[test]
+    fn claw_session_path_under_claw_dir() {
+        let home = Path::new("/home/user");
+        let path = claw_session_path(home, "test");
+        assert!(path.starts_with(claw_dir(home)));
     }
 
     #[test]

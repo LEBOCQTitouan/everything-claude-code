@@ -23,6 +23,8 @@ enum Cli {
     Hook(commands::hook::HookArgs),
     /// Validate content files
     Validate(commands::validate::ValidateArgs),
+    /// NanoClaw interactive REPL
+    Claw(commands::claw::ClawArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -36,5 +38,6 @@ fn main() -> anyhow::Result<()> {
         Cli::Completion(args) => commands::completion::run(args),
         Cli::Hook(args) => commands::hook::run(args),
         Cli::Validate(args) => commands::validate::run(args),
+        Cli::Claw(args) => commands::claw::run(args),
     }
 }
