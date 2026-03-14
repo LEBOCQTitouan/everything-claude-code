@@ -1,0 +1,24 @@
+{
+  "name": "@lebocqtitouan/ecc",
+  "version": "4.0.0-alpha.1",
+  "description": "CLI to set up Claude Code configuration — agents, skills, rules, hooks",
+  "license": "MIT",
+  "bin": {
+    "ecc": "bin/ecc.js",
+    "ecc-hook": "bin/ecc-hook.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LEBOCQTitouan/everything-claude-code.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@lebocqtitouan/ecc-darwin-arm64": "4.0.0-alpha.1",
+    "@lebocqtitouan/ecc-darwin-x64": "4.0.0-alpha.1",
+    "@lebocqtitouan/ecc-linux-x64": "4.0.0-alpha.1",
+    "@lebocqtitouan/ecc-linux-arm64": "4.0.0-alpha.1",
+    "@lebocqtitouan/ecc-win32-x64": "4.0.0-alpha.1"
+  }
+}

@@ -1,0 +1,11 @@
+[package]
+name = "ecc-app"
+description = "Application use cases — orchestrates domain + ports"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+ecc-domain = { workspace = true }
+ecc-ports = { workspace = true }
+anyhow = { workspace = true }

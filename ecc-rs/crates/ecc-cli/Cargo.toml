@@ -1,0 +1,20 @@
+[package]
+name = "ecc-cli"
+description = "CLI binary entry point for ECC"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "ecc"
+path = "src/main.rs"
+
+[dependencies]
+ecc-domain = { workspace = true }
+ecc-ports = { workspace = true }
+ecc-app = { workspace = true }
+ecc-infra = { workspace = true }
+clap = { workspace = true }
+clap_complete = { workspace = true }
+include_dir = { workspace = true }
+anyhow = { workspace = true }

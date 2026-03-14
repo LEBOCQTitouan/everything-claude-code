@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/ecc-domain",
+    "crates/ecc-ports",
+    "crates/ecc-app",
+    "crates/ecc-infra",
+    "crates/ecc-cli",
+    "crates/ecc-test-support",
+]
+
+[workspace.package]
+version = "4.0.0-alpha.1"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/LEBOCQTitouan/everything-claude-code"
+
+[workspace.dependencies]
+# Domain / serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+regex = "1"
+walkdir = "2"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+
+# Embedded assets
+include_dir = "0.7"
+
+# Interactive
+dialoguer = "0.11"
+rustyline = "15"
+crossterm = "0.28"
+
+# Workspace crates
+ecc-domain = { path = "crates/ecc-domain" }
+ecc-ports = { path = "crates/ecc-ports" }
+ecc-app = { path = "crates/ecc-app" }
+ecc-infra = { path = "crates/ecc-infra" }
+ecc-test-support = { path = "crates/ecc-test-support" }

@@ -23,6 +23,7 @@ node_modules/
 
 # Build output
 dist/
+ecc-rs/target/
 
 # Python
 __pycache__/
