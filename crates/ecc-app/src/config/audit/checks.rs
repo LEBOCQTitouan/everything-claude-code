@@ -14,14 +14,28 @@ pub fn check_deny_rules(
     let mut findings = Vec::new();
 
     let settings = match read_json_safe(fs, settings_path) {
-        Some(s) => s,
-        None => {
+        Ok(Some(s)) => s,
+        Ok(None) => {
             findings.push(AuditFinding {
                 id: "DENY-001".into(),
                 severity: Severity::Critical,
                 title: "No settings.json found".into(),
                 detail: format!("Expected settings at {}", settings_path.display()),
                 fix: "Run `ecc install` to create settings with deny rules.".into(),
+            });
+            return AuditCheckResult {
+                name: "Deny rules".into(),
+                passed: false,
+                findings,
+            };
+        }
+        Err(msg) => {
+            findings.push(AuditFinding {
+                id: "DENY-002".into(),
+                severity: Severity::High,
+                title: "Corrupt settings.json".into(),
+                detail: msg,
+                fix: "Fix or recreate settings.json.".into(),
             });
             return AuditCheckResult {
                 name: "Deny rules".into(),
@@ -138,8 +152,8 @@ pub fn check_hook_duplicates(
     let mut findings = Vec::new();
 
     let settings = match read_json_safe(fs, settings_path) {
-        Some(s) => s,
-        None => {
+        Ok(Some(s)) => s,
+        _ => {
             return AuditCheckResult {
                 name: "Hook duplicates".into(),
                 passed: true,

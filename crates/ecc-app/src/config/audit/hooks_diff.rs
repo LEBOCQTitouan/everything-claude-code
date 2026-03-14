@@ -13,6 +13,8 @@ fn read_hooks_from_settings(
     settings_path: &Path,
 ) -> serde_json::Value {
     read_json_safe(fs, settings_path)
+        .ok()
+        .flatten()
         .and_then(|s| s.get("hooks").cloned())
         .unwrap_or(serde_json::Value::Object(serde_json::Map::new()))
 }
@@ -23,6 +25,8 @@ fn read_hooks_from_source(
     hooks_json_path: &Path,
 ) -> serde_json::Value {
     read_json_safe(fs, hooks_json_path)
+        .ok()
+        .flatten()
         .and_then(|s| s.get("hooks").cloned())
         .unwrap_or(serde_json::Value::Object(serde_json::Map::new()))
 }

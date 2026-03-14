@@ -8,13 +8,22 @@ use ecc_domain::config::audit::{compute_audit_score, AuditReport};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
-/// Read a JSON file, returning None on any error.
+/// Read a JSON file.
+/// Returns `Ok(None)` if the file does not exist,
+/// `Ok(Some(value))` on success, `Err(message)` if the file exists but is corrupt.
 pub(super) fn read_json_safe(
     fs: &dyn FileSystem,
     path: &Path,
-) -> Option<serde_json::Value> {
-    let content = fs.read_to_string(path).ok()?;
-    serde_json::from_str(&content).ok()
+) -> Result<Option<serde_json::Value>, String> {
+    let content = match fs.read_to_string(path) {
+        Ok(c) => c,
+        Err(ecc_ports::fs::FsError::NotFound(_)) => return Ok(None),
+        Err(e) => return Err(format!("Cannot read {}: {}", path.display(), e)),
+    };
+    match serde_json::from_str(&content) {
+        Ok(v) => Ok(Some(v)),
+        Err(e) => Err(format!("Corrupt JSON in {}: {}", path.display(), e)),
+    }
 }
 
 /// Full ECC config audit comparing installed artifacts against source.

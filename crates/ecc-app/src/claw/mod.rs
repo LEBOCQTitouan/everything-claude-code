@@ -107,7 +107,11 @@ pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> anyhow::Result<()
         let line = match ports.repl_input.read_line(&prompt) {
             Ok(Some(line)) => line,
             Ok(None) => break, // EOF
-            Err(_) => break,
+            Err(e) => {
+                log::warn!("REPL read_line error: {}", e);
+                ports.terminal.stderr_write(&format!("Input error: {e}\n"));
+                break;
+            }
         };
 
         let command = parse_command(&line);

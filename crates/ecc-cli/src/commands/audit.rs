@@ -19,7 +19,10 @@ pub fn run(_args: AuditArgs) -> anyhow::Result<()> {
 
     let home = env.home_dir().ok_or_else(|| anyhow::anyhow!("Cannot determine home directory"))?;
     let claude_dir = home.join(".claude");
-    let project_dir = env.current_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    let project_dir = env.current_dir().unwrap_or_else(|| {
+        eprintln!("Warning: cannot determine current directory, using '.'");
+        std::path::PathBuf::from(".")
+    });
 
     // For audit, ecc_root points to the installed claude_dir (where agents/commands live)
     let options = AuditOptions {
