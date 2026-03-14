@@ -13,6 +13,7 @@ import { mergeDirectory, mergeSkills, mergeRules, mergeHooks, printMergeReport, 
 import { ensureGitignoreEntries, findTrackedEccFiles, gitUntrack } from './lib/gitignore';
 import { auditEccConfig, printConfigAudit } from './lib/config-audit';
 import { cleanFromManifest, cleanAll, printCleanReport } from './lib/clean';
+import { ensureDenyRules } from './lib/deny-rules';
 import type { MergeOptions } from './lib/merge';
 import type { EccManifest } from './lib/manifest';
 
@@ -218,6 +219,18 @@ async function installGlobal(languages: string[], opts: OrchestratorOptions): Pr
     console.error(`  Hooks: ${hookParts.join(', ')}`);
   } else {
     console.error('  Hooks: (dry-run, skipped)');
+  }
+
+  // Step 6b: Ensure deny rules for sensitive paths
+  if (!opts.dryRun) {
+    const denyResult = ensureDenyRules(path.join(claudeDir, 'settings.json'));
+    if (denyResult.added > 0) {
+      console.error(`  Deny rules: ${denyResult.added} added, ${denyResult.existing} already present`);
+    } else {
+      console.error(`  Deny rules: all ${denyResult.existing} already present`);
+    }
+  } else {
+    console.error('  Deny rules: (dry-run, skipped)');
   }
 
   // Step 7: Write/update manifest

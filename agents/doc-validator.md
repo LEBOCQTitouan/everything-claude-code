@@ -3,6 +3,7 @@ name: doc-validator
 description: Documentation validator. Checks doc accuracy against code, scores quality using rubric, detects contradictions and duplicates, verifies code examples compile.
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: opus
+skills: ["doc-quality-scoring", "doc-drift-detector", "doc-gap-analyser"]
 ---
 
 # Documentation Validator
@@ -13,6 +14,11 @@ You validate existing documentation against the actual code. You score quality, 
 
 - `skills/doc-quality-scoring/SKILL.md` — scoring rubric (Presence, Accuracy, Completeness, Clarity, Currency)
 - `skills/doc-guidelines/SKILL.md` — file size guidelines and quality gate thresholds
+
+### Quality Skills (delegate to these for specialised checks)
+
+- `skills/doc-drift-detector/SKILL.md` — doc-code drift detection across 6 categories
+- `skills/doc-gap-analyser/SKILL.md` — systematic gap analysis with priority scoring
 
 ## Inputs
 
@@ -125,7 +131,29 @@ Severity levels:
 
 **Auto-fix**: Non-controversial items (updated counts, corrected directory listings) are fixed automatically. Ambiguous findings are flagged for user review.
 
-### Step 8: File Size Validation
+### Step 8: Drift Detection (via doc-drift-detector skill)
+
+Apply the `doc-drift-detector` skill methodology to check for documentation-code drift beyond what Step 1 (accuracy check) covers:
+
+1. **Structural drift**: Verify all file path references in docs resolve to existing paths
+2. **Config drift**: Compare documented env vars/config against config-extraction data
+3. **Count drift**: Verify stated counts (test count, file count, agent count) against actuals
+4. **Example drift**: Type-check code examples in documentation
+
+Produce a drift score (0-100, higher = less drift) and append drift findings to the quality report.
+
+### Step 9: Gap Analysis (via doc-gap-analyser skill)
+
+Apply the `doc-gap-analyser` skill methodology:
+
+1. Identify gaps across all documentation layers (source comments, architecture, API reference, README, runbooks)
+2. Score each gap by usage frequency, complexity, change frequency, and blast radius
+3. Produce a prioritised list of documentation gaps
+4. Identify "quick wins" (low effort, high impact improvements)
+
+Append gap analysis to the quality report.
+
+### Step 10: File Size Validation
 
 Apply file size guidelines from `skills/doc-guidelines/SKILL.md`:
 

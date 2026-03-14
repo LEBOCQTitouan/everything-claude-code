@@ -62,6 +62,8 @@ async function runTests() {
     assert.ok(patterns.includes('.claude/.ecc-manifest.json'));
     assert.ok(patterns.includes('docs/CODEMAPS/'));
     assert.ok(patterns.includes('.claude/plans/'));
+    assert.ok(patterns.includes('.mcp.json'));
+    assert.ok(patterns.includes('CLAUDE.local.md'));
   });
 
   await test('each entry has pattern and comment', () => {

@@ -3,6 +3,7 @@ name: doc-analyzer
 description: Codebase documentation analyzer. Scans project structure, identifies public API surface, detects domain concepts, maps module dependencies. Produces analysis output that downstream doc agents consume.
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: opus
+skills: ["doc-analysis", "symbol-extraction", "behaviour-extraction"]
 ---
 
 # Documentation Analyzer
@@ -12,6 +13,16 @@ You analyze codebases to understand what needs documenting. You produce structur
 ## Reference Skills
 
 - `skills/doc-analysis/SKILL.md` — methodology for public API detection, domain concepts, module boundaries
+
+### Extraction Skills (delegate to these for atomic data gathering)
+
+- `skills/symbol-extraction/SKILL.md` — public symbols, types, signatures, visibility
+- `skills/behaviour-extraction/SKILL.md` — runtime behaviour, side effects, error paths
+- `skills/example-extraction/SKILL.md` — usage examples from tests and docs
+- `skills/git-narrative/SKILL.md` — evolution summary, decision trail, authorship
+- `skills/config-extraction/SKILL.md` — env vars, config files, CLI flags
+- `skills/dependency-docs/SKILL.md` — per-dependency purpose and risk
+- `skills/failure-modes/SKILL.md` — failure scenarios, detection, recovery
 
 ## Inputs
 
@@ -28,15 +39,17 @@ You analyze codebases to understand what needs documenting. You produce structur
 4. Classify codebase size: **small** (<50 source files) or **large** (50+)
 5. Determine output format based on size (single files vs folders — see Output Structure)
 
-### Step 2: Module Inventory
+### Step 2: Module Inventory (via symbol-extraction skill)
 
-For each source directory that forms a module:
+For each source directory that forms a module, apply the `symbol-extraction` skill methodology:
 
 1. List all source files
-2. Grep for export patterns (language-specific — see skill)
-3. Categorize each exported symbol: function, class, type, interface, constant, enum
-4. Count: total exports, documented exports, undocumented exports
-5. List imports from other modules (dependency edges)
+2. Identify export boundaries using language-specific patterns (see `skills/symbol-extraction/references/language-patterns.md`)
+3. Classify each exported symbol: function, class, type, interface, constant, enum
+4. Extract full type signatures (params, return types, generics)
+5. Count: total exports, documented exports, undocumented exports
+6. List imports from other modules (dependency edges)
+7. Resolve re-exports through barrel files
 
 ### Step 3: Domain Concept Extraction
 
@@ -61,6 +74,19 @@ For each exported symbol:
 - Has doc comment? (yes/no)
 - Doc comment has: description? params? return? throws? example?
 - Last modified date of doc vs last modified date of code (via git blame if available)
+
+### Step 5b: Enrichment Passes (for priority modules)
+
+For modules flagged as high-priority (high fan-in, high change frequency, low doc coverage), run additional extraction:
+
+1. **Behaviour extraction** (`skills/behaviour-extraction/SKILL.md`): Side effects, error paths, protocols
+2. **Config extraction** (`skills/config-extraction/SKILL.md`): Environment variables, config files, defaults
+3. **Failure modes** (`skills/failure-modes/SKILL.md`): Failure scenarios, blast radius, recovery
+4. **Git narrative** (`skills/git-narrative/SKILL.md`): Evolution summary, decision trail
+5. **Example extraction** (`skills/example-extraction/SKILL.md`): Usage examples from tests
+6. **Dependency docs** (`skills/dependency-docs/SKILL.md`): Per-dependency purpose and risk
+
+These enrichment passes produce additional structured data consumed by generation skills downstream.
 
 ### Step 6: Diagram Opportunity Detection
 

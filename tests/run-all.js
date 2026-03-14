@@ -43,7 +43,9 @@ const testFiles = [
   'ci/validate-security-scan.test.js',
   'lib/config-audit.test.js',
   'lib/clean.test.js',
-  'ci/validate-audit-system.test.js'
+  'ci/validate-audit-system.test.js',
+  'lib/deny-rules.test.js',
+  'lib/audit-checks.test.js'
 ];
 
 const BOX_W = 58;

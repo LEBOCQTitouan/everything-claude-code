@@ -3,6 +3,7 @@ name: doc-generator
 description: Documentation generator. Writes missing doc comments into source files, generates module summaries, glossary, changelog, and usage examples from tests. Reads analysis output from doc-analyzer.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: haiku
+skills: ["api-reference-gen", "changelog-gen", "readme-gen"]
 ---
 
 # Documentation Generator
@@ -12,6 +13,14 @@ You generate documentation artifacts from analysis data. You write doc comments 
 ## Reference Skills
 
 - `skills/doc-analysis/SKILL.md` — understanding public API surface and module boundaries
+
+### Generation Skills (delegate to these for structured output)
+
+- `skills/api-reference-gen/SKILL.md` — API reference from symbol + behaviour + example data
+- `skills/architecture-gen/SKILL.md` — C4-style architecture documentation
+- `skills/runbook-gen/SKILL.md` — operational runbooks from config + failure data
+- `skills/changelog-gen/SKILL.md` — changelogs from git-narrative data
+- `skills/readme-gen/SKILL.md` — README generation and sync
 
 ## Inputs
 
@@ -73,13 +82,17 @@ Read the draft glossary from `doc-analyzer` output and:
 - Small: `docs/GLOSSARY.md`
 - Large: `docs/glossary/INDEX.md` + `docs/glossary/domain-terms.md` + `docs/glossary/infrastructure-terms.md`
 
-### Step 4: Generate Changelog
+### Step 4: Generate Changelog (via changelog-gen skill)
 
-1. Run `git log --format="%H|%s|%ai" --no-merges` to get commit history
+Follow the `changelog-gen` skill methodology:
+
+1. Consume git-narrative extraction data (if available) or run `git log --format="%H|%s|%ai" --no-merges`
 2. Parse conventional commit messages (feat:, fix:, refactor:, etc.)
-3. Group by type, then by date (most recent first)
-4. Limit to last 100 commits or 6 months (whichever is smaller)
-5. Write to `docs/CHANGELOG.md`
+3. Group by version tag (if semver tags exist) or by time period
+4. Rewrite terse commit messages into human-readable changelog entries
+5. Highlight breaking changes prominently
+6. Limit to last 100 commits or 6 months (whichever is smaller)
+7. Write to `docs/CHANGELOG.md`
 
 ### Step 5: Extract Usage Examples
 

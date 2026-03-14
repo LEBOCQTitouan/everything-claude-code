@@ -17,7 +17,9 @@ export const ECC_GITIGNORE_ENTRIES: ReadonlyArray<{ pattern: string; comment: st
   { pattern: '.claude/settings.local.json', comment: 'Claude Code local settings (machine-specific)' },
   { pattern: '.claude/.ecc-manifest.json', comment: 'ECC installation manifest' },
   { pattern: 'docs/CODEMAPS/', comment: 'Generated architecture docs (regeneratable via /update-codemaps)' },
-  { pattern: '.claude/plans/', comment: 'Autonomous loop plans (ephemeral)' }
+  { pattern: '.claude/plans/', comment: 'Autonomous loop plans (ephemeral)' },
+  { pattern: '.mcp.json', comment: 'MCP server config (may contain API keys)' },
+  { pattern: 'CLAUDE.local.md', comment: 'Personal Claude Code instructions (never commit)' }
 ];
 
 /** Result of ensuring gitignore entries — patterns added, already present, and skip flag. */

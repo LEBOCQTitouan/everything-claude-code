@@ -72,7 +72,7 @@ Archived commands are in `commands/_archive/` for reference. All agents and skil
 | `npm run build` | Compile TypeScript `src/` to `dist/` via `tsc` |
 | `npm run dev` | Watch-mode TypeScript compilation (`tsc --watch`) |
 | `npm run clean` | Remove `dist/` directory |
-| `npm test` | Run all 1401 tests via `tsx tests/run-all.js` (single-process) |
+| `npm test` | Run all 1508 tests via `tsx tests/run-all.js` (single-process) |
 | `npm run typecheck` | Type-check without emitting (`tsc --noEmit`) |
 | `npm run lint` | Lint all Markdown files with markdownlint |
 | `npm run use:dev` | Build and `npm link` for local development |

@@ -35,6 +35,12 @@ tasks/
 personal/
 private/
 
+# MCP configs (may contain API keys)
+.mcp.json
+
+# Claude Code local instructions (personal, never commit)
+CLAUDE.local.md
+
 # Claude Code local settings (machine-specific, never commit)
 .claude/settings.local.json
 
