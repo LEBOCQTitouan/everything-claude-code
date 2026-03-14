@@ -28,6 +28,7 @@ pub fn ensure_gitignore_entries(
             added: vec![],
             already_present: vec![],
             skipped: true,
+            error: None,
         };
     }
 
@@ -55,17 +56,25 @@ pub fn ensure_gitignore_entries(
             added,
             already_present,
             skipped: false,
+            error: None,
         };
     }
 
     let section = build_gitignore_section(&to_add);
     let new_content = format!("{}\n{}", existing_content.trim_end(), section);
-    let _ = fs.write(&gitignore_path, &new_content);
+    let write_error = match fs.write(&gitignore_path, &new_content) {
+        Ok(()) => None,
+        Err(e) => {
+            log::warn!("Failed to write .gitignore: {}", e);
+            Some(format!("Failed to write .gitignore: {e}"))
+        }
+    };
 
     GitignoreResult {
         added,
         already_present,
         skipped: false,
+        error: write_error,
     }
 }
 
