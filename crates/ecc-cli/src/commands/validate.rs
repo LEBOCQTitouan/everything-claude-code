@@ -4,6 +4,7 @@
 
 use clap::{Args, Subcommand};
 use ecc_infra::os_fs::OsFileSystem;
+use ecc_infra::std_terminal::StdTerminal;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -34,9 +35,10 @@ pub enum CliValidateTarget {
 
 pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
     let fs = OsFileSystem;
+    let terminal = StdTerminal;
     let target = map_target(&args.target);
 
-    if ecc_app::validate::run_validate(&fs, &target, &args.ecc_root) {
+    if ecc_app::validate::run_validate(&fs, &terminal, &target, &args.ecc_root) {
         Ok(())
     } else {
         std::process::exit(1);

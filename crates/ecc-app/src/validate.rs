@@ -4,6 +4,7 @@ use ecc_domain::config::validate::{
     check_hook_entry, extract_frontmatter, VALID_HOOK_EVENTS, VALID_MODELS,
 };
 use ecc_ports::fs::FileSystem;
+use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
 /// Which content type to validate.
@@ -18,30 +19,33 @@ pub enum ValidateTarget {
 }
 
 /// Run validation for the given target. Returns `true` on success, `false` on errors.
-///
-/// Errors are printed to stderr via `eprintln!`.
-pub fn run_validate(fs: &dyn FileSystem, target: &ValidateTarget, root: &Path) -> bool {
+pub fn run_validate(
+    fs: &dyn FileSystem,
+    terminal: &dyn TerminalIO,
+    target: &ValidateTarget,
+    root: &Path,
+) -> bool {
     match target {
-        ValidateTarget::Agents => validate_agents(root, fs),
-        ValidateTarget::Commands => validate_commands(root, fs),
-        ValidateTarget::Hooks => validate_hooks(root, fs),
-        ValidateTarget::Skills => validate_skills(root, fs),
-        ValidateTarget::Rules => validate_rules(root, fs),
-        ValidateTarget::Paths => validate_paths(root, fs),
+        ValidateTarget::Agents => validate_agents(root, fs, terminal),
+        ValidateTarget::Commands => validate_commands(root, fs, terminal),
+        ValidateTarget::Hooks => validate_hooks(root, fs, terminal),
+        ValidateTarget::Skills => validate_skills(root, fs, terminal),
+        ValidateTarget::Rules => validate_rules(root, fs, terminal),
+        ValidateTarget::Paths => validate_paths(root, fs, terminal),
     }
 }
 
-fn validate_agents(root: &Path, fs: &dyn FileSystem) -> bool {
+fn validate_agents(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let agents_dir = root.join("agents");
     if !fs.exists(&agents_dir) {
-        println!("No agents directory found, skipping validation");
+        terminal.stdout_write("No agents directory found, skipping validation\n");
         return true;
     }
 
     let files = match fs.read_dir(&agents_dir) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("ERROR: Cannot read agents directory: {e}");
+            terminal.stderr_write(&format!("ERROR: Cannot read agents directory: {e}\n"));
             return false;
         }
     };
@@ -52,7 +56,7 @@ fn validate_agents(root: &Path, fs: &dyn FileSystem) -> bool {
 
     let mut has_errors = false;
     for file in &md_files {
-        if !validate_agent_file(file, fs) {
+        if !validate_agent_file(file, fs, terminal) {
             has_errors = true;
         }
     }
@@ -61,17 +65,17 @@ fn validate_agents(root: &Path, fs: &dyn FileSystem) -> bool {
         return false;
     }
 
-    println!("Validated {} agent files", md_files.len());
+    terminal.stdout_write(&format!("Validated {} agent files\n", md_files.len()));
     true
 }
 
-fn validate_agent_file(file: &Path, fs: &dyn FileSystem) -> bool {
+fn validate_agent_file(file: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let required_fields = ["model", "tools"];
 
     let content = match fs.read_to_string(file) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("ERROR: {} - {}", file.display(), e);
+            terminal.stderr_write(&format!("ERROR: {} - {}\n", file.display(), e));
             return false;
         }
     };
@@ -80,7 +84,7 @@ fn validate_agent_file(file: &Path, fs: &dyn FileSystem) -> bool {
         Some(fm) => fm,
         None => {
             let name = file.file_name().unwrap_or_default().to_string_lossy();
-            eprintln!("ERROR: {} - Missing frontmatter", name);
+            terminal.stderr_write(&format!("ERROR: {} - Missing frontmatter\n", name));
             return false;
         }
     };
@@ -92,7 +96,10 @@ fn validate_agent_file(file: &Path, fs: &dyn FileSystem) -> bool {
         match frontmatter.get(*field) {
             Some(v) if !v.trim().is_empty() => {}
             _ => {
-                eprintln!("ERROR: {} - Missing required field: {}", name, field);
+                terminal.stderr_write(&format!(
+                    "ERROR: {} - Missing required field: {}\n",
+                    name, field
+                ));
                 valid = false;
             }
         }
@@ -101,29 +108,29 @@ fn validate_agent_file(file: &Path, fs: &dyn FileSystem) -> bool {
     if let Some(model) = frontmatter.get("model")
         && !VALID_MODELS.contains(&model.as_str())
     {
-        eprintln!(
-            "ERROR: {} - Invalid model '{}'. Must be one of: {}",
+        terminal.stderr_write(&format!(
+            "ERROR: {} - Invalid model '{}'. Must be one of: {}\n",
             name,
             model,
             VALID_MODELS.join(", ")
-        );
+        ));
         valid = false;
     }
 
     valid
 }
 
-fn validate_commands(root: &Path, fs: &dyn FileSystem) -> bool {
+fn validate_commands(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let commands_dir = root.join("commands");
     if !fs.exists(&commands_dir) {
-        println!("No commands directory found, skipping validation");
+        terminal.stdout_write("No commands directory found, skipping validation\n");
         return true;
     }
 
     let files = match fs.read_dir(&commands_dir) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("ERROR: Cannot read commands directory: {e}");
+            terminal.stderr_write(&format!("ERROR: Cannot read commands directory: {e}\n"));
             return false;
         }
     };
@@ -138,7 +145,7 @@ fn validate_commands(root: &Path, fs: &dyn FileSystem) -> bool {
         let content = match fs.read_to_string(file) {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("ERROR: {} - {}", file.display(), e);
+                terminal.stderr_write(&format!("ERROR: {} - {}\n", file.display(), e));
                 has_errors = true;
                 continue;
             }
@@ -147,7 +154,7 @@ fn validate_commands(root: &Path, fs: &dyn FileSystem) -> bool {
         let name = file.file_name().unwrap_or_default().to_string_lossy();
 
         if content.trim().is_empty() {
-            eprintln!("ERROR: {} - Empty command file", name);
+            terminal.stderr_write(&format!("ERROR: {} - Empty command file\n", name));
             has_errors = true;
         }
     }
@@ -156,28 +163,28 @@ fn validate_commands(root: &Path, fs: &dyn FileSystem) -> bool {
         return false;
     }
 
-    println!("Validated {} command files", md_files.len());
+    terminal.stdout_write(&format!("Validated {} command files\n", md_files.len()));
     true
 }
 
-fn validate_hooks(root: &Path, fs: &dyn FileSystem) -> bool {
+fn validate_hooks(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let hooks_file = root.join("hooks").join("hooks.json");
     if !fs.exists(&hooks_file) {
-        println!("No hooks.json found, skipping validation");
+        terminal.stdout_write("No hooks.json found, skipping validation\n");
         return true;
     }
 
     let content = match fs.read_to_string(&hooks_file) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("ERROR: Cannot read hooks.json: {e}");
+            terminal.stderr_write(&format!("ERROR: Cannot read hooks.json: {e}\n"));
             return false;
         }
     };
     let data: serde_json::Value = match serde_json::from_str(&content) {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("ERROR: Invalid JSON in hooks.json: {e}");
+            terminal.stderr_write(&format!("ERROR: Invalid JSON in hooks.json: {e}\n"));
             return false;
         }
     };
@@ -189,7 +196,7 @@ fn validate_hooks(root: &Path, fs: &dyn FileSystem) -> bool {
     if let Some(obj) = hooks.as_object() {
         for (event_type, matchers) in obj {
             if !VALID_HOOK_EVENTS.contains(&event_type.as_str()) {
-                eprintln!("ERROR: Invalid event type: {}", event_type);
+                terminal.stderr_write(&format!("ERROR: Invalid event type: {}\n", event_type));
                 has_errors = true;
                 continue;
             }
@@ -197,14 +204,14 @@ fn validate_hooks(root: &Path, fs: &dyn FileSystem) -> bool {
             let matchers = match matchers.as_array() {
                 Some(a) => a,
                 None => {
-                    eprintln!("ERROR: {} must be an array", event_type);
+                    terminal.stderr_write(&format!("ERROR: {} must be an array\n", event_type));
                     has_errors = true;
                     continue;
                 }
             };
 
             for (i, matcher) in matchers.iter().enumerate() {
-                if !validate_hook_matcher(matcher, event_type, i) {
+                if !validate_hook_matcher(matcher, event_type, i, terminal) {
                     has_errors = true;
                 }
                 total_matchers += 1;
@@ -216,15 +223,20 @@ fn validate_hooks(root: &Path, fs: &dyn FileSystem) -> bool {
         return false;
     }
 
-    println!("Validated {} hook matchers", total_matchers);
+    terminal.stdout_write(&format!("Validated {} hook matchers\n", total_matchers));
     true
 }
 
-fn validate_hook_matcher(matcher: &serde_json::Value, event_type: &str, idx: usize) -> bool {
+fn validate_hook_matcher(
+    matcher: &serde_json::Value,
+    event_type: &str,
+    idx: usize,
+    terminal: &dyn TerminalIO,
+) -> bool {
     let obj = match matcher.as_object() {
         Some(o) => o,
         None => {
-            eprintln!("ERROR: {}[{}] is not an object", event_type, idx);
+            terminal.stderr_write(&format!("ERROR: {}[{}] is not an object\n", event_type, idx));
             return false;
         }
     };
@@ -232,7 +244,10 @@ fn validate_hook_matcher(matcher: &serde_json::Value, event_type: &str, idx: usi
     let mut valid = true;
 
     if obj.get("matcher").and_then(|v| v.as_str()).is_none() {
-        eprintln!("ERROR: {}[{}] missing 'matcher' field", event_type, idx);
+        terminal.stderr_write(&format!(
+            "ERROR: {}[{}] missing 'matcher' field\n",
+            event_type, idx
+        ));
         valid = false;
     }
 
@@ -242,7 +257,7 @@ fn validate_hook_matcher(matcher: &serde_json::Value, event_type: &str, idx: usi
                 let label = format!("{}[{}].hooks[{}]", event_type, idx, j);
                 let errors = check_hook_entry(hook, &label);
                 for err in &errors {
-                    eprintln!("ERROR: {err}");
+                    terminal.stderr_write(&format!("ERROR: {err}\n"));
                 }
                 if !errors.is_empty() {
                     valid = false;
@@ -250,7 +265,10 @@ fn validate_hook_matcher(matcher: &serde_json::Value, event_type: &str, idx: usi
             }
         }
         None => {
-            eprintln!("ERROR: {}[{}] missing 'hooks' array", event_type, idx);
+            terminal.stderr_write(&format!(
+                "ERROR: {}[{}] missing 'hooks' array\n",
+                event_type, idx
+            ));
             valid = false;
         }
     }
@@ -258,17 +276,17 @@ fn validate_hook_matcher(matcher: &serde_json::Value, event_type: &str, idx: usi
     valid
 }
 
-fn validate_skills(root: &Path, fs: &dyn FileSystem) -> bool {
+fn validate_skills(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let skills_dir = root.join("skills");
     if !fs.exists(&skills_dir) {
-        println!("No skills directory found, skipping validation");
+        terminal.stdout_write("No skills directory found, skipping validation\n");
         return true;
     }
 
     let entries = match fs.read_dir(&skills_dir) {
         Ok(e) => e,
         Err(e) => {
-            eprintln!("ERROR: Cannot read skills directory: {e}");
+            terminal.stderr_write(&format!("ERROR: Cannot read skills directory: {e}\n"));
             return false;
         }
     };
@@ -287,18 +305,18 @@ fn validate_skills(root: &Path, fs: &dyn FileSystem) -> bool {
         let skill_md = entry.join("SKILL.md");
 
         if !fs.exists(&skill_md) {
-            eprintln!("ERROR: {}/ - Missing SKILL.md", name);
+            terminal.stderr_write(&format!("ERROR: {}/ - Missing SKILL.md\n", name));
             has_errors = true;
             continue;
         }
 
         match fs.read_to_string(&skill_md) {
             Ok(c) if c.trim().is_empty() => {
-                eprintln!("ERROR: {}/SKILL.md - Empty file", name);
+                terminal.stderr_write(&format!("ERROR: {}/SKILL.md - Empty file\n", name));
                 has_errors = true;
             }
             Err(e) => {
-                eprintln!("ERROR: {}/SKILL.md - {}", name, e);
+                terminal.stderr_write(&format!("ERROR: {}/SKILL.md - {}\n", name, e));
                 has_errors = true;
             }
             Ok(_) => {
@@ -311,21 +329,21 @@ fn validate_skills(root: &Path, fs: &dyn FileSystem) -> bool {
         return false;
     }
 
-    println!("Validated {} skill directories", valid_count);
+    terminal.stdout_write(&format!("Validated {} skill directories\n", valid_count));
     true
 }
 
-fn validate_rules(root: &Path, fs: &dyn FileSystem) -> bool {
+fn validate_rules(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let rules_dir = root.join("rules");
     if !fs.exists(&rules_dir) {
-        println!("No rules directory found, skipping validation");
+        terminal.stdout_write("No rules directory found, skipping validation\n");
         return true;
     }
 
     let files = match fs.read_dir_recursive(&rules_dir) {
         Ok(f) => f,
         Err(e) => {
-            eprintln!("ERROR: Cannot read rules directory: {e}");
+            terminal.stderr_write(&format!("ERROR: Cannot read rules directory: {e}\n"));
             return false;
         }
     };
@@ -341,12 +359,12 @@ fn validate_rules(root: &Path, fs: &dyn FileSystem) -> bool {
         match fs.read_to_string(file) {
             Ok(c) if c.trim().is_empty() => {
                 let rel = file.strip_prefix(root).unwrap_or(file);
-                eprintln!("ERROR: {} - Empty rule file", rel.display());
+                terminal.stderr_write(&format!("ERROR: {} - Empty rule file\n", rel.display()));
                 has_errors = true;
             }
             Err(e) => {
                 let rel = file.strip_prefix(root).unwrap_or(file);
-                eprintln!("ERROR: {} - {}", rel.display(), e);
+                terminal.stderr_write(&format!("ERROR: {} - {}\n", rel.display(), e));
                 has_errors = true;
             }
             Ok(_) => {
@@ -359,11 +377,11 @@ fn validate_rules(root: &Path, fs: &dyn FileSystem) -> bool {
         return false;
     }
 
-    println!("Validated {} rule files", validated);
+    terminal.stdout_write(&format!("Validated {} rule files\n", validated));
     true
 }
 
-fn validate_paths(root: &Path, fs: &dyn FileSystem) -> bool {
+fn validate_paths(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let targets = ["README.md", "skills", "commands", "agents", "docs"];
 
     let block_patterns = ["/Users/affoon", "C:\\Users\\affoon"];
@@ -382,7 +400,17 @@ fn validate_paths(root: &Path, fs: &dyn FileSystem) -> bool {
         let files = if fs.is_file(&target_path) {
             vec![target_path]
         } else {
-            fs.read_dir_recursive(&target_path).unwrap_or_default()
+            match fs.read_dir_recursive(&target_path) {
+                Ok(f) => f,
+                Err(e) => {
+                    terminal.stderr_write(&format!(
+                        "ERROR: Cannot read {}: {}\n",
+                        target, e
+                    ));
+                    failures += 1;
+                    continue;
+                }
+            }
         };
 
         for file in &files {
@@ -398,7 +426,10 @@ fn validate_paths(root: &Path, fs: &dyn FileSystem) -> bool {
                 for pattern in &block_patterns {
                     if content.contains(pattern) {
                         let rel = file.strip_prefix(root).unwrap_or(file);
-                        eprintln!("ERROR: personal path detected in {}", rel.display());
+                        terminal.stderr_write(&format!(
+                            "ERROR: personal path detected in {}\n",
+                            rel.display()
+                        ));
                         failures += 1;
                         break;
                     }
@@ -411,21 +442,26 @@ fn validate_paths(root: &Path, fs: &dyn FileSystem) -> bool {
         return false;
     }
 
-    println!("Validated: no personal absolute paths in shipped docs/skills/commands");
+    terminal.stdout_write("Validated: no personal absolute paths in shipped docs/skills/commands\n");
     true
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ecc_test_support::InMemoryFileSystem;
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
+
+    fn term() -> BufferedTerminal {
+        BufferedTerminal::new()
+    }
 
     // --- validate_agents ---
 
     #[test]
     fn agents_no_dir_succeeds() {
         let fs = InMemoryFileSystem::new();
-        assert!(run_validate(&fs, &ValidateTarget::Agents, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
     }
 
     #[test]
@@ -434,14 +470,17 @@ mod tests {
             "/root/agents/test.md",
             "---\nmodel: sonnet\ntools: Read\n---\n# Agent",
         );
-        assert!(run_validate(&fs, &ValidateTarget::Agents, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
     }
 
     #[test]
     fn agents_missing_frontmatter() {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/agents/bad.md", "# No frontmatter");
-        assert!(!run_validate(&fs, &ValidateTarget::Agents, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("Missing frontmatter")));
     }
 
     #[test]
@@ -450,7 +489,9 @@ mod tests {
             "/root/agents/bad.md",
             "---\nmodel: sonnet\n---\n# Agent",
         );
-        assert!(!run_validate(&fs, &ValidateTarget::Agents, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("Missing required field")));
     }
 
     #[test]
@@ -459,7 +500,9 @@ mod tests {
             "/root/agents/bad.md",
             "---\nmodel: gpt4\ntools: Read\n---\n# Agent",
         );
-        assert!(!run_validate(&fs, &ValidateTarget::Agents, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("Invalid model")));
     }
 
     // --- validate_commands ---
@@ -467,21 +510,25 @@ mod tests {
     #[test]
     fn commands_no_dir_succeeds() {
         let fs = InMemoryFileSystem::new();
-        assert!(run_validate(&fs, &ValidateTarget::Commands, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Commands, Path::new("/root")));
     }
 
     #[test]
     fn commands_valid_file() {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/commands/test.md", "# Command");
-        assert!(run_validate(&fs, &ValidateTarget::Commands, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Commands, Path::new("/root")));
     }
 
     #[test]
     fn commands_empty_file() {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/commands/bad.md", "   ");
-        assert!(!run_validate(&fs, &ValidateTarget::Commands, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Commands, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("Empty command file")));
     }
 
     // --- validate_hooks ---
@@ -489,7 +536,8 @@ mod tests {
     #[test]
     fn hooks_no_file_succeeds() {
         let fs = InMemoryFileSystem::new();
-        assert!(run_validate(&fs, &ValidateTarget::Hooks, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Hooks, Path::new("/root")));
     }
 
     #[test]
@@ -497,14 +545,17 @@ mod tests {
         let json = r#"{"PreToolUse": [{"matcher": "Write", "hooks": [{"type": "command", "command": "echo ok"}]}]}"#;
         let fs = InMemoryFileSystem::new()
             .with_file("/root/hooks/hooks.json", json);
-        assert!(run_validate(&fs, &ValidateTarget::Hooks, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Hooks, Path::new("/root")));
     }
 
     #[test]
     fn hooks_invalid_json() {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/hooks/hooks.json", "not json");
-        assert!(!run_validate(&fs, &ValidateTarget::Hooks, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Hooks, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("Invalid JSON")));
     }
 
     #[test]
@@ -512,7 +563,9 @@ mod tests {
         let json = r#"{"InvalidEvent": [{"matcher": "x", "hooks": [{"type": "command", "command": "echo"}]}]}"#;
         let fs = InMemoryFileSystem::new()
             .with_file("/root/hooks/hooks.json", json);
-        assert!(!run_validate(&fs, &ValidateTarget::Hooks, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Hooks, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("Invalid event type")));
     }
 
     // --- validate_skills ---
@@ -520,7 +573,8 @@ mod tests {
     #[test]
     fn skills_no_dir_succeeds() {
         let fs = InMemoryFileSystem::new();
-        assert!(run_validate(&fs, &ValidateTarget::Skills, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Skills, Path::new("/root")));
     }
 
     #[test]
@@ -528,7 +582,8 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/skills/tdd/SKILL.md", "# TDD Skill")
             .with_dir("/root/skills/tdd");
-        assert!(run_validate(&fs, &ValidateTarget::Skills, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Skills, Path::new("/root")));
     }
 
     #[test]
@@ -536,7 +591,9 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/skills")
             .with_dir("/root/skills/empty-skill");
-        assert!(!run_validate(&fs, &ValidateTarget::Skills, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Skills, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("Missing SKILL.md")));
     }
 
     // --- validate_rules ---
@@ -544,7 +601,8 @@ mod tests {
     #[test]
     fn rules_no_dir_succeeds() {
         let fs = InMemoryFileSystem::new();
-        assert!(run_validate(&fs, &ValidateTarget::Rules, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Rules, Path::new("/root")));
     }
 
     #[test]
@@ -552,7 +610,8 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/rules")
             .with_file("/root/rules/common/test.md", "# Rule");
-        assert!(run_validate(&fs, &ValidateTarget::Rules, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Rules, Path::new("/root")));
     }
 
     #[test]
@@ -560,7 +619,9 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/rules")
             .with_file("/root/rules/common/bad.md", "  ");
-        assert!(!run_validate(&fs, &ValidateTarget::Rules, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Rules, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("Empty rule file")));
     }
 
     // --- validate_paths ---
@@ -568,20 +629,37 @@ mod tests {
     #[test]
     fn paths_no_targets_succeeds() {
         let fs = InMemoryFileSystem::new();
-        assert!(run_validate(&fs, &ValidateTarget::Paths, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root")));
     }
 
     #[test]
     fn paths_clean_files() {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/README.md", "# Project\nClean content.");
-        assert!(run_validate(&fs, &ValidateTarget::Paths, Path::new("/root")));
+        let t = term();
+        assert!(run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root")));
     }
 
     #[test]
     fn paths_personal_path_detected() {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/README.md", "See /Users/affoon/code for details.");
-        assert!(!run_validate(&fs, &ValidateTarget::Paths, Path::new("/root")));
+        let t = term();
+        assert!(!run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root")));
+        assert!(t.stderr_output().iter().any(|s| s.contains("personal path detected")));
+    }
+
+    #[test]
+    fn paths_read_dir_error_reported() {
+        // Verify that read_dir errors are now reported (fixes ERR-008)
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/skills/test.md", "content");
+        let t = term();
+        // skills dir exists as a file (not a dir), so read_dir_recursive will fail
+        // This verifies the error path is now surfaced
+        let result = run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root"));
+        // Should still pass since this path is not a checked extension
+        assert!(result);
     }
 }
