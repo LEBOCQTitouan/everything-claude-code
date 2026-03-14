@@ -21,6 +21,7 @@ pub trait ShellExecutor: Send + Sync {
     ) -> Result<CommandOutput, ShellError>;
 }
 
+/// Output captured from a completed shell command.
 #[derive(Debug, Clone)]
 pub struct CommandOutput {
     pub stdout: String,
@@ -34,6 +35,7 @@ impl CommandOutput {
     }
 }
 
+/// Errors that can occur when executing shell commands.
 #[derive(Debug, thiserror::Error)]
 pub enum ShellError {
     #[error("command not found: {0}")]

@@ -18,6 +18,7 @@ pub trait FileSystem: Send + Sync {
     fn read_dir_recursive(&self, path: &Path) -> Result<Vec<PathBuf>, FsError>;
 }
 
+/// Errors that can occur during filesystem operations.
 #[derive(Debug, thiserror::Error)]
 pub enum FsError {
     #[error("file not found: {0}")]

@@ -4,6 +4,7 @@ pub trait StdinReader: Send + Sync {
     fn read_raw(&self) -> Result<String, StdinError>;
 }
 
+/// Errors that can occur when reading from stdin.
 #[derive(Debug, thiserror::Error)]
 pub enum StdinError {
     #[error("stdin not available")]
