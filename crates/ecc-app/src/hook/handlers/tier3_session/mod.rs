@@ -2,6 +2,8 @@
 
 mod helpers;
 
+use log::warn;
+
 use crate::hook::{HookPorts, HookResult};
 use ecc_domain::time::{datetime_from_epoch, format_date, format_datetime, format_time};
 use helpers::{
@@ -9,6 +11,15 @@ use helpers::{
     extract_session_summary, find_files_by_suffix, find_last_updated_line, to_u64,
 };
 use std::path::Path;
+
+/// Log a write failure and append the warning to stderr_parts if provided.
+fn log_write_failure(path: &Path, err: &ecc_ports::fs::FsError, stderr_parts: Option<&mut Vec<String>>) {
+    let msg = format!("[Warning] Failed to write {}: {}", path.display(), err);
+    warn!("{}", msg);
+    if let Some(parts) = stderr_parts {
+        parts.push(msg);
+    }
+}
 
 fn epoch_secs() -> u64 {
     std::time::SystemTime::now()
@@ -165,7 +176,11 @@ pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 }
             }
 
-            let _ = ports.fs.write(&session_file, &updated);
+            if let Err(e) = ports.fs.write(&session_file, &updated) {
+                let msg = format!("[Warning] Failed to write session: {}", e);
+                warn!("{}", msg);
+                return HookResult::warn(stdin, &format!("{msg}\n"));
+            }
         }
     } else {
         // Create new session file
@@ -192,7 +207,11 @@ pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
             summary = summary_section,
         );
 
-        let _ = ports.fs.write(&session_file, &template);
+        if let Err(e) = ports.fs.write(&session_file, &template) {
+            let msg = format!("[Warning] Failed to write session: {}", e);
+            warn!("{}", msg);
+            return HookResult::warn(stdin, &format!("{msg}\n"));
+        }
     }
 
     HookResult::passthrough(stdin)
@@ -217,7 +236,9 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .read_to_string(&compaction_log)
         .unwrap_or_default();
     let new_content = format!("{}[{}] Context compaction triggered\n", existing, timestamp);
-    let _ = ports.fs.write(&compaction_log, &new_content);
+    if let Err(e) = ports.fs.write(&compaction_log, &new_content) {
+        log_write_failure(&compaction_log, &e, None);
+    }
 
     // Append note to active session
     let session_files = find_files_by_suffix(&sessions_dir, "-session.tmp", ports);
@@ -228,7 +249,9 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 "{}\n---\n**[Compaction occurred at {}]** - Context was summarized\n",
                 content, time_str
             );
-            let _ = ports.fs.write(active, &updated);
+            if let Err(e) = ports.fs.write(active, &updated) {
+                log_write_failure(active, &e, None);
+            }
         }
 
     HookResult::warn(stdin, "[PreCompact] State saved before compaction\n")
@@ -353,7 +376,9 @@ pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let costs_file = metrics_dir.join("costs.jsonl");
     let existing = ports.fs.read_to_string(&costs_file).unwrap_or_default();
     let new_content = format!("{}{}\n", existing, row);
-    let _ = ports.fs.write(&costs_file, &new_content);
+    if let Err(e) = ports.fs.write(&costs_file, &new_content) {
+        log_write_failure(&costs_file, &e, None);
+    }
 
     HookResult::passthrough(stdin)
 }
