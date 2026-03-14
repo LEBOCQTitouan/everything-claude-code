@@ -159,21 +159,22 @@ pub fn get_session_by_id(
     None
 }
 
-/// Write content to a session file. Returns `true` on success.
+/// Write content to a session file.
 pub fn write_session_content(
     fs: &dyn FileSystem,
     path: &Path,
     content: &str,
-) -> bool {
-    fs.write(path, content).is_ok()
+) -> Result<(), ecc_ports::fs::FsError> {
+    fs.write(path, content)
 }
 
-/// Delete a session file. Returns `true` if the file existed and was removed.
-pub fn delete_session(fs: &dyn FileSystem, path: &Path) -> bool {
+/// Delete a session file. Returns `Ok(true)` if deleted, `Ok(false)` if not found.
+pub fn delete_session(fs: &dyn FileSystem, path: &Path) -> Result<bool, ecc_ports::fs::FsError> {
     if !fs.exists(path) {
-        return false;
+        return Ok(false);
     }
-    fs.remove_file(path).is_ok()
+    fs.remove_file(path)?;
+    Ok(true)
 }
 
 // ---------------------------------------------------------------------------
@@ -200,7 +201,7 @@ pub fn get_session(
 }
 
 /// Write session content to a file.
-pub fn write_session(fs: &dyn FileSystem, path: &Path, content: &str) -> bool {
+pub fn write_session(fs: &dyn FileSystem, path: &Path, content: &str) -> Result<(), ecc_ports::fs::FsError> {
     write_session_content(fs, path, content)
 }
 
@@ -282,21 +283,21 @@ mod tests {
     fn delete_session_success() {
         let fs = sessions_fs();
         let path = Path::new("/sessions/2026-03-14-abc12345-session.tmp");
-        assert!(delete_session(&fs, path));
+        assert!(delete_session(&fs, path).unwrap());
         assert!(!fs.exists(path));
     }
 
     #[test]
     fn delete_session_not_found() {
         let fs = InMemoryFileSystem::new();
-        assert!(!delete_session(&fs, Path::new("/sessions/nonexistent.tmp")));
+        assert!(!delete_session(&fs, Path::new("/sessions/nonexistent.tmp")).unwrap());
     }
 
     #[test]
     fn write_session_success() {
         let fs = InMemoryFileSystem::new().with_dir("/sessions");
         let path = Path::new("/sessions/test.tmp");
-        assert!(write_session(&fs, path, "# New content"));
+        write_session(&fs, path, "# New content").unwrap();
         assert_eq!(
             fs.read_to_string(path).unwrap(),
             "# New content"
@@ -643,7 +644,7 @@ mod tests {
     fn write_session_content_success() {
         let fs = InMemoryFileSystem::new().with_dir("/sessions");
         let path = Path::new("/sessions/test.tmp");
-        assert!(write_session_content(&fs, path, "hello"));
+        write_session_content(&fs, path, "hello").unwrap();
         assert_eq!(fs.read_to_string(path).unwrap(), "hello");
     }
 
@@ -652,7 +653,7 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/sessions/test.tmp", "old");
         let path = Path::new("/sessions/test.tmp");
-        assert!(write_session_content(&fs, path, "new"));
+        write_session_content(&fs, path, "new").unwrap();
         assert_eq!(fs.read_to_string(path).unwrap(), "new");
     }
 
@@ -675,7 +676,7 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/sessions/test.tmp", "content");
         let path = Path::new("/sessions/test.tmp");
-        assert!(delete_session(&fs, path));
+        assert!(delete_session(&fs, path).unwrap());
         assert!(!fs.exists(path));
     }
 
@@ -683,7 +684,7 @@ mod tests {
     fn delete_session_not_exists() {
         let fs = InMemoryFileSystem::new().with_dir("/sessions");
         let path = Path::new("/sessions/nope.tmp");
-        assert!(!delete_session(&fs, path));
+        assert!(!delete_session(&fs, path).unwrap());
     }
 
     #[test]
