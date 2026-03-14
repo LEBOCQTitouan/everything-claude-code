@@ -89,7 +89,7 @@ jobs:
             cross: false
 
           - target: x86_64-apple-darwin
-            runner: macos-13
+            runner: macos-14
             npm-pkg: ecc-darwin-x64
             binary: ecc
             cross: false
