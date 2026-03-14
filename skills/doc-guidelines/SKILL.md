@@ -63,6 +63,54 @@ Warnings are displayed in the console summary but do not block the pipeline.
 | Hard maximum | 500 lines | Flag as too large — must split for readability |
 | README.md | Exempt | No maximum — README serves as the project entry point |
 
+## Design Principles
+
+These principles guide how documentation is written and structured across the pipeline.
+
+### Audience Layering
+
+Write documentation at multiple levels, each serving a different reader:
+
+| Layer | Audience | Content | Where |
+|-------|----------|---------|-------|
+| **L1 — Overview** | New team members, non-technical stakeholders | What the system does, high-level architecture | README, ARCHITECTURE.md (System Context) |
+| **L2 — Component** | Developers joining the team | Module purposes, dependencies, key interfaces | Module summaries, ARCHITECTURE.md (Component View) |
+| **L3 — API** | Developers using the API | Signatures, parameters, return types, examples | Doc comments, API-SURFACE.md |
+| **L4 — Operational** | On-call engineers, DevOps | Runbooks, failure modes, config knobs | Runbooks, config docs |
+
+Every documentation decision should consider: "which audience needs this, and at which layer?"
+
+### Intent Inference
+
+When documentation is missing, infer what the developer *intended* to communicate:
+
+1. **Function name** → primary purpose
+2. **Parameter names and types** → expected inputs and constraints
+3. **Return type** → what the caller gets back
+4. **Error handling** → what can go wrong
+5. **Test names** → expected behaviour in plain language
+
+Use inferred intent as a starting point, then verify against the implementation. Mark inferred documentation with appropriate confidence levels.
+
+### Living Over Comprehensive
+
+Prefer documentation that stays accurate over documentation that covers everything:
+
+- **A few accurate docs > many stale docs** — better to document 70% well than 100% poorly
+- **Generated over hand-written** — auto-generated docs from code stay in sync; hand-written docs drift
+- **Manifests over snapshots** — use `docs/.doc-manifest.json` to track freshness, not manual dates
+- **Incremental over batch** — update docs when code changes, not in periodic documentation sprints
+
+### Progressive Disclosure
+
+Structure documentation so readers can drill down:
+
+1. **SKILL.md** — complete but concise (under 2000 words)
+2. **references/** — detailed patterns, anti-examples, language-specific guides
+3. **assets/** — templates, schemas, diagrams
+
+Readers start at the SKILL.md level and only dive into references when they need specifics.
+
 ## How Agents Use These Guidelines
 
 - **doc-orchestrator**: Displays the CAPITALISED guidelines during Phase 0 (plan) and checks quality gates after all phases complete
@@ -72,6 +120,9 @@ Warnings are displayed in the console summary but do not block the pipeline.
 ## Related
 
 - Scoring rubric: `skills/doc-quality-scoring/SKILL.md`
+- Drift detection: `skills/doc-drift-detector/SKILL.md`
+- Gap analysis: `skills/doc-gap-analyser/SKILL.md`
 - Validator agent: `agents/doc-validator.md`
 - Orchestrator agent: `agents/doc-orchestrator.md`
 - Command: `commands/doc-suite.md`
+- Manifest schema: `schemas/doc-manifest.schema.json`

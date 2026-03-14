@@ -1,6 +1,6 @@
 {
   "name": "@lebocqtitouan/ecc",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "CLI to set up Claude Code configuration — agents, skills, rules, hooks",
   "license": "MIT",
   "main": "./bin/ecc.js",

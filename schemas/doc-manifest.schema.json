@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://everything-claude-code/schemas/doc-manifest.schema.json",
+  "title": "Documentation Manifest",
+  "description": "Tracks generated documentation files, their source dependencies, and last generation metadata for incremental regeneration.",
+  "type": "object",
+  "required": ["version", "generated", "files"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Schema version for forward compatibility."
+    },
+    "generated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the last full pipeline run."
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "Git SHA at the time of generation."
+    },
+    "codebaseSize": {
+      "type": "string",
+      "enum": ["small", "large"],
+      "description": "Codebase size classification from doc-analyzer."
+    },
+    "sourceFileCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of source files scanned during analysis."
+    },
+    "files": {
+      "type": "object",
+      "description": "Map of generated doc file path to its metadata.",
+      "additionalProperties": {
+        "$ref": "#/$defs/docFile"
+      }
+    },
+    "qualityGate": {
+      "$ref": "#/$defs/qualityGate"
+    }
+  },
+  "$defs": {
+    "docFile": {
+      "type": "object",
+      "required": ["generator", "generatedAt", "sourceDeps"],
+      "properties": {
+        "generator": {
+          "type": "string",
+          "enum": [
+            "doc-analyzer",
+            "doc-generator",
+            "doc-validator",
+            "doc-reporter",
+            "diagram-generator",
+            "doc-updater"
+          ],
+          "description": "Which agent produced this file."
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this file was last generated."
+        },
+        "sourceDeps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Source files this doc depends on. If any change, the doc may be stale."
+        },
+        "gitSha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$",
+          "description": "Git SHA when this file was generated."
+        },
+        "stale": {
+          "type": "boolean",
+          "default": false,
+          "description": "True if source deps changed since last generation."
+        },
+        "module": {
+          "type": "string",
+          "description": "Module this file documents (if module-scoped)."
+        }
+      }
+    },
+    "qualityGate": {
+      "type": "object",
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "Whether the quality gate passed."
+        },
+        "accuracy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Accuracy score from doc-validator."
+        },
+        "qualityGrade": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D", "F"],
+          "description": "Overall quality grade."
+        },
+        "coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Documentation coverage percentage."
+        },
+        "driftScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Drift score from doc-drift-detector (higher = less drift)."
+        },
+        "blockingIssues": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of blocking issues found."
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of warning-level issues found."
+        }
+      }
+    }
+  }
+}

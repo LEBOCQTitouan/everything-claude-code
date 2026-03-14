@@ -12,13 +12,47 @@ const { test, describe } = require('../harness');
 
 const ROOT = path.join(__dirname, '..', '..');
 
-const DOC_AGENTS = ['agents/doc-analyzer.md', 'agents/doc-generator.md', 'agents/doc-validator.md', 'agents/doc-reporter.md', 'agents/doc-orchestrator.md'];
+const DOC_AGENTS = [
+  'agents/doc-analyzer.md',
+  'agents/doc-generator.md',
+  'agents/doc-validator.md',
+  'agents/doc-reporter.md',
+  'agents/doc-orchestrator.md',
+  'agents/doc-updater.md',
+  'agents/diagram-generator.md'
+];
 
 // doc-analyze, doc-generate, doc-validate, doc-coverage were archived to
 // commands/_archive/ during the 5-command simplification. Only doc-suite remains.
 const DOC_COMMANDS = ['commands/doc-suite.md'];
 
-const DOC_SKILLS = ['skills/doc-analysis/SKILL.md', 'skills/doc-quality-scoring/SKILL.md'];
+const DOC_SKILLS = [
+  'skills/doc-analysis/SKILL.md',
+  'skills/doc-quality-scoring/SKILL.md',
+  'skills/doc-guidelines/SKILL.md',
+  'skills/diagram-generation/SKILL.md',
+  'skills/symbol-extraction/SKILL.md',
+  'skills/behaviour-extraction/SKILL.md',
+  'skills/example-extraction/SKILL.md',
+  'skills/git-narrative/SKILL.md',
+  'skills/config-extraction/SKILL.md',
+  'skills/dependency-docs/SKILL.md',
+  'skills/failure-modes/SKILL.md',
+  'skills/api-reference-gen/SKILL.md',
+  'skills/architecture-gen/SKILL.md',
+  'skills/runbook-gen/SKILL.md',
+  'skills/changelog-gen/SKILL.md',
+  'skills/readme-gen/SKILL.md',
+  'skills/doc-drift-detector/SKILL.md',
+  'skills/doc-gap-analyser/SKILL.md'
+];
+
+const DOC_REFERENCE_FILES = [
+  'skills/symbol-extraction/references/language-patterns.md',
+  'skills/failure-modes/references/common-patterns.md',
+  'skills/api-reference-gen/references/bad-examples.md',
+  'skills/architecture-gen/assets/c4-template.md'
+];
 
 function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---/);
@@ -100,6 +134,34 @@ async function runTests() {
       assert.ok(content.includes('## Related'), `Missing "Related" section in ${skillFile}`);
     });
   }
+
+  describe('Doc system reference file validation');
+
+  for (const refFile of DOC_REFERENCE_FILES) {
+    const filePath = path.join(ROOT, refFile);
+
+    await test(`${refFile} exists`, () => {
+      assert.ok(fs.existsSync(filePath), `Missing reference file: ${refFile}`);
+    });
+
+    await test(`${refFile} has content`, () => {
+      const content = fs.readFileSync(filePath, 'utf8');
+      assert.ok(content.trim().length > 0, `Reference file is empty: ${refFile}`);
+    });
+  }
+
+  describe('Doc manifest schema validation');
+
+  await test('schemas/doc-manifest.schema.json exists and is valid JSON', () => {
+    const schemaPath = path.join(ROOT, 'schemas/doc-manifest.schema.json');
+    assert.ok(fs.existsSync(schemaPath), 'Missing doc-manifest.schema.json');
+    const content = fs.readFileSync(schemaPath, 'utf8');
+    const schema = JSON.parse(content);
+    assert.ok(schema.$schema, 'Missing $schema field');
+    assert.ok(schema.properties, 'Missing properties field');
+    assert.ok(schema.properties.files, 'Missing files property');
+    assert.ok(schema.properties.version, 'Missing version property');
+  });
 }
 
 module.exports = { runTests };

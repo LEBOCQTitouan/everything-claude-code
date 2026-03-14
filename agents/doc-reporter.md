@@ -15,6 +15,7 @@ You calculate documentation coverage metrics, compare against baselines, detect 
 - `--module=<name>` — report on a specific module only
 - Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md` or `docs/api-surface/`
 - Quality data from `docs/DOC-QUALITY.md` or `docs/doc-quality/`
+- Manifest data from `docs/.doc-manifest.json` (if exists, for incremental comparison)
 
 ## Reporting Pipeline
 
@@ -54,7 +55,19 @@ For each documented item:
    - **Very stale**: code changed >90 days after doc
    - **Ancient**: code changed >1 year after doc
 
-### Step 4: Summary Statistics
+### Step 4: Manifest-Based Incremental Reporting
+
+If `docs/.doc-manifest.json` exists:
+
+1. Read the manifest to get previous generation metadata
+2. Compare manifest's `gitSha` against current HEAD
+3. For each file in the manifest, check if `sourceDeps` have changed
+4. Mark stale files in the report
+5. Calculate incremental delta (what changed since last full pipeline run)
+
+This enables the reporter to show "since last generation" trends even without `--base`.
+
+### Step 5: Summary Statistics
 
 Calculate project-wide metrics:
 - Overall coverage percentage
@@ -62,6 +75,7 @@ Calculate project-wide metrics:
 - Number of stale docs
 - Trend vs previous run
 - Quality grade (from doc-validator data if available)
+- Manifest staleness (files whose source deps changed since last generation)
 
 ## Output Structure
 

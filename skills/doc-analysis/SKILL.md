@@ -17,17 +17,21 @@ Systematic methodology for analyzing a codebase to understand what needs documen
 
 ## Core Concepts
 
+This skill defines the high-level analysis methodology. For detailed extraction techniques, delegate to the atomic extraction skills:
+
+- **Symbol extraction**: `skills/symbol-extraction/SKILL.md` — public API surface, signatures, visibility
+- **Behaviour extraction**: `skills/behaviour-extraction/SKILL.md` — runtime behaviour, side effects, error paths
+- **Example extraction**: `skills/example-extraction/SKILL.md` — usage examples from tests
+- **Git narrative**: `skills/git-narrative/SKILL.md` — evolution summary, decision trail
+- **Config extraction**: `skills/config-extraction/SKILL.md` — env vars, config files, CLI flags
+- **Dependency docs**: `skills/dependency-docs/SKILL.md` — per-dependency purpose and risk
+- **Failure modes**: `skills/failure-modes/SKILL.md` — failure scenarios, detection, recovery
+
 ### Public API Surface
 
-The set of symbols explicitly exported for external consumption. Everything else is internal implementation.
+For detailed language-specific patterns, see `skills/symbol-extraction/references/language-patterns.md`.
 
-| Language | Public Signal | Internal Signal |
-|----------|--------------|-----------------|
-| TypeScript/JS | `export`, `export default`, `module.exports` | No export keyword, `_` prefix |
-| Python | Listed in `__all__`, no `_` prefix | `_` prefix, not in `__all__` |
-| Go | Capitalized identifiers | Lowercase identifiers |
-| Java | `public` access modifier | `private`, `protected`, package-private |
-| Rust | `pub`, `pub(crate)` | No `pub` keyword |
+The set of symbols explicitly exported for external consumption. Everything else is internal implementation. The `symbol-extraction` skill provides the full methodology for identifying, classifying, and cataloguing these symbols.
 
 ### Module Boundary Detection
 
@@ -146,5 +150,5 @@ Import patterns: use crate::, use super::, use external_crate::
 ## Related
 
 - Agent: `agents/doc-analyzer.md`
-- Command: `commands/doc-analyze.md`
 - Orchestrator: `agents/doc-orchestrator.md`
+- Extraction skills: `skills/symbol-extraction/`, `skills/behaviour-extraction/`, `skills/example-extraction/`, `skills/git-narrative/`, `skills/config-extraction/`, `skills/dependency-docs/`, `skills/failure-modes/`
