@@ -21,9 +21,8 @@ Thumbs.db
 # Node
 node_modules/
 
-# Build output
-dist/
-ecc-rs/target/
+# Rust build output
+target/
 
 # Python
 __pycache__/

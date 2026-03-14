@@ -1,24 +1,17 @@
 {
   "name": "@lebocqtitouan/ecc",
-  "version": "3.0.0",
+  "version": "4.0.0-alpha.1",
   "description": "CLI to set up Claude Code configuration — agents, skills, rules, hooks",
   "license": "MIT",
-  "main": "./bin/ecc.js",
-  "types": "./index.d.ts",
+  "main": "./npm/ecc/bin/ecc.js",
   "bin": {
-    "ecc": "./bin/ecc.js",
-    "ecc-hook": "./bin/ecc-hook.js",
+    "ecc": "./npm/ecc/bin/ecc.js",
+    "ecc-hook": "./npm/ecc/bin/ecc-hook.js",
     "ecc-shell-hook": "./bin/ecc-shell-hook.sh"
-  },
-  "exports": {
-    ".": {
-      "types": "./index.d.ts",
-      "default": "./bin/ecc.js"
-    }
   },
   "files": [
     "bin/",
-    "index.d.ts",
+    "npm/",
     "install.sh",
     "examples",
     "agents",
@@ -28,31 +21,19 @@
     "hooks",
     "contexts",
     "mcp-configs",
-    "dist",
     "scripts/hooks/run-with-flags-shell.sh",
     "scripts/codemaps"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "dev": "tsc -p tsconfig.build.json --watch",
-    "use:dev": "npm run build && npm link",
-    "use:latest": "npm install -g @lebocqtitouan/ecc@latest",
-    "clean": "rm -rf dist",
-    "prebuild": "rm -rf dist",
-    "postinstall": "node dist/postinstall.js",
-    "preuninstall": "node dist/preuninstall.js",
-    "test": "npx tsx tests/run-all.js",
-    "lint": "markdownlint '**/*.md' --ignore node_modules",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "omelette": "^0.4.17"
+    "build": "cargo build --release",
+    "test": "cargo test",
+    "clippy": "cargo clippy -- -D warnings",
+    "lint": "markdownlint '**/*.md' --ignore node_modules --ignore target",
+    "use:dev": "cargo build --release && npm link",
+    "use:latest": "npm install -g @lebocqtitouan/ecc@latest"
   },
   "devDependencies": {
-    "@types/node": "^25.3.5",
-    "markdownlint-cli": "^0.48.0",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "markdownlint-cli": "^0.48.0"
   },
   "engines": {
     "node": ">=18"
@@ -67,6 +48,7 @@
     "ai",
     "cli",
     "agents",
-    "hooks"
+    "hooks",
+    "rust"
   ]
 }
