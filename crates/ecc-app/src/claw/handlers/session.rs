@@ -1,12 +1,9 @@
-//! Command handlers for the Claw REPL.
+//! State-mutating command handlers for the Claw REPL.
 
-use super::{ClawPorts, ClawState};
+use super::super::{ClawPorts, ClawState};
 use ecc_domain::claw::compact::{compact_turns, compaction_summary};
-use ecc_domain::claw::export::{export_turns, ExportFormat};
-use ecc_domain::claw::metrics::{compute_metrics, format_metrics};
 use ecc_domain::claw::model::ClawModel;
 use ecc_domain::claw::prompt::{assemble_prompt, build_system_context};
-use ecc_domain::claw::search::{format_search_results, search_turns};
 use ecc_domain::claw::session_name::is_valid_session_name;
 use ecc_domain::claw::turn::{Role, Turn};
 use ecc_domain::time::{datetime_from_epoch, format_datetime};
@@ -20,49 +17,16 @@ fn now_datetime_string() -> String {
     format_datetime(&datetime_from_epoch(secs))
 }
 
-/// Show help text.
-pub fn handle_help(_state: &ClawState, ports: &ClawPorts<'_>) {
-    let help = "\
-Commands:
-  /help, /h          Show this help
-  /clear             Clear session history
-  /history, /hist    Show conversation history
-  /sessions [name]   List sessions or switch to one
-  /model [name]      Show or change model (sonnet/opus/haiku)
-  /load <skill>      Load a skill by name
-  /branch <name>     Branch session into a new name
-  /search <keyword>  Search history
-  /compact [n]       Compact to last N turns (default: 10)
-  /export [format]   Export session (md/json/text)
-  /metrics, /stats   Show session metrics
-  exit, quit, /q     Exit the REPL";
-
-    ports.terminal.stdout_write(help);
-    ports.terminal.stdout_write("\n");
-}
-
 /// Clear the current session history.
 pub fn handle_clear(state: &mut ClawState, ports: &ClawPorts<'_>) {
     let count = state.turns.len();
     state.turns.clear();
 
     if let Some(home) = ports.env.home_dir() {
-        let _ = super::storage::clear_session(&home, &state.session_name, ports.fs);
+        let _ = super::super::storage::clear_session(&home, &state.session_name, ports.fs);
     }
 
     ports.terminal.stderr_write(&format!("Cleared {count} turns.\n"));
-}
-
-/// Show conversation history.
-pub fn handle_history(state: &ClawState, ports: &ClawPorts<'_>) {
-    if state.turns.is_empty() {
-        ports.terminal.stdout_write("No history.\n");
-        return;
-    }
-
-    let md = ecc_domain::claw::turn::format_turns(&state.turns);
-    ports.terminal.stdout_write(&md);
-    ports.terminal.stdout_write("\n");
 }
 
 /// List or switch sessions.
@@ -82,7 +46,7 @@ pub fn handle_sessions(
     match target {
         None => {
             // List sessions
-            let sessions = super::storage::list_sessions(&home, ports.fs);
+            let sessions = super::super::storage::list_sessions(&home, ports.fs);
             if sessions.is_empty() {
                 ports.terminal.stdout_write("No sessions found.\n");
             } else {
@@ -107,7 +71,7 @@ pub fn handle_sessions(
             }
             // Save current session first
             if !state.turns.is_empty() {
-                let _ = super::storage::save_session(
+                let _ = super::super::storage::save_session(
                     &home,
                     &state.session_name,
                     &state.turns,
@@ -115,7 +79,7 @@ pub fn handle_sessions(
                 );
             }
             // Switch to new session
-            state.turns = super::storage::load_session(&home, name, ports.fs);
+            state.turns = super::super::storage::load_session(&home, name, ports.fs);
             state.session_name = name.clone();
             ports
                 .terminal
@@ -152,7 +116,7 @@ pub fn handle_model(target: &Option<String>, state: &mut ClawState, ports: &Claw
 
 /// Load a skill.
 pub fn handle_load(skill_name: &str, state: &mut ClawState, ports: &ClawPorts<'_>) {
-    match super::skill_loader::load_skill(skill_name, ports) {
+    match super::super::skill_loader::load_skill(skill_name, ports) {
         Ok(content) => {
             state.loaded_skills.push(content);
             ports
@@ -182,7 +146,7 @@ pub fn handle_branch(target_name: &str, state: &mut ClawState, ports: &ClawPorts
         }
     };
 
-    match super::storage::branch_session(
+    match super::super::storage::branch_session(
         &home,
         &state.session_name,
         target_name,
@@ -202,14 +166,6 @@ pub fn handle_branch(target_name: &str, state: &mut ClawState, ports: &ClawPorts
     }
 }
 
-/// Search history.
-pub fn handle_search(keyword: &str, state: &ClawState, ports: &ClawPorts<'_>) {
-    let indices = search_turns(&state.turns, keyword);
-    let output = format_search_results(&state.turns, &indices);
-    ports.terminal.stdout_write(&output);
-    ports.terminal.stdout_write("\n");
-}
-
 /// Compact history.
 pub fn handle_compact(keep: &Option<usize>, state: &mut ClawState, ports: &ClawPorts<'_>) {
     let original_count = state.turns.len();
@@ -219,38 +175,6 @@ pub fn handle_compact(keep: &Option<usize>, state: &mut ClawState, ports: &ClawP
 
     let msg = compaction_summary(original_count, kept_count);
     ports.terminal.stderr_write(&format!("{msg}\n"));
-}
-
-/// Export session.
-pub fn handle_export(
-    format_arg: &Option<String>,
-    state: &ClawState,
-    ports: &ClawPorts<'_>,
-) {
-    let format = match format_arg {
-        Some(f) => match ExportFormat::parse(f) {
-            Some(fmt) => fmt,
-            None => {
-                ports.terminal.stderr_write(&format!(
-                    "Unknown format: '{f}'. Use md, json, or text.\n"
-                ));
-                return;
-            }
-        },
-        None => ExportFormat::Markdown, // default
-    };
-
-    let output = export_turns(&state.session_name, &state.turns, format);
-    ports.terminal.stdout_write(&output);
-    ports.terminal.stdout_write("\n");
-}
-
-/// Show session metrics.
-pub fn handle_metrics(state: &ClawState, ports: &ClawPorts<'_>) {
-    let metrics = compute_metrics(&state.turns);
-    let output = format_metrics(&metrics);
-    ports.terminal.stdout_write(&output);
-    ports.terminal.stdout_write("\n");
 }
 
 /// Handle a user message by running it through Claude.
@@ -268,7 +192,7 @@ pub fn handle_user_message(
     let prompt = assemble_prompt(system_ctx.as_deref(), &state.turns, message);
 
     // Run claude — only add turns after success to avoid orphan user turns
-    match super::claude_runner::run_claude(&prompt, state.model, ports) {
+    match super::super::claude_runner::run_claude(&prompt, state.model, ports) {
         Ok(response) => {
             let user_turn = Turn {
                 timestamp: now_datetime_string(),
@@ -346,24 +270,6 @@ mod tests {
         }
     }
 
-    // --- handle_help ---
-
-    #[test]
-    fn help_shows_commands() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = default_state();
-
-        handle_help(&state, &ports);
-        let out = term.stdout_output();
-        assert!(out.iter().any(|s| s.contains("/help")));
-        assert!(out.iter().any(|s| s.contains("/export")));
-    }
-
     // --- handle_clear ---
 
     #[test]
@@ -395,38 +301,6 @@ mod tests {
         assert!(err.iter().any(|s| s.contains("2 turns")));
     }
 
-    // --- handle_history ---
-
-    #[test]
-    fn history_empty() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = default_state();
-
-        handle_history(&state, &ports);
-        let out = term.stdout_output();
-        assert!(out.iter().any(|s| s.contains("No history")));
-    }
-
-    #[test]
-    fn history_shows_turns() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = state_with_turns();
-
-        handle_history(&state, &ports);
-        let out = term.stdout_output();
-        assert!(out.iter().any(|s| s.contains("hello")));
-    }
-
     // --- handle_sessions ---
 
     #[test]
@@ -446,11 +320,10 @@ mod tests {
 
     #[test]
     fn sessions_switch_valid() {
-        let fs = InMemoryFileSystem::new()
-            .with_file(
-                "/home/test/.claude/claw/sessions/other.md",
-                "### [ts1] User\nhi\n---",
-            );
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/claw/sessions/other.md",
+            "### [ts1] User\nhi\n---",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -586,38 +459,6 @@ mod tests {
         assert_eq!(state.session_name, "test"); // unchanged
     }
 
-    // --- handle_search ---
-
-    #[test]
-    fn search_finds_matches() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = state_with_turns();
-
-        handle_search("hello", &state, &ports);
-        let out = term.stdout_output();
-        assert!(out.iter().any(|s| s.contains("1 match")));
-    }
-
-    #[test]
-    fn search_no_matches() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = state_with_turns();
-
-        handle_search("xyz", &state, &ports);
-        let out = term.stdout_output();
-        assert!(out.iter().any(|s| s.contains("No matches")));
-    }
-
     // --- handle_compact ---
 
     #[test]
@@ -643,70 +484,6 @@ mod tests {
 
         handle_compact(&Some(5), &mut state, &ports);
         assert_eq!(state.turns.len(), 6); // header + 5
-    }
-
-    // --- handle_export ---
-
-    #[test]
-    fn export_markdown_default() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = state_with_turns();
-
-        handle_export(&None, &state, &ports);
-        let out = term.stdout_output();
-        assert!(out.iter().any(|s| s.contains("# Session:")));
-    }
-
-    #[test]
-    fn export_json() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = state_with_turns();
-
-        handle_export(&Some("json".to_string()), &state, &ports);
-        let out = term.stdout_output();
-        assert!(out.iter().any(|s| s.contains("\"role\"")));
-    }
-
-    #[test]
-    fn export_unknown_format() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = state_with_turns();
-
-        handle_export(&Some("xml".to_string()), &state, &ports);
-        let err = term.stderr_output();
-        assert!(err.iter().any(|s| s.contains("Unknown format")));
-    }
-
-    // --- handle_metrics ---
-
-    #[test]
-    fn metrics_shows_counts() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let state = state_with_turns();
-
-        handle_metrics(&state, &ports);
-        let out = term.stdout_output();
-        assert!(out.iter().any(|s| s.contains("Turns: 2")));
     }
 
     // --- handle_user_message ---
