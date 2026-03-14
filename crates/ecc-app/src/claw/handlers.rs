@@ -9,7 +9,16 @@ use ecc_domain::claw::prompt::{assemble_prompt, build_system_context};
 use ecc_domain::claw::search::{format_search_results, search_turns};
 use ecc_domain::claw::session_name::is_valid_session_name;
 use ecc_domain::claw::turn::{Role, Turn};
-use ecc_domain::time::datetime_string;
+use ecc_domain::time::{datetime_from_epoch, format_datetime};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+fn now_datetime_string() -> String {
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    format_datetime(&datetime_from_epoch(secs))
+}
 
 /// Show help text.
 pub fn handle_help(_state: &ClawState, ports: &ClawPorts<'_>) {
@@ -262,12 +271,12 @@ pub fn handle_user_message(
     match super::claude_runner::run_claude(&prompt, state.model, ports) {
         Ok(response) => {
             let user_turn = Turn {
-                timestamp: datetime_string(),
+                timestamp: now_datetime_string(),
                 role: Role::User,
                 content: message.to_string(),
             };
             let assistant_turn = Turn {
-                timestamp: datetime_string(),
+                timestamp: now_datetime_string(),
                 role: Role::Assistant,
                 content: response.clone(),
             };

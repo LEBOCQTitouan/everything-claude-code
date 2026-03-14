@@ -1,9 +1,16 @@
 //! Tier 3 Hooks — Session management and file I/O hooks.
 
 use crate::hook::{HookPorts, HookResult};
-use ecc_domain::time::{date_string, datetime_string, time_string};
+use ecc_domain::time::{datetime_from_epoch, format_date, format_datetime, format_time};
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
+
+fn epoch_secs() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
 
 /// session-start: load previous context, detect project type.
 pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
@@ -100,7 +107,7 @@ pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let sessions_dir = home.join(".claude").join("sessions");
     let _ = ports.fs.create_dir_all(&sessions_dir);
 
-    let today = date_string();
+    let today = format_date(&datetime_from_epoch(epoch_secs()));
     let short_id = ports
         .env
         .var("CLAUDE_SESSION_ID")
@@ -113,7 +120,7 @@ pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         })
         .unwrap_or_else(|| "unknown".to_string());
     let session_file = sessions_dir.join(format!("{}-{}-session.tmp", today, short_id));
-    let current_time = time_string();
+    let current_time = format_time(&datetime_from_epoch(epoch_secs()));
 
     // Try to extract summary from transcript
     let summary = transcript_path
@@ -197,7 +204,7 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let _ = ports.fs.create_dir_all(&sessions_dir);
 
     let compaction_log = sessions_dir.join("compaction-log.txt");
-    let timestamp = datetime_string();
+    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
 
     // Append to compaction log
     let existing = ports
@@ -211,7 +218,7 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let session_files = find_files_by_suffix(&sessions_dir, "-session.tmp", ports);
     if let Some(active) = session_files.first()
         && let Ok(content) = ports.fs.read_to_string(active) {
-            let time_str = time_string();
+            let time_str = format_time(&datetime_from_epoch(epoch_secs()));
             let updated = format!(
                 "{}\n---\n**[Compaction occurred at {}]** - Context was summarized\n",
                 content, time_str
@@ -327,7 +334,7 @@ pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let _ = ports.fs.create_dir_all(&metrics_dir);
 
     let cost = estimate_cost(&model, input_tokens, output_tokens);
-    let timestamp = datetime_string();
+    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
 
     let row = serde_json::json!({
         "timestamp": timestamp,

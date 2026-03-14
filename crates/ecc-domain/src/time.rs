@@ -62,38 +62,8 @@ pub fn parse_datetime(s: &str) -> Option<DateTime> {
     })
 }
 
-/// Get the current system time as a DateTime.
-pub fn now() -> DateTime {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-
-    // Convert Unix timestamp to calendar date/time (UTC)
-    let days = (secs / 86400) as u32;
-    let time_of_day = (secs % 86400) as u32;
-
-    let hour = (time_of_day / 3600) as u8;
-    let minute = ((time_of_day % 3600) / 60) as u8;
-    let second = (time_of_day % 60) as u8;
-
-    // Days since 1970-01-01 to Y-M-D (civil calendar)
-    let (year, month, day) = days_to_civil(days);
-
-    DateTime {
-        year,
-        month,
-        day,
-        hour,
-        minute,
-        second,
-    }
-}
-
 /// Convert days since 1970-01-01 to (year, month, day).
-fn days_to_civil(days: u32) -> (u16, u8, u8) {
+pub fn days_to_civil(days: u32) -> (u16, u8, u8) {
     // Algorithm from Howard Hinnant
     let z = days as i64 + 719468;
     let era = if z >= 0 { z } else { z - 146096 } / 146097;
@@ -108,19 +78,25 @@ fn days_to_civil(days: u32) -> (u16, u8, u8) {
     (y as u16, m as u8, d as u8)
 }
 
-/// Convenience: current date as "YYYY-MM-DD".
-pub fn date_string() -> String {
-    format_date(&now())
-}
+/// Build a `DateTime` from a Unix epoch timestamp (seconds since 1970-01-01 UTC).
+pub fn datetime_from_epoch(secs: u64) -> DateTime {
+    let days = (secs / 86400) as u32;
+    let time_of_day = (secs % 86400) as u32;
 
-/// Convenience: current time as "HH:MM".
-pub fn time_string() -> String {
-    format_time(&now())
-}
+    let hour = (time_of_day / 3600) as u8;
+    let minute = ((time_of_day % 3600) / 60) as u8;
+    let second = (time_of_day % 60) as u8;
 
-/// Convenience: current datetime as "YYYY-MM-DD HH:MM:SS".
-pub fn datetime_string() -> String {
-    format_datetime(&now())
+    let (year, month, day) = days_to_civil(days);
+
+    DateTime {
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+    }
 }
 
 #[cfg(test)]

@@ -66,7 +66,18 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
         terminal: &terminal,
     };
 
-    let now = iso_now();
+    let now = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let dt = ecc_domain::time::datetime_from_epoch(secs);
+        format!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
+        )
+    };
     let options = InstallOptions {
         dry_run: args.dry_run,
         force: args.force,
@@ -125,60 +136,3 @@ fn resolve_ecc_root() -> anyhow::Result<std::path::PathBuf> {
     )
 }
 
-/// Generate an ISO 8601 timestamp.
-fn iso_now() -> String {
-    use std::time::SystemTime;
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_default();
-    // Simple UTC timestamp
-    let secs = now.as_secs();
-    let days = secs / 86400;
-    let time_in_day = secs % 86400;
-    let hours = time_in_day / 3600;
-    let minutes = (time_in_day % 3600) / 60;
-    let seconds = time_in_day % 60;
-
-    // Approximate date from days since epoch (1970-01-01)
-    // Good enough for manifest timestamps
-    let (year, month, day) = days_to_ymd(days);
-    format!(
-        "{year:04}-{month:02}-{day:02}T{hours:02}:{minutes:02}:{seconds:02}Z"
-    )
-}
-
-fn days_to_ymd(days: u64) -> (u64, u64, u64) {
-    // Simplified date calculation
-    let mut remaining = days;
-    let mut year = 1970u64;
-
-    loop {
-        let days_in_year = if is_leap(year) { 366 } else { 365 };
-        if remaining < days_in_year {
-            break;
-        }
-        remaining -= days_in_year;
-        year += 1;
-    }
-
-    let days_in_months: [u64; 12] = if is_leap(year) {
-        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    } else {
-        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    };
-
-    let mut month = 1u64;
-    for dim in &days_in_months {
-        if remaining < *dim {
-            break;
-        }
-        remaining -= dim;
-        month += 1;
-    }
-
-    (year, month, remaining + 1)
-}
-
-fn is_leap(year: u64) -> bool {
-    (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
-}
