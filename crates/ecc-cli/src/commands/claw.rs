@@ -43,7 +43,7 @@ pub fn run(args: ClawArgs) -> anyhow::Result<()> {
 
     // Set up rustyline with history in claw dir
     let history_path = env.home_dir().map(|h| {
-        ecc_domain::paths::claw_dir(&h).join(".history")
+        ecc_app::claw::history_path(&h)
     });
     let repl_input = RustylineInput::new(history_path)
         .map_err(|e| anyhow::anyhow!(e))?;
