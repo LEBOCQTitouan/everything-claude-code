@@ -9,3 +9,8 @@ license.workspace = true
 ecc-domain = { workspace = true }
 ecc-ports = { workspace = true }
 anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+ecc-test-support = { workspace = true }

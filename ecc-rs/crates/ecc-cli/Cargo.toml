@@ -16,5 +16,5 @@ ecc-app = { workspace = true }
 ecc-infra = { workspace = true }
 clap = { workspace = true }
 clap_complete = { workspace = true }
-include_dir = { workspace = true }
 anyhow = { workspace = true }
+serde_json = { workspace = true }

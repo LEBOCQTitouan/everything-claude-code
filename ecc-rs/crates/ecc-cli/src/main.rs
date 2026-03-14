@@ -19,6 +19,10 @@ enum Cli {
     Audit(commands::audit::AuditArgs),
     /// Generate shell completions
     Completion(commands::completion::CompletionArgs),
+    /// Run a hook by ID
+    Hook(commands::hook::HookArgs),
+    /// Validate content files
+    Validate(commands::validate::ValidateArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -30,5 +34,7 @@ fn main() -> anyhow::Result<()> {
         Cli::Init(args) => commands::init::run(args),
         Cli::Audit(args) => commands::audit::run(args),
         Cli::Completion(args) => commands::completion::run(args),
+        Cli::Hook(args) => commands::hook::run(args),
+        Cli::Validate(args) => commands::validate::run(args),
     }
 }

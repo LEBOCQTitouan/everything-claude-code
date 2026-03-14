@@ -62,6 +62,67 @@ pub fn parse_datetime(s: &str) -> Option<DateTime> {
     })
 }
 
+/// Get the current system time as a DateTime.
+pub fn now() -> DateTime {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+
+    // Convert Unix timestamp to calendar date/time (UTC)
+    let days = (secs / 86400) as u32;
+    let time_of_day = (secs % 86400) as u32;
+
+    let hour = (time_of_day / 3600) as u8;
+    let minute = ((time_of_day % 3600) / 60) as u8;
+    let second = (time_of_day % 60) as u8;
+
+    // Days since 1970-01-01 to Y-M-D (civil calendar)
+    let (year, month, day) = days_to_civil(days);
+
+    DateTime {
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+    }
+}
+
+/// Convert days since 1970-01-01 to (year, month, day).
+fn days_to_civil(days: u32) -> (u16, u8, u8) {
+    // Algorithm from Howard Hinnant
+    let z = days as i64 + 719468;
+    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let doe = (z - era * 146097) as u32;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    (y as u16, m as u8, d as u8)
+}
+
+/// Convenience: current date as "YYYY-MM-DD".
+pub fn date_string() -> String {
+    format_date(&now())
+}
+
+/// Convenience: current time as "HH:MM".
+pub fn time_string() -> String {
+    format_time(&now())
+}
+
+/// Convenience: current datetime as "YYYY-MM-DD HH:MM:SS".
+pub fn datetime_string() -> String {
+    format_datetime(&now())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
