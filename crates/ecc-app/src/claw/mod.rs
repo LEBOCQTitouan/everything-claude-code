@@ -2,6 +2,9 @@
 
 use ecc_domain::claw::command::{parse_command, ClawCommand};
 use ecc_domain::claw::model::ClawModel;
+
+// Re-export ClawModel so CLI doesn't need to import from ecc-domain directly.
+pub use ecc_domain::claw::model::ClawModel as Model;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::repl::ReplInput;

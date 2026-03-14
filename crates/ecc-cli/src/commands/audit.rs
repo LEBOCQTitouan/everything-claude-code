@@ -6,11 +6,7 @@ use ecc_infra::std_terminal::StdTerminal;
 use ecc_ports::env::Environment;
 
 #[derive(Args)]
-pub struct AuditArgs {
-    /// Output format
-    #[arg(short, long, default_value = "text")]
-    pub format: String,
-}
+pub struct AuditArgs {}
 
 pub fn run(_args: AuditArgs) -> anyhow::Result<()> {
     let fs = OsFileSystem;

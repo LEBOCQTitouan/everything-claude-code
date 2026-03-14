@@ -1,8 +1,7 @@
 //! CLI command: `ecc claw` — NanoClaw interactive REPL.
 
 use clap::Args;
-use ecc_app::claw::{run_repl, ClawConfig, ClawPorts};
-use ecc_domain::claw::model::ClawModel;
+use ecc_app::claw::{run_repl, ClawConfig, ClawPorts, Model as ClawModel};
 use ecc_ports::env::Environment;
 use ecc_infra::os_env::OsEnvironment;
 use ecc_infra::os_fs::OsFileSystem;
