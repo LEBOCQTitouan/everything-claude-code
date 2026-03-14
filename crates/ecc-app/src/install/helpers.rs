@@ -540,4 +540,106 @@ mod tests {
         assert!(groups.contains(&"common".to_string()));
         assert!(groups.contains(&"typescript".to_string()));
     }
+
+    // --- error paths ---
+
+    #[test]
+    fn install_with_empty_source_dir_succeeds_with_zero_artifacts() {
+        // ecc_root exists but agents/commands/etc. directories are empty
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules")
+            .with_dir("/claude");
+        let env = no_color_env();
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = InstallOptions {
+            dry_run: false, force: true, no_gitignore: false, interactive: false,
+            clean: false, clean_all: false, languages: vec![],
+        };
+
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
+
+        assert!(summary.success);
+        assert_eq!(summary.added, 0);
+        assert_eq!(summary.updated, 0);
+    }
+
+    #[test]
+    fn install_with_missing_agents_dir_still_succeeds() {
+        // ecc_root exists but agents/ sub-directory is absent entirely
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc")
+            .with_dir("/claude");
+        let env = no_color_env();
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = InstallOptions {
+            dry_run: false, force: true, no_gitignore: false, interactive: false,
+            clean: false, clean_all: false, languages: vec![],
+        };
+
+        // Should not panic — missing sub-dirs are treated as empty
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
+
+        assert!(summary.success);
+        assert_eq!(summary.added, 0);
+    }
+
+    #[test]
+    fn install_output_contains_install_header() {
+        // Smoke test: even with an empty source, the install header is printed
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc")
+            .with_dir("/claude");
+        let env = no_color_env();
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = default_install_options();
+
+        install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
+
+        let output = terminal.stdout_output().join("");
+        assert!(output.contains("ECC Install"));
+    }
+
+    #[test]
+    fn collect_rule_groups_missing_rules_dir_returns_empty() {
+        // InMemoryFileSystem::read_dir never errors — missing dir yields empty entries.
+        // Confirm that no groups are returned when ecc_root has no rules/ directory.
+        let fs = InMemoryFileSystem::new().with_dir("/nowhere");
+
+        let groups = collect_rule_groups(&fs, Path::new("/nonexistent"), &[]);
+        // No dirs under /nonexistent/rules → result is empty (no crash)
+        assert!(groups.is_empty());
+    }
 }
