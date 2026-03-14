@@ -176,4 +176,29 @@ mod tests {
         });
         assert!(!check_hook_entry(&hook, "test").is_empty());
     }
+
+    // --- Property-based tests ---
+
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn frontmatter_roundtrip_preserves_keys(
+                key in "[a-z]{1,10}",
+                value in "[a-zA-Z0-9 _-]{0,20}"
+            ) {
+                let content = format!("---\n{key}: {value}\n---\n# Body");
+                let fm = extract_frontmatter(&content).unwrap();
+                prop_assert_eq!(fm.get(&key).unwrap().trim(), value.trim());
+            }
+
+            #[test]
+            fn frontmatter_never_panics(content in "\\PC{0,200}") {
+                // Should not panic on any input
+                let _ = extract_frontmatter(&content);
+            }
+        }
+    }
 }

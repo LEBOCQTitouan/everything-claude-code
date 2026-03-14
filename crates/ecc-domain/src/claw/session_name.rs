@@ -101,6 +101,37 @@ mod tests {
         assert!(!is_valid_session_name("test!"));
     }
 
+    // --- Property-based tests ---
+
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn valid_names_always_start_with_alnum(
+                first in "[a-zA-Z0-9]",
+                rest in "[a-zA-Z0-9-]{0,20}"
+            ) {
+                let name = format!("{first}{rest}");
+                prop_assert!(is_valid_session_name(&name));
+            }
+
+            #[test]
+            fn names_with_non_alnum_hyphen_are_invalid(
+                name in "[a-zA-Z0-9][a-zA-Z0-9-]*[^a-zA-Z0-9-][a-zA-Z0-9-]*"
+            ) {
+                prop_assert!(!is_valid_session_name(&name));
+            }
+
+            #[test]
+            fn empty_name_is_never_valid(name in "\\PC{0,0}") {
+                let _ = name;
+                prop_assert!(!is_valid_session_name(""));
+            }
+        }
+    }
+
     // --- session_name_from_path ---
 
     #[test]
