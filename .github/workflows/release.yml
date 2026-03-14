@@ -8,8 +8,208 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Create Release
+  # ── Job 1: Validate tag and version consistency ──
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract and validate version
+        id: meta
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if ! [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+            echo "::error::Invalid tag format: $TAG_NAME (expected vX.Y.Z or vX.Y.Z-suffix)"
+            exit 1
+          fi
+
+          VERSION="${TAG_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if [[ "$VERSION" == *-* ]]; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify all versions match tag
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG_NAME#v}"
+          ERRORS=0
+
+          check_version() {
+            local file="$1"
+            local actual="$2"
+            if [ "$actual" != "$VERSION" ]; then
+              echo "::error::$file version ($actual) does not match tag ($VERSION)"
+              ERRORS=$((ERRORS + 1))
+            fi
+          }
+
+          # Cargo.toml workspace version
+          CARGO_VERSION=$(grep -m1 '^version' Cargo.toml | sed 's/.*"\(.*\)"/\1/')
+          check_version "Cargo.toml" "$CARGO_VERSION"
+
+          # Root package.json
+          ROOT_VERSION=$(node -p "require('./package.json').version")
+          check_version "package.json" "$ROOT_VERSION"
+
+          # npm/ecc/package.json
+          NPM_VERSION=$(node -p "require('./npm/ecc/package.json').version")
+          check_version "npm/ecc/package.json" "$NPM_VERSION"
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "::error::Run scripts/bump-version.sh $VERSION to sync all versions"
+            exit 1
+          fi
+
+  # ── Job 2: Cross-compile for all platforms ──
+  build:
+    name: Build (${{ matrix.npm-pkg }})
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runner: macos-14
+            npm-pkg: ecc-darwin-arm64
+            binary: ecc
+            cross: false
+
+          - target: x86_64-apple-darwin
+            runner: macos-13
+            npm-pkg: ecc-darwin-x64
+            binary: ecc
+            cross: false
+
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+            npm-pkg: ecc-linux-x64
+            binary: ecc
+            cross: false
+
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-latest
+            npm-pkg: ecc-linux-arm64
+            binary: ecc
+            cross: true
+
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            npm-pkg: ecc-win32-x64
+            binary: ecc.exe
+            cross: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.cross
+        run: cargo install cross --locked
+
+      - name: Build (native)
+        if: "!matrix.cross"
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Build (cross)
+        if: matrix.cross
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Copy binary to npm package
+        shell: bash
+        run: |
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" \
+             "npm/${{ matrix.npm-pkg }}/${{ matrix.binary }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.npm-pkg }}
+          path: npm/${{ matrix.npm-pkg }}/
+          if-no-files-found: error
+
+  # ── Job 3: Publish to npm ──
+  publish-npm:
+    name: Publish npm
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Place binaries in npm packages
+        run: |
+          for pkg in ecc-darwin-arm64 ecc-darwin-x64 ecc-linux-x64 ecc-linux-arm64 ecc-win32-x64; do
+            cp -r "artifacts/$pkg/"* "npm/$pkg/"
+          done
+
+      - name: Publish platform packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          IS_PRERELEASE: ${{ needs.validate.outputs.is_prerelease }}
+        run: |
+          TAG="latest"
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            TAG="next"
+          fi
+
+          for pkg in ecc-darwin-arm64 ecc-darwin-x64 ecc-linux-x64 ecc-linux-arm64 ecc-win32-x64; do
+            echo "Publishing @lebocqtitouan/$pkg..."
+            npm publish "npm/$pkg" --access public --tag "$TAG"
+          done
+
+      - name: Publish wrapper package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          IS_PRERELEASE: ${{ needs.validate.outputs.is_prerelease }}
+        run: |
+          TAG="latest"
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            TAG="next"
+          fi
+
+          echo "Publishing @lebocqtitouan/ecc..."
+          npm publish "npm/ecc" --access public --tag "$TAG"
+
+  # ── Job 4: Create GitHub Release ──
+  github-release:
+    name: GitHub Release
+    needs: [validate, build, publish-npm]
     runs-on: ubuntu-latest
 
     steps:
@@ -18,24 +218,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate version tag
-        run: |
-          if ! [[ "${{ github.ref_name }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version tag format. Expected vX.Y.Z"
-            exit 1
-          fi
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-      - name: Verify package.json version matches tag
-        env:
-          TAG_NAME: ${{ github.ref_name }}
+      - name: Package binaries for release
         run: |
-          TAG_VERSION="${TAG_NAME#v}"
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
-            echo "Run: npm version $TAG_VERSION --no-git-tag-version"
-            exit 1
-          fi
+          mkdir -p release-assets
+          for pkg in ecc-darwin-arm64 ecc-darwin-x64 ecc-linux-x64 ecc-linux-arm64; do
+            chmod +x "artifacts/$pkg/ecc"
+            tar -czf "release-assets/$pkg.tar.gz" -C "artifacts/$pkg" ecc
+          done
+          zip -j "release-assets/ecc-win32-x64.zip" "artifacts/ecc-win32-x64/ecc.exe"
 
       - name: Generate changelog
         id: changelog
@@ -44,16 +239,26 @@ jobs:
           if [ -z "$PREV_TAG" ]; then
             COMMITS=$(git log --pretty=format:"- %s" HEAD)
           else
-            COMMITS=$(git log --pretty=format:"- %s" ${PREV_TAG}..HEAD)
+            COMMITS=$(git log --pretty=format:"- %s" "${PREV_TAG}..HEAD")
           fi
-          echo "commits<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          DELIMITER="COMMITS_END_$(date +%s)"
+          echo "commits<<${DELIMITER}" >> "$GITHUB_OUTPUT"
+          echo "$COMMITS" >> "$GITHUB_OUTPUT"
+          echo "${DELIMITER}" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
         with:
+          prerelease: ${{ needs.validate.outputs.is_prerelease == 'true' }}
           body: |
             ## Changes
             ${{ steps.changelog.outputs.commits }}
+
+            ## Install
+            ```bash
+            npm install -g @lebocqtitouan/ecc
+            ```
+          files: release-assets/*
           generate_release_notes: false
