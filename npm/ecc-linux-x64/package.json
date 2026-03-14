@@ -1,0 +1,15 @@
+{
+  "name": "@lebocqtitouan/ecc-linux-x64",
+  "version": "4.0.0-alpha.1",
+  "description": "ECC binary for Linux x64",
+  "license": "MIT",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "ecc"
+  ]
+}
