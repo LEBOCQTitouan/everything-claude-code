@@ -423,7 +423,9 @@ pub fn suggest_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     };
 
     // Write updated count
-    let _ = ports.fs.write(&counter_file, &count.to_string());
+    if let Err(e) = ports.fs.write(&counter_file, &count.to_string()) {
+        log::warn!("Cannot write compact counter: {}", e);
+    }
 
     if count == threshold {
         let msg = format!(
