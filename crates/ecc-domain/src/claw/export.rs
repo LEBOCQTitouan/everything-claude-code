@@ -36,19 +36,7 @@ fn export_markdown(session_name: &str, turns: &[Turn]) -> String {
 }
 
 fn export_json(turns: &[Turn]) -> String {
-    let entries: Vec<String> = turns
-        .iter()
-        .map(|t| {
-            format!(
-                "  {{\n    \"timestamp\": \"{}\",\n    \"role\": \"{}\",\n    \"content\": {}\n  }}",
-                t.timestamp,
-                t.role.as_str().to_lowercase(),
-                escape_json_string(&t.content),
-            )
-        })
-        .collect();
-
-    format!("[\n{}\n]", entries.join(",\n"))
+    serde_json::to_string_pretty(turns).unwrap_or_else(|_| "[]".to_string())
 }
 
 fn export_text(turns: &[Turn]) -> String {
@@ -57,26 +45,6 @@ fn export_text(turns: &[Turn]) -> String {
         .map(|t| format!("[{}] {}: {}", t.timestamp, t.role.as_str(), t.content))
         .collect::<Vec<_>>()
         .join("\n\n")
-}
-
-fn escape_json_string(s: &str) -> String {
-    let mut out = String::with_capacity(s.len() + 2);
-    out.push('"');
-    for ch in s.chars() {
-        match ch {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c if c.is_control() => {
-                out.push_str(&format!("\\u{:04x}", c as u32));
-            }
-            c => out.push(c),
-        }
-    }
-    out.push('"');
-    out
 }
 
 #[cfg(test)]
@@ -176,7 +144,7 @@ mod tests {
     #[test]
     fn export_json_empty() {
         let result = export_turns("test", &[], ExportFormat::Json);
-        assert_eq!(result.trim(), "[\n\n]");
+        assert_eq!(result.trim(), "[]");
     }
 
     // --- export_turns text ---
@@ -199,25 +167,4 @@ mod tests {
         assert!(result.contains("[ts2] Assistant: hey"));
     }
 
-    // --- escape_json_string ---
-
-    #[test]
-    fn escape_quotes() {
-        assert_eq!(escape_json_string("say \"hi\""), "\"say \\\"hi\\\"\"");
-    }
-
-    #[test]
-    fn escape_backslash() {
-        assert_eq!(escape_json_string("a\\b"), "\"a\\\\b\"");
-    }
-
-    #[test]
-    fn escape_newlines() {
-        assert_eq!(escape_json_string("a\nb"), "\"a\\nb\"");
-    }
-
-    #[test]
-    fn escape_tabs() {
-        assert_eq!(escape_json_string("a\tb"), "\"a\\tb\"");
-    }
 }

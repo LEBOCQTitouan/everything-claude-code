@@ -1,5 +1,5 @@
 /// A single conversation turn in a Claw session.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct Turn {
     pub timestamp: String,
     pub role: Role,
@@ -7,7 +7,8 @@ pub struct Turn {
 }
 
 /// The role of a conversation participant.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Role {
     User,
     Assistant,
