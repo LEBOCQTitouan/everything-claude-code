@@ -240,32 +240,14 @@ pub fn compute_audit_score(checks: &[AuditCheckResult]) -> (i32, String) {
 
 /// Simple YAML frontmatter parser.
 /// Returns key-value pairs from the frontmatter block.
+///
+/// Delegates to the canonical `extract_frontmatter` in `config::validate`,
+/// converting the result to a `BTreeMap` (empty on missing frontmatter).
 pub fn parse_frontmatter(content: &str) -> BTreeMap<String, String> {
-    let mut result = BTreeMap::new();
-
-    if !content.starts_with("---") {
-        return result;
+    match super::validate::extract_frontmatter(content) {
+        Some(map) => map.into_iter().collect(),
+        None => BTreeMap::new(),
     }
-
-    let after_opening = &content[3..];
-    let end_idx = match after_opening.find("---") {
-        Some(i) => i,
-        None => return result,
-    };
-    let frontmatter = &after_opening[..end_idx];
-
-    for line in frontmatter.lines() {
-        let trimmed = line.trim();
-        if let Some(colon_idx) = trimmed.find(':')
-            && colon_idx > 0
-        {
-            let key = trimmed[..colon_idx].trim().to_string();
-            let value = trimmed[colon_idx + 1..].trim().to_string();
-            result.insert(key, value);
-        }
-    }
-
-    result
 }
 
 /// Check if a settings hook entry exists in the source hooks (by serialized hooks array).
