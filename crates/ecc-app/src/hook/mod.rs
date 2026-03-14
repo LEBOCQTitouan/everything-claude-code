@@ -9,7 +9,7 @@ use ecc_ports::terminal::TerminalIO;
 pub mod handlers;
 
 /// Maximum stdin payload size (1 MB).
-const MAX_STDIN: usize = 1_024 * 1_024;
+pub const MAX_STDIN: usize = 1_024 * 1_024;
 
 /// Input context for a hook invocation.
 #[derive(Debug)]

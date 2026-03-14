@@ -3,14 +3,12 @@
 //! Reads stdin, dispatches to the appropriate hook handler, writes stdout/stderr.
 
 use clap::Args;
-use ecc_app::hook::{dispatch, HookContext, HookPorts};
+use ecc_app::hook::{dispatch, HookContext, HookPorts, MAX_STDIN};
 use ecc_infra::os_env::OsEnvironment;
 use ecc_infra::os_fs::OsFileSystem;
 use ecc_infra::process_executor::ProcessExecutor;
 use ecc_infra::std_terminal::StdTerminal;
 use std::io::{self, Read, Write};
-
-const MAX_STDIN: usize = 1_024 * 1_024;
 
 #[derive(Args)]
 pub struct HookArgs {
