@@ -2,6 +2,21 @@
 
 use std::collections::HashMap;
 
+/// Valid model identifiers for agent frontmatter.
+pub const VALID_MODELS: &[&str] = &["haiku", "sonnet", "opus"];
+
+/// Valid hook event types.
+pub const VALID_HOOK_EVENTS: &[&str] = &[
+    "PreToolUse",
+    "PostToolUse",
+    "PreCompact",
+    "SessionStart",
+    "SessionEnd",
+    "Stop",
+    "Notification",
+    "SubagentStop",
+];
+
 /// Extract YAML frontmatter from markdown content into a key-value map.
 ///
 /// Looks for content between `---` delimiters at the start of the file,

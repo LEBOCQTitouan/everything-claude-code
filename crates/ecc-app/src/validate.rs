@@ -1,6 +1,8 @@
 //! Validate use case — validates content files (agents, commands, hooks, skills, rules, paths).
 
-use ecc_domain::config::validate::{check_hook_entry, extract_frontmatter};
+use ecc_domain::config::validate::{
+    check_hook_entry, extract_frontmatter, VALID_HOOK_EVENTS, VALID_MODELS,
+};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
@@ -65,7 +67,6 @@ fn validate_agents(root: &Path, fs: &dyn FileSystem) -> bool {
 
 fn validate_agent_file(file: &Path, fs: &dyn FileSystem) -> bool {
     let required_fields = ["model", "tools"];
-    let valid_models = ["haiku", "sonnet", "opus"];
 
     let content = match fs.read_to_string(file) {
         Ok(c) => c,
@@ -98,13 +99,13 @@ fn validate_agent_file(file: &Path, fs: &dyn FileSystem) -> bool {
     }
 
     if let Some(model) = frontmatter.get("model")
-        && !valid_models.contains(&model.as_str())
+        && !VALID_MODELS.contains(&model.as_str())
     {
         eprintln!(
             "ERROR: {} - Invalid model '{}'. Must be one of: {}",
             name,
             model,
-            valid_models.join(", ")
+            VALID_MODELS.join(", ")
         );
         valid = false;
     }
@@ -181,24 +182,13 @@ fn validate_hooks(root: &Path, fs: &dyn FileSystem) -> bool {
         }
     };
 
-    let valid_events = [
-        "PreToolUse",
-        "PostToolUse",
-        "PreCompact",
-        "SessionStart",
-        "SessionEnd",
-        "Stop",
-        "Notification",
-        "SubagentStop",
-    ];
-
     let hooks = data.get("hooks").unwrap_or(&data);
     let mut has_errors = false;
     let mut total_matchers = 0;
 
     if let Some(obj) = hooks.as_object() {
         for (event_type, matchers) in obj {
-            if !valid_events.contains(&event_type.as_str()) {
+            if !VALID_HOOK_EVENTS.contains(&event_type.as_str()) {
                 eprintln!("ERROR: Invalid event type: {}", event_type);
                 has_errors = true;
                 continue;
