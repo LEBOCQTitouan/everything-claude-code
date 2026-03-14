@@ -2,7 +2,19 @@
 
 use crate::hook::{HookPorts, HookResult};
 use ecc_ports::env::Platform;
+use log::warn;
 use std::path::Path;
+
+/// Reject file paths that start with `-` to prevent flag injection.
+fn validate_file_path(path: &str) -> Result<(), String> {
+    if path.starts_with('-') {
+        return Err(format!(
+            "[Hook] Rejected file path starting with dash: {}",
+            path
+        ));
+    }
+    Ok(())
+}
 
 /// pre-bash-dev-server-block: block dev servers outside tmux.
 pub fn pre_bash_dev_server_block(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
@@ -47,6 +59,10 @@ pub fn post_edit_format(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         return HookResult::passthrough(stdin);
     }
 
+    if let Err(msg) = validate_file_path(&file_path) {
+        return HookResult::warn(stdin, &format!("{msg}\n"));
+    }
+
     let ext = Path::new(&file_path)
         .extension()
         .map(|e| e.to_string_lossy().to_lowercase())
@@ -74,18 +90,40 @@ pub fn post_edit_format(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
     match formatter.as_deref() {
         Some("biome") => {
-            let _ = ports.shell.run_command_in_dir(
+            match ports.shell.run_command_in_dir(
                 npx,
                 &["@biomejs/biome", "format", "--write", &file_path],
                 &project_root,
-            );
+            ) {
+                Ok(out) if out.exit_code != 0 => {
+                    let msg = format!("[Hook] biome format failed (exit {}): {}", out.exit_code, out.stderr);
+                    warn!("{}", msg);
+                    return HookResult::warn(stdin, &format!("{msg}\n"));
+                }
+                Err(e) => {
+                    let msg = format!("[Hook] biome format error: {}", e);
+                    warn!("{}", msg);
+                }
+                _ => {}
+            }
         }
         Some("prettier") => {
-            let _ = ports.shell.run_command_in_dir(
+            match ports.shell.run_command_in_dir(
                 npx,
                 &["prettier", "--write", &file_path],
                 &project_root,
-            );
+            ) {
+                Ok(out) if out.exit_code != 0 => {
+                    let msg = format!("[Hook] prettier format failed (exit {}): {}", out.exit_code, out.stderr);
+                    warn!("{}", msg);
+                    return HookResult::warn(stdin, &format!("{msg}\n"));
+                }
+                Err(e) => {
+                    let msg = format!("[Hook] prettier format error: {}", e);
+                    warn!("{}", msg);
+                }
+                _ => {}
+            }
         }
         _ => {}
     }
@@ -98,6 +136,10 @@ pub fn post_edit_typecheck(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);
+    }
+
+    if let Err(msg) = validate_file_path(&file_path) {
+        return HookResult::warn(stdin, &format!("{msg}\n"));
     }
 
     let ext = Path::new(&file_path)
@@ -166,6 +208,10 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         return HookResult::passthrough(stdin);
     }
 
+    if let Err(msg) = validate_file_path(&file_path) {
+        return HookResult::warn(stdin, &format!("{msg}\n"));
+    }
+
     let ext = Path::new(&file_path)
         .extension()
         .map(|e| e.to_string_lossy().to_lowercase())
@@ -224,7 +270,10 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 }
         }
         "go" if fix => {
-            let _ = ports.shell.run_command("gofmt", &["-w", &file_path]);
+            if let Err(e) = ports.shell.run_command("gofmt", &["-w", &file_path]) {
+                let msg = format!("[QualityGate] gofmt error: {}", e);
+                warn!("{}", msg);
+            }
         }
         "py" => {
             let mut args = vec!["format"];
