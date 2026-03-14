@@ -411,12 +411,12 @@ pub fn resolve_ecc_root(
 
     // Try relative to binary location (best-effort, not abstracted behind port)
     let _ = env; // env used for future expansion
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            let relative = parent.join("../share/ecc");
-            if fs.exists(&relative.join("agents")) {
-                return Ok(relative);
-            }
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(parent) = exe.parent()
+    {
+        let relative = parent.join("../share/ecc");
+        if fs.exists(&relative.join("agents")) {
+            return Ok(relative);
         }
     }
 

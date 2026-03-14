@@ -662,7 +662,7 @@ mod tests {
         let fs = InMemoryFileSystem::new().with_dir("/sessions");
         let path = Path::new("/sessions/verify.tmp");
         let content = "# Session\n\n**Date:** 2024-03-15\n";
-        write_session_content(&fs, path, content);
+        write_session_content(&fs, path, content).unwrap();
         let read_back = fs.read_to_string(path).unwrap();
         assert_eq!(read_back, content);
     }
@@ -692,7 +692,7 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/sessions/test.tmp", "data");
         let path = Path::new("/sessions/test.tmp");
-        delete_session(&fs, path);
+        let _ = delete_session(&fs, path);
         assert!(fs.read_to_string(path).is_err());
     }
 }

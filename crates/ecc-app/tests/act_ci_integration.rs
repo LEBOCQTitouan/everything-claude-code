@@ -15,7 +15,7 @@ fn should_skip() -> bool {
     if !std::process::Command::new("act")
         .arg("--version")
         .output()
-        .map_or(false, |o| o.status.success())
+        .is_ok_and(|o| o.status.success())
     {
         eprintln!("WARN: act not installed — skipping smoke test");
         return true;
