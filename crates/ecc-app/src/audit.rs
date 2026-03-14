@@ -1,7 +1,7 @@
 //! Audit use case — runs domain checks and formats colored report.
 
 use ecc_domain::ansi;
-use ecc_domain::config::audit::{self, AuditFinding, AuditReport, Severity};
+use ecc_domain::config::audit::{AuditFinding, AuditReport, Severity};
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
@@ -31,7 +31,7 @@ pub fn run_audit(
         ansi::bold("ECC Configuration Audit", colored)
     ));
 
-    let report = audit::run_all_checks(
+    let report = crate::config::audit::run_all_checks(
         fs,
         options.claude_dir,
         options.project_dir,

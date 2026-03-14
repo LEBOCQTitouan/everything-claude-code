@@ -1,6 +1,6 @@
 //! Detection use case — thin wrapper around domain detect + report.
 
-use ecc_domain::config::detect::{self, DetectionResult};
+use ecc_domain::config::detect::{generate_report, DetectionResult};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
@@ -14,8 +14,8 @@ pub fn detect_and_report(
     claude_dir: &Path,
     project_dir: Option<&Path>,
 ) -> DetectionResult {
-    let result = detect::detect(fs, claude_dir, project_dir);
-    let report = detect::generate_report(&result);
+    let result = crate::config::detect::detect(fs, claude_dir, project_dir);
+    let report = generate_report(&result);
     terminal.stdout_write(&format!("{report}\n"));
     result
 }
