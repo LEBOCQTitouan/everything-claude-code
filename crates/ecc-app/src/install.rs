@@ -2,6 +2,8 @@
 //!
 //! Ports `install-orchestrator.ts`.
 
+use crate::config::clean as app_clean;
+use crate::config::gitignore as app_gitignore;
 use crate::config::manifest::{read_manifest, write_manifest};
 use crate::detect;
 use crate::merge::{self, MergeContext, MergeOptions, ReviewChoice};
@@ -102,7 +104,7 @@ pub fn install_global(
     // Step 1: Clean if requested
     if options.clean_all {
         ctx.terminal.stdout_write("Cleaning all ECC files...\n");
-        let report = clean::clean_all(
+        let report = app_clean::clean_all(
             ctx.fs,
             claude_dir,
             &|entry| domain_merge::is_legacy_ecc_hook(entry),
@@ -116,7 +118,7 @@ pub fn install_global(
         if let Some(existing_manifest) = read_manifest(ctx.fs, claude_dir) {
             ctx.terminal
                 .stdout_write("Cleaning ECC-managed files from manifest...\n");
-            let report = clean::clean_from_manifest(
+            let report = app_clean::clean_from_manifest(
                 ctx.fs,
                 claude_dir,
                 &existing_manifest,
@@ -324,7 +326,7 @@ pub fn init_project(
         }
 
         // Check for tracked files
-        let tracked = gitignore::find_tracked_ecc_files(ctx.shell, ctx.fs, project_dir);
+        let tracked = app_gitignore::find_tracked_ecc_files(ctx.shell, ctx.fs, project_dir);
         if !tracked.is_empty() {
             ctx.terminal.stdout_write(&format!(
                 "Would untrack {} file(s):\n",
@@ -338,7 +340,7 @@ pub fn init_project(
         return true;
     }
 
-    let result = gitignore::ensure_gitignore_entries(ctx.fs, ctx.shell, project_dir, None);
+    let result = app_gitignore::ensure_gitignore_entries(ctx.fs, ctx.shell, project_dir, None);
 
     if result.skipped {
         ctx.terminal
@@ -360,7 +362,7 @@ pub fn init_project(
     }
 
     // Untrack files that are now gitignored
-    let tracked = gitignore::find_tracked_ecc_files(ctx.shell, ctx.fs, project_dir);
+    let tracked = app_gitignore::find_tracked_ecc_files(ctx.shell, ctx.fs, project_dir);
     for file in &tracked {
         let _ = ctx.shell.run_command_in_dir(
             "git",

@@ -2,6 +2,7 @@
 //!
 //! Orchestrates file-by-file merge with user prompts for accept/keep/smart-merge.
 
+use crate::config::merge as config_merge;
 use crate::smart_merge;
 use ecc_domain::config::merge::{
     self, FileToReview, MergeReport,
@@ -133,7 +134,7 @@ pub fn apply_review_choice(
 ) {
     match choice {
         ReviewChoice::Accept => {
-            match merge::apply_accept(fs, &file.src_path, &file.dest_path, dry_run) {
+            match config_merge::apply_accept(fs, &file.src_path, &file.dest_path, dry_run) {
                 Ok(()) => {
                     if file.is_new {
                         report.added.push(file.filename.clone());
@@ -199,7 +200,7 @@ pub fn merge_directory(
 ) -> MergeReport {
     let mut report = merge::empty_report();
 
-    let (files_to_review, unchanged) = merge::pre_scan_directory(ctx.fs, src_dir, dest_dir, ext);
+    let (files_to_review, unchanged) = config_merge::pre_scan_directory(ctx.fs, src_dir, dest_dir, ext);
     report.unchanged = unchanged;
 
     if files_to_review.is_empty() {
