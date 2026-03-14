@@ -205,8 +205,6 @@ dependencies = [
 name = "ecc-domain"
 version = "4.0.0-alpha.1"
 dependencies = [
- "ecc-ports",
- "ecc-test-support",
  "regex",
  "serde",
  "serde_json",

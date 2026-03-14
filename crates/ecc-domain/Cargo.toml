@@ -10,7 +10,3 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 regex = { workspace = true }
-ecc-ports = { workspace = true }
-
-[dev-dependencies]
-ecc-test-support = { workspace = true }
