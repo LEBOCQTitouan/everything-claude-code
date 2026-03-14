@@ -60,6 +60,11 @@ impl ClawState {
     }
 }
 
+/// Get the Claw REPL history file path from a home directory.
+pub fn history_path(home: &std::path::Path) -> std::path::PathBuf {
+    ecc_domain::paths::claw_history_path(home)
+}
+
 /// Run the Claw REPL. Returns Ok(()) when the user exits.
 pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> anyhow::Result<()> {
     let home = ports
