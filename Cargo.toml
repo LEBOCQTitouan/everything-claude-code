@@ -42,3 +42,7 @@ ecc-ports = { path = "crates/ecc-ports" }
 ecc-app = { path = "crates/ecc-app" }
 ecc-infra = { path = "crates/ecc-infra" }
 ecc-test-support = { path = "crates/ecc-test-support" }
+
+[profile.release]
+strip = true
+lto = true
