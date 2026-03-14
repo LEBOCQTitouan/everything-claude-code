@@ -3,4 +3,6 @@ pub mod config;
 pub mod detection;
 pub mod diff;
 pub mod hook_runtime;
+pub mod paths;
 pub mod session;
+pub mod time;
