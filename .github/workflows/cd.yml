@@ -1,0 +1,98 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cd-main
+  cancel-in-progress: false  # serialize — don't cancel in-flight bumps
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  auto-tag:
+    name: Auto-tag release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Guard 1: skip version-bump commits (prevent infinite loop)
+      - name: Skip version-bump commits
+        if: >-
+          contains(github.event.head_commit.message, '[skip cd]') ||
+          github.actor == 'github-actions[bot]'
+        run: echo "Version-bump commit — skipping." && exit 0
+
+      # Guard 2: check for `release` label on merged PR
+      - name: Check for release label
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          LABELS=$(gh pr list \
+            --repo "$GITHUB_REPOSITORY" \
+            --state merged \
+            --base main \
+            --json labels,mergeCommit \
+            --jq ".[] | select(.mergeCommit.oid == \"$COMMIT_SHA\") | .labels[].name" \
+            2>/dev/null || true)
+          echo "Labels: $LABELS"
+          if echo "$LABELS" | grep -qx "release"; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "No 'release' label — nothing to do."
+          fi
+
+      - name: Checkout
+        if: steps.gate.outputs.release == 'true'
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
+
+      - name: Setup Node.js
+        if: steps.gate.outputs.release == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20.x'
+
+      - name: Compute next patch version
+        if: steps.gate.outputs.release == 'true'
+        id: version
+        run: |
+          CURRENT=$(grep -m1 '^version' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "Current: $CURRENT"
+          NUM="${CURRENT##*[^0-9]}"
+          PREFIX="${CURRENT%"$NUM"}"
+          NEXT="${PREFIX}$((NUM + 1))"
+          echo "Next: $NEXT"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+
+      - name: Bump all version files
+        if: steps.gate.outputs.release == 'true'
+        run: bash scripts/bump-version.sh "${{ steps.version.outputs.next }}"
+
+      - name: Commit, tag, and push
+        if: steps.gate.outputs.release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add \
+            Cargo.toml \
+            Cargo.lock \
+            package.json \
+            npm/ecc/package.json \
+            npm/ecc-darwin-arm64/package.json \
+            npm/ecc-darwin-x64/package.json \
+            npm/ecc-linux-x64/package.json \
+            npm/ecc-linux-arm64/package.json \
+            npm/ecc-win32-x64/package.json
+          NEXT="${{ steps.version.outputs.next }}"
+          git commit -m "chore: bump version to v${NEXT} [skip cd]"
+          git tag "v${NEXT}"
+          git push origin HEAD:main "v${NEXT}"
