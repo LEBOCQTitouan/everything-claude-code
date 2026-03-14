@@ -388,3 +388,41 @@ pub fn init_project(
 
     true
 }
+
+/// Resolve the ECC root directory containing agents/, commands/, etc.
+///
+/// Checks well-known npm global install paths, then falls back to a path
+/// relative to the current executable. Uses ports for filesystem checks.
+pub fn resolve_ecc_root(
+    fs: &dyn FileSystem,
+    env: &dyn Environment,
+) -> Result<std::path::PathBuf, String> {
+    let npm_paths = [
+        "/usr/local/lib/node_modules/@lebocqtitouan/ecc",
+        "/usr/lib/node_modules/@lebocqtitouan/ecc",
+    ];
+
+    for path in &npm_paths {
+        let p = std::path::PathBuf::from(path);
+        if fs.exists(&p.join("agents")) {
+            return Ok(p);
+        }
+    }
+
+    // Try relative to binary location (best-effort, not abstracted behind port)
+    let _ = env; // env used for future expansion
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let relative = parent.join("../share/ecc");
+            if fs.exists(&relative.join("agents")) {
+                return Ok(relative);
+            }
+        }
+    }
+
+    Err(
+        "Cannot find ECC assets directory. Set ECC_ROOT environment variable \
+         or use --ecc-root flag."
+            .to_string(),
+    )
+}
