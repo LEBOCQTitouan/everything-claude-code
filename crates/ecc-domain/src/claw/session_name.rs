@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Validate a session name: must match `^[a-zA-Z0-9][-a-zA-Z0-9]*$`.
 pub fn is_valid_session_name(name: &str) -> bool {
@@ -15,11 +15,6 @@ pub fn is_valid_session_name(name: &str) -> bool {
 
     // Rest must be alphanumeric or hyphen
     bytes[1..].iter().all(|&b| b.is_ascii_alphanumeric() || b == b'-')
-}
-
-/// Build a session file path from a claw directory and session name.
-pub fn session_path(claw_dir: &Path, name: &str) -> PathBuf {
-    claw_dir.join("sessions").join(format!("{name}.md"))
 }
 
 /// Extract session name from a session file path (strip `.md` extension).
@@ -104,23 +99,6 @@ mod tests {
     fn invalid_special_chars() {
         assert!(!is_valid_session_name("test@name"));
         assert!(!is_valid_session_name("test!"));
-    }
-
-    // --- session_path ---
-
-    #[test]
-    fn session_path_basic() {
-        let path = session_path(Path::new("/home/user/.claude/claw"), "my-session");
-        assert_eq!(
-            path,
-            PathBuf::from("/home/user/.claude/claw/sessions/my-session.md")
-        );
-    }
-
-    #[test]
-    fn session_path_different_dir() {
-        let path = session_path(Path::new("/tmp/claw"), "test");
-        assert_eq!(path, PathBuf::from("/tmp/claw/sessions/test.md"));
     }
 
     // --- session_name_from_path ---
