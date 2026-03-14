@@ -15,7 +15,10 @@ pub(super) fn collect_rule_groups(
     let rules_dir = ecc_root.join("rules");
     let entries = match fs.read_dir(&rules_dir) {
         Ok(e) => e,
-        Err(_) => return vec!["common".to_string()],
+        Err(e) => {
+            log::warn!("Cannot read rules directory: {}", e);
+            return vec!["common".to_string()];
+        }
     };
 
     let mut groups: Vec<String> = entries
@@ -52,7 +55,10 @@ pub(super) fn collect_installed_artifacts(fs: &dyn FileSystem, claude_dir: &Path
 fn list_files_with_ext(fs: &dyn FileSystem, dir: &Path, ext: &str) -> Vec<String> {
     let entries = match fs.read_dir(dir) {
         Ok(e) => e,
-        Err(_) => return vec![],
+        Err(e) => {
+            log::warn!("Cannot list files in {}: {}", dir.display(), e);
+            return vec![];
+        }
     };
     let mut files: Vec<String> = entries
         .iter()
@@ -72,7 +78,10 @@ fn list_files_with_ext(fs: &dyn FileSystem, dir: &Path, ext: &str) -> Vec<String
 fn list_dirs(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     let entries = match fs.read_dir(dir) {
         Ok(e) => e,
-        Err(_) => return vec![],
+        Err(e) => {
+            log::warn!("Cannot list dirs in {}: {}", dir.display(), e);
+            return vec![];
+        }
     };
     let mut dirs: Vec<String> = entries
         .iter()
@@ -106,7 +115,13 @@ pub(super) fn ensure_deny_rules_in_settings(
     dry_run: bool,
 ) -> Option<(usize, usize)> {
     let content = fs.read_to_string(settings_path).unwrap_or_else(|_| "{}".to_string());
-    let mut settings: serde_json::Value = serde_json::from_str(&content).ok()?;
+    let mut settings: serde_json::Value = match serde_json::from_str(&content) {
+        Ok(v) => v,
+        Err(e) => {
+            log::warn!("Malformed settings.json at {}: {}", settings_path.display(), e);
+            return None;
+        }
+    };
 
     let existing_deny: Vec<String> = settings
         .get("permissions")
@@ -135,8 +150,17 @@ pub(super) fn ensure_deny_rules_in_settings(
                 ),
             );
 
-        let json = serde_json::to_string_pretty(&settings).ok()?;
-        fs.write(settings_path, &format!("{json}\n")).ok()?;
+        let json = match serde_json::to_string_pretty(&settings) {
+            Ok(j) => j,
+            Err(e) => {
+                log::warn!("Failed to serialize settings: {}", e);
+                return None;
+            }
+        };
+        if let Err(e) = fs.write(settings_path, &format!("{json}\n")) {
+            log::warn!("Failed to write settings.json: {}", e);
+            return None;
+        }
     }
 
     Some((result.added, result.existing))
