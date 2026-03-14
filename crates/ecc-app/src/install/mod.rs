@@ -219,7 +219,7 @@ pub fn install_global(
     );
     all_reports.push(rules_report);
 
-    let combined = domain_merge::combine_reports(&all_reports);
+    let mut combined = domain_merge::combine_reports(&all_reports);
 
     // Step 5: Merge hooks
     let hooks_json = ecc_root.join("hooks.json");
@@ -262,7 +262,10 @@ pub fn install_global(
             }
             None => manifest::create_manifest(version, now, &options.languages, installed_artifacts),
         };
-        let _ = write_manifest(ctx.fs, claude_dir, &new_manifest);
+        if let Err(e) = write_manifest(ctx.fs, claude_dir, &new_manifest) {
+            log::warn!("Failed to write manifest: {}", e);
+            combined.errors.push(format!("Failed to write manifest: {e}"));
+        }
     }
 
     // Step 8: Print summary
