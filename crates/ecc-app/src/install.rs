@@ -2,6 +2,7 @@
 //!
 //! Ports `install-orchestrator.ts`.
 
+use crate::config::manifest::{read_manifest, write_manifest};
 use crate::detect;
 use crate::merge::{self, MergeContext, MergeOptions, ReviewChoice};
 use ecc_domain::ansi;
@@ -112,7 +113,7 @@ pub fn install_global(
             clean::format_clean_report(&report, options.dry_run)
         ));
     } else if options.clean {
-        if let Some(existing_manifest) = manifest::read_manifest(ctx.fs, claude_dir) {
+        if let Some(existing_manifest) = read_manifest(ctx.fs, claude_dir) {
             ctx.terminal
                 .stdout_write("Cleaning ECC-managed files from manifest...\n");
             let report = clean::clean_from_manifest(
@@ -146,7 +147,7 @@ pub fn install_global(
     ));
 
     // Step 3: Read existing manifest
-    let existing_manifest = manifest::read_manifest(ctx.fs, claude_dir);
+    let existing_manifest = read_manifest(ctx.fs, claude_dir);
 
     // Step 4: Merge artifacts
     let mut merge_options = MergeOptions {
@@ -254,7 +255,7 @@ pub fn install_global(
             }
             None => manifest::create_manifest(version, now, &options.languages, installed_artifacts),
         };
-        let _ = manifest::write_manifest(ctx.fs, claude_dir, &new_manifest);
+        let _ = write_manifest(ctx.fs, claude_dir, &new_manifest);
     }
 
     // Step 8: Print summary
@@ -648,7 +649,7 @@ mod tests {
         assert!(fs.exists(Path::new("/claude/rules/common/style.md")));
 
         // Manifest should be written
-        let manifest = manifest::read_manifest(&fs, Path::new("/claude"));
+        let manifest = read_manifest(&fs, Path::new("/claude"));
         assert!(manifest.is_some());
         assert_eq!(manifest.unwrap().version, "4.0.0");
     }
@@ -689,7 +690,7 @@ mod tests {
         // Files should NOT be written in dry run
         assert!(!fs.exists(Path::new("/claude/agents/planner.md")));
         // Manifest should NOT exist
-        assert!(manifest::read_manifest(&fs, Path::new("/claude")).is_none());
+        assert!(read_manifest(&fs, Path::new("/claude")).is_none());
     }
 
     #[test]

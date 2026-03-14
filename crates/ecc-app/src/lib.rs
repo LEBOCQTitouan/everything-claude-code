@@ -1,5 +1,6 @@
 pub mod audit;
 pub mod claw;
+pub mod config;
 pub mod detect;
 pub mod hook;
 pub mod install;
