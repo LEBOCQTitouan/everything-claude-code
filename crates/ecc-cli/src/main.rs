@@ -40,12 +40,12 @@ enum Command {
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    // Initialize logging: --verbose sets RUST_LOG=debug unless already set.
+    // Initialize logging: --verbose sets debug level unless RUST_LOG is already set.
+    let mut log_builder = env_logger::Builder::from_default_env();
     if cli.verbose && std::env::var_os("RUST_LOG").is_none() {
-        // SAFETY: Called before any threads are spawned (start of main).
-        unsafe { std::env::set_var("RUST_LOG", "debug") };
+        log_builder.filter_level(log::LevelFilter::Debug);
     }
-    env_logger::init();
+    log_builder.init();
 
     match cli.command {
         Command::Version => commands::version::run(),
