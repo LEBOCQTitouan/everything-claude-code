@@ -242,6 +242,7 @@ For each phase in the approved plan:
 - Improve naming, extract constants, reduce duplication
 - Run tests again — **verify tests still PASS**
 - If no meaningful refactoring needed, skip this step
+- **Boy Scout Delta**: Scan 3-5 files near the current changes for one small improvement: remove a TODO, extract a magic number, rename a vague identifier, or delete dead code. Commit separately: `chore(scout): <description>`
 - Commit: `refactor: improve <phase>`
 
 #### 5. GATE — Phase Complete
