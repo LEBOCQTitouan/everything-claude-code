@@ -191,6 +191,68 @@ Use these rules to decide which diagrams to generate:
 6. **Long labels:** Keep labels under 40 characters. Use `<br/>` for line breaks in node labels (`\n` does NOT work in Mermaid)
 7. **Undefined references:** Every node referenced in an arrow must be defined somewhere in the diagram
 8. **classDiagram methods:** Use `+method()` for public, `-method()` for private, `#method()` for protected
+9. **Reserved word `end` as node ID:** `end` is a Mermaid keyword. Never use it as a node ID — use `finish`, `done`, or `End` instead.
+10. **Unquoted edge labels:** Edge labels with special characters must be quoted: `A -->|"label text"| B`
+11. **Missing `end` in sequence diagram blocks:** Every `alt`, `opt`, `loop`, `par` block MUST have a matching `end`
+
+## Pitfall Examples
+
+### Unquoted labels with special characters
+
+BAD:
+```
+flowchart LR
+    A(Start here) --> B{Is it valid?}
+    B -->|Yes| C(Done (finally))
+```
+
+GOOD — everything quoted:
+```
+flowchart LR
+    A["Start here"] --> B{"Is it valid?"}
+    B -->|"Yes"| C["Done (finally)"]
+```
+
+### Reserved word "end" as node ID
+
+BAD:
+```
+flowchart LR
+    start --> process --> end
+```
+
+GOOD — renamed to avoid reserved word:
+```
+flowchart LR
+    start --> process --> finish
+```
+
+### Missing "end" in sequence diagram
+
+BAD:
+```
+sequenceDiagram
+    Alice->>Bob: Hello
+    alt is happy
+        Bob->>Alice: Great!
+```
+
+GOOD — matching "end" keyword:
+```
+sequenceDiagram
+    Alice->>Bob: Hello
+    alt is happy
+        Bob->>Alice: Great!
+    end
+```
+
+## Validation
+
+Every generated diagram should be validated before writing. The `diagram-generator` agent uses a **generate → validate → fix** loop:
+
+1. **Quick check**: Verify the first line declares a valid diagram type and that brackets are balanced
+2. **mmdc validation**: If `mmdc` (mermaid-cli) is available, run the diagram through the official parser
+3. **Fix loop**: On parse error, read the error, fix only that issue, re-validate (max 3 retries)
 
 ## Marker Syntax
 
