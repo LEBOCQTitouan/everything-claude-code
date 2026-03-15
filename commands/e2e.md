@@ -230,6 +230,22 @@ Add to your CI pipeline:
 - ❌ Skip artifact review on failures
 - ❌ Test every edge case with E2E (use unit tests)
 
+## Humble Object Pattern Enforcement
+
+During code review of generated E2E tests (Phase 2), enforce the Humble Object pattern:
+
+**Page Objects — Zero Assertions**:
+- Page Object files must contain zero `expect()` calls
+- They encapsulate selectors and actions only
+- They return raw values for tests to assert on
+
+**Test Files — Zero Selectors**:
+- Test files must not contain raw `page.locator()` or `page.click('[data-testid="..."]')` calls
+- All element interaction goes through Page Object methods
+- `data-testid` literals appear only in Page Objects
+
+Violations are flagged as MEDIUM code review findings.
+
 ## Integration with Other Commands
 
 - Use `/plan` to identify critical journeys to test and run TDD per phase
