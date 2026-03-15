@@ -31,25 +31,6 @@ pub fn cyan(text: &str, enabled: bool) -> String {
     wrap(text, "36", enabled)
 }
 
-/// Wrap text in white ANSI escape codes.
-pub fn white(text: &str, enabled: bool) -> String {
-    wrap(text, "37", enabled)
-}
-
-/// Wrap text in magenta ANSI escape codes.
-pub fn magenta(text: &str, enabled: bool) -> String {
-    wrap(text, "35", enabled)
-}
-
-/// Wrap text in gray ANSI escape codes.
-pub fn gray(text: &str, enabled: bool) -> String {
-    wrap(text, "90", enabled)
-}
-
-/// Wrap text in cyan background ANSI escape codes.
-pub fn bg_cyan(text: &str, enabled: bool) -> String {
-    wrap(text, "46", enabled)
-}
 
 fn wrap(text: &str, code: &str, enabled: bool) -> String {
     if enabled {
@@ -100,10 +81,6 @@ mod tests {
         assert!(green("x", true).contains("[32m"));
         assert!(yellow("x", true).contains("[33m"));
         assert!(cyan("x", true).contains("[36m"));
-        assert!(white("x", true).contains("[37m"));
-        assert!(magenta("x", true).contains("[35m"));
-        assert!(gray("x", true).contains("[90m"));
         assert!(dim("x", true).contains("[2m"));
-        assert!(bg_cyan("x", true).contains("[46m"));
     }
 }
