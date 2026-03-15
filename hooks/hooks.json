@@ -71,18 +71,6 @@
           }
         ],
         "description": "Warn when edit content mixes abstraction levels (Stepdown Rule)"
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ecc-shell-hook \"pre:observe\" \"skills/continuous-learning-v2/hooks/observe.sh\" \"standard,strict\"",
-            "async": true,
-            "timeout": 10
-          }
-        ],
-        "description": "Capture tool use observations for continuous learning"
       }
     ],
     "PreCompact": [
@@ -221,18 +209,6 @@
           }
         ],
         "description": "Remind about undocumented exports after source file edits"
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ecc-shell-hook \"post:observe\" \"skills/continuous-learning-v2/hooks/observe.sh\" \"standard,strict\"",
-            "async": true,
-            "timeout": 10
-          }
-        ],
-        "description": "Capture tool use results for continuous learning"
       }
     ],
     "Stop": [
