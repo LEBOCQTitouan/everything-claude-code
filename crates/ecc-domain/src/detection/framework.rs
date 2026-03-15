@@ -6,7 +6,7 @@ pub struct FrameworkRule {
     pub package_keys: &'static [&'static str],
 }
 
-/// Framework detection rules — 25 entries matching the TypeScript implementation.
+/// Framework detection rules for all supported web/app frameworks.
 pub const FRAMEWORK_RULES: &[FrameworkRule] = &[
     // Python frameworks
     FrameworkRule {
@@ -162,6 +162,8 @@ pub const FRAMEWORK_RULES: &[FrameworkRule] = &[
         package_keys: &["io.ktor"],
     },
     // C#/.NET frameworks
+    // Note: markers are AND-combined with the csharp language rule (.cs/.csproj/.sln).
+    // appsettings.json alone won't trigger — the project must also have C# extensions.
     FrameworkRule {
         framework: "aspnetcore",
         language: "csharp",
@@ -180,22 +182,81 @@ pub struct ProjectType {
 }
 
 pub const FRONTEND_SIGNALS: &[&str] = &[
-    "react", "vue", "angular", "svelte", "nextjs", "nuxt", "astro", "remix",
+    "react", "vue", "angular", "svelte", "nextjs", "nuxt", "astro", "remix", "electron",
 ];
 
 pub const BACKEND_SIGNALS: &[&str] = &[
     "django", "fastapi", "flask", "express", "nestjs", "rails", "spring",
-    "laravel", "phoenix", "gin", "echo", "actix", "axum", "ktor", "aspnetcore",
+    "laravel", "symfony", "phoenix", "gin", "echo", "actix", "axum", "ktor", "aspnetcore",
 ];
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // --- FRAMEWORK_RULES ---
+    use crate::detection::language::LANGUAGE_RULES;
 
     #[test]
     fn framework_rules_has_25_entries() {
         assert_eq!(FRAMEWORK_RULES.len(), 25);
+    }
+
+    #[test]
+    fn all_framework_rules_have_nonempty_name_and_language() {
+        for rule in FRAMEWORK_RULES {
+            assert!(!rule.framework.is_empty(), "framework name must not be empty");
+            assert!(!rule.language.is_empty(), "language must not be empty for {}", rule.framework);
+        }
+    }
+
+    #[test]
+    fn all_framework_rules_have_markers_or_package_keys() {
+        for rule in FRAMEWORK_RULES {
+            assert!(
+                !rule.markers.is_empty() || !rule.package_keys.is_empty(),
+                "framework '{}' must have markers or package_keys",
+                rule.framework
+            );
+        }
+    }
+
+    #[test]
+    fn all_framework_rules_reference_known_languages() {
+        let known_langs: Vec<&str> = LANGUAGE_RULES.iter().map(|r| r.lang_type).collect();
+        for rule in FRAMEWORK_RULES {
+            assert!(
+                known_langs.contains(&rule.language),
+                "framework '{}' references unknown language '{}'",
+                rule.framework,
+                rule.language
+            );
+        }
+    }
+
+    #[test]
+    fn no_duplicate_framework_names() {
+        let mut seen = std::collections::HashSet::new();
+        for rule in FRAMEWORK_RULES {
+            assert!(
+                seen.insert(rule.framework),
+                "duplicate framework: {}",
+                rule.framework
+            );
+        }
+    }
+
+    #[test]
+    fn every_framework_is_classified_as_frontend_or_backend() {
+        let all_signals: Vec<&str> = FRONTEND_SIGNALS
+            .iter()
+            .chain(BACKEND_SIGNALS.iter())
+            .copied()
+            .collect();
+        for rule in FRAMEWORK_RULES {
+            assert!(
+                all_signals.contains(&rule.framework),
+                "framework '{}' not in FRONTEND_SIGNALS or BACKEND_SIGNALS",
+                rule.framework
+            );
+        }
     }
 }
