@@ -248,6 +248,119 @@ pub fn merge_hooks_pure(
     )
 }
 
+// ---------------------------------------------------------------------------
+// Typed hook functions (using HookEntry / HooksMap)
+// ---------------------------------------------------------------------------
+
+/// Check if a typed hook entry is a legacy ECC hook.
+pub fn is_legacy_ecc_hook_typed(entry: &super::hook_types::HookEntry) -> bool {
+    let hooks = match &entry.hooks {
+        Some(h) => h,
+        None => return false,
+    };
+
+    for hook in hooks {
+        let cmd = match &hook.command {
+            Some(super::hook_types::HookCommandValue::Single(c)) => c.as_str(),
+            _ => continue,
+        };
+
+        if cmd.starts_with("ecc-hook ") || cmd.starts_with("ecc-shell-hook ") {
+            if cmd.contains("dist/hooks/") {
+                return true;
+            }
+            continue;
+        }
+
+        for identifier in ECC_PACKAGE_IDENTIFIERS {
+            if cmd.contains(identifier) {
+                return true;
+            }
+        }
+
+        if cmd.contains("scripts/hooks/") && !cmd.contains("run-with-flags-shell.sh") {
+            return true;
+        }
+
+        if cmd.contains("${ECC_ROOT}") || cmd.contains("${CLAUDE_PLUGIN_ROOT}") {
+            return true;
+        }
+
+        if cmd.contains("/dist/hooks/run-with-flags.js") {
+            return true;
+        }
+
+        if cmd.contains("/scripts/hooks/run-with-flags-shell.sh") {
+            return true;
+        }
+
+        if cmd.contains("node -e")
+            && (cmd.contains("dev-server")
+                || cmd.contains("tmux")
+                || cmd.contains("git push")
+                || cmd.contains("console.log")
+                || cmd.contains("check-console")
+                || cmd.contains("pr-created")
+                || cmd.contains("build-complete"))
+        {
+            return true;
+        }
+    }
+
+    false
+}
+
+/// Remove legacy hooks from a typed hooks map.
+/// Returns a new map with legacy hooks removed, and the count of removed hooks.
+pub fn remove_legacy_hooks_typed(
+    hooks: &super::hook_types::HooksMap,
+) -> (super::hook_types::HooksMap, usize) {
+    let mut result = super::hook_types::HooksMap::new();
+    let mut removed = 0usize;
+
+    for (event, entries) in hooks {
+        let original_len = entries.len();
+        let filtered: Vec<super::hook_types::HookEntry> = entries
+            .iter()
+            .filter(|entry| !is_legacy_ecc_hook_typed(entry))
+            .cloned()
+            .collect();
+        removed += original_len - filtered.len();
+        result.insert(event.clone(), filtered);
+    }
+
+    (result, removed)
+}
+
+/// Merge hooks from source into existing hooks (typed version).
+///
+/// Returns `(merged_hooks, added_count, existing_count, legacy_removed_count)`.
+pub fn merge_hooks_typed(
+    source_hooks: &super::hook_types::HooksMap,
+    existing_hooks: &super::hook_types::HooksMap,
+) -> (super::hook_types::HooksMap, usize, usize, usize) {
+    let (cleaned, legacy_removed) = remove_legacy_hooks_typed(existing_hooks);
+
+    let mut merged = cleaned;
+    let mut added = 0usize;
+    let mut already_present = 0usize;
+
+    for (event, source_entries) in source_hooks {
+        let existing_entries = merged.entry(event.clone()).or_default();
+
+        for entry in source_entries {
+            if existing_entries.contains(entry) {
+                already_present += 1;
+            } else {
+                existing_entries.push(entry.clone());
+                added += 1;
+            }
+        }
+    }
+
+    (merged, added, already_present, legacy_removed)
+}
+
 /// Check if two strings differ after trimming whitespace.
 pub fn contents_differ(a: &str, b: &str) -> bool {
     a.trim() != b.trim()

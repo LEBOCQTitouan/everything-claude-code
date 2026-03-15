@@ -41,26 +41,22 @@ pub fn extract_frontmatter(content: &str) -> Option<HashMap<String, String>> {
     Some(map)
 }
 
-/// Validate a single hook entry object.
+/// Validate a single hook command using the typed model.
 ///
 /// Returns a list of error messages. Empty means the entry is valid.
-pub fn check_hook_entry(hook: &serde_json::Value, label: &str) -> Vec<String> {
+pub fn check_hook_command(hook: &super::hook_types::HookCommand, label: &str) -> Vec<String> {
     let mut errors = Vec::new();
 
-    match hook.get("type").and_then(|v| v.as_str()) {
+    match &hook.hook_type {
         Some(t) if !t.is_empty() => {}
         _ => {
             errors.push(format!("{label} missing or invalid 'type' field"));
         }
     }
 
-    if let Some(a) = hook.get("async")
-        && !a.is_boolean()
-    {
-        errors.push(format!("{label} 'async' must be a boolean"));
-    }
+    // async is always a bool if present (enforced by serde), no validation needed
 
-    if let Some(t) = hook.get("timeout") {
+    if let Some(t) = &hook.timeout {
         match t.as_f64() {
             Some(v) if v >= 0.0 => {}
             _ => {
@@ -69,15 +65,10 @@ pub fn check_hook_entry(hook: &serde_json::Value, label: &str) -> Vec<String> {
         }
     }
 
-    match hook.get("command") {
-        Some(serde_json::Value::String(s)) if !s.trim().is_empty() => {}
-        Some(serde_json::Value::Array(arr)) if !arr.is_empty() => {
-            if !arr
-                .iter()
-                .all(|v| matches!(v, serde_json::Value::String(s) if !s.is_empty()))
-            {
-                errors.push(format!("{label} invalid 'command' array entries"));
-            }
+    match &hook.command {
+        Some(cmd) if cmd.all_entries_valid() => {}
+        Some(super::hook_types::HookCommandValue::Array(_)) => {
+            errors.push(format!("{label} invalid 'command' array entries"));
         }
         _ => {
             errors.push(format!("{label} missing or invalid 'command' field"));
@@ -87,9 +78,112 @@ pub fn check_hook_entry(hook: &serde_json::Value, label: &str) -> Vec<String> {
     errors
 }
 
+/// Validate a single hook entry object (untyped, for backward compatibility).
+///
+/// Returns a list of error messages. Empty means the entry is valid.
+pub fn check_hook_entry(hook: &serde_json::Value, label: &str) -> Vec<String> {
+    // Try to deserialize into the typed model
+    match serde_json::from_value::<super::hook_types::HookCommand>(hook.clone()) {
+        Ok(cmd) => check_hook_command(&cmd, label),
+        Err(_) => {
+            // Fall back to manual validation for malformed JSON
+            let mut errors = Vec::new();
+
+            match hook.get("type").and_then(|v| v.as_str()) {
+                Some(t) if !t.is_empty() => {}
+                _ => {
+                    errors.push(format!("{label} missing or invalid 'type' field"));
+                }
+            }
+
+            if let Some(a) = hook.get("async")
+                && !a.is_boolean()
+            {
+                errors.push(format!("{label} 'async' must be a boolean"));
+            }
+
+            if let Some(t) = hook.get("timeout") {
+                match t.as_f64() {
+                    Some(v) if v >= 0.0 => {}
+                    _ => {
+                        errors.push(format!("{label} 'timeout' must be a non-negative number"));
+                    }
+                }
+            }
+
+            match hook.get("command") {
+                Some(serde_json::Value::String(s)) if !s.trim().is_empty() => {}
+                Some(serde_json::Value::Array(arr)) if !arr.is_empty() => {
+                    if !arr
+                        .iter()
+                        .all(|v| matches!(v, serde_json::Value::String(s) if !s.is_empty()))
+                    {
+                        errors.push(format!("{label} invalid 'command' array entries"));
+                    }
+                }
+                _ => {
+                    errors.push(format!("{label} missing or invalid 'command' field"));
+                }
+            }
+
+            errors
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::hook_types::{HookCommand, HookCommandValue};
+
+    // --- check_hook_command (typed) ---
+
+    #[test]
+    fn typed_valid_hook_command() {
+        let cmd = HookCommand {
+            hook_type: Some("command".to_string()),
+            command: Some(HookCommandValue::Single("echo hello".to_string())),
+            r#async: None,
+            timeout: None,
+        };
+        assert!(check_hook_command(&cmd, "test").is_empty());
+    }
+
+    #[test]
+    fn typed_missing_type() {
+        let cmd = HookCommand {
+            hook_type: None,
+            command: Some(HookCommandValue::Single("echo hello".to_string())),
+            r#async: None,
+            timeout: None,
+        };
+        assert!(!check_hook_command(&cmd, "test").is_empty());
+    }
+
+    #[test]
+    fn typed_missing_command() {
+        let cmd = HookCommand {
+            hook_type: Some("command".to_string()),
+            command: None,
+            r#async: None,
+            timeout: None,
+        };
+        assert!(!check_hook_command(&cmd, "test").is_empty());
+    }
+
+    #[test]
+    fn typed_valid_array_command() {
+        let cmd = HookCommand {
+            hook_type: Some("command".to_string()),
+            command: Some(HookCommandValue::Array(vec![
+                "echo".to_string(),
+                "hello".to_string(),
+            ])),
+            r#async: None,
+            timeout: None,
+        };
+        assert!(check_hook_command(&cmd, "test").is_empty());
+    }
 
     // --- extract_frontmatter ---
 

@@ -55,6 +55,13 @@ pub struct HookDiffEntry {
     pub entry: serde_json::Value,
 }
 
+/// A typed hook entry in a diff comparison (no serde_json::Value).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypedHookDiffEntry {
+    pub event: String,
+    pub entry: super::hook_types::HookEntry,
+}
+
 /// Audit summary for a single artifact type (agents, commands, etc.).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArtifactAudit {
@@ -254,6 +261,71 @@ pub fn parse_frontmatter(content: &str) -> BTreeMap<String, String> {
     match super::validate::extract_frontmatter(content) {
         Some(map) => map.into_iter().collect(),
         None => BTreeMap::new(),
+    }
+}
+
+/// Check if a typed hook entry is ECC-managed.
+pub fn is_ecc_managed_hook_typed(
+    entry: &super::hook_types::HookEntry,
+    source_hooks: &super::hook_types::HooksMap,
+) -> bool {
+    let hooks = match &entry.hooks {
+        Some(h) if !h.is_empty() => h,
+        _ => return false,
+    };
+
+    for hook in hooks {
+        let cmd = match &hook.command {
+            Some(super::hook_types::HookCommandValue::Single(c)) => c.as_str(),
+            _ => continue,
+        };
+
+        if cmd.starts_with("ecc-hook ") || cmd.starts_with("ecc-shell-hook ") {
+            return true;
+        }
+
+        for identifier in ECC_PACKAGE_IDENTIFIERS {
+            if cmd.contains(identifier) {
+                return true;
+            }
+        }
+
+        // Check if entry matches any source hook
+        for source_entries in source_hooks.values() {
+            if source_entries.contains(entry) {
+                return true;
+            }
+        }
+
+        if is_legacy_pattern(cmd) {
+            return true;
+        }
+    }
+
+    false
+}
+
+/// Check if a typed hook entry exists in the source hooks.
+pub fn exists_in_source_typed(
+    event: &str,
+    entry: &super::hook_types::HookEntry,
+    source_hooks: &super::hook_types::HooksMap,
+) -> bool {
+    match source_hooks.get(event) {
+        Some(entries) => entries.contains(entry),
+        None => false,
+    }
+}
+
+/// Check if a typed source hook entry exists in the settings hooks.
+pub fn exists_in_settings_typed(
+    event: &str,
+    entry: &super::hook_types::HookEntry,
+    settings_hooks: &super::hook_types::HooksMap,
+) -> bool {
+    match settings_hooks.get(event) {
+        Some(entries) => entries.contains(entry),
+        None => false,
     }
 }
 
