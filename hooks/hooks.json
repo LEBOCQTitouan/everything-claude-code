@@ -53,6 +53,26 @@
         "description": "Suggest manual compaction at logical intervals"
       },
       {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"pre:edit:boundary-crossing\" \"standard,strict\""
+          }
+        ],
+        "description": "Block edits that introduce outward imports in domain-layer files"
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"pre:edit:stepdown-warning\" \"standard,strict\""
+          }
+        ],
+        "description": "Warn when edit content mixes abstraction levels (Stepdown Rule)"
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
@@ -155,6 +175,42 @@
         "description": "Warn about console.log statements after edits"
       },
       {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"post:edit:boy-scout-delta\" \"standard,strict\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Suggest one small nearby improvement after edits (Boy Scout Rule)"
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"post:edit:naming-review\" \"standard,strict\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Flag generic identifier names in edit content"
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"post:edit:newspaper-check\" \"standard,strict\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Check public-before-private function ordering after edits"
+      },
+      {
         "matcher": "Edit|Write",
         "hooks": [
           {
@@ -235,6 +291,30 @@
           }
         ],
         "description": "Track token and cost metrics per session"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"stop:oath-reflection\" \"standard,strict\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Summarize session commits against Programmer's Oath"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"stop:craft-velocity\" \"standard,strict\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Calculate rework ratio and track craft velocity metrics"
       }
     ],
     "SessionEnd": [
