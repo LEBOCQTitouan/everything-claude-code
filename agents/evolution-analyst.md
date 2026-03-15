@@ -105,6 +105,26 @@ Also output a structured data section for other agents to cross-reference:
 | File | Hotspot Score | Changes | Complexity | Bus Factor | Trend |
 ```
 
+## Temporal Coupling Detection
+
+Identify file pairs that change together but have no compile-time dependency:
+
+1. From co-change coupling data, filter pairs with co-change rate > 60%
+2. For each pair, check if either file imports the other (directly or transitively)
+3. If no import relationship exists, flag as **temporal coupling**:
+
+```
+### [EVOL-NNN] Temporal Coupling
+- **Severity**: MEDIUM
+- **Files**: `file_a.rs` ↔ `file_b.rs`
+- **Co-change rate**: 73% (22/30 commits)
+- **Compile-time dependency**: NONE
+- **Risk**: Change to one file implicitly requires changing the other, but the compiler won't catch missed updates
+- **Remediation**: Either make the dependency explicit (shared interface) or decouple the files
+```
+
+Temporal coupling is a leading indicator of fragility — when the dependency is invisible, developers miss required changes.
+
 ## What You Are NOT
 
 - You do NOT review code quality or architecture — you analyze git history patterns
