@@ -10,6 +10,17 @@ Run comprehensive verification on current codebase state. This is the single qua
 
 Execute verification in this exact order. Each phase is sequential — stop on critical failures.
 
+### Phase 0: Prompt Refinement
+
+Before executing, analyze the user's input using the `prompt-optimizer` skill:
+1. Identify intent and match to available ECC skills/commands/agents
+2. Check for ambiguity or missing context
+3. Rewrite the task description for clarity and specificity
+4. Display the refined prompt to the user
+
+If the refined prompt differs significantly, show both original and refined versions.
+Proceed with the refined version unless the user objects.
+
 ### Phase 1: Build Check
 
 - Run the build command for this project
@@ -208,7 +219,9 @@ $ARGUMENTS can be:
 - `full` — All phases (default)
 - `pre-commit` — Build + types + tests + code review
 - `pre-pr` — All phases plus security scan
+- `review` — Code review only (Phase 6). Runs `git diff HEAD` review without build/tests/lint
 - `--fix` — Auto-fix lint/format issues
+- `--path=<dir>` — Scope phases 1-3 (build, types, lint) to a subdirectory. Code review and architecture review still run project-wide
 - `--focus=<dimension>` — Narrow architecture review to a specific dimension (e.g., `--focus=coupling`)
 
 ## Related Agents
