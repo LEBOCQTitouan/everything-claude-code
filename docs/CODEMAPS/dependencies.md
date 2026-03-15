@@ -58,29 +58,27 @@ ecc-test-support → ecc-ports
 | `.gitignore` | ECC-managed entries (project-level) |
 | `CLAUDE.md` | Project instructions (project-level) |
 
-## npm Package Distribution
+## Distribution
 
-Published as `@lebocqtitouan/ecc`. Uses platform-specific optional dependencies:
+Distributed via GitHub Releases. Each release tarball bundles:
 
 ```
-npm/
-  ├─ ecc-darwin-arm64/    → macOS ARM binary
-  ├─ ecc-darwin-x64/      → macOS Intel binary
-  ├─ ecc-linux-arm64/     → Linux ARM binary
-  ├─ ecc-linux-x64/       → Linux x64 binary
-  └─ ecc-win32-x64/       → Windows x64 binary
-
-Included content:
-  agents/      → 30 agent definitions
-  commands/    → 7 slash commands
-  skills/      → 81 skill directories
-  rules/       → Language-specific rules (7 groups)
-  hooks/       → hooks.json registry
-  contexts/    → Context injection files
-  mcp-configs/ → MCP server configs
-  examples/    → CLAUDE.md templates
-  schemas/     → JSON schemas
+~/.ecc/
+  ├─ bin/ecc              → Platform binary
+  ├─ bin/ecc-hook         → Shell shim for hook dispatch
+  ├─ bin/ecc-shell-hook.sh → Shell hook shim
+  ├─ agents/              → 30 agent definitions
+  ├─ commands/            → 7 slash commands
+  ├─ skills/              → 81 skill directories
+  ├─ rules/               → Language-specific rules (7 groups)
+  ├─ hooks/               → hooks.json registry
+  ├─ contexts/            → Context injection files
+  ├─ mcp-configs/         → MCP server configs
+  ├─ examples/            → CLAUDE.md templates
+  └─ schemas/             → JSON schemas
 ```
+
+Install: `curl -fsSL https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/get-ecc.sh | bash`
 
 ## Total Dependency Count
 

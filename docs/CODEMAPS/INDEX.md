@@ -9,7 +9,7 @@
 | [architecture.md](architecture.md) | Hexagonal architecture, data flow, crate boundaries, build pipeline |
 | [backend.md](backend.md) | Crate-level module breakdown, hook handlers, CLI commands |
 | [data.md](data.md) | Rust data structures, storage format, configuration files |
-| [dependencies.md](dependencies.md) | Cargo workspace deps, external tools, npm distribution shims |
+| [dependencies.md](dependencies.md) | Cargo workspace deps, external tools, GitHub Releases distribution |
 
 ## Quick Stats
 
@@ -23,7 +23,7 @@
 
 ```
 crates/ecc-cli/src/main.rs  → CLI binary (`ecc` command via clap)
-npm/                        → npm distribution shims (JS → Rust binary bridge)
+scripts/get-ecc.sh          → curl installer (GitHub Releases → ~/.ecc/)
 ```
 
 ## Crate Architecture

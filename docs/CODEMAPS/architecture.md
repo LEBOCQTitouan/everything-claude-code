@@ -4,7 +4,7 @@
 
 ## System Type
 
-CLI tool (`ecc`) -- Rust binary with npm distribution shims, providing Claude Code configuration management.
+CLI tool (`ecc`) -- Rust binary distributed via GitHub Releases with curl installer, providing Claude Code configuration management.
 
 ## Hexagonal Architecture
 
@@ -76,11 +76,9 @@ User CLI
 ```
 crates/**/*.rs  →  cargo build --release  →  target/release/ecc (single binary)
                                                   │
-                                           npm/*/index.js (platform shims)
+                                           GitHub Release tarballs (binary + content)
                                                   │
-                                           npm publish (optionalDependencies per platform)
-                                                  │
-                                           npm install -g @lebocqtitouan/ecc
+                                           curl installer → ~/.ecc/
 ```
 
 ## Test Architecture

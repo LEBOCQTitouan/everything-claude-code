@@ -31,7 +31,7 @@ crates/          Rust crates (hexagonal architecture)
   ecc-infra/     Production adapters (OS filesystem, process executor, terminal)
   ecc-cli/       CLI binary entry point (`ecc` command)
   ecc-test-support/  Test doubles (InMemoryFileSystem, MockExecutor, MockEnvironment)
-npm/             npm distribution shims (JS → Rust binary bridge)
+bin/             Shell shims (ecc-hook, ecc-shell-hook.sh)
 docs/            Diagrams, guides, and reference documentation
 examples/        CLAUDE.md templates for real-world stacks
 agents/          Specialized subagents (architect, uncle-bob, planner, code-reviewer, ...)
