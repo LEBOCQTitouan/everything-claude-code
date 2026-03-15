@@ -17,6 +17,18 @@ Proceed with the refined version unless the user objects.
 
 **FIRST ACTION**: Call the `EnterPlanMode` tool immediately. This enters Claude Code plan mode which restricts tools to read-only exploration while you research and design the plan. After writing the plan, call `ExitPlanMode` to present it for user approval. Once the user approves, you exit plan mode and gain full tool access for TDD execution.
 
+### Phase 0.5: Screaming Architecture Boundary Check
+
+Before story decomposition, the requirements-analyst checks if the directory structure "screams the use case":
+
+1. Scan the project's top-level directory structure
+2. Check if directories are named for the **use case/domain** (e.g., `orders/`, `payments/`, `users/`) or for **technical role** (e.g., `controllers/`, `models/`, `views/`)
+3. If organized by technical role: flag as WARNING — "Architecture does not scream its use case. Consider restructuring by domain."
+4. If organized by domain: PASS — proceed with story decomposition
+5. Include boundary check result in the plan recap
+
+This ensures new features land in the right structural home before any code is written.
+
 This command invokes the **planner** agent to create a comprehensive implementation plan, then executes it using TDD after user confirmation.
 
 ## Modes
