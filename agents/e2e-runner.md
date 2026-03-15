@@ -48,21 +48,34 @@ npx playwright test --trace on             # Run with trace
 npx playwright show-report                 # View HTML report
 ```
 
+## Input Contract
+
+When invoked from `/e2e`, this agent receives a journey spec:
+- **name** — journey identifier (e.g., "market-search-and-view")
+- **scenarios** — list of scenarios to test (happy path, edge cases, error cases)
+- **risk level** — HIGH / MEDIUM / LOW
+- **target dir** — where to write test files
+
+When invoked directly (not from `/e2e`), this agent performs its own journey planning.
+
+## Output Contract
+
+Return structured results:
+- **files_created** — list of test files written
+- **test_results** — pass/fail counts, duration
+- **flaky_tests** — tests that failed intermittently (from repeat runs)
+- **artifact_paths** — screenshots, videos, traces, reports
+
 ## Workflow
 
-### 1. Plan
-- Identify critical user journeys (auth, core features, payments, CRUD)
-- Define scenarios: happy path, edge cases, error cases
-- Prioritize by risk: HIGH (financial, auth), MEDIUM (search, nav), LOW (UI polish)
-
-### 2. Create
+### 1. Create
 - Use Page Object Model (POM) pattern
 - Prefer `data-testid` locators over CSS/XPath
 - Add assertions at key steps
 - Capture screenshots at critical points
 - Use proper waits (never `waitForTimeout`)
 
-### 3. Execute
+### 2. Execute
 - Run locally 3-5 times to check for flakiness
 - Quarantine flaky tests with `test.fixme()` or `test.skip()`
 - Upload artifacts to CI
