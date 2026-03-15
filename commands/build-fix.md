@@ -31,6 +31,18 @@ Identify the project's build tool and run the build:
 | `go.mod` | `go build ./...` |
 | `pyproject.toml` | `python -m py_compile` or `mypy .` |
 
+## Step 1.5: Error Classification
+
+Before fixing, classify each error to guide the response:
+
+| Classification | Signal | Response |
+|---------------|--------|----------|
+| **Structural** | Error spans multiple layers, import graph broken | Suggest `/plan refactor` — this is an architecture problem, not a quick fix |
+| **Contractual** | Interface mismatch, missing trait impl, wrong return type | Fix the contract + add a note about the abstraction leak that caused it |
+| **Incidental** | Typo, missing import, wrong variable name | Fix immediately and move on |
+
+Structural errors that recur after 2 fix attempts are a signal to stop and rethink the architecture.
+
 ## Step 2: Parse and Group Errors
 
 1. Run the build command and capture stderr
