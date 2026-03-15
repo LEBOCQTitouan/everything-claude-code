@@ -110,6 +110,25 @@ npx eslint . --fix
 - Tests failing → use `tdd-guide`
 - Security issues → use `security-reviewer`
 
+## Error Classification
+
+Before fixing, classify each error to guide your response:
+
+| Classification | Signal | Response |
+|---------------|--------|----------|
+| **Structural** | Error spans multiple layers, import graph broken | Suggest `/plan refactor` — architecture problem, not quick fix |
+| **Contractual** | Interface mismatch, missing trait impl, wrong return type | Fix contract + note the abstraction leak |
+| **Incidental** | Typo, missing import, wrong variable name | Fix immediately |
+
+## Primitive Obsession Detection
+
+When fixing type errors, watch for repeated primitive wrapping/unwrapping patterns:
+- Same `as String` / `.to_string()` / `&str` → `String` conversion for the same concept in 3+ locations
+- Repeated `i32`/`u64` used for typed IDs
+- String fields always validated the same way
+
+When detected, add a note: "Consider a newtype for `<concept>` — repeated primitive conversions indicate a missing domain type."
+
 ---
 
 ## Commit Cadence
