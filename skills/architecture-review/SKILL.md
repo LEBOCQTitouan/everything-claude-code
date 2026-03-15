@@ -135,6 +135,41 @@ Types and state should not leak across bounded context boundaries.
 
 Detection: Map types to their defining module. Search for imports of those types from other contexts. Check for shared state patterns (global stores, static mutable variables).
 
+### 13. Dependency Direction Scoring
+
+Quantitative measure of how well the codebase respects the Dependency Rule (source code dependencies must point inward).
+
+**Methodology**:
+1. For each module, count **inward edges** (imports from outer layers pointing to this module) and **outward edges** (this module importing from inner layers — violations).
+2. Calculate the **dependency direction score**:
+
+```
+direction_score = inward_edges / (inward_edges + outward_edges)
+```
+
+- `1.0` → perfect: all dependencies point inward
+- `0.5` → neutral: equal inward and outward (coin flip)
+- `< 0.5` → inverted: more outward dependencies than inward
+
+**Thresholds**:
+- Module score `< 0.5` — HIGH: dependency rule violated (net outward)
+- Module score `0.5 - 0.7` — MEDIUM: weak inward tendency
+- Module score `>= 0.7` — GOOD: strong inward dependency direction
+
+**Aggregate project score**:
+```
+project_direction_score = sum(inward_edges) / sum(inward_edges + outward_edges)
+```
+
+Report as "Dependency Rule Compliance: X%" (score × 100).
+
+**Layer classification** (for edge direction determination):
+- **Inner layers**: domain, entities, core, model
+- **Middle layers**: application, use_cases, services, ports
+- **Outer layers**: infrastructure, adapters, controllers, cli, api, ui, framework
+
+An edge from outer → inner is **inward** (correct). An edge from inner → outer is **outward** (violation).
+
 ## Architecture Score
 
 | Score | Criteria |
