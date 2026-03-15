@@ -1,54 +1,9 @@
 {
-  "name": "@lebocqtitouan/ecc",
-  "version": "4.0.0-alpha.1",
-  "description": "CLI to set up Claude Code configuration — agents, skills, rules, hooks",
-  "license": "MIT",
-  "main": "./npm/ecc/bin/ecc.js",
-  "bin": {
-    "ecc": "./npm/ecc/bin/ecc.js",
-    "ecc-hook": "./npm/ecc/bin/ecc-hook.js",
-    "ecc-shell-hook": "./bin/ecc-shell-hook.sh"
-  },
-  "files": [
-    "bin/",
-    "npm/",
-    "install.sh",
-    "examples",
-    "agents",
-    "commands",
-    "skills",
-    "rules",
-    "hooks",
-    "contexts",
-    "mcp-configs",
-    "scripts/hooks/run-with-flags-shell.sh",
-    "scripts/codemaps"
-  ],
+  "private": true,
   "scripts": {
-    "build": "cargo build --release",
-    "test": "cargo test",
-    "clippy": "cargo clippy -- -D warnings",
-    "lint": "markdownlint '**/*.md' --ignore node_modules --ignore target",
-    "use:dev": "cargo build --release && npm link",
-    "use:latest": "npm install -g @lebocqtitouan/ecc@latest"
+    "lint": "markdownlint '**/*.md' --ignore node_modules --ignore target"
   },
   "devDependencies": {
     "markdownlint-cli": "^0.48.0"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/LEBOCQTitouan/everything-claude-code.git"
-  },
-  "keywords": [
-    "claude",
-    "claude-code",
-    "ai",
-    "cli",
-    "agents",
-    "hooks",
-    "rust"
-  ]
+  }
 }
