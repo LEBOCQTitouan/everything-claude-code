@@ -120,6 +120,22 @@ Red flags:
 
 ---
 
+## Component Principles
+
+In addition to SOLID and Clean Code, evaluate designs against the 6 component principles:
+
+**Cohesion**:
+- **REP**: Can each component be released as a coherent unit?
+- **CCP**: Do things that change together live together?
+- **CRP**: Are consumers forced to depend on things they don't use?
+
+**Coupling**:
+- **ADP**: Are there cycles in the component dependency graph? (CRITICAL if yes)
+- **SDP**: Do dependencies point toward stability? (Stable components should not depend on unstable ones)
+- **SAP**: Are stable components sufficiently abstract? (Concrete + stable = Zone of Pain)
+
+Flag component principle violations in the review output under a "Component Principles" section, using the same CRITICAL/HIGH/MEDIUM/LOW severity scale.
+
 ## Review Output Format
 
 ### Design Review (pre-implementation)
