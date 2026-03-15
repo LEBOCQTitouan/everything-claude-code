@@ -6,7 +6,7 @@ pub struct FrameworkRule {
     pub package_keys: &'static [&'static str],
 }
 
-/// Framework detection rules — 23 entries matching the TypeScript implementation.
+/// Framework detection rules — 25 entries matching the TypeScript implementation.
 pub const FRAMEWORK_RULES: &[FrameworkRule] = &[
     // Python frameworks
     FrameworkRule {
@@ -154,6 +154,20 @@ pub const FRAMEWORK_RULES: &[FrameworkRule] = &[
         markers: &[],
         package_keys: &["phoenix"],
     },
+    // Kotlin frameworks
+    FrameworkRule {
+        framework: "ktor",
+        language: "kotlin",
+        markers: &[],
+        package_keys: &["io.ktor"],
+    },
+    // C#/.NET frameworks
+    FrameworkRule {
+        framework: "aspnetcore",
+        language: "csharp",
+        markers: &["appsettings.json", "Program.cs"],
+        package_keys: &["Microsoft.AspNetCore"],
+    },
 ];
 
 /// Result of full project type detection.
@@ -171,7 +185,7 @@ pub const FRONTEND_SIGNALS: &[&str] = &[
 
 pub const BACKEND_SIGNALS: &[&str] = &[
     "django", "fastapi", "flask", "express", "nestjs", "rails", "spring",
-    "laravel", "phoenix", "gin", "echo", "actix", "axum",
+    "laravel", "phoenix", "gin", "echo", "actix", "axum", "ktor", "aspnetcore",
 ];
 
 #[cfg(test)]
@@ -181,7 +195,7 @@ mod tests {
     // --- FRAMEWORK_RULES ---
 
     #[test]
-    fn framework_rules_has_23_entries() {
-        assert_eq!(FRAMEWORK_RULES.len(), 23);
+    fn framework_rules_has_25_entries() {
+        assert_eq!(FRAMEWORK_RULES.len(), 25);
     }
 }

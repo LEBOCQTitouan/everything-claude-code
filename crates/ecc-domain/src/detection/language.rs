@@ -5,7 +5,7 @@ pub struct LanguageRule {
     pub extensions: &'static [&'static str],
 }
 
-/// Language detection rules — 12 entries matching the TypeScript implementation.
+/// Language detection rules — 16 entries matching the TypeScript implementation.
 pub const LANGUAGE_RULES: &[LanguageRule] = &[
     LanguageRule {
         lang_type: "python",
@@ -51,7 +51,7 @@ pub const LANGUAGE_RULES: &[LanguageRule] = &[
     },
     LanguageRule {
         lang_type: "csharp",
-        markers: &[],
+        markers: &["Directory.Build.props", "NuGet.Config"],
         extensions: &[".cs", ".csproj", ".sln"],
     },
     LanguageRule {
@@ -61,7 +61,7 @@ pub const LANGUAGE_RULES: &[LanguageRule] = &[
     },
     LanguageRule {
         lang_type: "kotlin",
-        markers: &[],
+        markers: &["build.gradle.kts", "settings.gradle.kts"],
         extensions: &[".kt", ".kts"],
     },
     LanguageRule {
@@ -74,6 +74,26 @@ pub const LANGUAGE_RULES: &[LanguageRule] = &[
         markers: &["composer.json", "composer.lock"],
         extensions: &[".php"],
     },
+    LanguageRule {
+        lang_type: "cpp",
+        markers: &["CMakeLists.txt", "Makefile", ".clang-format"],
+        extensions: &[".c", ".cpp", ".h", ".hpp", ".cc", ".cxx"],
+    },
+    LanguageRule {
+        lang_type: "shell",
+        markers: &[],
+        extensions: &[".sh", ".bash", ".zsh"],
+    },
+    LanguageRule {
+        lang_type: "yaml",
+        markers: &[],
+        extensions: &[".yml", ".yaml"],
+    },
+    LanguageRule {
+        lang_type: "json",
+        markers: &[],
+        extensions: &[".json", ".jsonc"],
+    },
 ];
 
 #[cfg(test)]
@@ -83,7 +103,7 @@ mod tests {
     // --- LANGUAGE_RULES ---
 
     #[test]
-    fn language_rules_has_12_entries() {
-        assert_eq!(LANGUAGE_RULES.len(), 12);
+    fn language_rules_has_16_entries() {
+        assert_eq!(LANGUAGE_RULES.len(), 16);
     }
 }
