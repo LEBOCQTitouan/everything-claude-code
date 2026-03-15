@@ -176,6 +176,30 @@ const usersWithPosts = await db.query(`
 - **Magic numbers** — Unexplained numeric constants
 - **Inconsistent formatting** — Mixed semicolons, quote styles, indentation
 
+## Function Discipline Checks
+
+During code review, apply these function-level quality checks:
+
+**Length**:
+- > 20 lines → WARNING (consider extracting)
+- > 40 lines → CAUTION (must extract or justify)
+
+**Abstraction Level (Stepdown Rule)**:
+- Flag functions that mix high-level calls (named function invocations) with low-level operations (array indexing `[`, bitwise ops `&|^`, raw string manipulation)
+- Each function should operate at a single level of abstraction
+
+**Argument Count**:
+- 0 (niladic) → ideal
+- 1 (monadic) → good
+- 2 (dyadic) → acceptable
+- 3 (triadic) → flag, recommend parameter object
+- 4+ (polyadic) → HIGH — must refactor
+
+**Command-Query Separation (CQS)**:
+- Flag functions named `get*`/`find*`/`is*`/`has*`/`check*` that mutate state
+- Flag functions named `set*`/`update*`/`create*`/`delete*` that return meaningful values beyond success/failure
+- Severity: MEDIUM for each violation
+
 ## Review Output Format
 
 Organize findings by severity. For each issue:
