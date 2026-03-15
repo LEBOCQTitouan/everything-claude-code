@@ -127,6 +127,20 @@ Produces `docs/diagrams/INDEX.md` catalog with all generated Mermaid diagrams.
 - Quality report with grades A-F per module
 - File size validation per `skills/doc-guidelines/SKILL.md` thresholds
 
+**Comment Quality Classification**:
+Classify every comment in changed/analyzed files:
+
+| Category | Action | Example |
+|----------|--------|---------|
+| **Informative** | Keep | `// RFC 7231 requires this header format` |
+| **Redundant** | Flag for removal | `// increment counter` above `counter += 1` |
+| **Misleading** | CRITICAL — fix immediately | Comment says X, code does Y |
+| **Apologetic** | Track as tech debt | `// sorry, this is a hack` |
+| **Mandated** | Validate accuracy | Required JSDoc/rustdoc for public API |
+| **Journaling** | Flag for removal | `// Added by John on 2024-01-15` |
+
+Include comment quality summary in validation report: count per category, highlight CRITICAL misleading comments.
+
 ### Phase 6: Report
 
 - Documentation coverage % per module (documented exports / total exports)
