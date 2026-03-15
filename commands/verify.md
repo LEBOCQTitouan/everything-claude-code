@@ -202,6 +202,10 @@ After individual phases complete, correlate findings across phases to escalate c
 | Code review CRITICAL security + low coverage | **Escalate to BLOCKING**: security-critical code without tests |
 | Architecture CRITICAL + mutation pattern | **Escalate**: architectural violation with unsafe data patterns |
 | Console.log + security finding | **Flag**: debug logging may leak sensitive data |
+| Dead code + high complexity | **Flag (Rigidity)**: dead code accumulation with rising complexity indicates structural rigidity |
+| Low coverage + high fan-in | **Escalate (Fragility)**: untested code with many dependents breaks unexpectedly |
+| Co-change coupling + no shared abstraction | **Flag (Immobility)**: tangled modules that can't be extracted for reuse |
+| Console.log at boundaries + growing TODOs | **Flag (Viscosity)**: doing the right thing is harder than the wrong thing |
 
 Escalations change the severity of findings:
 - **Escalate** — raise to next severity level
