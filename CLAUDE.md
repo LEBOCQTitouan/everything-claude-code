@@ -58,7 +58,7 @@ ecc completion <shell>    Generate shell completions
 
 ## Slash Commands
 
-6 commands cover the entire coding workflow:
+7 commands cover the entire coding workflow:
 
 | Command | Purpose |
 |---------|---------|
@@ -68,6 +68,7 @@ ecc completion <shell>    Generate shell completions
 | `/e2e` | Generate and run E2E tests with Playwright |
 | `/doc-suite` | Plan-first documentation pipeline |
 | `/audit` | Codebase health audit |
+| `/backlog` | Capture, challenge, optimize, and manage implementation ideas |
 
 ## Scripts
 
