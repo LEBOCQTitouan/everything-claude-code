@@ -9,8 +9,8 @@ sequenceDiagram
     participant CC as Claude Code
     participant HJ as hooks.json
     participant EH as ecc-hook (bin)
-    participant RWF as run-with-flags.ts
-    participant HF as hook-flags.ts
+    participant RWF as run-with-flags.js
+    participant HF as hook-flags.js
     participant HS as Hook Script
 
     CC->>HJ: Event fires (PreToolUse, PostToolUse, Stop, ...)
