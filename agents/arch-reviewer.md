@@ -141,6 +141,25 @@ Only report findings with >80% confidence. If uncertain, downgrade severity rath
 - You are NOT a designer — you do not propose new architectures. That is the `architect` agent.
 - You diagnose. You report. You recommend. You do not rewrite.
 
+## Dependency Direction Scoring
+
+As part of the architecture review pipeline, compute a quantitative dependency direction score:
+
+1. For each top-level module, count **inward edges** (imports respecting the dependency rule) and **outward edges** (imports violating the dependency rule)
+2. Per-module score: `direction_score = inward / (inward + outward)`
+3. Flag modules with `direction_score < 0.5` — net outward dependencies
+4. Aggregate project score: `total_inward / (total_inward + total_outward)`
+5. Report as "Dependency Rule Compliance: X%"
+
+Include in the Architecture Score report:
+
+| Compliance | Verdict |
+|-----------|---------|
+| 90-100% | EXCELLENT |
+| 70-89% | GOOD |
+| 50-69% | NEEDS WORK |
+| < 50% | CRITICAL |
+
 ## Commit Cadence
 
 Architecture reviews are read-only — no commits expected. If the user asks you to fix findings, delegate to `/plan` for a remediation plan, then commit per the atomic commits convention.
