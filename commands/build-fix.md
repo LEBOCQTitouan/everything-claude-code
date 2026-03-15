@@ -4,6 +4,8 @@ description: Incrementally fix build and type errors with minimal, safe changes.
 
 # Build and Fix
 
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
 Incrementally fix build and type errors with minimal, safe changes.
 
 ## Step 0: Prompt Refinement

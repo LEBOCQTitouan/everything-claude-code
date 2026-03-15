@@ -4,6 +4,8 @@ description: Uncle Bob craft health audit — evaluate work against the Programm
 
 # Uncle Bob Audit
 
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
 Standalone invocation of the `robert` meta-agent for professional craftsmanship evaluation.
 
 ## What This Command Does

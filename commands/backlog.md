@@ -4,6 +4,8 @@ description: Capture, challenge, optimize, and manage implementation ideas in a 
 
 # Backlog Command
 
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
 Capture implementation ideas outside active `/plan` sessions. Each idea is challenged lightly, optimized into a ready-to-execute prompt for its target command, and stored in `docs/backlog/`.
 
 ## Subcommands

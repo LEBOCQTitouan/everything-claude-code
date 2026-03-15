@@ -4,6 +4,8 @@ description: Restate requirements, assess risks, create step-by-step plan, then 
 
 # Plan Command
 
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
 ### Phase 0: Prompt Refinement
 
 Before executing, analyze the user's input using the `prompt-optimizer` skill:

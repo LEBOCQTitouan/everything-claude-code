@@ -4,6 +4,8 @@ description: Generate and run end-to-end tests with Playwright. Creates test jou
 
 # E2E Command
 
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
 ### Phase 0: Prompt Refinement
 
 Before executing, analyze the user's input using the `prompt-optimizer` skill:

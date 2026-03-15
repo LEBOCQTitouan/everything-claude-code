@@ -4,6 +4,8 @@ description: Comprehensive verification gate — build, tests, lint, code review
 
 # Verification Command
 
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
 Run comprehensive verification on current codebase state. This is the single quality gate that combines build checks, code review, and architecture review.
 
 ## Instructions
