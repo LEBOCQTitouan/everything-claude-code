@@ -42,43 +42,22 @@ jobs:
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Verify all versions match tag
+      - name: Verify Cargo.toml version matches tag
         if: github.event_name == 'push'
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           VERSION="${TAG_NAME#v}"
-          ERRORS=0
-
-          check_version() {
-            local file="$1"
-            local actual="$2"
-            if [ "$actual" != "$VERSION" ]; then
-              echo "::error::$file version ($actual) does not match tag ($VERSION)"
-              ERRORS=$((ERRORS + 1))
-            fi
-          }
-
-          # Cargo.toml workspace version
           CARGO_VERSION=$(grep -m1 '^version' Cargo.toml | sed 's/.*"\(.*\)"/\1/')
-          check_version "Cargo.toml" "$CARGO_VERSION"
-
-          # Root package.json
-          ROOT_VERSION=$(node -p "require('./package.json').version")
-          check_version "package.json" "$ROOT_VERSION"
-
-          # npm/ecc/package.json
-          NPM_VERSION=$(node -p "require('./npm/ecc/package.json').version")
-          check_version "npm/ecc/package.json" "$NPM_VERSION"
-
-          if [ "$ERRORS" -gt 0 ]; then
-            echo "::error::Run scripts/bump-version.sh $VERSION to sync all versions"
+          if [ "$CARGO_VERSION" != "$VERSION" ]; then
+            echo "::error::Cargo.toml version ($CARGO_VERSION) does not match tag ($VERSION)"
+            echo "::error::Run scripts/bump-version.sh $VERSION to sync"
             exit 1
           fi
 
   # ── Job 2: Cross-compile for all platforms ──
   build:
-    name: Build (${{ matrix.npm-pkg }})
+    name: Build (${{ matrix.target }})
     needs: validate
     runs-on: ${{ matrix.runner }}
 
@@ -88,31 +67,31 @@ jobs:
         include:
           - target: aarch64-apple-darwin
             runner: macos-14
-            npm-pkg: ecc-darwin-arm64
+            artifact: ecc-darwin-arm64
             binary: ecc
             cross: false
 
           - target: x86_64-apple-darwin
             runner: macos-14
-            npm-pkg: ecc-darwin-x64
+            artifact: ecc-darwin-x64
             binary: ecc
             cross: false
 
           - target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
-            npm-pkg: ecc-linux-x64
+            artifact: ecc-linux-x64
             binary: ecc
             cross: false
 
           - target: aarch64-unknown-linux-gnu
             runner: ubuntu-latest
-            npm-pkg: ecc-linux-arm64
+            artifact: ecc-linux-arm64
             binary: ecc
             cross: true
 
           - target: x86_64-pc-windows-msvc
             runner: windows-latest
-            npm-pkg: ecc-win32-x64
+            artifact: ecc-win32-x64
             binary: ecc.exe
             cross: false
 
@@ -142,80 +121,24 @@ jobs:
         if: matrix.cross
         run: cross build --release --target ${{ matrix.target }}
 
-      - name: Copy binary to npm package
+      - name: Stage binary
         shell: bash
         run: |
-          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" \
-             "npm/${{ matrix.npm-pkg }}/${{ matrix.binary }}"
+          mkdir -p staging
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" staging/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
-          name: ${{ matrix.npm-pkg }}
-          path: npm/${{ matrix.npm-pkg }}/
+          name: ${{ matrix.artifact }}
+          path: staging/
           if-no-files-found: error
 
-  # ── Job 3: Publish to npm ──
-  publish-npm:
-    name: Publish npm
-    if: github.event_name == 'push'
-    needs: [validate, build]
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v5
-        with:
-          path: artifacts
-
-      - name: Place binaries in npm packages
-        run: |
-          for pkg in ecc-darwin-arm64 ecc-darwin-x64 ecc-linux-x64 ecc-linux-arm64 ecc-win32-x64; do
-            cp -r "artifacts/$pkg/"* "npm/$pkg/"
-          done
-
-      - name: Publish platform packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          IS_PRERELEASE: ${{ needs.validate.outputs.is_prerelease }}
-        run: |
-          TAG="latest"
-          if [ "$IS_PRERELEASE" = "true" ]; then
-            TAG="next"
-          fi
-
-          for pkg in ecc-darwin-arm64 ecc-darwin-x64 ecc-linux-x64 ecc-linux-arm64 ecc-win32-x64; do
-            echo "Publishing @lebocqtitouan/$pkg..."
-            npm publish "npm/$pkg" --access public --tag "$TAG"
-          done
-
-      - name: Publish wrapper package
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          IS_PRERELEASE: ${{ needs.validate.outputs.is_prerelease }}
-        run: |
-          TAG="latest"
-          if [ "$IS_PRERELEASE" = "true" ]; then
-            TAG="next"
-          fi
-
-          echo "Publishing @lebocqtitouan/ecc..."
-          npm publish "npm/ecc" --access public --tag "$TAG"
-
-  # ── Job 4: Create GitHub Release ──
+  # ── Job 3: Create GitHub Release ──
   github-release:
     name: GitHub Release
     if: github.event_name == 'push'
-    needs: [validate, build, publish-npm]
+    needs: [validate, build]
     runs-on: ubuntu-latest
 
     steps:
@@ -229,13 +152,52 @@ jobs:
         with:
           path: artifacts
 
-      - name: Package binaries for release
+      - name: Package release tarballs with content
         run: |
           mkdir -p release-assets
+
+          # Content directories to bundle alongside the binary
+          CONTENT_DIRS="agents commands skills rules hooks contexts mcp-configs examples schemas"
+
           for pkg in ecc-darwin-arm64 ecc-darwin-x64 ecc-linux-x64 ecc-linux-arm64; do
-            chmod +x "artifacts/$pkg/ecc"
-            tar -czf "release-assets/$pkg.tar.gz" -C "artifacts/$pkg" ecc
+            STAGING=$(mktemp -d)
+
+            # Binary
+            mkdir -p "$STAGING/bin"
+            cp "artifacts/$pkg/ecc" "$STAGING/bin/ecc"
+            chmod +x "$STAGING/bin/ecc"
+
+            # Shell shims
+            cp bin/ecc-hook "$STAGING/bin/ecc-hook"
+            chmod +x "$STAGING/bin/ecc-hook"
+            cp bin/ecc-shell-hook.sh "$STAGING/bin/ecc-shell-hook.sh"
+            chmod +x "$STAGING/bin/ecc-shell-hook.sh"
+
+            # Content files
+            for dir in $CONTENT_DIRS; do
+              if [ -d "$dir" ]; then
+                cp -r "$dir" "$STAGING/$dir"
+              fi
+            done
+
+            # Install script and support files
+            cp install.sh "$STAGING/install.sh"
+            chmod +x "$STAGING/install.sh"
+
+            if [ -d scripts/hooks ]; then
+              mkdir -p "$STAGING/scripts/hooks"
+              cp -r scripts/hooks/. "$STAGING/scripts/hooks/"
+            fi
+            if [ -d scripts/codemaps ]; then
+              mkdir -p "$STAGING/scripts/codemaps"
+              cp -r scripts/codemaps/. "$STAGING/scripts/codemaps/"
+            fi
+
+            tar -czf "release-assets/$pkg.tar.gz" -C "$STAGING" .
+            rm -rf "$STAGING"
           done
+
+          # Windows zip (binary only — no shell shims)
           zip -j "release-assets/ecc-win32-x64.zip" "artifacts/ecc-win32-x64/ecc.exe"
 
       - name: Generate changelog
@@ -264,7 +226,9 @@ jobs:
 
             ## Install
             ```bash
-            npm install -g @lebocqtitouan/ecc
+            curl -fsSL https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/get-ecc.sh | bash
             ```
+
+            Or download the tarball for your platform and extract to `~/.ecc/`.
           files: release-assets/*
           generate_release_notes: false
