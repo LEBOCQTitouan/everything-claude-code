@@ -156,6 +156,23 @@ See [Module Summary](module-summaries/lib.md) | [Quality Score](doc-quality/lib.
 
 When writing to folders, each file is scoped to a single module. Multiple doc-analyzer instances (if invoked by orchestrator for different scopes) write to different files — no conflicts.
 
+## Naming Expressiveness Analysis
+
+During codebase analysis, evaluate the expressiveness of exported identifiers:
+
+1. Scan all public/exported identifiers (functions, classes, types, constants)
+2. Match against generic name patterns: `Manager`, `Handler`, `Processor`, `Data`, `Info`, `Helper`, `Util`, `Service` (without domain prefix), `Base`, `Abstract` (standalone)
+3. Calculate per-module naming score: `(total_exports - generic_names) / total_exports`
+4. Flag modules with naming score < 0.8
+
+Include in analysis output:
+```
+Naming Expressiveness:
+  module-a: 0.92 (GOOD)
+  module-b: 0.71 (WARNING — 5 generic names: DataProcessor, InfoHandler, ...)
+  module-c: 0.95 (GOOD)
+```
+
 ## What You Are NOT
 
 - You do NOT write doc comments into source code — that's `doc-generator`
