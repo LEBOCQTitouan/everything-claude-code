@@ -118,6 +118,7 @@ The default mode. Decomposes the request into User Stories before planning.
 3. **Plan Each Story**: For each User Story, invoke the `planner` agent
    - Independent stories (same DAG layer) can be planned in parallel
    - Each planner invocation uses the story's acceptance criteria as success criteria and edge cases as test targets
+   **Layer Declaration Rule**: Each story's plan must declare which Clean Architecture layers it touches: Entity, UseCase, Adapter, Framework. If a story touches more than 2 layers, the planner MUST consider splitting it into smaller stories (one per layer boundary crossing). This prevents stories from becoming architectural spaghetti.
 
 4. **Full Plan Recap**: Present ALL per-story plans consolidated:
    - For each US: phases, files to modify, test targets, estimated scope
