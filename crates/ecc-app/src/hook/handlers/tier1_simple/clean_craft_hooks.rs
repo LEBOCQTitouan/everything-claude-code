@@ -316,12 +316,12 @@ fn has_magic_number(line: &str) -> bool {
                 }
             }
             // Exclude common non-magic numbers
-            if num_str != "2" || line.contains("/ 2") || line.contains("* 2") {
-                if let Ok(n) = num_str.replace('_', "").parse::<f64>() {
-                    if n > 1.0 && !line.contains("0x") && !line.contains("0b") {
-                        return true;
-                    }
-                }
+            if (num_str != "2" || line.contains("/ 2") || line.contains("* 2"))
+                && num_str.replace('_', "").parse::<f64>().is_ok_and(|n| {
+                    n > 1.0 && !line.contains("0x") && !line.contains("0b")
+                })
+            {
+                return true;
             }
         }
     }
@@ -343,7 +343,7 @@ fn check_newspaper_ordering(content: &str, ext: &str) -> Option<String> {
 
     for (i, line) in lines.iter().enumerate() {
         let trimmed = line.trim();
-        let (is_public, is_private) = match ext.as_ref() {
+        let (is_public, is_private) = match ext {
             "rs" => (
                 trimmed.starts_with("pub fn ") || trimmed.starts_with("pub async fn "),
                 trimmed.starts_with("fn ") && !trimmed.starts_with("fn main"),
@@ -362,10 +362,10 @@ fn check_newspaper_ordering(content: &str, ext: &str) -> Option<String> {
             first_private_before_public = Some(i);
         }
         if is_public {
-            if first_private_before_public.is_some() {
+            if let Some(priv_line) = first_private_before_public {
                 return Some(format!(
                     "private function at line {} appears before public function at line {}",
-                    first_private_before_public.unwrap() + 1,
+                    priv_line + 1,
                     i + 1
                 ));
             }

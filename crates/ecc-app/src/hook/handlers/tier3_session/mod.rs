@@ -518,9 +518,8 @@ pub fn craft_velocity(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
             if !msg.starts_with("chore(scout)") {
                 rework += 1;
             }
-        } else if msg.starts_with("refactor:") || msg.starts_with("refactor(") {
-            neutral += 1;
         } else {
+            // refactor, ci, perf, and other types are neutral
             neutral += 1;
         }
     }

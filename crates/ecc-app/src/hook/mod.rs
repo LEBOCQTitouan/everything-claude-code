@@ -134,12 +134,21 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "post:edit:typecheck" => handlers::post_edit_typecheck(stdin, ports),
         "post:quality-gate" => handlers::quality_gate(stdin, ports),
 
+        // Tier 1: Clean Craft hooks
+        "pre:edit:boundary-crossing" => handlers::pre_edit_boundary_crossing(stdin, ports),
+        "post:edit:boy-scout-delta" => handlers::post_edit_boy_scout_delta(stdin, ports),
+        "post:edit:naming-review" => handlers::post_edit_naming_review(stdin, ports),
+        "post:edit:newspaper-check" => handlers::post_edit_newspaper_check(stdin, ports),
+        "pre:edit:stepdown-warning" => handlers::pre_edit_stepdown_warning(stdin, ports),
+
         // Tier 3: Session/File I/O hooks
         "session:start" => handlers::session_start(stdin, ports),
         "stop:session-end" => handlers::session_end(stdin, ports),
         "pre:compact" => handlers::pre_compact(stdin, ports),
         "stop:evaluate-session" => handlers::evaluate_session(stdin, ports),
         "stop:cost-tracker" => handlers::cost_tracker(stdin, ports),
+        "stop:oath-reflection" => handlers::oath_reflection(stdin, ports),
+        "stop:craft-velocity" => handlers::craft_velocity(stdin, ports),
 
         // Unknown hook — passthrough with warning
         _ => {
