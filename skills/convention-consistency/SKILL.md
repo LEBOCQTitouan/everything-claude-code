@@ -112,6 +112,42 @@ Using raw primitives where domain types would add safety and clarity.
 - String literals for state/status: `if (status === 'active')` without type safety — MEDIUM
 - Magic numbers without named constants — MEDIUM
 
+**Enhanced Detection Patterns**:
+
+Scan for repeated parameter signatures that indicate missing value types:
+
+| Pattern | Signal | Severity |
+|---------|--------|----------|
+| Same `(String, String)` / `(&str, &str)` pair in 3+ function signatures | Missing newtype wrapper | HIGH |
+| `i32` / `i64` / `u64` used for IDs across 3+ functions | Should be `Id<T>` newtype | HIGH |
+| `f64` used for money/currency in 2+ files | Should be `Money` / `Amount` type | CRITICAL |
+| `String` field named `*_id` in 3+ structs | Should be typed ID newtype | HIGH |
+| `Option<String>` for email/phone/url in 2+ structs | Should be validated newtype | MEDIUM |
+| Boolean parameters (`bool`) in public API functions | Should be enum with named variants | MEDIUM |
+
+**Newtype Recommendation Heuristic**:
+
+When the same primitive type + semantic meaning appears in 3+ locations, recommend a newtype:
+
+```
+// BEFORE (primitive obsession):
+fn create_order(user_id: String, product_id: String, quantity: i32) { ... }
+fn get_order(order_id: String) { ... }
+fn cancel_order(order_id: String, user_id: String) { ... }
+
+// AFTER (newtypes):
+struct UserId(String);
+struct ProductId(String);
+struct OrderId(String);
+struct Quantity(i32);
+fn create_order(user: UserId, product: ProductId, qty: Quantity) { ... }
+```
+
+**Report**: For each detected case, list:
+- The primitive type and its semantic meaning
+- All locations where it appears (file:line)
+- Suggested newtype name and definition
+
 ## Finding Format
 
 ```
