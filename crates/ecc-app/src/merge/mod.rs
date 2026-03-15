@@ -295,7 +295,11 @@ pub fn merge_hooks(
     settings_json_path: &Path,
     dry_run: bool,
 ) -> Result<(usize, usize, usize), String> {
-    let source_hooks = read_json(fs, hooks_json_path)?;
+    let source_file = read_json(fs, hooks_json_path)?;
+    let source_hooks = source_file
+        .get("hooks")
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}));
     let existing_settings = read_json_or_default(fs, settings_json_path);
 
     let existing_hooks = existing_settings
