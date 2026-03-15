@@ -157,6 +157,23 @@ Dependency Direction, Layer Separation, Circular Dependencies, Coupling, Cohesio
 - Search for console.log in source files (not test files)
 - Report locations
 
+### Phase 8.5: Cross-Phase Correlation
+
+After individual phases complete, correlate findings across phases to escalate compound risks:
+
+| Correlation | Action |
+|-------------|--------|
+| Low coverage + code review HIGH | **Escalate**: untested code with quality problems |
+| Dead code + architecture HIGH coupling | **Flag**: coupled dead code may have hidden consumers |
+| Code review CRITICAL security + low coverage | **Escalate to BLOCKING**: security-critical code without tests |
+| Architecture CRITICAL + mutation pattern | **Escalate**: architectural violation with unsafe data patterns |
+| Console.log + security finding | **Flag**: debug logging may leak sensitive data |
+
+Escalations change the severity of findings:
+- **Escalate** — raise to next severity level
+- **Escalate to BLOCKING** — raise to CRITICAL regardless of original level
+- **Flag** — add warning annotation without changing severity
+
 ### Phase 9: Git Status
 
 - Show uncommitted changes
@@ -177,6 +194,7 @@ Dead Code:     [X SAFE, Y CAUTION, Z DANGER items]
 Code Review:   [PASS/X CRITICAL, Y HIGH, Z MEDIUM]
 Architecture:  [A-F score]
 Logs:          [OK/X console.logs]
+Correlation:   [X escalations, Y flags]
 
 Ready for PR: [YES/NO]
 ```
