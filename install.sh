@@ -533,6 +533,26 @@ WHAT GETS CREATED/UPDATED
   .claude/.ecc-manifest.json  — tracks installed artifacts
 EOF
             ;;
+        uninstall)
+            cat <<EOF
+USAGE
+  ecc uninstall [--force] [--keep-config]
+
+DESCRIPTION
+  Remove ECC from the system. Cleans up ~/.ecc/ (binary), ECC artifacts
+  from ~/.claude/ (agents, commands, skills, rules, manifest), and PATH
+  entries from shell RC files.
+
+OPTIONS
+  --force        Skip confirmation prompt
+  --keep-config  Only remove ~/.ecc/ and PATH entries; keep ~/.claude/ artifacts
+
+EXAMPLES
+  ecc uninstall                  (interactive confirmation)
+  ecc uninstall --force          (no confirmation)
+  ecc uninstall --keep-config    (preserve ~/.claude/ artifacts)
+EOF
+            ;;
         version)
             cat <<EOF
 USAGE
@@ -574,6 +594,9 @@ COMMANDS
 
   update
       Reinstall the latest version of ecc from GitHub Releases.
+
+  uninstall [--force] [--keep-config]
+      Remove ECC from the system (binary, content, PATH entries).
 
   help [<command>]
       Show help. Pass a command name for detailed usage.
@@ -627,6 +650,7 @@ _ecc() {
     commands=(
         'install:Install agents, commands, skills, rules, and hooks into ~/.claude/'
         'init:Set up Claude configuration for the current project'
+        'uninstall:Remove ECC from the system'
         'help:Show help for a command'
         'completion:Output shell completion script'
     )
@@ -659,8 +683,12 @@ _ecc() {
                     _arguments \
                         '--template[CLAUDE.md template]:template:_ecc_templates' \
                         '::language:_ecc_languages' ;;
+                uninstall)
+                    _arguments \
+                        '--force[Skip confirmation]' \
+                        '--keep-config[Keep ~/.claude/ artifacts]' ;;
                 help)
-                    local help_cmds=('install' 'init' 'version' 'update' 'completion')
+                    local help_cmds=('install' 'init' 'uninstall' 'version' 'update' 'completion')
                     _describe 'command' help_cmds ;;
                 completion)
                     local shells=('bash' 'zsh' 'fish')
@@ -683,7 +711,7 @@ _ecc_completion() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     words=("${COMP_WORDS[@]}")
 
-    local commands="install init help version update completion"
+    local commands="install init uninstall help version update completion"
 
     if [[ $COMP_CWORD -eq 1 ]]; then
         COMPREPLY=($(compgen -W "$commands" -- "$cur"))
@@ -706,8 +734,10 @@ _ecc_completion() {
                 langs="$(ecc --list-languages 2>/dev/null | tr '\n' ' ')"
                 COMPREPLY=($(compgen -W "--template $langs" -- "$cur"))
             fi ;;
+        uninstall)
+            COMPREPLY=($(compgen -W "--force --keep-config" -- "$cur")) ;;
         help)
-            COMPREPLY=($(compgen -W "install init version update completion" -- "$cur")) ;;
+            COMPREPLY=($(compgen -W "install init uninstall version update completion" -- "$cur")) ;;
         completion)
             COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")) ;;
     esac
@@ -728,8 +758,15 @@ complete -c ecc -n '__fish_use_subcommand' -a install    -d 'Install into ~/.cla
 complete -c ecc -n '__fish_use_subcommand' -a init       -d 'Set up current project'
 complete -c ecc -n '__fish_use_subcommand' -a version    -d 'Print installed version'
 complete -c ecc -n '__fish_use_subcommand' -a update     -d 'Update to latest version'
+complete -c ecc -n '__fish_use_subcommand' -a uninstall  -d 'Remove ECC from the system'
 complete -c ecc -n '__fish_use_subcommand' -a help       -d 'Show help'
 complete -c ecc -n '__fish_use_subcommand' -a completion -d 'Output completion script'
+
+# uninstall: --force and --keep-config flags
+complete -c ecc -n '__fish_seen_subcommand_from uninstall' \
+    -l force -d 'Skip confirmation'
+complete -c ecc -n '__fish_seen_subcommand_from uninstall' \
+    -l keep-config -d 'Keep ~/.claude/ artifacts'
 
 # install: complete with languages
 complete -c ecc -n '__fish_seen_subcommand_from install' \
@@ -744,7 +781,7 @@ complete -c ecc -n '__fish_seen_subcommand_from init' \
 
 # help: complete with command names
 complete -c ecc -n '__fish_seen_subcommand_from help' \
-    -a "install init version update completion"
+    -a "install init uninstall version update completion"
 
 # completion: complete with shell names
 complete -c ecc -n '__fish_seen_subcommand_from completion' \
@@ -792,6 +829,9 @@ case "$CMD" in
     update)
         echo "Updating ECC to latest..."
         curl -fsSL "https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/get-ecc.sh" | bash
+        ;;
+    uninstall)
+        shift; exec "$SCRIPT_DIR/scripts/uninstall-ecc.sh" "$@"
         ;;
     help|-h|--help)
         shift; cmd_help "${1:-}" ;;
