@@ -17,13 +17,13 @@ Proceed with the refined version unless the user objects.
 
 **FIRST ACTION**: Unless `--skip-plan` is passed, call the `EnterPlanMode` tool immediately. This enters Claude Code plan mode which restricts tools to read-only exploration while you scan the codebase and draft an audit plan. After presenting the plan, call `ExitPlanMode` to proceed with execution after user approval.
 
-Comprehensive codebase health analysis across 7 domains: architecture, evolutionary patterns, test architecture, security, observability, error handling, and convention consistency. Produces a dated audit report in `docs/audits/` with cross-domain correlations and actionable recommendations.
+Comprehensive codebase health analysis across 7 domains: architecture, evolutionary patterns, test architecture, security, observability, error handling, convention consistency, and component structure. Produces a dated audit report in `docs/audits/` with cross-domain correlations and actionable recommendations.
 
 ## What This Command Does
 
 0. **Discovery** — scan codebase, detect boundaries/languages, present audit plan, wait for approval
 1. **Evolutionary Analysis** — mine git history for hotspots, co-change coupling, bus factor, complexity trends
-2. **Domain Audits** — run all domain-specific audits in parallel (architecture, security, testing, observability, errors, conventions)
+2. **Domain Audits** — run all domain-specific audits in parallel (architecture, security, testing, observability, errors, conventions, components)
 3. **Cross-Domain Correlation** — connect findings across domains, escalate correlated risks
 4. **Report Generation** — produce `docs/audits/YYYY-MM-DD-audit.md`
 5. **Console Summary** — display scores, top risks, and health grade
@@ -31,7 +31,7 @@ Comprehensive codebase health analysis across 7 domains: architecture, evolution
 ## Arguments
 
 - `--scope=<path>` — limit to subdirectory (default: entire repo)
-- `--domain=<domains>` — comma-separated: `architecture`, `evolution`, `testing`, `security`, `observability`, `errors`, `conventions`, `all` (default: all)
+- `--domain=<domains>` — comma-separated: `architecture`, `evolution`, `testing`, `security`, `observability`, `errors`, `conventions`, `components`, `all` (default: all)
 - `--boundary=<moduleA>:<moduleB>` — audit a specific boundary between two modules
 - `--window=<days>` — git history window (default: 180)
 - `--diff=<path>` — compare against prior audit report
@@ -80,6 +80,7 @@ All domain agents launch in parallel:
 | `observability-auditor` | observability | Log levels, structured logging, correlation IDs, metrics, health checks |
 | `error-handling-auditor` | errors | Swallowed errors, error taxonomy, boundary translation, partial failures |
 | `convention-auditor` | conventions | Naming patterns, pattern consistency, config access, primitive obsession |
+| `component-auditor` | components | REP, CCP, CRP, ADP, SDP, SAP, main sequence distance, zone analysis |
 
 ### Phase 3: Cross-Domain Correlation
 
