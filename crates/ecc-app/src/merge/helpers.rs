@@ -438,7 +438,7 @@ mod tests {
 
     #[test]
     fn merge_hooks_adds_new() {
-        let source = serde_json::json!({"PreToolUse": [{"description": "ECC format", "hooks": [{"command": "ecc-hook format"}]}]});
+        let source = serde_json::json!({"hooks": {"PreToolUse": [{"description": "ECC format", "hooks": [{"command": "ecc-hook format"}]}]}});
         let fs = InMemoryFileSystem::new()
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", "{}");
@@ -456,7 +456,7 @@ mod tests {
     #[test]
     fn merge_hooks_dedup() {
         let hook = serde_json::json!({"description": "ECC format", "hooks": [{"command": "ecc-hook format"}]});
-        let source = serde_json::json!({ "PreToolUse": [hook.clone()] });
+        let source = serde_json::json!({"hooks": { "PreToolUse": [hook.clone()] }});
         let settings = serde_json::json!({"hooks": { "PreToolUse": [hook] }});
         let fs = InMemoryFileSystem::new()
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
@@ -472,7 +472,7 @@ mod tests {
     fn merge_hooks_removes_legacy() {
         let legacy_hook = serde_json::json!({"description": "old hook", "hooks": [{"command": "node /path/to/everything-claude-code/dist/hooks/run.js"}]});
         let settings = serde_json::json!({"hooks": { "PreToolUse": [legacy_hook] }});
-        let source = serde_json::json!({});
+        let source = serde_json::json!({"hooks": {}});
         let fs = InMemoryFileSystem::new()
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", &serde_json::to_string(&settings).unwrap());
@@ -489,7 +489,7 @@ mod tests {
         let legacy_hook = serde_json::json!({"description": "old hook", "hooks": [{"command": "node /path/to/everything-claude-code/dist/hooks/run.js"}]});
         let user_hook = serde_json::json!({"description": "user hook", "hooks": [{"command": "my-custom-hook"}]});
         let settings = serde_json::json!({"hooks": { "PreToolUse": [legacy_hook, user_hook] }});
-        let source = serde_json::json!({});
+        let source = serde_json::json!({"hooks": {}});
         let fs = InMemoryFileSystem::new()
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", &serde_json::to_string(&settings).unwrap());
@@ -510,7 +510,7 @@ mod tests {
 
     #[test]
     fn merge_hooks_dry_run_does_not_write() {
-        let source = serde_json::json!({"PreToolUse": [{"hooks": [{"command": "ecc-hook test"}]}]});
+        let source = serde_json::json!({"hooks": {"PreToolUse": [{"hooks": [{"command": "ecc-hook test"}]}]}});
         let fs = InMemoryFileSystem::new()
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", "{}");

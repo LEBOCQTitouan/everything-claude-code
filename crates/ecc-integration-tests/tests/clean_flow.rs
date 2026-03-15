@@ -73,26 +73,27 @@ fn clean_removes_ecc_hooks_from_settings() {
     env.install(&["--clean"]).success();
 
     let settings = env.settings_json();
-    // The ECC hook should have been removed by clean
+    // The stale "ecc-hook format" entry should have been removed by clean,
+    // then replaced by proper install hooks.
     if let Some(pre_hooks) = settings["hooks"]["PreToolUse"].as_array() {
-        let has_ecc_hook = pre_hooks.iter().any(|h| {
+        let has_stale_format_hook = pre_hooks.iter().any(|h| {
             h.get("hooks")
                 .and_then(|hooks| hooks.as_array())
                 .is_some_and(|hooks| {
                     hooks.iter().any(|hook| {
                         hook.get("command")
                             .and_then(|c| c.as_str())
-                            .is_some_and(|c| c.starts_with("ecc-hook "))
+                            .is_some_and(|c| c == "ecc-hook format")
                     })
                 })
         });
         assert!(
-            !has_ecc_hook,
-            "ECC hooks should be removed by --clean"
+            !has_stale_format_hook,
+            "stale ecc-hook format entry should be removed by --clean"
         );
     }
     // User hook may or may not survive depending on how clean interacts with
-    // the full reinstall cycle — the key assertion is that ECC hooks are cleaned.
+    // the full reinstall cycle — the key assertion is that stale hooks are cleaned.
 }
 
 /// --clean-all removes entire ECC directories.
