@@ -87,8 +87,25 @@ npm test
 # Tests should fail - we haven't implemented yet
 ```
 
-### Step 4: Implement Code
-Write minimal code to make tests pass:
+### Step 4: Implement Code (GREEN — Transformation Priority Premise)
+
+Write minimal code to make tests pass. Apply the **Transformation Priority Premise** — always prefer the simplest transformation that makes the failing test pass:
+
+| Priority | Transformation | Example |
+|----------|---------------|---------|
+| 1 | `{} → nil` | Return nothing |
+| 2 | `nil → constant` | Return a fixed value |
+| 3 | `constant → variable` | Replace constant with a parameter |
+| 4 | `add computation` | Simple arithmetic or string op |
+| 5 | `unconditional → selection` | Add `if` / `match` |
+| 6 | `scalar → collection` | Single value → array/vec |
+| 7 | `statement → tail recursion` | Loop via recursion |
+| 8 | `selection → iteration` | `if` → `for` / `loop` |
+| 9 | `value → mutated value` | Transform existing data (last resort) |
+
+**Rule**: Try the lowest-priority-number transformation first. If it doesn't make the test pass, move to the next. Jumping to complex transformations leads to over-engineered solutions.
+
+**Anti-pattern**: Going straight to iteration or recursion when a simple conditional would work.
 
 ```typescript
 // Implementation guided by tests
