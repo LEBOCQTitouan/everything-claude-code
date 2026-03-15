@@ -95,6 +95,10 @@ Orchestrator connects findings across domains:
 | Convention divergence + coupling | Flag as maintenance risk |
 | Security issue + error leakage | Escalate to CRITICAL |
 | Bus factor + hotspot | Escalate to CRITICAL |
+| Dead code + complexity trend ↑ | Flag as **Rigidity** — hard to change, changes cascade |
+| Low coverage + high fan-in | Escalate as **Fragility** — changes break unrelated areas |
+| Co-change coupling + no shared interface | Flag as **Immobility** — useful parts can't be extracted |
+| Debug logging at boundaries + TODO trend ↑ | Flag as **Viscosity** — right thing harder than wrong thing |
 
 ### Phase 4: Report Generation
 
