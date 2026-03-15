@@ -198,6 +198,14 @@ Severity levels:
 
 Auto-fix non-controversial items (counts, directory listings). Flag ambiguous findings for user review.
 
+**"The Last Page" Check** — verify claims are actual, not aspirational:
+- **Convention claims**: For each stated convention (e.g., "we use immutable patterns"), grep the codebase for counter-examples. If violations > 10%, flag as "aspirational, not actual"
+- **Dependency graph claims**: Compare the described dependency graph with actual import analysis. Flag mismatches.
+- **Test coverage claims**: Compare stated coverage targets with actual coverage numbers. Flag gaps > 5%.
+- **Architecture claims**: Verify that described architecture patterns (e.g., "hexagonal architecture") match the actual directory structure and import patterns.
+
+The goal is to ensure CLAUDE.md describes what the codebase **is**, not what it **aspires to be**.
+
 Uses `doc-validator` agent with `--target=CLAUDE.md`.
 
 ## Quality Gates
