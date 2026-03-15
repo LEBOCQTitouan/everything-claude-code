@@ -28,20 +28,20 @@ Commands:
 
 /// Show conversation history.
 pub fn handle_history(state: &ClawState, ports: &ClawPorts<'_>) {
-    if state.turns.is_empty() {
+    if state.turns().is_empty() {
         ports.terminal.stdout_write("No history.\n");
         return;
     }
 
-    let md = ecc_domain::claw::turn::format_turns(&state.turns);
+    let md = ecc_domain::claw::turn::format_turns(state.turns());
     ports.terminal.stdout_write(&md);
     ports.terminal.stdout_write("\n");
 }
 
 /// Search history.
 pub fn handle_search(keyword: &str, state: &ClawState, ports: &ClawPorts<'_>) {
-    let indices = search_turns(&state.turns, keyword);
-    let output = format_search_results(&state.turns, &indices);
+    let indices = search_turns(state.turns(), keyword);
+    let output = format_search_results(state.turns(), &indices);
     ports.terminal.stdout_write(&output);
     ports.terminal.stdout_write("\n");
 }
@@ -68,14 +68,14 @@ pub fn handle_export(
     let json_serializer = |turns: &[ecc_domain::claw::turn::Turn]| {
         serde_json::to_string_pretty(turns).unwrap_or_else(|_| "[]".to_string())
     };
-    let output = export_turns(&state.session_name, &state.turns, format, json_serializer);
+    let output = export_turns(state.session_name(), state.turns(), format, json_serializer);
     ports.terminal.stdout_write(&output);
     ports.terminal.stdout_write("\n");
 }
 
 /// Show session metrics.
 pub fn handle_metrics(state: &ClawState, ports: &ClawPorts<'_>) {
-    let metrics = compute_metrics(&state.turns);
+    let metrics = compute_metrics(state.turns());
     let output = format_metrics(&metrics);
     ports.terminal.stdout_write(&output);
     ports.terminal.stdout_write("\n");
@@ -107,32 +107,26 @@ mod tests {
     }
 
     fn default_state() -> ClawState {
-        ClawState {
+        ClawState::new(&super::super::super::ClawConfig {
             session_name: "test".to_string(),
             model: ClawModel::Sonnet,
-            turns: Vec::new(),
-            loaded_skills: Vec::new(),
-        }
+            initial_skills: Vec::new(),
+        })
     }
 
     fn state_with_turns() -> ClawState {
-        ClawState {
-            session_name: "test".to_string(),
-            model: ClawModel::Sonnet,
-            turns: vec![
-                Turn {
-                    timestamp: "ts1".to_string(),
-                    role: Role::User,
-                    content: "hello".to_string(),
-                },
-                Turn {
-                    timestamp: "ts2".to_string(),
-                    role: Role::Assistant,
-                    content: "hi there".to_string(),
-                },
-            ],
-            loaded_skills: Vec::new(),
-        }
+        let mut state = default_state();
+        state.add_turn(Turn {
+            timestamp: "ts1".to_string(),
+            role: Role::User,
+            content: "hello".to_string(),
+        });
+        state.add_turn(Turn {
+            timestamp: "ts2".to_string(),
+            role: Role::Assistant,
+            content: "hi there".to_string(),
+        });
+        state
     }
 
     // --- handle_help ---

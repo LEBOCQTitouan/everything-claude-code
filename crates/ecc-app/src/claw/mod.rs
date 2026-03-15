@@ -46,10 +46,10 @@ impl Default for ClawConfig {
 
 /// Mutable state for a running REPL session.
 pub struct ClawState {
-    pub session_name: String,
-    pub model: ClawModel,
-    pub turns: Vec<ecc_domain::claw::turn::Turn>,
-    pub loaded_skills: Vec<String>,
+    session_name: String,
+    model: ClawModel,
+    turns: Vec<ecc_domain::claw::turn::Turn>,
+    loaded_skills: Vec<String>,
 }
 
 impl ClawState {
@@ -60,6 +60,52 @@ impl ClawState {
             turns: Vec::new(),
             loaded_skills: Vec::new(),
         }
+    }
+
+    // --- Accessors ---
+
+    pub fn session_name(&self) -> &str {
+        &self.session_name
+    }
+
+    pub fn model(&self) -> ClawModel {
+        self.model
+    }
+
+    pub fn turns(&self) -> &[ecc_domain::claw::turn::Turn] {
+        &self.turns
+    }
+
+    pub fn loaded_skills(&self) -> &[String] {
+        &self.loaded_skills
+    }
+
+    // --- Mutators ---
+
+    pub fn set_session_name(&mut self, name: String) {
+        self.session_name = name;
+    }
+
+    pub fn set_model(&mut self, model: ClawModel) {
+        self.model = model;
+    }
+
+    pub fn set_turns(&mut self, turns: Vec<ecc_domain::claw::turn::Turn>) {
+        self.turns = turns;
+    }
+
+    pub fn clear_turns(&mut self) -> usize {
+        let count = self.turns.len();
+        self.turns.clear();
+        count
+    }
+
+    pub fn add_turn(&mut self, turn: ecc_domain::claw::turn::Turn) {
+        self.turns.push(turn);
+    }
+
+    pub fn load_skill(&mut self, content: String) {
+        self.loaded_skills.push(content);
     }
 }
 
@@ -85,28 +131,28 @@ pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> anyhow::Result<()
     let mut state = ClawState::new(config);
 
     // Load existing session if available
-    let session_path = ecc_domain::paths::claw_session_path(&home, &state.session_name);
+    let session_path = ecc_domain::paths::claw_session_path(&home, state.session_name());
     if let Ok(content) = ports.fs.read_to_string(&session_path) {
-        state.turns = ecc_domain::claw::turn::parse_turns(&content);
+        state.set_turns(ecc_domain::claw::turn::parse_turns(&content));
     }
 
     // Load initial skills
     for skill_name in &config.initial_skills {
         if let Ok(content) = skill_loader::load_skill(skill_name, ports) {
-            state.loaded_skills.push(content);
+            state.load_skill(content);
         }
     }
 
     // Print welcome
     ports.terminal.stderr_write(&format!(
         "NanoClaw REPL — session: {}, model: {}\nType /help for commands, exit to quit.\n",
-        state.session_name,
-        state.model.display_name(),
+        state.session_name(),
+        state.model().display_name(),
     ));
 
     // Main REPL loop
     loop {
-        let prompt = format!("{}> ", state.session_name);
+        let prompt = format!("{}> ", state.session_name());
         let line = match ports.repl_input.read_line(&prompt) {
             Ok(Some(line)) => line,
             Ok(None) => break, // EOF
@@ -127,9 +173,9 @@ pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> anyhow::Result<()
     }
 
     // Save session on exit
-    if !state.turns.is_empty()
+    if !state.turns().is_empty()
         && let Err(e) =
-            storage::save_session(&home, &state.session_name, &state.turns, ports.fs)
+            storage::save_session(&home, state.session_name(), state.turns(), ports.fs)
     {
         ports
             .terminal
@@ -282,9 +328,9 @@ mod tests {
             initial_skills: vec!["tdd".to_string()],
         };
         let state = ClawState::new(&config);
-        assert_eq!(state.session_name, "test");
-        assert_eq!(state.model, ClawModel::Opus);
-        assert!(state.turns.is_empty());
+        assert_eq!(state.session_name(), "test");
+        assert_eq!(state.model(), ClawModel::Opus);
+        assert!(state.turns().is_empty());
     }
 
     #[test]

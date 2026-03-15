@@ -19,11 +19,10 @@ fn now_datetime_string() -> String {
 
 /// Clear the current session history.
 pub fn handle_clear(state: &mut ClawState, ports: &ClawPorts<'_>) {
-    let count = state.turns.len();
-    state.turns.clear();
+    let count = state.clear_turns();
 
     if let Some(home) = ports.env.home_dir() {
-        let _ = super::super::storage::clear_session(&home, &state.session_name, ports.fs);
+        let _ = super::super::storage::clear_session(&home, state.session_name(), ports.fs);
     }
 
     ports.terminal.stderr_write(&format!("Cleared {count} turns.\n"));
@@ -52,7 +51,7 @@ pub fn handle_sessions(
             } else {
                 let mut output = String::from("Sessions:\n");
                 for name in &sessions {
-                    let marker = if *name == state.session_name {
+                    let marker = if *name == state.session_name() {
                         " (active)"
                     } else {
                         ""
@@ -70,17 +69,17 @@ pub fn handle_sessions(
                 return;
             }
             // Save current session first
-            if !state.turns.is_empty() {
+            if !state.turns().is_empty() {
                 let _ = super::super::storage::save_session(
                     &home,
-                    &state.session_name,
-                    &state.turns,
+                    state.session_name(),
+                    state.turns(),
                     ports.fs,
                 );
             }
             // Switch to new session
-            state.turns = super::super::storage::load_session(&home, name, ports.fs);
-            state.session_name = name.clone();
+            state.set_turns(super::super::storage::load_session(&home, name, ports.fs));
+            state.set_session_name(name.clone());
             ports
                 .terminal
                 .stderr_write(&format!("Switched to session: {name}\n"));
@@ -94,12 +93,12 @@ pub fn handle_model(target: &Option<String>, state: &mut ClawState, ports: &Claw
         None => {
             ports.terminal.stdout_write(&format!(
                 "Current model: {}\n",
-                state.model.display_name()
+                state.model().display_name()
             ));
         }
         Some(name) => match ClawModel::parse(name) {
             Some(model) => {
-                state.model = model;
+                state.set_model(model);
                 ports.terminal.stderr_write(&format!(
                     "Model changed to: {}\n",
                     model.display_name()
@@ -118,7 +117,7 @@ pub fn handle_model(target: &Option<String>, state: &mut ClawState, ports: &Claw
 pub fn handle_load(skill_name: &str, state: &mut ClawState, ports: &ClawPorts<'_>) {
     match super::super::skill_loader::load_skill(skill_name, ports) {
         Ok(content) => {
-            state.loaded_skills.push(content);
+            state.load_skill(content);
             ports
                 .terminal
                 .stderr_write(&format!("Loaded skill: {skill_name}\n"));
@@ -148,14 +147,14 @@ pub fn handle_branch(target_name: &str, state: &mut ClawState, ports: &ClawPorts
 
     match super::super::storage::branch_session(
         &home,
-        &state.session_name,
+        state.session_name(),
         target_name,
-        &state.turns,
+        state.turns(),
         ports.fs,
     ) {
         Ok(()) => {
-            let old_name = state.session_name.clone();
-            state.session_name = target_name.to_string();
+            let old_name = state.session_name().to_string();
+            state.set_session_name(target_name.to_string());
             ports.terminal.stderr_write(&format!(
                 "Branched '{old_name}' → '{target_name}'\n"
             ));
@@ -168,10 +167,10 @@ pub fn handle_branch(target_name: &str, state: &mut ClawState, ports: &ClawPorts
 
 /// Compact history.
 pub fn handle_compact(keep: &Option<usize>, state: &mut ClawState, ports: &ClawPorts<'_>) {
-    let original_count = state.turns.len();
-    let compacted = compact_turns(&state.turns, *keep);
+    let original_count = state.turns().len();
+    let compacted = compact_turns(state.turns(), *keep);
     let kept_count = compacted.len();
-    state.turns = compacted;
+    state.set_turns(compacted);
 
     let msg = compaction_summary(original_count, kept_count);
     ports.terminal.stderr_write(&format!("{msg}\n"));
@@ -188,11 +187,11 @@ pub fn handle_user_message(
     }
 
     // Build prompt with existing history
-    let system_ctx = build_system_context(&state.loaded_skills);
-    let prompt = assemble_prompt(system_ctx.as_deref(), &state.turns, message);
+    let system_ctx = build_system_context(state.loaded_skills());
+    let prompt = assemble_prompt(system_ctx.as_deref(), state.turns(), message);
 
     // Run claude — only add turns after success to avoid orphan user turns
-    match super::super::claude_runner::run_claude(&prompt, state.model, ports) {
+    match super::super::claude_runner::run_claude(&prompt, state.model(), ports) {
         Ok(response) => {
             let user_turn = Turn {
                 timestamp: now_datetime_string(),
@@ -204,8 +203,8 @@ pub fn handle_user_message(
                 role: Role::Assistant,
                 content: response.clone(),
             };
-            state.turns.push(user_turn);
-            state.turns.push(assistant_turn);
+            state.add_turn(user_turn);
+            state.add_turn(assistant_turn);
             ports.terminal.stdout_write(&response);
             ports.terminal.stdout_write("\n");
         }
@@ -242,32 +241,26 @@ mod tests {
     }
 
     fn default_state() -> ClawState {
-        ClawState {
+        ClawState::new(&super::super::super::ClawConfig {
             session_name: "test".to_string(),
             model: ClawModel::Sonnet,
-            turns: Vec::new(),
-            loaded_skills: Vec::new(),
-        }
+            initial_skills: Vec::new(),
+        })
     }
 
     fn state_with_turns() -> ClawState {
-        ClawState {
-            session_name: "test".to_string(),
-            model: ClawModel::Sonnet,
-            turns: vec![
-                Turn {
-                    timestamp: "ts1".to_string(),
-                    role: Role::User,
-                    content: "hello".to_string(),
-                },
-                Turn {
-                    timestamp: "ts2".to_string(),
-                    role: Role::Assistant,
-                    content: "hi there".to_string(),
-                },
-            ],
-            loaded_skills: Vec::new(),
-        }
+        let mut state = default_state();
+        state.add_turn(Turn {
+            timestamp: "ts1".to_string(),
+            role: Role::User,
+            content: "hello".to_string(),
+        });
+        state.add_turn(Turn {
+            timestamp: "ts2".to_string(),
+            role: Role::Assistant,
+            content: "hi there".to_string(),
+        });
+        state
     }
 
     // --- handle_clear ---
@@ -283,7 +276,7 @@ mod tests {
         let mut state = state_with_turns();
 
         handle_clear(&mut state, &ports);
-        assert!(state.turns.is_empty());
+        assert!(state.turns().is_empty());
     }
 
     #[test]
@@ -332,8 +325,8 @@ mod tests {
         let mut state = default_state();
 
         handle_sessions(&Some("other".to_string()), &mut state, &ports);
-        assert_eq!(state.session_name, "other");
-        assert_eq!(state.turns.len(), 1);
+        assert_eq!(state.session_name(),"other");
+        assert_eq!(state.turns().len(),1);
     }
 
     #[test]
@@ -379,7 +372,7 @@ mod tests {
         let mut state = default_state();
 
         handle_model(&Some("opus".to_string()), &mut state, &ports);
-        assert_eq!(state.model, ClawModel::Opus);
+        assert_eq!(state.model(), ClawModel::Opus);
     }
 
     #[test]
@@ -395,7 +388,7 @@ mod tests {
         handle_model(&Some("gpt4".to_string()), &mut state, &ports);
         let err = term.stderr_output();
         assert!(err.iter().any(|s| s.contains("Unknown model")));
-        assert_eq!(state.model, ClawModel::Sonnet); // unchanged
+        assert_eq!(state.model(), ClawModel::Sonnet); // unchanged
     }
 
     // --- handle_load ---
@@ -412,7 +405,7 @@ mod tests {
         let mut state = default_state();
 
         handle_load("tdd", &mut state, &ports);
-        assert_eq!(state.loaded_skills.len(), 1);
+        assert_eq!(state.loaded_skills().len(),1);
     }
 
     #[test]
@@ -426,7 +419,7 @@ mod tests {
         let mut state = default_state();
 
         handle_load("nonexistent", &mut state, &ports);
-        assert!(state.loaded_skills.is_empty());
+        assert!(state.loaded_skills().is_empty());
     }
 
     // --- handle_branch ---
@@ -442,7 +435,7 @@ mod tests {
         let mut state = state_with_turns();
 
         handle_branch("new-branch", &mut state, &ports);
-        assert_eq!(state.session_name, "new-branch");
+        assert_eq!(state.session_name(),"new-branch");
     }
 
     #[test]
@@ -456,7 +449,7 @@ mod tests {
         let mut state = state_with_turns();
 
         handle_branch("bad name!", &mut state, &ports);
-        assert_eq!(state.session_name, "test"); // unchanged
+        assert_eq!(state.session_name(),"test"); // unchanged
     }
 
     // --- handle_compact ---
@@ -469,21 +462,17 @@ mod tests {
         let term = BufferedTerminal::new();
         let input = ScriptedInput::new();
         let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let mut state = ClawState {
-            session_name: "test".to_string(),
-            model: ClawModel::Sonnet,
-            turns: (0..20)
-                .map(|i| Turn {
-                    timestamp: format!("ts{i}"),
-                    role: Role::User,
-                    content: format!("msg {i}"),
-                })
-                .collect(),
-            loaded_skills: Vec::new(),
-        };
+        let mut state = default_state();
+        for i in 0..20 {
+            state.add_turn(Turn {
+                timestamp: format!("ts{i}"),
+                role: Role::User,
+                content: format!("msg {i}"),
+            });
+        }
 
         handle_compact(&Some(5), &mut state, &ports);
-        assert_eq!(state.turns.len(), 6); // header + 5
+        assert_eq!(state.turns().len(),6); // header + 5
     }
 
     // --- handle_user_message ---
@@ -506,9 +495,9 @@ mod tests {
         let mut state = default_state();
 
         handle_user_message("hello", &mut state, &ports);
-        assert_eq!(state.turns.len(), 2); // user + assistant
-        assert_eq!(state.turns[0].role, Role::User);
-        assert_eq!(state.turns[1].role, Role::Assistant);
+        assert_eq!(state.turns().len(),2); // user + assistant
+        assert_eq!(state.turns()[0].role, Role::User);
+        assert_eq!(state.turns()[1].role, Role::Assistant);
     }
 
     #[test]
@@ -522,7 +511,7 @@ mod tests {
         let mut state = default_state();
 
         handle_user_message("", &mut state, &ports);
-        assert!(state.turns.is_empty());
+        assert!(state.turns().is_empty());
     }
 
     #[test]
@@ -543,7 +532,7 @@ mod tests {
         let mut state = default_state();
 
         handle_user_message("hello", &mut state, &ports);
-        assert!(state.turns.is_empty()); // no orphan turns on error
+        assert!(state.turns().is_empty()); // no orphan turns on error
         let err = term.stderr_output();
         assert!(err.iter().any(|s| s.contains("Error from Claude")));
     }

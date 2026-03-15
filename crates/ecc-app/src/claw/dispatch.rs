@@ -55,12 +55,11 @@ mod tests {
     }
 
     fn default_state() -> ClawState {
-        ClawState {
+        ClawState::new(&super::super::ClawConfig {
             session_name: "test".to_string(),
             model: ClawModel::Sonnet,
-            turns: Vec::new(),
-            loaded_skills: Vec::new(),
-        }
+            initial_skills: Vec::new(),
+        })
     }
 
     #[test]
@@ -85,19 +84,15 @@ mod tests {
         let term = BufferedTerminal::new();
         let input = ScriptedInput::new();
         let ports = make_ports(&fs, &shell, &env, &term, &input);
-        let mut state = ClawState {
-            session_name: "test".to_string(),
-            model: ClawModel::Sonnet,
-            turns: vec![Turn {
-                timestamp: "ts".to_string(),
-                role: Role::User,
-                content: "hi".to_string(),
-            }],
-            loaded_skills: Vec::new(),
-        };
+        let mut state = default_state();
+        state.add_turn(Turn {
+            timestamp: "ts".to_string(),
+            role: Role::User,
+            content: "hi".to_string(),
+        });
 
         dispatch_command(&ClawCommand::Clear, &mut state, &ports).unwrap();
-        assert!(state.turns.is_empty());
+        assert!(state.turns().is_empty());
     }
 
     #[test]
@@ -144,7 +139,7 @@ mod tests {
             &ports,
         )
         .unwrap();
-        assert_eq!(state.model, ClawModel::Opus);
+        assert_eq!(state.model(), ClawModel::Opus);
     }
 
     #[test]
@@ -277,6 +272,6 @@ mod tests {
             &ports,
         );
         assert!(result.is_ok());
-        assert!(state.turns.is_empty());
+        assert!(state.turns().is_empty());
     }
 }
