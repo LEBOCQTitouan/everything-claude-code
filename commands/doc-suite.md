@@ -92,6 +92,12 @@ Rules:
 
 Scan codebase structure, identify API surface, detect concepts, map dependencies.
 
+**Naming Expressiveness Audit** (sub-phase):
+- Scan all exported identifiers (functions, classes, types, constants) for generic names: `Manager`, `Handler`, `Processor`, `Data`, `Info`, `Helper`, `Util`, `Service` (without domain prefix), `Base`, `Abstract` (as standalone)
+- Calculate per-module naming score: `(total_exports - generic_names) / total_exports`
+- Flag modules with naming score < 0.8 as "naming expressiveness concern"
+- Include in Phase 2 output alongside API surface data
+
 Output files: `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md`, `docs/DEPENDENCY-GRAPH.md`, `docs/GLOSSARY.md` (draft)
 
 ### Phase 3: Generate
