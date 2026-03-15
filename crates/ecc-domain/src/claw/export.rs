@@ -21,10 +21,18 @@ impl ExportFormat {
 }
 
 /// Export turns in the specified format.
-pub fn export_turns(session_name: &str, turns: &[Turn], format: ExportFormat) -> String {
+///
+/// For `Json` format, returns the result of calling `json_serializer` with
+/// the turns slice. This keeps serialization out of the domain layer.
+pub fn export_turns(
+    session_name: &str,
+    turns: &[Turn],
+    format: ExportFormat,
+    json_serializer: impl FnOnce(&[Turn]) -> String,
+) -> String {
     match format {
         ExportFormat::Markdown => export_markdown(session_name, turns),
-        ExportFormat::Json => export_json(turns),
+        ExportFormat::Json => json_serializer(turns),
         ExportFormat::Text => export_text(turns),
     }
 }
@@ -33,10 +41,6 @@ fn export_markdown(session_name: &str, turns: &[Turn]) -> String {
     let mut out = format!("# Session: {session_name}\n\n");
     out.push_str(&format_turns(turns));
     out
-}
-
-fn export_json(turns: &[Turn]) -> String {
-    serde_json::to_string_pretty(turns).unwrap_or_else(|_| "[]".to_string())
 }
 
 fn export_text(turns: &[Turn]) -> String {
@@ -58,6 +62,10 @@ mod tests {
             role,
             content: content.to_string(),
         }
+    }
+
+    fn test_json_serializer(turns: &[Turn]) -> String {
+        serde_json::to_string_pretty(turns).unwrap_or_else(|_| "[]".to_string())
     }
 
     // --- ExportFormat::parse ---
@@ -100,7 +108,7 @@ mod tests {
     #[test]
     fn export_markdown_header() {
         let turns = vec![make_turn("ts1", Role::User, "hello")];
-        let result = export_turns("test-session", &turns, ExportFormat::Markdown);
+        let result = export_turns("test-session", &turns, ExportFormat::Markdown, test_json_serializer);
         assert!(result.starts_with("# Session: test-session"));
     }
 
@@ -110,14 +118,14 @@ mod tests {
             make_turn("ts1", Role::User, "hello"),
             make_turn("ts2", Role::Assistant, "hi"),
         ];
-        let result = export_turns("test", &turns, ExportFormat::Markdown);
+        let result = export_turns("test", &turns, ExportFormat::Markdown, test_json_serializer);
         assert!(result.contains("### [ts1] User"));
         assert!(result.contains("### [ts2] Assistant"));
     }
 
     #[test]
     fn export_markdown_empty() {
-        let result = export_turns("empty", &[], ExportFormat::Markdown);
+        let result = export_turns("empty", &[], ExportFormat::Markdown, test_json_serializer);
         assert!(result.contains("# Session: empty"));
     }
 
@@ -126,7 +134,7 @@ mod tests {
     #[test]
     fn export_json_structure() {
         let turns = vec![make_turn("ts1", Role::User, "hello")];
-        let result = export_turns("test", &turns, ExportFormat::Json);
+        let result = export_turns("test", &turns, ExportFormat::Json, test_json_serializer);
         assert!(result.starts_with('['));
         assert!(result.ends_with(']'));
         assert!(result.contains("\"role\": \"user\""));
@@ -137,13 +145,13 @@ mod tests {
     #[test]
     fn export_json_escapes_special_chars() {
         let turns = vec![make_turn("ts1", Role::User, "line1\nline2")];
-        let result = export_turns("test", &turns, ExportFormat::Json);
+        let result = export_turns("test", &turns, ExportFormat::Json, test_json_serializer);
         assert!(result.contains("\\n"));
     }
 
     #[test]
     fn export_json_empty() {
-        let result = export_turns("test", &[], ExportFormat::Json);
+        let result = export_turns("test", &[], ExportFormat::Json, test_json_serializer);
         assert_eq!(result.trim(), "[]");
     }
 
@@ -152,7 +160,7 @@ mod tests {
     #[test]
     fn export_text_format() {
         let turns = vec![make_turn("ts1", Role::User, "hello")];
-        let result = export_turns("test", &turns, ExportFormat::Text);
+        let result = export_turns("test", &turns, ExportFormat::Text, test_json_serializer);
         assert_eq!(result, "[ts1] User: hello");
     }
 
@@ -162,7 +170,7 @@ mod tests {
             make_turn("ts1", Role::User, "hi"),
             make_turn("ts2", Role::Assistant, "hey"),
         ];
-        let result = export_turns("test", &turns, ExportFormat::Text);
+        let result = export_turns("test", &turns, ExportFormat::Text, test_json_serializer);
         assert!(result.contains("[ts1] User: hi"));
         assert!(result.contains("[ts2] Assistant: hey"));
     }

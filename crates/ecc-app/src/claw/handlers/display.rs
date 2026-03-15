@@ -65,7 +65,10 @@ pub fn handle_export(
         None => ExportFormat::Markdown, // default
     };
 
-    let output = export_turns(&state.session_name, &state.turns, format);
+    let json_serializer = |turns: &[ecc_domain::claw::turn::Turn]| {
+        serde_json::to_string_pretty(turns).unwrap_or_else(|_| "[]".to_string())
+    };
+    let output = export_turns(&state.session_name, &state.turns, format, json_serializer);
     ports.terminal.stdout_write(&output);
     ports.terminal.stdout_write("\n");
 }
