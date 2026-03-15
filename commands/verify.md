@@ -163,6 +163,23 @@ Comprehensive architecture audit of the **entire project structure** (not just c
 **Dimension Summary** (10 dimensions):
 Dependency Direction, Layer Separation, Circular Dependencies, Coupling, Cohesion, Domain Model Quality, Bounded Contexts, Ports & Adapters, File Organization, SOLID Compliance
 
+### Phase 7.5: Dependency Direction Audit
+
+Quantitative validation that source code dependencies point inward.
+
+1. For each top-level module/package, count **inward edges** (imports from outer layers) and **outward edges** (imports pointing to inner layers — violations)
+2. Calculate: `direction_score = inward / (inward + outward)` per module
+3. Flag any module with `direction_score < 0.5` as HIGH (net outward dependencies)
+4. Aggregate: `project_score = total_inward / (total_inward + total_outward)`
+5. Report as: "Dependency Rule Compliance: X%"
+
+| Score | Verdict |
+|-------|---------|
+| 90-100% | EXCELLENT — strong inward dependency direction |
+| 70-89% | GOOD — minor outward leaks |
+| 50-69% | NEEDS WORK — significant dependency rule violations |
+| < 50% | CRITICAL — more outward than inward dependencies |
+
 ### Phase 8: Console.log Audit
 
 - Search for console.log in source files (not test files)
