@@ -4,6 +4,17 @@ description: Codebase health audit — architecture, evolution, testing, securit
 
 # Codebase Health Audit
 
+### Phase 0: Prompt Refinement
+
+Before executing, analyze the user's input using the `prompt-optimizer` skill:
+1. Identify intent and match to available ECC skills/commands/agents
+2. Check for ambiguity or missing context
+3. Rewrite the task description for clarity and specificity
+4. Display the refined prompt to the user
+
+If the refined prompt differs significantly, show both original and refined versions.
+Proceed with the refined version unless the user objects.
+
 **FIRST ACTION**: Unless `--skip-plan` is passed, call the `EnterPlanMode` tool immediately. This enters Claude Code plan mode which restricts tools to read-only exploration while you scan the codebase and draft an audit plan. After presenting the plan, call `ExitPlanMode` to proceed with execution after user approval.
 
 Comprehensive codebase health analysis across 7 domains: architecture, evolutionary patterns, test architecture, security, observability, error handling, and convention consistency. Produces a dated audit report in `docs/audits/` with cross-domain correlations and actionable recommendations.

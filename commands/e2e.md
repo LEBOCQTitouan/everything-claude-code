@@ -4,6 +4,17 @@ description: Generate and run end-to-end tests with Playwright. Creates test jou
 
 # E2E Command
 
+### Phase 0: Prompt Refinement
+
+Before executing, analyze the user's input using the `prompt-optimizer` skill:
+1. Identify intent and match to available ECC skills/commands/agents
+2. Check for ambiguity or missing context
+3. Rewrite the task description for clarity and specificity
+4. Display the refined prompt to the user
+
+If the refined prompt differs significantly, show both original and refined versions.
+Proceed with the refined version unless the user objects.
+
 **FIRST ACTION**: Unless `--skip-plan` is passed, call the `EnterPlanMode` tool immediately. This enters Claude Code plan mode which restricts tools to read-only exploration while you analyze the codebase and draft an E2E test plan. After presenting the plan, call `ExitPlanMode` to proceed with execution after user approval.
 
 This command orchestrates E2E test generation and execution across multiple agents. The command itself is the orchestrator — it delegates to specialized agents per phase.

@@ -6,6 +6,17 @@ description: Incrementally fix build and type errors with minimal, safe changes.
 
 Incrementally fix build and type errors with minimal, safe changes.
 
+## Step 0: Prompt Refinement
+
+Before executing, analyze the user's input using the `prompt-optimizer` skill:
+1. Identify intent and match to available ECC skills/commands/agents
+2. Check for ambiguity or missing context
+3. Rewrite the task description for clarity and specificity
+4. Display the refined prompt to the user
+
+If the refined prompt differs significantly, show both original and refined versions.
+Proceed with the refined version unless the user objects.
+
 ## Step 1: Detect Build System
 
 Identify the project's build tool and run the build:
