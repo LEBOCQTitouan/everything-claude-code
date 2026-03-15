@@ -66,6 +66,26 @@ npm run test:coverage
 - Asserting too little (passing tests that don't verify anything)
 - Not mocking external dependencies (Supabase, Redis, OpenAI, etc.)
 
+## Transformation Priority Premise (GREEN Phase)
+
+When making a failing test pass, apply the simplest transformation that works:
+
+| Priority | Transformation | Example |
+|----------|---------------|---------|
+| 1 | `{} → nil` | Return nothing |
+| 2 | `nil → constant` | Return a fixed value |
+| 3 | `constant → variable` | Replace constant with parameter |
+| 4 | `add computation` | Simple arithmetic/string op |
+| 5 | `unconditional → selection` | Add `if` / `match` |
+| 6 | `scalar → collection` | Single value → array/vec |
+| 7 | `statement → tail recursion` | Loop via recursion |
+| 8 | `selection → iteration` | `if` → `for` / `loop` |
+| 9 | `value → mutated value` | Transform existing (last resort) |
+
+**Rule**: Always try the lowest-priority-number transformation first. Jumping to complex transformations when simpler ones suffice leads to over-engineered solutions.
+
+When reviewing GREEN implementations, flag cases where a simpler transformation would have sufficed.
+
 ## Commit Cadence
 
 Commit after each TDD phase transition:
