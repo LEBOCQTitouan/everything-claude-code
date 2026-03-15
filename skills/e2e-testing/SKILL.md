@@ -324,3 +324,111 @@ test('trade execution', async ({ page }) => {
   await expect(page.locator('[data-testid="trade-success"]')).toBeVisible()
 })
 ```
+
+## Humble Object Pattern
+
+Separate testable logic from hard-to-test UI interaction by enforcing strict boundaries between Page Objects and test files.
+
+### Page Object Rules (Zero Assertions)
+
+Page Objects encapsulate **selectors and actions only**. They must contain:
+- Locator definitions
+- Navigation methods
+- Data extraction methods (return raw values)
+- **Zero assertions** — never `expect()` inside a Page Object
+
+```typescript
+// CORRECT: Page Object returns data, no assertions
+export class CheckoutPage {
+  readonly totalPrice: Locator
+
+  constructor(page: Page) {
+    this.totalPrice = page.locator('[data-testid="total-price"]')
+  }
+
+  async getTotal(): Promise<string> {
+    return await this.totalPrice.textContent() ?? ''
+  }
+}
+
+// WRONG: Page Object contains assertion
+export class CheckoutPage {
+  async verifyTotal(expected: string) {
+    await expect(this.totalPrice).toHaveText(expected) // NO — assertion in POM
+  }
+}
+```
+
+### Test File Rules (Zero Selectors)
+
+Test files contain **assertions and orchestration only**. They must:
+- Use Page Object methods for all interactions
+- Contain all `expect()` calls
+- **Zero raw selectors** — never `page.locator()` or `page.click('[data-testid="..."]')` directly
+
+```typescript
+// CORRECT: Test uses POM methods, asserts in test
+test('checkout shows correct total', async ({ page }) => {
+  const checkout = new CheckoutPage(page)
+  await checkout.goto()
+
+  const total = await checkout.getTotal()
+  expect(total).toBe('$42.00')
+})
+
+// WRONG: Test uses raw selectors
+test('checkout shows correct total', async ({ page }) => {
+  await page.goto('/checkout')
+  const total = await page.locator('[data-testid="total-price"]').textContent() // NO
+  expect(total).toBe('$42.00')
+})
+```
+
+### Verification
+
+During code review, check:
+- `expect(` count in POM files must be 0
+- `page.locator(` or `page.click(` count in test files must be 0 (except through POM)
+- `data-testid` literals must only appear in POM files
+
+## Boundary Classification
+
+Tag each E2E journey with the system boundaries it crosses. This enables risk assessment and helps prioritize which journeys need the most robust test infrastructure.
+
+### `boundaries_crossed` Field
+
+Add to the journey manifest:
+
+```json
+{
+  "journey": "place-trade",
+  "risk": "HIGH",
+  "boundaries_crossed": ["HTTP API", "Database", "External Auth", "Payment Gateway"],
+  "scenarios": [...]
+}
+```
+
+### Boundary Types
+
+| Boundary | Examples | Risk Weight |
+|----------|----------|-------------|
+| HTTP API | REST endpoints, GraphQL | 1 |
+| Database | SQL queries, ORM | 2 |
+| External Auth | OAuth, SSO, JWT verification | 3 |
+| Payment Gateway | Stripe, PayPal | 4 |
+| File System | Uploads, downloads, temp files | 1 |
+| Message Queue | Redis pub/sub, RabbitMQ, SQS | 2 |
+| Third-party API | Maps, email, SMS | 3 |
+| WebSocket | Real-time connections | 2 |
+
+### Risk Scoring
+
+```
+journey_risk = sum(boundary_risk_weights)
+```
+
+| Score | Risk Level | Test Strategy |
+|-------|-----------|---------------|
+| 0-2 | LOW | Standard Playwright, no special infra |
+| 3-5 | MEDIUM | Add retries, increase timeouts |
+| 6+ | HIGH | Mock external boundaries, add trace capture |
