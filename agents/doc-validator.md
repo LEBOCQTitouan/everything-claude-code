@@ -167,6 +167,32 @@ Apply file size guidelines from `skills/doc-guidelines/SKILL.md`:
 
 Include file size findings in the quality report.
 
+## Comment Quality Classification
+
+Classify every comment in validated files:
+
+| Category | Action | Signal |
+|----------|--------|--------|
+| **Informative** | Keep | Explains why, references specs, documents constraints |
+| **Redundant** | Flag removal | Restates what the code already says |
+| **Misleading** | CRITICAL fix | Comment says X, code does Y |
+| **Apologetic** | Track as debt | "sorry", "hack", "temporary", "workaround" |
+| **Mandated** | Validate accuracy | Required API docs (JSDoc, rustdoc) |
+| **Journaling** | Flag removal | Author/date stamps, change logs in comments |
+
+Include comment quality summary in validation report.
+
+## "The Last Page" — Actual vs Aspirational
+
+When validating CLAUDE.md (via `--target=CLAUDE.md`), verify claims describe what the codebase **is**, not what it **aspires to be**:
+
+- **Convention claims**: Grep for counter-examples. If violations > 10%, flag as "aspirational, not actual"
+- **Dependency graph claims**: Compare with actual import analysis
+- **Coverage claims**: Compare with actual coverage numbers
+- **Architecture claims**: Verify patterns match directory structure and imports
+
+Severity: HIGH for claims that would mislead new contributors.
+
 ## Output Structure
 
 Based on codebase size, write to `docs/`:
