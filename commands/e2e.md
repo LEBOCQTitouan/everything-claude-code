@@ -4,15 +4,35 @@ description: Generate and run end-to-end tests with Playwright. Creates test jou
 
 # E2E Command
 
-This command invokes the **e2e-runner** agent to generate, maintain, and execute end-to-end tests using Playwright.
+**FIRST ACTION**: Unless `--skip-plan` is passed, call the `EnterPlanMode` tool immediately. This enters Claude Code plan mode which restricts tools to read-only exploration while you analyze the codebase and draft an E2E test plan. After presenting the plan, call `ExitPlanMode` to proceed with execution after user approval.
+
+This command orchestrates E2E test generation and execution across multiple agents. The command itself is the orchestrator — it delegates to specialized agents per phase.
+
+## Orchestrator Responsibilities
+
+- **Phase sequencing** — execute phases in order, gate on failures
+- **Journey isolation** — one `e2e-runner` invocation per journey (1-agent-per-task)
+- **Cross-review** — delegate generated tests to `code-reviewer` for quality
+- **Commit enforcement** — commit after each journey and each review fix
+- **Recap production** — summarize results across all journeys
 
 ## What This Command Does
 
-1. **Generate Test Journeys** - Create Playwright tests for user flows
-2. **Run E2E Tests** - Execute tests across browsers
-3. **Capture Artifacts** - Screenshots, videos, traces on failures
-4. **Upload Results** - HTML reports and JUnit XML
-5. **Identify Flaky Tests** - Quarantine unstable tests
+0. **Plan** — Analyze codebase, identify journeys, classify by risk, present manifest, wait for approval
+1. **Generate + Execute** — Delegate to `e2e-runner` agent per journey, commit after each
+2. **Code Review** — Delegate generated tests to `code-reviewer`, fix findings, commit each fix
+3. **Recap Report** — Produce summary (journeys tested, pass/fail, flaky rate, artifacts, review findings)
+
+## Commit Cadence
+
+| Trigger | Commit Message |
+|---------|---------------|
+| After each journey generated + executed | `test: add E2E tests for <journey>` |
+| After each code review fix | `fix: <review finding> in E2E tests` |
+
+## Arguments
+
+- `--skip-plan` — skip the planning phase and proceed directly to test generation
 
 ## When to Use
 
@@ -25,181 +45,80 @@ Use `/e2e` when:
 
 ## How It Works
 
-The e2e-runner agent will:
+### Phase 0: Plan
 
-1. **Analyze user flow** and identify test scenarios
-2. **Generate Playwright test** using Page Object Model pattern
-3. **Run tests** across multiple browsers (Chrome, Firefox, Safari)
-4. **Capture failures** with screenshots, videos, and traces
-5. **Generate report** with results and artifacts
-6. **Identify flaky tests** and recommend fixes
+1. Call `EnterPlanMode`
+2. Explore the codebase (read-only) to identify critical user journeys
+3. Classify journeys by risk: **HIGH** (financial, auth), **MEDIUM** (search, nav), **LOW** (UI polish)
+4. Present journey manifest with scenarios per journey
+5. Wait for user approval, then call `ExitPlanMode`
+
+### Phase 1: Generate + Execute
+
+For each approved journey (one at a time):
+1. Invoke `e2e-runner` agent with journey spec (name, scenarios, risk level, target dir)
+2. Agent generates Playwright tests using Page Object Model pattern
+3. Agent runs tests across browsers, captures artifacts on failure
+4. Agent returns structured results (files created, pass/fail, flaky tests, artifacts)
+5. **Commit**: `test: add E2E tests for <journey>`
+
+### Phase 2: Code Review
+
+1. Invoke `code-reviewer` agent on all generated test files
+2. Review for: test isolation, flaky patterns, hardcoded values, missing assertions, selector quality
+3. For each finding: apply fix, then **commit**: `fix: <review finding> in E2E tests`
+
+### Phase 3: Recap Report
+
+Produce a summary across all journeys:
+- Journeys tested (with risk levels)
+- Pass/fail counts per journey
+- Overall flaky rate
+- Artifacts generated (screenshots, videos, traces, reports)
+- Code review findings addressed
 
 ## Example Usage
 
 ```
-User: /e2e Test the market search and view flow
+User: /e2e Test the market search and trading flows
 
-Agent (e2e-runner):
-# E2E Test Generation: Market Search and View Flow
+[Phase 0: Plan mode]
+  Journey Manifest:
+  1. market-search-and-view (HIGH) — search, filter, view details
+  2. place-trade (HIGH) — select market, place order, confirm
+  3. portfolio-overview (MEDIUM) — view positions, P&L
 
-## Test Scenario Identified
+  Approve? [y/n]
 
-**User Journey:** Market Search → View Results → Click Market → View Details
+User: y
 
-**Test Coverage:**
-1. Navigate to markets page
-2. Perform semantic search
-3. Verify search results
-4. Click on first result
-5. Verify market details page loads
-6. Verify chart renders
+[Phase 1: Generate + Execute]
+  Journey 1/3: market-search-and-view (HIGH)
+    → e2e-runner: generated 3 tests in tests/e2e/markets/search-and-view.spec.ts
+    → 3/3 passed (4.2s), 0 flaky
+    → commit: test: add E2E tests for market-search-and-view
 
-## Generated Test Code
+  Journey 2/3: place-trade (HIGH)
+    → e2e-runner: generated 4 tests in tests/e2e/trading/place-trade.spec.ts
+    → 4/4 passed (6.1s), 0 flaky
+    → commit: test: add E2E tests for place-trade
 
-```typescript
-// tests/e2e/markets/search-and-view.spec.ts
-import { test, expect } from '@playwright/test'
-import { MarketsPage } from '../../pages/MarketsPage'
-import { MarketDetailsPage } from '../../pages/MarketDetailsPage'
+  Journey 3/3: portfolio-overview (MEDIUM)
+    → e2e-runner: generated 2 tests in tests/e2e/portfolio/overview.spec.ts
+    → 2/2 passed (3.0s), 0 flaky
+    → commit: test: add E2E tests for portfolio-overview
 
-test.describe('Market Search and View Flow', () => {
-  test('user can search markets and view details', async ({ page }) => {
-    // 1. Navigate to markets page
-    const marketsPage = new MarketsPage(page)
-    await marketsPage.goto()
+[Phase 2: Code Review]
+  → code-reviewer: reviewed 3 test files
+  → Finding: hardcoded wait in place-trade.spec.ts → replaced with waitForResponse
+  → commit: fix: replace hardcoded wait with waitForResponse in E2E tests
 
-    // Verify page loaded
-    await expect(page).toHaveTitle(/Markets/)
-    await expect(page.locator('h1')).toContainText('Markets')
-
-    // 2. Perform semantic search
-    await marketsPage.searchMarkets('election')
-
-    // Wait for API response
-    await page.waitForResponse(resp =>
-      resp.url().includes('/api/markets/search') && resp.status() === 200
-    )
-
-    // 3. Verify search results
-    const marketCards = marketsPage.marketCards
-    await expect(marketCards.first()).toBeVisible()
-    const resultCount = await marketCards.count()
-    expect(resultCount).toBeGreaterThan(0)
-
-    // Take screenshot of search results
-    await page.screenshot({ path: 'artifacts/search-results.png' })
-
-    // 4. Click on first result
-    const firstMarketTitle = await marketCards.first().textContent()
-    await marketCards.first().click()
-
-    // 5. Verify market details page loads
-    await expect(page).toHaveURL(/\/markets\/[a-z0-9-]+/)
-
-    const detailsPage = new MarketDetailsPage(page)
-    await expect(detailsPage.marketName).toBeVisible()
-    await expect(detailsPage.marketDescription).toBeVisible()
-
-    // 6. Verify chart renders
-    await expect(detailsPage.priceChart).toBeVisible()
-
-    // Verify market name matches
-    const detailsTitle = await detailsPage.marketName.textContent()
-    expect(detailsTitle?.toLowerCase()).toContain(
-      firstMarketTitle?.toLowerCase().substring(0, 20) || ''
-    )
-
-    // Take screenshot of market details
-    await page.screenshot({ path: 'artifacts/market-details.png' })
-  })
-
-  test('search with no results shows empty state', async ({ page }) => {
-    const marketsPage = new MarketsPage(page)
-    await marketsPage.goto()
-
-    // Search for non-existent market
-    await marketsPage.searchMarkets('xyznonexistentmarket123456')
-
-    // Verify empty state
-    await expect(page.locator('[data-testid="no-results"]')).toBeVisible()
-    await expect(page.locator('[data-testid="no-results"]')).toContainText(
-      /no.*results|no.*markets/i
-    )
-
-    const marketCount = await marketsPage.marketCards.count()
-    expect(marketCount).toBe(0)
-  })
-
-  test('can clear search and see all markets again', async ({ page }) => {
-    const marketsPage = new MarketsPage(page)
-    await marketsPage.goto()
-
-    // Initial market count
-    const initialCount = await marketsPage.marketCards.count()
-
-    // Perform search
-    await marketsPage.searchMarkets('trump')
-    await page.waitForLoadState('networkidle')
-
-    // Verify filtered results
-    const filteredCount = await marketsPage.marketCards.count()
-    expect(filteredCount).toBeLessThan(initialCount)
-
-    // Clear search
-    await marketsPage.searchInput.clear()
-    await page.waitForLoadState('networkidle')
-
-    // Verify all markets shown again
-    const finalCount = await marketsPage.marketCards.count()
-    expect(finalCount).toBe(initialCount)
-  })
-})
-```
-
-## Running Tests
-
-```bash
-# Run the generated test
-npx playwright test tests/e2e/markets/search-and-view.spec.ts
-
-Running 3 tests using 3 workers
-
-  ✓  [chromium] › search-and-view.spec.ts:5:3 › user can search markets and view details (4.2s)
-  ✓  [chromium] › search-and-view.spec.ts:52:3 › search with no results shows empty state (1.8s)
-  ✓  [chromium] › search-and-view.spec.ts:67:3 › can clear search and see all markets again (2.9s)
-
-  3 passed (9.1s)
-
-Artifacts generated:
-- artifacts/search-results.png
-- artifacts/market-details.png
-- playwright-report/index.html
-```
-
-## Test Report
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║                    E2E Test Results                          ║
-╠══════════════════════════════════════════════════════════════╣
-║ Status:     ✅ ALL TESTS PASSED                              ║
-║ Total:      3 tests                                          ║
-║ Passed:     3 (100%)                                         ║
-║ Failed:     0                                                ║
-║ Flaky:      0                                                ║
-║ Duration:   9.1s                                             ║
-╚══════════════════════════════════════════════════════════════╝
-
-Artifacts:
-📸 Screenshots: 2 files
-📹 Videos: 0 files (only on failure)
-🔍 Traces: 0 files (only on failure)
-📊 HTML Report: playwright-report/index.html
-
-View report: npx playwright show-report
-```
-
-✅ E2E test suite ready for CI/CD integration!
+[Phase 3: Recap]
+  Journeys:  3/3 passed
+  Tests:     9 total, 9 passed, 0 failed
+  Flaky:     0 (0%)
+  Artifacts: 6 screenshots, 1 HTML report
+  Review:    1 finding addressed
 ```
 
 ## Test Artifacts
@@ -307,8 +226,9 @@ Add to your CI pipeline:
 
 ## Related Agents
 
-This command invokes the `e2e-runner` agent located at:
-`~/.claude/agents/e2e-runner.md`
+This command orchestrates:
+- `e2e-runner` agent — test generation and execution (one invocation per journey)
+- `code-reviewer` agent — review generated test files for quality and patterns
 
 ## Quick Commands
 
