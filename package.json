@@ -1,9 +1,0 @@
-{
-  "private": true,
-  "scripts": {
-    "lint": "markdownlint '**/*.md' --ignore node_modules --ignore target"
-  },
-  "devDependencies": {
-    "markdownlint-cli": "^0.48.0"
-  }
-}
