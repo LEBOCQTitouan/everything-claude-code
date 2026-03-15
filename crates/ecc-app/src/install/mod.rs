@@ -229,7 +229,7 @@ pub fn install_global(
     let mut combined = domain_merge::combine_reports(&all_reports);
 
     // Step 5: Merge hooks
-    let hooks_json = ecc_root.join("hooks.json");
+    let hooks_json = ecc_root.join("hooks").join("hooks.json");
     let settings_json = claude_dir.join("settings.json");
     let (hooks_added, hooks_existing, hooks_legacy) =
         if ctx.fs.exists(&hooks_json) {
