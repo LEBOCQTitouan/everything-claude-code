@@ -233,6 +233,7 @@ For each phase in the approved plan:
 
 #### 3. GREEN — Implement Minimal Code
 - Write the minimal implementation to make all tests pass
+- Apply the **Transformation Priority Premise**: prefer the simplest transformation that makes the test pass (constant → variable → computation → selection → iteration). Never jump to complex transformations when simpler ones suffice.
 - Run the test command — **verify tests PASS**
 - Run the build command — **verify build passes**
 - Commit: `feat: implement <phase>`
