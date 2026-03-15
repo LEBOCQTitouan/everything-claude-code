@@ -3,6 +3,7 @@ name: test-auditor
 description: Test architecture quality analyst. Classifies tests by dependency footprint, measures structural coupling, evaluates fixture ratios, and identifies coverage gaps.
 tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
+skills: ["test-architecture"]
 ---
 
 # Test Auditor

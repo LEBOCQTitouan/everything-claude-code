@@ -3,6 +3,7 @@ name: convention-auditor
 description: Convention and consistency analyst. Detects naming convention deviations, pattern divergence, configuration access scatter, and primitive obsession.
 tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
+skills: ["convention-consistency"]
 ---
 
 # Convention Auditor

@@ -3,6 +3,7 @@ name: audit-orchestrator
 description: Codebase health audit orchestrator. Delegates to domain-specific audit agents in parallel, correlates cross-domain findings, and generates a comprehensive audit report.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent"]
 model: opus
+skills: ["architecture-review"]
 ---
 
 # Audit Orchestrator

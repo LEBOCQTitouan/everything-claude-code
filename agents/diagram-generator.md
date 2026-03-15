@@ -3,6 +3,7 @@ name: diagram-generator
 description: Mermaid diagram generator. Reads codebase analysis data and produces flowcharts, sequence diagrams, class diagrams, ER diagrams, and state diagrams. Supports explicit markers in doc files and auto-detection via manifest.
 tools: ["Read", "Write", "Edit", "Grep", "Glob"]
 model: haiku
+skills: ["diagram-generation"]
 ---
 
 # Diagram Generator

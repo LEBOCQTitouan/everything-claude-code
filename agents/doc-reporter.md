@@ -3,6 +3,7 @@ name: doc-reporter
 description: Documentation coverage reporter. Calculates per-module doc coverage percentages, diffs against previous runs or branches, flags staleness and regressions.
 tools: ["Read", "Bash", "Grep", "Glob"]
 model: haiku
+skills: ["doc-quality-scoring"]
 ---
 
 # Documentation Coverage Reporter

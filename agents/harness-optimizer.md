@@ -3,6 +3,7 @@ name: harness-optimizer
 description: Analyze and improve the local agent harness configuration for reliability, cost, and throughput.
 tools: ["Read", "Grep", "Glob", "Bash", "Edit"]
 model: opus
+skills: ["agent-harness-construction"]
 color: teal
 ---
 
