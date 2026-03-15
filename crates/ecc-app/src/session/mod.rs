@@ -191,19 +191,6 @@ mod tests {
         PathBuf::from("/sessions")
     }
 
-    fn sessions_fs() -> InMemoryFileSystem {
-        InMemoryFileSystem::new()
-            .with_dir("/sessions")
-            .with_file(
-                "/sessions/2026-03-14-abc12345-session.tmp",
-                "# Session\n## Tasks\n- [x] Task 1\n- [ ] Task 2\n",
-            )
-            .with_file(
-                "/sessions/2026-03-13-def45678-session.tmp",
-                "# Session 2\n## Tasks\n- [x] Done\n",
-            )
-    }
-
     // -----------------------------------------------------------------------
     // get_all_sessions (moved from domain)
     // -----------------------------------------------------------------------
