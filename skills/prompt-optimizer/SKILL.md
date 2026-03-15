@@ -109,6 +109,21 @@ from the prompt description alone and mark the estimate as uncertain.
 | HIGH | Cross-domain, 5+ files | /plan first, then phased execution |
 | EPIC | Multi-session, multi-PR, architectural shift | Use blueprint skill for multi-session plan |
 
+### Phase 2.5: Backlog Cross-Reference
+
+If `docs/backlog/BACKLOG.md` exists in the project:
+
+1. Read the backlog index
+2. Compare incoming prompt against open entries (titles, tags, scope keywords)
+3. Score: HIGH (3+ overlaps), MEDIUM (2), LOW (1)
+4. Add "Backlog Matches" subsection to Prompt Diagnosis output:
+
+| ID | Title | Confidence | Suggestion |
+|----|-------|------------|------------|
+| BL-001 | [title] | HIGH | Bundle with this task |
+
+If no backlog exists or no matches, omit this subsection.
+
 ### Phase 3: ECC Component Matching
 
 Map intent + scope + tech stack (from Phase 0) to specific ECC components.
