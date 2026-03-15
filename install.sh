@@ -270,13 +270,6 @@ cmd_install() {
 
     for lang in "${langs[@]}"; do validate_lang "$lang"; done
 
-    # Try the Node.js orchestrator (detection + merge + manifest)
-    local orchestrator="$SCRIPT_DIR/dist/install-orchestrator.js"
-    if command -v node &>/dev/null && [[ -f "$orchestrator" ]]; then
-        node "$orchestrator" install "${langs[@]}" $dry_run $force $no_interactive $clean $clean_all
-        return $?
-    fi
-
     # Fallback: legacy cp-based install (no detection/merge/manifest)
     if [[ -n "$clean" ]]; then
         echo "Warning: --clean requires the Node.js orchestrator (manifest-aware). Use --clean-all instead." >&2
@@ -410,12 +403,8 @@ cmd_init() {
         echo "Next: run 'ecc install $lang' once to set up global rules/agents/skills."
     fi
 
-    # --- .gitignore management via orchestrator ---
-    local orchestrator="$SCRIPT_DIR/dist/install-orchestrator.js"
-    if [[ -z "$no_gitignore" ]] && command -v node &>/dev/null && [[ -f "$orchestrator" ]]; then
-        echo ""
-        node "$orchestrator" init $no_gitignore $dry_run $force
-    elif [[ -z "$no_gitignore" ]]; then
+    # --- .gitignore management ---
+    if [[ -z "$no_gitignore" ]]; then
         # Fallback: legacy single-entry gitignore
         local gitignore_file="$project_dir/.gitignore"
         local gitignore_entry=".claude/settings.local.json"
@@ -563,8 +552,8 @@ USAGE
   ecc update
 
 DESCRIPTION
-  Reinstall the latest version of ecc from npm.
-  Equivalent to: npm install -g @lebocqtitouan/ecc@latest
+  Reinstall the latest version of ecc from GitHub Releases.
+  Re-runs the curl installer to download the latest binary.
 EOF
             ;;
         ""|help)
@@ -584,7 +573,7 @@ COMMANDS
       Print the installed ecc version.  Aliases: --version, -v
 
   update
-      Reinstall the latest version of ecc from npm.
+      Reinstall the latest version of ecc from GitHub Releases.
 
   help [<command>]
       Show help. Pass a command name for detailed usage.
@@ -794,12 +783,16 @@ case "$CMD" in
     init)
         shift; cmd_init "$@" ;;
     version|--version|-v)
-        node -e "process.stdout.write(require('$(dirname "$0")/package.json').version+'\n')" 2>/dev/null \
-            || grep '"version"' "$(dirname "$0")/package.json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/' ;;
+        if command -v ecc &>/dev/null; then
+            ecc version
+        else
+            grep -m1 '^version' "$(dirname "$0")/Cargo.toml" | sed 's/version = "\(.*\)"/\1/'
+        fi
+        ;;
     update)
-        pkg=$(node -e "process.stdout.write(require('$(dirname "$0")/package.json').name)" 2>/dev/null || echo "@lebocqtitouan/ecc")
-        echo "Updating $pkg to latest..."
-        npm install -g "$pkg@latest" ;;
+        echo "Updating ECC to latest..."
+        curl -fsSL "https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/get-ecc.sh" | bash
+        ;;
     help|-h|--help)
         shift; cmd_help "${1:-}" ;;
     completion)
