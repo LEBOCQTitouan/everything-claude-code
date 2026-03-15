@@ -104,6 +104,35 @@ test('flaky: market search', async ({ page }) => {
 
 Common causes: race conditions (use auto-wait locators), network timing (wait for response), animation timing (wait for `networkidle`).
 
+## Humble Object Pattern
+
+When generating Playwright tests, enforce strict separation:
+
+**Page Objects (Zero Assertions)**:
+- Contain locator definitions and action methods only
+- Return raw values — never call `expect()` inside a Page Object
+- All `data-testid` literals live exclusively in Page Objects
+
+**Test Files (Zero Selectors)**:
+- Use Page Object methods for all element interaction
+- Contain all `expect()` assertions
+- Never use raw `page.locator()` or `page.click('[data-testid="..."]')` directly
+
+## Boundary Classification
+
+For each test journey, declare the system boundaries crossed:
+
+```json
+{
+  "boundaries_crossed": ["HTTP API", "Database", "External Auth"],
+  "risk_score": 6
+}
+```
+
+Boundary types and risk weights: HTTP API (1), Database (2), External Auth (3), Payment Gateway (4), File System (1), Message Queue (2), Third-party API (3), WebSocket (2).
+
+Use risk score to determine test strategy: 0-2 (standard), 3-5 (add retries), 6+ (mock external boundaries, add trace capture).
+
 ## Success Metrics
 
 - All critical journeys passing (100%)
