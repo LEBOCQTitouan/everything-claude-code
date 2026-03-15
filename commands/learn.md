@@ -1,3 +1,7 @@
+---
+description: Extract Reusable Patterns
+---
+
 # /learn - Extract Reusable Patterns
 
 Analyze the current session and extract any patterns worth saving as skills.
