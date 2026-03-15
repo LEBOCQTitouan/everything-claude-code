@@ -113,10 +113,12 @@ fn remove_ecc_hooks(
 
 /// Remove only files listed in the manifest (surgical cleanup).
 /// In `dry_run` mode, records what would be removed without actually removing.
+/// `is_legacy_hook` identifies legacy ECC hooks to remove from settings.json.
 pub fn clean_from_manifest(
     fs: &dyn FileSystem,
     dir: &Path,
     manifest: &EccManifest,
+    is_legacy_hook: &dyn Fn(&serde_json::Value) -> bool,
     dry_run: bool,
 ) -> CleanReport {
     let mut report = CleanReport::new();
@@ -148,6 +150,22 @@ pub fn clean_from_manifest(
             let file_path = dir.join("rules").join(group).join(file);
             let label = format!("rules/{group}/{file}");
             remove_file(fs, &file_path, &label, dry_run, &mut report);
+        }
+    }
+
+    // Remove ECC hooks from settings.json
+    let settings_path = dir.join("settings.json");
+    if fs.exists(&settings_path) {
+        match remove_ecc_hooks(fs, &settings_path, is_legacy_hook, dry_run) {
+            Ok(Some(count)) => {
+                report
+                    .removed
+                    .push(format!("settings.json ({count} ECC hook(s))"));
+            }
+            Ok(None) => {}
+            Err(msg) => {
+                report.errors.push(format!("settings.json: {msg}"));
+            }
         }
     }
 
@@ -251,7 +269,8 @@ mod tests {
         let manifest = sample_manifest();
         let dir = Path::new("/claude");
 
-        let report = clean_from_manifest(&fs, dir, &manifest, false);
+        let no_legacy = |_: &serde_json::Value| false;
+        let report = clean_from_manifest(&fs, dir, &manifest, &no_legacy, false);
 
         assert!(report.errors.is_empty());
         assert!(!report.removed.is_empty());
@@ -268,7 +287,8 @@ mod tests {
         let manifest = sample_manifest();
         let dir = Path::new("/claude");
 
-        let report = clean_from_manifest(&fs, dir, &manifest, false);
+        let no_legacy = |_: &serde_json::Value| false;
+        let report = clean_from_manifest(&fs, dir, &manifest, &no_legacy, false);
 
         assert!(report.removed.is_empty());
         assert!(!report.skipped.is_empty());
@@ -284,13 +304,49 @@ mod tests {
         let manifest = sample_manifest();
         let dir = Path::new("/claude");
 
-        let report = clean_from_manifest(&fs, dir, &manifest, true);
+        let no_legacy = |_: &serde_json::Value| false;
+        let report = clean_from_manifest(&fs, dir, &manifest, &no_legacy, true);
 
         assert!(!report.removed.is_empty());
         // Files should still exist
         assert!(fs.exists(&dir.join("agents/planner.md")));
         assert!(fs.exists(&dir.join("commands/plan.md")));
         assert!(fs.exists(&dir.join(".ecc-manifest.json")));
+    }
+
+    #[test]
+    fn clean_from_manifest_removes_ecc_hooks() {
+        let settings = r#"{
+            "hooks": {
+                "PreToolUse": [
+                    {"description": "ECC format", "hooks": [{"command": "ecc-hook format"}]},
+                    {"description": "User hook", "hooks": [{"command": "my-custom-hook"}]}
+                ]
+            }
+        }"#;
+        let fs = build_populated_fs()
+            .with_file("/claude/settings.json", settings);
+        let manifest = sample_manifest();
+        let dir = Path::new("/claude");
+        let no_legacy = |_: &serde_json::Value| false;
+
+        let report = clean_from_manifest(&fs, dir, &manifest, &no_legacy, false);
+
+        assert!(
+            report
+                .removed
+                .iter()
+                .any(|r| r.contains("1 ECC hook(s)"))
+        );
+
+        // Verify user hook preserved
+        let updated = fs
+            .read_to_string(Path::new("/claude/settings.json"))
+            .unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&updated).unwrap();
+        let pre_hooks = parsed["hooks"]["PreToolUse"].as_array().unwrap();
+        assert_eq!(pre_hooks.len(), 1);
+        assert_eq!(pre_hooks[0]["description"], "User hook");
     }
 
     // --- clean_all ---

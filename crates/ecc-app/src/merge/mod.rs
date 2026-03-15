@@ -306,7 +306,7 @@ pub fn merge_hooks(
     let (merged_hooks, added, existing, legacy_removed) =
         merge::merge_hooks_pure(&source_hooks, &existing_hooks);
 
-    if added > 0 && !dry_run {
+    if (added > 0 || legacy_removed > 0) && !dry_run {
         let mut settings = existing_settings;
         settings
             .as_object_mut()

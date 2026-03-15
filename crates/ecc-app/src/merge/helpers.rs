@@ -483,6 +483,32 @@ mod tests {
     }
 
     #[test]
+    fn merge_hooks_writes_when_only_legacy_removed() {
+        // Bug fix: previously, settings were only written when added > 0.
+        // Legacy-only removal (added == 0, legacy_removed > 0) must also persist.
+        let legacy_hook = serde_json::json!({"description": "old hook", "hooks": [{"command": "node /path/to/everything-claude-code/dist/hooks/run.js"}]});
+        let user_hook = serde_json::json!({"description": "user hook", "hooks": [{"command": "my-custom-hook"}]});
+        let settings = serde_json::json!({"hooks": { "PreToolUse": [legacy_hook, user_hook] }});
+        let source = serde_json::json!({});
+        let fs = InMemoryFileSystem::new()
+            .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
+            .with_file("/settings.json", &serde_json::to_string(&settings).unwrap());
+
+        let (added, _, legacy_removed) = merge_hooks(&fs, Path::new("/hooks.json"), Path::new("/settings.json"), false).unwrap();
+
+        assert_eq!(added, 0);
+        assert_eq!(legacy_removed, 1);
+
+        // Verify settings.json was rewritten with legacy hook removed
+        let updated: serde_json::Value = serde_json::from_str(
+            &fs.read_to_string(Path::new("/settings.json")).unwrap()
+        ).unwrap();
+        let pre_hooks = updated["hooks"]["PreToolUse"].as_array().unwrap();
+        assert_eq!(pre_hooks.len(), 1);
+        assert_eq!(pre_hooks[0]["description"], "user hook");
+    }
+
+    #[test]
     fn merge_hooks_dry_run_does_not_write() {
         let source = serde_json::json!({"PreToolUse": [{"hooks": [{"command": "ecc-hook test"}]}]});
         let fs = InMemoryFileSystem::new()

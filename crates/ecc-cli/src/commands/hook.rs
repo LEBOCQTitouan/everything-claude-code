@@ -15,8 +15,9 @@ pub struct HookArgs {
     /// Hook identifier (e.g., "pre:bash:dev-server-block")
     pub hook_id: String,
 
-    /// Comma-separated profile names (e.g., "standard,strict")
-    pub profiles: Option<String>,
+    /// Optional: legacy script path (ignored) and/or profile names.
+    /// Accepts both 2-arg (hook_id profiles) and 3-arg (hook_id script_path profiles) formats.
+    pub rest: Vec<String>,
 }
 
 pub fn run(args: HookArgs) -> anyhow::Result<()> {
@@ -51,10 +52,20 @@ pub fn run(args: HookArgs) -> anyhow::Result<()> {
         terminal: &terminal,
     };
 
+    // Parse rest args: supports 3 formats:
+    // - 0 args: no profiles
+    // - 1 arg:  profiles CSV
+    // - 2 args: legacy script path (ignored), profiles CSV
+    let profiles_csv = match args.rest.len() {
+        0 => None,
+        1 => Some(args.rest.into_iter().next().unwrap()),
+        _ => Some(args.rest.into_iter().last().unwrap()),
+    };
+
     let ctx = HookContext {
         hook_id: args.hook_id,
         stdin_payload: raw,
-        profiles_csv: args.profiles,
+        profiles_csv,
     };
 
     let result = dispatch(&ctx, &ports);

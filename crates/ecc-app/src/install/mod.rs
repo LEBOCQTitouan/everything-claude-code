@@ -133,6 +133,7 @@ pub fn install_global(
                 ctx.fs,
                 claude_dir,
                 &existing_manifest,
+                &|entry| domain_merge::is_legacy_ecc_hook(entry),
                 options.dry_run,
             );
             ctx.terminal.stdout_write(&format!(
