@@ -368,6 +368,15 @@ The pipeline maintains `docs/.doc-manifest.json` (schema: `schemas/doc-manifest.
 
 ## Commit Cadence
 
-After the full pipeline:
-- `docs: generate documentation suite` — single commit for all doc files
-- Or delegate commits to each sub-agent if running phases individually
+Commit after each major phase — one concern per commit:
+
+| Trigger | Commit Message |
+|---------|---------------|
+| After Phase 1 (Discovery + Extraction) | `docs: sync documentation from source files` |
+| After Phase 2 (Generation) | `docs: generate module documentation` |
+| After Phase 2 (Diagrams complete) | `docs: add diagrams` |
+| After Phase 3 (Index Assembly) | `docs: update codemaps` |
+| After Phase 4 (README Sync) | `docs: sync README` |
+| After Phase 5 (if fixes applied) | `fix: resolve CLAUDE.md inconsistencies` |
+
+Do not batch all doc files into a single commit. Each phase produces a distinct logical change.

@@ -302,6 +302,19 @@ User: /doc-suite --skip-plan
 [Phases 1-9 execute directly without approval step]
 ```
 
+## Commit Cadence
+
+| Trigger | Commit Message |
+|---------|---------------|
+| After Phase 1 (Source Sync) | `docs: sync documentation from source files` |
+| After Phase 3 (Generate) | `docs: generate module documentation` |
+| After Phase 4 (Diagrams) | `docs: add diagrams` |
+| After Phase 7 (Codemaps) | `docs: update codemaps` |
+| After Phase 8 (README Sync) | `docs: sync README` |
+| After Phase 9 (if fixes applied) | `fix: resolve CLAUDE.md inconsistencies` |
+
+Each commit is atomic — one concern per commit. Do not batch multiple phases into a single commit.
+
 ## When to Use
 
 - Setting up documentation for a new project
