@@ -70,61 +70,77 @@ validate_lang() {
 # Merge hooks from source hooks.json into a settings.json file
 merge_hooks() {
     local settings_file="$1"
-    if ! command -v node &>/dev/null; then
-        echo "Warning: node not found — skipping hooks merge. Add hooks manually from hooks/hooks.json." >&2
+    if ! command -v python3 &>/dev/null; then
+        echo "Warning: python3 not found — skipping hooks merge. Add hooks manually from hooks/hooks.json." >&2
         return
     fi
-    node - "$settings_file" "$HOOKS_FILE" <<'NODE'
-const fs = require('fs');
-const path = require('path');
-const [, , settingsPath, hooksPath] = process.argv;
+    python3 - "$settings_file" "$HOOKS_FILE" <<'PYMERGE'
+import json, os, sys
 
-const existing = fs.existsSync(settingsPath)
-    ? JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
-    : {};
+settings_path, hooks_path = sys.argv[1], sys.argv[2]
 
-const source = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+if os.path.exists(settings_path):
+    with open(settings_path) as f:
+        existing = json.load(f)
+else:
+    existing = {}
 
-const merged = { ...existing };
-merged.hooks = merged.hooks || {};
+with open(hooks_path) as f:
+    source = json.load(f)
 
-// Remove legacy/stale ECC hooks — mirrors isLegacyEccHook() in src/lib/merge.ts
-for (const event of Object.keys(merged.hooks)) {
-    if (!Array.isArray(merged.hooks[event])) continue;
-    merged.hooks[event] = merged.hooks[event].filter(entry => {
-        if (!Array.isArray(entry.hooks)) return true;
-        return !entry.hooks.some(h => {
-            const cmd = h.command || '';
-            // Current wrapper commands are NOT legacy
-            if (cmd.startsWith('ecc-hook ') || cmd.startsWith('ecc-shell-hook ')) return false;
-            // Absolute path containing ECC package identifier (catches 10-scripts/, 05-skills/, etc.)
-            if (cmd.includes('@lebocqtitouan/ecc/') || cmd.includes('everything-claude-code/')) return true;
-            if (cmd.includes('scripts/hooks/') && !cmd.includes('run-with-flags-shell.sh')) return true;
-            if (cmd.includes('${ECC_ROOT}') || cmd.includes('${CLAUDE_PLUGIN_ROOT}')) return true;
-            if (cmd.includes('/dist/hooks/run-with-flags.js')) return true;
-            if (cmd.includes('/scripts/hooks/run-with-flags-shell.sh')) return true;
-            if (cmd.includes('node -e') && /dev-server|tmux|git push|console\.log|check-console|pr-created|build-complete/.test(cmd)) return true;
-            return false;
-        });
-    });
-}
+merged = dict(existing)
+merged.setdefault("hooks", {})
 
-for (const [event, entries] of Object.entries(source.hooks || {})) {
-    merged.hooks[event] = merged.hooks[event] || [];
-    for (const entry of entries) {
-        const key = JSON.stringify(entry.hooks);
-        const alreadyPresent = merged.hooks[event].some(
-            e => JSON.stringify(e.hooks) === key
-        );
-        if (!alreadyPresent) {
-            merged.hooks[event].push(entry);
-        }
-    }
-}
+# Remove legacy/stale ECC hooks
+legacy_patterns = [
+    "@lebocqtitouan/ecc/", "everything-claude-code/",
+    "${ECC_ROOT}", "${CLAUDE_PLUGIN_ROOT}",
+    "/dist/hooks/run-with-flags.js",
+    "/scripts/hooks/run-with-flags-shell.sh",
+]
+legacy_node_patterns = [
+    "dev-server", "tmux", "git push", "console.log",
+    "check-console", "pr-created", "build-complete",
+]
 
-fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2) + '\n');
-NODE
+def is_legacy(cmd):
+    if cmd.startswith("ecc-hook ") or cmd.startswith("ecc-shell-hook "):
+        return False
+    for p in legacy_patterns:
+        if p in cmd:
+            return True
+    if "scripts/hooks/" in cmd and "run-with-flags-shell.sh" not in cmd:
+        return True
+    if "node -e" in cmd and any(lp in cmd for lp in legacy_node_patterns):
+        return True
+    return False
+
+for event, entries in list(merged["hooks"].items()):
+    if not isinstance(entries, list):
+        continue
+    merged["hooks"][event] = [
+        entry for entry in entries
+        if not isinstance(entry.get("hooks"), list)
+        or not any(is_legacy(h.get("command", "")) for h in entry["hooks"])
+    ]
+
+# Merge source hooks
+for event, entries in (source.get("hooks") or {}).items():
+    merged["hooks"].setdefault(event, [])
+    for entry in entries:
+        key = json.dumps(entry.get("hooks"), sort_keys=True)
+        already = any(
+            json.dumps(e.get("hooks"), sort_keys=True) == key
+            for e in merged["hooks"][event]
+        )
+        if not already:
+            merged["hooks"][event].append(entry)
+
+os.makedirs(os.path.dirname(settings_path) or ".", exist_ok=True)
+with open(settings_path, "w") as f:
+    json.dump(merged, f, indent=2)
+    f.write("\n")
+PYMERGE
 }
 
 # Merge missing ## sections from a template file into an existing CLAUDE.md.
@@ -231,6 +247,11 @@ detect_template() {
 # COMMAND: install
 # ---------------------------------------------------------------------------
 cmd_install() {
+    # Delegate to Rust CLI if available
+    if command -v ecc >/dev/null 2>&1; then
+        exec ecc install "$@"
+    fi
+
     local dry_run=""
     local force=""
     local no_interactive=""
@@ -317,6 +338,11 @@ cmd_install() {
 # COMMAND: init
 # ---------------------------------------------------------------------------
 cmd_init() {
+    # Delegate to Rust CLI if available
+    if command -v ecc >/dev/null 2>&1; then
+        exec ecc init "$@"
+    fi
+
     local template=""
     local lang=""
     local no_gitignore=""
