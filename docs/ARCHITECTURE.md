@@ -8,15 +8,14 @@
 
 | Property | Value |
 |----------|-------|
-| **Package** | `@lebocqtitouan/ecc` v2.0.0 |
-| **Language** | TypeScript (compiled to CommonJS) |
-| **Runtime** | Node.js >= 18 |
-| **Dependencies** | 1 runtime (`omelette`), 4 dev (`@types/node`, `markdownlint-cli`, `tsx`, `typescript`) |
-| **Source files** | 50 `.ts` files under `src/` |
-| **Codebase size** | Small (50 source files) |
-| **Entry points** | `bin/ecc.js` (CLI), `dist/postinstall.js`, `dist/preuninstall.js`, `dist/install-orchestrator.js`, `dist/claw.js` |
-| **Test count** | 1401 (32 test files, single-process runner) |
-| **Build** | `tsc -p tsconfig.build.json` to `dist/` |
+| **Package** | `ecc` (Everything Claude Code) |
+| **Language** | Rust (Cargo workspace) |
+| **Runtime** | Native binary (no runtime dependency) |
+| **Architecture** | Hexagonal (domain → ports → infra → app → CLI) |
+| **Crates** | 6 (`ecc-domain`, `ecc-ports`, `ecc-app`, `ecc-infra`, `ecc-cli`, `ecc-test-support`) |
+| **Entry point** | `crates/ecc-cli/` → `ecc` binary |
+| **Test count** | 670+ (`cargo test`) |
+| **Build** | `cargo build --release` → single binary |
 
 ## Source Directory Layout
 
@@ -102,21 +101,19 @@ Run during CI to ensure artifact quality. No public exports, standalone executab
 ## System Diagram
 
 ```
-User CLI (ecc)
+User CLI (ecc)  — native Rust binary
   |
-  +-- bin/ecc.js --- shell completion (omelette)
-  |    +-- install.sh (bash orchestrator)
-  |         +-- cmd_install -> install-orchestrator.ts
-  |         |    +-- detect     -> scan ~/.claude/
-  |         |    +-- manifest   -> track artifacts
-  |         |    +-- merge      -> interactive diff review
-  |         |    |    +-- smart-merge -> LCS diff + Claude AI merge
-  |         |    |    +-- ansi       -> colored terminal output
-  |         |    +-- gitignore  -> manage .gitignore
-  |         +-- cmd_init -> project CLAUDE.md + hooks
+  +-- ecc install  -> copy content to ~/.claude/
+  +-- ecc init     -> project CLAUDE.md + hooks
+  +-- ecc audit    -> configuration health check
+  +-- ecc hook     -> run a hook by ID
+  +-- ecc validate -> validate content files
   |
-  +-- hooks.json -> 23 hook implementations
-  |    +-- run-with-flags.ts (profile gating via hook-flags)
+  +-- install.sh   (bash fallback orchestrator)
+  |
+  +-- hooks.json -> hook implementations
+  |    +-- bin/ecc-hook (shell shim)
+  |    +-- bin/ecc-shell-hook.sh
   |
   +-- Content (copied to ~/.claude/)
        +-- agents/    (30 markdown with YAML frontmatter)
@@ -129,21 +126,17 @@ User CLI (ecc)
 ## Build Pipeline
 
 ```
-src/**/*.ts
+crates/
     |
-    v  tsc -p tsconfig.build.json
+    v  cargo build --release
     |
-dist/**/*.js  (CommonJS)
+target/release/ecc  (native binary)
     |
-    +-- bin/ecc.js            (CLI entry via package.json "bin")
-    +-- bin/ecc-hook.js       (Hook runner entry)
-    +-- dist/postinstall.js   (npm lifecycle: postinstall)
-    +-- dist/preuninstall.js  (npm lifecycle: preuninstall)
-    +-- dist/hooks/*.js       (Individual hook scripts)
+    +-- ecc version / install / init / audit / hook / validate / completion
 
 Test pipeline:
-    tests/**/*.test.js  --[tsx]--> single-process runner (tests/run-all.js)
-    tests/harness.js    --> shared test()/describe() with auto-async detection
+    cargo test  (670+ tests across 6 crates)
+    cargo clippy -- -D warnings  (zero-warning lint)
 ```
 
 ## Diagram Manifest

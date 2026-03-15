@@ -320,25 +320,19 @@ Per-module purpose, key exports, dependencies, and documentation coverage.
 
 ---
 
-### src/postinstall
+### src/postinstall (legacy)
 
-**Purpose:** Post-install health checks run after `npm install -g`. Validates Node.js version, bash availability, and runtime dependencies. Prints getting-started hints.
+**Purpose:** Previously ran post-install health checks after `npm install -g`. Now superseded by the Rust CLI and `scripts/get-ecc.sh` installer.
 
-**Key functions:** `checkNodeVersion()`, `checkBash()`, `checkDependencies()` (not exported)
-
-**Dependencies:** lib/ansi
-
-**Doc coverage:** N/A (no public exports)
+**Status:** Legacy — retained for reference only.
 
 ---
 
-### src/preuninstall
+### src/preuninstall (legacy)
 
-**Purpose:** Clean up shell completion files (fish, bash, zsh) and .zshrc fpath entries on `npm uninstall`.
+**Purpose:** Previously cleaned up shell completion files on `npm uninstall`. Now superseded by `scripts/uninstall-ecc.sh`.
 
-**Dependencies:** fs, os
-
-**Doc coverage:** N/A (no public exports)
+**Status:** Legacy — retained for reference only.
 
 ---
 

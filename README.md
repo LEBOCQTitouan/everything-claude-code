@@ -21,14 +21,14 @@ A collection of production-ready agents, skills, hooks, commands, and rules for 
 
 ### Requirements
 
-- Node.js 18+
 - Claude Code CLI v2.1.0+
+- macOS or Linux (x64 / arm64)
 
 ```bash
-npm install -g @lebocqtitouan/ecc
+curl -fsSL https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/get-ecc.sh | bash
 ```
 
-Works on Mac, Linux, and Windows (PowerShell).
+This downloads the prebuilt Rust binary to `~/.ecc/bin/ecc` and adds it to your PATH.
 
 ---
 
@@ -36,20 +36,13 @@ Works on Mac, Linux, and Windows (PowerShell).
 
 Supports bash, zsh, fish, and PowerShell.
 
-**Auto-detect (recommended):** Run once after installing — omelette detects your shell and writes to the appropriate rc file:
+Output the completion script for your shell and source it:
 
-```bash
-ecc completion
-```
-
-**Per-shell manual setup:** Output the completion script for your shell and source it:
-
-| Shell      | Setup command                                               | Reload                                    |
-|------------|-------------------------------------------------------------|-------------------------------------------|
-| zsh        | `eval "$(ecc completion zsh)"`  (add to `~/.zshrc`)        | `source ~/.zshrc`                         |
-| bash       | `eval "$(ecc completion bash)"` (add to `~/.bashrc`)       | `source ~/.bashrc`                        |
-| fish       | `ecc completion fish > ~/.config/fish/completions/ecc.fish` | `source ~/.config/fish/config.fish`       |
-| PowerShell | `ecc completion pwsh \| Out-String \| Invoke-Expression`   (add to `$PROFILE`) | `. $PROFILE`   |
+| Shell | Setup command                                               | Reload                              |
+|-------|-------------------------------------------------------------|-------------------------------------|
+| zsh   | `eval "$(ecc completion zsh)"`  (add to `~/.zshrc`)        | `source ~/.zshrc`                   |
+| bash  | `eval "$(ecc completion bash)"` (add to `~/.bashrc`)       | `source ~/.bashrc`                  |
+| fish  | `ecc completion fish > ~/.config/fish/completions/ecc.fish` | `source ~/.config/fish/config.fish` |
 
 After reloading, `ecc <TAB>` completes commands, languages, and templates automatically.
 
@@ -193,18 +186,16 @@ everything-claude-code/
 │   ├── security-guide.md            # Security patterns and review
 │   └── token-optimization.md
 │
-├── src/                             # TypeScript source
-│   ├── lib/                         #   Core libraries (utils, package-manager, session-manager, ...)
-│   ├── hooks/                       #   Hook script implementations (23 hooks)
-│   ├── ci/                          #   CI validators (agents, commands, hooks, rules, skills)
-│   ├── claw.ts                      #   NanoClaw REPL agent
-│   ├── postinstall.ts               #   npm postinstall entry point
-│   └── ...                          #   Other standalone scripts
+├── crates/                          # Rust workspace (hexagonal architecture)
+│   ├── ecc-domain/                  #   Pure business logic — zero I/O
+│   ├── ecc-ports/                   #   Trait definitions (FileSystem, ShellExecutor, etc.)
+│   ├── ecc-app/                     #   Application use cases
+│   ├── ecc-infra/                   #   Production adapters
+│   ├── ecc-cli/                     #   CLI binary entry point
+│   └── ecc-test-support/            #   Test doubles (InMemoryFileSystem, MockExecutor)
 │
-├── dist/                            # Compiled JS output (npm run build)
-│
-└── tests/                           # Test suite (1401 tests, run with tsx)
-    └── run-all.js
+└── scripts/                         # Install/uninstall scripts
+    └── get-ecc.sh                   #   curl installer
 ```
 
 > ★ = added or heavily modified in this fork
@@ -318,37 +309,10 @@ rules/golang/          # Go specific
 ## Running Tests
 
 ```bash
-npm run build              # compile TypeScript to dist/
-npx tsx tests/run-all.js   # run all 1401 tests
+cargo test                 # run all 670+ Rust tests
+cargo clippy -- -D warnings  # lint with zero warnings
+cargo build --release      # build release binary
 ```
-
----
-
-## Local CI Testing
-
-Run GitHub Actions workflows locally using [nektos/act](https://github.com/nektos/act).
-
-### Install act
-
-```bash
-brew install act           # macOS
-# or see https://nektosact.com/installation/ for other platforms
-```
-
-### Set up secrets
-
-```bash
-cp .secrets.example .secrets
-# Edit .secrets and fill in your NPM_TOKEN (required for release.yml)
-```
-
-### Available targets
-
-| Command | Description |
-|---------|-------------|
-| `make ci` | Run all workflows locally |
-| `make ci-dry` | List all jobs (dry-run) |
-| `make ci-job JOB=validate` | Run a specific job |
 
 ---
 
