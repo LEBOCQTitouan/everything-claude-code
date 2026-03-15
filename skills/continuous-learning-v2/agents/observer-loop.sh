@@ -38,6 +38,12 @@ analyze_observations() {
     return
   fi
 
+  # session-guardian: gate observer cycle (active hours, cooldown, idle detection)
+  if ! bash "$(dirname "$0")/session-guardian.sh"; then
+    echo "[$(date)] Observer cycle skipped by session-guardian" >> "$LOG_FILE"
+    return
+  fi
+
   prompt_file="$(mktemp "${TMPDIR:-/tmp}/ecc-observer-prompt.XXXXXX")"
   cat > "$prompt_file" <<PROMPT
 Read ${OBSERVATIONS_FILE} and identify patterns for the project ${PROJECT_NAME} (user corrections, error resolutions, repeated workflows, tool preferences).
@@ -78,9 +84,21 @@ Rules:
 PROMPT
 
   timeout_seconds="${ECC_OBSERVER_TIMEOUT_SECONDS:-120}"
+  max_turns="${ECC_OBSERVER_MAX_TURNS:-10}"
   exit_code=0
 
-  claude --model haiku --max-turns 3 --print < "$prompt_file" >> "$LOG_FILE" 2>&1 &
+  case "$max_turns" in
+    ''|*[!0-9]*)
+      max_turns=10
+      ;;
+  esac
+
+  if [ "$max_turns" -lt 4 ]; then
+    max_turns=10
+  fi
+
+  # Prevent observe.sh from recording this automated Haiku session as observations
+  ECC_SKIP_OBSERVE=1 ECC_HOOK_PROFILE=minimal claude --model haiku --max-turns "$max_turns" --print < "$prompt_file" >> "$LOG_FILE" 2>&1 &
   claude_pid=$!
 
   (
