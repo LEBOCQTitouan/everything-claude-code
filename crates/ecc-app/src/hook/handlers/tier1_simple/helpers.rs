@@ -167,7 +167,7 @@ pub(super) fn has_doc_comment(lines: &[&str], export_line: usize, ext: &str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hook::handlers::tier1_simple::handlers::*;
+    use crate::hook::handlers::tier1_simple::*;
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
