@@ -28,6 +28,21 @@ Registered in [`CUSTOM.md`](CUSTOM.md). Regenerated from source context on every
 | [Security Review](security-review.md) | flowchart LR | Code review pipeline: security, clean code, and quality checklists |
 | [Refactoring](refactoring.md) | flowchart TD | Safe refactoring flow with test baseline, incremental removal, and rollback |
 
+## Command Workflow Diagrams
+
+One diagram per slash command, showing the execution flow.
+
+| Diagram | Type | Description |
+|---------|------|-------------|
+| [/plan](cmd-plan.md) | flowchart TD | Stories decomposition, planning, TDD execution, E2E, and /verify |
+| [/verify](cmd-verify.md) | flowchart TD | Build, tests, lint, code review, arch review, coverage, dead code |
+| [/build-fix](cmd-build-fix.md) | flowchart TD | Detect errors, classify, fix incrementally, verify |
+| [/e2e](cmd-e2e.md) | flowchart TD | Discover flows, generate Playwright tests, run, capture artifacts |
+| [/doc-suite](cmd-doc-suite.md) | flowchart TD | Plan, sync, analyze, generate, validate, diagrams, coverage |
+| [/audit](cmd-audit.md) | flowchart TD | 7 parallel domain audits, cross-correlation, report |
+| [/backlog](cmd-backlog.md) | flowchart TD | Add, challenge, optimize, store, list, promote |
+| [/uncle-bob-audit](cmd-uncle-bob-audit.md) | flowchart TD | Invoke robert agent, oath evaluation, rework ratio, self-audit |
+
 ## Coverage
 
 | Category | Count | Diagrams |
@@ -38,7 +53,8 @@ Registered in [`CUSTOM.md`](CUSTOM.md). Regenerated from source context on every
 | Development workflows | 3 | Feature Development, TDD Workflow, Refactoring |
 | Quality gates | 1 | Security Review |
 | Build/CI | 1 | Build Pipeline |
-| **Total** | **10** | |
+| Command workflows | 8 | /plan, /verify, /build-fix, /e2e, /doc-suite, /audit, /backlog, /uncle-bob-audit |
+| **Total** | **18** | |
 
 ## Related
 - [Architecture](../ARCHITECTURE.md)
