@@ -289,33 +289,48 @@ pub fn merge_rules(
 /// Merge hooks from a source hooks.json into settings.json.
 ///
 /// Returns `(added, existing, legacy_removed)` counts.
+///
+/// Deserializes JSON at the boundary, uses typed domain functions for merge,
+/// and serializes back when writing to disk.
 pub fn merge_hooks(
     fs: &dyn FileSystem,
     hooks_json_path: &Path,
     settings_json_path: &Path,
     dry_run: bool,
 ) -> Result<(usize, usize, usize), String> {
+    use ecc_domain::config::hook_types::HooksMap;
+
     let source_file = read_json(fs, hooks_json_path)?;
-    let source_hooks = source_file
+    let source_hooks_value = source_file
         .get("hooks")
         .cloned()
         .unwrap_or_else(|| serde_json::json!({}));
     let existing_settings = read_json_or_default(fs, settings_json_path);
-
-    let existing_hooks = existing_settings
+    let existing_hooks_value = existing_settings
         .get("hooks")
         .cloned()
         .unwrap_or_else(|| serde_json::json!({}));
 
+    // Deserialize at boundary into typed model
+    let source_hooks: HooksMap = serde_json::from_value(source_hooks_value)
+        .unwrap_or_default();
+    let existing_hooks: HooksMap = serde_json::from_value(existing_hooks_value)
+        .unwrap_or_default();
+
+    // Call typed domain function
     let (merged_hooks, added, existing, legacy_removed) =
-        merge::merge_hooks_pure(&source_hooks, &existing_hooks);
+        merge::merge_hooks_typed(&source_hooks, &existing_hooks);
 
     if (added > 0 || legacy_removed > 0) && !dry_run {
+        // Serialize back at boundary
+        let merged_value = serde_json::to_value(&merged_hooks)
+            .map_err(|e| format!("Serialization error: {e}"))?;
+
         let mut settings = existing_settings;
         settings
             .as_object_mut()
             .ok_or_else(|| "settings.json is not an object".to_string())?
-            .insert("hooks".to_string(), merged_hooks);
+            .insert("hooks".to_string(), merged_value);
 
         let json = serde_json::to_string_pretty(&settings)
             .map_err(|e| format!("JSON serialization error: {e}"))?;

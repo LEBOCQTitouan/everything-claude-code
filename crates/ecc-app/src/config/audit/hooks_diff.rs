@@ -1,34 +1,37 @@
 use ecc_domain::config::audit::{
-    exists_in_settings, exists_in_source, is_ecc_managed_hook,
+    exists_in_settings_typed, exists_in_source_typed, is_ecc_managed_hook_typed,
     ArtifactAudit, HookDiffEntry, HooksDiff,
 };
+use ecc_domain::config::hook_types::HooksMap;
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
 use super::read_json_safe;
 
-/// Read hooks from a settings.json file.
+/// Read and deserialize hooks from a settings.json file into a typed HooksMap.
 fn read_hooks_from_settings(
     fs: &dyn FileSystem,
     settings_path: &Path,
-) -> serde_json::Value {
+) -> HooksMap {
     read_json_safe(fs, settings_path)
         .ok()
         .flatten()
         .and_then(|s| s.get("hooks").cloned())
-        .unwrap_or(serde_json::Value::Object(serde_json::Map::new()))
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
 }
 
-/// Read hooks from a hooks.json source file.
+/// Read and deserialize hooks from a hooks.json source file into a typed HooksMap.
 fn read_hooks_from_source(
     fs: &dyn FileSystem,
     hooks_json_path: &Path,
-) -> serde_json::Value {
+) -> HooksMap {
     read_json_safe(fs, hooks_json_path)
         .ok()
         .flatten()
         .and_then(|s| s.get("hooks").cloned())
-        .unwrap_or(serde_json::Value::Object(serde_json::Map::new()))
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default()
 }
 
 /// Compare hooks in settings.json against the source hooks.json.
@@ -44,49 +47,41 @@ pub fn diff_hooks(
     let mut matching = Vec::new();
     let mut user_hooks = Vec::new();
 
-    if let Some(settings_obj) = settings_hooks.as_object() {
-        for (event, entries) in settings_obj {
-            let arr = match entries.as_array() {
-                Some(a) => a,
-                None => continue,
-            };
-            for entry in arr {
-                if is_ecc_managed_hook(entry, &source_hooks) {
-                    if exists_in_source(event, entry, &source_hooks) {
-                        matching.push(HookDiffEntry {
-                            event: event.clone(),
-                            entry: entry.clone(),
-                        });
-                    } else {
-                        stale.push(HookDiffEntry {
-                            event: event.clone(),
-                            entry: entry.clone(),
-                        });
-                    }
-                } else {
-                    user_hooks.push(HookDiffEntry {
+    for (event, entries) in &settings_hooks {
+        for entry in entries {
+            // Serialize back to Value for HookDiffEntry (still uses Value in struct)
+            let entry_value = serde_json::to_value(entry).unwrap_or_default();
+
+            if is_ecc_managed_hook_typed(entry, &source_hooks) {
+                if exists_in_source_typed(event, entry, &source_hooks) {
+                    matching.push(HookDiffEntry {
                         event: event.clone(),
-                        entry: entry.clone(),
+                        entry: entry_value,
+                    });
+                } else {
+                    stale.push(HookDiffEntry {
+                        event: event.clone(),
+                        entry: entry_value,
                     });
                 }
+            } else {
+                user_hooks.push(HookDiffEntry {
+                    event: event.clone(),
+                    entry: entry_value,
+                });
             }
         }
     }
 
     let mut missing = Vec::new();
-    if let Some(source_obj) = source_hooks.as_object() {
-        for (event, entries) in source_obj {
-            let arr = match entries.as_array() {
-                Some(a) => a,
-                None => continue,
-            };
-            for entry in arr {
-                if !exists_in_settings(event, entry, &settings_hooks) {
-                    missing.push(HookDiffEntry {
-                        event: event.clone(),
-                        entry: entry.clone(),
-                    });
-                }
+    for (event, entries) in &source_hooks {
+        for entry in entries {
+            if !exists_in_settings_typed(event, entry, &settings_hooks) {
+                let entry_value = serde_json::to_value(entry).unwrap_or_default();
+                missing.push(HookDiffEntry {
+                    event: event.clone(),
+                    entry: entry_value,
+                });
             }
         }
     }
