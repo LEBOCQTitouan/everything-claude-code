@@ -67,6 +67,7 @@ Delegates to `evolution-analyst` agent. Must complete before Phase 2 because dom
 - Co-change coupling between file pairs
 - Bus factor per file and module
 - Complexity trends for top hotspots
+- **Temporal coupling detection**: Identify file pairs that change together (>60% co-change rate) but have no compile-time dependency between them. These represent hidden coupling — a change to one file implicitly requires changing the other, but the compiler won't catch missed updates.
 
 ### Phase 2: Domain Audits (Parallel)
 
