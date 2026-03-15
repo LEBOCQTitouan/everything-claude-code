@@ -1,5 +1,7 @@
 # Testing Requirements
 
+> **MANDATORY WORKFLOW**: The workflow described in this file is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
 ## Minimum Test Coverage: 80%
 
 Test Types (ALL required):
