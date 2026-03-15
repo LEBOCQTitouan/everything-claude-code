@@ -62,7 +62,8 @@ Use `/e2e` when:
 2. Explore the codebase (read-only) to identify critical user journeys
 3. Classify journeys by risk: **HIGH** (financial, auth), **MEDIUM** (search, nav), **LOW** (UI polish)
 4. Present journey manifest with scenarios per journey
-5. Wait for user approval, then call `ExitPlanMode`
+5. For each journey, include `boundaries_crossed` field listing the system boundaries the journey traverses (e.g., `[HTTP API, Database, External Auth]`). Calculate risk score from boundary weights. Display in the manifest.
+6. Wait for user approval, then call `ExitPlanMode`
 
 ### Phase 1: Generate + Execute
 
@@ -95,9 +96,9 @@ User: /e2e Test the market search and trading flows
 
 [Phase 0: Plan mode]
   Journey Manifest:
-  1. market-search-and-view (HIGH) — search, filter, view details
-  2. place-trade (HIGH) — select market, place order, confirm
-  3. portfolio-overview (MEDIUM) — view positions, P&L
+  1. market-search-and-view (HIGH) — search, filter, view details [HTTP API, Database]
+  2. place-trade (HIGH) — select market, place order, confirm [HTTP API, Database, External Auth]
+  3. portfolio-overview (MEDIUM) — view positions, P&L [HTTP API, Database]
 
   Approve? [y/n]
 
