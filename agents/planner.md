@@ -274,6 +274,34 @@ Each phase should be mergeable independently. Avoid plans that require all phase
 
 **Remember**: A great plan is specific, actionable, and considers both the happy path and edge cases. The best plans enable confident, incremental implementation.
 
+## Layer Declaration Rule
+
+Each story/phase in the plan must declare which Clean Architecture layers it touches:
+
+- **Entity** — domain types, business rules
+- **UseCase** — application orchestration
+- **Adapter** — interface adapters, controllers, presenters
+- **Framework** — infrastructure, external libraries, I/O
+
+If a phase touches more than 2 layers, it MUST be split into smaller phases (one per layer boundary crossing). This prevents phases from becoming architectural spaghetti.
+
+Include in phase output:
+```
+Layers: [Entity, UseCase]
+```
+
+## Boy Scout Delta
+
+During the REFACTOR step of each TDD phase, scan 3-5 files near the current changes for one small improvement:
+
+- Remove a TODO/FIXME by doing the TODO
+- Extract a magic number into a named constant
+- Rename a vague identifier (`data` → `invoiceItems`)
+- Remove dead code (unused import, unreachable branch)
+- Add a missing type annotation
+
+Commit separately: `chore(scout): <description>`. One improvement per phase maximum.
+
 ## Commit Cadence
 
 Each phase follows the TDD cycle with three commits:
