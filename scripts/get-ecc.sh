@@ -112,6 +112,7 @@ main() {
     echo "  ecc install            # Install agents, skills, rules to ~/.claude/"
     echo "  ecc init               # Set up current project"
     echo "  ecc help               # Show all commands"
+    echo "  ecc uninstall          # Remove ECC completely"
 }
 
 add_to_path() {
