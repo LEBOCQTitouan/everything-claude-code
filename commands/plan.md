@@ -15,6 +15,21 @@ Before executing, analyze the user's input using the `prompt-optimizer` skill:
 If the refined prompt differs significantly, show both original and refined versions.
 Proceed with the refined version unless the user objects.
 
+### Phase 0.25: Backlog Cross-Reference
+
+Before entering Plan Mode, check if `docs/backlog/BACKLOG.md` exists:
+
+1. If it exists, read it and cross-reference the user's (refined) prompt against open backlog entries
+2. Use keyword matching on titles, tags, and content of open entries
+3. If matches found, present them:
+   - **High confidence**: "These backlog items are directly related: BL-001, BL-003. Consider bundling them into this plan."
+   - **Medium confidence**: "These items may be related: BL-005. Review before proceeding."
+   - **Challenge framing**: If a backlog entry suggests a different approach, surface it
+4. If user wants to include items, read their full optimized prompts and incorporate into planning context
+5. After plan execution, offer to promote included backlog items
+
+If `docs/backlog/BACKLOG.md` does not exist, skip silently.
+
 **FIRST ACTION**: Call the `EnterPlanMode` tool immediately. This enters Claude Code plan mode which restricts tools to read-only exploration while you research and design the plan. After writing the plan, call `ExitPlanMode` to present it for user approval. Once the user approves, you exit plan mode and gain full tool access for TDD execution.
 
 ### Phase 0.5: Screaming Architecture Boundary Check
