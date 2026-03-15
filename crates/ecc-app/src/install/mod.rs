@@ -391,12 +391,34 @@ pub fn init_project(
 
 /// Resolve the ECC root directory containing agents/, commands/, etc.
 ///
-/// Checks well-known npm global install paths, then falls back to a path
-/// relative to the current executable. Uses ports for filesystem checks.
+/// Resolution order:
+/// 1. Relative to binary: `parent_of_binary/..` (handles `~/.ecc/bin/ecc` → `~/.ecc/`)
+/// 2. `$HOME/.ecc/`
+/// 3. Legacy npm global install paths (backward compat)
+/// 4. Error with instructions
 pub fn resolve_ecc_root(
     fs: &dyn FileSystem,
     env: &dyn Environment,
 ) -> Result<std::path::PathBuf, String> {
+    // 1. Relative to binary: parent/.. (e.g. ~/.ecc/bin/ecc → ~/.ecc/)
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(bin_dir) = exe.parent()
+    {
+        let relative = bin_dir.join("..");
+        if fs.exists(&relative.join("agents")) {
+            return Ok(relative);
+        }
+    }
+
+    // 2. $HOME/.ecc/
+    if let Some(home) = env.home_dir() {
+        let home_ecc = home.join(".ecc");
+        if fs.exists(&home_ecc.join("agents")) {
+            return Ok(home_ecc);
+        }
+    }
+
+    // 3. Legacy npm paths (backward compat)
     let npm_paths = [
         "/usr/local/lib/node_modules/@lebocqtitouan/ecc",
         "/usr/lib/node_modules/@lebocqtitouan/ecc",
@@ -409,20 +431,70 @@ pub fn resolve_ecc_root(
         }
     }
 
-    // Try relative to binary location (best-effort, not abstracted behind port)
-    let _ = env; // env used for future expansion
-    if let Ok(exe) = std::env::current_exe()
-        && let Some(parent) = exe.parent()
-    {
-        let relative = parent.join("../share/ecc");
-        if fs.exists(&relative.join("agents")) {
-            return Ok(relative);
-        }
-    }
-
     Err(
-        "Cannot find ECC assets directory. Set ECC_ROOT environment variable \
-         or use --ecc-root flag."
+        "Cannot find ECC assets directory. Install with: \
+         curl -fsSL https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/get-ecc.sh | bash\n\
+         Or set ECC_ROOT environment variable / use --ecc-root flag."
             .to_string(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ecc_test_support::{InMemoryFileSystem, MockEnvironment};
+
+    #[test]
+    fn resolve_ecc_root_finds_home_ecc() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/home/user/.ecc/agents");
+        let env = MockEnvironment::new().with_home("/home/user");
+
+        let result = resolve_ecc_root(&fs, &env);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            std::path::PathBuf::from("/home/user/.ecc")
+        );
+    }
+
+    #[test]
+    fn resolve_ecc_root_finds_legacy_npm_path() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/usr/local/lib/node_modules/@lebocqtitouan/ecc/agents");
+        let env = MockEnvironment::new().with_home("/home/user");
+
+        let result = resolve_ecc_root(&fs, &env);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            std::path::PathBuf::from("/usr/local/lib/node_modules/@lebocqtitouan/ecc")
+        );
+    }
+
+    #[test]
+    fn resolve_ecc_root_prefers_home_over_npm() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/home/user/.ecc/agents")
+            .with_dir("/usr/local/lib/node_modules/@lebocqtitouan/ecc/agents");
+        let env = MockEnvironment::new().with_home("/home/user");
+
+        let result = resolve_ecc_root(&fs, &env);
+        assert!(result.is_ok());
+        // $HOME/.ecc/ should be preferred over npm paths
+        assert_eq!(
+            result.unwrap(),
+            std::path::PathBuf::from("/home/user/.ecc")
+        );
+    }
+
+    #[test]
+    fn resolve_ecc_root_errors_when_no_paths_found() {
+        let fs = InMemoryFileSystem::new();
+        let env = MockEnvironment::new().with_home("/home/user");
+
+        let result = resolve_ecc_root(&fs, &env);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Cannot find ECC assets directory"));
+    }
 }
