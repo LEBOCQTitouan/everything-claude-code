@@ -155,11 +155,17 @@ impl FileSystem for InMemoryFileSystem {
 
     fn read_dir_recursive(&self, path: &Path) -> Result<Vec<PathBuf>, FsError> {
         let files = self.files.lock().unwrap();
+        let dirs = self.dirs.lock().unwrap();
         let mut entries: Vec<PathBuf> = files
             .keys()
             .filter(|k| k.starts_with(path) && *k != path)
             .cloned()
             .collect();
+        for dir in dirs.keys() {
+            if dir.starts_with(path) && dir != path && !entries.contains(dir) {
+                entries.push(dir.clone());
+            }
+        }
         entries.sort();
         Ok(entries)
     }

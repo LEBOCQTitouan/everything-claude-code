@@ -28,12 +28,17 @@ pub(super) fn copy_dir_recursive(
     for entry in entries {
         if let Ok(relative) = entry.strip_prefix(src) {
             let dest_path = dest.join(relative);
-            if let Some(parent) = dest_path.parent() {
-                fs.create_dir_all(parent)
+            if fs.is_dir(&entry) {
+                fs.create_dir_all(&dest_path)
                     .map_err(|e| format!("Cannot create dir: {e}"))?;
+            } else {
+                if let Some(parent) = dest_path.parent() {
+                    fs.create_dir_all(parent)
+                        .map_err(|e| format!("Cannot create dir: {e}"))?;
+                }
+                fs.copy(&entry, &dest_path)
+                    .map_err(|e| format!("Cannot copy {}: {e}", entry.display()))?;
             }
-            fs.copy(&entry, &dest_path)
-                .map_err(|e| format!("Cannot copy {}: {e}", entry.display()))?;
         }
     }
 
@@ -363,6 +368,30 @@ mod tests {
         assert_eq!(report.added, vec!["tdd"]);
         assert!(fs.exists(Path::new("/dest/skills/tdd/SKILL.md")));
         assert!(fs.exists(Path::new("/dest/skills/tdd/examples.md")));
+    }
+
+    #[test]
+    fn merge_skills_with_subdirectories() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/src/skills/security-review")
+            .with_file("/src/skills/security-review/SKILL.md", "# Security Review")
+            .with_dir("/src/skills/security-review/references")
+            .with_file("/src/skills/security-review/references/owasp.md", "# OWASP Top 10")
+            .with_file("/src/skills/security-review/references/checklist.md", "# Checklist")
+            .with_dir("/dest/skills");
+        let terminal = BufferedTerminal::new();
+        let env = no_color_env();
+        let shell = MockExecutor::new();
+        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let mut options = MergeOptions { dry_run: false, force: true, interactive: true, apply_all: None };
+
+        let report = merge_skills(&ctx, Path::new("/src/skills"), Path::new("/dest/skills"), &mut options);
+
+        assert!(report.errors.is_empty(), "errors: {:?}", report.errors);
+        assert_eq!(report.added, vec!["security-review"]);
+        assert!(fs.exists(Path::new("/dest/skills/security-review/SKILL.md")));
+        assert!(fs.exists(Path::new("/dest/skills/security-review/references/owasp.md")));
+        assert!(fs.exists(Path::new("/dest/skills/security-review/references/checklist.md")));
     }
 
     #[test]
