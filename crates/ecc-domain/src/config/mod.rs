@@ -8,6 +8,7 @@ pub mod clean;
 pub mod deny_rules;
 pub mod detect;
 pub mod gitignore;
+pub mod hook_types;
 pub mod manifest;
 pub mod merge;
 pub mod validate;
