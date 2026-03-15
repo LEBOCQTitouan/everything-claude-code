@@ -112,6 +112,7 @@ The default mode. Decomposes the request into User Stories before planning.
    - Iterates with the user via `AskUserQuestion` until stories are clear
    - Outputs: formal User Stories + dependency DAG + Challenges & Decisions log
    - Persists stories to `docs/user-stories/YYYY-MM-DD-<slug>.md`
+   - **Component impact analysis**: Map each story to affected components. Check CCP compliance — if a story forces changes in 3+ components, flag as "CCP violation: consider regrouping." Report coupling-increasing changes (new cross-component dependencies).
 
 2. **User Confirms Stories**: Present the stories and DAG. Wait for explicit confirmation.
 
