@@ -104,8 +104,10 @@ legacy_node_patterns = [
 ]
 
 def is_legacy(cmd):
+    # Current wrapper commands are NOT legacy — unless they contain a
+    # stale dist/hooks/ JS path from the Node.js era (3-arg format).
     if cmd.startswith("ecc-hook ") or cmd.startswith("ecc-shell-hook "):
-        return False
+        return "dist/hooks/" in cmd
     for p in legacy_patterns:
         if p in cmd:
             return True
