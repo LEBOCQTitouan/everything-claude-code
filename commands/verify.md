@@ -102,6 +102,12 @@ Review all uncommitted changes (`git diff HEAD`). For each changed file, check f
 - TODO/FIXME comments
 - Missing JSDoc for public APIs
 
+**Function Discipline Sub-Checks:**
+- **Length**: Functions > 20 lines → WARNING, > 40 lines → CAUTION (must extract or justify)
+- **Abstraction level mixing (Stepdown Rule)**: Flag functions that mix named function calls (high level) with array indexing, bitwise ops, or raw string manipulation (low level)
+- **Argument count**: > 3 arguments → flag as polyadic, recommend parameter object. Classify: niladic (0), monadic (1), dyadic (2), triadic (3), polyadic (4+)
+- **CQS violations**: Flag functions named `get*`/`find*`/`is*`/`has*` that mutate state, or `set*`/`update*`/`create*` that return meaningful values beyond success/failure
+
 **Best Practices (MEDIUM):**
 - Mutation patterns (use immutable instead)
 - Missing tests for new code
