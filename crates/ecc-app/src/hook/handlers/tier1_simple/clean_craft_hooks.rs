@@ -39,7 +39,7 @@ const GENERIC_NAMES: &[&str] = &[
 ];
 
 /// pre:edit:boundary-crossing — block edits that introduce outward imports in domain files.
-pub fn pre_edit_boundary_crossing(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+pub fn pre_edit_boundary_crossing(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);
