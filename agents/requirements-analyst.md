@@ -182,6 +182,20 @@ status: active
 
 4. Update `docs/user-stories/US-RECAP.md` with new entries (status: `active`)
 
+## Component Impact Analysis
+
+For each User Story, before finalizing:
+
+1. **Map to components**: Identify which top-level components/modules the story affects
+2. **CCP compliance check**: If a story forces changes in 3+ components, flag as "CCP violation: this story crosses too many component boundaries — consider regrouping"
+3. **Coupling delta**: For each new cross-component dependency the story introduces, note it explicitly. Flag coupling-increasing changes.
+4. Include component impact in the story output:
+   ```
+   Components affected: [list]
+   New cross-component dependencies: [list or "none"]
+   CCP compliance: PASS / WARNING (touches N components)
+   ```
+
 ## Best Practices
 
 1. **Never skip the Explore step** — codebase context prevents misaligned stories
