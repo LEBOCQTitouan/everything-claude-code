@@ -12,7 +12,7 @@ flowchart LR
     BIN --> HOOK["bin/ecc-hook<br/>bin/ecc-shell-hook.sh<br/>(hook shims)"]
 
     subgraph validation["Validation"]
-        SRC --> TEST["cargo test<br/>670+ tests"]
+        SRC --> TEST["cargo test<br/>999 tests"]
         SRC --> CLIPPY["cargo clippy<br/>-- -D warnings"]
         SRC --> LINT["npm run lint<br/>markdownlint"]
     end

@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-# Run all tests (670 tests)
+# Run all tests (999 tests)
 cargo test
 
 # Run clippy
@@ -73,7 +73,7 @@ ecc completion <shell>    Generate shell completions
 
 | Command | Description |
 |---------|-------------|
-| `cargo test` | Run all 670 Rust tests |
+| `cargo test` | Run all 999 Rust tests |
 | `cargo clippy -- -D warnings` | Lint with zero warnings |
 | `cargo build --release` | Build release binary |
 | `npm run lint` | Lint all Markdown files with markdownlint |

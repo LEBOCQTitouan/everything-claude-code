@@ -309,7 +309,7 @@ rules/golang/          # Go specific
 ## Running Tests
 
 ```bash
-cargo test                 # run all 670+ Rust tests
+cargo test                 # run all 999 Rust tests
 cargo clippy -- -D warnings  # lint with zero warnings
 cargo build --release      # build release binary
 ```

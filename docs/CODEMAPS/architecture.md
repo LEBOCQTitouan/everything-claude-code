@@ -84,12 +84,13 @@ crates/**/*.rs  →  cargo build --release  →  target/release/ecc (single bina
 ## Test Architecture
 
 ```
-cargo test                → 996 tests across all crates
-  ├─ ecc-domain (514)    → pure unit tests, proptest property tests
-  ├─ ecc-app (464)       → use case tests with InMemoryFileSystem + MockExecutor
-  ├─ ecc-infra (13)      → adapter integration tests
-  ├─ ecc-ports (3)       → trait contract tests
-  └─ ecc-test-support (2) → test double self-tests
+cargo test                → 999 tests across all crates
+  ├─ ecc-domain (515)    → pure unit tests, proptest property tests
+  ├─ ecc-app (466)       → use case tests with InMemoryFileSystem + MockExecutor
+  ├─ ecc-cli (13)        → CLI integration tests
+  ├─ ecc-ports (3)       → trait contract tests (3 ignored — require OS)
+  ├─ ecc-infra (2)       → adapter integration tests
+  └─ ecc-test-support (0) → test double self-tests
 ```
 
 ## Runtime Dependencies

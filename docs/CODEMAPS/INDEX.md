@@ -1,4 +1,4 @@
-<!-- Generated: 2026-03-15 | Crates: 6 | Files: 109 .rs -->
+<!-- Generated: 2026-03-15 | Crates: 6 | Files: 108 .rs -->
 
 # Codemap Index -- Everything Claude Code (ECC)
 
@@ -13,9 +13,9 @@
 
 ## Quick Stats
 
-- **Source:** 109 Rust files across 6 crates (~23,800 LOC)
-- **Tests:** 996 tests passing (514 domain + 464 app + 18 others)
-- **Content:** 30 agents, 7 commands, 81 skills, 7 rule groups
+- **Source:** 108 Rust files across 6 crates (~23,700 LOC)
+- **Tests:** 999 tests passing (515 domain + 466 app + 18 others)
+- **Content:** 30 agents, 6 commands, 74 skills, 4 rule groups
 - **Runtime deps:** serde, clap, regex, crossterm, rustyline, walkdir
 - **Build:** `cargo build --release` (single binary `ecc`)
 

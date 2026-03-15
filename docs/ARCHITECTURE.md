@@ -14,7 +14,7 @@
 | **Architecture** | Hexagonal (domain → ports → infra → app → CLI) |
 | **Crates** | 6 (`ecc-domain`, `ecc-ports`, `ecc-app`, `ecc-infra`, `ecc-cli`, `ecc-test-support`) |
 | **Entry point** | `crates/ecc-cli/` → `ecc` binary |
-| **Test count** | 670+ (`cargo test`) |
+| **Test count** | 999 (`cargo test`) |
 | **Build** | `cargo build --release` → single binary |
 
 ## System Diagram
@@ -37,7 +37,7 @@ User CLI (ecc)  — native Rust binary
   +-- Content (copied to ~/.claude/)
        +-- agents/    (30 markdown with YAML frontmatter)
        +-- commands/  (6 active + 41 archived markdown slash commands)
-       +-- skills/    (67 domain knowledge directories)
+       +-- skills/    (74 domain knowledge directories)
        +-- rules/     (grouped by language: common/, typescript/, python/, ...)
        +-- contexts/  (dynamic system prompt injection)
 ```
@@ -54,7 +54,7 @@ target/release/ecc  (native binary)
     +-- ecc version / install / init / audit / hook / validate / completion
 
 Test pipeline:
-    cargo test  (670+ tests across 6 crates)
+    cargo test  (999 tests across 6 crates)
     cargo clippy -- -D warnings  (zero-warning lint)
 ```
 
