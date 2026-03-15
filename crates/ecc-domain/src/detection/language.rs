@@ -5,7 +5,7 @@ pub struct LanguageRule {
     pub extensions: &'static [&'static str],
 }
 
-/// Language detection rules — 16 entries matching the TypeScript implementation.
+/// Language detection rules for all supported programming languages.
 pub const LANGUAGE_RULES: &[LanguageRule] = &[
     LanguageRule {
         lang_type: "python",
@@ -46,7 +46,8 @@ pub const LANGUAGE_RULES: &[LanguageRule] = &[
     },
     LanguageRule {
         lang_type: "java",
-        markers: &["pom.xml", "build.gradle", "build.gradle.kts"],
+        // Note: build.gradle.kts is Kotlin DSL — listed under kotlin, not here.
+        markers: &["pom.xml", "build.gradle"],
         extensions: &[".java"],
     },
     LanguageRule {
@@ -100,10 +101,76 @@ pub const LANGUAGE_RULES: &[LanguageRule] = &[
 mod tests {
     use super::*;
 
-    // --- LANGUAGE_RULES ---
-
     #[test]
     fn language_rules_has_16_entries() {
         assert_eq!(LANGUAGE_RULES.len(), 16);
+    }
+
+    #[test]
+    fn all_language_rules_have_nonempty_type_and_extensions() {
+        for rule in LANGUAGE_RULES {
+            assert!(!rule.lang_type.is_empty(), "lang_type must not be empty");
+            assert!(
+                !rule.extensions.is_empty(),
+                "{} must have at least one extension",
+                rule.lang_type
+            );
+        }
+    }
+
+    #[test]
+    fn no_duplicate_lang_types() {
+        let mut seen = std::collections::HashSet::new();
+        for rule in LANGUAGE_RULES {
+            assert!(
+                seen.insert(rule.lang_type),
+                "duplicate lang_type: {}",
+                rule.lang_type
+            );
+        }
+    }
+
+    #[test]
+    fn no_duplicate_extensions_across_rules() {
+        let mut seen = std::collections::HashMap::new();
+        for rule in LANGUAGE_RULES {
+            for ext in rule.extensions {
+                if let Some(prev) = seen.insert(*ext, rule.lang_type) {
+                    panic!(
+                        "extension '{}' claimed by both '{}' and '{}'",
+                        ext, prev, rule.lang_type
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn no_marker_overlap_between_language_rules() {
+        let mut seen = std::collections::HashMap::new();
+        for rule in LANGUAGE_RULES {
+            for marker in rule.markers {
+                if let Some(prev) = seen.insert(*marker, rule.lang_type) {
+                    panic!(
+                        "marker '{}' claimed by both '{}' and '{}'",
+                        marker, prev, rule.lang_type
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn all_extensions_start_with_dot() {
+        for rule in LANGUAGE_RULES {
+            for ext in rule.extensions {
+                assert!(
+                    ext.starts_with('.'),
+                    "{}: extension '{}' must start with '.'",
+                    rule.lang_type,
+                    ext
+                );
+            }
+        }
     }
 }
