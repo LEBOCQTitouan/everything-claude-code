@@ -76,6 +76,7 @@ Based on `--domain` filter, launch these agents in parallel:
 | `observability-auditor` | observability | Log levels, structured logging, correlation IDs, metrics, health checks |
 | `error-handling-auditor` | errors | Swallowed errors, error taxonomy, boundary translation, partial failures |
 | `convention-auditor` | conventions | Naming patterns, pattern consistency, config access, primitive obsession |
+| `component-auditor` | components | REP, CCP, CRP, ADP, SDP, SAP, instability, abstractness, main sequence distance |
 
 Pass each agent:
 - The scope path
@@ -92,6 +93,19 @@ After all domain agents complete, correlate findings across domains:
 4. **Convention divergence + coupling**: Inconsistent patterns between coupled modules → flag as maintenance risk
 5. **Security + error handling**: Error messages that leak sensitive data → escalate to CRITICAL
 6. **Bus factor + hotspot**: Single-contributor hotspot → escalate to CRITICAL
+
+### Four Design Smells Mapping
+
+Map compound signals across domains to the four design smells:
+
+| Smell | Compound Signal | Escalation |
+|-------|----------------|------------|
+| **Rigidity** | Dead code (conventions) + complexity trend ↑ (evolution) | Flag — hard to change |
+| **Fragility** | Low coverage (testing) + high fan-in (architecture) | Escalate — changes break unrelated areas |
+| **Immobility** | Co-change coupling (evolution) + no shared interface (architecture) | Flag — can't extract for reuse |
+| **Viscosity** | Debug logging at boundaries (observability) + TODO trend ↑ (evolution) | Flag — right thing harder than wrong |
+
+Include design smell summary in the final report: which smells are present, their severity, and the compound signals that triggered them.
 
 ### Phase 4: Report Generation
 
