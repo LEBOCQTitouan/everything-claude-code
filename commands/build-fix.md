@@ -85,6 +85,7 @@ Show results:
 | Circular dependency | Identify cycle with import graph; suggest extraction |
 | Version conflict | Check `package.json` / `Cargo.toml` for version constraints |
 | Build tool misconfiguration | Read config file; compare with working defaults |
+| Primitive obsession | When fixing type errors, if you see repeated primitive wrapping/unwrapping (`as String`, `.to_string()`, `&str` → `String` conversions for the same concept across 3+ locations), suggest introducing a newtype. Flag: "Consider a newtype for `<concept>` — repeated primitive conversions indicate a missing domain type." |
 
 ## Step 6: Commit After Each Fix
 
