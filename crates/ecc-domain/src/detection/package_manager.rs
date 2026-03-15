@@ -104,13 +104,20 @@ pub struct PackageManagerResult {
     pub source: DetectionSource,
 }
 
+use std::sync::LazyLock;
+
+static SAFE_NAME_RE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(SAFE_NAME_PATTERN).expect("BUG: invalid SAFE_NAME_PATTERN regex"));
+
+static SAFE_ARGS_RE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(SAFE_ARGS_PATTERN).expect("BUG: invalid SAFE_ARGS_PATTERN regex"));
+
 /// Validate a script name contains only safe characters.
 pub fn validate_script_name(name: &str) -> Result<(), String> {
     if name.is_empty() {
         return Err("Script name must be a non-empty string".to_string());
     }
-    let re = regex::Regex::new(SAFE_NAME_PATTERN).unwrap();
-    if !re.is_match(name) {
+    if !SAFE_NAME_RE.is_match(name) {
         return Err(format!("Script name contains unsafe characters: {name}"));
     }
     Ok(())
@@ -121,8 +128,7 @@ pub fn validate_args(args: &str) -> Result<(), String> {
     if args.is_empty() {
         return Ok(());
     }
-    let re = regex::Regex::new(SAFE_ARGS_PATTERN).unwrap();
-    if !re.is_match(args) {
+    if !SAFE_ARGS_RE.is_match(args) {
         return Err(format!("Arguments contain unsafe characters: {args}"));
     }
     Ok(())

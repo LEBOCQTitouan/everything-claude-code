@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+.secrets
 
 # API keys
 *.key
@@ -17,9 +18,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
-
-# Node
-node_modules/
 
 # Rust build output
 target/
@@ -46,6 +44,9 @@ CLAUDE.local.md
 
 # Session templates (not committed)
 examples/sessions/*.tmp
+
+# Compiled TypeScript output (stale, migrated to Rust)
+dist/
 
 # Local drafts
 marketing/

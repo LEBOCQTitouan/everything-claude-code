@@ -8,7 +8,17 @@ use clap::Parser;
     about = "Everything Claude Code — CLI for setting up Claude Code configuration",
     version
 )]
-enum Cli {
+struct Cli {
+    /// Enable verbose output (RUST_LOG=debug)
+    #[arg(short, long, global = true)]
+    verbose: bool,
+
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(clap::Subcommand)]
+enum Command {
     /// Show the current ECC version
     Version,
     /// Install ECC configuration to ~/.claude/
@@ -30,14 +40,21 @@ enum Cli {
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    match cli {
-        Cli::Version => commands::version::run(),
-        Cli::Install(args) => commands::install::run(args),
-        Cli::Init(args) => commands::init::run(args),
-        Cli::Audit(args) => commands::audit::run(args),
-        Cli::Completion(args) => commands::completion::run(args),
-        Cli::Hook(args) => commands::hook::run(args),
-        Cli::Validate(args) => commands::validate::run(args),
-        Cli::Claw(args) => commands::claw::run(args),
+    // Initialize logging: --verbose sets debug level unless RUST_LOG is already set.
+    let mut log_builder = env_logger::Builder::from_default_env();
+    if cli.verbose && std::env::var_os("RUST_LOG").is_none() {
+        log_builder.filter_level(log::LevelFilter::Debug);
+    }
+    log_builder.init();
+
+    match cli.command {
+        Command::Version => commands::version::run(),
+        Command::Install(args) => commands::install::run(args),
+        Command::Init(args) => commands::init::run(args),
+        Command::Audit(args) => commands::audit::run(args),
+        Command::Completion(args) => commands::completion::run(args),
+        Command::Hook(args) => commands::hook::run(args),
+        Command::Validate(args) => commands::validate::run(args),
+        Command::Claw(args) => commands::claw::run(args),
     }
 }

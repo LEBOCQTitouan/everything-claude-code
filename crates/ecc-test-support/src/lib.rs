@@ -1,3 +1,10 @@
+//! Test doubles for Everything Claude Code.
+//!
+//! Provides in-memory and mock implementations of [`ecc_ports`] traits
+//! ([`InMemoryFileSystem`], [`MockExecutor`], [`MockEnvironment`],
+//! [`BufferedTerminal`], [`ScriptedInput`]) enabling fully deterministic,
+//! I/O-free testing of application use cases.
+
 pub mod buffered_terminal;
 pub mod in_memory_fs;
 pub mod mock_env;

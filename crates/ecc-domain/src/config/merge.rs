@@ -4,6 +4,7 @@ use std::path::PathBuf;
 // Types
 // ---------------------------------------------------------------------------
 
+/// Summary of a merge operation across one artifact category.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MergeReport {
     pub added: Vec<String>,
@@ -14,6 +15,7 @@ pub struct MergeReport {
     pub errors: Vec<String>,
 }
 
+/// A file that differs between source and destination, pending user review.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileToReview {
     pub filename: String,
@@ -26,9 +28,8 @@ pub struct FileToReview {
 // Constants
 // ---------------------------------------------------------------------------
 
-/// Known ECC package identifiers in npm paths.
-pub const ECC_PACKAGE_IDENTIFIERS: &[&str] =
-    &["@lebocqtitouan/ecc/", "everything-claude-code/"];
+// Re-export from shared location for backwards compatibility.
+pub use super::ECC_PACKAGE_IDENTIFIERS;
 
 // ---------------------------------------------------------------------------
 // Pure functions
@@ -80,8 +81,12 @@ pub fn is_legacy_ecc_hook(entry: &serde_json::Value) -> bool {
             None => continue,
         };
 
-        // Current wrapper commands are NOT legacy
+        // Current wrapper commands are NOT legacy — unless they contain a
+        // stale dist/hooks/ JS path from the Node.js era (3-arg format).
         if cmd.starts_with("ecc-hook ") || cmd.starts_with("ecc-shell-hook ") {
+            if cmd.contains("dist/hooks/") {
+                return true;
+            }
             continue;
         }
 
@@ -431,6 +436,22 @@ mod tests {
             "hooks": [{"command": "ecc-shell-hook post-tool-use lint"}]
         });
         assert!(!is_legacy_ecc_hook(&entry));
+    }
+
+    #[test]
+    fn is_legacy_ecc_hook_stale_3arg_ecc_hook_with_dist_path() {
+        let entry = serde_json::json!({
+            "hooks": [{"command": "ecc-hook \"pre:bash:dev-server-block\" \"dist/hooks/pre-bash-dev-server-block.js\" \"standard,strict\""}]
+        });
+        assert!(is_legacy_ecc_hook(&entry));
+    }
+
+    #[test]
+    fn is_legacy_ecc_hook_stale_3arg_ecc_hook_post_tool() {
+        let entry = serde_json::json!({
+            "hooks": [{"command": "ecc-hook \"post:edit:format\" \"dist/hooks/post-edit-format.js\" \"standard,strict\""}]
+        });
+        assert!(is_legacy_ecc_hook(&entry));
     }
 
     #[test]

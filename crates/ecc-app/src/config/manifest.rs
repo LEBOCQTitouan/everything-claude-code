@@ -23,7 +23,10 @@ pub fn write_manifest(
     fs.create_dir_all(dir)?;
     let manifest_path = dir.join(MANIFEST_FILENAME);
     let json = serde_json::to_string_pretty(manifest)
-        .expect("manifest serialization should not fail");
+        .map_err(|e| ecc_ports::fs::FsError::Io {
+            path: manifest_path.clone(),
+            message: format!("serialization failed: {e}"),
+        })?;
     fs.write(&manifest_path, &format!("{json}\n"))
 }
 

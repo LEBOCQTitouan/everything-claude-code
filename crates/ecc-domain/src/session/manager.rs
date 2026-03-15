@@ -100,39 +100,39 @@ pub struct SessionDetail {
 // ---------------------------------------------------------------------------
 
 static SESSION_FILENAME_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(\d{4}-\d{2}-\d{2})(?:-([a-z0-9]{8,}))?-session\.tmp$").unwrap()
+    Regex::new(r"^(\d{4}-\d{2}-\d{2})(?:-([a-z0-9]{8,}))?-session\.tmp$").expect("BUG: invalid SESSION_FILENAME_RE regex")
 });
 
 static TITLE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?m)^#\s+(.+)$").unwrap());
+    LazyLock::new(|| Regex::new(r"(?m)^#\s+(.+)$").expect("BUG: invalid TITLE_RE regex"));
 
 static DATE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})").unwrap());
+    LazyLock::new(|| Regex::new(r"\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})").expect("BUG: invalid regex constant"));
 
 static STARTED_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*\*Started:\*\*\s*([\d:]+)").unwrap());
+    LazyLock::new(|| Regex::new(r"\*\*Started:\*\*\s*([\d:]+)").expect("BUG: invalid regex constant"));
 
 static UPDATED_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*\*Last Updated:\*\*\s*([\d:]+)").unwrap());
+    LazyLock::new(|| Regex::new(r"\*\*Last Updated:\*\*\s*([\d:]+)").expect("BUG: invalid regex constant"));
 
 static COMPLETED_SECTION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)### Completed\s*\n(.*?)(?:###|\n\n|$)").unwrap());
+    LazyLock::new(|| Regex::new(r"(?s)### Completed\s*\n(.*?)(?:###|\n\n|$)").expect("BUG: invalid regex constant"));
 
 static PROGRESS_SECTION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)### In Progress\s*\n(.*?)(?:###|\n\n|$)").unwrap());
+    LazyLock::new(|| Regex::new(r"(?s)### In Progress\s*\n(.*?)(?:###|\n\n|$)").expect("BUG: invalid regex constant"));
 
 static NOTES_SECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?s)### Notes for Next Session\s*\n(.*?)(?:###|\n\n|$)").unwrap()
+    Regex::new(r"(?s)### Notes for Next Session\s*\n(.*?)(?:###|\n\n|$)").expect("BUG: invalid regex constant")
 });
 
 static CONTEXT_SECTION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)### Context to Load\s*\n```\n(.*?)```").unwrap());
+    LazyLock::new(|| Regex::new(r"(?s)### Context to Load\s*\n```\n(.*?)```").expect("BUG: invalid regex constant"));
 
 static COMPLETED_ITEM_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"- \[x\]\s*(.+)").unwrap());
+    LazyLock::new(|| Regex::new(r"- \[x\]\s*(.+)").expect("BUG: invalid regex constant"));
 
 static IN_PROGRESS_ITEM_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"- \[ \]\s*(.+)").unwrap());
+    LazyLock::new(|| Regex::new(r"- \[ \]\s*(.+)").expect("BUG: invalid regex constant"));
 
 // ---------------------------------------------------------------------------
 // Pure functions

@@ -55,6 +55,11 @@ pub fn claw_dir(home: &Path) -> PathBuf {
     claude_dir(home).join("claw")
 }
 
+/// Get the Claw REPL history file path from a home directory.
+pub fn claw_history_path(home: &Path) -> PathBuf {
+    claw_dir(home).join(".history")
+}
+
 /// Get a specific Claw session file path.
 pub fn claw_session_path(home: &Path, session_name: &str) -> PathBuf {
     claw_dir(home).join("sessions").join(format!("{session_name}.md"))
@@ -188,6 +193,22 @@ mod tests {
     fn claw_session_path_under_claw_dir() {
         let home = Path::new("/home/user");
         let path = claw_session_path(home, "test");
+        assert!(path.starts_with(claw_dir(home)));
+    }
+
+    #[test]
+    fn claw_history_path_basic() {
+        let home = Path::new("/home/user");
+        assert_eq!(
+            claw_history_path(home),
+            PathBuf::from("/home/user/.claude/claw/.history")
+        );
+    }
+
+    #[test]
+    fn claw_history_path_under_claw_dir() {
+        let home = Path::new("/home/user");
+        let path = claw_history_path(home);
         assert!(path.starts_with(claw_dir(home)));
     }
 

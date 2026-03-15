@@ -28,12 +28,17 @@ pub(super) fn copy_dir_recursive(
     for entry in entries {
         if let Ok(relative) = entry.strip_prefix(src) {
             let dest_path = dest.join(relative);
-            if let Some(parent) = dest_path.parent() {
-                fs.create_dir_all(parent)
+            if fs.is_dir(&entry) {
+                fs.create_dir_all(&dest_path)
                     .map_err(|e| format!("Cannot create dir: {e}"))?;
+            } else {
+                if let Some(parent) = dest_path.parent() {
+                    fs.create_dir_all(parent)
+                        .map_err(|e| format!("Cannot create dir: {e}"))?;
+                }
+                fs.copy(&entry, &dest_path)
+                    .map_err(|e| format!("Cannot copy {}: {e}", entry.display()))?;
             }
-            fs.copy(&entry, &dest_path)
-                .map_err(|e| format!("Cannot copy {}: {e}", entry.display()))?;
         }
     }
 
@@ -366,6 +371,30 @@ mod tests {
     }
 
     #[test]
+    fn merge_skills_with_subdirectories() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/src/skills/security-review")
+            .with_file("/src/skills/security-review/SKILL.md", "# Security Review")
+            .with_dir("/src/skills/security-review/references")
+            .with_file("/src/skills/security-review/references/owasp.md", "# OWASP Top 10")
+            .with_file("/src/skills/security-review/references/checklist.md", "# Checklist")
+            .with_dir("/dest/skills");
+        let terminal = BufferedTerminal::new();
+        let env = no_color_env();
+        let shell = MockExecutor::new();
+        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let mut options = MergeOptions { dry_run: false, force: true, interactive: true, apply_all: None };
+
+        let report = merge_skills(&ctx, Path::new("/src/skills"), Path::new("/dest/skills"), &mut options);
+
+        assert!(report.errors.is_empty(), "errors: {:?}", report.errors);
+        assert_eq!(report.added, vec!["security-review"]);
+        assert!(fs.exists(Path::new("/dest/skills/security-review/SKILL.md")));
+        assert!(fs.exists(Path::new("/dest/skills/security-review/references/owasp.md")));
+        assert!(fs.exists(Path::new("/dest/skills/security-review/references/checklist.md")));
+    }
+
+    #[test]
     fn merge_skills_unchanged_skipped() {
         let fs = InMemoryFileSystem::new()
             .with_dir("/src/skills/tdd").with_file("/src/skills/tdd/SKILL.md", "same content")
@@ -510,5 +539,84 @@ mod tests {
         let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
 
         assert_eq!(report.skipped, vec!["existing.md"]);
+    }
+
+    // --- merge_directory edge cases ---
+
+    #[test]
+    fn merge_directory_empty_source_returns_empty_report() {
+        // Source dir exists but contains no matching files
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/src/agents")
+            .with_dir("/dest/agents");
+        let terminal = BufferedTerminal::new();
+        let env = no_color_env();
+        let shell = MockExecutor::new();
+        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let mut options = MergeOptions { dry_run: false, force: true, interactive: false, apply_all: None };
+
+        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+
+        assert!(report.added.is_empty());
+        assert!(report.updated.is_empty());
+        assert!(report.unchanged.is_empty());
+        assert!(report.errors.is_empty());
+    }
+
+    #[test]
+    fn merge_directory_nonexistent_source_returns_empty_report() {
+        // Source directory does not exist at all
+        let fs = InMemoryFileSystem::new().with_dir("/dest/agents");
+        let terminal = BufferedTerminal::new();
+        let env = no_color_env();
+        let shell = MockExecutor::new();
+        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let mut options = MergeOptions { dry_run: false, force: true, interactive: false, apply_all: None };
+
+        let report = merge_directory(&ctx, Path::new("/nonexistent/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+
+        assert!(report.added.is_empty());
+        assert!(report.errors.is_empty());
+    }
+
+    #[test]
+    fn merge_directory_apply_all_accept_skips_remaining_prompts() {
+        // First file prompted with "A" (accept all), second should be accepted without prompt
+        let fs = InMemoryFileSystem::new()
+            .with_file("/src/agents/a.md", "content a")
+            .with_file("/src/agents/b.md", "content b")
+            .with_dir("/dest/agents");
+        // Only one input line — if the second file prompted it would exhaust input and default
+        let terminal = BufferedTerminal::new().with_input("A");
+        let env = no_color_env();
+        let shell = MockExecutor::new();
+        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let mut options = default_merge_options();
+
+        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+
+        assert_eq!(report.added.len(), 2, "both files should be accepted");
+        assert!(fs.exists(Path::new("/dest/agents/a.md")));
+        assert!(fs.exists(Path::new("/dest/agents/b.md")));
+        // apply_all should have been set after first "A" response
+        assert_eq!(options.apply_all, Some(ReviewChoice::Accept));
+    }
+
+    #[test]
+    fn merge_directory_wrong_extension_ignored() {
+        // Source dir has a .txt file — should not appear in report when filtering by .md
+        let fs = InMemoryFileSystem::new()
+            .with_file("/src/agents/readme.txt", "ignore me")
+            .with_dir("/dest/agents");
+        let terminal = BufferedTerminal::new();
+        let env = no_color_env();
+        let shell = MockExecutor::new();
+        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let mut options = MergeOptions { dry_run: false, force: true, interactive: false, apply_all: None };
+
+        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+
+        assert!(report.added.is_empty());
+        assert!(report.updated.is_empty());
     }
 }

@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 // Types
 // ---------------------------------------------------------------------------
 
+/// Severity level for an audit finding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
     Critical,
@@ -12,6 +13,7 @@ pub enum Severity {
     Low,
 }
 
+/// A single issue discovered during an audit check.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditFinding {
     pub id: String,
@@ -21,6 +23,7 @@ pub struct AuditFinding {
     pub fix: String,
 }
 
+/// Result of a single named audit check (pass/fail with findings).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditCheckResult {
     pub name: String,
@@ -28,6 +31,7 @@ pub struct AuditCheckResult {
     pub findings: Vec<AuditFinding>,
 }
 
+/// Aggregated audit report with scored grade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditReport {
     pub checks: Vec<AuditCheckResult>,
@@ -44,12 +48,14 @@ pub struct HooksDiff {
     pub user_hooks: Vec<HookDiffEntry>,
 }
 
+/// A single hook entry in a diff comparison.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HookDiffEntry {
     pub event: String,
     pub entry: serde_json::Value,
 }
 
+/// Audit summary for a single artifact type (agents, commands, etc.).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArtifactAudit {
     pub matching: Vec<String>,
@@ -57,6 +63,7 @@ pub struct ArtifactAudit {
     pub missing: Vec<String>,
 }
 
+/// Full configuration audit comparing installed artifacts and hooks against source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConfigAudit {
     pub agents: ArtifactAudit,
@@ -69,9 +76,8 @@ pub struct ConfigAudit {
 // Constants
 // ---------------------------------------------------------------------------
 
-/// Known ECC package identifiers in npm paths.
-pub const ECC_PACKAGE_IDENTIFIERS: &[&str] =
-    &["@lebocqtitouan/ecc/", "everything-claude-code/"];
+// Re-export from shared location for backwards compatibility.
+pub use super::ECC_PACKAGE_IDENTIFIERS;
 
 // ---------------------------------------------------------------------------
 // Pure functions
@@ -241,32 +247,14 @@ pub fn compute_audit_score(checks: &[AuditCheckResult]) -> (i32, String) {
 
 /// Simple YAML frontmatter parser.
 /// Returns key-value pairs from the frontmatter block.
+///
+/// Delegates to the canonical `extract_frontmatter` in `config::validate`,
+/// converting the result to a `BTreeMap` (empty on missing frontmatter).
 pub fn parse_frontmatter(content: &str) -> BTreeMap<String, String> {
-    let mut result = BTreeMap::new();
-
-    if !content.starts_with("---") {
-        return result;
+    match super::validate::extract_frontmatter(content) {
+        Some(map) => map.into_iter().collect(),
+        None => BTreeMap::new(),
     }
-
-    let after_opening = &content[3..];
-    let end_idx = match after_opening.find("---") {
-        Some(i) => i,
-        None => return result,
-    };
-    let frontmatter = &after_opening[..end_idx];
-
-    for line in frontmatter.lines() {
-        let trimmed = line.trim();
-        if let Some(colon_idx) = trimmed.find(':')
-            && colon_idx > 0
-        {
-            let key = trimmed[..colon_idx].trim().to_string();
-            let value = trimmed[colon_idx + 1..].trim().to_string();
-            result.insert(key, value);
-        }
-    }
-
-    result
 }
 
 /// Check if a settings hook entry exists in the source hooks (by serialized hooks array).

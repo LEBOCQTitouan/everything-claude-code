@@ -1,31 +1,40 @@
-<!-- Generated: 2026-03-14 | Files scanned: 50 src + 32 tests | Token estimate: ~400 -->
+<!-- Generated: 2026-03-15 | Crates: 6 | Files: 108 .rs -->
 
-# Codemap Index — Everything Claude Code (ECC)
+# Codemap Index -- Everything Claude Code (ECC)
 
 ## Maps
 
 | File | Description |
 |------|-------------|
-| [architecture.md](architecture.md) | System diagram, data flow, build pipeline, boundaries |
-| [backend.md](backend.md) | Library modules, hooks, install pipeline, CI validators |
-| [data.md](data.md) | Data structures, storage format, configuration files |
-| [dependencies.md](dependencies.md) | Runtime/dev deps, external tools, npm distribution |
+| [architecture.md](architecture.md) | Hexagonal architecture, data flow, crate boundaries, build pipeline |
+| [backend.md](backend.md) | Crate-level module breakdown, hook handlers, CLI commands |
+| [data.md](data.md) | Rust data structures, storage format, configuration files |
+| [dependencies.md](dependencies.md) | Cargo workspace deps, external tools, GitHub Releases distribution |
 
 ## Quick Stats
 
-- **Source:** 50 TypeScript files in `src/` (~5,800 LOC)
-- **Tests:** 32 test files, 1401 assertions passing (single-process runner)
-- **Content:** 30 agents, 6 commands (+ 41 archived), 67 skills, 5 rule groups
-- **Runtime dep:** 1 (`omelette`)
-- **Build:** `tsc` → CommonJS in `dist/`
+- **Source:** 108 Rust files across 6 crates (~23,700 LOC)
+- **Tests:** 999 tests passing (515 domain + 466 app + 18 others)
+- **Content:** 30 agents, 6 commands, 74 skills, 4 rule groups
+- **Runtime deps:** serde, clap, regex, crossterm, rustyline, walkdir
+- **Build:** `cargo build --release` (single binary `ecc`)
 
 ## Entry Points
 
 ```
-bin/ecc.js           → CLI entry (shell completion)
-install.sh           → Bash orchestrator (install/init)
-src/postinstall.ts   → npm postinstall health checks
-src/install-orchestrator.ts → Node.js install pipeline
+crates/ecc-cli/src/main.rs  → CLI binary (`ecc` command via clap)
+scripts/get-ecc.sh          → curl installer (GitHub Releases → ~/.ecc/)
+```
+
+## Crate Architecture
+
+```
+ecc-cli        Binary entry, clap argument parsing, subcommand dispatch
+  └─ ecc-app        Use case orchestration (install, merge, audit, validate, hook, claw)
+       ├─ ecc-domain    Pure business logic, zero I/O (config, detection, diff, session)
+       └─ ecc-ports     Trait definitions (FileSystem, ShellExecutor, Environment, TerminalIO)
+            ├─ ecc-infra         Production OS adapters (std::fs, std::process, crossterm)
+            └─ ecc-test-support  Test doubles (InMemoryFileSystem, MockExecutor, etc.)
 ```
 
 ## Agent Ecosystem

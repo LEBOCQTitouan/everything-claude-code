@@ -70,61 +70,79 @@ validate_lang() {
 # Merge hooks from source hooks.json into a settings.json file
 merge_hooks() {
     local settings_file="$1"
-    if ! command -v node &>/dev/null; then
-        echo "Warning: node not found — skipping hooks merge. Add hooks manually from hooks/hooks.json." >&2
+    if ! command -v python3 &>/dev/null; then
+        echo "Warning: python3 not found — skipping hooks merge. Add hooks manually from hooks/hooks.json." >&2
         return
     fi
-    node - "$settings_file" "$HOOKS_FILE" <<'NODE'
-const fs = require('fs');
-const path = require('path');
-const [, , settingsPath, hooksPath] = process.argv;
+    python3 - "$settings_file" "$HOOKS_FILE" <<'PYMERGE'
+import json, os, sys
 
-const existing = fs.existsSync(settingsPath)
-    ? JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
-    : {};
+settings_path, hooks_path = sys.argv[1], sys.argv[2]
 
-const source = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
+if os.path.exists(settings_path):
+    with open(settings_path) as f:
+        existing = json.load(f)
+else:
+    existing = {}
 
-const merged = { ...existing };
-merged.hooks = merged.hooks || {};
+with open(hooks_path) as f:
+    source = json.load(f)
 
-// Remove legacy/stale ECC hooks — mirrors isLegacyEccHook() in src/lib/merge.ts
-for (const event of Object.keys(merged.hooks)) {
-    if (!Array.isArray(merged.hooks[event])) continue;
-    merged.hooks[event] = merged.hooks[event].filter(entry => {
-        if (!Array.isArray(entry.hooks)) return true;
-        return !entry.hooks.some(h => {
-            const cmd = h.command || '';
-            // Current wrapper commands are NOT legacy
-            if (cmd.startsWith('ecc-hook ') || cmd.startsWith('ecc-shell-hook ')) return false;
-            // Absolute path containing ECC package identifier (catches 10-scripts/, 05-skills/, etc.)
-            if (cmd.includes('@lebocqtitouan/ecc/') || cmd.includes('everything-claude-code/')) return true;
-            if (cmd.includes('scripts/hooks/') && !cmd.includes('run-with-flags-shell.sh')) return true;
-            if (cmd.includes('${ECC_ROOT}') || cmd.includes('${CLAUDE_PLUGIN_ROOT}')) return true;
-            if (cmd.includes('/dist/hooks/run-with-flags.js')) return true;
-            if (cmd.includes('/scripts/hooks/run-with-flags-shell.sh')) return true;
-            if (cmd.includes('node -e') && /dev-server|tmux|git push|console\.log|check-console|pr-created|build-complete/.test(cmd)) return true;
-            return false;
-        });
-    });
-}
+merged = dict(existing)
+merged.setdefault("hooks", {})
 
-for (const [event, entries] of Object.entries(source.hooks || {})) {
-    merged.hooks[event] = merged.hooks[event] || [];
-    for (const entry of entries) {
-        const key = JSON.stringify(entry.hooks);
-        const alreadyPresent = merged.hooks[event].some(
-            e => JSON.stringify(e.hooks) === key
-        );
-        if (!alreadyPresent) {
-            merged.hooks[event].push(entry);
-        }
-    }
-}
+# Remove legacy/stale ECC hooks
+legacy_patterns = [
+    "@lebocqtitouan/ecc/", "everything-claude-code/",
+    "${ECC_ROOT}", "${CLAUDE_PLUGIN_ROOT}",
+    "/dist/hooks/run-with-flags.js",
+    "/scripts/hooks/run-with-flags-shell.sh",
+]
+legacy_node_patterns = [
+    "dev-server", "tmux", "git push", "console.log",
+    "check-console", "pr-created", "build-complete",
+]
 
-fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-fs.writeFileSync(settingsPath, JSON.stringify(merged, null, 2) + '\n');
-NODE
+def is_legacy(cmd):
+    # Current wrapper commands are NOT legacy — unless they contain a
+    # stale dist/hooks/ JS path from the Node.js era (3-arg format).
+    if cmd.startswith("ecc-hook ") or cmd.startswith("ecc-shell-hook "):
+        return "dist/hooks/" in cmd
+    for p in legacy_patterns:
+        if p in cmd:
+            return True
+    if "scripts/hooks/" in cmd and "run-with-flags-shell.sh" not in cmd:
+        return True
+    if "node -e" in cmd and any(lp in cmd for lp in legacy_node_patterns):
+        return True
+    return False
+
+for event, entries in list(merged["hooks"].items()):
+    if not isinstance(entries, list):
+        continue
+    merged["hooks"][event] = [
+        entry for entry in entries
+        if not isinstance(entry.get("hooks"), list)
+        or not any(is_legacy(h.get("command", "")) for h in entry["hooks"])
+    ]
+
+# Merge source hooks
+for event, entries in (source.get("hooks") or {}).items():
+    merged["hooks"].setdefault(event, [])
+    for entry in entries:
+        key = json.dumps(entry.get("hooks"), sort_keys=True)
+        already = any(
+            json.dumps(e.get("hooks"), sort_keys=True) == key
+            for e in merged["hooks"][event]
+        )
+        if not already:
+            merged["hooks"][event].append(entry)
+
+os.makedirs(os.path.dirname(settings_path) or ".", exist_ok=True)
+with open(settings_path, "w") as f:
+    json.dump(merged, f, indent=2)
+    f.write("\n")
+PYMERGE
 }
 
 # Merge missing ## sections from a template file into an existing CLAUDE.md.
@@ -231,6 +249,11 @@ detect_template() {
 # COMMAND: install
 # ---------------------------------------------------------------------------
 cmd_install() {
+    # Delegate to Rust CLI if available
+    if command -v ecc >/dev/null 2>&1; then
+        exec ecc install "$@"
+    fi
+
     local dry_run=""
     local force=""
     local no_interactive=""
@@ -269,13 +292,6 @@ cmd_install() {
     fi
 
     for lang in "${langs[@]}"; do validate_lang "$lang"; done
-
-    # Try the Node.js orchestrator (detection + merge + manifest)
-    local orchestrator="$SCRIPT_DIR/dist/install-orchestrator.js"
-    if command -v node &>/dev/null && [[ -f "$orchestrator" ]]; then
-        node "$orchestrator" install "${langs[@]}" $dry_run $force $no_interactive $clean $clean_all
-        return $?
-    fi
 
     # Fallback: legacy cp-based install (no detection/merge/manifest)
     if [[ -n "$clean" ]]; then
@@ -324,6 +340,11 @@ cmd_install() {
 # COMMAND: init
 # ---------------------------------------------------------------------------
 cmd_init() {
+    # Delegate to Rust CLI if available
+    if command -v ecc >/dev/null 2>&1; then
+        exec ecc init "$@"
+    fi
+
     local template=""
     local lang=""
     local no_gitignore=""
@@ -410,12 +431,8 @@ cmd_init() {
         echo "Next: run 'ecc install $lang' once to set up global rules/agents/skills."
     fi
 
-    # --- .gitignore management via orchestrator ---
-    local orchestrator="$SCRIPT_DIR/dist/install-orchestrator.js"
-    if [[ -z "$no_gitignore" ]] && command -v node &>/dev/null && [[ -f "$orchestrator" ]]; then
-        echo ""
-        node "$orchestrator" init $no_gitignore $dry_run $force
-    elif [[ -z "$no_gitignore" ]]; then
+    # --- .gitignore management ---
+    if [[ -z "$no_gitignore" ]]; then
         # Fallback: legacy single-entry gitignore
         local gitignore_file="$project_dir/.gitignore"
         local gitignore_entry=".claude/settings.local.json"
@@ -544,6 +561,26 @@ WHAT GETS CREATED/UPDATED
   .claude/.ecc-manifest.json  — tracks installed artifacts
 EOF
             ;;
+        uninstall)
+            cat <<EOF
+USAGE
+  ecc uninstall [--force] [--keep-config]
+
+DESCRIPTION
+  Remove ECC from the system. Cleans up ~/.ecc/ (binary), ECC artifacts
+  from ~/.claude/ (agents, commands, skills, rules, manifest), and PATH
+  entries from shell RC files.
+
+OPTIONS
+  --force        Skip confirmation prompt
+  --keep-config  Only remove ~/.ecc/ and PATH entries; keep ~/.claude/ artifacts
+
+EXAMPLES
+  ecc uninstall                  (interactive confirmation)
+  ecc uninstall --force          (no confirmation)
+  ecc uninstall --keep-config    (preserve ~/.claude/ artifacts)
+EOF
+            ;;
         version)
             cat <<EOF
 USAGE
@@ -563,8 +600,8 @@ USAGE
   ecc update
 
 DESCRIPTION
-  Reinstall the latest version of ecc from npm.
-  Equivalent to: npm install -g @lebocqtitouan/ecc@latest
+  Reinstall the latest version of ecc from GitHub Releases.
+  Re-runs the curl installer to download the latest binary.
 EOF
             ;;
         ""|help)
@@ -584,7 +621,10 @@ COMMANDS
       Print the installed ecc version.  Aliases: --version, -v
 
   update
-      Reinstall the latest version of ecc from npm.
+      Reinstall the latest version of ecc from GitHub Releases.
+
+  uninstall [--force] [--keep-config]
+      Remove ECC from the system (binary, content, PATH entries).
 
   help [<command>]
       Show help. Pass a command name for detailed usage.
@@ -638,6 +678,7 @@ _ecc() {
     commands=(
         'install:Install agents, commands, skills, rules, and hooks into ~/.claude/'
         'init:Set up Claude configuration for the current project'
+        'uninstall:Remove ECC from the system'
         'help:Show help for a command'
         'completion:Output shell completion script'
     )
@@ -670,8 +711,12 @@ _ecc() {
                     _arguments \
                         '--template[CLAUDE.md template]:template:_ecc_templates' \
                         '::language:_ecc_languages' ;;
+                uninstall)
+                    _arguments \
+                        '--force[Skip confirmation]' \
+                        '--keep-config[Keep ~/.claude/ artifacts]' ;;
                 help)
-                    local help_cmds=('install' 'init' 'version' 'update' 'completion')
+                    local help_cmds=('install' 'init' 'uninstall' 'version' 'update' 'completion')
                     _describe 'command' help_cmds ;;
                 completion)
                     local shells=('bash' 'zsh' 'fish')
@@ -694,7 +739,7 @@ _ecc_completion() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     words=("${COMP_WORDS[@]}")
 
-    local commands="install init help version update completion"
+    local commands="install init uninstall help version update completion"
 
     if [[ $COMP_CWORD -eq 1 ]]; then
         COMPREPLY=($(compgen -W "$commands" -- "$cur"))
@@ -717,8 +762,10 @@ _ecc_completion() {
                 langs="$(ecc --list-languages 2>/dev/null | tr '\n' ' ')"
                 COMPREPLY=($(compgen -W "--template $langs" -- "$cur"))
             fi ;;
+        uninstall)
+            COMPREPLY=($(compgen -W "--force --keep-config" -- "$cur")) ;;
         help)
-            COMPREPLY=($(compgen -W "install init version update completion" -- "$cur")) ;;
+            COMPREPLY=($(compgen -W "install init uninstall version update completion" -- "$cur")) ;;
         completion)
             COMPREPLY=($(compgen -W "bash zsh fish" -- "$cur")) ;;
     esac
@@ -739,8 +786,15 @@ complete -c ecc -n '__fish_use_subcommand' -a install    -d 'Install into ~/.cla
 complete -c ecc -n '__fish_use_subcommand' -a init       -d 'Set up current project'
 complete -c ecc -n '__fish_use_subcommand' -a version    -d 'Print installed version'
 complete -c ecc -n '__fish_use_subcommand' -a update     -d 'Update to latest version'
+complete -c ecc -n '__fish_use_subcommand' -a uninstall  -d 'Remove ECC from the system'
 complete -c ecc -n '__fish_use_subcommand' -a help       -d 'Show help'
 complete -c ecc -n '__fish_use_subcommand' -a completion -d 'Output completion script'
+
+# uninstall: --force and --keep-config flags
+complete -c ecc -n '__fish_seen_subcommand_from uninstall' \
+    -l force -d 'Skip confirmation'
+complete -c ecc -n '__fish_seen_subcommand_from uninstall' \
+    -l keep-config -d 'Keep ~/.claude/ artifacts'
 
 # install: complete with languages
 complete -c ecc -n '__fish_seen_subcommand_from install' \
@@ -755,7 +809,7 @@ complete -c ecc -n '__fish_seen_subcommand_from init' \
 
 # help: complete with command names
 complete -c ecc -n '__fish_seen_subcommand_from help' \
-    -a "install init version update completion"
+    -a "install init uninstall version update completion"
 
 # completion: complete with shell names
 complete -c ecc -n '__fish_seen_subcommand_from completion' \
@@ -794,12 +848,19 @@ case "$CMD" in
     init)
         shift; cmd_init "$@" ;;
     version|--version|-v)
-        node -e "process.stdout.write(require('$(dirname "$0")/package.json').version+'\n')" 2>/dev/null \
-            || grep '"version"' "$(dirname "$0")/package.json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/' ;;
+        if command -v ecc &>/dev/null; then
+            ecc version
+        else
+            grep -m1 '^version' "$(dirname "$0")/Cargo.toml" | sed 's/version = "\(.*\)"/\1/'
+        fi
+        ;;
     update)
-        pkg=$(node -e "process.stdout.write(require('$(dirname "$0")/package.json').name)" 2>/dev/null || echo "@lebocqtitouan/ecc")
-        echo "Updating $pkg to latest..."
-        npm install -g "$pkg@latest" ;;
+        echo "Updating ECC to latest..."
+        curl -fsSL "https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/get-ecc.sh" | bash
+        ;;
+    uninstall)
+        shift; exec "$SCRIPT_DIR/scripts/uninstall-ecc.sh" "$@"
+        ;;
     help|-h|--help)
         shift; cmd_help "${1:-}" ;;
     completion)

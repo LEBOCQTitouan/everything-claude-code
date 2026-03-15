@@ -2,6 +2,9 @@
 
 use ecc_domain::claw::command::{parse_command, ClawCommand};
 use ecc_domain::claw::model::ClawModel;
+
+// Re-export ClawModel so CLI doesn't need to import from ecc-domain directly.
+pub use ecc_domain::claw::model::ClawModel as Model;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::repl::ReplInput;
@@ -60,6 +63,11 @@ impl ClawState {
     }
 }
 
+/// Get the Claw REPL history file path from a home directory.
+pub fn history_path(home: &std::path::Path) -> std::path::PathBuf {
+    ecc_domain::paths::claw_history_path(home)
+}
+
 /// Run the Claw REPL. Returns Ok(()) when the user exits.
 pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> anyhow::Result<()> {
     let home = ports
@@ -102,7 +110,11 @@ pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> anyhow::Result<()
         let line = match ports.repl_input.read_line(&prompt) {
             Ok(Some(line)) => line,
             Ok(None) => break, // EOF
-            Err(_) => break,
+            Err(e) => {
+                log::warn!("REPL read_line error: {}", e);
+                ports.terminal.stderr_write(&format!("Input error: {e}\n"));
+                break;
+            }
         };
 
         let command = parse_command(&line);

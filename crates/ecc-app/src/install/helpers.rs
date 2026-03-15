@@ -15,7 +15,10 @@ pub(super) fn collect_rule_groups(
     let rules_dir = ecc_root.join("rules");
     let entries = match fs.read_dir(&rules_dir) {
         Ok(e) => e,
-        Err(_) => return vec!["common".to_string()],
+        Err(e) => {
+            log::warn!("Cannot read rules directory: {}", e);
+            return vec!["common".to_string()];
+        }
     };
 
     let mut groups: Vec<String> = entries
@@ -52,7 +55,10 @@ pub(super) fn collect_installed_artifacts(fs: &dyn FileSystem, claude_dir: &Path
 fn list_files_with_ext(fs: &dyn FileSystem, dir: &Path, ext: &str) -> Vec<String> {
     let entries = match fs.read_dir(dir) {
         Ok(e) => e,
-        Err(_) => return vec![],
+        Err(e) => {
+            log::warn!("Cannot list files in {}: {}", dir.display(), e);
+            return vec![];
+        }
     };
     let mut files: Vec<String> = entries
         .iter()
@@ -72,7 +78,10 @@ fn list_files_with_ext(fs: &dyn FileSystem, dir: &Path, ext: &str) -> Vec<String
 fn list_dirs(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     let entries = match fs.read_dir(dir) {
         Ok(e) => e,
-        Err(_) => return vec![],
+        Err(e) => {
+            log::warn!("Cannot list dirs in {}: {}", dir.display(), e);
+            return vec![];
+        }
     };
     let mut dirs: Vec<String> = entries
         .iter()
@@ -106,7 +115,13 @@ pub(super) fn ensure_deny_rules_in_settings(
     dry_run: bool,
 ) -> Option<(usize, usize)> {
     let content = fs.read_to_string(settings_path).unwrap_or_else(|_| "{}".to_string());
-    let mut settings: serde_json::Value = serde_json::from_str(&content).ok()?;
+    let mut settings: serde_json::Value = match serde_json::from_str(&content) {
+        Ok(v) => v,
+        Err(e) => {
+            log::warn!("Malformed settings.json at {}: {}", settings_path.display(), e);
+            return None;
+        }
+    };
 
     let existing_deny: Vec<String> = settings
         .get("permissions")
@@ -135,8 +150,17 @@ pub(super) fn ensure_deny_rules_in_settings(
                 ),
             );
 
-        let json = serde_json::to_string_pretty(&settings).ok()?;
-        fs.write(settings_path, &format!("{json}\n")).ok()?;
+        let json = match serde_json::to_string_pretty(&settings) {
+            Ok(j) => j,
+            Err(e) => {
+                log::warn!("Failed to serialize settings: {}", e);
+                return None;
+            }
+        };
+        if let Err(e) = fs.write(settings_path, &format!("{json}\n")) {
+            log::warn!("Failed to write settings.json: {}", e);
+            return None;
+        }
     }
 
     Some((result.added, result.existing))
@@ -515,5 +539,107 @@ mod tests {
         let groups = collect_rule_groups(&fs, Path::new("/ecc"), &[]);
         assert!(groups.contains(&"common".to_string()));
         assert!(groups.contains(&"typescript".to_string()));
+    }
+
+    // --- error paths ---
+
+    #[test]
+    fn install_with_empty_source_dir_succeeds_with_zero_artifacts() {
+        // ecc_root exists but agents/commands/etc. directories are empty
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules")
+            .with_dir("/claude");
+        let env = no_color_env();
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = InstallOptions {
+            dry_run: false, force: true, no_gitignore: false, interactive: false,
+            clean: false, clean_all: false, languages: vec![],
+        };
+
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
+
+        assert!(summary.success);
+        assert_eq!(summary.added, 0);
+        assert_eq!(summary.updated, 0);
+    }
+
+    #[test]
+    fn install_with_missing_agents_dir_still_succeeds() {
+        // ecc_root exists but agents/ sub-directory is absent entirely
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc")
+            .with_dir("/claude");
+        let env = no_color_env();
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = InstallOptions {
+            dry_run: false, force: true, no_gitignore: false, interactive: false,
+            clean: false, clean_all: false, languages: vec![],
+        };
+
+        // Should not panic — missing sub-dirs are treated as empty
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
+
+        assert!(summary.success);
+        assert_eq!(summary.added, 0);
+    }
+
+    #[test]
+    fn install_output_contains_install_header() {
+        // Smoke test: even with an empty source, the install header is printed
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc")
+            .with_dir("/claude");
+        let env = no_color_env();
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = default_install_options();
+
+        install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
+
+        let output = terminal.stdout_output().join("");
+        assert!(output.contains("ECC Install"));
+    }
+
+    #[test]
+    fn collect_rule_groups_missing_rules_dir_returns_empty() {
+        // InMemoryFileSystem::read_dir never errors — missing dir yields empty entries.
+        // Confirm that no groups are returned when ecc_root has no rules/ directory.
+        let fs = InMemoryFileSystem::new().with_dir("/nowhere");
+
+        let groups = collect_rule_groups(&fs, Path::new("/nonexistent"), &[]);
+        // No dirs under /nonexistent/rules → result is empty (no crash)
+        assert!(groups.is_empty());
     }
 }

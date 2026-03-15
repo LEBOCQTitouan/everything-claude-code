@@ -180,4 +180,40 @@ mod tests {
         let diff = compute_line_diff(&[], &[]);
         assert!(diff.is_empty());
     }
+
+    // --- Property-based tests ---
+
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn diff_same_input_is_all_same(lines in prop::collection::vec("[a-z]{1,10}", 0..20)) {
+                let refs: Vec<&str> = lines.iter().map(|s| s.as_str()).collect();
+                let diff = compute_line_diff(&refs, &refs);
+                prop_assert_eq!(diff.len(), lines.len());
+                prop_assert!(diff.iter().all(|d| d.kind == DiffType::Same));
+            }
+
+            #[test]
+            fn diff_preserves_line_count(
+                old in prop::collection::vec("[a-z]{1,5}", 0..10),
+                new in prop::collection::vec("[a-z]{1,5}", 0..10),
+            ) {
+                let old_refs: Vec<&str> = old.iter().map(|s| s.as_str()).collect();
+                let new_refs: Vec<&str> = new.iter().map(|s| s.as_str()).collect();
+                let diff = compute_line_diff(&old_refs, &new_refs);
+
+                // The diff must contain all removed lines from old and all added from new
+                let removed: Vec<_> = diff.iter().filter(|d| d.kind == DiffType::Removed).collect();
+                let added: Vec<_> = diff.iter().filter(|d| d.kind == DiffType::Added).collect();
+                let same: Vec<_> = diff.iter().filter(|d| d.kind == DiffType::Same).collect();
+
+                // same + removed = old length, same + added = new length
+                prop_assert_eq!(same.len() + removed.len(), old.len());
+                prop_assert_eq!(same.len() + added.len(), new.len());
+            }
+        }
+    }
 }

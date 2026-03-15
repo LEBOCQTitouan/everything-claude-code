@@ -28,8 +28,13 @@ if [[ -z "$HOOK_ID" || -z "$REL_SCRIPT_PATH" ]]; then
   exit 0
 fi
 
-# Ask Node helper if this hook is enabled
-ENABLED="$(node "${ECC_ROOT}/dist/hooks/check-hook-enabled.js" "$HOOK_ID" "$PROFILES_CSV" 2>/dev/null || echo yes)"
+# Ask Rust CLI if this hook is enabled (fallback to "yes" if ecc not available)
+if command -v ecc >/dev/null 2>&1; then
+    ENABLED="$(echo "$HOOK_ID" | ecc hook check:hook:enabled 2>/dev/null | tr -d '[:space:]')"
+    [ -z "$ENABLED" ] && ENABLED="yes"
+else
+    ENABLED="yes"
+fi
 if [[ "$ENABLED" != "yes" ]]; then
   printf '%s' "$INPUT"
   exit 0

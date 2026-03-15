@@ -37,33 +37,23 @@ pub struct DetectionResult {
 
 /// Extract `name` from YAML frontmatter in markdown content.
 /// Returns `None` if no frontmatter or no `name:` field.
+///
+/// Delegates to the canonical `extract_frontmatter` in `config::validate`,
+/// then extracts and unquotes the `name` value.
 pub fn extract_frontmatter_name(content: &str) -> Option<String> {
-    if !content.starts_with("---") {
+    let fm = super::validate::extract_frontmatter(content)?;
+    let value = fm.get("name")?;
+    let value = value.trim();
+    if value.is_empty() {
         return None;
     }
-
-    let after_opening = &content[3..];
-    let end_idx = after_opening.find("---")?;
-    let frontmatter = &after_opening[..end_idx];
-
-    for line in frontmatter.lines() {
-        let trimmed = line.trim();
-        if let Some(value) = trimmed.strip_prefix("name:") {
-            let value = value.trim();
-            if value.is_empty() {
-                return None;
-            }
-            // Strip surrounding quotes (single or double)
-            let stripped = value
-                .strip_prefix('"')
-                .and_then(|v| v.strip_suffix('"'))
-                .or_else(|| value.strip_prefix('\'').and_then(|v| v.strip_suffix('\'')))
-                .unwrap_or(value);
-            return Some(stripped.to_string());
-        }
-    }
-
-    None
+    // Strip surrounding quotes (single or double)
+    let stripped = value
+        .strip_prefix('"')
+        .and_then(|v| v.strip_suffix('"'))
+        .or_else(|| value.strip_prefix('\'').and_then(|v| v.strip_suffix('\'')))
+        .unwrap_or(value);
+    Some(stripped.to_string())
 }
 
 /// Generate a human-readable report from detection results.

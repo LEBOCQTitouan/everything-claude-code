@@ -6,11 +6,7 @@ use ecc_infra::std_terminal::StdTerminal;
 use ecc_ports::env::Environment;
 
 #[derive(Args)]
-pub struct AuditArgs {
-    /// Output format
-    #[arg(short, long, default_value = "text")]
-    pub format: String,
-}
+pub struct AuditArgs {}
 
 pub fn run(_args: AuditArgs) -> anyhow::Result<()> {
     let fs = OsFileSystem;
@@ -19,7 +15,10 @@ pub fn run(_args: AuditArgs) -> anyhow::Result<()> {
 
     let home = env.home_dir().ok_or_else(|| anyhow::anyhow!("Cannot determine home directory"))?;
     let claude_dir = home.join(".claude");
-    let project_dir = env.current_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    let project_dir = env.current_dir().unwrap_or_else(|| {
+        eprintln!("Warning: cannot determine current directory, using '.'");
+        std::path::PathBuf::from(".")
+    });
 
     // For audit, ecc_root points to the installed claude_dir (where agents/commands live)
     let options = AuditOptions {

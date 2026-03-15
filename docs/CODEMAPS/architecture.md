@@ -1,81 +1,105 @@
-<!-- Generated: 2026-03-14 | Files scanned: 50 src + 32 tests | Token estimate: ~950 -->
+<!-- Generated: 2026-03-15 | Crates: 6 | Files: 109 .rs -->
 
 # Architecture Overview
 
 ## System Type
 
-CLI tool (`@lebocqtitouan/ecc`) — global npm package providing Claude Code configuration management.
+CLI tool (`ecc`) -- Rust binary distributed via GitHub Releases with curl installer, providing Claude Code configuration management.
+
+## Hexagonal Architecture
+
+```
+                    ┌───────────────────────────┐
+                    │        ecc-cli            │
+                    │  (clap args, dispatch)     │
+                    └─────────┬─────────────────┘
+                              │
+                    ┌─────────▼─────────────────┐
+                    │        ecc-app            │
+                    │  (use cases / orchestration)│
+                    │  install, merge, audit,    │
+                    │  validate, hook, claw      │
+                    └──┬──────────────────┬──────┘
+                       │                  │
+            ┌──────────▼──────┐  ┌────────▼────────┐
+            │   ecc-domain   │  │   ecc-ports     │
+            │  (pure logic)  │  │  (trait defs)   │
+            │  zero I/O      │  │  boundaries     │
+            └────────────────┘  └──┬──────────┬───┘
+                                   │          │
+                        ┌──────────▼──┐ ┌─────▼──────────┐
+                        │ ecc-infra  │ │ ecc-test-support│
+                        │ (OS adapt.)│ │ (test doubles)  │
+                        └────────────┘ └─────────────────┘
+```
 
 ## Data Flow
 
 ```
 User CLI
   │
-  ├─ bin/ecc.js (entry, shell completion via omelette)
-  │    └─ install.sh (bash orchestrator)
-  │         ├─ cmd_install → install-orchestrator.ts
-  │         │    ├─ detect.ts     → scan existing setup
-  │         │    ├─ manifest.ts   → track ECC artifacts
-  │         │    ├─ merge.ts      → interactive diff review + conflict resolution
-  │         │    ├─ smart-merge.ts → LCS diff + Claude merge + contentsDiffer
-  │         │    ├─ clean.ts        → surgical/nuclear artifact cleanup
-  │         │    ├─ config-audit.ts → source-of-truth config diffing
-  │         │    └─ gitignore.ts  → auto-manage .gitignore
-  │         └─ cmd_init → project-level CLAUDE.md + hooks
+  ├─ ecc install → InstallContext
+  │    ├─ detect::detect_and_report  → scan existing setup
+  │    ├─ manifest::read_manifest    → track ECC artifacts
+  │    ├─ merge::merge_directory     → interactive diff review
+  │    ├─ merge::merge_hooks         → hook merge with legacy removal
+  │    ├─ deny_rules::ensure_deny_rules → security deny rules
+  │    └─ manifest::write_manifest   → persist updated manifest
   │
-  ├─ hooks/ (hooks.json registry)
-  │    └─ src/hooks/*.ts (23 hook implementations)
-  │         └─ run-with-flags.ts (profile-gated execution)
+  ├─ ecc audit → AuditOptions
+  │    └─ config::audit::run_all_checks → score + grade
   │
-  ├─ Doc system agents (6-agent pipeline)
-  │    └─ doc-orchestrator → doc-analyzer → doc-generator → doc-validator → doc-reporter
-  │                                       → diagram-generator (reads CUSTOM.md registry)
+  ├─ ecc validate <target> → ValidateTarget
+  │    └─ validate::{agents,commands,hooks,skills,rules,paths}
   │
-  ├─ Audit system agents (6-agent pipeline)
-  │    └─ audit-orchestrator → evolution-analyst, test-auditor, observability-auditor,
-  │                            error-handling-auditor, convention-auditor, security-reviewer
+  ├─ ecc hook <id> [profiles] → HookContext
+  │    └─ hook::dispatch → 20+ hook handlers (passthrough/warn/block)
   │
-  └─ Content directories (copied to ~/.claude/)
-       ├─ agents/    (30 specialized agents)
-       ├─ commands/  (6 active + 41 archived)
-       ├─ skills/    (67 skill directories)
-       ├─ rules/     (common + language-specific)
-       └─ contexts/  (3 context files)
+  ├─ ecc init → init_project (gitignore + untrack)
+  │
+  └─ ecc claw → ClawConfig → run_repl
+       └─ REPL loop: parse_command → dispatch_command → claude -p
 ```
 
 ## Key Boundaries
 
 | Boundary | Description |
 |----------|-------------|
-| CLI → Bash | `bin/ecc.js` dispatches to `install.sh` for install/init |
-| Bash → Node | `install.sh` delegates to `dist/install-orchestrator.js` |
-| Hooks → Runtime | `hooks.json` maps events → `dist/hooks/*.js` scripts |
-| Config → User | Files are merged into `~/.claude/` with interactive diff review |
-| Doc Suite → Agents | `/doc-suite` orchestrates 5 specialized doc agents in parallel |
-| Custom Registry → Diagrams | `docs/diagrams/CUSTOM.md` declares diagrams for regeneration |
+| domain ↔ ports | Domain types are pure; all I/O goes through port traits |
+| app ↔ ports | Use cases accept `&dyn Trait` references, never concrete types |
+| infra → ports | Production adapters implement port traits against OS primitives |
+| test-support → ports | Test doubles implement port traits with in-memory state |
+| cli → app | CLI parses args, constructs contexts, delegates to use cases |
 
 ## Build Pipeline
 
 ```
-src/**/*.ts  →  tsc (tsconfig.build.json)  →  dist/**/*.js (CommonJS)
+crates/**/*.rs  →  cargo build --release  →  target/release/ecc (single binary)
                                                   │
-                                           npm publish (files: bin/, dist/, agents/, ...)
+                                           GitHub Release tarballs (binary + content)
                                                   │
-                                           npm install -g → postinstall.ts health checks
+                                           curl installer → ~/.ecc/
 ```
 
 ## Test Architecture
 
 ```
-tests/harness.js       → shared test()/describe()/getResults() harness
-tests/run-all.js       → single-process runner (require, no subprocess per file)
-tests/**/*.test.js     → 32 test files exporting runTests() (1401 assertions)
-                         env snapshot/restore + require.cache cleanup between files
+cargo test                → 999 tests across all crates
+  ├─ ecc-domain (515)    → pure unit tests, proptest property tests
+  ├─ ecc-app (466)       → use case tests with InMemoryFileSystem + MockExecutor
+  ├─ ecc-cli (13)        → CLI integration tests
+  ├─ ecc-ports (3)       → trait contract tests (3 ignored — require OS)
+  ├─ ecc-infra (2)       → adapter integration tests
+  └─ ecc-test-support (0) → test double self-tests
 ```
 
 ## Runtime Dependencies
 
-- `omelette` — shell tab-completion
-- Node.js >=18
-- bash (for install.sh orchestration)
+- `serde` + `serde_json` -- serialization
+- `clap` + `clap_complete` -- CLI parsing and shell completions
+- `regex` -- pattern matching
+- `crossterm` -- terminal control
+- `rustyline` -- REPL line editing with history
+- `walkdir` -- recursive directory traversal
+- `thiserror` / `anyhow` -- error handling
 - Optional: `claude` CLI (for smart-merge)

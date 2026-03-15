@@ -8,120 +8,36 @@
 
 | Property | Value |
 |----------|-------|
-| **Package** | `@lebocqtitouan/ecc` v2.0.0 |
-| **Language** | TypeScript (compiled to CommonJS) |
-| **Runtime** | Node.js >= 18 |
-| **Dependencies** | 1 runtime (`omelette`), 4 dev (`@types/node`, `markdownlint-cli`, `tsx`, `typescript`) |
-| **Source files** | 50 `.ts` files under `src/` |
-| **Codebase size** | Small (50 source files) |
-| **Entry points** | `bin/ecc.js` (CLI), `dist/postinstall.js`, `dist/preuninstall.js`, `dist/install-orchestrator.js`, `dist/claw.js` |
-| **Test count** | 1401 (32 test files, single-process runner) |
-| **Build** | `tsc -p tsconfig.build.json` to `dist/` |
-
-## Source Directory Layout
-
-| Directory | Files | Purpose |
-|-----------|-------|---------|
-| `src/lib/` | 14 | Shared libraries (utils, ansi, merge, smart-merge, detect, manifest, session-manager, session-aliases, package-manager, project-detect, gitignore, hook-flags, clean, config-audit) |
-| `src/hooks/` | 23 | Claude Code hook scripts (pre/post tool-use, session lifecycle, quality gates) including 2 runners |
-| `src/ci/` | 6 | CI validation scripts (agents, commands, hooks, rules, skills, personal-paths) |
-| `src/types/` | 1 | Type declarations (omelette.d.ts) |
-| `src/` (root) | 6 | Standalone scripts (postinstall, preuninstall, install-orchestrator, claw, setup-package-manager, skill-create-output) |
-
-## Module Overview
-
-### lib/ -- Shared Core Libraries (14 modules)
-
-The foundation layer. Every hook, CI script, and standalone script imports from here.
-
-- **utils.ts** (481 LOC) -- Cross-platform file I/O, command execution, git helpers, date formatting, stdin JSON reader. Hub module imported by 8+ hooks.
-- **ansi.ts** (45 LOC) -- Zero-dependency ANSI color utilities with NO_COLOR support.
-- **package-manager.ts** (364 LOC) -- Detect, configure, and generate commands for npm/pnpm/yarn/bun. 6-level detection priority chain.
-- **detect.ts** (239 LOC) -- Scan existing Claude Code setup (agents, commands, skills, rules, hooks). Read-only, no side effects.
-- **smart-merge.ts** (365 LOC) -- LCS-based diff algorithm, side-by-side terminal formatter, Claude CLI smart merge.
-- **manifest.ts** (136 LOC) -- ECC installation manifest tracking (version, artifacts, ownership). Immutable update pattern.
-- **merge.ts** (701 LOC) -- Interactive file merge strategies for installation (directory, skills, rules, hooks). Largest lib module.
-- **project-detect.ts** (344 LOC) -- Language detection (12 languages) and framework detection (23 frameworks) from markers and dependencies.
-- **gitignore.ts** (149 LOC) -- Append-only gitignore section management for ECC-generated files.
-- **hook-flags.ts** (84 LOC) -- Hook enable/disable controls via profiles (minimal/standard/strict) and ECC_DISABLED_HOOKS env var.
-- **session-aliases.ts** (479 LOC) -- Session alias CRUD with atomic file writes, backup/restore, and rollback on failure.
-- **session-manager.ts** (389 LOC) -- Session file CRUD, markdown metadata parsing, pagination, and stats computation.
-- **clean.ts** (226 LOC) -- Surgical and full cleanup of ECC-managed artifacts. Manifest-based removal or nuclear directory wipe with hook cleanup.
-- **config-audit.ts** (413 LOC) -- ECC configuration auditing. Compares installed artifacts against source of truth, produces structured diffs for agents, commands, and hooks.
-
-### hooks/ -- Claude Code Hook Scripts (23 files)
-
-Each hook is a standalone Node.js script that reads JSON from stdin and writes to stdout/stderr. No public exports.
-
-| Hook | Event | Purpose |
-|------|-------|---------|
-| run-with-flags | (runner) | Execute hooks conditionally based on profile flags |
-| check-hook-enabled | (runner) | Simple enabled/disabled check for shell scripts |
-| session-start | SessionStart | Load previous context, aliases, project type, package manager |
-| session-end | Stop | Extract session summary from transcript, persist to file |
-| session-end-marker | Stop | Passthrough marker (placeholder) |
-| evaluate-session | Stop | Analyze session for extractable patterns |
-| suggest-compact | PreToolUse | Track tool call count, suggest /compact at thresholds |
-| pre-compact | PreCompact | Save state before context compaction |
-| check-console-log | Stop | Warn about console.log in modified files |
-| post-edit-console-warn | PostToolUse (Edit) | Warn about console.log after individual edits |
-| post-edit-format | PostToolUse (Edit) | Auto-format via Biome or Prettier |
-| post-edit-typecheck | PostToolUse (Edit) | Run tsc --noEmit on edited .ts/.tsx files |
-| pre-write-doc-warn | PreToolUse (Write) | Warn about non-standard documentation files |
-| doc-file-warning | PreToolUse (Write) | Non-standard doc file warning (variant) |
-| doc-coverage-reminder | PostToolUse (Edit/Write) | Check for undocumented exports |
-| cost-tracker | Stop | Append session cost metrics to costs.jsonl |
-| quality-gate | PostToolUse (Edit) | Run formatter/linter checks after edits |
-| post-bash-build-complete | PostToolUse (Bash) | Log notification after build commands |
-| post-bash-pr-created | PostToolUse (Bash) | Extract and log PR URL after gh pr create |
-| pre-bash-dev-server-block | PreToolUse (Bash) | Block dev server outside tmux (Unix only) |
-| pre-bash-git-push-reminder | PreToolUse (Bash) | Reminder before git push |
-| pre-bash-tmux-reminder | PreToolUse (Bash) | Suggest tmux for long-running commands |
-| stop-uncommitted-reminder | Stop | Remind about uncommitted changes at session end |
-
-### ci/ -- Validation Scripts (6 files)
-
-Run during CI to ensure artifact quality. No public exports, standalone executables.
-
-- **validate-agents.ts** -- Check agent markdown has required frontmatter (model, tools fields)
-- **validate-commands.ts** -- Check command files are non-empty with valid cross-references to agents, skills, commands
-- **validate-hooks.ts** -- Validate hooks.json schema (events, matchers, command syntax, inline JS parsing)
-- **validate-rules.ts** -- Check rule markdown files are non-empty
-- **validate-skills.ts** -- Check skill directories contain SKILL.md
-- **validate-no-personal-paths.ts** -- Prevent shipping user-specific absolute paths in public files
-
-### Standalone Scripts (6 files)
-
-- **install-orchestrator.ts** (337 LOC) -- Full install/init flow: detect existing setup, read manifest, merge artifacts, write manifest, manage gitignore, clean before reinstall
-- **claw.ts** (554 LOC) -- NanoClaw REPL: session-aware interactive Claude CLI wrapper with branching, search, export, compaction
-- **setup-package-manager.ts** (197 LOC) -- Interactive package manager configuration with detect/list/set modes
-- **skill-create-output.ts** (248 LOC) -- Terminal UI formatter for /skill-create (animated progress, box drawing, pattern display)
-- **postinstall.ts** (82 LOC) -- Post-install health checks (Node version, bash, dependencies) and getting-started hints
-- **preuninstall.ts** (38 LOC) -- Clean up shell completion files (fish, bash, zsh) on uninstall
+| **Package** | `ecc` (Everything Claude Code) |
+| **Language** | Rust (Cargo workspace) |
+| **Runtime** | Native binary (no runtime dependency) |
+| **Architecture** | Hexagonal (domain → ports → infra → app → CLI) |
+| **Crates** | 6 (`ecc-domain`, `ecc-ports`, `ecc-app`, `ecc-infra`, `ecc-cli`, `ecc-test-support`) |
+| **Entry point** | `crates/ecc-cli/` → `ecc` binary |
+| **Test count** | 999 (`cargo test`) |
+| **Build** | `cargo build --release` → single binary |
 
 ## System Diagram
 
 ```
-User CLI (ecc)
+User CLI (ecc)  — native Rust binary
   |
-  +-- bin/ecc.js --- shell completion (omelette)
-  |    +-- install.sh (bash orchestrator)
-  |         +-- cmd_install -> install-orchestrator.ts
-  |         |    +-- detect     -> scan ~/.claude/
-  |         |    +-- manifest   -> track artifacts
-  |         |    +-- merge      -> interactive diff review
-  |         |    |    +-- smart-merge -> LCS diff + Claude AI merge
-  |         |    |    +-- ansi       -> colored terminal output
-  |         |    +-- gitignore  -> manage .gitignore
-  |         +-- cmd_init -> project CLAUDE.md + hooks
+  +-- ecc install  -> copy content to ~/.claude/
+  +-- ecc init     -> project CLAUDE.md + hooks
+  +-- ecc audit    -> configuration health check
+  +-- ecc hook     -> run a hook by ID
+  +-- ecc validate -> validate content files
   |
-  +-- hooks.json -> 23 hook implementations
-  |    +-- run-with-flags.ts (profile gating via hook-flags)
+  +-- install.sh   (bash fallback orchestrator)
+  |
+  +-- hooks.json -> hook implementations
+  |    +-- bin/ecc-hook (shell shim)
+  |    +-- bin/ecc-shell-hook.sh
   |
   +-- Content (copied to ~/.claude/)
        +-- agents/    (30 markdown with YAML frontmatter)
        +-- commands/  (6 active + 41 archived markdown slash commands)
-       +-- skills/    (67 domain knowledge directories)
+       +-- skills/    (74 domain knowledge directories)
        +-- rules/     (grouped by language: common/, typescript/, python/, ...)
        +-- contexts/  (dynamic system prompt injection)
 ```
@@ -129,21 +45,17 @@ User CLI (ecc)
 ## Build Pipeline
 
 ```
-src/**/*.ts
+crates/
     |
-    v  tsc -p tsconfig.build.json
+    v  cargo build --release
     |
-dist/**/*.js  (CommonJS)
+target/release/ecc  (native binary)
     |
-    +-- bin/ecc.js            (CLI entry via package.json "bin")
-    +-- bin/ecc-hook.js       (Hook runner entry)
-    +-- dist/postinstall.js   (npm lifecycle: postinstall)
-    +-- dist/preuninstall.js  (npm lifecycle: preuninstall)
-    +-- dist/hooks/*.js       (Individual hook scripts)
+    +-- ecc version / install / init / audit / hook / validate / completion
 
 Test pipeline:
-    tests/**/*.test.js  --[tsx]--> single-process runner (tests/run-all.js)
-    tests/harness.js    --> shared test()/describe() with auto-async detection
+    cargo test  (999 tests across 6 crates)
+    cargo clippy -- -D warnings  (zero-warning lint)
 ```
 
 ## Diagram Manifest

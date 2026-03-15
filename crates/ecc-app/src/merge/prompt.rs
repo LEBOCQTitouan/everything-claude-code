@@ -129,3 +129,150 @@ pub fn apply_review_choice(
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ecc_domain::config::merge::{self, FileToReview};
+    use ecc_ports::shell::CommandOutput;
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+
+    fn no_color_env() -> MockEnvironment {
+        MockEnvironment::new().with_var("NO_COLOR", "1")
+    }
+
+    fn changed_file() -> FileToReview {
+        FileToReview {
+            filename: "agent.md".into(),
+            src_path: "/src/agent.md".into(),
+            dest_path: "/dest/agent.md".into(),
+            is_new: false,
+        }
+    }
+
+    // --- prompt_file_review ---
+
+    #[test]
+    fn prompt_unknown_input_defaults_to_accept() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/src/agent.md", "new content")
+            .with_file("/dest/agent.md", "old content");
+        let terminal = BufferedTerminal::new().with_input("x");
+        let env = no_color_env();
+
+        let (choice, apply_all) =
+            prompt_file_review(&terminal, &fs, &env, &changed_file(), "[1/1]").unwrap();
+
+        assert_eq!(choice, ReviewChoice::Accept);
+        assert!(!apply_all);
+    }
+
+    #[test]
+    fn prompt_shows_diff_for_changed_file() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/src/agent.md", "new line")
+            .with_file("/dest/agent.md", "old line");
+        let terminal = BufferedTerminal::new().with_input("a");
+        let env = no_color_env();
+
+        prompt_file_review(&terminal, &fs, &env, &changed_file(), "[2/5]").unwrap();
+
+        let output = terminal.stdout_output().join("");
+        assert!(output.contains("CHANGED: agent.md"));
+        assert!(output.contains("[2/5]"));
+    }
+
+    #[test]
+    fn prompt_new_file_shows_preview_truncated() {
+        // File with more than 10 lines — preview should be truncated with "..."
+        let many_lines: String = (1..=15).map(|i| format!("Line {i}\n")).collect();
+        let fs = InMemoryFileSystem::new().with_file("/src/new.md", &many_lines);
+        let terminal = BufferedTerminal::new().with_input("a");
+        let env = no_color_env();
+        let file = FileToReview {
+            filename: "new.md".into(),
+            src_path: "/src/new.md".into(),
+            dest_path: "/dest/new.md".into(),
+            is_new: true,
+        };
+
+        prompt_file_review(&terminal, &fs, &env, &file, "[1/1]").unwrap();
+
+        let output = terminal.stdout_output().join("");
+        assert!(output.contains("NEW: new.md"));
+        assert!(output.contains("15 lines"));
+        assert!(output.contains("..."));
+    }
+
+    #[test]
+    fn prompt_new_file_short_no_truncation() {
+        let fs = InMemoryFileSystem::new().with_file("/src/new.md", "# Header\nBody line");
+        let terminal = BufferedTerminal::new().with_input("k");
+        let env = no_color_env();
+        let file = FileToReview {
+            filename: "new.md".into(),
+            src_path: "/src/new.md".into(),
+            dest_path: "/dest/new.md".into(),
+            is_new: true,
+        };
+
+        prompt_file_review(&terminal, &fs, &env, &file, "[1/1]").unwrap();
+
+        let output = terminal.stdout_output().join("");
+        assert!(output.contains("NEW: new.md"));
+        assert!(!output.contains("..."));
+    }
+
+    // --- apply_review_choice ---
+
+    #[test]
+    fn apply_accept_existing_file_records_updated() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/src/agent.md", "updated content")
+            .with_file("/dest/agent.md", "old content");
+        let shell = MockExecutor::new();
+        let file = FileToReview {
+            filename: "agent.md".into(),
+            src_path: "/src/agent.md".into(),
+            dest_path: "/dest/agent.md".into(),
+            is_new: false,
+        };
+        let mut report = merge::empty_report();
+
+        apply_review_choice(&fs, &shell, ReviewChoice::Accept, &file, false, &mut report);
+
+        assert!(report.added.is_empty());
+        assert_eq!(report.updated, vec!["agent.md"]);
+    }
+
+    #[test]
+    fn apply_smart_merge_dry_run_does_not_write() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/dest/agent.md", "old")
+            .with_file("/src/agent.md", "new");
+        let shell = MockExecutor::new()
+            .with_command("claude")
+            .on("claude", CommandOutput {
+                stdout: "merged".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            });
+        let file = FileToReview {
+            filename: "agent.md".into(),
+            src_path: "/src/agent.md".into(),
+            dest_path: "/dest/agent.md".into(),
+            is_new: false,
+        };
+        let mut report = merge::empty_report();
+
+        apply_review_choice(&fs, &shell, ReviewChoice::SmartMerge, &file, true, &mut report);
+
+        assert_eq!(report.smart_merged, vec!["agent.md"]);
+        // dry_run: dest file must remain unchanged
+        assert_eq!(fs.read_to_string(std::path::Path::new("/dest/agent.md")).unwrap(), "old");
+    }
+}

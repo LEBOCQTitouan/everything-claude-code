@@ -56,7 +56,8 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
     // Resolve ECC assets root: explicit flag > env var > npm global install path
     let ecc_root = match args.ecc_root {
         Some(root) => root,
-        None => resolve_ecc_root()?,
+        None => install::resolve_ecc_root(&fs, &env)
+            .map_err(|e| anyhow::anyhow!(e))?,
     };
 
     let ctx = InstallContext {
@@ -104,35 +105,4 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Resolve the ECC root directory containing agents/, commands/, skills/, rules/, hooks.json.
-fn resolve_ecc_root() -> anyhow::Result<std::path::PathBuf> {
-    // Try the npm global install location
-    let npm_paths = [
-        // macOS/Linux global npm
-        "/usr/local/lib/node_modules/@lebocqtitouan/ecc",
-        "/usr/lib/node_modules/@lebocqtitouan/ecc",
-    ];
-
-    for path in &npm_paths {
-        let p = std::path::PathBuf::from(path);
-        if p.join("agents").exists() {
-            return Ok(p);
-        }
-    }
-
-    // Try relative to binary location
-    if let Ok(exe) = std::env::current_exe()
-        && let Some(parent) = exe.parent()
-    {
-        let relative = parent.join("../share/ecc");
-        if relative.join("agents").exists() {
-            return Ok(relative);
-        }
-    }
-
-    anyhow::bail!(
-        "Cannot find ECC assets directory. Set ECC_ROOT environment variable \
-         or use --ecc-root flag."
-    )
-}
 

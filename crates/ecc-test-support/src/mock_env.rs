@@ -35,6 +35,11 @@ impl MockEnvironment {
         self
     }
 
+    pub fn with_current_dir(mut self, path: &str) -> Self {
+        self.cwd = Some(PathBuf::from(path));
+        self
+    }
+
     pub fn with_platform(mut self, platform: Platform) -> Self {
         self.platform = platform;
         self

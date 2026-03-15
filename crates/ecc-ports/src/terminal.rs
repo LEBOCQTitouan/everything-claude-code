@@ -7,6 +7,7 @@ pub trait TerminalIO: Send + Sync {
     fn terminal_width(&self) -> Option<u16>;
 }
 
+/// Errors that can occur during terminal I/O operations.
 #[derive(Debug, thiserror::Error)]
 pub enum TerminalError {
     #[error("input cancelled by user")]

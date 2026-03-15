@@ -11,7 +11,7 @@
 - [ ] `ci:` CI/CD changes
 
 ## Checklist
-- [ ] Tests pass locally (`node tests/run-all.js`)
+- [ ] Tests pass locally (`cargo test`)
 - [ ] Validation scripts pass
 - [ ] Follows conventional commits format
 - [ ] Updated relevant documentation

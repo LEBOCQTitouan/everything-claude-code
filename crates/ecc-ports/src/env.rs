@@ -9,6 +9,7 @@ pub trait Environment: Send + Sync {
     fn platform(&self) -> Platform;
 }
 
+/// Host operating system platform.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Platform {
     MacOS,

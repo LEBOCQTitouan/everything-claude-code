@@ -170,7 +170,7 @@ Other doc-suite agents use different fence markers (`AUTO-GENERATED` / `END AUTO
 - Prefer clarity over completeness — omit internal implementation details
 - Use the project's actual module and function names, not generic placeholders
 
-## Related
+## Related Resources
 
 - Skill: `skills/diagram-generation/SKILL.md`
 - Command: `commands/doc-diagrams.md`

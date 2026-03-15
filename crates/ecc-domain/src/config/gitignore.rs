@@ -47,6 +47,8 @@ pub struct GitignoreResult {
     pub added: Vec<String>,
     pub already_present: Vec<String>,
     pub skipped: bool,
+    /// Write error message, if the gitignore file could not be updated.
+    pub error: Option<String>,
 }
 
 /// Parse existing .gitignore content and extract all non-comment, non-empty patterns.
