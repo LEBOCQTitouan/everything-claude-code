@@ -123,7 +123,6 @@ everything-claude-code/
 │   ├── backend-patterns/
 │   ├── frontend-patterns/
 │   ├── continuous-learning/
-│   ├── continuous-learning-v2/
 │   ├── autonomous-loops/
 │   ├── api-design/
 │   ├── database-migrations/
