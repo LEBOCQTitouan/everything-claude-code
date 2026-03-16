@@ -139,6 +139,149 @@ pub fn suggest_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     HookResult::passthrough(stdin)
 }
 
+/// post:failure:error-context — Suggest recovery commands after tool failures.
+///
+/// Parses `tool_name` and `error` from stdin JSON. If error contains build/compile
+/// or test failure keywords, emits a stderr hint. Otherwise passthrough.
+pub fn post_failure_error_context(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    let parsed = serde_json::from_str::<serde_json::Value>(stdin).ok();
+
+    let error = parsed
+        .as_ref()
+        .and_then(|v| v.get("error").and_then(|e| e.as_str()))
+        .unwrap_or("");
+
+    if error.is_empty() {
+        return HookResult::passthrough(stdin);
+    }
+
+    let error_lower = error.to_lowercase();
+
+    let build_keywords = ["build failed", "compile error", "compilation failed", "cannot find module", "syntax error", "type error"];
+    let test_keywords = ["test failed", "assertion failed", "expected", "test error", "failures:"];
+
+    if build_keywords.iter().any(|kw| error_lower.contains(kw)) {
+        return HookResult::warn(
+            stdin,
+            "[Hook] Build failure detected. Consider /build-fix\n",
+        );
+    }
+
+    if test_keywords.iter().any(|kw| error_lower.contains(kw)) {
+        return HookResult::warn(
+            stdin,
+            "[Hook] Test failure. Check test isolation before retrying\n",
+        );
+    }
+
+    HookResult::passthrough(stdin)
+}
+
+/// pre:prompt:context-inject — Inject context reminders before prompt processing.
+///
+/// Checks for uncommitted changes and emits a stderr reminder. Passthrough (never blocks).
+pub fn pre_prompt_context_inject(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    let diff_output = ports
+        .shell
+        .run_command("git", &["diff", "--stat", "--cached"]);
+
+    let unstaged_output = ports
+        .shell
+        .run_command("git", &["diff", "--stat"]);
+
+    let cached_count = diff_output
+        .as_ref()
+        .ok()
+        .filter(|o| o.success())
+        .map(|o| o.stdout.lines().count().saturating_sub(1)) // last line is summary
+        .unwrap_or(0);
+
+    let unstaged_count = unstaged_output
+        .as_ref()
+        .ok()
+        .filter(|o| o.success())
+        .map(|o| o.stdout.lines().count().saturating_sub(1))
+        .unwrap_or(0);
+
+    let total = cached_count + unstaged_count;
+    if total > 0 {
+        let msg = format!(
+            "[Hook] Reminder: {} uncommitted change(s) from previous response\n",
+            total
+        );
+        return HookResult::warn(stdin, &msg);
+    }
+
+    HookResult::passthrough(stdin)
+}
+
+/// instructions:loaded:validate — Validate that the instructions file exists and has content.
+///
+/// Parses `instructions_path` from stdin JSON. Warns if file not found or empty.
+pub fn instructions_loaded_validate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    let path_str = serde_json::from_str::<serde_json::Value>(stdin)
+        .ok()
+        .and_then(|v| v.get("instructions_path")?.as_str().map(|s| s.to_string()));
+
+    let path_str = match path_str {
+        Some(p) => p,
+        None => return HookResult::passthrough(stdin),
+    };
+
+    let path = std::path::Path::new(&path_str);
+
+    if !ports.fs.exists(path) {
+        return HookResult::warn(
+            stdin,
+            &format!("[Hook] Instructions file not found: {}\n", path_str),
+        );
+    }
+
+    match ports.fs.read_to_string(path) {
+        Ok(content) if content.trim().is_empty() => {
+            HookResult::warn(stdin, "[Hook] Instructions file is empty\n")
+        }
+        Ok(content) if content.trim().len() < 10 => {
+            HookResult::warn(
+                stdin,
+                &format!(
+                    "[Hook] Instructions file suspiciously short ({} chars): {}\n",
+                    content.trim().len(),
+                    path_str
+                ),
+            )
+        }
+        Ok(_) => HookResult::passthrough(stdin),
+        Err(_) => HookResult::warn(
+            stdin,
+            &format!("[Hook] Could not read instructions file: {}\n", path_str),
+        ),
+    }
+}
+
+/// stop:worktree-cleanup-reminder — Remind about unmerged changes after worktree removal.
+///
+/// Parses `worktree_path` from stdin JSON.
+pub fn worktree_cleanup_reminder(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    let path = serde_json::from_str::<serde_json::Value>(stdin)
+        .ok()
+        .and_then(|v| v.get("worktree_path")?.as_str().map(|s| s.to_string()));
+
+    match path {
+        Some(p) => {
+            let msg = format!(
+                "[Hook] Worktree removed: {}. Check for unmerged changes.\n",
+                p
+            );
+            HookResult::warn(stdin, &msg)
+        }
+        None => HookResult::warn(
+            stdin,
+            "[Hook] Worktree removed. Check for unmerged changes.\n",
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -265,5 +408,215 @@ mod tests {
 
         let result = suggest_compact("{}", &ports);
         assert!(result.stderr.contains("5 tool calls reached"));
+    }
+
+    // --- post_failure_error_context ---
+
+    #[test]
+    fn post_failure_build_error_hint() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_name":"Bash","error":"Build failed: cannot find module 'foo'"}"#;
+        let result = post_failure_error_context(stdin, &ports);
+        assert!(result.stderr.contains("Build failure detected"));
+        assert!(result.stderr.contains("/build-fix"));
+    }
+
+    #[test]
+    fn post_failure_test_error_hint() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_name":"Bash","error":"Test failed: assertion failed at line 42"}"#;
+        let result = post_failure_error_context(stdin, &ports);
+        assert!(result.stderr.contains("Test failure"));
+        assert!(result.stderr.contains("test isolation"));
+    }
+
+    #[test]
+    fn post_failure_generic_error_passthrough() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_name":"Bash","error":"Permission denied"}"#;
+        let result = post_failure_error_context(stdin, &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn post_failure_missing_fields_passthrough() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = post_failure_error_context("{}", &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- pre_prompt_context_inject ---
+
+    #[test]
+    fn pre_prompt_with_uncommitted_changes() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new()
+            .on_args("git", &["diff", "--stat", "--cached"], ecc_ports::shell::CommandOutput {
+                stdout: " src/main.rs | 5 ++---\n 1 file changed\n".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            })
+            .on_args("git", &["diff", "--stat"], ecc_ports::shell::CommandOutput {
+                stdout: " src/lib.rs | 2 +-\n 1 file changed\n".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            });
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = pre_prompt_context_inject("{}", &ports);
+        assert!(result.stderr.contains("uncommitted change(s)"));
+    }
+
+    #[test]
+    fn pre_prompt_no_git_repo_passthrough() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new(); // git commands not registered
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = pre_prompt_context_inject("{}", &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn pre_prompt_no_uncommitted_changes() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new()
+            .on_args("git", &["diff", "--stat", "--cached"], ecc_ports::shell::CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            })
+            .on_args("git", &["diff", "--stat"], ecc_ports::shell::CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            });
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = pre_prompt_context_inject("{}", &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- instructions_loaded_validate ---
+
+    #[test]
+    fn instructions_loaded_missing_path_passthrough() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = instructions_loaded_validate("{}", &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    #[test]
+    fn instructions_loaded_file_not_found_warns() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"instructions_path":"/tmp/missing.md"}"#;
+        let result = instructions_loaded_validate(stdin, &ports);
+        assert!(result.stderr.contains("not found"));
+        assert!(result.stderr.contains("/tmp/missing.md"));
+    }
+
+    #[test]
+    fn instructions_loaded_empty_file_warns() {
+        let fs = InMemoryFileSystem::new().with_file("/tmp/instructions.md", "   ");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"instructions_path":"/tmp/instructions.md"}"#;
+        let result = instructions_loaded_validate(stdin, &ports);
+        assert!(result.stderr.contains("empty"));
+    }
+
+    #[test]
+    fn instructions_loaded_tiny_file_warns() {
+        let fs = InMemoryFileSystem::new().with_file("/tmp/instructions.md", "# Hi");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"instructions_path":"/tmp/instructions.md"}"#;
+        let result = instructions_loaded_validate(stdin, &ports);
+        assert!(result.stderr.contains("suspiciously short"));
+    }
+
+    #[test]
+    fn instructions_loaded_normal_file_passthrough() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/tmp/instructions.md", "# Project\n\nThis is a valid instructions file with enough content.");
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"instructions_path":"/tmp/instructions.md"}"#;
+        let result = instructions_loaded_validate(stdin, &ports);
+        assert!(result.stderr.is_empty());
+    }
+
+    // --- worktree_cleanup_reminder ---
+
+    #[test]
+    fn worktree_cleanup_with_path() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"worktree_path":"/tmp/wt-feature-x"}"#;
+        let result = worktree_cleanup_reminder(stdin, &ports);
+        assert!(result.stderr.contains("/tmp/wt-feature-x"));
+        assert!(result.stderr.contains("unmerged changes"));
+    }
+
+    #[test]
+    fn worktree_cleanup_without_path() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = worktree_cleanup_reminder("{}", &ports);
+        assert!(result.stderr.contains("Worktree removed"));
+        assert!(result.stderr.contains("unmerged changes"));
     }
 }
