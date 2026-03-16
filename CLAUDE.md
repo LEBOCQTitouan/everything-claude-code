@@ -83,6 +83,18 @@ ecc completion <shell>    Generate shell completions
 | `cargo build --release` | Build release binary |
 | `npm run lint` | Lint all Markdown files with markdownlint |
 
+## Command Workflows
+
+Slash command workflows defined in `commands/` are mandatory. Follow every phase and step exactly as specified — do not skip, reorder, or modify phases without asking the user first.
+
+## Gotchas
+
+- `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by boundary-crossing hook)
+- Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
+- `hooks.json` lives in `hooks/`, not the project root
+- Skill directory name must match the `name` field in its frontmatter
+- Test count in CLAUDE.md (currently 1180) must be updated after adding or removing tests
+
 ## Development Notes
 
 - Source is Rust, organized as a Cargo workspace with 7 crates
