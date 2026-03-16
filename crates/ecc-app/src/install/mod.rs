@@ -21,7 +21,8 @@ use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
 use helpers::{
-    collect_installed_artifacts, collect_rule_groups, ensure_deny_rules_in_settings, print_summary,
+    collect_installed_artifacts, collect_rule_groups, ensure_deny_rules_in_settings,
+    ensure_statusline_in_settings, print_summary,
 };
 
 // ---------------------------------------------------------------------------
@@ -85,13 +86,14 @@ pub struct InstallSummary {
 
 /// Run a full global install of ECC configuration to `claude_dir`.
 ///
-/// 8-step flow:
+/// 9-step flow:
 /// 1. Clean if requested (--clean / --clean-all)
 /// 2. Detect existing setup
 /// 3. Read existing manifest
 /// 4. Merge artifacts (agents, commands, skills, rules)
 /// 5. Merge hooks
 /// 6. Ensure deny rules
+/// 6b. Ensure statusline
 /// 7. Write/update manifest
 /// 8. Print summary
 #[allow(clippy::too_many_arguments)]
@@ -258,6 +260,30 @@ pub fn install_global(
         ctx.terminal.stdout_write(&format!(
             "  Deny rules: {added} added, {existing} already present\n"
         ));
+    }
+
+    // Step 6b: Ensure statusline
+    let statusline_result = ensure_statusline_in_settings(
+        ctx.fs,
+        ctx.env,
+        &settings_json,
+        ecc_root,
+        version,
+        options.dry_run,
+    );
+    match &statusline_result {
+        Some(ecc_domain::config::statusline::StatusLineResult::Installed) => {
+            ctx.terminal.stdout_write("  Statusline: installed\n");
+        }
+        Some(ecc_domain::config::statusline::StatusLineResult::Updated) => {
+            ctx.terminal.stdout_write("  Statusline: updated\n");
+        }
+        Some(ecc_domain::config::statusline::StatusLineResult::AlreadyCustom) => {
+            ctx.terminal.stdout_write("  Statusline: already custom (skipped)\n");
+        }
+        None => {
+            // Source script missing or other error — not fatal
+        }
     }
 
     // Step 7: Write/update manifest

@@ -340,6 +340,11 @@ mod tests {
             .with_dir("/ecc/rules")
             .with_dir("/ecc/rules/common")
             .with_file("/ecc/rules/common/style.md", "# Style rules")
+            .with_dir("/ecc/statusline")
+            .with_file(
+                "/ecc/statusline/statusline-command.sh",
+                "#!/bin/bash\nECC_VERSION=\"__ECC_VERSION__\"\necho $ECC_VERSION",
+            )
             .with_dir("/claude")
     }
 
@@ -719,6 +724,96 @@ mod tests {
         let groups = collect_rule_groups(&fs, Path::new("/nonexistent"), &[]);
         // No dirs under /nonexistent/rules → result is empty (no crash)
         assert!(groups.is_empty());
+    }
+
+    // --- install + statusline integration ---
+
+    #[test]
+    fn install_first_time_installs_statusline() {
+        let fs = ecc_source_fs();
+        let env = MockEnvironment::new()
+            .with_var("NO_COLOR", "1")
+            .with_home("/claude"); // claude_dir == home/.claude
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = InstallOptions {
+            dry_run: false, force: true, no_gitignore: false, interactive: false,
+            clean: false, clean_all: false, languages: vec![],
+        };
+
+        let summary = install_global(
+            &ctx, Path::new("/ecc"), Path::new("/claude/.claude"), "4.2.0", "2026-03-14T00:00:00Z", &options
+        );
+
+        assert!(summary.success);
+
+        // Script exists with version embedded
+        let script = fs.read_to_string(Path::new("/claude/.claude/statusline-command.sh")).unwrap();
+        assert!(script.contains("4.2.0"));
+        assert!(!script.contains("__ECC_VERSION__"));
+
+        // Settings has statusLine
+        let settings_str = fs.read_to_string(Path::new("/claude/.claude/settings.json")).unwrap();
+        let settings: serde_json::Value = serde_json::from_str(&settings_str).unwrap();
+        assert!(settings["statusLine"]["command"].as_str().is_some());
+    }
+
+    #[test]
+    fn install_preserves_custom_statusline() {
+        let fs = ecc_source_fs()
+            .with_file(
+                "/claude/settings.json",
+                &serde_json::json!({"statusLine": {"command": "my-custom.sh"}}).to_string(),
+            );
+        let env = MockEnvironment::new()
+            .with_var("NO_COLOR", "1")
+            .with_home("/claude"); // so ~/.claude == /claude/.claude
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = InstallOptions {
+            dry_run: false, force: true, no_gitignore: false, interactive: false,
+            clean: false, clean_all: false, languages: vec![],
+        };
+
+        install_global(
+            &ctx, Path::new("/ecc"), Path::new("/claude"), "4.2.0", "2026-03-14T00:00:00Z", &options
+        );
+
+        let output = terminal.stdout_output().join("");
+        assert!(output.contains("already custom"));
+    }
+
+    #[test]
+    fn install_missing_statusline_source_does_not_fail() {
+        // ecc_root without statusline/ dir
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules")
+            .with_dir("/claude");
+        let env = MockEnvironment::new()
+            .with_var("NO_COLOR", "1")
+            .with_home("/home/user");
+        let terminal = BufferedTerminal::new();
+        let shell = MockExecutor::new();
+        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+
+        let options = InstallOptions {
+            dry_run: false, force: true, no_gitignore: false, interactive: false,
+            clean: false, clean_all: false, languages: vec![],
+        };
+
+        let summary = install_global(
+            &ctx, Path::new("/ecc"), Path::new("/claude"), "4.2.0", "2026-03-14T00:00:00Z", &options
+        );
+
+        // Install succeeds even if statusline source is missing
+        assert!(summary.success);
     }
 
     // --- ensure_statusline_in_settings ---
