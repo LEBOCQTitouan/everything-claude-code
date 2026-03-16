@@ -129,6 +129,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "pre:edit-write:suggest-compact" => handlers::suggest_compact(stdin, ports),
 
         // Tier 2: External tool spawning hooks
+        "stop:notify" => handlers::stop_notify(stdin, ports),
         "pre:bash:dev-server-block" => handlers::pre_bash_dev_server_block(stdin, ports),
         "post:edit:format" => handlers::post_edit_format(stdin, ports),
         "post:edit:typecheck" => handlers::post_edit_typecheck(stdin, ports),
@@ -140,6 +141,18 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "post:edit:naming-review" => handlers::post_edit_naming_review(stdin, ports),
         "post:edit:newspaper-check" => handlers::post_edit_newspaper_check(stdin, ports),
         "pre:edit:stepdown-warning" => handlers::pre_edit_stepdown_warning(stdin, ports),
+
+        // New event handlers
+        "task:completed:notify" => handlers::task_completed_notify(stdin, ports),
+        "post:failure:error-context" => handlers::post_failure_error_context(stdin, ports),
+        "pre:prompt:context-inject" => handlers::pre_prompt_context_inject(stdin, ports),
+        "post:compact:state-save" => handlers::post_compact(stdin, ports),
+        "subagent:start:log" => handlers::subagent_start_log(stdin, ports),
+        "subagent:stop:log" => handlers::subagent_stop_log(stdin, ports),
+        "stop:worktree-cleanup-reminder" => handlers::worktree_cleanup_reminder(stdin, ports),
+        "instructions:loaded:validate" => handlers::instructions_loaded_validate(stdin, ports),
+        "config:change:log" => handlers::config_change_log(stdin, ports),
+        "worktree:create:init" => handlers::worktree_create_init(stdin, ports),
 
         // Tier 3: Session/File I/O hooks
         "session:start" => handlers::session_start(stdin, ports),

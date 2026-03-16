@@ -217,6 +217,18 @@
         "hooks": [
           {
             "type": "command",
+            "command": "ecc-hook \"stop:notify\" \"minimal,standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Send system notification when Claude stops and needs user input"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
             "command": "ecc-hook \"stop:uncommitted-reminder\" \"standard,strict\""
           }
         ],
@@ -291,6 +303,138 @@
           }
         ],
         "description": "Calculate rework ratio and track craft velocity metrics"
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"task:completed:notify\" \"minimal,standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Send system notification when a task completes"
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"post:failure:error-context\" \"standard,strict\""
+          }
+        ],
+        "description": "Suggest recovery commands after tool failures"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"pre:prompt:context-inject\" \"standard,strict\""
+          }
+        ],
+        "description": "Inject context reminders before prompt processing"
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"post:compact:state-save\" \"standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Save compaction summary to session log"
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"subagent:start:log\" \"standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Log subagent lifecycle start to session file"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"subagent:stop:log\" \"standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Log subagent lifecycle completion to session file"
+      }
+    ],
+    "ConfigChange": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"config:change:log\" \"minimal,standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Log configuration changes to session log"
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"instructions:loaded:validate\" \"standard,strict\""
+          }
+        ],
+        "description": "Validate that instructions file exists and has content"
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"worktree:create:init\" \"standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Log worktree creation to active session file"
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\""
+          }
+        ],
+        "description": "Remind about unmerged changes after worktree removal"
       }
     ],
     "SessionEnd": [
