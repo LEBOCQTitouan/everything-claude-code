@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Claude Code Hooks Configuration",
-  "description": "Configuration for Claude Code hooks. Event types are validated at runtime and must be one of: PreToolUse, PostToolUse, PreCompact, SessionStart, SessionEnd, Stop, Notification, SubagentStop",
+  "description": "Configuration for Claude Code hooks. Event types are validated at runtime and must be one of: PreToolUse, PostToolUse, PostToolUseFailure, PreCompact, PostCompact, SessionStart, SessionEnd, Stop, Notification, SubagentStart, SubagentStop, UserPromptSubmit, InstructionsLoaded, PermissionRequest, TeammateIdle, TaskCompleted, ConfigChange, WorktreeCreate, WorktreeRemove, Elicitation, ElicitationResult",
   "$defs": {
     "hookItem": {
       "type": "object",
@@ -13,16 +13,9 @@
         "type": {
           "type": "string",
           "enum": [
-            "PreToolUse",
-            "PostToolUse",
-            "PreCompact",
-            "SessionStart",
-            "SessionEnd",
-            "Stop",
-            "Notification",
-            "SubagentStop"
+            "command"
           ],
-          "description": "Hook event type that triggers this hook"
+          "description": "Hook execution type (currently only 'command' is supported)"
         },
         "command": {
           "oneOf": [
