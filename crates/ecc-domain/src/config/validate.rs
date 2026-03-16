@@ -5,16 +5,29 @@ use std::collections::HashMap;
 /// Valid model identifiers for agent frontmatter.
 pub const VALID_MODELS: &[&str] = &["haiku", "sonnet", "opus"];
 
-/// Valid hook event types.
+/// Valid hook event types (all 21 Claude Code hook events).
 pub const VALID_HOOK_EVENTS: &[&str] = &[
     "PreToolUse",
     "PostToolUse",
+    "PostToolUseFailure",
     "PreCompact",
+    "PostCompact",
     "SessionStart",
     "SessionEnd",
     "Stop",
     "Notification",
+    "SubagentStart",
     "SubagentStop",
+    "UserPromptSubmit",
+    "InstructionsLoaded",
+    "PermissionRequest",
+    "TeammateIdle",
+    "TaskCompleted",
+    "ConfigChange",
+    "WorktreeCreate",
+    "WorktreeRemove",
+    "Elicitation",
+    "ElicitationResult",
 ];
 
 /// Extract YAML frontmatter from markdown content into a key-value map.
@@ -213,6 +226,36 @@ mod tests {
         let content = "---\nmodel: \ntools: Read\n---\n";
         let fm = extract_frontmatter(content).unwrap();
         assert_eq!(fm.get("model").unwrap(), "");
+    }
+
+    // --- VALID_HOOK_EVENTS ---
+
+    #[test]
+    fn all_21_hook_events_accepted() {
+        let expected = [
+            "PreToolUse", "PostToolUse", "PostToolUseFailure",
+            "PreCompact", "PostCompact",
+            "SessionStart", "SessionEnd", "Stop", "Notification",
+            "SubagentStart", "SubagentStop",
+            "UserPromptSubmit", "InstructionsLoaded", "PermissionRequest",
+            "TeammateIdle", "TaskCompleted", "ConfigChange",
+            "WorktreeCreate", "WorktreeRemove",
+            "Elicitation", "ElicitationResult",
+        ];
+        assert_eq!(VALID_HOOK_EVENTS.len(), 21);
+        for event in &expected {
+            assert!(
+                VALID_HOOK_EVENTS.contains(event),
+                "Missing event: {event}"
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_hook_event_not_accepted() {
+        assert!(!VALID_HOOK_EVENTS.contains(&"BogusEvent"));
+        assert!(!VALID_HOOK_EVENTS.contains(&""));
+        assert!(!VALID_HOOK_EVENTS.contains(&"preToolUse"));
     }
 
     // --- check_hook_entry ---
