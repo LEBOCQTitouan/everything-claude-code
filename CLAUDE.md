@@ -36,7 +36,7 @@ bin/             Shell shims (ecc-hook, ecc-shell-hook.sh)
 docs/            Diagrams, guides, and reference documentation
 examples/        CLAUDE.md templates for real-world stacks
 agents/          Specialized subagents (architect, uncle-bob, planner, code-reviewer, ...)
-commands/        Slash commands (/plan, /build-fix, /verify, /e2e, /doc-suite, /audit, /uncle-bob-audit, /backlog)
+commands/        Slash commands (/plan, /build-fix, /verify, /e2e, /doc-suite, /audit, /optimize, /uncle-bob-audit, /backlog)
 skills/          Domain knowledge (tdd-workflow, security-review, backend-patterns, ...)
 rules/           Always-follow guidelines (common/ + cpp/ + csharp/ + golang/ + java/ + json/ + kotlin/ + perl/ + php/ + python/ + rust/ + shell/ + swift/ + typescript/ + yaml/)
 hooks/           Trigger-based automations (hooks.json)
@@ -60,7 +60,7 @@ ecc completion <shell>    Generate shell completions
 
 ## Slash Commands
 
-8 commands cover the entire coding workflow:
+9 commands cover the entire coding workflow:
 
 | Command | Purpose |
 |---------|---------|
@@ -71,6 +71,7 @@ ecc completion <shell>    Generate shell completions
 | `/doc-suite` | Plan-first documentation pipeline |
 | `/audit` | Codebase health audit |
 | `/backlog` | Capture, challenge, optimize, and manage implementation ideas |
+| `/optimize` | Audit and optimize CLAUDE.md files and workspace configuration |
 | `/uncle-bob-audit` | Uncle Bob craft health audit — Programmer's Oath, rework ratio, self-audit |
 
 ## Scripts
