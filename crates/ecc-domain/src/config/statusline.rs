@@ -30,17 +30,41 @@ pub enum StatusLineResult {
 /// - `statusLine.command` contains `statusline-command.sh` → update path if different, return `Updated`
 /// - `statusLine` exists but not our script → return `AlreadyCustom`
 pub fn ensure_statusline(
-    _settings: &serde_json::Value,
-    _script_path: &str,
+    settings: &serde_json::Value,
+    script_path: &str,
 ) -> (serde_json::Value, StatusLineResult) {
-    todo!()
+    let mut new_settings = settings.clone();
+
+    match settings.get("statusLine") {
+        None => {
+            // No statusLine key — install ours
+            new_settings["statusLine"] = serde_json::json!({
+                "command": script_path
+            });
+            (new_settings, StatusLineResult::Installed)
+        }
+        Some(status_line) => {
+            match status_line.get("command").and_then(|c| c.as_str()) {
+                Some(cmd) if cmd.contains(STATUSLINE_SCRIPT_FILENAME) => {
+                    // ECC-managed — update path if different
+                    new_settings["statusLine"]["command"] =
+                        serde_json::Value::String(script_path.to_string());
+                    (new_settings, StatusLineResult::Updated)
+                }
+                _ => {
+                    // Custom or no command field — leave untouched
+                    (new_settings, StatusLineResult::AlreadyCustom)
+                }
+            }
+        }
+    }
 }
 
 /// Replace the version placeholder in a script template.
 ///
 /// Returns a new string with all occurrences of `__ECC_VERSION__` replaced by `version`.
-pub fn prepare_script(_template: &str, _version: &str) -> String {
-    todo!()
+pub fn prepare_script(template: &str, version: &str) -> String {
+    template.replace(STATUSLINE_VERSION_PLACEHOLDER, version)
 }
 
 #[cfg(test)]
