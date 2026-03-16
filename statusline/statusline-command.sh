@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ECC Statusline — receives JSON from Claude Code via stdin.
-# Outputs: Model [########--------] 42% | branch | project | ecc vX.Y.Z
+# Outputs: Model [########--------] 42% | repo | branch | dir | ecc vX.Y.Z
 
 ECC_VERSION="__ECC_VERSION__"
 BAR_WIDTH=8
@@ -25,21 +25,28 @@ EMPTY=$(( BAR_WIDTH - FILLED ))
 BAR=$(printf '%0.s#' $(seq 1 "$FILLED" 2>/dev/null) ; printf '%0.s-' $(seq 1 "$EMPTY" 2>/dev/null))
 PCT_DISPLAY="${USED_INT}%"
 
+# --- Git repo ---
+REPO="n/a"
+REMOTE_URL=$(git remote get-url origin 2>/dev/null || true)
+if [ -n "$REMOTE_URL" ]; then
+  # Strip .git suffix, then extract last two path segments (org/repo)
+  CLEAN_URL="${REMOTE_URL%.git}"
+  REPO=$(echo "$CLEAN_URL" | sed 's|.*[:/]\([^/]*/[^/]*\)$|\1|')
+fi
+
 # --- Git branch ---
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "n/a")
 
-# --- Project name ---
-PROJECT=""
-if [ -f "Cargo.toml" ]; then
-  PROJECT=$(grep -m1 '^name' Cargo.toml | sed 's/^name[[:space:]]*=[[:space:]]*"\(.*\)"/\1/' 2>/dev/null || true)
-fi
-if [ -z "$PROJECT" ] && [ -f "package.json" ]; then
-  PROJECT=$(jq -r '.name // empty' package.json 2>/dev/null || true)
-fi
-if [ -z "$PROJECT" ]; then
-  PROJECT=$(basename "$PWD")
+# --- Current directory (last 2 path segments) ---
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
+if [ -n "$REPO_ROOT" ] && [ "$PWD" != "$REPO_ROOT" ]; then
+  REL_PATH="${PWD#"$REPO_ROOT"/}"
+  # Show last 2 segments of relative path
+  DIR=$(echo "$REL_PATH" | awk -F/ '{if(NF<=2) print $0; else print $(NF-1)"/"$NF}')
+else
+  DIR=$(basename "$PWD")
 fi
 
 # --- Output ---
-printf '\033[1m%s\033[0m [%s] %s | %s | %s | ecc %s' \
-  "$MODEL" "$BAR" "$PCT_DISPLAY" "$BRANCH" "$PROJECT" "$ECC_VERSION"
+printf '\033[1m%s\033[0m [%s] %s | %s | %s | %s | ecc %s' \
+  "$MODEL" "$BAR" "$PCT_DISPLAY" "$REPO" "$BRANCH" "$DIR" "$ECC_VERSION"
