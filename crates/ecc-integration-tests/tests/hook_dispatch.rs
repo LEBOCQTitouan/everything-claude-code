@@ -55,6 +55,152 @@ fn hook_disabled_via_env_var() {
         .stdout(predicate::str::contains("Bash"));
 }
 
+/// stop:notify dispatches and exits zero (fire-and-forget).
+#[test]
+fn stop_notify_dispatches_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "stop:notify", "minimal,standard,strict"])
+        .write_stdin("{}")
+        .assert()
+        .success();
+}
+
+/// stop:notify disabled via ECC_NOTIFY_ENABLED=0 still exits zero.
+#[test]
+fn stop_notify_disabled_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .env("ECC_NOTIFY_ENABLED", "0")
+        .args(["hook", "stop:notify", "minimal,standard,strict"])
+        .write_stdin("{}")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("{}"));
+}
+
+/// task:completed:notify dispatches and exits zero.
+#[test]
+fn task_completed_notify_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "task:completed:notify", "minimal,standard,strict"])
+        .write_stdin(r#"{"task_subject":"Build auth"}"#)
+        .assert()
+        .success();
+}
+
+/// post:failure:error-context dispatches and exits zero.
+#[test]
+fn post_failure_error_context_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "post:failure:error-context", "standard,strict"])
+        .write_stdin(r#"{"tool_name":"Bash","error":"Build failed"}"#)
+        .assert()
+        .success();
+}
+
+/// pre:prompt:context-inject dispatches and exits zero.
+#[test]
+fn pre_prompt_context_inject_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "pre:prompt:context-inject", "standard,strict"])
+        .write_stdin("{}")
+        .assert()
+        .success();
+}
+
+/// post:compact:state-save dispatches and exits zero.
+#[test]
+fn post_compact_state_save_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "post:compact:state-save", "standard,strict"])
+        .write_stdin(r#"{"compact_summary":"test summary"}"#)
+        .assert()
+        .success();
+}
+
+/// subagent:start:log dispatches and exits zero.
+#[test]
+fn subagent_start_log_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "subagent:start:log", "standard,strict"])
+        .write_stdin(r#"{"agent_type":"code-reviewer"}"#)
+        .assert()
+        .success();
+}
+
+/// subagent:stop:log dispatches and exits zero.
+#[test]
+fn subagent_stop_log_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "subagent:stop:log", "standard,strict"])
+        .write_stdin(r#"{"agent_type":"architect"}"#)
+        .assert()
+        .success();
+}
+
+/// stop:worktree-cleanup-reminder dispatches and exits zero.
+#[test]
+fn worktree_cleanup_reminder_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "stop:worktree-cleanup-reminder"])
+        .write_stdin(r#"{"worktree_path":"/tmp/wt-test"}"#)
+        .assert()
+        .success();
+}
+
+/// instructions:loaded:validate dispatches and exits zero.
+#[test]
+fn instructions_loaded_validate_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "instructions:loaded:validate", "standard,strict"])
+        .write_stdin(r#"{"instructions_path":"/tmp/nonexistent.md"}"#)
+        .assert()
+        .success();
+}
+
+/// config:change:log dispatches and exits zero.
+#[test]
+fn config_change_log_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "config:change:log", "minimal,standard,strict"])
+        .write_stdin(r#"{"config_key":"theme","config_value":"dark"}"#)
+        .assert()
+        .success();
+}
+
+/// worktree:create:init dispatches and exits zero.
+#[test]
+fn worktree_create_init_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "worktree:create:init", "standard,strict"])
+        .write_stdin(r#"{"worktree_path":"/tmp/wt-test"}"#)
+        .assert()
+        .success();
+}
+
+/// WorktreeRemove event dispatches stop:worktree-cleanup-reminder and exits zero.
+#[test]
+fn worktree_remove_dispatches_exits_zero() {
+    let env = EccTestEnv::new();
+    env.cmd()
+        .args(["hook", "stop:worktree-cleanup-reminder", "standard,strict"])
+        .write_stdin(r#"{"worktree_path":"/tmp/wt-removed"}"#)
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("unmerged"));
+}
+
 /// 3-arg legacy format actually dispatches (not just parses).
 /// check:hook:enabled outputs "yes" — verifying it actually ran the handler.
 #[test]
