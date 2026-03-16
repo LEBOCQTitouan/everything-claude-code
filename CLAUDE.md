@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-# Run all tests (999 tests)
+# Run all tests (1163 tests)
 cargo test
 
 # Run clippy
@@ -31,13 +31,14 @@ crates/          Rust crates (hexagonal architecture)
   ecc-infra/     Production adapters (OS filesystem, process executor, terminal)
   ecc-cli/       CLI binary entry point (`ecc` command)
   ecc-test-support/  Test doubles (InMemoryFileSystem, MockExecutor, MockEnvironment)
+  ecc-integration-tests/  Integration tests
 bin/             Shell shims (ecc-hook, ecc-shell-hook.sh)
 docs/            Diagrams, guides, and reference documentation
 examples/        CLAUDE.md templates for real-world stacks
 agents/          Specialized subagents (architect, uncle-bob, planner, code-reviewer, ...)
-commands/        Slash commands (/plan, /build-fix, /verify, /e2e, /doc-suite, /audit)
+commands/        Slash commands (/plan, /build-fix, /verify, /e2e, /doc-suite, /audit, /uncle-bob-audit, /backlog)
 skills/          Domain knowledge (tdd-workflow, security-review, backend-patterns, ...)
-rules/           Always-follow guidelines (common/ + typescript/ + python/ + golang/)
+rules/           Always-follow guidelines (common/ + cpp/ + csharp/ + golang/ + java/ + json/ + kotlin/ + perl/ + php/ + python/ + rust/ + shell/ + swift/ + typescript/ + yaml/)
 hooks/           Trigger-based automations (hooks.json)
 contexts/        Dynamic system prompt injection
 mcp-configs/     MCP server configurations
@@ -53,12 +54,13 @@ ecc init             Initialize ECC in current project
 ecc audit            Audit ECC configuration health
 ecc hook <id> [profiles]  Run a hook by ID
 ecc validate <target>     Validate content files (agents|commands|hooks|skills|rules|paths)
+ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ```
 
 ## Slash Commands
 
-7 commands cover the entire coding workflow:
+8 commands cover the entire coding workflow:
 
 | Command | Purpose |
 |---------|---------|
@@ -69,19 +71,20 @@ ecc completion <shell>    Generate shell completions
 | `/doc-suite` | Plan-first documentation pipeline |
 | `/audit` | Codebase health audit |
 | `/backlog` | Capture, challenge, optimize, and manage implementation ideas |
+| `/uncle-bob-audit` | Uncle Bob craft health audit — Programmer's Oath, rework ratio, self-audit |
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `cargo test` | Run all 999 Rust tests |
+| `cargo test` | Run all 1163 Rust tests |
 | `cargo clippy -- -D warnings` | Lint with zero warnings |
 | `cargo build --release` | Build release binary |
 | `npm run lint` | Lint all Markdown files with markdownlint |
 
 ## Development Notes
 
-- Source is Rust, organized as a Cargo workspace with 6 crates
+- Source is Rust, organized as a Cargo workspace with 7 crates
 - Hexagonal architecture: domain (pure logic) → ports (traits) → infra (adapters) → app (use cases) → CLI
 - All I/O is abstracted behind port traits, enabling full in-memory testing
 - Agent format: Markdown with YAML frontmatter (name, description, tools, model)
