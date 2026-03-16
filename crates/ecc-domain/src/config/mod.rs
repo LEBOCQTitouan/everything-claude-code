@@ -11,6 +11,7 @@ pub mod gitignore;
 pub mod hook_types;
 pub mod manifest;
 pub mod merge;
+pub mod statusline;
 pub mod validate;
 
 /// Known ECC package identifiers in npm paths.
