@@ -84,6 +84,7 @@ pub fn run_all_checks(
         check_agent_skills(fs, &agents_dir),
         check_command_descriptions(fs, &commands_dir),
         check_project_claude_md(fs, project_dir),
+        check_statusline(fs, claude_dir),
     ];
 
     let (score, grade) = compute_audit_score(&checks);

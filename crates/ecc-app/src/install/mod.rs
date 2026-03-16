@@ -93,9 +93,9 @@ pub struct InstallSummary {
 /// 4. Merge artifacts (agents, commands, skills, rules)
 /// 5. Merge hooks
 /// 6. Ensure deny rules
-/// 6b. Ensure statusline
-/// 7. Write/update manifest
-/// 8. Print summary
+/// 7. Ensure statusline
+/// 8. Write/update manifest
+/// 9. Print summary
 #[allow(clippy::too_many_arguments)]
 pub fn install_global(
     ctx: &InstallContext,

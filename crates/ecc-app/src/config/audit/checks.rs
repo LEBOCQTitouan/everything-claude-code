@@ -381,6 +381,58 @@ pub fn check_command_descriptions(
     }
 }
 
+/// Check that the ECC statusline script is installed and settings reference it.
+pub fn check_statusline(
+    fs: &dyn FileSystem,
+    claude_dir: &Path,
+) -> AuditCheckResult {
+    let mut findings = Vec::new();
+
+    let script_path = claude_dir.join(ecc_domain::config::statusline::STATUSLINE_SCRIPT_FILENAME);
+    if !fs.exists(&script_path) {
+        findings.push(AuditFinding {
+            id: "SL-001".into(),
+            severity: Severity::Low,
+            title: "Statusline script not installed".into(),
+            detail: format!("Expected at {}", script_path.display()),
+            fix: "Run `ecc install` to install the statusline script.".into(),
+        });
+    }
+
+    let settings_path = claude_dir.join("settings.json");
+    match read_json_safe(fs, &settings_path) {
+        Ok(Some(settings)) => {
+            let has_ecc_statusline = settings
+                .get("statusLine")
+                .and_then(|sl| sl.get("command"))
+                .and_then(|c| c.as_str())
+                .is_some_and(|cmd| {
+                    cmd.contains(ecc_domain::config::statusline::STATUSLINE_SCRIPT_FILENAME)
+                });
+
+            if !has_ecc_statusline && findings.is_empty() {
+                // Script exists but settings don't reference it
+                findings.push(AuditFinding {
+                    id: "SL-002".into(),
+                    severity: Severity::Low,
+                    title: "Statusline not configured in settings.json".into(),
+                    detail: "Script exists but settings.json doesn't reference it.".into(),
+                    fix: "Run `ecc install` to configure the statusline.".into(),
+                });
+            }
+        }
+        _ => {
+            // Settings missing/corrupt — already reported by check_deny_rules
+        }
+    }
+
+    AuditCheckResult {
+        name: "Statusline".into(),
+        passed: findings.is_empty(),
+        findings,
+    }
+}
+
 /// Check project CLAUDE.md line count.
 pub fn check_project_claude_md(
     fs: &dyn FileSystem,
@@ -672,6 +724,61 @@ mod tests {
 
         let result = check_command_descriptions(&fs, Path::new("/commands"));
         assert!(result.passed);
+    }
+
+    // --- check_statusline ---
+
+    #[test]
+    fn check_statusline_all_present() {
+        let settings = serde_json::json!({
+            "statusLine": {"command": "/home/user/.claude/statusline-command.sh"}
+        });
+        let fs = InMemoryFileSystem::new()
+            .with_file("/claude/statusline-command.sh", "#!/bin/bash\necho ok")
+            .with_file("/claude/settings.json", &settings.to_string());
+
+        let result = check_statusline(&fs, Path::new("/claude"));
+        assert!(result.passed);
+    }
+
+    #[test]
+    fn check_statusline_script_missing() {
+        let settings = serde_json::json!({
+            "statusLine": {"command": "/claude/statusline-command.sh"}
+        });
+        let fs = InMemoryFileSystem::new()
+            .with_file("/claude/settings.json", &settings.to_string());
+
+        let result = check_statusline(&fs, Path::new("/claude"));
+        assert!(!result.passed);
+        assert_eq!(result.findings[0].id, "SL-001");
+    }
+
+    #[test]
+    fn check_statusline_not_in_settings() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/claude/statusline-command.sh", "#!/bin/bash")
+            .with_file("/claude/settings.json", "{}");
+
+        let result = check_statusline(&fs, Path::new("/claude"));
+        assert!(!result.passed);
+        assert_eq!(result.findings[0].id, "SL-002");
+    }
+
+    #[test]
+    fn check_statusline_custom_command_no_finding() {
+        // User has custom statusline, script missing — only SL-001
+        let settings = serde_json::json!({
+            "statusLine": {"command": "my-custom.sh"}
+        });
+        let fs = InMemoryFileSystem::new()
+            .with_file("/claude/settings.json", &settings.to_string());
+
+        let result = check_statusline(&fs, Path::new("/claude"));
+        assert!(!result.passed);
+        // Only SL-001 (script missing), not SL-002
+        assert_eq!(result.findings.len(), 1);
+        assert_eq!(result.findings[0].id, "SL-001");
     }
 
     // --- check_project_claude_md ---

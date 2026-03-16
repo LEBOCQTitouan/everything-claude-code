@@ -105,6 +105,9 @@ mod tests {
         let settings = serde_json::json!({
             "permissions": {
                 "deny": ecc_domain::config::deny_rules::ECC_DENY_RULES
+            },
+            "statusLine": {
+                "command": "/claude/statusline-command.sh"
             }
         });
         let gitignore_entries: Vec<&str> = ecc_domain::config::gitignore::ECC_GITIGNORE_ENTRIES
@@ -118,6 +121,7 @@ mod tests {
                 &serde_json::to_string(&settings).unwrap(),
             )
             .with_file("/claude/CLAUDE.md", "# Global\n## Instructions\nContent here")
+            .with_file("/claude/statusline-command.sh", "#!/bin/bash\necho ok")
             .with_file(
                 "/project/.gitignore",
                 &gitignore_entries.join("\n"),

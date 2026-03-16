@@ -369,7 +369,7 @@ mod tests {
             Path::new("/ecc"),
         );
 
-        assert_eq!(report.checks.len(), 7);
+        assert_eq!(report.checks.len(), 8);
         assert!(report.score >= 90);
         assert_eq!(report.grade, "A");
     }
@@ -385,7 +385,7 @@ mod tests {
             Path::new("/ecc"),
         );
 
-        assert_eq!(report.checks.len(), 7);
+        assert_eq!(report.checks.len(), 8);
         let total_findings: usize =
             report.checks.iter().map(|c| c.findings.len()).sum();
         assert!(total_findings >= 2);
