@@ -1,0 +1,82 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/phase-gate.sh"
+          }
+        ],
+        "description": "Pipeline: block source writes during plan/solution phases"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/phase-advance.sh"
+          }
+        ],
+        "description": "Pipeline: advance phase on artifact completion"
+      },
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/tdd-enforcement.sh",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Pipeline: track TDD cycle (informational)"
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/stop-gate.sh"
+          }
+        ],
+        "description": "Pipeline: prevent stop before workflow completes"
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/doc-enforcement.sh"
+          }
+        ],
+        "description": "Pipeline: require docs updated"
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pass-condition-check.sh"
+          }
+        ],
+        "description": "Pipeline: verify pass conditions"
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/e2e-boundary-check.sh"
+          }
+        ],
+        "description": "Pipeline: verify E2E coverage"
+      }
+    ]
+  }
+}
