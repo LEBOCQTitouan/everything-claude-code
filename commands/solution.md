@@ -159,12 +159,34 @@ Must include ADRs for decisions marked "ADR Needed? Yes".
 <reverse dependency order of File Changes — if implementation fails, undo in this order>
 ```
 
-After writing, update `.claude/workflow/state.json`:
-- Set `phase` to `"solution"`
-- Set `artifacts.solution` to the current ISO 8601 timestamp
-- Append to `completed` array: `{ "phase": "solution", "file": "solution.md", "at": "<timestamp>" }`
+After writing, the `phase-advance.sh` hook will automatically update `.claude/workflow/state.json` (setting phase to `"implement"`). The `solution-coverage-check.sh` hook will then validate AC coverage and adversarial review pass — rolling back the state if validation fails.
 
-## Phase 9: Present and STOP
+## Phase 9: Adversarial Review
+
+Launch a Task with the `solution-adversary` agent:
+
+- Pass the full contents of `.claude/workflow/plan.md` AND `.claude/workflow/solution.md` as context
+- The agent attacks the solution on 8 dimensions: coverage, order, fragility, rollback, architecture, blast radius, missing PCs, doc plan
+- The agent writes `.claude/workflow/solution-adversary-report.md` with a verdict
+
+### Verdict Handling (max 3 rounds)
+
+Track the current round number (starting at 1):
+
+- **FAIL**: Present the adversary's findings to the user. Return to **Phase 1 (Implementation Design)** to redesign. Re-run Phases 2-8 with the updated design, then re-run the adversary (Phase 9). Increment round.
+- **CONDITIONAL**: The adversary has suggested specific PCs to add or doc plan fixes. Apply the fixes to solution.md. Re-run the adversary. Increment round.
+- **PASS**: Append the following line to the end of `.claude/workflow/solution.md`:
+  ```
+  Adversarial Review: PASS
+  ```
+  Proceed to Phase 10.
+
+After 3 FAIL rounds, ask the user:
+> "The solution has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon?"
+- If override: append `Adversarial Review: PASS` (user override) to solution.md and proceed
+- If abandon: reset state to `"plan"` phase and exit
+
+## Phase 10: Present and STOP
 
 Display a summary:
 - **Title**: from the spec
@@ -174,6 +196,7 @@ Display a summary:
 - **SOLID**: PASS or finding count
 - **Robert**: CLEAN or warning count
 - **Security**: CLEAR or finding count
+- **Adversarial review**: PASS, round number
 
 Then STOP. Say:
 
@@ -199,3 +222,4 @@ This command invokes:
 - `uncle-bob` — SOLID and Clean Architecture validation of proposed design
 - `robert` — Programmer's Oath evaluation of the design process
 - `security-reviewer` — Quick security scan of the design surface
+- `solution-adversary` — Adversarial solution review on 8 dimensions before phase transition

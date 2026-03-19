@@ -224,8 +224,10 @@ Verify stop hook requirements are met:
 
 1. **stop-gate**: `state.json` phase is `"done"` ✅
 2. **doc-enforcement**: `## Docs Updated` section has entries (not empty) ✅
-3. **pass-condition-check**: `## Pass Condition Results` has all ✅, no ❌ ✅
+3. **pass-condition-check**: `## Pass Condition Results` has all ✅, no ❌, E2E tests have `#[ignore]` ✅
 4. **e2e-boundary-check**: if solution had `## E2E Test Plan` entries, `## E2E Tests` section exists ✅
+5. **scope-check**: review any warnings about files changed outside the solution's File Changes table. If unexpected files were flagged, verify they are legitimate (test helpers, lock files, etc.) before proceeding.
+6. **doc-level-check**: review any warnings about doc size limits (CLAUDE.md < 200 lines, README < 300 lines, ARCHITECTURE.md code blocks < 20 lines). Address if practical.
 
 Display a summary:
 - **Title**: from the spec

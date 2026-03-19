@@ -55,6 +55,18 @@ Invoke the **code-reviewer** agent on `git diff HEAD`. Auto-detect language-spec
 
 Invoke the **arch-reviewer** agent on the full project structure.
 
+### 6. Drift Check (conditional)
+
+If `.claude/workflow/state.json` exists and workflow artifacts are present (plan.md, solution.md, implement-done.md):
+- Invoke the **drift-checker** agent
+- Agent compares implementation against spec — finds unimplemented ACs and scope creep
+- Agent writes `.claude/workflow/drift-report.md`
+- Report drift level: NONE, LOW, MEDIUM, or HIGH
+
+If no workflow artifacts exist, skip this step silently.
+
+**If `quick` → stop at step 3 (skip reviews, architecture, and drift check).**
+
 ## Output
 
 ```
@@ -65,6 +77,7 @@ Lint:         [OK/X issues]
 Tests:        [X/Y passed]
 Code Review:  [PASS/X issues]
 Architecture: [PASS/X issues]
+Drift:        [NONE/LOW/MEDIUM/HIGH or SKIPPED]
 
 Ready for PR: [YES/NO]
 ```
@@ -75,3 +88,4 @@ Ready for PR: [YES/NO]
 - `arch-reviewer` — architecture audit
 - `go-reviewer` — Go-specific review (auto-detected)
 - `python-reviewer` — Python-specific review (auto-detected)
+- `drift-checker` — spec vs implementation drift detection (conditional on workflow artifacts)
