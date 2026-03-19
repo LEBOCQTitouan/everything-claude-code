@@ -10,6 +10,16 @@
           }
         ],
         "description": "Pipeline: block source writes during plan/solution phases"
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/spec-schema-check.sh"
+          }
+        ],
+        "description": "Pipeline: validate plan.md schema before solution-phase writes"
       }
     ],
     "PostToolUse": [
@@ -22,6 +32,16 @@
           }
         ],
         "description": "Pipeline: advance phase on artifact completion"
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/solution-coverage-check.sh"
+          }
+        ],
+        "description": "Pipeline: validate AC coverage and adversarial pass in solution.md"
       },
       {
         "matcher": "Write|Edit|Bash",
@@ -65,7 +85,7 @@
             "command": "bash .claude/hooks/pass-condition-check.sh"
           }
         ],
-        "description": "Pipeline: verify pass conditions"
+        "description": "Pipeline: verify pass conditions and E2E #[ignore]"
       },
       {
         "matcher": "",
@@ -76,6 +96,26 @@
           }
         ],
         "description": "Pipeline: verify E2E coverage"
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scope-check.sh"
+          }
+        ],
+        "description": "Pipeline: warn about unexpected file changes (scope creep)"
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/doc-level-check.sh"
+          }
+        ],
+        "description": "Pipeline: warn about doc content level violations"
       }
     ]
   }
