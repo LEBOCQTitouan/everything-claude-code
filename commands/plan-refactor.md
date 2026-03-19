@@ -153,7 +153,32 @@ Write `.claude/workflow/plan.md` using the exact schema below. Every section is 
 <Should be empty after grill-me. If any remain, list them here.>
 ```
 
-## Phase 6: Present and STOP
+## Phase 6: Adversarial Review
+
+Launch a Task with the `spec-adversary` agent:
+
+- Pass the full contents of `.claude/workflow/plan.md` as context
+- The agent attacks the spec on 7 dimensions: ambiguity, edge cases, scope, dependencies, testability, decisions, rollback
+- The agent writes `.claude/workflow/spec-adversary-report.md` with a verdict
+
+### Verdict Handling (max 3 rounds)
+
+Track the current round number (starting at 1):
+
+- **FAIL**: Present the adversary's findings to the user. Return to **Phase 4 (Grill-Me)** to address the fundamental issues. After the user confirms updates, rewrite plan.md (Phase 5), then re-run the adversary (Phase 6). Increment round.
+- **CONDITIONAL**: The adversary has suggested specific ACs to add. Add the suggested ACs to plan.md. Re-run the adversary. Increment round.
+- **PASS**: Append the following line to the end of `.claude/workflow/plan.md`:
+  ```
+  Adversarial Review: PASS
+  ```
+  Proceed to Phase 7.
+
+After 3 FAIL rounds, ask the user:
+> "The spec has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon this spec?"
+- If override: append `Adversarial Review: PASS` (user override) to plan.md and proceed
+- If abandon: delete workflow artifacts and exit
+
+## Phase 7: Present and STOP
 
 Display a summary of the spec:
 - Title
@@ -161,6 +186,7 @@ Display a summary of the spec:
 - Number of user stories
 - Affected modules (brief)
 - Key architectural decisions
+- Adversarial review result (PASS, round number)
 - Any open questions remaining
 
 Then STOP. Say:
@@ -176,3 +202,4 @@ This command invokes:
 - `arch-reviewer` — Architecture quality audit, layering violations, DDD/hexagonal compliance
 - `component-auditor` — Component principles evaluation, instability/abstractness metrics
 - `architect` — (implicit via arch-reviewer orchestration)
+- `spec-adversary` — Adversarial spec review on 7 dimensions before phase transition
