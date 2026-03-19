@@ -9,40 +9,27 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-# Run all tests (1180 tests)
-cargo test
-
-# Run clippy
-cargo clippy -- -D warnings
-
-# Build release binary
-cargo build --release
+cargo test              # Run all tests (1180 tests)
+cargo clippy -- -D warnings  # Lint with zero warnings
+cargo build --release   # Build release binary
+npm run lint            # Lint all Markdown files
 ```
 
 ## Architecture
 
 ```
-Cargo.toml       Rust workspace root
-Cargo.lock       Dependency lock file
 crates/          Rust crates (hexagonal architecture)
   ecc-domain/    Pure business logic — zero I/O
   ecc-ports/     Trait definitions (FileSystem, ShellExecutor, Environment, TerminalIO)
-  ecc-app/       Application use cases — orchestrates domain + ports
-  ecc-infra/     Production adapters (OS filesystem, process executor, terminal)
-  ecc-cli/       CLI binary entry point (`ecc` command)
-  ecc-test-support/  Test doubles (InMemoryFileSystem, MockExecutor, MockEnvironment)
-  ecc-integration-tests/  Integration tests
-bin/             Shell shims (ecc-hook, ecc-shell-hook.sh)
-docs/            Diagrams, guides, and reference documentation
-examples/        CLAUDE.md templates for real-world stacks
-agents/          Specialized subagents (architect, uncle-bob, planner, code-reviewer, ...)
-commands/        Slash commands (/plan, /build-fix, /verify, /e2e, /doc-suite, /audit, /optimize, /uncle-bob-audit, /backlog)
-skills/          Domain knowledge (tdd-workflow, security-review, backend-patterns, ...)
-rules/           Always-follow guidelines (common/ + cpp/ + csharp/ + golang/ + java/ + json/ + kotlin/ + perl/ + php/ + python/ + rust/ + shell/ + swift/ + typescript/ + yaml/)
-hooks/           Trigger-based automations (hooks.json)
-contexts/        Dynamic system prompt injection
-mcp-configs/     MCP server configurations
-schemas/         JSON schemas (hooks, package-manager)
+  ecc-app/       Use cases — orchestrates domain + ports
+  ecc-infra/     Adapters (OS filesystem, process executor, terminal)
+  ecc-cli/       CLI entry point (`ecc` command)
+  ecc-test-support/  Test doubles | ecc-integration-tests/  Integration tests
+bin/             Shell shims | docs/  Guides & reference | examples/  CLAUDE.md templates
+agents/          Subagents (architect, uncle-bob, planner, code-reviewer, ...)
+commands/        Slash commands (audit-*, plan-*, solution, implement, verify, review, ...)
+skills/          Domain knowledge | rules/  Always-follow guidelines
+hooks/           Automations | contexts/  Prompt injection | mcp-configs/  MCP servers
 ```
 
 ## CLI Commands
@@ -60,36 +47,58 @@ ecc completion <shell>    Generate shell completions
 
 ## Slash Commands
 
-9 commands cover the entire coding workflow:
+### Audit Commands
+
+| Command | Domain |
+|---------|--------|
+| `/audit-full` | All domains — parallel run with cross-domain correlation |
+| `/audit-archi` | Boundary integrity, dependency direction, DDD compliance |
+| `/audit-code` | SOLID, clean code, naming, complexity |
+| `/audit-convention` | Naming patterns, style consistency |
+| `/audit-doc` | Coverage, staleness, drift |
+| `/audit-errors` | Swallowed errors, taxonomy, boundary translation |
+| `/audit-evolution` | Git hotspots, churn, bus factor, complexity trends |
+| `/audit-observability` | Logging, metrics, tracing, health endpoints |
+| `/audit-security` | OWASP top 10, secrets, attack surface |
+| `/audit-test` | Coverage, classification, fixture ratios, E2E matrix |
+
+### Spec-Driven Pipeline
+
+`/plan-dev`, `/plan-fix`, `/plan-refactor` → `/solution` → `/implement`
+
+- Each `/plan-*` runs a grill-me interview, then writes `.claude/workflow/plan.md`
+- `/solution` designs the technical approach from the spec
+- `/implement` executes TDD loops with mandatory doc updates
+- State machine in `.claude/workflow/` enforces phase ordering via hooks
+
+### Side Commands
 
 | Command | Purpose |
 |---------|---------|
-| `/plan` | Plan, TDD (with commits per iteration), E2E if needed. Modes: `stories` (default), `refactor`, `security` |
+| `/verify` | Build + tests + lint + code review + architecture review |
+| `/review` | Robert professional conscience check |
+| `/backlog` | Capture and manage implementation ideas |
 | `/build-fix` | Fix build/type errors reactively |
-| `/verify` | Build + tests + lint + code review + architecture review + coverage + dead code scan |
-| `/e2e` | Generate and run E2E tests with Playwright |
-| `/doc-suite` | Plan-first documentation pipeline |
-| `/audit` | Codebase health audit |
-| `/backlog` | Capture, challenge, optimize, and manage implementation ideas |
-| `/optimize` | Audit and optimize CLAUDE.md files and workspace configuration |
-| `/uncle-bob-audit` | Uncle Bob craft health audit — Programmer's Oath, rework ratio, self-audit |
-
-## Scripts
-
-| Command | Description |
-|---------|-------------|
-| `cargo test` | Run all 1180 Rust tests |
-| `cargo clippy -- -D warnings` | Lint with zero warnings |
-| `cargo build --release` | Build release binary |
-| `npm run lint` | Lint all Markdown files with markdownlint |
+| `/ecc-test-mode` | Isolated worktree for testing ECC config changes |
 
 ## Command Workflows
 
-Slash command workflows defined in `commands/` are mandatory. Follow every phase and step exactly as specified — do not skip, reorder, or modify phases without asking the user first.
+Slash command workflows defined in `commands/` are mandatory. Follow every phase and step exactly as specified — do not skip, reorder, or modify phases. The spec-driven pipeline is enforced by `.claude/workflow/state.json` and hook-based gates.
+
+## Doc Hierarchy
+
+`CLAUDE.md` (onboarding) → `docs/getting-started.md` (human setup) → `docs/ARCHITECTURE.md` (system design) → `docs/adr/` (decisions) → `docs/domain/bounded-contexts.md` (domain model) → `docs/runbooks/` (ops) → `docs/MODULE-SUMMARIES.md` (per-crate reference). Information lives at the lowest layer that serves its audience; CLAUDE.md stays terse.
+
+## Dual-Mode Development
+
+- **Spec-driven** (`/plan-*` → `/solution` → `/implement`): for features, fixes, and refactors requiring design review
+- **Direct** (edit + `/verify`): for small, well-understood changes
+- Use `/audit-*` independently at any time for health checks
+- Use `/review` as a final craft conscience gate before shipping
 
 ## Gotchas
 
-- `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by boundary-crossing hook)
+- `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by hook)
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
 - `hooks.json` lives in `hooks/`, not the project root
 - Skill directory name must match the `name` field in its frontmatter
@@ -98,9 +107,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 ## Development Notes
 
 - Source is Rust, organized as a Cargo workspace with 7 crates
-- Hexagonal architecture: domain (pure logic) → ports (traits) → infra (adapters) → app (use cases) → CLI
+- Hexagonal architecture: domain → ports → infra → app → CLI
 - All I/O is abstracted behind port traits, enabling full in-memory testing
-- Agent format: Markdown with YAML frontmatter (name, description, tools, model)
-- Skill format: Markdown with clear sections for when to use, how it works, examples
-- Hook format: JSON with matcher conditions and command/notification hooks
+- Agent/skill/hook format: Markdown with YAML frontmatter (see `agents/`, `skills/`, `hooks/`)
 - File naming: lowercase with hyphens (e.g., `python-reviewer.md`, `tdd-workflow.md`)
