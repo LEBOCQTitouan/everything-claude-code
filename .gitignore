@@ -58,4 +58,7 @@ marketing/
 docs/CODEMAPS/
 # Autonomous loop plans (ephemeral)
 .claude/plans/
+# Workflow state (ephemeral, per-session)
+.claude/workflow/
+!.claude/workflow/README.md
 # End ECC generated files
