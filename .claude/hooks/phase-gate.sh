@@ -13,6 +13,22 @@ PHASE=$(jq -r '.phase // "done"' "$STATE_FILE" 2>/dev/null) || exit 0
 # implement and done phases — no gating
 [ "$PHASE" = "done" ] || [ "$PHASE" = "implement" ] && exit 0
 
+# Stale workflow warning (> 86400 seconds = 24 hours)
+STARTED_AT=$(jq -r '.started_at // empty' "$STATE_FILE" 2>/dev/null) || true
+if [ -n "$STARTED_AT" ]; then
+  # Parse ISO 8601 timestamp to epoch
+  STARTED_EPOCH=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null || date -d "$STARTED_AT" +%s 2>/dev/null || echo "")
+  if [ -n "$STARTED_EPOCH" ]; then
+    NOW_EPOCH=$(date +%s)
+    AGE=$((NOW_EPOCH - STARTED_EPOCH))
+    if [ "$AGE" -gt 86400 ]; then
+      HOURS=$((AGE / 3600))
+      echo "WARNING: Workflow started ${HOURS} hours ago. Consider whether this workflow is still relevant." >&2
+      echo "To reset: rm $STATE_FILE" >&2
+    fi
+  fi
+fi
+
 # Read tool input from stdin (Claude hook protocol)
 INPUT=$(cat)
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || exit 0
