@@ -1,0 +1,178 @@
+---
+description: Plan a refactoring — current state analysis, smell catalog, grill-me interview, and spec generation. Produces .claude/workflow/plan.md.
+allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUserQuestion]
+---
+
+# Plan Refactor Command
+
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
+!`bash .claude/hooks/workflow-init.sh refactor "$ARGUMENTS"`
+
+## Phase 0: Project Detection
+
+Detect the project's test, lint, and build commands:
+
+Test command: !`command -v cargo > /dev/null 2>&1 && echo "cargo test" || (test -f package.json && echo "npm test" || (test -f go.mod && echo "go test ./..." || (test -f pyproject.toml && echo "pytest" || echo "echo 'no test runner detected'")))`
+
+Lint command: !`command -v cargo > /dev/null 2>&1 && echo "cargo clippy -- -D warnings" || (test -f package.json && echo "npm run lint" || (test -f go.mod && echo "golangci-lint run" || (test -f pyproject.toml && echo "ruff check ." || echo "echo 'no linter detected'")))`
+
+Build command: !`command -v cargo > /dev/null 2>&1 && echo "cargo build" || (test -f package.json && echo "npm run build" || (test -f go.mod && echo "go build ./..." || echo "echo 'no build command detected'"))`
+
+Store these commands mentally for use in spec constraints.
+
+## Phase 1: Current State Analysis
+
+Launch **three Tasks in parallel**:
+
+### Task 1: Evolution Analysis
+Launch with `evolution-analyst` agent:
+- Analyze git history for the affected area
+- Identify change frequency hotspots, co-change coupling, and bus factor
+- Flag complexity trends and churn indicators
+
+### Task 2: Architecture Review
+Launch with `arch-reviewer` agent:
+- Audit current structure for layering violations and dependency direction
+- Identify coupling, cohesion, and circular dependency issues
+- Check DDD/hexagonal compliance
+
+### Task 3: Component Audit
+Launch with `component-auditor` agent:
+- Evaluate package/module design against the 6 component principles (REP, CCP, CRP, ADP, SDP, SAP)
+- Compute instability, abstractness, and main sequence distance
+- Flag principle violations
+
+Collect all three outputs — you will use them in the smell catalog.
+
+## Phase 2: Existing Audit Reports
+
+Read `docs/audits/` for any existing audit reports relevant to the refactoring area:
+
+1. Glob for `docs/audits/*.md`
+2. Scan report titles and summaries for overlap with the refactoring domain
+3. Extract relevant findings (any severity) that support or contradict the refactoring
+4. Identify findings that the refactoring should resolve
+5. If no audit reports exist or none are relevant, note "No prior audit findings applicable"
+
+## Phase 3: Smell Catalog
+
+Compile a unified catalog of detected smells from all Phase 1 agent findings and Phase 2 audit reports:
+
+| # | Smell | Source | Severity | Evidence |
+|---|-------|--------|----------|----------|
+| 1 | ... | evolution-analyst / arch-reviewer / component-auditor / audit | CRITICAL/HIGH/MEDIUM/LOW | ... |
+
+Group by severity. This catalog drives the grill-me interview.
+
+## Phase 4: Grill-Me Interview
+
+**STOP all research. START interviewing the user.**
+
+You have gathered evolution analysis, architecture review, component audit, existing audit reports, and a smell catalog. Now challenge the user's thinking with refactoring-specific questions. For each question, provide your recommended answer based on the analysis.
+
+### Mandatory Questions
+
+1. **Smell triage** — "Here are [N] smells detected. Which should we address now vs defer?" (Recommend based on severity and coupling to the refactoring goal)
+2. **Target architecture** — "What should the target state look like? Current violations: [list]" (Recommend based on arch-reviewer output)
+3. **Step independence** — "Can each refactoring step be shipped independently, or do some require atomic grouping?" (Recommend based on dependency analysis)
+4. **Downstream dependencies** — "These [N] modules depend on the code being refactored. How do we ensure they stay green?" (Recommend based on component-auditor output)
+5. **Rename vs behavioral change** — "Which changes are pure renames/moves vs behavioral modifications?" (Recommend based on evolution-analyst output)
+6. **Performance budget** — "Will any of these changes affect hot paths or latency-sensitive code?" (Recommend based on evolution-analyst hotspot data)
+7. **ADR decisions** — "Which architectural decisions warrant an ADR?" (Recommend based on arch-reviewer output)
+8. **Test safety net** — "Current test coverage for affected area: [N]%. Is this sufficient to refactor safely?" (Recommend based on coverage data)
+
+### Rules
+
+- Explore the codebase yourself instead of asking the user when the answer is findable in code
+- Provide your recommended answer for each question
+- The user can accept recommendations with "yes", override with their own answer, or say "spec it" to accept all remaining recommendations
+- Do NOT proceed until the user says **"spec it"** (or equivalent confirmation)
+
+## Phase 5: Write the Spec
+
+Write `.claude/workflow/plan.md` using the exact schema below. Every section is mandatory.
+
+```markdown
+# Spec: <title>
+
+## Problem Statement
+
+<One paragraph describing the structural problem, its symptoms, and why refactoring is needed now.>
+
+## Decisions Made
+
+| # | Decision | Rationale | ADR Needed? |
+|---|----------|-----------|-------------|
+| 1 | ... | ... | Yes/No |
+
+## User Stories
+
+### US-001: <title>
+
+**As a** <role>, **I want** <refactoring goal>, **so that** <quality/maintainability benefit>.
+
+#### Acceptance Criteria
+
+- AC-001.1: Given <current state>, when <refactoring applied>, then <target state>
+- AC-001.2: ...
+
+#### Dependencies
+
+- Depends on: <none or US-NNN>
+
+### US-002: <title>
+...
+
+## Affected Modules
+
+<From arch-reviewer and component-auditor output. List modules, their layer (domain/port/adapter/app/CLI), and the nature of the change.>
+
+## Constraints
+
+<From audits, smell catalog, and interview. E.g., "all refactoring steps must be behavior-preserving", "test suite must stay green after each step".>
+
+## Non-Requirements
+
+<Explicitly out of scope — deferred smells from grill-me interview.>
+
+## E2E Boundaries Affected
+
+| Port/Adapter | Change Type | E2E Consequence |
+|--------------|-------------|-----------------|
+| ... | ... | ... |
+
+## Doc Impact Assessment
+
+| Change Type | Level | Target Doc | Action |
+|-------------|-------|------------|--------|
+| ... | ... | ... | ... |
+
+## Open Questions
+
+<Should be empty after grill-me. If any remain, list them here.>
+```
+
+## Phase 6: Present and STOP
+
+Display a summary of the spec:
+- Title
+- Number of smells addressed vs deferred
+- Number of user stories
+- Affected modules (brief)
+- Key architectural decisions
+- Any open questions remaining
+
+Then STOP. Say:
+
+> **Run `/solution` to continue.**
+
+Do NOT proceed to solution design or implementation.
+
+## Related Agents
+
+This command invokes:
+- `evolution-analyst` — Git history analysis, change frequency, co-change coupling, complexity trends
+- `arch-reviewer` — Architecture quality audit, layering violations, DDD/hexagonal compliance
+- `component-auditor` — Component principles evaluation, instability/abstractness metrics
+- `architect` — (implicit via arch-reviewer orchestration)

@@ -1,0 +1,172 @@
+---
+description: Plan a new feature — requirements analysis, architecture review, grill-me interview, and spec generation. Produces .claude/workflow/plan.md.
+allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUserQuestion]
+---
+
+# Plan Dev Command
+
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
+!`bash .claude/hooks/workflow-init.sh dev "$ARGUMENTS"`
+
+## Phase 0: Project Detection
+
+Detect the project's test, lint, and build commands:
+
+Test command: !`command -v cargo > /dev/null 2>&1 && echo "cargo test" || (test -f package.json && echo "npm test" || (test -f go.mod && echo "go test ./..." || (test -f pyproject.toml && echo "pytest" || echo "echo 'no test runner detected'")))`
+
+Lint command: !`command -v cargo > /dev/null 2>&1 && echo "cargo clippy -- -D warnings" || (test -f package.json && echo "npm run lint" || (test -f go.mod && echo "golangci-lint run" || (test -f pyproject.toml && echo "ruff check ." || echo "echo 'no linter detected'")))`
+
+Build command: !`command -v cargo > /dev/null 2>&1 && echo "cargo build" || (test -f package.json && echo "npm run build" || (test -f go.mod && echo "go build ./..." || echo "echo 'no build command detected'"))`
+
+Store these commands mentally for use in spec constraints.
+
+## Phase 1: Requirements Analysis
+
+Launch a Task with the `requirements-analyst` agent:
+
+- Provide the user's raw input as context
+- Agent decomposes input into formal User Stories (US-NNN) with acceptance criteria (AC-NNN.N)
+- Agent challenges assumptions and validates against the codebase
+- Agent produces a dependency DAG for parallel execution
+- Collect the output — you will incorporate it into the spec
+
+## Phase 2: Architecture Review
+
+Launch a Task with the `architect` agent:
+
+- Provide the user stories from Phase 1 as context
+- Agent identifies affected modules, hexagonal boundaries, port/adapter impacts
+- Agent flags any DDD violations or architectural concerns
+- Agent assesses E2E boundary consequences
+- Collect the output — you will incorporate it into the spec
+
+## Phase 3: Prior Audit Check
+
+Read `docs/audits/` for any existing audit reports relevant to the feature area:
+
+1. Glob for `docs/audits/*.md`
+2. Scan report titles and summaries for overlap with the feature domain
+3. Extract relevant findings (CRITICAL/HIGH severity) that should constrain the implementation
+4. If no audit reports exist or none are relevant, note "No prior audit findings applicable"
+
+## Phase 4: Backlog Cross-Reference
+
+Check if `docs/backlog/BACKLOG.md` exists:
+
+1. If it exists, read it and cross-reference against the feature request
+2. Use keyword matching on titles, tags, and content of open entries
+3. If matches found, present them:
+   - **High confidence**: "These backlog items are directly related: BL-NNN. Consider bundling."
+   - **Medium confidence**: "These items may be related: BL-NNN. Review before proceeding."
+4. If user wants to include items, read their full optimized prompts and incorporate into planning context
+5. If `docs/backlog/BACKLOG.md` does not exist, skip silently
+
+## Phase 5: Grill-Me Interview
+
+**STOP all research. START interviewing the user.**
+
+You have gathered requirements, architecture analysis, audit findings, and backlog context. Now challenge the user's thinking with domain-specific questions. For each question, provide your recommended answer based on codebase research — the user can accept or override.
+
+### Mandatory Questions
+
+1. **Scope boundaries** — "What is explicitly OUT of scope?" (Recommend based on requirements-analyst output)
+2. **Edge cases** — "What happens when [specific edge case from codebase analysis]?" (Recommend based on existing error handling patterns)
+3. **Test strategy** — "Which critical paths need 100% coverage vs 80%?" (Recommend based on domain criticality)
+4. **Performance constraints** — "Are there latency/throughput requirements?" (Recommend based on existing benchmarks or SLAs if found)
+5. **Security implications** — "Does this touch auth, user data, or external APIs?" (Recommend based on architect findings)
+6. **Breaking changes** — "Will this change any existing public API or data contract?" (Recommend based on affected modules)
+7. **Domain concepts** — "Are there domain terms that need defining in the glossary?" (Recommend based on new concepts found)
+8. **ADR decisions** — "Which decisions are significant enough to warrant an ADR?" (Recommend based on architect output)
+
+### Rules
+
+- Explore the codebase yourself instead of asking the user when the answer is findable in code
+- Provide your recommended answer for each question
+- The user can accept recommendations with "yes", override with their own answer, or say "spec it" to accept all remaining recommendations
+- Do NOT proceed until the user says **"spec it"** (or equivalent confirmation)
+
+## Phase 6: Write the Spec
+
+Write `.claude/workflow/plan.md` using the exact schema below. Every section is mandatory.
+
+```markdown
+# Spec: <title>
+
+## Problem Statement
+
+<One paragraph describing the problem and why it needs solving.>
+
+## Decisions Made
+
+| # | Decision | Rationale | ADR Needed? |
+|---|----------|-----------|-------------|
+| 1 | ... | ... | Yes/No |
+
+## User Stories
+
+### US-001: <title>
+
+**As a** <role>, **I want** <capability>, **so that** <benefit>.
+
+#### Acceptance Criteria
+
+- AC-001.1: Given <context>, when <action>, then <outcome>
+- AC-001.2: ...
+
+#### Dependencies
+
+- Depends on: <none or US-NNN>
+
+### US-002: <title>
+...
+
+## Affected Modules
+
+<From architect agent output. List modules, their layer (domain/port/adapter/app/CLI), and the nature of the change.>
+
+## Constraints
+
+<From audits, backlog, and interview. List hard constraints that the solution must respect.>
+
+## Non-Requirements
+
+<Explicitly out of scope — from grill-me interview.>
+
+## E2E Boundaries Affected
+
+| Port/Adapter | Change Type | E2E Consequence |
+|--------------|-------------|-----------------|
+| ... | ... | ... |
+
+## Doc Impact Assessment
+
+| Change Type | Level | Target Doc | Action |
+|-------------|-------|------------|--------|
+| ... | ... | ... | ... |
+
+## Open Questions
+
+<Should be empty after grill-me. If any remain, list them here.>
+```
+
+## Phase 7: Present and STOP
+
+Display a summary of the spec:
+- Title
+- Number of user stories
+- Key decisions
+- Affected modules (brief)
+- Any open questions remaining
+
+Then STOP. Say:
+
+> **Run `/solution` to continue.**
+
+Do NOT proceed to solution design or implementation.
+
+## Related Agents
+
+This command invokes:
+- `requirements-analyst` — User Story decomposition, product challenge, codebase validation, dependency DAG
+- `architect` — Hexagonal architecture analysis, module impact, E2E boundary assessment
