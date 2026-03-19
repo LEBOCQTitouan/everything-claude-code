@@ -123,7 +123,7 @@ Write single files:
 - `docs/ARCHITECTURE.md` — project profile + module overview + ASCII diagram
 - `docs/API-SURFACE.md` — all public exports with doc status
 - `docs/DEPENDENCY-GRAPH.md` — text dependency graph with doc annotations
-- `docs/GLOSSARY.md` — draft glossary (finalized by doc-generator)
+- `docs/domain/glossary.md` — draft glossary (finalized by doc-generator)
 
 ### Large Codebase (50+ source files)
 

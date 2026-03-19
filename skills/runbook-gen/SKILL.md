@@ -136,7 +136,7 @@ Use config-extraction data to document per-environment details:
 
 ### 6. Output Structure
 
-Place runbooks in `docs/runbooks/` (or `docs/RUNBOOK.md` for small projects):
+Place runbooks in `docs/runbooks/` (or `docs/runbooks/operations.md` for small projects):
 
 ```
 docs/runbooks/

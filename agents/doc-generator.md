@@ -79,7 +79,7 @@ Read the draft glossary from `doc-analyzer` output and:
 4. Separate domain terms from infrastructure terms
 
 **Output location:**
-- Small: `docs/GLOSSARY.md`
+- Small: `docs/domain/glossary.md`
 - Large: `docs/glossary/INDEX.md` + `docs/glossary/domain-terms.md` + `docs/glossary/infrastructure-terms.md`
 
 ### Step 4: Generate Changelog (via changelog-gen skill)

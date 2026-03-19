@@ -17,6 +17,6 @@ For current module documentation, see the individual crate READMEs and source:
 | `ecc-cli` | CLI binary entry point (`ecc` command) |
 | `ecc-test-support` | Test doubles (InMemoryFileSystem, MockExecutor, MockEnvironment) |
 
-See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glossary](GLOSSARY.md)
+See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glossary](domain/glossary.md)
 
 <!-- END AUTO-GENERATED -->

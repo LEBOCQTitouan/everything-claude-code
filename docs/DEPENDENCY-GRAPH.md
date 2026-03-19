@@ -169,6 +169,6 @@ No module exceeds fan-in of 11. **No circular dependencies detected.**
   └────────────────────────────────────────────────────────┘
 ```
 
-See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glossary](GLOSSARY.md)
+See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glossary](domain/glossary.md)
 
 <!-- END AUTO-GENERATED -->

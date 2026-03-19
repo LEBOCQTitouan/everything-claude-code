@@ -27,7 +27,7 @@ No HIGH severity issues.
 
 | # | File | Issue |
 |---|------|-------|
-| M1 | [docs/GLOSSARY.md](GLOSSARY.md) | **Stale file references.** Glossary terms reference TypeScript files (`src/lib/*.ts`, `src/hooks/*.ts`) that no longer exist. Terms are conceptually correct but file paths need updating to Rust equivalents. |
+| M1 | [docs/domain/glossary.md](domain/glossary.md) | **Stale file references.** Glossary terms reference TypeScript files (`src/lib/*.ts`, `src/hooks/*.ts`) that no longer exist. Terms are conceptually correct but file paths need updating to Rust equivalents. |
 | M2 | [docs/DOC-COVERAGE.md](DOC-COVERAGE.md) | **ecc-infra under-documented.** 4 public items in the infra adapter crate lack `///` doc comments. |
 
 ### LOW Severity
@@ -79,7 +79,7 @@ Grade mapping: A (9-10), A- (8.5-8.9), B+ (8-8.4), B (7-7.9), C (5-6), D (3-4), 
 
 ### Priority 1 — Glossary Refresh
 
-Update GLOSSARY.md to reference Rust source files instead of TypeScript. Terms (Agent, Hook, Manifest, etc.) remain valid but file paths are stale.
+Update `docs/domain/glossary.md` to reference Rust source files instead of TypeScript. Terms (Agent, Hook, Manifest, etc.) remain valid but file paths are stale.
 
 ### Priority 2 — Diagram Refresh
 
@@ -89,6 +89,6 @@ Regenerate module-dependency-graph.md and build-pipeline.md for the Rust crate a
 
 Rewrite API-SURFACE.md and DEPENDENCY-GRAPH.md for Rust `pub` items and Cargo dependencies.
 
-See also: [Coverage](DOC-COVERAGE.md) | [Architecture](ARCHITECTURE.md) | [Module Summaries](MODULE-SUMMARIES.md)
+See also: [Coverage](DOC-COVERAGE.md) | [Architecture](ARCHITECTURE.md) | [Module Summaries](MODULE-SUMMARIES.md) | [Glossary](domain/glossary.md)
 
 <!-- END AUTO-GENERATED -->

@@ -82,7 +82,7 @@ Sync documentation from source-of-truth files:
 
 Also generates or updates:
 - `docs/CONTRIBUTING.md` — setup, scripts, testing, code style, PR checklist
-- `docs/RUNBOOK.md` — deployment, health checks, common issues, rollback, alerting
+- `docs/runbooks/operations.md` — deployment, health checks, common issues, rollback, alerting
 
 Rules:
 - **Single source of truth**: Always generate from code, never manually edit generated sections
@@ -100,7 +100,7 @@ Scan codebase structure, identify API surface, detect concepts, map dependencies
 - Flag modules with naming score < 0.8 as "naming expressiveness concern"
 - Include in Phase 2 output alongside API surface data
 
-Output files: `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md`, `docs/DEPENDENCY-GRAPH.md`, `docs/GLOSSARY.md` (draft)
+Output files: `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md`, `docs/DEPENDENCY-GRAPH.md`, `docs/domain/glossary.md` (draft)
 
 ### Phase 3: Generate
 
@@ -243,13 +243,13 @@ Single markdown files in `docs/`:
 | `ARCHITECTURE.md` | Project profile, module overview, system diagram |
 | `API-SURFACE.md` | All public exports with doc status |
 | `DEPENDENCY-GRAPH.md` | Module dependency graph with doc annotations |
-| `GLOSSARY.md` | Domain and infrastructure term definitions |
+| `domain/glossary.md` | Domain and infrastructure term definitions |
 | `MODULE-SUMMARIES.md` | Per-module purpose, exports, dependencies |
 | `DOC-QUALITY.md` | Quality scores, contradictions, issues |
 | `DOC-COVERAGE.md` | Coverage %, trends, staleness report |
 | `CHANGELOG.md` | Generated from git conventional commits |
 | `CONTRIBUTING.md` | Setup, scripts, testing, code style, PR checklist |
-| `RUNBOOK.md` | Deployment, health checks, common issues, rollback |
+| `runbooks/operations.md` | Deployment, health checks, common issues, rollback |
 | `diagrams/INDEX.md` | Catalog of all generated Mermaid diagrams |
 | `CODEMAPS/` | Token-lean architecture maps |
 

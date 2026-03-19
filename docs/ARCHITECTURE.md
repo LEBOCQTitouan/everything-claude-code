@@ -74,6 +74,6 @@ The following diagrams would add value to this codebase:
 
 Existing diagrams are preserved in `docs/diagrams/` and `docs/CODEMAPS/`.
 
-See also: [API Surface](API-SURFACE.md) | [Dependencies](DEPENDENCY-GRAPH.md) | [Glossary](GLOSSARY.md) | [CODEMAPS/](CODEMAPS/INDEX.md)
+See also: [API Surface](API-SURFACE.md) | [Dependencies](DEPENDENCY-GRAPH.md) | [Glossary](domain/glossary.md) | [CODEMAPS/](CODEMAPS/INDEX.md) | [ADRs](adr/)
 
 <!-- END AUTO-GENERATED -->

@@ -118,7 +118,7 @@ Drift score: 73/100 (higher = less drift)
 - [ ] CLAUDE.md:80 — Missing 2 new npm scripts from table
 
 ### LOW
-- [ ] docs/GLOSSARY.md:12 — "merge strategy" definition slightly outdated
+- [ ] docs/domain/glossary.md:12 — "merge strategy" definition slightly outdated
 - [ ] README.md:55 — Badge URL uses old repo name
 ```
 

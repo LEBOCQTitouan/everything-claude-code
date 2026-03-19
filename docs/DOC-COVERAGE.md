@@ -84,6 +84,6 @@ Previous baseline: `docs/DOC-COVERAGE.md` dated 2026-03-14 (TypeScript era).
 - **Out of scope:** `pub(crate)` items, test modules, `main()` entry point
 - **Documentation definition:** A symbol is "documented" if it has a `///` doc comment immediately preceding its declaration
 
-See also: [Architecture](ARCHITECTURE.md) | [Module Summaries](MODULE-SUMMARIES.md) | [Glossary](GLOSSARY.md)
+See also: [Architecture](ARCHITECTURE.md) | [Module Summaries](MODULE-SUMMARIES.md) | [Glossary](domain/glossary.md)
 
 <!-- END AUTO-GENERATED -->

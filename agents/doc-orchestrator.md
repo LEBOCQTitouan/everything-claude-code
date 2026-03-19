@@ -285,7 +285,7 @@ docs/
   ARCHITECTURE.md
   API-SURFACE.md
   DEPENDENCY-GRAPH.md
-  GLOSSARY.md
+  domain/glossary.md
   MODULE-SUMMARIES.md
   DOC-QUALITY.md
   DOC-COVERAGE.md

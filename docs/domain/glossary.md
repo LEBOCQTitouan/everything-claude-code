@@ -160,6 +160,6 @@ A single conversation exchange in a [NanoClaw](#nanoclaw) session, consisting of
 - **Related:** [NanoClaw](#nanoclaw), [Session](#session)
 - **Files:** [`claw.ts`](../src/claw.ts) (`Turn` interface, `parseTurns`, `appendTurn`)
 
-See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Module Summaries](MODULE-SUMMARIES.md) | [Dependencies](DEPENDENCY-GRAPH.md)
+See also: [Architecture](../ARCHITECTURE.md) | [API Surface](../API-SURFACE.md) | [Module Summaries](../MODULE-SUMMARIES.md) | [Dependencies](../DEPENDENCY-GRAPH.md)
 
 <!-- END AUTO-GENERATED -->
