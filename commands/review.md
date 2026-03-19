@@ -1,5 +1,5 @@
 ---
-description: Uncle Bob craft health audit — evaluate work against the Programmer's Oath, calculate rework ratio, and self-audit ECC configuration quality.
+description: Robert professional conscience check
 ---
 
 # Uncle Bob Audit
