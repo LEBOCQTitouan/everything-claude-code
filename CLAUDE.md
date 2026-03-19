@@ -26,7 +26,7 @@ crates/          Rust crates (hexagonal architecture)
   ecc-cli/       CLI entry point (`ecc` command)
   ecc-test-support/  Test doubles | ecc-integration-tests/  Integration tests
 bin/             Shell shims | docs/  Guides & reference | examples/  CLAUDE.md templates
-agents/          Subagents (architect, uncle-bob, planner, code-reviewer, ...)
+agents/          Subagents (architect, uncle-bob, planner, code-reviewer, spec-adversary, solution-adversary, drift-checker, ...)
 commands/        Slash commands (audit-*, plan-*, solution, implement, verify, review, ...)
 skills/          Domain knowledge | rules/  Always-follow guidelines
 hooks/           Automations | contexts/  Prompt injection | mcp-configs/  MCP servers
@@ -66,16 +66,16 @@ ecc completion <shell>    Generate shell completions
 
 `/plan-dev`, `/plan-fix`, `/plan-refactor` → `/solution` → `/implement`
 
-- Each `/plan-*` runs a grill-me interview, then writes `.claude/workflow/plan.md`
-- `/solution` designs the technical approach from the spec
+- Each `/plan-*` runs a grill-me interview, adversarial review (`spec-adversary`), then writes `.claude/workflow/plan.md`
+- `/solution` designs the technical approach, runs adversarial review (`solution-adversary`), then writes `.claude/workflow/solution.md`
 - `/implement` executes TDD loops with mandatory doc updates
-- State machine in `.claude/workflow/` enforces phase ordering via hooks
+- State machine in `.claude/workflow/` enforces phase ordering via hooks (12 hooks: 7 blocking, 3 warning, 2 tracking)
 
 ### Side Commands
 
 | Command | Purpose |
 |---------|---------|
-| `/verify` | Build + tests + lint + code review + architecture review |
+| `/verify` | Build + tests + lint + code review + architecture review + drift check |
 | `/review` | Robert professional conscience check |
 | `/backlog` | Capture and manage implementation ideas |
 | `/build-fix` | Fix build/type errors reactively |
