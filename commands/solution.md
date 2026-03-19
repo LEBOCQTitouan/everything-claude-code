@@ -1,0 +1,201 @@
+---
+description: "Design the technical solution from the spec — Phase 2 of the pipeline"
+allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite]
+---
+
+# Solution Command
+
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+
+## Phase 0: State Validation
+
+1. Read `.claude/workflow/state.json`
+2. Verify `phase` is `"plan"` or `"solution"` (re-entry allowed). If any other phase → error:
+   > "Current phase is `<phase>`. `/solution` requires phase `plan` or `solution`. Run the appropriate `/plan-*` command first."
+3. Read `.claude/workflow/plan.md`
+4. Verify it contains `## User Stories` with at least one `### US-` heading
+5. Verify it contains `AC-` patterns (acceptance criteria) inside user stories
+6. If plan.md is missing or malformed → refuse:
+   > "Spec is malformed or missing. Run a `/plan-*` command to create a proper spec."
+7. Extract `concern` and `feature` from `state.json` for the solution header
+
+## Phase 1: Implementation Design
+
+Launch a Task with the `planner` agent:
+
+- Pass the full contents of `.claude/workflow/plan.md` as context
+- Instruct the agent to:
+  1. Design file changes in dependency order (what to create, modify, or delete)
+  2. Map each file change to its spec reference (US-NNN, AC-NNN.N)
+  3. For each change, provide a rationale explaining why the change is needed
+  4. Define pass conditions (PC-NNN) — each with:
+     - Type: unit, integration, e2e, lint, or build
+     - Description of what is verified
+     - Which AC(s) it verifies
+     - A literal bash command runnable verbatim
+     - Expected result (PASS, exit 0, or specific output)
+  5. Order PCs in TDD dependency order (what to implement first)
+  6. Final PCs must include lint and build checks
+- Collect the output: File Changes table + Pass Conditions table + TDD order
+
+## Phase 2: SOLID Validation
+
+Launch a Task with the `uncle-bob` agent:
+
+- Pass the proposed file changes from Phase 1 as context
+- Instruct the agent to evaluate the design against:
+  - SOLID principles (SRP, OCP, LSP, ISP, DIP)
+  - Clean Architecture dependency rules
+  - Component principles (REP, CCP, CRP, ADP, SDP, SAP)
+- Collect the output: PASS or findings with file references and severity
+
+## Phase 3: Professional Conscience
+
+Launch a Task with the `robert` agent:
+
+- Pass `.claude/workflow/plan.md` contents AND the proposed design from Phase 1
+- Instruct the agent to evaluate the design against the Programmer's Oath
+- Focus on: no harmful code, no mess, proof (test coverage planned), small releases
+- Collect the output: CLEAN or warnings with oath references
+
+## Phase 4: Security Quick-Check
+
+Launch a Task with the `security-reviewer` agent:
+
+- Pass the proposed file changes from Phase 1 as context
+- This is a quick design-level scan, NOT a full audit (that happens during `/verify`)
+- Focus on: input validation boundaries, auth concerns, secret handling, injection surfaces
+- Collect the output: CLEAR or findings with severity
+
+## Phase 5: E2E Boundary Detection
+
+1. Read the spec's `## E2E Boundaries Affected` table from `.claude/workflow/plan.md`
+2. Scan Phase 1 file changes for any port or adapter touches (files in `crates/ecc-ports/`, `crates/ecc-infra/`, or adapter-layer paths)
+3. Expand each boundary into concrete E2E test entries:
+
+| # | Boundary | Adapter | Port | Test Description | Default State | Run When |
+|---|----------|---------|------|------------------|---------------|----------|
+
+- **Default State**: `ignored` (E2E tests are ignored by default, un-ignored only when relevant)
+- **Run When**: condition that activates the test (e.g., "FileSystem adapter modified", "CLI output format changed")
+
+4. Produce E2E Activation Rules — which specific E2E tests to un-ignore for THIS implementation based on the file changes
+
+## Phase 6: Doc Update Plan
+
+1. Read the spec's `## Doc Impact Assessment` table from `.claude/workflow/plan.md`
+2. Expand each entry into a concrete doc action:
+
+| # | Doc File | Level | Action | Content Summary | Spec Ref |
+|---|----------|-------|--------|-----------------|----------|
+
+3. MUST include a `CHANGELOG.md` entry (even if minimal)
+4. MUST include an ADR entry for any decision marked `ADR Needed? Yes` in the spec's `## Decisions Made` table
+5. Reference the spec's US/AC for each doc action
+
+## Phase 7: AC Coverage Verification
+
+This is the critical gate — every acceptance criterion must be testable.
+
+1. Collect ALL `AC-NNN.N` identifiers from `.claude/workflow/plan.md`
+2. Collect ALL `PC-NNN` pass conditions from the Phase 1 design
+3. For each AC, verify it appears in at least one PC's "Verifies AC" column
+4. List any uncovered ACs with an explanation
+5. If uncovered ACs exist, add PCs to cover them before proceeding
+6. The result SHOULD be zero uncovered ACs
+
+## Phase 8: Write solution.md
+
+Write `.claude/workflow/solution.md` using the exact schema below. Every section is mandatory.
+
+```markdown
+# Solution: <title from spec>
+
+## Spec Reference
+Concern: <from state.json>, Feature: <from state.json>
+
+## File Changes (dependency order)
+| # | File | Action (create/modify/delete) | Rationale | Spec Ref (US/AC) |
+|---|------|-------------------------------|-----------|------------------|
+| 1 | ... | ... | ... | US-001, AC-001.1 |
+
+## Pass Conditions
+| ID | Type (unit/integration/e2e/lint/build) | Description | Verifies AC | Command | Expected |
+|----|----------------------------------------|-------------|-------------|---------|----------|
+| PC-001 | unit | ... | AC-001.1 | `cargo test ...` | PASS |
+
+### Coverage Check
+Every AC-NNN.N from the spec MUST appear in at least one PC's "Verifies AC" column.
+<list of ACs and their covering PCs, or "All ACs covered.">
+<list any uncovered ACs with explanation — should be zero>
+
+### E2E Test Plan
+| # | Boundary | Adapter | Port | Test Description | Default State | Run When |
+|---|----------|---------|------|------------------|---------------|----------|
+
+### E2E Activation Rules
+<which e2e tests to run un-ignored during THIS implementation>
+
+## Test Strategy
+TDD order: which PCs to implement first (dependency order).
+<ordered list of PC-NNN with rationale for ordering>
+
+## Doc Update Plan
+| # | Doc File | Level | Action | Content Summary | Spec Ref |
+|---|----------|-------|--------|-----------------|----------|
+Must include CHANGELOG.md.
+Must include ADRs for decisions marked "ADR Needed? Yes".
+
+## SOLID Assessment
+<from uncle-bob — PASS or findings with file references>
+
+## Robert's Oath Check
+<from robert — CLEAN or warnings>
+
+## Security Notes
+<from security-reviewer — CLEAR or findings>
+
+## Rollback Plan
+<reverse dependency order of File Changes — if implementation fails, undo in this order>
+```
+
+After writing, update `.claude/workflow/state.json`:
+- Set `phase` to `"solution"`
+- Set `artifacts.solution` to the current ISO 8601 timestamp
+- Append to `completed` array: `{ "phase": "solution", "file": "solution.md", "at": "<timestamp>" }`
+
+## Phase 9: Present and STOP
+
+Display a summary:
+- **Title**: from the spec
+- **File changes**: count of files to create/modify/delete
+- **Pass conditions**: count of PCs
+- **Uncovered ACs**: count (should be zero)
+- **SOLID**: PASS or finding count
+- **Robert**: CLEAN or warning count
+- **Security**: CLEAR or finding count
+
+Then STOP. Say:
+
+> **Run `/implement` to begin.**
+
+Do NOT proceed to implementation. Do NOT write any code.
+
+## Pass Condition Rules
+
+These rules govern all PCs written in the solution:
+
+1. **Format**: `PC-NNN` — three digits, sequential starting at 001
+2. **Command**: every PC has a literal `Command` column — a bash command runnable verbatim (no placeholders, no pseudo-commands)
+3. **Expected**: every PC has an `Expected` column — `PASS`, `exit 0`, or specific expected output
+4. **Coverage**: every AC from the spec is covered by >= 1 PC (enforced by Phase 7)
+5. **Final PCs**: the last PCs must include lint check (`cargo clippy -- -D warnings` or equivalent) and build check (`cargo build` or equivalent)
+6. **Deterministic**: PCs must be verifiable by running the command and checking the expected output — no subjective criteria
+
+## Related Agents
+
+This command invokes:
+- `planner` — Implementation design, file changes, pass conditions, TDD order
+- `uncle-bob` — SOLID and Clean Architecture validation of proposed design
+- `robert` — Programmer's Oath evaluation of the design process
+- `security-reviewer` — Quick security scan of the design surface
