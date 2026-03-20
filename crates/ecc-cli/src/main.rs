@@ -35,6 +35,8 @@ enum Command {
     Validate(commands::validate::ValidateArgs),
     /// NanoClaw interactive REPL
     Claw(commands::claw::ClawArgs),
+    /// Toggle ECC config on/off
+    Dev(commands::dev::DevArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -56,5 +58,6 @@ fn main() -> anyhow::Result<()> {
         Command::Hook(args) => commands::hook::run(args),
         Command::Validate(args) => commands::validate::run(args),
         Command::Claw(args) => commands::claw::run(args),
+        Command::Dev(args) => commands::dev::run(args),
     }
 }

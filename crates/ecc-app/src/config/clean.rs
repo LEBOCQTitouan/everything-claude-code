@@ -46,7 +46,7 @@ fn remove_directory(
 }
 
 /// Returns true if a hook entry's `hooks[].command` starts with "ecc-hook " or "ecc-shell-hook ".
-fn is_current_ecc_hook(entry: &serde_json::Value) -> bool {
+pub(crate) fn is_current_ecc_hook(entry: &serde_json::Value) -> bool {
     let Some(hooks) = entry.get("hooks").and_then(|h| h.as_array()) else {
         return false;
     };
