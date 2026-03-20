@@ -7,6 +7,8 @@ allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite]
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 
+> **Do NOT enter Plan Mode. Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only. Plan Mode is reserved for `/implement`.
+
 ## Phase 0: State Validation
 
 1. Read `.claude/workflow/state.json`
@@ -173,11 +175,11 @@ Track the current round number (starting at 1):
 
 - **FAIL**: Present the adversary's findings to the user. Return to **Phase 1 (Implementation Design)** to redesign. Re-run Phases 2-8 with the updated design, then re-run the adversary (Phase 9). Increment round.
 - **CONDITIONAL**: The adversary has suggested specific PCs to add or doc plan fixes. Update the solution in conversation. Re-run the adversary. Increment round.
-- **PASS**: Note "Adversarial Review: PASS" in conversation output. Update `.claude/workflow/state.json`: set `phase` to `"implement"`, set `artifacts.solution` to current ISO 8601 timestamp. Proceed to Phase 10.
+- **PASS**: Note "Adversarial Review: PASS" in conversation output. Run: `!bash .claude/hooks/phase-transition.sh implement solution`. Proceed to Phase 10.
 
 After 3 FAIL rounds, ask the user:
 > "The solution has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon?"
-- If override: note "Adversarial Review: PASS (user override)" in conversation, update state.json as above, and proceed
+- If override: note "Adversarial Review: PASS (user override)" in conversation, run `!bash .claude/hooks/phase-transition.sh implement solution`, and proceed
 - If abandon: reset state to `"plan"` phase and exit
 
 ## Phase 10: Present and STOP

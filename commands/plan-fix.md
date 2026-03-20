@@ -7,6 +7,8 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUs
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 
+> **Do NOT enter Plan Mode. Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only. Plan Mode is reserved for `/implement`.
+
 !`bash .claude/hooks/workflow-init.sh fix "$ARGUMENTS"`
 
 ## Phase 0: Project Detection
@@ -155,11 +157,11 @@ Track the current round number (starting at 1):
 
 - **FAIL**: Present the adversary's findings to the user. Return to **Phase 4 (Grill-Me)** to address the fundamental issues. After the user confirms updates, re-output the spec (Phase 5), then re-run the adversary (Phase 6). Increment round.
 - **CONDITIONAL**: The adversary has suggested specific ACs to add. Update the spec in conversation with the suggested ACs. Re-run the adversary. Increment round.
-- **PASS**: Note "Adversarial Review: PASS" in conversation output. Update `.claude/workflow/state.json`: set `phase` to `"solution"`, set `artifacts.plan` to current ISO 8601 timestamp. Proceed to Phase 7.
+- **PASS**: Note "Adversarial Review: PASS" in conversation output. Run: `!bash .claude/hooks/phase-transition.sh solution plan`. Proceed to Phase 7.
 
 After 3 FAIL rounds, ask the user:
 > "The spec has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon this spec?"
-- If override: note "Adversarial Review: PASS (user override)" in conversation, update state.json as above, and proceed
+- If override: note "Adversarial Review: PASS (user override)" in conversation, run `!bash .claude/hooks/phase-transition.sh solution plan`, and proceed
 - If abandon: delete workflow artifacts and exit
 
 ## Phase 7: Present and STOP

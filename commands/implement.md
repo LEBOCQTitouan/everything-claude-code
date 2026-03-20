@@ -7,6 +7,8 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 
+> **Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only.
+
 ## Phase 0: State Validation
 
 1. Read `.claude/workflow/state.json`
@@ -16,7 +18,7 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 4. If the spec or solution is not in conversation context → ask the user:
    > "Spec and/or solution not found in conversation context. Please re-run `/plan-*` and `/solution` or paste the outputs here."
 5. Extract `concern` and `feature` from `state.json` for the implementation header
-6. Update `state.json`: set `phase` to `"implement"`
+6. Run: `!bash .claude/hooks/phase-transition.sh implement`
 
 ## Phase 1: Enter Plan Mode
 
@@ -237,10 +239,7 @@ All pass conditions: N/N ✅
 <type>(<scope>): <description>
 ```
 
-After writing, update `.claude/workflow/state.json`:
-- Set `phase` to `"done"`
-- Set `artifacts.implement` to the current ISO 8601 timestamp
-- Append to `completed` array: `{ "phase": "implement", "file": "implement-done.md", "at": "<timestamp>" }`
+After writing, run: `!bash .claude/hooks/phase-transition.sh done implement`
 
 ## Phase 8: Final Verification and STOP
 

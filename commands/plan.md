@@ -7,6 +7,8 @@ allowed-tools: [Read, Grep, Glob, Bash, Skill, AskUserQuestion]
 
 > **Thin router**: This command classifies intent and delegates to `/plan-dev`, `/plan-fix`, or `/plan-refactor`. All workflow logic lives in the delegated command.
 
+> **Do NOT enter Plan Mode. Do NOT directly edit `.claude/workflow/state.json`.** This is a thin router.
+
 ## Phase 0 — Validate Input
 
 If `$ARGUMENTS` is empty or blank, use AskUserQuestion to ask:
