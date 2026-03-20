@@ -57,7 +57,7 @@ Invoke the **arch-reviewer** agent on the full project structure.
 
 ### 6. Drift Check (conditional)
 
-If `.claude/workflow/state.json` exists and workflow artifacts are present (plan.md, solution.md, implement-done.md):
+If `.claude/workflow/state.json` exists and workflow artifacts are present (state.json and implement-done.md):
 - Invoke the **drift-checker** agent
 - Agent compares implementation against spec — finds unimplemented ACs and scope creep
 - Agent writes `.claude/workflow/drift-report.md`

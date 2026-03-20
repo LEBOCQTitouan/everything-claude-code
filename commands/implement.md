@@ -75,6 +75,7 @@ For each PC in the order specified by Test Strategy, execute the RED → GREEN �
    - If it passes → the feature already exists or the test is wrong. Investigate before proceeding.
    - If the command errors for a reason unrelated to the assertion (e.g., compile error), fix the compilation issue and re-run.
 4. Record: `PC-NNN RED: <test name> fails as expected`
+5. Commit: `test: add <PC description> (PC-NNN)`
 
 ### GREEN
 
@@ -84,6 +85,7 @@ For each PC in the order specified by Test Strategy, execute the RED → GREEN �
 4. Run ALL previously passing PCs' Commands. ALL MUST PASS (no regressions).
    - If a previous PC regresses → fix the regression before proceeding.
 5. Record: `PC-NNN GREEN: passes, all N previous PCs pass`
+6. Commit: `feat: implement <PC description> (PC-NNN)`
 
 ### REFACTOR
 
@@ -91,13 +93,7 @@ For each PC in the order specified by Test Strategy, execute the RED → GREEN �
 2. Run ALL PCs completed so far. ALL MUST PASS.
 3. If no refactoring needed, skip with: `PC-NNN REFACTOR: no refactor needed`
 4. Otherwise record: `PC-NNN REFACTOR: cleaned, all pass`
-
-### Commit After Each PC
-
-After each PC completes its cycle (RED → GREEN → REFACTOR):
-1. Commit the test: `test: add <PC description> (PC-NNN)`
-2. Commit the implementation: `feat: implement <PC description> (PC-NNN)`
-3. If refactored: `refactor: clean <PC description> (PC-NNN)`
+5. If refactored, commit: `refactor: clean <PC description> (PC-NNN)`
 
 ### Loop Invariant
 
@@ -138,6 +134,8 @@ If CRITICAL or HIGH findings:
 1. Fix each finding
 2. Re-run all PCs to verify no regressions
 3. Commit each fix: `fix: address review finding — <description>`
+
+Max 2 fix rounds. If CRITICAL/HIGH findings persist after 2 rounds, report to user and proceed.
 
 Record: code review summary (PASS or findings addressed)
 
@@ -181,12 +179,15 @@ For each decision marked `ADR Needed? Yes` in the spec's Decisions table:
    ```
 2. Commit: `docs(adr): add ADR NNN — <decision title>`
 
-### Doc Commits
+### Other Doc Updates
 
-Commit each doc update separately:
-- `docs: update <target> for <feature>`
-- `docs(changelog): add <feature> entry`
-- `docs(adr): add ADR NNN — <title>` (if applicable)
+For each remaining row in the Doc Update Plan:
+1. Apply the doc update
+2. Commit: `docs: update <target> for <feature>`
+
+For CHANGELOG.md (always required):
+1. Add the feature entry
+2. Commit: `docs(changelog): add <feature> entry`
 
 ## Phase 7: Write implement-done.md
 
@@ -240,6 +241,8 @@ All pass conditions: N/N ✅
 ```
 
 After writing, run: `!bash .claude/hooks/phase-transition.sh done implement`
+
+Commit: `chore: write implement-done.md`
 
 ## Phase 8: Final Verification and STOP
 
