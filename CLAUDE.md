@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all tests (1180 tests)
+cargo test              # Run all tests (1190 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo build --release   # Build release binary
 npm run lint            # Lint all Markdown files
@@ -41,6 +41,7 @@ ecc init             Initialize ECC in current project
 ecc audit            Audit ECC configuration health
 ecc hook <id> [profiles]  Run a hook by ID
 ecc validate <target>     Validate content files (agents|commands|hooks|skills|rules|paths)
+ecc dev on|off|status     Toggle ECC config on/off
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ```
@@ -64,12 +65,13 @@ ecc completion <shell>    Generate shell completions
 
 ### Spec-Driven Pipeline
 
-`/plan-dev`, `/plan-fix`, `/plan-refactor` → `/solution` → `/implement`
+`/plan` → `/plan-dev`, `/plan-fix`, `/plan-refactor` → `/solution` → `/implement`
 
-- Each `/plan-*` runs a grill-me interview, adversarial review (`spec-adversary`), then writes `.claude/workflow/plan.md`
-- `/solution` designs the technical approach, runs adversarial review (`solution-adversary`), then writes `.claude/workflow/solution.md`
-- `/implement` executes TDD loops with mandatory doc updates
-- State machine in `.claude/workflow/` enforces phase ordering via hooks (12 hooks: 7 blocking, 3 warning, 2 tracking)
+- `/plan` auto-classifies intent (dev/fix/refactor) from your description and delegates to the matching `/plan-*` command
+- Each `/plan-*` runs a grill-me interview, adversarial review (`spec-adversary`), then outputs the spec in conversation (no file write)
+- `/solution` designs the technical approach, runs adversarial review (`solution-adversary`), then outputs the solution in conversation (no file write)
+- `/implement` enters Plan Mode with full spec+solution recap, then executes TDD loops with mandatory doc updates
+- State machine in `.claude/workflow/` enforces phase ordering via hooks (9 hooks: 1 blocking, 6 warning, 2 tracking)
 
 ### Side Commands
 
@@ -91,7 +93,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 
 ## Dual-Mode Development
 
-- **Spec-driven** (`/plan-*` → `/solution` → `/implement`): for features, fixes, and refactors requiring design review
+- **Spec-driven** (`/plan` or `/plan-*` → `/solution` → `/implement`): for features, fixes, and refactors requiring design review
 - **Direct** (edit + `/verify`): for small, well-understood changes
 - Use `/audit-*` independently at any time for health checks
 - Use `/review` as a final craft conscience gate before shipping
@@ -103,6 +105,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - `hooks.json` lives in `hooks/`, not the project root
 - Skill directory name must match the `name` field in its frontmatter
 - Test count in CLAUDE.md (currently 1180) must be updated after adding or removing tests
+- ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
 
 ## Development Notes
 
