@@ -1,52 +1,42 @@
 ---
-description: "Set up an isolated worktree for testing ECC config changes"
+description: "Test the ECC hook pipeline in the current repo or an isolated worktree"
 ---
 
 # ECC Test Mode
 
-Create an isolated git worktree for safely testing ECC configuration changes before applying them to your real setup.
+Test the full ECC hook pipeline. By default, hooks are bypassed in the ECC repo via `.envrc` (`ECC_WORKFLOW_BYPASS=1`). This command provides two ways to re-enable them for testing.
 
-## What This Command Does
+## Quick Test (same repo)
 
-1. Creates a git worktree at `../ecc-test` on branch `ecc-config-dev`
-2. Prints usage instructions for the three test modes
+Launch Claude Code with hooks active in the current repo:
 
-## Setup
+```bash
+ECC_WORKFLOW_BYPASS=0 claude
+```
+
+All 12 hooks will fire normally. Exit Claude Code to return to bypassed mode.
+
+## Isolated Test (worktree)
+
+Create an isolated worktree where hooks fire by default (no `.envrc`):
 
 ```bash
 git worktree add ../ecc-test -b ecc-config-dev
 ```
 
-If the branch already exists, attach to it:
+If the branch already exists:
 
 ```bash
 git worktree add ../ecc-test ecc-config-dev
 ```
 
-## Modes
-
-| Mode | Env Var | Behavior |
-|------|---------|----------|
-| `use` | `ECC_MODE=use` | Normal — uses installed ECC config from `~/.claude/` |
-| `test` | `ECC_MODE=test` | Dev — uses config from the worktree at `../ecc-test` |
-| `test-safe` | `ECC_MODE=test-safe` | Rollback-safe — uses worktree config but reverts on any hook/agent error |
-
-## Usage
-
-After setup, switch modes by setting the environment variable:
+Then test in isolation:
 
 ```bash
-# Normal mode (default)
-export ECC_MODE=use
-
-# Test your config changes
-export ECC_MODE=test
-
-# Test with automatic rollback on errors
-export ECC_MODE=test-safe
+cd ../ecc-test && claude
 ```
 
-Edit files in `../ecc-test`, then run Claude Code with `ECC_MODE=test` to validate changes before merging back.
+The worktree has no `.envrc`, so `ECC_WORKFLOW_BYPASS` is unset and hooks fire normally.
 
 ## Cleanup
 

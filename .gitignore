@@ -36,6 +36,9 @@ private/
 # MCP configs (may contain API keys)
 .mcp.json
 
+# direnv (per-developer ECC_WORKFLOW_BYPASS preference)
+.envrc
+
 # Claude Code local instructions (personal, never commit)
 CLAUDE.local.md
 
