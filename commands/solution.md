@@ -12,18 +12,16 @@ allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite]
 1. Read `.claude/workflow/state.json`
 2. Verify `phase` is `"plan"` or `"solution"` (re-entry allowed). If any other phase → error:
    > "Current phase is `<phase>`. `/solution` requires phase `plan` or `solution`. Run the appropriate `/plan-*` command first."
-3. Read `.claude/workflow/plan.md`
-4. Verify it contains `## User Stories` with at least one `### US-` heading
-5. Verify it contains `AC-` patterns (acceptance criteria) inside user stories
-6. If plan.md is missing or malformed → refuse:
-   > "Spec is malformed or missing. Run a `/plan-*` command to create a proper spec."
-7. Extract `concern` and `feature` from `state.json` for the solution header
+3. Verify the spec is available in conversation context (from the `/plan-*` command output). It must contain `## User Stories` with at least one `### US-` heading and `AC-` patterns (acceptance criteria).
+4. If the spec is not in conversation context → ask the user:
+   > "Spec not found in conversation context. Please re-run the `/plan-*` command or paste the spec output here."
+5. Extract `concern` and `feature` from `state.json` for the solution header
 
 ## Phase 1: Implementation Design
 
 Launch a Task with the `planner` agent:
 
-- Pass the full contents of `.claude/workflow/plan.md` as context
+- Pass the full spec content from conversation context
 - Instruct the agent to:
   1. Design file changes in dependency order (what to create, modify, or delete)
   2. Map each file change to its spec reference (US-NNN, AC-NNN.N)
@@ -53,7 +51,7 @@ Launch a Task with the `uncle-bob` agent:
 
 Launch a Task with the `robert` agent:
 
-- Pass `.claude/workflow/plan.md` contents AND the proposed design from Phase 1
+- Pass the spec content from conversation AND the proposed design from Phase 1
 - Instruct the agent to evaluate the design against the Programmer's Oath
 - Focus on: no harmful code, no mess, proof (test coverage planned), small releases
 - Collect the output: CLEAN or warnings with oath references
@@ -69,7 +67,7 @@ Launch a Task with the `security-reviewer` agent:
 
 ## Phase 5: E2E Boundary Detection
 
-1. Read the spec's `## E2E Boundaries Affected` table from `.claude/workflow/plan.md`
+1. Read the spec's `## E2E Boundaries Affected` table from conversation context
 2. Scan Phase 1 file changes for any port or adapter touches (files in `crates/ecc-ports/`, `crates/ecc-infra/`, or adapter-layer paths)
 3. Expand each boundary into concrete E2E test entries:
 
@@ -83,7 +81,7 @@ Launch a Task with the `security-reviewer` agent:
 
 ## Phase 6: Doc Update Plan
 
-1. Read the spec's `## Doc Impact Assessment` table from `.claude/workflow/plan.md`
+1. Read the spec's `## Doc Impact Assessment` table from conversation context
 2. Expand each entry into a concrete doc action:
 
 | # | Doc File | Level | Action | Content Summary | Spec Ref |
@@ -97,16 +95,16 @@ Launch a Task with the `security-reviewer` agent:
 
 This is the critical gate — every acceptance criterion must be testable.
 
-1. Collect ALL `AC-NNN.N` identifiers from `.claude/workflow/plan.md`
+1. Collect ALL `AC-NNN.N` identifiers from the spec in conversation context
 2. Collect ALL `PC-NNN` pass conditions from the Phase 1 design
 3. For each AC, verify it appears in at least one PC's "Verifies AC" column
 4. List any uncovered ACs with an explanation
 5. If uncovered ACs exist, add PCs to cover them before proceeding
 6. The result SHOULD be zero uncovered ACs
 
-## Phase 8: Write solution.md
+## Phase 8: Output Solution
 
-Write `.claude/workflow/solution.md` using the exact schema below. Every section is mandatory.
+Output the full solution in conversation using the exact schema below. Do NOT write `.claude/workflow/solution.md`. Every section is mandatory.
 
 ```markdown
 # Solution: <title from spec>
@@ -159,31 +157,27 @@ Must include ADRs for decisions marked "ADR Needed? Yes".
 <reverse dependency order of File Changes — if implementation fails, undo in this order>
 ```
 
-After writing, the `phase-advance.sh` hook will automatically update `.claude/workflow/state.json` (setting phase to `"implement"`). The `solution-coverage-check.sh` hook will then validate AC coverage and adversarial review pass — rolling back the state if validation fails.
+The solution is output in conversation only — no file is written.
 
 ## Phase 9: Adversarial Review
 
 Launch a Task with the `solution-adversary` agent:
 
-- Pass the full contents of `.claude/workflow/plan.md` AND `.claude/workflow/solution.md` as context
+- Pass the full spec AND solution from conversation context
 - The agent attacks the solution on 8 dimensions: coverage, order, fragility, rollback, architecture, blast radius, missing PCs, doc plan
-- The agent writes `.claude/workflow/solution-adversary-report.md` with a verdict
+- The agent returns a verdict in conversation (no file writes)
 
 ### Verdict Handling (max 3 rounds)
 
 Track the current round number (starting at 1):
 
 - **FAIL**: Present the adversary's findings to the user. Return to **Phase 1 (Implementation Design)** to redesign. Re-run Phases 2-8 with the updated design, then re-run the adversary (Phase 9). Increment round.
-- **CONDITIONAL**: The adversary has suggested specific PCs to add or doc plan fixes. Apply the fixes to solution.md. Re-run the adversary. Increment round.
-- **PASS**: Append the following line to the end of `.claude/workflow/solution.md`:
-  ```
-  Adversarial Review: PASS
-  ```
-  Proceed to Phase 10.
+- **CONDITIONAL**: The adversary has suggested specific PCs to add or doc plan fixes. Update the solution in conversation. Re-run the adversary. Increment round.
+- **PASS**: Note "Adversarial Review: PASS" in conversation output. Update `.claude/workflow/state.json`: set `phase` to `"implement"`, set `artifacts.solution` to current ISO 8601 timestamp. Proceed to Phase 10.
 
 After 3 FAIL rounds, ask the user:
 > "The solution has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon?"
-- If override: append `Adversarial Review: PASS` (user override) to solution.md and proceed
+- If override: note "Adversarial Review: PASS (user override)" in conversation, update state.json as above, and proceed
 - If abandon: reset state to `"plan"` phase and exit
 
 ## Phase 10: Present and STOP
@@ -197,6 +191,8 @@ Display a summary:
 - **Robert**: CLEAN or warning count
 - **Security**: CLEAR or finding count
 - **Adversarial review**: PASS, round number
+
+> **Note:** If continuing in a new session, copy the spec and solution recaps above or re-run the commands.
 
 Then STOP. Say:
 

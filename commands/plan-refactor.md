@@ -1,5 +1,5 @@
 ---
-description: Plan a refactoring — current state analysis, smell catalog, grill-me interview, and spec generation. Produces .claude/workflow/plan.md.
+description: Plan a refactoring — current state analysis, smell catalog, grill-me interview, and spec generation. Outputs spec in conversation.
 allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUserQuestion]
 ---
 
@@ -91,7 +91,7 @@ You have gathered evolution analysis, architecture review, component audit, exis
 
 ## Phase 5: Write the Spec
 
-Write `.claude/workflow/plan.md` using the exact schema below. Every section is mandatory.
+Output the full spec in conversation using the exact schema below. Do NOT write `.claude/workflow/plan.md`. Every section is mandatory.
 
 ```markdown
 # Spec: <title>
@@ -157,25 +157,21 @@ Write `.claude/workflow/plan.md` using the exact schema below. Every section is 
 
 Launch a Task with the `spec-adversary` agent:
 
-- Pass the full contents of `.claude/workflow/plan.md` as context
+- Pass the full spec from conversation context (Phase 5 output)
 - The agent attacks the spec on 7 dimensions: ambiguity, edge cases, scope, dependencies, testability, decisions, rollback
-- The agent writes `.claude/workflow/spec-adversary-report.md` with a verdict
+- The agent returns a verdict in conversation (no file writes)
 
 ### Verdict Handling (max 3 rounds)
 
 Track the current round number (starting at 1):
 
-- **FAIL**: Present the adversary's findings to the user. Return to **Phase 4 (Grill-Me)** to address the fundamental issues. After the user confirms updates, rewrite plan.md (Phase 5), then re-run the adversary (Phase 6). Increment round.
-- **CONDITIONAL**: The adversary has suggested specific ACs to add. Add the suggested ACs to plan.md. Re-run the adversary. Increment round.
-- **PASS**: Append the following line to the end of `.claude/workflow/plan.md`:
-  ```
-  Adversarial Review: PASS
-  ```
-  Proceed to Phase 7.
+- **FAIL**: Present the adversary's findings to the user. Return to **Phase 4 (Grill-Me)** to address the fundamental issues. After the user confirms updates, re-output the spec (Phase 5), then re-run the adversary (Phase 6). Increment round.
+- **CONDITIONAL**: The adversary has suggested specific ACs to add. Update the spec in conversation with the suggested ACs. Re-run the adversary. Increment round.
+- **PASS**: Note "Adversarial Review: PASS" in conversation output. Update `.claude/workflow/state.json`: set `phase` to `"solution"`, set `artifacts.plan` to current ISO 8601 timestamp. Proceed to Phase 7.
 
 After 3 FAIL rounds, ask the user:
 > "The spec has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon this spec?"
-- If override: append `Adversarial Review: PASS` (user override) to plan.md and proceed
+- If override: note "Adversarial Review: PASS (user override)" in conversation, update state.json as above, and proceed
 - If abandon: delete workflow artifacts and exit
 
 ## Phase 7: Present and STOP
@@ -188,6 +184,8 @@ Display a summary of the spec:
 - Key architectural decisions
 - Adversarial review result (PASS, round number)
 - Any open questions remaining
+
+> **Note:** If continuing in a new session, copy the spec recap above or re-run `/plan-refactor`.
 
 Then STOP. Say:
 

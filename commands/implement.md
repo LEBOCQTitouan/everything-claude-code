@@ -1,6 +1,6 @@
 ---
 description: "Implement the solution — Phase 3. Deterministic TDD loop with mandatory doc updates."
-allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWrite]
+allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWrite, EnterPlanMode, ExitPlanMode]
 ---
 
 # Implement Command
@@ -12,17 +12,41 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 1. Read `.claude/workflow/state.json`
 2. Verify `phase` is `"solution"` or `"implement"` (re-entry allowed). If any other phase → error:
    > "Current phase is `<phase>`. `/implement` requires phase `solution`. Run `/solution` first."
-3. Read `.claude/workflow/solution.md`
-4. Verify it contains `## Pass Conditions` with at least one `PC-` row
-5. Verify each PC row has `Command` and `Expected` columns
-6. If solution.md is missing or malformed → refuse:
-   > "Solution is malformed or missing. Run `/solution` to create a proper solution."
-7. Extract `concern` and `feature` from `state.json` for the implementation header
-8. Update `state.json`: set `phase` to `"implement"`
+3. Verify both the spec and solution are available in conversation context. They must contain `## Pass Conditions` with at least one `PC-` row, each with `Command` and `Expected` columns.
+4. If the spec or solution is not in conversation context → ask the user:
+   > "Spec and/or solution not found in conversation context. Please re-run `/plan-*` and `/solution` or paste the outputs here."
+5. Extract `concern` and `feature` from `state.json` for the implementation header
+6. Update `state.json`: set `phase` to `"implement"`
 
-## Phase 1: Parse Solution
+## Phase 1: Enter Plan Mode
 
-Extract from `.claude/workflow/solution.md`:
+1. Call `EnterPlanMode`
+2. Write the plan file with the following structure, using the spec and solution from conversation context:
+
+```markdown
+# Implementation Plan: <title>
+
+## Spec (from /plan)
+<full spec from conversation>
+
+## Solution (from /solution)
+<full solution from conversation>
+
+## Checklist
+<PC items from solution's Test Strategy, in TDD order>
+- [ ] PC-NNN: <Description> (RED → GREEN → REFACTOR)
+- ...
+- [ ] E2E tests (if activated)
+- [ ] Code review
+- [ ] Doc updates
+- [ ] Write implement-done.md
+```
+
+3. Call `ExitPlanMode`
+
+## Phase 2: Parse Solution
+
+Extract from the Solution section of the plan file:
 
 1. **Pass Conditions table** — all `PC-NNN` rows with: ID, Type, Description, Verifies AC, Command, Expected
 2. **Test Strategy** — the TDD ordering of PCs
@@ -37,7 +61,7 @@ Create a TodoWrite checklist from the PCs in TDD order:
 - `[ ] Doc updates`
 - `[ ] Write implement-done.md`
 
-## Phase 2: TDD Loop
+## Phase 3: TDD Loop
 
 For each PC in the order specified by Test Strategy, execute the RED → GREEN → REFACTOR cycle:
 
@@ -87,7 +111,7 @@ After ALL PCs complete:
 3. Run the build PC (e.g., `cargo build`). Must pass.
 4. Update the TodoWrite checklist: mark all PC items complete.
 
-## Phase 3: E2E Tests
+## Phase 4: E2E Tests
 
 Read the solution's `## E2E Activation Rules`:
 
@@ -98,13 +122,13 @@ Read the solution's `## E2E Activation Rules`:
   3. If any E2E test fails → fix and re-run. All must pass.
   4. Commit: `test(e2e): add <boundary> E2E tests`
 
-## Phase 4: Code Review
+## Phase 5: Code Review
 
 Launch a Task with the `code-reviewer` agent:
 
 - Pass the full list of files changed during the TDD loop
-- Pass the spec (`.claude/workflow/plan.md`) as the requirement reference
-- Pass the solution (`.claude/workflow/solution.md`) as the design reference
+- Pass the spec (from the Spec section of the plan file) as the requirement reference
+- Pass the solution (from the Solution section of the plan file) as the design reference
 - Agent reviews for: quality, security, maintainability, spec compliance
 - Collect findings
 
@@ -115,7 +139,7 @@ If CRITICAL or HIGH findings:
 
 Record: code review summary (PASS or findings addressed)
 
-## Phase 5: Doc Updates
+## Phase 6: Doc Updates
 
 Execute every row from the solution's `## Doc Update Plan`. Doc updates are part of implementation — they happen BEFORE writing implement-done.md.
 
@@ -162,7 +186,7 @@ Commit each doc update separately:
 - `docs(changelog): add <feature> entry`
 - `docs(adr): add ADR NNN — <title>` (if applicable)
 
-## Phase 6: Write implement-done.md
+## Phase 7: Write implement-done.md
 
 Write `.claude/workflow/implement-done.md` using the exact schema below. Every section is mandatory.
 
@@ -218,7 +242,7 @@ After writing, update `.claude/workflow/state.json`:
 - Set `artifacts.implement` to the current ISO 8601 timestamp
 - Append to `completed` array: `{ "phase": "implement", "file": "implement-done.md", "at": "<timestamp>" }`
 
-## Phase 7: Final Verification and STOP
+## Phase 8: Final Verification and STOP
 
 Verify stop hook requirements are met:
 
