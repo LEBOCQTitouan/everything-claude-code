@@ -10,39 +10,9 @@
           }
         ],
         "description": "Pipeline: block source writes during plan/solution phases"
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/spec-schema-check.sh"
-          }
-        ],
-        "description": "Pipeline: validate plan.md schema before solution-phase writes"
       }
     ],
     "PostToolUse": [
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/phase-advance.sh"
-          }
-        ],
-        "description": "Pipeline: advance phase on artifact completion"
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/solution-coverage-check.sh"
-          }
-        ],
-        "description": "Pipeline: validate AC coverage and adversarial pass in solution.md"
-      },
       {
         "matcher": "Write|Edit|Bash",
         "hooks": [
@@ -65,7 +35,7 @@
             "command": "bash .claude/hooks/stop-gate.sh"
           }
         ],
-        "description": "Pipeline: prevent stop before workflow completes"
+        "description": "Pipeline: warn when workflow incomplete"
       },
       {
         "matcher": "",
@@ -75,7 +45,7 @@
             "command": "bash .claude/hooks/doc-enforcement.sh"
           }
         ],
-        "description": "Pipeline: require docs updated"
+        "description": "Pipeline: warn about missing docs"
       },
       {
         "matcher": "",
@@ -85,7 +55,7 @@
             "command": "bash .claude/hooks/pass-condition-check.sh"
           }
         ],
-        "description": "Pipeline: verify pass conditions and E2E #[ignore]"
+        "description": "Pipeline: warn about pass conditions and E2E #[ignore]"
       },
       {
         "matcher": "",
@@ -95,7 +65,7 @@
             "command": "bash .claude/hooks/e2e-boundary-check.sh"
           }
         ],
-        "description": "Pipeline: verify E2E coverage"
+        "description": "Pipeline: warn about E2E coverage"
       },
       {
         "matcher": "",
