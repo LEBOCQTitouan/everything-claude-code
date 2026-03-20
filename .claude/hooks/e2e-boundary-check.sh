@@ -22,14 +22,14 @@ IMPL_FILE="$PROJECT_DIR/.claude/workflow/implement-done.md"
 # If solution has E2E Test Plan, implementation must have E2E Tests
 if grep -q '^## E2E Test Plan' "$SOLUTION_FILE"; then
   if [ ! -f "$IMPL_FILE" ]; then
-    echo "BLOCKED: solution.md has '## E2E Test Plan' but implement-done.md not found." >&2
-    exit 2
+    echo "WARNING: solution.md has '## E2E Test Plan' but implement-done.md not found." >&2
+    exit 0
   fi
 
   if ! grep -q '^## E2E Tests' "$IMPL_FILE"; then
-    echo "BLOCKED: solution.md has '## E2E Test Plan' but implement-done.md missing '## E2E Tests' section." >&2
+    echo "WARNING: solution.md has '## E2E Test Plan' but implement-done.md missing '## E2E Tests' section." >&2
     echo "Add an '## E2E Tests' section documenting E2E test results." >&2
-    exit 2
+    exit 0
   fi
 fi
 

@@ -6,13 +6,15 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 WORKFLOW_DIR="$PROJECT_DIR/.claude/workflow"
 STATE_FILE="$WORKFLOW_DIR/state.json"
 
-# Usage: bash .claude/hooks/workflow-init.sh <concern> "<feature>"
+# Usage: bash .claude/hooks/workflow-init.sh <concern> ["<feature>"]
+# Feature is optional — defaults to "(pending)" when omitted (defined during grill-me interview).
 CONCERN="${1:-}"
-FEATURE="${2:-}"
+FEATURE="${2:-(pending)}"
 
-if [ -z "$CONCERN" ] || [ -z "$FEATURE" ]; then
-  echo "Usage: workflow-init.sh <concern> \"<feature description>\"" >&2
+if [ -z "$CONCERN" ]; then
+  echo "Usage: workflow-init.sh <concern> [\"<feature description>\"]" >&2
   echo "  concern: dev, refactor, security, docs" >&2
+  echo "  feature: optional — defaults to \"(pending)\"" >&2
   exit 1
 fi
 
@@ -20,9 +22,7 @@ fi
 mkdir -p "$WORKFLOW_DIR"
 
 # Clean previous artifacts
-rm -f "$WORKFLOW_DIR/plan.md" \
-      "$WORKFLOW_DIR/solution.md" \
-      "$WORKFLOW_DIR/implement-done.md" \
+rm -f "$WORKFLOW_DIR/implement-done.md" \
       "$WORKFLOW_DIR/.tdd-state"
 
 # Build state JSON

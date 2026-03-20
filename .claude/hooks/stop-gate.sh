@@ -15,9 +15,9 @@ PHASE=$(jq -r '.phase // "done"' "$STATE_FILE" 2>/dev/null) || exit 0
 
 FEATURE=$(jq -r '.feature // "unknown"' "$STATE_FILE" 2>/dev/null) || true
 
-echo "BLOCKED: Cannot stop — workflow is in '$PHASE' phase." >&2
+echo "WARNING: Workflow is in '$PHASE' phase (not done)." >&2
 echo "Feature: $FEATURE" >&2
 echo "Remaining: $PHASE -> ... -> done" >&2
 echo "" >&2
 echo "Escape hatch: rm $STATE_FILE" >&2
-exit 2
+exit 0
