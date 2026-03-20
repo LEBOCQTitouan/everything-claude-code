@@ -79,17 +79,6 @@ fn stop_notify_disabled_exits_zero() {
         .stdout(predicate::str::contains("{}"));
 }
 
-/// task:completed:notify dispatches and exits zero.
-#[test]
-fn task_completed_notify_exits_zero() {
-    let env = EccTestEnv::new();
-    env.cmd()
-        .args(["hook", "task:completed:notify", "minimal,standard,strict"])
-        .write_stdin(r#"{"task_subject":"Build auth"}"#)
-        .assert()
-        .success();
-}
-
 /// post:failure:error-context dispatches and exits zero.
 #[test]
 fn post_failure_error_context_exits_zero() {

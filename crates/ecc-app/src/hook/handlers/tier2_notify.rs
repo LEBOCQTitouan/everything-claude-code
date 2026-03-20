@@ -71,29 +71,6 @@ pub fn stop_notify(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     HookResult::passthrough(stdin)
 }
 
-/// task:completed:notify — Send a system notification when a task completes.
-///
-/// Parses `task_subject` from stdin JSON. Fire-and-forget.
-pub fn task_completed_notify(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
-    // Opt-out check
-    if let Some(val) = ports.env.var("ECC_NOTIFY_ENABLED") {
-        let lower = val.to_lowercase();
-        if lower == "0" || lower == "false" {
-            return HookResult::passthrough(stdin);
-        }
-    }
-
-    let subject = serde_json::from_str::<serde_json::Value>(stdin)
-        .ok()
-        .and_then(|v| v.get("task_subject")?.as_str().map(|s| s.to_string()))
-        .unwrap_or_else(|| "A task completed".to_string());
-
-    let message = format!("Task completed: {}", subject);
-    send_notification(DEFAULT_TITLE, &message, ports);
-
-    HookResult::passthrough(stdin)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -269,61 +246,4 @@ mod tests {
         assert!(result.stderr.is_empty());
     }
 
-    // --- task_completed_notify ---
-
-    #[test]
-    fn task_completed_with_subject() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new().on("osascript", ok_output());
-        let env = MockEnvironment::new().with_platform(Platform::MacOS);
-        let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
-
-        let stdin = r#"{"task_subject":"Build auth module"}"#;
-        let result = task_completed_notify(stdin, &ports);
-        assert_eq!(result.exit_code, 0);
-        assert_eq!(result.stdout, stdin);
-        assert!(result.stderr.is_empty());
-    }
-
-    #[test]
-    fn task_completed_without_subject_uses_default() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new().on("osascript", ok_output());
-        let env = MockEnvironment::new().with_platform(Platform::MacOS);
-        let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
-
-        let result = task_completed_notify("{}", &ports);
-        assert_eq!(result.exit_code, 0);
-        assert_eq!(result.stdout, "{}");
-    }
-
-    #[test]
-    fn task_completed_disabled_via_env() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new()
-            .with_platform(Platform::MacOS)
-            .with_var("ECC_NOTIFY_ENABLED", "false");
-        let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
-
-        let result = task_completed_notify("{}", &ports);
-        assert_eq!(result.exit_code, 0);
-        assert!(result.stderr.is_empty());
-    }
-
-    #[test]
-    fn task_completed_failure_still_passthrough() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new(); // osascript not registered
-        let env = MockEnvironment::new().with_platform(Platform::MacOS);
-        let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
-
-        let result = task_completed_notify("{}", &ports);
-        assert_eq!(result.exit_code, 0);
-        assert!(result.stderr.is_empty());
-    }
 }

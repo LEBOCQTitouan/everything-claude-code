@@ -143,7 +143,6 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "pre:edit:stepdown-warning" => handlers::pre_edit_stepdown_warning(stdin, ports),
 
         // New event handlers
-        "task:completed:notify" => handlers::task_completed_notify(stdin, ports),
         "post:failure:error-context" => handlers::post_failure_error_context(stdin, ports),
         "pre:prompt:context-inject" => handlers::pre_prompt_context_inject(stdin, ports),
         "post:compact:state-save" => handlers::post_compact(stdin, ports),

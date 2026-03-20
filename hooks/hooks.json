@@ -305,20 +305,6 @@
         "description": "Calculate rework ratio and track craft velocity metrics"
       }
     ],
-    "TaskCompleted": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ecc-hook \"task:completed:notify\" \"minimal,standard,strict\"",
-            "async": true,
-            "timeout": 5
-          }
-        ],
-        "description": "Send system notification when a task completes"
-      }
-    ],
     "PostToolUseFailure": [
       {
         "matcher": "*",

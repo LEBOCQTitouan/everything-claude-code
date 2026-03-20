@@ -182,7 +182,7 @@ No hooks, env vars, or MCP servers in this file.
 
 **Status line:** Command-based, runs `bash ~/.claude/statusline-command.sh`
 
-**Hooks:** 22 hook definitions across 11 lifecycle events (PreToolUse, PostToolUse, PostToolUseFailure, PreCompact, PostCompact, SessionStart, SessionEnd, Stop, SubagentStart, SubagentStop, ConfigChange, InstructionsLoaded, WorktreeCreate, WorktreeRemove, TaskCompleted, UserPromptSubmit).
+**Hooks:** 21 hook definitions across 10 lifecycle events (PreToolUse, PostToolUse, PostToolUseFailure, PreCompact, PostCompact, SessionStart, SessionEnd, Stop, SubagentStart, SubagentStop, ConfigChange, InstructionsLoaded, WorktreeCreate, WorktreeRemove, UserPromptSubmit).
 
 ---
 
@@ -483,7 +483,6 @@ Uses `$schema: https://json.schemastore.org/claude-code-settings.json`. All hook
 | SubagentStart | 1 | subagent:start:log |
 | SubagentStop | 1 | subagent:stop:log |
 | UserPromptSubmit | 1 | pre:prompt:context-inject |
-| TaskCompleted | 1 | task:completed:notify |
 | ConfigChange | 1 | config:change:log |
 | InstructionsLoaded | 1 | instructions:loaded:validate |
 | WorktreeCreate | 1 | worktree:create:init |

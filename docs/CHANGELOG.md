@@ -61,6 +61,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- Remove task:completed:notify hook to reduce notification noise — only stop:notify remains
 - Archive 41 commands, keep 5 essential (later expanded to 6 with /audit)
 - Update rules, examples, and README to reference simplified commands
 - Remove orphaned loop-operator agent
