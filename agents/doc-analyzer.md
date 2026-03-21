@@ -31,6 +31,19 @@ You analyze codebases to understand what needs documenting. You produce structur
 
 ## Analysis Pipeline
 
+> **Tracking**: Create a TodoWrite checklist for the analysis pipeline. If TodoWrite is unavailable, proceed without tracking — the analysis executes identically.
+
+TodoWrite items:
+- "Step 1: Project Profile"
+- "Step 2: Module Inventory"
+- "Step 3: Domain Concept Extraction"
+- "Step 4: Dependency Graph"
+- "Step 5: Documentation Inventory"
+- "Step 5b: Enrichment Passes"
+- "Step 6: Diagram Opportunity Detection"
+
+Mark each item complete as the step finishes.
+
 ### Step 1: Project Profile
 
 1. Detect language and framework
