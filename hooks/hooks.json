@@ -304,6 +304,18 @@
           }
         ],
         "description": "Calculate rework ratio and track craft velocity metrics"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"stop:daily-summary\" \"minimal,standard,strict\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Append session summary to daily memory file"
       }
     ],
     "PostToolUseFailure": [
