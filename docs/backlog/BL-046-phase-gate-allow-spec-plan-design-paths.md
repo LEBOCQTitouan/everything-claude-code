@@ -1,7 +1,7 @@
 ---
 id: BL-046
 title: Phase-gate hook blocks spec/plan/design file writes during active workflow phases
-status: open
+status: implemented
 created: 2026-03-21
 promoted_to: ""
 tags: [hooks, phase-gate, workflow, spec, design, plan, bug]
