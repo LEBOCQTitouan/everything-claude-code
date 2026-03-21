@@ -17,20 +17,7 @@ npm run lint            # Lint all Markdown files
 
 ## Architecture
 
-```
-crates/          Rust crates (hexagonal architecture)
-  ecc-domain/    Pure business logic — zero I/O
-  ecc-ports/     Trait definitions (FileSystem, ShellExecutor, Environment, TerminalIO)
-  ecc-app/       Use cases — orchestrates domain + ports
-  ecc-infra/     Adapters (OS filesystem, process executor, terminal)
-  ecc-cli/       CLI entry point (`ecc` command)
-  ecc-test-support/  Test doubles | ecc-integration-tests/  Integration tests
-bin/             Shell shims | docs/  Guides & reference | examples/  CLAUDE.md templates
-agents/          Subagents (architect, uncle-bob, planner, code-reviewer, spec-adversary, solution-adversary, drift-checker, ...)
-commands/        Slash commands (audit-*, plan-*, solution, implement, verify, review, ...)
-skills/          Domain knowledge | rules/  Always-follow guidelines
-hooks/           Automations | contexts/  Prompt injection | mcp-configs/  MCP servers
-```
+Hexagonal architecture: domain → ports → app → infra → CLI (7 crates). See `docs/ARCHITECTURE.md` for full structure.
 
 ## CLI Commands
 
@@ -48,20 +35,7 @@ ecc completion <shell>    Generate shell completions
 
 ## Slash Commands
 
-### Audit Commands
-
-| Command | Domain |
-|---------|--------|
-| `/audit-full` | All domains — parallel run with cross-domain correlation |
-| `/audit-archi` | Boundary integrity, dependency direction, DDD compliance |
-| `/audit-code` | SOLID, clean code, naming, complexity |
-| `/audit-convention` | Naming patterns, style consistency |
-| `/audit-doc` | Coverage, staleness, drift |
-| `/audit-errors` | Swallowed errors, taxonomy, boundary translation |
-| `/audit-evolution` | Git hotspots, churn, bus factor, complexity trends |
-| `/audit-observability` | Logging, metrics, tracing, health endpoints |
-| `/audit-security` | OWASP top 10, secrets, attack surface |
-| `/audit-test` | Coverage, classification, fixture ratios, E2E matrix |
+Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/ecc-test-mode`): see `docs/commands-reference.md`.
 
 ### Spec-Driven Pipeline (Doc-First)
 
@@ -74,16 +48,6 @@ ecc completion <shell>    Generate shell completions
 - All three phases use Plan Mode so the user reviews artifacts before execution
 - Old names (`/plan`, `/solution`) still work as aliases
 - State machine in `.claude/workflow/` enforces phase ordering via hooks
-
-### Side Commands
-
-| Command | Purpose |
-|---------|---------|
-| `/verify` | Build + tests + lint + code review + architecture review + drift check |
-| `/review` | Robert professional conscience check |
-| `/backlog` | Capture and manage implementation ideas |
-| `/build-fix` | Fix build/type errors reactively |
-| `/ecc-test-mode` | Isolated worktree for testing ECC config changes |
 
 ## Command Workflows
 
