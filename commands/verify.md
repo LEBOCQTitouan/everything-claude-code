@@ -1,5 +1,6 @@
 ---
 description: "Build + lint + test + code review + architecture review"
+allowed-tools: [Bash, Task, Read, Grep, Glob, LS, TodoWrite, TodoRead]
 ---
 
 # Verify
@@ -12,6 +13,18 @@ Run a single-shot quality gate on the current codebase.
 - `quick` — build + lint + test only (skip reviews)
 - `full` — all steps (default)
 - `--fix` — auto-fix lint/format issues
+
+> **Tracking**: Create a TodoWrite checklist for this command's steps. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Step 1: Build"
+- "Step 2: Lint"
+- "Step 3: Test Suite"
+- "Step 4: Code Review"
+- "Step 5: Architecture Review"
+- "Step 6: Drift Check"
+
+Mark each item complete as the step finishes.
 
 ## Steps
 
@@ -47,18 +60,18 @@ Report pass/fail count.
 
 ### 4. Code Review
 
-Invoke the **code-reviewer** agent on `git diff HEAD`. Auto-detect language-specific reviewers:
-- Go project → also invoke **go-reviewer** agent
-- Python project → also invoke **python-reviewer** agent
+Invoke the **code-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) on `git diff HEAD`. Auto-detect language-specific reviewers:
+- Go project → also invoke **go-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash])
+- Python project → also invoke **python-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash])
 
 ### 5. Architecture Review
 
-Invoke the **arch-reviewer** agent on the full project structure.
+Invoke the **arch-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) on the full project structure.
 
 ### 6. Drift Check (conditional)
 
 If `.claude/workflow/state.json` exists and workflow artifacts are present (state.json and implement-done.md):
-- Invoke the **drift-checker** agent
+- Invoke the **drift-checker** agent (allowedTools: [Read, Grep, Glob, Bash])
 - Agent compares implementation against spec — finds unimplemented ACs and scope creep
 - Agent writes `.claude/workflow/drift-report.md`
 - Report drift level: NONE, LOW, MEDIUM, or HIGH
