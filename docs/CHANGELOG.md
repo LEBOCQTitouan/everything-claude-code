@@ -6,7 +6,7 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
-## v4.1.0-alpha.1
+## v4.2.0
 
 ### Features
 
