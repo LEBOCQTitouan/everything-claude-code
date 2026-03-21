@@ -6,7 +6,7 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 # Implement Command
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
-
+>
 > **Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only.
 
 ## Phase 0: State Validation
