@@ -13,7 +13,7 @@ For module-level implementation details (internal code structure, patterns withi
 
 ## Collaboration Protocol
 
-- **You → architect-module**: After defining the hexagonal structure and DDD model, delegate module-level design with clear constraints: which layer the module lives in, which ports it implements or depends on, and what invariants it must respect.
+- **You → architect-module** (allowedTools: [Read, Grep, Glob]): After defining the hexagonal structure and DDD model, delegate module-level design with clear constraints: which layer the module lives in, which ports it implements or depends on, and what invariants it must respect.
 - **architect-module → You**: If architect-module surfaces a design that would violate hexagonal boundaries or DDD rules, it must escalate back to you. You have final say on any boundary or contract decision.
 
 When delegating, be explicit:
