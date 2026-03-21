@@ -21,12 +21,11 @@ fn now_datetime_string() -> String {
 pub fn handle_clear(state: &mut ClawState, ports: &ClawPorts<'_>) {
     let count = state.clear_turns();
 
-    if let Some(home) = ports.env.home_dir() {
-        if let Err(err) =
+    if let Some(home) = ports.env.home_dir()
+        && let Err(err) =
             super::super::storage::clear_session(&home, state.session_name(), ports.fs)
-        {
-            log::warn!("clear session failed: {err}");
-        }
+    {
+        log::warn!("clear session failed: {err}");
     }
 
     ports
@@ -73,15 +72,15 @@ pub fn handle_sessions(target: &Option<String>, state: &mut ClawState, ports: &C
                 return;
             }
             // Save current session first
-            if !state.turns().is_empty() {
-                if let Err(err) = super::super::storage::save_session(
+            if !state.turns().is_empty()
+                && let Err(err) = super::super::storage::save_session(
                     &home,
                     state.session_name(),
                     state.turns(),
                     ports.fs,
-                ) {
-                    log::warn!("save session failed: {err}");
-                }
+                )
+            {
+                log::warn!("save session failed: {err}");
             }
             // Switch to new session
             state.set_turns(super::super::storage::load_session(&home, name, ports.fs));

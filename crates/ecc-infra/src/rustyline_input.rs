@@ -21,10 +21,10 @@ impl RustylineInput {
 
         if let Some(ref path) = history_path {
             // Ensure parent dir exists
-            if let Some(parent) = path.parent() {
-                if let Err(err) = std::fs::create_dir_all(parent) {
-                    log::warn!("create history dir failed: {err}");
-                }
+            if let Some(parent) = path.parent()
+                && let Err(err) = std::fs::create_dir_all(parent)
+            {
+                log::warn!("create history dir failed: {err}");
             }
             if let Err(err) = editor.load_history(path) {
                 log::warn!("load history failed: {err}");
@@ -42,10 +42,9 @@ impl Drop for RustylineInput {
     fn drop(&mut self) {
         if let Some(ref path) = self.history_path
             && let Ok(mut editor) = self.editor.lock()
+            && let Err(err) = editor.save_history(path)
         {
-            if let Err(err) = editor.save_history(path) {
-                log::warn!("save history failed: {err}");
-            }
+            log::warn!("save history failed: {err}");
         }
     }
 }

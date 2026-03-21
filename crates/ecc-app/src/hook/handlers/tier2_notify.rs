@@ -22,10 +22,10 @@ fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
             }
         }
         Platform::Linux => {
-            if ports.shell.command_exists("notify-send") {
-                if let Err(err) = ports.shell.run_command("notify-send", &[title, message]) {
-                    log::warn!("notify-send failed: {err}");
-                }
+            if ports.shell.command_exists("notify-send")
+                && let Err(err) = ports.shell.run_command("notify-send", &[title, message])
+            {
+                log::warn!("notify-send failed: {err}");
             }
         }
         Platform::Windows => {
@@ -33,10 +33,10 @@ fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
             let result = ports
                 .shell
                 .run_command("powershell", &["-Command", &ps_cmd]);
-            if result.is_err() {
-                if let Err(err) = ports.shell.run_command("msg", &["*", message]) {
-                    log::warn!("msg fallback notification failed: {err}");
-                }
+            if result.is_err()
+                && let Err(err) = ports.shell.run_command("msg", &["*", message])
+            {
+                log::warn!("msg fallback notification failed: {err}");
             }
         }
         Platform::Unknown => {}
