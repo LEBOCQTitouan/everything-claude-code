@@ -28,6 +28,11 @@ A 7-domain codebase health assessment system orchestrated by the [audit-orchestr
 - **Related:** [Agent](#agent), [Command](#command)
 - **Files:** [`agents/audit-orchestrator.md`](../agents/audit-orchestrator.md), [`agents/evolution-analyst.md`](../agents/evolution-analyst.md), [`agents/test-auditor.md`](../agents/test-auditor.md), [`agents/observability-auditor.md`](../agents/observability-auditor.md), [`agents/error-handling-auditor.md`](../agents/error-handling-auditor.md), [`agents/convention-auditor.md`](../agents/convention-auditor.md), [`commands/audit.md`](../commands/audit.md)
 
+### Context Brief
+The structured input passed from the `/implement` parent orchestrator to a [TDD Executor](#tdd-executor) subagent for a single Pass Condition. Contains 6 exact headings: PC Spec, File Paths, Files to Modify, Prior PC Results, Commit Rules, TDD Cycle Rules. Max 500 lines. Excludes full spec/design content and prior PC implementation reasoning.
+- **Related:** [TDD Executor](#tdd-executor), [Command](#command)
+- **Files:** [`commands/implement.md`](../commands/implement.md), [`agents/tdd-executor.md`](../agents/tdd-executor.md)
+
 ### Clean
 Surgical or full removal of ECC-managed [Artifacts](#artifact). Manifest-based cleanup removes only tracked files; nuclear cleanup (`--clean-all`) removes entire artifact directories and ECC hooks from settings.json.
 - **Related:** [Manifest](#manifest), [Artifact](#artifact)
@@ -87,6 +92,16 @@ The library module providing CRUD operations, metadata parsing, pagination, and 
 A directory containing `SKILL.md` that provides domain knowledge to Claude Code. Differs from [Agents](#agent) (which have tools and model config) and [Commands](#command) (which are user-invocable).
 - **Related:** [Agent](#agent), [Command](#command), [Artifact](#artifact)
 - **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-skills.ts`](../src/ci/validate-skills.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts), [`claw.ts`](../src/claw.ts)
+
+### Regression Verification
+Parent-side check after each [TDD Executor](#tdd-executor) subagent completes during `/implement` Phase 3. Runs all PC commands from PC-001 through PC-N. Must pass before marking PC-N as complete. Failure triggers a hard stop — the parent reports the regressing PC and halts the loop.
+- **Related:** [TDD Executor](#tdd-executor), [Context Brief](#context-brief), [Command](#command)
+- **Files:** [`commands/implement.md`](../commands/implement.md)
+
+### TDD Executor
+A subagent ([Agent](#agent)) that executes a single Pass Condition's RED-GREEN-REFACTOR cycle in an isolated context window. Receives a [Context Brief](#context-brief) from the parent, implements the PC, commits atomically (test, implementation, optional refactor), and returns structured results (pc_id, status, commits, files_changed, error). Owned by `/implement` Phase 3.
+- **Related:** [Context Brief](#context-brief), [Regression Verification](#regression-verification), [Agent](#agent)
+- **Files:** [`agents/tdd-executor.md`](../agents/tdd-executor.md), [`commands/implement.md`](../commands/implement.md)
 
 ### Test Targets
 A structured subsection in each phase of a [planner](#agent) output that specifies what to scaffold and test before implementation. Includes interfaces to scaffold, unit tests, integration tests, edge cases, and expected test file paths. Consumed by the `/plan` [Command](#command) TDD execution loop to drive the RED phase.
