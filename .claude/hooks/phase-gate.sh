@@ -35,21 +35,43 @@ TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || exit 0
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null) || true
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || true
 
+# --- Allowed paths during spec/design phases ---
+ALLOWED_PATHS=(
+  ".claude/workflow/*"
+  ".claude/plans/*"
+  "docs/audits/*"
+  "docs/backlog/*"
+  "docs/user-stories/*"
+  "docs/specs/*"
+  "docs/plans/*"
+  "docs/designs/*"
+  "docs/adr/*"
+)
+
+is_allowed_path() {
+  local path="$1"
+  case "$path" in
+    */.claude/workflow/*|.claude/workflow/*) return 0 ;;
+    */.claude/plans/*|.claude/plans/*) return 0 ;;
+    */docs/audits/*|docs/audits/*) return 0 ;;
+    */docs/backlog/*|docs/backlog/*) return 0 ;;
+    */docs/user-stories/*|docs/user-stories/*) return 0 ;;
+    */docs/specs/*|docs/specs/*) return 0 ;;
+    */docs/plans/*|docs/plans/*) return 0 ;;
+    */docs/designs/*|docs/designs/*) return 0 ;;
+    */docs/adr/*|docs/adr/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # --- Write/Edit/MultiEdit: allow workflow and docs paths only ---
 case "$TOOL_NAME" in
   Write|Edit|MultiEdit)
-    case "$FILE_PATH" in
-      */.claude/workflow/*) exit 0 ;;
-      */docs/audits/*) exit 0 ;;
-      */docs/backlog/*) exit 0 ;;
-      */docs/user-stories/*) exit 0 ;;
-      .claude/workflow/*) exit 0 ;;
-      docs/audits/*) exit 0 ;;
-      docs/backlog/*) exit 0 ;;
-      docs/user-stories/*) exit 0 ;;
-    esac
+    if is_allowed_path "$FILE_PATH"; then
+      exit 0
+    fi
     echo "BLOCKED: Cannot write to '$FILE_PATH' during $PHASE phase." >&2
-    echo "Only .claude/workflow/*, docs/audits/*, docs/backlog/*, docs/user-stories/* are allowed." >&2
+    echo "Only the following paths are allowed: ${ALLOWED_PATHS[*]}" >&2
     echo "Advance to implement phase by completing the $PHASE artifact." >&2
     exit 2
     ;;
