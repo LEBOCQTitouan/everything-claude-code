@@ -42,13 +42,18 @@ case "$TRANSITION" in
   plan_solution)      VALID=true ;;
   solution_implement) VALID=true ;;
   implement_done)     VALID=true ;;
+  # Spec/design aliases (backward compatible)
+  plan_design)        VALID=true; TARGET="solution" ;;
+  spec_solution)      VALID=true; TARGET="solution" ;;
+  spec_design)        VALID=true; TARGET="solution" ;;
+  design_implement)   VALID=true; TARGET="implement" ;;
   # Allow re-entry (idempotent)
   "${TARGET}_${TARGET}") VALID=true ;;
 esac
 
 if [ "$VALID" != "true" ]; then
   echo "ERROR: Illegal transition '$CURRENT' -> '$TARGET'." >&2
-  echo "Valid transitions: plan->solution, solution->implement, implement->done." >&2
+  echo "Valid transitions: spec->design, plan->solution, solution->implement, implement->done." >&2
   exit 1
 fi
 

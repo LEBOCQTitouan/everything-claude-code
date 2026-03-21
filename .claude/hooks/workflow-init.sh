@@ -53,5 +53,5 @@ fi
 mv "$TMPFILE" "$STATE_FILE"
 
 echo "Workflow initialized: concern=$CONCERN, feature=\"$FEATURE\""
-echo "Phase: plan -> solution -> implement -> done"
+echo "Phase: spec -> design -> implement -> done"
 echo "State: $STATE_FILE"
