@@ -63,15 +63,17 @@ ecc completion <shell>    Generate shell completions
 | `/audit-security` | OWASP top 10, secrets, attack surface |
 | `/audit-test` | Coverage, classification, fixture ratios, E2E matrix |
 
-### Spec-Driven Pipeline
+### Spec-Driven Pipeline (Doc-First)
 
-`/plan` → `/plan-dev`, `/plan-fix`, `/plan-refactor` → `/solution` → `/implement`
+`/spec` → `/spec-dev`, `/spec-fix`, `/spec-refactor` → `/design` → `/implement`
 
-- `/plan` auto-classifies intent (dev/fix/refactor) from your description and delegates to the matching `/plan-*` command
-- Each `/plan-*` runs a grill-me interview, adversarial review (`spec-adversary`), then outputs the spec in conversation (no file write)
-- `/solution` designs the technical approach, runs adversarial review (`solution-adversary`), then outputs the solution in conversation (no file write)
-- `/implement` enters Plan Mode with full spec+solution recap, then executes TDD loops with mandatory doc updates
-- State machine in `.claude/workflow/` enforces phase ordering via hooks (9 hooks: 1 blocking, 6 warning, 2 tracking)
+- `/spec` auto-classifies intent (dev/fix/refactor) and delegates to the matching `/spec-*` command
+- Each `/spec-*` runs web research, grill-me interview, enters **Plan Mode** for doc-first review (spec draft + upper-level doc preview), adversarial review, then outputs the spec
+- `/design` produces the technical design, enters **Plan Mode** for architecture preview (arch docs, diagrams, bounded contexts), then adversarial review
+- `/implement` enters **Plan Mode** for implementation steps, then executes TDD loops with TaskCreate tracking and mandatory doc updates
+- All three phases use Plan Mode so the user reviews artifacts before execution
+- Old names (`/plan`, `/solution`) still work as aliases
+- State machine in `.claude/workflow/` enforces phase ordering via hooks
 
 ### Side Commands
 
@@ -93,7 +95,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 
 ## Dual-Mode Development
 
-- **Spec-driven** (`/plan` or `/plan-*` → `/solution` → `/implement`): for features, fixes, and refactors requiring design review
+- **Spec-driven** (`/spec` or `/spec-*` → `/design` → `/implement`): for features, fixes, and refactors requiring design review. Old names (`/plan`, `/solution`) work as aliases.
 - **Direct** (edit + `/verify`): for small, well-understood changes
 - Use `/audit-*` independently at any time for health checks
 - Use `/review` as a final craft conscience gate before shipping
