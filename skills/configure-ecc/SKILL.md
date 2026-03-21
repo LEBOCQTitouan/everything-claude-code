@@ -23,6 +23,19 @@ This skill must be accessible to Claude Code before activation. Two ways to boot
 
 ---
 
+> **Tracking**: Create a TodoWrite checklist for the installation workflow. If TodoWrite is unavailable, proceed without tracking — the installation executes identically.
+
+TodoWrite items:
+- "Step 0: Clone ECC Repository"
+- "Step 1: Choose Installation Level"
+- "Step 2: Select & Install Skills"
+- "Step 3: Select & Install Rules"
+- "Step 4: Post-Installation Verification"
+- "Step 5: Optimize Installed Files"
+- "Step 6: Installation Summary"
+
+Mark each item complete as the step finishes.
+
 ## Step 0: Clone ECC Repository
 
 Before any installation, clone the latest ECC source to `/tmp`:
