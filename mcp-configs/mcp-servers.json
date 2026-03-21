@@ -2,7 +2,7 @@
   "mcpServers": {
     "github": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "args": ["-y", "@modelcontextprotocol/server-github@2025.4.8"],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_PAT_HERE"
       },
@@ -10,7 +10,7 @@
     },
     "firecrawl": {
       "command": "npx",
-      "args": ["-y", "firecrawl-mcp"],
+      "args": ["-y", "firecrawl-mcp@3.11.0"],
       "env": {
         "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_KEY_HERE"
       },
@@ -18,17 +18,17 @@
     },
     "supabase": {
       "command": "npx",
-      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--project-ref=YOUR_PROJECT_REF"],
+      "args": ["-y", "@supabase/mcp-server-supabase@0.7.0", "--project-ref=YOUR_PROJECT_REF"],
       "description": "Supabase database operations"
     },
     "memory": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "args": ["-y", "@modelcontextprotocol/server-memory@2026.1.26"],
       "description": "Persistent memory across sessions"
     },
     "sequential-thinking": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@2025.12.18"],
       "description": "Chain-of-thought reasoning"
     },
     "vercel": {
@@ -38,7 +38,7 @@
     },
     "railway": {
       "command": "npx",
-      "args": ["-y", "@railway/mcp-server"],
+      "args": ["-y", "@railway/mcp-server@0.1.8"],
       "description": "Railway deployments"
     },
     "cloudflare-docs": {
@@ -68,7 +68,7 @@
     },
     "exa-web-search": {
       "command": "npx",
-      "args": ["-y", "exa-mcp-server"],
+      "args": ["-y", "exa-mcp-server@3.1.9"],
       "env": {
         "EXA_API_KEY": "YOUR_EXA_API_KEY_HERE"
       },
@@ -76,17 +76,17 @@
     },
     "context7": {
       "command": "npx",
-      "args": ["-y", "@context7/mcp-server"],
-      "description": "Live documentation lookup"
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Live documentation lookup (package name unverified — check npm before use)"
     },
     "magic": {
       "command": "npx",
-      "args": ["-y", "@magicuidesign/mcp@latest"],
+      "args": ["-y", "@magicuidesign/mcp@2.0.0"],
       "description": "Magic UI components"
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/your/projects"],
+      "args": ["-y", "@modelcontextprotocol/server-filesystem@2026.1.14", "/path/to/your/projects"],
       "description": "Filesystem operations (set your path)"
     }
   },
@@ -94,6 +94,8 @@
     "usage": "Copy the servers you need to your ~/.claude.json mcpServers section",
     "env_vars": "Replace YOUR_*_HERE placeholders with actual values",
     "disabling": "Use disabledMcpServers array in project config to disable per-project",
-    "context_warning": "Keep under 10 MCPs enabled to preserve context window"
+    "context_warning": "Keep under 10 MCPs enabled to preserve context window",
+    "pinned_date": "2026-03-21",
+    "audit_reminder": "Review and update pinned versions quarterly (next: 2026-06-21)"
   }
 }
