@@ -119,7 +119,7 @@ For each PC (sequential, in Test Strategy order):
 4. Receive the subagent's structured result: pc_id, status, red_result, green_result, refactor_result, commits, files_changed, error
 5. If the subagent returns `RED_ALREADY_PASSES` → investigate. The feature may already exist or the test is wrong.
 6. If the subagent crashes or times out after partial commits → report: subagent exit state, last commit SHA(s) via `git log -3 --oneline`, and the PC in progress. Do NOT auto-revert.
-7. If the subagent returns `failure` → **STOP** and report the error to the user. Do not proceed to the next PC.
+7. If the subagent returns `failure` → **STOP** and report the error to the user. If the failure message mentions a prior PC or a structural conflict, report it as a potential PC conflict (the subagent believes making its test pass necessarily breaks prior code — analogous to the old Loop Invariant). If the failure suggests a test/spec mismatch, the parent should investigate and, if confirmed, fix the test locally (with a TDD Log note) and re-dispatch the PC. Do not proceed to the next PC.
 
 ### Parent Regression Verification
 
