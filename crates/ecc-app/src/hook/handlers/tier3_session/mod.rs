@@ -1,6 +1,7 @@
 //! Tier 3 Hooks — Session management and file I/O hooks.
 
 mod compact;
+pub mod daily;
 mod helpers;
 mod lifecycle;
 mod logging;
@@ -12,6 +13,7 @@ use log::warn;
 use std::path::Path;
 
 pub use compact::{post_compact, pre_compact};
+pub use daily::daily_summary;
 pub use lifecycle::{session_end, session_start};
 pub use logging::{config_change_log, subagent_start_log, subagent_stop_log};
 pub use reflection::{craft_velocity, oath_reflection};

@@ -159,6 +159,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "stop:cost-tracker" => handlers::cost_tracker(stdin, ports),
         "stop:oath-reflection" => handlers::oath_reflection(stdin, ports),
         "stop:craft-velocity" => handlers::craft_velocity(stdin, ports),
+        "stop:daily-summary" => handlers::daily_summary(stdin, ports),
 
         // Unknown hook — passthrough with warning
         _ => {
