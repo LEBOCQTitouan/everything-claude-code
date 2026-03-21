@@ -17,7 +17,7 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 ## 1. Analysis
 
-Invoke the `observability-auditor` agent with full codebase access.
+Invoke the `observability-auditor` agent with full codebase access (allowedTools: [Read, Grep, Glob, Bash]).
 
 The agent evaluates:
 - **Log level consistency** — appropriate use of debug, info, warn, error across modules

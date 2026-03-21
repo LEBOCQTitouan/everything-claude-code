@@ -19,7 +19,7 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 Launch **two agents in parallel**:
 
-### 1a. `code-reviewer` Agent
+### 1a. `code-reviewer` Agent (allowedTools: [Read, Grep, Glob, Bash])
 Evaluates:
 - **Code readability** — naming clarity, comment quality, self-documenting code
 - **Function size** — functions exceeding 50 lines
@@ -30,7 +30,7 @@ Evaluates:
 - **Security** — basic security patterns (input validation, injection prevention)
 - **Maintainability** — complexity, coupling, cohesion at function/class level
 
-### 1b. `uncle-bob` Agent
+### 1b. `uncle-bob` Agent (allowedTools: [Read, Grep, Glob])
 Evaluates (diagnosis only — never produces code):
 - **SRP** (Single Responsibility) — each module/class has one reason to change
 - **OCP** (Open/Closed) — open for extension, closed for modification

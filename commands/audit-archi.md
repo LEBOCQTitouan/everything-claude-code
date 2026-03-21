@@ -19,7 +19,7 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 Launch **three agents in parallel**:
 
-### 1a. `arch-reviewer` Agent
+### 1a. `arch-reviewer` Agent (allowedTools: [Read, Grep, Glob, Bash])
 Evaluates:
 - **Layering violations** — imports crossing architectural boundaries
 - **Dependency direction** — dependencies pointing inward (domain ← app ← infra)
@@ -29,14 +29,14 @@ Evaluates:
 - **DDD compliance** — bounded contexts, aggregates, value objects
 - **Hexagonal compliance** — ports/adapters pattern adherence
 
-### 1b. `architect` Agent
+### 1b. `architect` Agent (allowedTools: [Read, Grep, Glob, Bash])
 Evaluates:
 - **Bounded context integrity** — context boundaries align with domain model
 - **Port contract completeness** — all external interactions go through ports
 - **Adapter coverage** — every port has at least one adapter
 - **Domain purity** — domain crate has zero I/O imports
 
-### 1c. `component-auditor` Agent
+### 1c. `component-auditor` Agent (allowedTools: [Read, Grep, Glob, Bash])
 Evaluates the 6 component principles:
 - **REP** (Reuse/Release Equivalence) — reusable units match release units
 - **CCP** (Common Closure) — classes that change together belong together

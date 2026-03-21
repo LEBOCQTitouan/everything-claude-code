@@ -17,7 +17,7 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 ## 1. Analysis
 
-Invoke the `security-reviewer` agent with full codebase access.
+Invoke the `security-reviewer` agent with full codebase access (allowedTools: [Read, Grep, Glob, Bash]).
 
 The agent evaluates:
 - **OWASP Top 10** — injection, broken auth, sensitive data exposure, XXE, broken access control, misconfig, XSS, insecure deserialization, known vulnerabilities, insufficient logging

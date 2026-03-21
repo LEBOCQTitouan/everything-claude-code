@@ -21,14 +21,14 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 Launch **two agents in parallel**:
 
-#### `doc-analyzer` Agent
+#### `doc-analyzer` Agent (allowedTools: [Read, Grep, Glob, Bash])
 Evaluates:
 - **Coverage** — percentage of public API surface with documentation
 - **Module summaries** — presence and completeness of module-level docs
 - **Domain concepts** — documented vs undocumented domain terms
 - **Dependency documentation** — dependency purpose and usage documented
 
-#### `doc-validator` Agent
+#### `doc-validator` Agent (allowedTools: [Read, Grep, Glob, Bash])
 Evaluates:
 - **Accuracy** — doc claims match actual code behavior
 - **Staleness** — docs that reference removed or renamed entities

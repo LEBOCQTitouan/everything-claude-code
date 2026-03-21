@@ -19,7 +19,7 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 ### 1a. Standard Test Architecture Analysis
 
-Invoke the `test-auditor` agent with full codebase access.
+Invoke the `test-auditor` agent with full codebase access (allowedTools: [Read, Grep, Glob, Bash]).
 
 The agent evaluates:
 - **Test classification** — unit, integration, E2E test distribution

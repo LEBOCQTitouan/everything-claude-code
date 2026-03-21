@@ -17,7 +17,7 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 ## 1. Analysis
 
-Invoke the `error-handling-auditor` agent with full codebase access.
+Invoke the `error-handling-auditor` agent with full codebase access (allowedTools: [Read, Grep, Glob, Bash]).
 
 The agent evaluates:
 - **Swallowed errors** — caught exceptions with no logging, re-throw, or handling

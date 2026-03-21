@@ -11,6 +11,26 @@ Comprehensive audit across all domains with cross-domain correlation. Delegates 
 
 Scope: $ARGUMENTS (or full codebase if none provided)
 
+> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Parse arguments"
+- "Invoke audit-orchestrator"
+- "Phase 1: Evolution analysis"
+- "Phase 2: Architecture audit"
+- "Phase 2: Code quality audit"
+- "Phase 2: Security audit"
+- "Phase 2: Test audit"
+- "Phase 2: Convention audit"
+- "Phase 2: Error handling audit"
+- "Phase 2: Observability audit"
+- "Phase 2: Documentation audit"
+- "Phase 3: Cross-domain correlation"
+- "Write report"
+- "Present summary"
+
+Mark each item complete as the phase finishes.
+
 ## Arguments
 
 - `--scope=<path>` — limit to subdirectory (default: entire repo)

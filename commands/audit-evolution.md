@@ -18,7 +18,7 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 ## 1. Analysis
 
-Invoke the `evolution-analyst` agent with full codebase and git history access.
+Invoke the `evolution-analyst` agent with full codebase and git history access (allowedTools: [Read, Grep, Glob, Bash]).
 
 Pass the `--window` argument to control the git history depth.
 

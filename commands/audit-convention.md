@@ -17,7 +17,7 @@ Scope: $ARGUMENTS (or full codebase if none provided)
 
 ## 1. Analysis
 
-Invoke the `convention-auditor` agent with full codebase access.
+Invoke the `convention-auditor` agent with full codebase access (allowedTools: [Read, Grep, Glob, Bash]).
 
 The agent evaluates:
 - **Naming conventions** — variable, function, type, file, and module naming consistency
