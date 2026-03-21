@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- Persist specs and designs as versioned file artifacts in docs/specs/ — survive sessions, re-readable on /implement re-entry (BL-029)
 - Rename pipeline: /plan → /spec, /solution → /design with doc-first Plan Mode review in all 3 phases (ADR 0006)
 - Display open backlog items as selectable options when `/plan` is called without arguments
 - Add cross-session memory system: append-only action log + grouped work item files, written by phase-transition hooks (BL-027)
