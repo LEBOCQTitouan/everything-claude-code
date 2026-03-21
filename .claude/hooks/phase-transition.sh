@@ -14,6 +14,7 @@ STATE_FILE="$WORKFLOW_DIR/state.json"
 
 TARGET="${1:-}"
 ARTIFACT="${2:-}"
+ARTIFACT_PATH="${3:-}"
 
 if [ -z "$TARGET" ]; then
   echo "Usage: phase-transition.sh <target-phase> [artifact-name]" >&2
@@ -64,6 +65,14 @@ JQ_EXPR=".phase = \"$TARGET\""
 
 if [ -n "$ARTIFACT" ]; then
   JQ_EXPR="$JQ_EXPR | .artifacts.$ARTIFACT = \"$TIMESTAMP\""
+fi
+
+# Store spec/design file paths in state.json (BL-029)
+if [ -n "$ARTIFACT_PATH" ]; then
+  case "$ARTIFACT" in
+    plan)     JQ_EXPR="$JQ_EXPR | .artifacts.spec_path = \"$ARTIFACT_PATH\"" ;;
+    solution) JQ_EXPR="$JQ_EXPR | .artifacts.design_path = \"$ARTIFACT_PATH\"" ;;
+  esac
 fi
 
 if [ "$TARGET" = "done" ]; then
