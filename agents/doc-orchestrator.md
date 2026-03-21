@@ -1,7 +1,7 @@
 ---
 name: doc-orchestrator
 description: Documentation suite orchestrator. Coordinates doc-analyzer, doc-generator, doc-validator, doc-reporter, and diagram-generator agents in a phased pipeline with parallel module-level execution.
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent"]
+tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuestion"]
 model: opus
 skills: ["doc-guidelines"]
 memory: project
@@ -91,7 +91,7 @@ Perform a lightweight codebase scan and present a plan manifest for user approva
    - If exists, compare current git SHA against manifest's `gitSha`
    - Show which doc files are stale (source deps changed since last generation)
    - Offer incremental run (only regenerate stale files) vs full run
-5. **Wait for user approval**, then proceed to execution phases
+5. Use `AskUserQuestion` to get user approval with options: ["Approve full run", "Incremental only", "Modify scope", "Cancel"]. If AskUserQuestion is unavailable, display the plan and wait for the user to confirm. Then proceed to execution phases.
 
 ### Phase 1: Discovery + Extraction (Sequential — must complete before other phases)
 

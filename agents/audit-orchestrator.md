@@ -1,7 +1,7 @@
 ---
 name: audit-orchestrator
 description: Codebase health audit orchestrator. Delegates to domain-specific audit agents in parallel, correlates cross-domain findings, and generates a comprehensive audit report.
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent"]
+tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuestion"]
 model: opus
 skills: ["architecture-review"]
 ---
@@ -60,7 +60,7 @@ Perform a lightweight codebase scan and present a plan manifest for user approva
    - Scaling decisions (hotspot count, sampling strategy for large codebases)
    - Prior audit comparison (if `--diff` provided)
 
-3. **Wait for user approval**, then proceed
+3. Use `AskUserQuestion` to get user approval with options: ["Approve", "Modify scope", "Cancel"]. If AskUserQuestion is unavailable, display the plan and wait for the user to confirm. Then proceed.
 
 ### Phase 1: Evolutionary Analysis (Sequential)
 
