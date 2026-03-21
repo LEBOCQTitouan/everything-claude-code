@@ -11,7 +11,18 @@ allowed-tools: [Read, Grep, Glob, Bash, Skill, AskUserQuestion]
 
 ## Phase 0 — Validate Input
 
-If `$ARGUMENTS` is empty or blank, use AskUserQuestion to ask:
+If `$ARGUMENTS` is empty or blank:
+
+1. Check if `docs/backlog/BACKLOG.md` exists
+2. If it exists, read it and collect all entries with status `open`
+3. If there are no open entries (all archived/promoted, or file does not exist), fall back to the free-text prompt below
+4. If there are open entries, present them via AskUserQuestion:
+   - Each open backlog item becomes an option with label `"BL-NNN: <Title>"` and description `"Scope: <Scope> | Target: <Target>"`
+   - AskUserQuestion automatically provides "Other" for custom input
+5. If the user selects a backlog item (BL-NNN), read its full file at `docs/backlog/BL-NNN-<slug>.md` and extract the optimized prompt from the `## Optimized Prompt` section. Use that prompt as `$ARGUMENTS`
+6. If the user selects "Other" and types custom text, use that as `$ARGUMENTS`
+
+**Fallback** (no backlog or no open entries): use AskUserQuestion to ask:
 
 > What would you like to plan? Describe the feature, bug fix, or refactoring you have in mind.
 
