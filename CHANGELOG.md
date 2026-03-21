@@ -33,6 +33,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- Remove 5 alias/superseded command files (plan.md, solution.md, plan-dev.md, plan-fix.md, plan-refactor.md) and update 60+ file references to canonical spec/design pipeline names (BL-045)
 - Decompose install/mod.rs (920 lines) into global.rs, init.rs, resolve.rs submodules — mod.rs reduced to 72 lines
 - Apply cargo fmt with edition 2024 across 543 files; add rustfmt.toml and .git-blame-ignore-revs
 - Add skills preload and negative examples to spec-adversary, solution-adversary, drift-checker, planner agents (BL-006 through BL-009)
