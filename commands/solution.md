@@ -1,6 +1,6 @@
 ---
 description: "Design the technical solution from the spec — Phase 2 of the pipeline"
-allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite]
+allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite, TodoRead]
 ---
 
 # Solution Command
@@ -18,10 +18,28 @@ allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite]
 4. If the spec is not in conversation context → ask the user:
    > "Spec not found in conversation context. Please re-run the `/plan-*` command or paste the spec output here."
 5. Extract `concern` and `feature` from `state.json` for the solution header
+6. **Re-entry**: If `phase` is `"solution"`, read existing TodoWrite items via TodoRead to resume progress
+
+> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Phase 0: State Validation"
+- "Phase 1: Implementation Design"
+- "Phase 2: SOLID Validation"
+- "Phase 3: Professional Conscience"
+- "Phase 4: Security Quick-Check"
+- "Phase 5: E2E Boundary Detection"
+- "Phase 6: Doc Update Plan"
+- "Phase 7: AC Coverage Verification"
+- "Phase 8: Output Solution"
+- "Phase 9: Adversarial Review"
+- "Phase 10: Present and STOP"
+
+Mark each item complete as the phase finishes.
 
 ## Phase 1: Implementation Design
 
-Launch a Task with the `planner` agent:
+Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Pass the full spec content from conversation context
 - Instruct the agent to:
@@ -40,7 +58,7 @@ Launch a Task with the `planner` agent:
 
 ## Phase 2: SOLID Validation
 
-Launch a Task with the `uncle-bob` agent:
+Launch a Task with the `uncle-bob` agent (allowedTools: [Read, Grep, Glob]):
 
 - Pass the proposed file changes from Phase 1 as context
 - Instruct the agent to evaluate the design against:
@@ -51,7 +69,7 @@ Launch a Task with the `uncle-bob` agent:
 
 ## Phase 3: Professional Conscience
 
-Launch a Task with the `robert` agent:
+Launch a Task with the `robert` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Pass the spec content from conversation AND the proposed design from Phase 1
 - Instruct the agent to evaluate the design against the Programmer's Oath
@@ -60,7 +78,7 @@ Launch a Task with the `robert` agent:
 
 ## Phase 4: Security Quick-Check
 
-Launch a Task with the `security-reviewer` agent:
+Launch a Task with the `security-reviewer` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Pass the proposed file changes from Phase 1 as context
 - This is a quick design-level scan, NOT a full audit (that happens during `/verify`)
@@ -163,7 +181,7 @@ The solution is output in conversation only — no file is written.
 
 ## Phase 9: Adversarial Review
 
-Launch a Task with the `solution-adversary` agent:
+Launch a Task with the `solution-adversary` agent (allowedTools: [Read, Bash, Grep, Glob]):
 
 - Pass the full spec AND solution from conversation context
 - The agent attacks the solution on 8 dimensions: coverage, order, fragility, rollback, architecture, blast radius, missing PCs, doc plan

@@ -1,6 +1,6 @@
 ---
 description: "Implement the solution — Phase 3. Deterministic TDD loop with mandatory doc updates."
-allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWrite, EnterPlanMode, ExitPlanMode]
+allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWrite, TodoRead, EnterPlanMode, ExitPlanMode]
 ---
 
 # Implement Command
@@ -18,7 +18,8 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 4. If the spec or solution is not in conversation context → ask the user:
    > "Spec and/or solution not found in conversation context. Please re-run `/plan-*` and `/solution` or paste the outputs here."
 5. Extract `concern` and `feature` from `state.json` for the implementation header
-6. Run: `!bash .claude/hooks/phase-transition.sh implement`
+6. **Re-entry**: If `phase` is `"implement"`, read existing TodoWrite items via TodoRead to resume progress from the last completed PC
+7. Run: `!bash .claude/hooks/phase-transition.sh implement`
 
 ## Phase 1: Enter Plan Mode
 
