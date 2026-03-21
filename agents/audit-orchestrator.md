@@ -19,6 +19,18 @@ You coordinate the full codebase health audit pipeline: discovery, evolutionary 
 - `skills/error-handling-audit/SKILL.md` — error handling methodology
 - `skills/convention-consistency/SKILL.md` — naming/pattern consistency methodology
 
+> **Tracking**: Create a TodoWrite checklist for the execution pipeline phases. If TodoWrite is unavailable, proceed without tracking — the pipeline executes identically.
+
+TodoWrite items:
+- "Phase 0: Discovery"
+- "Phase 1: Evolutionary Analysis"
+- "Phase 2: Domain Audits (parallel)"
+- "Phase 3: Cross-Domain Correlation"
+- "Phase 4: Report Generation"
+- "Phase 5: Console Summary"
+
+Mark each item complete as the phase finishes.
+
 ## Arguments
 
 - `--scope=<path>` — limit to subdirectory (default: entire repo)
@@ -66,17 +78,17 @@ Wait for completion. The output feeds into Phase 2 (domain agents can cross-refe
 
 ### Phase 2: Domain Audits (Parallel)
 
-Based on `--domain` filter, launch these agents in parallel:
+Based on `--domain` filter, launch these agents in parallel with `context: "fork"` to isolate intermediate output:
 
-| Agent | Domain | What it audits |
-|-------|--------|----------------|
-| `arch-reviewer` | architecture | Layering, coupling, dependency direction, DDD compliance, dependency metrics, boundary coherence |
-| `security-reviewer` | security | OWASP top 10, secrets, input validation, auth/authz |
-| `test-auditor` | testing | Test classification, structural coupling, fixture ratios, coverage gaps |
-| `observability-auditor` | observability | Log levels, structured logging, correlation IDs, metrics, health checks |
-| `error-handling-auditor` | errors | Swallowed errors, error taxonomy, boundary translation, partial failures |
-| `convention-auditor` | conventions | Naming patterns, pattern consistency, config access, primitive obsession |
-| `component-auditor` | components | REP, CCP, CRP, ADP, SDP, SAP, instability, abstractness, main sequence distance |
+| Agent | Domain | allowedTools | What it audits |
+|-------|--------|-------------|----------------|
+| `arch-reviewer` | architecture | [Read, Grep, Glob, Bash] | Layering, coupling, dependency direction, DDD compliance, dependency metrics, boundary coherence |
+| `security-reviewer` | security | [Read, Grep, Glob, Bash] | OWASP top 10, secrets, input validation, auth/authz |
+| `test-auditor` | testing | [Read, Grep, Glob, Bash] | Test classification, structural coupling, fixture ratios, coverage gaps |
+| `observability-auditor` | observability | [Read, Grep, Glob, Bash] | Log levels, structured logging, correlation IDs, metrics, health checks |
+| `error-handling-auditor` | errors | [Read, Grep, Glob, Bash] | Swallowed errors, error taxonomy, boundary translation, partial failures |
+| `convention-auditor` | conventions | [Read, Grep, Glob, Bash] | Naming patterns, pattern consistency, config access, primitive obsession |
+| `component-auditor` | components | [Read, Grep, Glob, Bash] | REP, CCP, CRP, ADP, SDP, SAP, instability, abstractness, main sequence distance |
 
 Pass each agent:
 - The scope path
@@ -226,9 +238,10 @@ Codebase Health Audit Complete
 
 ## Error Handling
 
-- If a domain agent fails, continue with remaining agents and report the failure
+- If a domain agent fails, log the failure (agent name, error summary) and continue with remaining agents
 - If evolutionary analysis fails, proceed with domain audits (they lose hotspot cross-referencing but still function)
-- At the end, list any failed domains so the user can retry with `--domain=<failed>`
+- At the end, list any failed domains with error summaries so the user can retry with `--domain=<failed>`
+- Update TodoWrite to mark failed phases with a note rather than leaving them incomplete
 
 ## What You Are NOT
 

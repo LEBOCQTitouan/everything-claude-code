@@ -39,6 +39,21 @@ You coordinate the full documentation pipeline: planning, analysis, generation, 
 - `skills/doc-drift-detector/SKILL.md` — doc-code drift detection
 - `skills/doc-gap-analyser/SKILL.md` — systematic gap analysis by priority
 
+> **Tracking**: Create a TodoWrite checklist for the execution pipeline phases. If TodoWrite is unavailable, proceed without tracking — the pipeline executes identically.
+
+TodoWrite items:
+- "Phase 0: Plan"
+- "Phase 1: Discovery + Extraction"
+- "Phase 2: Generation (parallel)"
+- "Phase 2b: Quality (parallel)"
+- "Phase 3: Index Assembly"
+- "Phase 4: README Sync"
+- "Phase 5: CLAUDE.md Challenge"
+- "Phase 6: Quality Gate + Manifest"
+- "Phase 7: Console Summary"
+
+Mark each item complete as the phase finishes.
+
 ## Arguments
 
 - `--scope=<path>` — directory to analyze (default: project root)
@@ -110,22 +125,22 @@ Based on the module list from Phase 1, fan out parallel agents using generation 
 
 #### For SMALL codebases (single-file output):
 
-Launch in parallel:
-1. **doc-generator** — generate all module summaries, glossary, changelog (uses api-reference-gen, architecture-gen, changelog-gen, readme-gen skills)
-2. **diagram-generator** — generate Mermaid diagrams from analysis data, markers, and manifest
+Launch in parallel with `context: "fork"` to isolate intermediate output:
+1. **doc-generator** (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) — generate all module summaries, glossary, changelog (uses api-reference-gen, architecture-gen, changelog-gen, readme-gen skills)
+2. **diagram-generator** (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) — generate Mermaid diagrams from analysis data, markers, and manifest
 
 #### For LARGE codebases (folder output):
 
-Launch in parallel — one agent per module:
+Launch in parallel with `context: "fork"` — one agent per module:
 
 ```
 # For each priority module in [lib, hooks, ci, ...]:
-doc-generator --module=lib    → docs/module-summaries/lib.md
-doc-generator --module=hooks  → docs/module-summaries/hooks.md
+doc-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) --module=lib    → docs/module-summaries/lib.md
+doc-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) --module=hooks  → docs/module-summaries/hooks.md
 
 # Plus non-module-scoped tasks:
-doc-generator --changelog     → docs/CHANGELOG.md (uses changelog-gen skill)
-diagram-generator             → docs/diagrams/*.md
+doc-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) --changelog     → docs/CHANGELOG.md (uses changelog-gen skill)
+diagram-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash])             → docs/diagrams/*.md
 ```
 
 Each agent writes to its own file — no conflicts.
@@ -136,8 +151,8 @@ Launch quality agents in parallel:
 
 #### For SMALL codebases:
 
-1. **doc-validator** — validate all existing docs (uses doc-drift-detector, doc-gap-analyser skills)
-2. **doc-reporter** — calculate coverage metrics
+1. **doc-validator** (allowedTools: [Read, Grep, Glob, Bash]) — validate all existing docs (uses doc-drift-detector, doc-gap-analyser skills)
+2. **doc-reporter** (allowedTools: [Read, Grep, Glob, Bash]) — calculate coverage metrics
 
 #### For LARGE codebases:
 
