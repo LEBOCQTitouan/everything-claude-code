@@ -107,10 +107,11 @@ You have gathered requirements, architecture analysis, audit findings, and backl
 
 ### Rules
 
+- Ask **one question at a time** using `AskUserQuestion`. WAIT for the user's response before asking the next question. NEVER present multiple questions in a single turn.
+- For each question, use `AskUserQuestion` with the recommended answer as the first option (append "(Recommended)" to the label). Add 1-2 alternative options where relevant. The user can always select "Other" to provide a custom answer.
 - Explore the codebase yourself instead of asking the user when the answer is findable in code
-- Provide your recommended answer for each question
-- The user can accept recommendations with "yes", override with their own answer, or say "spec it" to accept all remaining recommendations
-- Do NOT proceed until the user says **"spec it"** (or equivalent confirmation)
+- The user can say **"spec it"** at any point to accept all remaining recommended answers and skip to the spec. Check for this after each answer.
+- Do NOT proceed to the spec until the user says **"spec it"** or all questions are answered
 
 ## Phase 7: Write the Spec
 
