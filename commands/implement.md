@@ -198,6 +198,8 @@ Read the solution's `## E2E Activation Rules`:
   3. If any E2E test fails → fix and re-run. All must pass.
   4. Commit: `test(e2e): add <boundary> E2E tests`
 
+After E2E phase completes (whether tests ran or not), update tasks.md: set "E2E tests" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
+
 ## Phase 5: Code Review
 
 Launch a Task with the `code-reviewer` agent:
@@ -216,6 +218,8 @@ If CRITICAL or HIGH findings:
 Max 2 fix rounds. If CRITICAL/HIGH findings persist after 2 rounds, report to user and proceed.
 
 Record: code review summary (PASS or findings addressed)
+
+After code review completes, update tasks.md: set "Code review" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
 
 ## Phase 6: Doc Updates
 
@@ -266,6 +270,8 @@ For each remaining row in the Doc Update Plan:
 For CHANGELOG.md (always required):
 1. Add the feature entry
 2. You MUST commit immediately: `docs(changelog): add <feature> entry`
+
+After all doc updates complete, update tasks.md: set "Doc updates" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
 
 ## Phase 7: Write implement-done.md
 
@@ -324,9 +330,11 @@ All pass conditions: N/N ✅
 <type>(<scope>): <description>
 ```
 
-After writing, run: `!bash .claude/hooks/phase-transition.sh done implement`
-
-Commit: `chore: write implement-done.md`
+After writing:
+1. Update tasks.md: set "Write implement-done.md" entry to `done@<ISO 8601 timestamp>` and mark `[x]`
+2. Commit tasks.md final state: `docs: finalize tasks.md for <feature>`
+3. Run: `!bash .claude/hooks/phase-transition.sh done implement`
+4. Commit: `chore: write implement-done.md`
 
 ## Phase 8: Final Verification and STOP
 
