@@ -14,6 +14,7 @@ Generated from git conventional commits. Grouped by type and version.
 - Add cross-session memory system: append-only action log + grouped work item files, written by phase-transition hooks (BL-027)
 - Add grill-me adversarial interview skill: 5-stage stress test with branch tracking, vocabulary detection, and transcript output (BL-011)
 - Add ubiquitous-language domain extraction skill: extracts types, functions, errors into structured glossary per bounded context (BL-010)
+- Add mandatory Web Research phase to plan-dev, plan-fix, plan-refactor commands with WebSearch/exa and Research Summary output (BL-028)
 
 ### Fixes
 
