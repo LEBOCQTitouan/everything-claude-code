@@ -9,7 +9,7 @@ const DEFAULT_TITLE: &str = "Claude Code";
 /// Default notification message.
 const DEFAULT_MESSAGE: &str = "Claude needs your attention";
 
-/// Send a cross-platform system notification. Fire-and-forget: failures are silently ignored.
+/// Send a cross-platform system notification. Fire-and-forget: failures are logged.
 fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
     match ports.env.platform() {
         Platform::MacOS => {
@@ -17,11 +17,15 @@ fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
                 "display notification \"{}\" with title \"{}\" sound name \"Glass\"",
                 message, title
             );
-            let _ = ports.shell.run_command("osascript", &["-e", &script]);
+            if let Err(err) = ports.shell.run_command("osascript", &["-e", &script]) {
+                log::warn!("osascript notification failed: {err}");
+            }
         }
         Platform::Linux => {
             if ports.shell.command_exists("notify-send") {
-                let _ = ports.shell.run_command("notify-send", &[title, message]);
+                if let Err(err) = ports.shell.run_command("notify-send", &[title, message]) {
+                    log::warn!("notify-send failed: {err}");
+                }
             }
         }
         Platform::Windows => {
@@ -30,7 +34,9 @@ fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
                 .shell
                 .run_command("powershell", &["-Command", &ps_cmd]);
             if result.is_err() {
-                let _ = ports.shell.run_command("msg", &["*", message]);
+                if let Err(err) = ports.shell.run_command("msg", &["*", message]) {
+                    log::warn!("msg fallback notification failed: {err}");
+                }
             }
         }
         Platform::Unknown => {}

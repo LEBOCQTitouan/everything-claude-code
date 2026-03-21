@@ -429,9 +429,12 @@ fn init_project_apply(ctx: &InstallContext, project_dir: &Path) {
 
     let tracked = app_gitignore::find_tracked_ecc_files(ctx.shell, ctx.fs, project_dir);
     for file in &tracked {
-        let _ = ctx
-            .shell
-            .run_command_in_dir("git", &["rm", "--cached", file], project_dir);
+        if let Err(err) =
+            ctx.shell
+                .run_command_in_dir("git", &["rm", "--cached", file], project_dir)
+        {
+            log::warn!("git rm --cached failed: {err}");
+        }
         ctx.terminal.stdout_write(&format!("Untracked: {file}\n"));
     }
 }

@@ -22,7 +22,11 @@ pub fn handle_clear(state: &mut ClawState, ports: &ClawPorts<'_>) {
     let count = state.clear_turns();
 
     if let Some(home) = ports.env.home_dir() {
-        let _ = super::super::storage::clear_session(&home, state.session_name(), ports.fs);
+        if let Err(err) =
+            super::super::storage::clear_session(&home, state.session_name(), ports.fs)
+        {
+            log::warn!("clear session failed: {err}");
+        }
     }
 
     ports
@@ -70,12 +74,14 @@ pub fn handle_sessions(target: &Option<String>, state: &mut ClawState, ports: &C
             }
             // Save current session first
             if !state.turns().is_empty() {
-                let _ = super::super::storage::save_session(
+                if let Err(err) = super::super::storage::save_session(
                     &home,
                     state.session_name(),
                     state.turns(),
                     ports.fs,
-                );
+                ) {
+                    log::warn!("save session failed: {err}");
+                }
             }
             // Switch to new session
             state.set_turns(super::super::storage::load_session(&home, name, ports.fs));

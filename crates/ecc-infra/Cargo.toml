@@ -12,3 +12,4 @@ walkdir = { workspace = true }
 crossterm = { workspace = true }
 rustyline = { workspace = true }
 anyhow = { workspace = true }
+log = "0.4"

@@ -298,6 +298,7 @@ dependencies = [
  "anyhow",
  "crossterm",
  "ecc-ports",
+ "log",
  "rustyline",
  "serde_json",
  "walkdir",
