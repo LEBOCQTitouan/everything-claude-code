@@ -73,47 +73,76 @@ Also create native tasks via `TaskCreate` for each PC in TDD order. Each task sh
 
 Use `TaskUpdate` to mark each task `in_progress` when starting and `completed` when the PC passes. This provides spinner UX and persists across context compaction.
 
-## Phase 3: TDD Loop
+## Phase 3: TDD Loop (Subagent Dispatch)
 
-For each PC in the order specified by Test Strategy, execute the RED → GREEN → REFACTOR cycle:
+For each PC in the order specified by Test Strategy, dispatch to an isolated `tdd-executor` subagent. PCs are dispatched **sequentially** — one at a time, never in parallel. Each subagent gets a fresh context window.
 
-### RED
+### Context Brief Construction
 
-1. Write the test. The test function name and assertion MUST match the PC's Description.
-2. Run the PC's Command column **VERBATIM** — do not paraphrase or modify the command.
-3. The test MUST FAIL.
-   - If it passes → the feature already exists or the test is wrong. Investigate before proceeding.
-   - If the command errors for a reason unrelated to the assertion (e.g., compile error), fix the compilation issue and re-run.
-4. Record: `PC-NNN RED: <test name> fails as expected`
-5. You MUST commit immediately: `test: add <PC description> (PC-NNN)` — do not defer, do not batch, do not ask the user
+For each PC, build a context brief with these exact headings (max 500 lines total). The brief MUST NOT include the full spec content, full design content, prior PC implementation reasoning, or Phase 0-2 context — only the PC-specific slice.
 
-### GREEN
+#### ## PC Spec
 
-1. Write the **MINIMUM** code to make this PC's test pass.
-2. Do NOT write code for other PCs. One PC at a time.
-3. Run the PC's Command. It MUST PASS.
-4. Run ALL previously passing PCs' Commands. ALL MUST PASS (no regressions).
-   - If a previous PC regresses → fix the regression before proceeding.
-5. Record: `PC-NNN GREEN: passes, all N previous PCs pass`
-6. You MUST commit immediately: `feat: implement <PC description> (PC-NNN)` — do not defer, do not batch, do not ask the user
+The PC's verbatim fields: ID, Type, Description, Verifies AC, Command, Expected. When spec/design file paths are null in state.json (BL-029 not active), include the PC's verbatim fields (ID, type, description, command, expected, verifies AC text) inline here instead of referencing files.
 
-### REFACTOR
+#### ## File Paths
 
-1. If the code can be cleaned (extract, rename, simplify), do it.
-2. Run ALL PCs completed so far. ALL MUST PASS.
-3. If no refactoring needed, skip with: `PC-NNN REFACTOR: no refactor needed`
-4. Otherwise record: `PC-NNN REFACTOR: cleaned, all pass`
-5. If refactored, you MUST commit immediately: `refactor: clean <PC description> (PC-NNN)` — do not defer, do not batch, do not ask the user
+- `spec_path`: from `state.json` `artifacts.spec_path` (nullable)
+- `design_path`: from `state.json` `artifacts.design_path` (nullable)
 
-### Loop Invariant
+#### ## Files to Modify
 
-- If a test cannot go green without breaking a previous test → **STOP**. Report the conflict to the user with both PC IDs and the nature of the conflict. Do not proceed.
-- Never modify a test to make it pass — modify the implementation.
-- Exception: the test was wrong per the spec → fix the test AND document why in the TDD Log Notes column.
+List of files this PC should modify, filtered from the solution's File Changes table by this PC's spec ref.
 
-### Loop Completion
+#### ## Prior PC Results
 
-After ALL PCs complete:
+Summary table of all previously completed PCs (max 5 lines per PC):
+
+| PC ID | Status | Files Changed |
+|-------|--------|---------------|
+
+#### ## Commit Rules
+
+The commit message templates for RED, GREEN, REFACTOR.
+
+#### ## TDD Cycle Rules
+
+The RED-GREEN-REFACTOR instructions from the `tdd-executor` agent.
+
+### Per-PC Subagent Dispatch
+
+For each PC (sequential, in Test Strategy order):
+
+1. Build the context brief using the headings above
+2. Launch a Task with the `tdd-executor` agent (allowedTools: [Read, Write, Edit, MultiEdit, Bash, Grep, Glob])
+3. The subagent executes RED → GREEN → REFACTOR and commits atomically
+4. Receive the subagent's structured result: pc_id, status, red_result, green_result, refactor_result, commits, files_changed, error
+5. If the subagent returns `RED_ALREADY_PASSES` → investigate. The feature may already exist or the test is wrong.
+6. If the subagent crashes or times out after partial commits → report: subagent exit state, last commit SHA(s) via `git log -3 --oneline`, and the PC in progress. Do NOT auto-revert.
+7. If the subagent returns `failure` → **STOP** and report the error to the user. Do not proceed to the next PC.
+
+### Parent Regression Verification
+
+After each subagent completes successfully:
+
+1. Run every PC command from PC-001 through the just-completed PC-N (run ALL prior PCs' commands plus PC-N's command)
+2. For the first PC (PC-001), skip regression check — there are no prior PCs to verify
+3. Regression check MUST pass BEFORE marking PC-N as complete — if any prior PC fails, PC-N is NOT marked complete
+4. If a regression is detected → **STOP** and report: the regressing PC ID, the failing command, actual vs expected output, and the PC-N that caused it. Do not proceed.
+
+### Progress Tracking (Parent-Owned)
+
+After regression verification passes:
+
+1. Update TodoWrite to mark PC-NNN as complete
+2. Call TaskUpdate to mark PC-N's task as completed
+3. If the subagent failed, do NOT mark the PC as complete — TodoWrite and Task remain in-progress
+4. On re-entry (implement phase re-entry), read TodoRead and resume from the first incomplete PC
+
+### Loop Completion (Parent-Owned)
+
+After ALL PCs complete successfully:
+
 1. Run every PC's Command one final time. Record results.
 2. Run the lint PC (e.g., `cargo clippy -- -D warnings`). Must pass.
 3. Run the build PC (e.g., `cargo build`). Must pass.
@@ -243,6 +272,12 @@ All pass conditions: N/N ✅
 |---|------|----------|
 (or "None required")
 
+## Subagent Execution
+| PC ID | Status | Commit Count | Files Changed Count |
+|-------|--------|--------------|---------------------|
+| PC-001 | success | 3 | 2 |
+(or "Inline execution — subagent dispatch not used" for pre-BL-031 implementations)
+
 ## Code Review
 <summary — PASS or findings addressed>
 
@@ -289,5 +324,5 @@ Then STOP. The workflow is complete.
 ## Related Agents
 
 This command invokes:
-- `tdd-guide` — assists with complex TDD cycles during the RED → GREEN → REFACTOR loop
+- `tdd-executor` — executes each PC's RED → GREEN → REFACTOR cycle in an isolated subagent with fresh context
 - `code-reviewer` — reviews all changes against spec and solution after TDD loop completes
