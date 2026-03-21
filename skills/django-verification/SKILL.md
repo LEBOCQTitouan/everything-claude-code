@@ -16,6 +16,24 @@ Run before PRs, after major changes, and pre-deploy to ensure Django application
 - Running full environment → lint → test → security → deploy readiness pipeline
 - Validating migration safety and test coverage
 
+> **Tracking**: Create a TodoWrite checklist for the verification pipeline. If TodoWrite is unavailable, proceed without tracking — the verification executes identically.
+
+TodoWrite items:
+- "Phase 1: Environment Check"
+- "Phase 2: Code Quality & Formatting"
+- "Phase 3: Migrations"
+- "Phase 4: Tests + Coverage"
+- "Phase 5: Security Scan"
+- "Phase 6: Django Management Commands"
+- "Phase 7: Performance Checks"
+- "Phase 8: Static Assets"
+- "Phase 9: Configuration Review"
+- "Phase 10: Logging Configuration"
+- "Phase 11: API Documentation"
+- "Phase 12: Diff Review"
+
+Mark each item complete as the phase finishes.
+
 ## Phase 1: Environment Check
 
 ```bash
