@@ -10,6 +10,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- Replace free-text "Wait for user approval" with AskUserQuestion in audit-orchestrator and doc-orchestrator (Tier B native tooling fixes)
+- Add context:"fork" to summary-output Task invocations in solution.md and verify.md
+- Add TodoWrite progress tracking to build-fix, backlog commands and 14 moderate-complexity agents
+- Replace manual git worktree with EnterWorktree/ExitWorktree in ecc-test-mode
 - Add allowedTools scoping to sub-agent spawns in architect, architect-module, code-reviewer, arch-reviewer, and requirements-analyst agents (Tier A native tooling fixes)
 - Add context:"fork" isolation to parallel spawns in arch-reviewer and requirements-analyst agents
 - Add TodoWrite progress tracking to requirements-analyst, doc-validator, doc-analyzer agents and configure-ecc, django-verification, springboot-verification skills
