@@ -23,7 +23,9 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 
 ## Phase 1: Enter Plan Mode
 
-1. Call `EnterPlanMode`
+> **BLOCKING**: You MUST call `EnterPlanMode` before any implementation work. NEVER skip Plan Mode — not to "save context", not for "simple changes", not for any reason. This is non-negotiable.
+
+1. You MUST call `EnterPlanMode`
 2. Write the plan file with the following structure, using the spec and solution from conversation context:
 
 ```markdown
@@ -76,7 +78,7 @@ For each PC in the order specified by Test Strategy, execute the RED → GREEN �
    - If it passes → the feature already exists or the test is wrong. Investigate before proceeding.
    - If the command errors for a reason unrelated to the assertion (e.g., compile error), fix the compilation issue and re-run.
 4. Record: `PC-NNN RED: <test name> fails as expected`
-5. Commit: `test: add <PC description> (PC-NNN)`
+5. You MUST commit immediately: `test: add <PC description> (PC-NNN)` — do not defer, do not batch, do not ask the user
 
 ### GREEN
 
@@ -86,7 +88,7 @@ For each PC in the order specified by Test Strategy, execute the RED → GREEN �
 4. Run ALL previously passing PCs' Commands. ALL MUST PASS (no regressions).
    - If a previous PC regresses → fix the regression before proceeding.
 5. Record: `PC-NNN GREEN: passes, all N previous PCs pass`
-6. Commit: `feat: implement <PC description> (PC-NNN)`
+6. You MUST commit immediately: `feat: implement <PC description> (PC-NNN)` — do not defer, do not batch, do not ask the user
 
 ### REFACTOR
 
@@ -94,7 +96,7 @@ For each PC in the order specified by Test Strategy, execute the RED → GREEN �
 2. Run ALL PCs completed so far. ALL MUST PASS.
 3. If no refactoring needed, skip with: `PC-NNN REFACTOR: no refactor needed`
 4. Otherwise record: `PC-NNN REFACTOR: cleaned, all pass`
-5. If refactored, commit: `refactor: clean <PC description> (PC-NNN)`
+5. If refactored, you MUST commit immediately: `refactor: clean <PC description> (PC-NNN)` — do not defer, do not batch, do not ask the user
 
 ### Loop Invariant
 
@@ -184,11 +186,11 @@ For each decision marked `ADR Needed? Yes` in the spec's Decisions table:
 
 For each remaining row in the Doc Update Plan:
 1. Apply the doc update
-2. Commit: `docs: update <target> for <feature>`
+2. You MUST commit immediately: `docs: update <target> for <feature>`
 
 For CHANGELOG.md (always required):
 1. Add the feature entry
-2. Commit: `docs(changelog): add <feature> entry`
+2. You MUST commit immediately: `docs(changelog): add <feature> entry`
 
 ## Phase 7: Write implement-done.md
 
@@ -269,12 +271,13 @@ Then STOP. The workflow is complete.
 
 ## Constraints
 
+- You MUST enter Plan Mode (EnterPlanMode) in Phase 1 — NEVER skip it for any reason
 - The TDD loop is the ONLY way code gets written — no code outside the loop
 - Every PC Command is run VERBATIM — no paraphrasing, no modification
+- You MUST commit immediately after every RED, GREEN, REFACTOR, and doc update step — never defer commits, never batch multiple steps into one commit, never ask the user whether to commit
 - Doc updates happen BEFORE writing implement-done.md (they are part of implementation, not an afterthought)
 - implement-done.md schema is EXACT — stop hooks parse it
 - One PC at a time — never batch multiple PCs
-- Commit after every logical unit — test, implementation, refactor, doc update
 
 ## Related Agents
 
