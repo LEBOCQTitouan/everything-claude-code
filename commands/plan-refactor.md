@@ -71,7 +71,16 @@ Read `docs/audits/` for any existing audit reports relevant to the refactoring a
 4. Identify findings that the refactoring should resolve
 5. If no audit reports exist or none are relevant, note "No prior audit findings applicable"
 
-## Phase 3: Smell Catalog
+## Phase 3: Web Research
+
+Search the web for refactoring patterns, migration guides, and best practices relevant to the refactoring scope.
+
+1. Derive up to 3 focused search queries from the refactoring goal + detected tech stack. Examples: "Rust module decomposition patterns", "extract method refactoring hexagonal architecture", "safe migration strategies for [framework]"
+2. Run each query using `WebSearch`. If WebSearch is unavailable, try `exa-web-search` MCP (`web_search_exa`). If both are unavailable, emit a warning: "Web research skipped: no search tool available" and proceed — do NOT hard-fail the plan.
+3. From the results, produce a **Research Summary** with 3-7 bullet points: refactoring patterns, migration strategies, pitfalls to avoid, and relevant guides.
+4. Carry the Research Summary forward into the spec output.
+
+## Phase 4: Smell Catalog
 
 Compile a unified catalog of detected smells from all Phase 1 agent findings and Phase 2 audit reports:
 
@@ -81,7 +90,7 @@ Compile a unified catalog of detected smells from all Phase 1 agent findings and
 
 Group by severity. This catalog drives the grill-me interview.
 
-## Phase 4: Grill-Me Interview
+## Phase 5: Grill-Me Interview
 
 **STOP all research. START interviewing the user.**
 
@@ -105,7 +114,7 @@ You have gathered evolution analysis, architecture review, component audit, exis
 - The user can accept recommendations with "yes", override with their own answer, or say "spec it" to accept all remaining recommendations
 - Do NOT proceed until the user says **"spec it"** (or equivalent confirmation)
 
-## Phase 5: Write the Spec
+## Phase 6: Write the Spec
 
 Output the full spec in conversation using the exact schema below. Do NOT write `.claude/workflow/plan.md`. Every section is mandatory.
 
@@ -115,6 +124,10 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 ## Problem Statement
 
 <One paragraph describing the structural problem, its symptoms, and why refactoring is needed now.>
+
+## Research Summary
+
+<3-7 bullet points from web research: refactoring patterns, migration strategies, pitfalls, guides. If web research was skipped, note "Web research skipped: no search tool available.">
 
 ## Decisions Made
 
@@ -169,7 +182,7 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 <Should be empty after grill-me. If any remain, list them here.>
 ```
 
-## Phase 6: Adversarial Review
+## Phase 7: Adversarial Review
 
 Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob]):
 
@@ -190,7 +203,7 @@ After 3 FAIL rounds, ask the user:
 - If override: note "Adversarial Review: PASS (user override)" in conversation, run `!bash .claude/hooks/phase-transition.sh solution plan`, and proceed
 - If abandon: delete workflow artifacts and exit
 
-## Phase 7: Present and STOP
+## Phase 8: Present and STOP
 
 Display a summary of the spec:
 - Title
