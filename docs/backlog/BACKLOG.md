@@ -28,6 +28,7 @@
 | BL-024 | Add context:fork to heavy skills | 6 | LOW | direct edit | open | 2026-03-20 |
 | BL-025 | Add memory:project to adversarial agents | 6 | LOW | direct edit | open | 2026-03-20 |
 | BL-026 | Quarterly MCP version audit | 6 | LOW | process | open | 2026-03-20 |
+| BL-027 | Cross-session memory system for actions, plans, and implementations | 7 | HIGH | /plan dev | open | 2026-03-21 |
 
 ## Dependency Graph
 
@@ -39,10 +40,13 @@ BL-012 → BL-016 (prd-to-plan consumes write-a-prd output)
 BL-014 → BL-020 (/design command wraps design-an-interface skill)
 BL-002 → BL-026 (quarterly audit requires initial pinning)
 BL-017 → BL-023 (/catchup prevents stale state recurrence)
+BL-027 → BL-017 (memory system feeds /catchup command)
+BL-027 → BL-004 (memory system feeds robert negative examples)
+BL-025 → BL-027 (per-agent memory flags complement cross-session log)
 ```
 
 ## Stats
 
-- **Total:** 26
-- **Open:** 26
-- **By tier:** T1: 3 | T2: 6 | T3: 7 | T4: 4 | T5: 3 | T6: 3
+- **Total:** 27
+- **Open:** 27
+- **By tier:** T1: 3 | T2: 6 | T3: 7 | T4: 4 | T5: 3 | T6: 3 | T7: 1
