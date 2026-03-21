@@ -16,6 +16,18 @@ Run before PRs, after major changes, and pre-deploy.
 - Running full build → lint → test → security scan pipeline
 - Validating test coverage meets thresholds
 
+> **Tracking**: Create a TodoWrite checklist for the verification pipeline. If TodoWrite is unavailable, proceed without tracking — the verification executes identically.
+
+TodoWrite items:
+- "Phase 1: Build"
+- "Phase 2: Static Analysis"
+- "Phase 3: Tests + Coverage"
+- "Phase 4: Security Scan"
+- "Phase 5: Lint/Format"
+- "Phase 6: Diff Review"
+
+Mark each item complete as the phase finishes.
+
 ## Phase 1: Build
 
 ```bash
