@@ -18,6 +18,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixes
 
+- Enforce atomic one-question-per-turn grill-me interviews via AskUserQuestion in all plan commands
 - Enforce Plan Mode and atomic commits in /implement with MUST/NEVER blocking language
 - Resolve MD028 blockquote lint errors in solution, implement, plan-dev, plan-fix, plan-refactor, and plan commands
 
