@@ -1,7 +1,7 @@
 ---
 id: BL-027
 title: Cross-session memory system for actions, plans, and implementations
-status: open
+status: implemented
 scope: HIGH
 target: /plan dev
 created: 2026-03-21

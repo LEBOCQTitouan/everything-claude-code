@@ -27,7 +27,8 @@
 | BL-024 | Add context:fork to heavy skills | 6 | LOW | direct edit | open | 2026-03-20 |
 | BL-025 | Add memory:project to adversarial agents | 6 | LOW | direct edit | open | 2026-03-20 |
 | BL-026 | Quarterly MCP version audit | 6 | LOW | process | open | 2026-03-20 |
-| BL-027 | Cross-session memory system for actions, plans, and implementations | 7 | HIGH | /plan dev | open | 2026-03-21 |
+| BL-027 | Cross-session memory system for actions, plans, and implementations | 7 | HIGH | /plan dev | implemented | 2026-03-21 |
+| BL-028 | Add active web search phase to /plan-dev, /plan-fix, /plan-refactor | 7 | MEDIUM | /plan-dev, /plan-fix, /plan-refactor | open | 2026-03-21 |
 
 ## Dependency Graph
 
@@ -45,6 +46,7 @@ BL-025 → BL-027 (per-agent memory flags complement cross-session log)
 
 ## Stats
 
-- **Total:** 26
-- **Open:** 26
-- **By tier:** T1: 3 | T2: 6 | T3: 7 | T4: 3 | T5: 3 | T6: 3 | T7: 1
+- **Total:** 28
+- **Open:** 27
+- **Implemented:** 1
+- **By tier:** T1: 3 | T2: 6 | T3: 7 | T4: 3 | T5: 3 | T6: 3 | T7: 2
