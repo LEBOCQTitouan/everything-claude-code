@@ -60,13 +60,13 @@ Report pass/fail count.
 
 ### 4. Code Review
 
-Invoke the **code-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) on `git diff HEAD`. Auto-detect language-specific reviewers:
+Invoke the **code-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) with `context: "fork"` on `git diff HEAD`. Auto-detect language-specific reviewers:
 - Go project → also invoke **go-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash])
 - Python project → also invoke **python-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash])
 
 ### 5. Architecture Review
 
-Invoke the **arch-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) on the full project structure.
+Invoke the **arch-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) with `context: "fork"` on the full project structure.
 
 ### 6. Drift Check (conditional)
 

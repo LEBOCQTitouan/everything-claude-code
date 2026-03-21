@@ -58,7 +58,7 @@ Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 ## Phase 2: SOLID Validation
 
-Launch a Task with the `uncle-bob` agent (allowedTools: [Read, Grep, Glob]):
+Launch a Task with the `uncle-bob` agent (allowedTools: [Read, Grep, Glob]) with `context: "fork"` (summary output sufficient):
 
 - Pass the proposed file changes from Phase 1 as context
 - Instruct the agent to evaluate the design against:
@@ -69,7 +69,7 @@ Launch a Task with the `uncle-bob` agent (allowedTools: [Read, Grep, Glob]):
 
 ## Phase 3: Professional Conscience
 
-Launch a Task with the `robert` agent (allowedTools: [Read, Grep, Glob, Bash]):
+Launch a Task with the `robert` agent (allowedTools: [Read, Grep, Glob, Bash]) with `context: "fork"` (summary output sufficient):
 
 - Pass the spec content from conversation AND the proposed design from Phase 1
 - Instruct the agent to evaluate the design against the Programmer's Oath
@@ -78,7 +78,7 @@ Launch a Task with the `robert` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 ## Phase 4: Security Quick-Check
 
-Launch a Task with the `security-reviewer` agent (allowedTools: [Read, Grep, Glob, Bash]):
+Launch a Task with the `security-reviewer` agent (allowedTools: [Read, Grep, Glob, Bash]) with `context: "fork"` (summary output sufficient):
 
 - Pass the proposed file changes from Phase 1 as context
 - This is a quick design-level scan, NOT a full audit (that happens during `/verify`)
