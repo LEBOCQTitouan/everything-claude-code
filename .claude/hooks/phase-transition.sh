@@ -70,8 +70,9 @@ fi
 # Store spec/design file paths in state.json (BL-029)
 if [ -n "$ARTIFACT_PATH" ]; then
   case "$ARTIFACT" in
-    plan)     JQ_EXPR="$JQ_EXPR | .artifacts.spec_path = \"$ARTIFACT_PATH\"" ;;
-    solution) JQ_EXPR="$JQ_EXPR | .artifacts.design_path = \"$ARTIFACT_PATH\"" ;;
+    plan)      JQ_EXPR="$JQ_EXPR | .artifacts.spec_path = \"$ARTIFACT_PATH\"" ;;
+    solution)  JQ_EXPR="$JQ_EXPR | .artifacts.design_path = \"$ARTIFACT_PATH\"" ;;
+    implement) JQ_EXPR="$JQ_EXPR | .artifacts.tasks_path = \"$ARTIFACT_PATH\"" ;;
   esac
 fi
 
