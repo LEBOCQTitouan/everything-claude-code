@@ -28,6 +28,15 @@ npx eslint . --plugin security
 
 ## Review Workflow
 
+> **Tracking**: Create a TodoWrite checklist for the security review workflow. If TodoWrite is unavailable, proceed without tracking — the review executes identically.
+
+TodoWrite items:
+- "Step 1: Initial Scan"
+- "Step 2: OWASP Top 10 Check"
+- "Step 3: Code Pattern Review"
+
+Mark each item complete as the step finishes.
+
 ### 1. Initial Scan
 - Run `npm audit`, `eslint-plugin-security`, search for hardcoded secrets
 - Review high-risk areas: auth, API endpoints, DB queries, file uploads, payments, webhooks

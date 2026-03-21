@@ -14,6 +14,17 @@ You are invoked by the `audit-orchestrator` as the 7th domain audit agent in Pha
 
 ## Methodology
 
+> **Tracking**: Create a TodoWrite checklist for the component audit methodology. If TodoWrite is unavailable, proceed without tracking — the audit executes identically.
+
+TodoWrite items:
+- "Step 1: Identify Components"
+- "Step 2: Build Dependency Graph"
+- "Step 3: Compute Metrics"
+- "Step 4: Evaluate Principles"
+- "Step 5: Produce Main Sequence Chart"
+
+Mark each item complete as the step finishes.
+
 ### Step 1: Identify Components
 
 Scan the project to identify top-level components (packages, crates, modules, directories that represent cohesive units):

@@ -30,6 +30,15 @@ npx eslint . --ext .ts,.tsx,.js,.jsx
 
 ## Workflow
 
+> **Tracking**: Create a TodoWrite checklist for the error resolution workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Step 1: Collect All Errors"
+- "Step 2: Fix Strategy"
+- "Step 3: Common Fixes"
+
+Mark each item complete as the step finishes.
+
 ### 1. Collect All Errors
 - Run `npx tsc --noEmit --pretty` to get all type errors
 - Categorize: type inference, missing types, imports, config, dependencies

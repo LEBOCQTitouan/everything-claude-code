@@ -28,6 +28,16 @@ npx eslint . --report-unused-disable-directives  # Unused eslint directives
 
 ## Workflow
 
+> **Tracking**: Create a TodoWrite checklist for the cleanup workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Step 1: Analyze"
+- "Step 2: Verify"
+- "Step 3: Remove Safely"
+- "Step 4: Consolidate Duplicates"
+
+Mark each item complete as the step finishes.
+
 ### 1. Analyze
 - Run detection tools in parallel
 - Categorize by risk: **SAFE** (unused exports/deps), **CAREFUL** (dynamic imports), **RISKY** (public API)

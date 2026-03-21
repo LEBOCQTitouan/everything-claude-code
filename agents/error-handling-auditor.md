@@ -21,6 +21,17 @@ You audit error handling architecture — how errors are caught, classified, tra
 
 ## Execution Steps
 
+> **Tracking**: Create a TodoWrite checklist for the error handling audit pipeline. If TodoWrite is unavailable, proceed without tracking — the audit executes identically.
+
+TodoWrite items:
+- "Step 1: Detect Swallowed Errors"
+- "Step 2: Analyze Error Taxonomy"
+- "Step 3: Check Error Boundary Translation"
+- "Step 4: Assess Partial Failure Handling"
+- "Step 5: Output Findings"
+
+Mark each item complete as the step finishes.
+
 ### Step 1: Detect Swallowed Errors
 
 Grep for error-swallowing patterns:

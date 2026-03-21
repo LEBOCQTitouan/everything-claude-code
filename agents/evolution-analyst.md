@@ -22,6 +22,20 @@ You mine git history to identify evolutionary health risks: hotspots, co-change 
 
 ## Execution Steps
 
+> **Tracking**: Create a TodoWrite checklist for the evolution analysis pipeline. If TodoWrite is unavailable, proceed without tracking — the analysis executes identically.
+
+TodoWrite items:
+- "Step 1: Detect Codebase Size"
+- "Step 2: Change Frequency"
+- "Step 3: Complexity Approximation"
+- "Step 4: Hotspot Scoring"
+- "Step 5: Co-Change Coupling"
+- "Step 6: Bus Factor"
+- "Step 7: Complexity Trends"
+- "Step 8: Output Findings"
+
+Mark each item complete as the step finishes.
+
 ### Step 1: Detect Codebase Size
 
 - Glob source files (exclude node_modules, vendor, dist, build, .git)

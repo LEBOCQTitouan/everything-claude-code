@@ -20,6 +20,17 @@ You calculate documentation coverage metrics, compare against baselines, detect 
 
 ## Reporting Pipeline
 
+> **Tracking**: Create a TodoWrite checklist for the reporting pipeline. If TodoWrite is unavailable, proceed without tracking — the pipeline executes identically.
+
+TodoWrite items:
+- "Step 1: Calculate Coverage"
+- "Step 2: Compare Against Baseline"
+- "Step 3: Staleness Analysis"
+- "Step 4: Manifest-Based Incremental Reporting"
+- "Step 5: Summary Statistics"
+
+Mark each item complete as the step finishes.
+
 ### Step 1: Calculate Coverage
 
 For each module:

@@ -21,6 +21,19 @@ You audit test architecture quality — how tests are structured, what they actu
 
 ## Execution Steps
 
+> **Tracking**: Create a TodoWrite checklist for the test audit pipeline. If TodoWrite is unavailable, proceed without tracking — the audit executes identically.
+
+TodoWrite items:
+- "Step 1: Discover Test Files"
+- "Step 2: Classify Tests"
+- "Step 3: Measure Structural Coupling"
+- "Step 4: Compute Fixture-to-Assertion Ratio"
+- "Step 5: Identify Missing Strategies"
+- "Step 6: Map Coverage Gaps"
+- "Step 7: Output Findings"
+
+Mark each item complete as the step finishes.
+
 ### Step 1: Discover Test Files
 
 - Glob for test files: `**/*.test.*`, `**/*.spec.*`, `**/*_test.*`, `**/test_*.*`, `**/tests/**/*`

@@ -21,6 +21,19 @@ You audit observability quality — whether the codebase produces the signals ne
 
 ## Execution Steps
 
+> **Tracking**: Create a TodoWrite checklist for the observability audit pipeline. If TodoWrite is unavailable, proceed without tracking — the audit executes identically.
+
+TodoWrite items:
+- "Step 1: Scan Log Calls"
+- "Step 2: Check Log Level Consistency"
+- "Step 3: Detect Structured vs Unstructured Logging"
+- "Step 4: Trace Correlation ID Propagation"
+- "Step 5: Assess Metric Coverage"
+- "Step 6: Evaluate Health Endpoints"
+- "Step 7: Output Findings"
+
+Mark each item complete as the step finishes.
+
 ### Step 1: Scan Log Calls
 
 Grep for all log calls across the codebase:
