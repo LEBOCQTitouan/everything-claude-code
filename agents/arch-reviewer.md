@@ -38,13 +38,13 @@ Do this yourself using Grep and Glob — do NOT delegate this:
 
 ### Step 4: Delegate Sub-Reviews
 
-Launch these in parallel using the Agent tool:
+Launch these in parallel using the Agent tool with `context: "fork"` to isolate intermediate output:
 
-1. **architect** agent: "Review this project's hexagonal architecture compliance and DDD model quality. Focus on: Are bounded contexts clearly separated? Does the domain layer contain real business logic or is it anemic? Are port interfaces defined? Report findings with severity (CRITICAL/HIGH/MEDIUM/LOW) and file paths."
+1. **architect** (allowedTools: [Read, Grep, Glob]) agent: "Review this project's hexagonal architecture compliance and DDD model quality. Focus on: Are bounded contexts clearly separated? Does the domain layer contain real business logic or is it anemic? Are port interfaces defined? Report findings with severity (CRITICAL/HIGH/MEDIUM/LOW) and file paths."
 
-2. **architect-module** agent: "Review the internal design of the following key modules: [list top 3-5 modules by size]. Focus on cohesion, responsibility separation, and internal patterns. Report findings with severity and file paths."
+2. **architect-module** (allowedTools: [Read, Grep, Glob]) agent: "Review the internal design of the following key modules: [list top 3-5 modules by size]. Focus on cohesion, responsibility separation, and internal patterns. Report findings with severity and file paths."
 
-3. **uncle-bob** agent: "Audit this codebase for SOLID principle violations and Clean Architecture dependency rule violations. Focus on: SRP in large files, DIP at layer boundaries, ISP for interfaces with >5 methods. Report findings with severity and file paths."
+3. **uncle-bob** (allowedTools: [Read, Grep, Glob]) agent: "Audit this codebase for SOLID principle violations and Clean Architecture dependency rule violations. Focus on: SRP in large files, DIP at layer boundaries, ISP for interfaces with >5 methods. Report findings with severity and file paths."
 
 If `--quick` flag is set, skip this step entirely.
 
