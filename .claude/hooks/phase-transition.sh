@@ -73,3 +73,23 @@ mv "$TMPFILE" "$STATE_FILE"
 echo "Phase transition: $CURRENT -> $TARGET"
 [ -n "$ARTIFACT" ] && echo "Artifact stamped: $ARTIFACT = $TIMESTAMP"
 [ "$TARGET" = "done" ] && echo "Workflow complete."
+
+# Write to cross-session memory (BL-027)
+MEMORY_WRITER="$PROJECT_DIR/.claude/hooks/memory-writer.sh"
+if [ -x "$MEMORY_WRITER" ] && [ -n "$ARTIFACT" ]; then
+  FEATURE=$(jq -r '.feature // "unknown"' "$STATE_FILE" 2>/dev/null)
+  CONCERN=$(jq -r '.concern // "unknown"' "$STATE_FILE" 2>/dev/null)
+  # Map artifact name to work-item phase
+  case "$ARTIFACT" in
+    plan)           WI_PHASE="plan" ;;
+    solution)       WI_PHASE="solution" ;;
+    implement)      WI_PHASE="implementation" ;;
+    *)              WI_PHASE="" ;;
+  esac
+  # Write action log entry
+  "$MEMORY_WRITER" action "$ARTIFACT" "$FEATURE" "success" "[]" 2>/dev/null || true
+  # Write work item file
+  if [ -n "$WI_PHASE" ]; then
+    "$MEMORY_WRITER" work-item "$WI_PHASE" "$FEATURE" "$CONCERN" 2>/dev/null || true
+  fi
+fi
