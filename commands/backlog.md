@@ -6,7 +6,7 @@ description: Capture, challenge, optimize, and manage implementation ideas in a 
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 
-Capture implementation ideas outside active `/plan` sessions. Each idea is challenged lightly, optimized into a ready-to-execute prompt for its target command, and stored in `docs/backlog/`.
+Capture implementation ideas outside active `/spec` sessions. Each idea is challenged lightly, optimized into a ready-to-execute prompt for its target command, and stored in `docs/backlog/`.
 
 ## Subcommands
 
@@ -35,7 +35,7 @@ TodoWrite items:
 Mark each item complete as the step finishes.
 
 1. **Challenges** the raw idea with 1-3 focused questions
-2. **Determines** the target command (`/plan`, `/e2e`, `/audit`, etc.) and scope
+2. **Determines** the target command (`/spec`, `/e2e`, `/audit`, etc.) and scope
 3. **Optimizes** the idea into a self-contained, ready-to-paste prompt
 4. **Checks duplicates** against existing open entries
 5. **Persists** the entry to `docs/backlog/BL-NNN-<slug>.md`
@@ -44,7 +44,7 @@ Mark each item complete as the step finishes.
 ## When to Use
 
 - An idea arrives during code review, debugging, or casual thinking
-- You want to park a feature idea that isn't ready for `/plan` yet
+- You want to park a feature idea that isn't ready for `/spec` yet
 - You want to review what's queued before starting new work
 - You want to check if a new task overlaps with existing backlog items
 
@@ -56,14 +56,14 @@ User: /backlog add Add rate limiting to all API endpoints
 Agent (backlog-curator):
 Before I add this, a few quick questions:
 
-1. Should this go through /plan (new feature) or /plan security (hardening)?
+1. Should this go through /spec (new feature) or /spec security (hardening)?
 2. Scope estimate — is this MEDIUM (one middleware + config) or HIGH (per-endpoint tuning)?
 3. Any specific endpoints that are most urgent?
 
-User: /plan security, MEDIUM scope, auth endpoints first
+User: /spec security, MEDIUM scope, auth endpoints first
 
 Agent: Created BL-003-rate-limiting-api-endpoints.md
-  Target: /plan security | Scope: MEDIUM | Status: open
+  Target: /spec security | Scope: MEDIUM | Status: open
   Backlog index updated.
 ```
 
@@ -73,9 +73,9 @@ User: /backlog list
 Agent:
 | ID | Title | Status | Scope | Target | Created |
 |----|-------|--------|-------|--------|---------|
-| BL-001 | WebSocket reconnection logic | open | MEDIUM | /plan | 2026-03-10 |
-| BL-002 | Refactor auth middleware | promoted | HIGH | /plan refactor | 2026-03-12 |
-| BL-003 | Rate limiting API endpoints | open | MEDIUM | /plan security | 2026-03-15 |
+| BL-001 | WebSocket reconnection logic | open | MEDIUM | /spec | 2026-03-10 |
+| BL-002 | Refactor auth middleware | promoted | HIGH | /spec refactor | 2026-03-12 |
+| BL-003 | Rate limiting API endpoints | open | MEDIUM | /spec security | 2026-03-15 |
 ```
 
 ```
@@ -99,7 +99,7 @@ No Phase 0 prompt refinement — the curator does its own optimization.
 
 ## Integration
 
-- `/plan` cross-references the backlog in Phase 0.25 before entering Plan Mode
+- `/spec` cross-references the backlog in Phase 0.25 before entering Plan Mode
 - `prompt-optimizer` checks the backlog in Phase 2.5 during prompt diagnosis
 - Both surface HIGH and MEDIUM confidence matches to the user
 

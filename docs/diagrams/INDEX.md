@@ -23,7 +23,7 @@ Registered in [`CUSTOM.md`](CUSTOM.md). Regenerated from source context on every
 | Diagram | Type | Description |
 |---------|------|-------------|
 | [Agent Orchestration](agent-orchestration.md) | flowchart TD + LR | Full development flow with planner, TDD execution, E2E assessment, and code-reviewer agents |
-| [Feature Development](feature-development.md) | sequence | Feature lifecycle from `/plan` through design, implementation, and review |
+| [Feature Development](feature-development.md) | sequence | Feature lifecycle from `/spec` through design, implementation, and review |
 | [TDD Workflow](tdd-workflow.md) | flowchart TD | RED-GREEN-REFACTOR cycle with coverage gates and uncle-bob review |
 | [Security Review](security-review.md) | flowchart LR | Code review pipeline: security, clean code, and quality checklists |
 | [Refactoring](refactoring.md) | flowchart TD | Safe refactoring flow with test baseline, incremental removal, and rollback |
@@ -34,7 +34,7 @@ One diagram per slash command, showing the execution flow.
 
 | Diagram | Type | Description |
 |---------|------|-------------|
-| [/plan](cmd-plan.md) | flowchart TD | Stories decomposition, planning, TDD execution, E2E, and /verify |
+| [/spec](cmd-spec.md) | flowchart TD | Spec-driven pipeline: grill-me, spec draft, adversarial review |
 | [/verify](cmd-verify.md) | flowchart TD | Build, tests, lint, code review, arch review, coverage, dead code |
 | [/build-fix](cmd-build-fix.md) | flowchart TD | Detect errors, classify, fix incrementally, verify |
 | [/e2e](cmd-e2e.md) | flowchart TD | Discover flows, generate Playwright tests, run, capture artifacts |
@@ -53,7 +53,7 @@ One diagram per slash command, showing the execution flow.
 | Development workflows | 3 | Feature Development, TDD Workflow, Refactoring |
 | Quality gates | 1 | Security Review |
 | Build/CI | 1 | Build Pipeline |
-| Command workflows | 8 | /plan, /verify, /build-fix, /e2e, /doc-suite, /audit, /backlog, /uncle-bob-audit |
+| Command workflows | 8 | /spec, /verify, /build-fix, /e2e, /doc-suite, /audit, /backlog, /uncle-bob-audit |
 | **Total** | **18** | |
 
 ## Related

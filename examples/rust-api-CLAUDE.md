@@ -264,9 +264,9 @@ cargo fmt -- --check
 
 ```bash
 # Planning
-/plan "Add order fulfillment with Stripe payment"
+/spec "Add order fulfillment with Stripe payment"
 
-# Development with TDD (built into /plan)
+# Development with TDD (built into /spec)
 
 # Review
 /verify                 # Code review

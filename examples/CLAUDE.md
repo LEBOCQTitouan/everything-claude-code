@@ -87,7 +87,7 @@ DEBUG=false
 
 ## Available Commands
 
-- `/plan` - Create implementation plan (includes TDD workflow)
+- `/spec` - Create implementation plan (includes TDD workflow)
 - `/verify` - Review code quality
 - `/build-fix` - Fix build errors
 

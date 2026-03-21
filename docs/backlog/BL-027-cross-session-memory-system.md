@@ -3,7 +3,7 @@ id: BL-027
 title: Cross-session memory system for actions, plans, and implementations
 status: implemented
 scope: HIGH
-target: /plan dev
+target: /spec dev
 created: 2026-03-21
 tags: [memory, hooks, agents, context, logging, markdown, json]
 ---
@@ -51,8 +51,8 @@ Rules:
 Directory: `docs/memory/work-items/`
 
 One subdirectory per work item, named `YYYY-MM-DD-<slug>/`:
-- `plan.md` — output of /plan or /plan-* phase
-- `solution.md` — output of /solution phase
+- `plan.md` — output of /spec or /spec-* phase
+- `solution.md` — output of /design phase
 - `implementation.md` — summary of /implement phase (key decisions, files changed, test results)
 
 Rules:
@@ -75,7 +75,7 @@ All other agents and commands have NO access to memory files. Do not add memory 
 
 1. **Storage writer hook** — A `PostToolUse` hook (or end-of-phase hook) writes to `action-log.json` after each major phase completes. Hook triggers on: plan complete, solution complete, implement complete, verify complete.
 
-2. **Work item writer** — Integrated into the /plan-*, /solution, and /implement commands. After each phase outputs its result, a small write step appends the structured Markdown artifact to the appropriate work item file.
+2. **Work item writer** — Integrated into the /spec-*, /design, and /implement commands. After each phase outputs its result, a small write step appends the structured Markdown artifact to the appropriate work item file.
 
 3. **Session ID injection** — A `PreToolUse` hook or context hook generates and injects a `SESSION_ID` env var at session start. All log entries reference it.
 
@@ -101,8 +101,8 @@ All other agents and commands have NO access to memory files. Do not add memory 
 
 ## Verification Steps
 
-1. Run `/plan dev` on a small task → confirm `action-log.json` gains one entry and `docs/memory/work-items/YYYY-MM-DD-<slug>/plan.md` is created with correct H2 sections
-2. Run `/solution` → confirm `solution.md` appears in the same work item directory
+1. Run `/spec dev` on a small task → confirm `action-log.json` gains one entry and `docs/memory/work-items/YYYY-MM-DD-<slug>/plan.md` is created with correct H2 sections
+2. Run `/design` → confirm `solution.md` appears in the same work item directory
 3. Run `/implement` → confirm `implementation.md` appears with ## Artifacts listing changed files
 4. Open `action-log.json` — verify all entries are valid JSON, append-only, no mutations
 5. Confirm `drift-checker` agent reads the log correctly when given the path

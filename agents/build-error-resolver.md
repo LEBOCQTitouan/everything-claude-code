@@ -125,7 +125,7 @@ Before fixing, classify each error to guide your response:
 
 | Classification | Signal | Response |
 |---------------|--------|----------|
-| **Structural** | Error spans multiple layers, import graph broken | Suggest `/plan refactor` — architecture problem, not quick fix |
+| **Structural** | Error spans multiple layers, import graph broken | Suggest `/spec refactor` — architecture problem, not quick fix |
 | **Contractual** | Interface mismatch, missing trait impl, wrong return type | Fix contract + note the abstraction leak |
 | **Incidental** | Typo, missing import, wrong variable name | Fix immediately |
 

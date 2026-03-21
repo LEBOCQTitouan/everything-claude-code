@@ -22,7 +22,7 @@ Agents are invoked automatically by the 5 commands:
 
 | Command | Agents Used |
 |---------|------------|
-| `/plan` | planner, tdd-guide, architect (refactor mode), security-reviewer (security mode) |
+| `/spec` | planner, tdd-guide, architect (refactor mode), security-reviewer (security mode) |
 | `/build-fix` | build-error-resolver |
 | `/verify` | code-reviewer, arch-reviewer, go-reviewer, python-reviewer (auto-detected) |
 | `/e2e` | e2e-runner |

@@ -14,7 +14,7 @@ flowchart TD
     PARSE --> CLASSIFY["Step 1.5: Classify Each Error"]
 
     CLASSIFY --> STRUCTURAL{"Structural?<br/>(spans multiple layers)"}
-    STRUCTURAL -->|yes| SUGGEST(["Suggest /plan refactor"])
+    STRUCTURAL -->|yes| SUGGEST(["Suggest /spec refactor"])
     STRUCTURAL -->|no| CONTRACTUAL{"Contractual?<br/>(interface mismatch)"}
     CONTRACTUAL -->|yes| FIX_CONTRACT["Fix contract +<br/>note abstraction leak"]
     CONTRACTUAL -->|no| FIX_INCIDENTAL["Fix immediately<br/>(typo, import, variable)"]

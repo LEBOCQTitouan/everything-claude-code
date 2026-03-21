@@ -16,14 +16,14 @@ The Feature Implementation Workflow describes the development pipeline: research
    - Prefer adopting or porting a proven approach over writing net-new code when it meets the requirement.
 
 1. **Plan First**
-   - Use **planner** agent via `/plan` to create implementation plan
+   - Use **planner** agent via `/spec` to create implementation plan
    - Plan includes test targets per phase and E2E assessment
    - Identify dependencies and risks
    - Break down into phases
    - **Wait for user confirmation before executing**
 
 2. **TDD Approach** _(automatic after plan confirmation)_
-   - `/plan` executes TDD per phase after confirmation
+   - `/spec` executes TDD per phase after confirmation
    - Write tests first (RED) → **commit tests**
    - Implement to pass tests (GREEN) → **commit implementation**
    - Refactor (IMPROVE) → **commit refactor**

@@ -3,7 +3,7 @@ id: BL-010
 title: Create ubiquitous-language skill
 tier: 3
 scope: MEDIUM
-target: /plan dev
+target: /spec dev
 status: open
 created: 2026-03-20
 file: skills/ubiquitous-language/SKILL.md

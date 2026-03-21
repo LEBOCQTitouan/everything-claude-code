@@ -53,7 +53,7 @@ Before fixing, classify each error to guide the response:
 
 | Classification | Signal | Response |
 |---------------|--------|----------|
-| **Structural** | Error spans multiple layers, import graph broken | Suggest `/plan refactor` — this is an architecture problem, not a quick fix |
+| **Structural** | Error spans multiple layers, import graph broken | Suggest `/spec refactor` — this is an architecture problem, not a quick fix |
 | **Contractual** | Interface mismatch, missing trait impl, wrong return type | Fix the contract + add a note about the abstraction leak that caused it |
 | **Incidental** | Typo, missing import, wrong variable name | Fix immediately and move on |
 

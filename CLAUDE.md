@@ -46,7 +46,6 @@ Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention
 - `/design` produces the technical design, enters **Plan Mode** for architecture preview (arch docs, diagrams, bounded contexts), then adversarial review
 - `/implement` enters **Plan Mode** for implementation steps, then executes TDD loops with TaskCreate tracking and mandatory doc updates
 - All three phases use Plan Mode so the user reviews artifacts before execution
-- Old names (`/plan`, `/solution`) still work as aliases
 - State machine in `.claude/workflow/` enforces phase ordering via hooks
 
 ## Command Workflows
@@ -59,7 +58,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 
 ## Dual-Mode Development
 
-- **Spec-driven** (`/spec` or `/spec-*` → `/design` → `/implement`): for features, fixes, and refactors requiring design review. Old names (`/plan`, `/solution`) work as aliases.
+- **Spec-driven** (`/spec` or `/spec-*` → `/design` → `/implement`): for features, fixes, and refactors requiring design review.
 - **Direct** (edit + `/verify`): for small, well-understood changes
 - Use `/audit-*` independently at any time for health checks
 - Use `/review` as a final craft conscience gate before shipping

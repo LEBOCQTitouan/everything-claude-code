@@ -93,7 +93,7 @@ Report structure:
 
 ## Next Steps
 
-To act on these findings, run `/plan` referencing this report.
+To act on these findings, run `/spec` referencing this report.
 ```
 
 ## 3. Present
@@ -107,7 +107,7 @@ Display a console summary:
 
 **STOP. DO NOT modify source code.**
 
-Say: "To act on findings, run `/plan` referencing this report."
+Say: "To act on findings, run `/spec` referencing this report."
 
 ## When to Use
 

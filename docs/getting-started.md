@@ -94,8 +94,8 @@ everything-claude-code/
 │   ├── audit-observability.md      # Logging, metrics, tracing, health endpoints
 │   ├── audit-security.md           # OWASP top 10, secrets, attack surface
 │   ├── audit-test.md               # Coverage, classification, fixture ratios, E2E matrix
-│   ├── plan-dev.md / plan-fix.md / plan-refactor.md  # Spec-driven planning
-│   ├── solution.md                 # Technical approach from spec
+│   ├── spec-dev.md / spec-fix.md / spec-refactor.md  # Spec-driven planning
+│   ├── design.md                   # Technical approach from spec
 │   ├── implement.md                # TDD execution with doc updates
 │   ├── verify.md                   # Build + tests + lint + review gate
 │   ├── review.md                   # Robert professional conscience check
@@ -188,9 +188,9 @@ Always-follow guidelines, installed to `~/.claude/rules/`. Organized by language
 
 ### Spec-Driven Pipeline
 
-`/plan-dev`, `/plan-fix`, `/plan-refactor` -> `/solution` -> `/implement`
+`/spec-dev`, `/spec-fix`, `/spec-refactor` -> `/design` -> `/implement`
 
-Each `/plan-*` runs a grill-me interview, then writes `.claude/workflow/plan.md`. `/solution` designs the technical approach. `/implement` executes TDD loops with mandatory doc updates.
+Each `/spec-*` runs a grill-me interview, then writes `.claude/workflow/plan.md`. `/design` designs the technical approach. `/implement` executes TDD loops with mandatory doc updates.
 
 ### Audit Commands
 

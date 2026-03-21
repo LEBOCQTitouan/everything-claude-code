@@ -24,7 +24,7 @@ Mark each item complete as the dimension is evaluated.
 
 ## Input
 
-Read `.claude/workflow/plan.md` — the spec produced by a `/plan-*` command.
+Read `.claude/workflow/plan.md` — the spec produced by a `/spec-*` command.
 
 ## Attack Dimensions
 
@@ -116,7 +116,7 @@ Rounds: <N of 3>
 
 ## Verdict Rules
 
-- **PASS**: All 7 dimensions pass. Spec is ready for `/solution`.
+- **PASS**: All 7 dimensions pass. Spec is ready for `/design`.
 - **FAIL**: Any dimension has a critical finding that cannot be addressed by adding ACs. Spec needs fundamental rework (return to grill-me).
 - **CONDITIONAL**: Some dimensions have gaps addressable by adding specific ACs. List the suggested ACs.
 

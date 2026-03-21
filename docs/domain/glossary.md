@@ -39,7 +39,7 @@ Surgical or full removal of ECC-managed [Artifacts](#artifact). Manifest-based c
 - **Files:** [`clean.ts`](../src/lib/clean.ts) (4 exports), [`install-orchestrator.ts`](../src/install-orchestrator.ts)
 
 ### Command
-A markdown slash command file (e.g., `/tdd`, `/plan`, `/doc-diagrams`). Commands are validated for non-empty content and valid cross-references to other commands, [Agents](#agent), and [Skills](#skill).
+A markdown slash command file (e.g., `/tdd`, `/spec`, `/doc-diagrams`). Canonical command names: `/spec`, `/spec-dev`, `/spec-fix`, `/spec-refactor`, `/design`, `/implement`. Commands are validated for non-empty content and valid cross-references to other commands, [Agents](#agent), and [Skills](#skill).
 - **Related:** [Agent](#agent), [Skill](#skill)
 - **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-commands.ts`](../src/ci/validate-commands.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts)
 
@@ -114,9 +114,9 @@ A subagent ([Agent](#agent)) that executes a single Pass Condition's RED-GREEN-R
 - **Files:** [`agents/tdd-executor.md`](../agents/tdd-executor.md), [`commands/implement.md`](../commands/implement.md)
 
 ### Test Targets
-A structured subsection in each phase of a [planner](#agent) output that specifies what to scaffold and test before implementation. Includes interfaces to scaffold, unit tests, integration tests, edge cases, and expected test file paths. Consumed by the `/plan` [Command](#command) TDD execution loop to drive the RED phase.
+A structured subsection in each phase of a [planner](#agent) output that specifies what to scaffold and test before implementation. Includes interfaces to scaffold, unit tests, integration tests, edge cases, and expected test file paths. Consumed by the `/spec` [Command](#command) TDD execution loop to drive the RED phase.
 - **Related:** [Agent](#agent), [Command](#command)
-- **Files:** [`planner.md`](../agents/planner.md), [`plan.md`](../commands/plan.md), [`validate-plan-tdd.test.js`](../tests/ci/validate-plan-tdd.test.js)
+- **Files:** [`planner.md`](../agents/planner.md), [`spec.md`](../commands/spec.md), [`validate-plan-tdd.test.js`](../tests/ci/validate-plan-tdd.test.js)
 
 ## Infrastructure Terms
 

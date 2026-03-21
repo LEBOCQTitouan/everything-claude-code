@@ -162,4 +162,4 @@ Include in the Architecture Score report:
 
 ## Commit Cadence
 
-Architecture reviews are read-only — no commits expected. If the user asks you to fix findings, delegate to `/plan` for a remediation plan, then commit per the atomic commits convention.
+Architecture reviews are read-only — no commits expected. If the user asks you to fix findings, delegate to `/spec` for a remediation plan, then commit per the atomic commits convention.

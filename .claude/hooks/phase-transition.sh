@@ -25,7 +25,7 @@ fi
 
 if [ ! -f "$STATE_FILE" ]; then
   echo "ERROR: No workflow active — $STATE_FILE not found." >&2
-  echo "Run a /plan-* command first to initialize the workflow." >&2
+  echo "Run a /spec-* command first to initialize the workflow." >&2
   exit 1
 fi
 

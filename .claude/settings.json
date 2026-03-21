@@ -9,7 +9,7 @@
             "command": "bash .claude/hooks/phase-gate.sh"
           }
         ],
-        "description": "Pipeline: block source writes during plan/solution phases"
+        "description": "Pipeline: block source writes during spec/design phases"
       }
     ],
     "PostToolUse": [

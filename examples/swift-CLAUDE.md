@@ -178,7 +178,7 @@ swift package show-dependencies # Show dependency tree
 ## ECC Workflow
 
 ```bash
-/plan          # Implementation planning (includes TDD workflow)
+/spec          # Implementation planning (includes TDD workflow)
 /verify        # Quality review
 /build-fix     # Fix build / compiler errors
 ```

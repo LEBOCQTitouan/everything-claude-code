@@ -121,11 +121,11 @@ Created: $timestamp
 
 ## Decisions
 
-(Populated by /plan-* command output)
+(Populated by /spec-* command output)
 
 ## User Stories
 
-(Populated by /plan-* command output)
+(Populated by /spec-* command output)
 
 ## Outcome
 
@@ -143,11 +143,11 @@ Created: $timestamp
 
 ## File Changes
 
-(Populated by /solution command output)
+(Populated by /design command output)
 
 ## Pass Conditions
 
-(Populated by /solution command output)
+(Populated by /design command output)
 
 ## Outcome
 

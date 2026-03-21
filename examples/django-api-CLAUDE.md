@@ -286,9 +286,9 @@ pytest --lf
 
 ```bash
 # Planning
-/plan "Add order refund system with Stripe integration"
+/spec "Add order refund system with Stripe integration"
 
-# Development with TDD (built into /plan)
+# Development with TDD (built into /spec)
 
 # Review
 /verify                 # Code review (auto-detects Python)

@@ -30,14 +30,14 @@ Full curation flow:
    - Scan directory structure for architecture understanding
 
 2. **Challenge & clarify** via AskUserQuestion (1-3 questions max)
-   - What command should execute this? (`/plan`, `/plan refactor`, `/e2e`, etc.)
+   - What command should execute this? (`/spec`, `/spec refactor`, `/e2e`, etc.)
    - What scope is this? (TRIVIAL, LOW, MEDIUM, HIGH, EPIC)
    - Is this related to any current work or existing backlog items?
    - Do NOT ask more than 3 questions. Keep it lightweight.
 
 3. **Determine target command + scope**
    - Use the user's answers and your codebase understanding
-   - Default to `/plan` if unclear
+   - Default to `/spec` if unclear
 
 4. **Optimize the idea**
    - Rewrite as a self-contained prompt for the target command
@@ -78,7 +78,7 @@ Full curation flow:
 
 ### `match <prompt>`
 
-Internal API for `/plan` and `prompt-optimizer` cross-referencing:
+Internal API for `/spec` and `prompt-optimizer` cross-referencing:
 
 1. Read `docs/backlog/BACKLOG.md`
 2. Filter to `status: open` entries only

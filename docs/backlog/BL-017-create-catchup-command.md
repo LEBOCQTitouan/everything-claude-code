@@ -3,7 +3,7 @@ id: BL-017
 title: Create /catchup command
 tier: 4
 scope: MEDIUM
-target: /plan dev
+target: /spec dev
 status: open
 created: 2026-03-20
 file: commands/catchup.md

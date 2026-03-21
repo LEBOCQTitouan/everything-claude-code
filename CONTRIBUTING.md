@@ -35,7 +35,7 @@ The project is a Cargo workspace with 6 crates following Hexagonal Architecture:
 
 ### 1. Plan First
 
-For non-trivial changes, use `/plan` to create an implementation plan before writing code.
+For non-trivial changes, use `/spec` to create a spec before writing code.
 
 ### 2. Test-Driven Development
 

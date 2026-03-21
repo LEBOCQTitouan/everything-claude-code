@@ -128,7 +128,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Testing Strategy
 
 ```bash
-/plan                   # Unit + integration tests for new features (TDD built in)
+/spec                   # Unit + integration tests for new features (TDD built in)
 /e2e                    # Playwright tests for auth flow, billing, dashboard
 /verify                 # Includes coverage analysis
 ```
@@ -144,9 +144,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ```bash
 # Planning a feature
-/plan "Add team invitations with email notifications"
+/spec "Add team invitations with email notifications"
 
-# Developing with TDD (built into /plan)
+# Developing with TDD (built into /spec)
 
 # Before committing
 /verify

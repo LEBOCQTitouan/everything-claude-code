@@ -218,7 +218,7 @@ OTEL_ENDPOINT=        # OpenTelemetry collector
 ## Testing Strategy
 
 ```bash
-/plan                # TDD with Go patterns
+/spec                # TDD with Go patterns
 /verify              # Code review (auto-detects Go)
 /build-fix           # Fix build errors (auto-detects Go)
 ```
@@ -245,9 +245,9 @@ go test ./... -race -count=1
 
 ```bash
 # Planning
-/plan "Add rate limiting to user endpoints"
+/spec "Add rate limiting to user endpoints"
 
-# Development (TDD built into /plan)
+# Development (TDD built into /spec)
 
 # Review
 /verify                   # Code review (auto-detects Go)

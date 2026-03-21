@@ -99,7 +99,7 @@ Use HTML comments to mark auto-generated sections:
 <!-- AUTO-GENERATED:commands -->
 | Command | Description |
 |---------|-------------|
-| `/plan` | Plan implementation |
+| `/spec` | Spec-driven planning |
 | `/verify` | Run quality checks |
 <!-- END AUTO-GENERATED:commands -->
 ```

@@ -11,15 +11,15 @@
 | BL-007 | solution-adversary: skills preload + negative examples | 2 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-008 | drift-checker: skills preload | 2 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-009 | Add negative examples to planner agent | 2 | LOW | direct edit | implemented | 2026-03-20 |
-| BL-010 | Create ubiquitous-language skill | 3 | MEDIUM | /plan dev | implemented | 2026-03-20 |
-| BL-011 | Create grill-me skill | 3 | MEDIUM | /plan dev | implemented | 2026-03-20 |
-| BL-012 | Create write-a-prd skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-013 | Create interview-me skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-014 | Create design-an-interface skill | 3 | HIGH | /plan dev | open | 2026-03-20 |
-| BL-015 | Create request-refactor-plan skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-016 | Create prd-to-plan skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-017 | Create /catchup command | 4 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-019 | Create /spec command | 4 | MEDIUM | /plan dev | implemented | 2026-03-20 |
+| BL-010 | Create ubiquitous-language skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
+| BL-011 | Create grill-me skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
+| BL-012 | Create write-a-prd skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-013 | Create interview-me skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-014 | Create design-an-interface skill | 3 | HIGH | /spec dev | open | 2026-03-20 |
+| BL-015 | Create request-refactor-plan skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-016 | Create prd-to-plan skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-017 | Create /catchup command | 4 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-019 | Create /spec command | 4 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-020 | Create /design command | 4 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-021 | Extract command reference tables from CLAUDE.md | 5 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-022 | Replace CLAUDE.md architecture block with pointer | 5 | LOW | direct edit | implemented | 2026-03-20 |
@@ -27,8 +27,8 @@
 | BL-024 | Add context:fork to heavy skills | 6 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-025 | Add memory:project to adversarial agents | 6 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-026 | Quarterly MCP version audit | 6 | LOW | process | open | 2026-03-20 |
-| BL-027 | Cross-session memory system | 7 | HIGH | /plan dev | implemented | 2026-03-21 |
-| BL-028 | Add web search to /plan commands | 7 | MEDIUM | /spec commands | implemented | 2026-03-21 |
+| BL-027 | Cross-session memory system | 7 | HIGH | /spec dev | implemented | 2026-03-21 |
+| BL-028 | Add web search to /spec commands | 7 | MEDIUM | /spec commands | implemented | 2026-03-21 |
 | BL-029 | Persist specs and designs as versioned file artifacts | 8 | HIGH | /spec, /design | implemented | 2026-03-21 |
 | BL-030 | Persist tasks.md as trackable artifact | 8 | HIGH | /implement | implemented | 2026-03-21 |
 | BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | implemented | 2026-03-21 |

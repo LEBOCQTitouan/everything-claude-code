@@ -12,7 +12,7 @@ The ECC pipeline (plan → solution → implement) produced specs and designs in
 
 ## Decision
 
-1. Rename the pipeline: `/plan` → `/spec`, `/solution` → `/design` (old names work as aliases)
+1. Rename the pipeline: `/plan` → `/spec`, `/solution` → `/design`
 2. All three pipeline phases (spec, design, implement) enter Plan Mode for user review before execution
 3. `/spec` commands draft upper-level doc updates (README, CLAUDE.md) in the plan file
 4. `/design` drafts architecture doc updates (ARCHITECTURE.md, diagrams, bounded contexts) in the plan file
@@ -25,9 +25,8 @@ The ECC pipeline (plan → solution → implement) produced specs and designs in
 - Doc updates are drafted alongside the spec, not as an afterthought
 - Pipeline naming matches output (spec, design) rather than process (plan, solution)
 - Plan Mode cleans context between phases, improving output quality
-- Backward compatible — old command names still work
 
 **Negative:**
 - Additional Plan Mode phase adds one user approval step per command
-- Existing muscle memory for /plan and /solution needs retraining (mitigated by aliases)
+- Existing muscle memory for /plan and /solution needs retraining
 - Plan file content may duplicate conversation context (mitigated by context cleaning benefit)

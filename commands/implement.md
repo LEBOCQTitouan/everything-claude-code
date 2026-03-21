@@ -13,10 +13,10 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 
 1. Read `.claude/workflow/state.json`
 2. Verify `phase` is `"solution"` or `"implement"` (re-entry allowed). If any other phase → error:
-   > "Current phase is `<phase>`. `/implement` requires phase `solution`. Run `/solution` first."
+   > "Current phase is `<phase>`. `/implement` requires phase `solution`. Run `/design` first."
 3. **Read spec and design from files if available**: If `artifacts.spec_path` exists in state.json, read the spec from that file. If `artifacts.design_path` exists, read the design from that file. If either file's modification time differs from its artifact timestamp, emit a warning: "File was modified since the original phase. Using file version." If a file path is set but the file does not exist on disk, fall back to step 4.
 4. If the spec or design is not in conversation context AND not available from file → ask the user:
-   > "Spec and/or design not found in conversation context or on disk. Please re-run `/spec-*` and `/design` or paste the outputs here."
+   > "Spec and/or design not found in conversation context or on disk. Please re-run `/spec-*` then `/design` or paste the outputs here."
 5. Extract `concern` and `feature` from `state.json` for the implementation header
 6. **Re-entry**: If `phase` is `"implement"`, resume using this priority:
    1. **tasks.md is the authoritative, primary resume source.** Read `artifacts.tasks_path` from state.json. If the file exists, parse it to find the first incomplete (non-done) PC as the resume point. If a PC has status `failed`, treat it as the resume point and report: "PC-NNN previously failed: <error summary>. Re-dispatching." If all PCs are done, resume from the first incomplete Post-TDD phase (E2E, review, docs, implement-done).
@@ -36,10 +36,10 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 ```markdown
 # Implementation Plan: <title>
 
-## Spec (from /plan)
+## Spec (from /spec)
 <full spec from conversation>
 
-## Solution (from /solution)
+## Solution (from /design)
 <full solution from conversation>
 
 ## Checklist

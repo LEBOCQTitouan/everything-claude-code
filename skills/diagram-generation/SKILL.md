@@ -296,7 +296,7 @@ Users can register additional diagrams in `docs/diagrams/CUSTOM.md` so they are 
 
 | File | Type | Title | Source Context | Description |
 |------|------|-------|---------------|-------------|
-| agent-orchestration.md | flowchart | Agent Orchestration | agents/*.md, commands/plan.md, rules/common/agents.md | Full development flow with planner, TDD, and code-reviewer agents |
+| agent-orchestration.md | flowchart | Agent Orchestration | agents/*.md, commands/spec.md, rules/common/agents.md | Full development flow with planner, TDD, and code-reviewer agents |
 | tdd-workflow.md | flowchart | TDD Workflow | commands/tdd.md, agents/tdd-guide.md, skills/tdd-workflow/ | RED-GREEN-REFACTOR cycle with coverage gates |
 ```
 

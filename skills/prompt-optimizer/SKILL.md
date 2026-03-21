@@ -106,7 +106,7 @@ from the prompt description alone and mark the estimate as uncertain.
 | TRIVIAL | Single file, < 50 lines | Direct execution |
 | LOW | Single component or module | Single command or skill |
 | MEDIUM | Multiple components, same domain | Command chain + /verify |
-| HIGH | Cross-domain, 5+ files | /plan first, then phased execution |
+| HIGH | Cross-domain, 5+ files | /spec first, then phased execution |
 | EPIC | Multi-session, multi-PR, architectural shift | Use blueprint skill for multi-session plan |
 
 ### Phase 2.5: Backlog Cross-Reference
@@ -132,15 +132,15 @@ Map intent + scope + tech stack (from Phase 0) to specific ECC components.
 
 | Intent | Commands | Skills | Agents |
 |--------|----------|--------|--------|
-| New Feature | /plan, /tdd, /code-review, /verify | tdd-workflow, verification-loop | planner, tdd-guide, code-reviewer |
+| New Feature | /spec, /tdd, /code-review, /verify | tdd-workflow, verification-loop | planner, tdd-guide, code-reviewer |
 | Bug Fix | /tdd, /build-fix, /verify | tdd-workflow | tdd-guide, build-error-resolver |
 | Refactor | /refactor-clean, /code-review, /verify | verification-loop | refactor-cleaner, code-reviewer |
-| Research | /plan | search-first, iterative-retrieval | — |
+| Research | /spec | search-first, iterative-retrieval | — |
 | Testing | /tdd, /e2e, /test-coverage | tdd-workflow, e2e-testing | tdd-guide, e2e-runner |
 | Review | /code-review | security-review | code-reviewer, security-reviewer |
 | Documentation | /update-docs, /update-codemaps | — | doc-updater |
-| Infrastructure | /plan, /verify | docker-patterns, deployment-patterns, database-migrations | architect |
-| Design (MEDIUM-HIGH) | /plan | — | planner, architect |
+| Infrastructure | /spec, /verify | docker-patterns, deployment-patterns, database-migrations | architect |
+| Design (MEDIUM-HIGH) | /spec | — | planner, architect |
 | Design (EPIC) | — | blueprint (invoke as skill) | planner, architect |
 
 #### By Tech Stack
@@ -187,7 +187,7 @@ Determine where this prompt sits in the development lifecycle:
 Research → Plan → Implement (TDD) → Review → Verify → Commit
 ```
 
-For MEDIUM+ tasks, always start with /plan. For EPIC tasks, use blueprint skill.
+For MEDIUM+ tasks, always start with /spec. For EPIC tasks, use blueprint skill.
 
 **Model recommendation** (include in output):
 
@@ -201,7 +201,7 @@ For MEDIUM+ tasks, always start with /plan. For EPIC tasks, use blueprint skill.
 **Multi-prompt splitting** (for HIGH/EPIC scope):
 
 For tasks that exceed a single session, split into sequential prompts:
-- Prompt 1: Research + Plan (use search-first skill, then /plan)
+- Prompt 1: Research + Plan (use search-first skill, then /spec)
 - Prompt 2-N: Implement one phase per prompt (each ends with /verify)
 - Final Prompt: Integration test + /code-review across all phases
 - Use /save-session and /resume-session to preserve context between sessions
@@ -230,7 +230,7 @@ If Phase 0 auto-detected the answer, state it instead of asking.
 
 | Type | Component | Purpose |
 |------|-----------|---------|
-| Command | /plan | Plan architecture before coding |
+| Command | /spec | Plan architecture before coding |
 | Skill | tdd-workflow | TDD methodology guidance |
 | Agent | code-reviewer | Post-implementation review |
 | Model | Sonnet 4.6 | Recommended for this scope |
@@ -255,10 +255,10 @@ A compact version for experienced ECC users. Vary by intent type:
 
 | Intent | Quick Pattern |
 |--------|--------------|
-| New Feature | `/plan [feature]. /tdd to implement. /code-review. /verify.` |
+| New Feature | `/spec [feature]. /tdd to implement. /code-review. /verify.` |
 | Bug Fix | `/tdd — write failing test for [bug]. Fix to green. /verify.` |
 | Refactor | `/refactor-clean [scope]. /code-review. /verify.` |
-| Research | `Use search-first skill for [topic]. /plan based on findings.` |
+| Research | `Use search-first skill for [topic]. /spec based on findings.` |
 | Testing | `/tdd [module]. /e2e for critical flows. /test-coverage.` |
 | Review | `/code-review. Then use security-reviewer agent.` |
 | Docs | `/update-docs. /update-codemaps.` |
@@ -306,7 +306,7 @@ A compact version for experienced ECC users. Vary by intent type:
 - 包含：邮箱/密码登录表单、表单验证、错误提示、加载状态、响应式布局
 
 工作流：
-1. /plan 先规划组件结构和认证流程，参考现有页面的模式
+1. /spec 先规划组件结构和认证流程，参考现有页面的模式
 2. /tdd 测试先行：编写登录表单的单元测试和认证流程的集成测试
 3. 实现登录页面和认证逻辑
 4. /code-review 审查实现
@@ -354,7 +354,7 @@ Requirements:
 - Follow existing API patterns in the codebase
 
 Workflow:
-1. /plan the endpoint structure, middleware chain, and validation logic
+1. /spec the endpoint structure, middleware chain, and validation logic
 2. /tdd — write table-driven tests for success, validation failure, auth failure, not-found
 3. Implement following existing handler patterns
 4. /go-review

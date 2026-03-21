@@ -3,7 +3,7 @@ id: BL-014
 title: Create design-an-interface skill
 tier: 3
 scope: HIGH
-target: /plan dev
+target: /spec dev
 status: open
 created: 2026-03-20
 file: skills/design-an-interface/SKILL.md

@@ -3,7 +3,7 @@ id: BL-015
 title: Create request-refactor-plan skill
 tier: 3
 scope: MEDIUM
-target: /plan dev
+target: /spec dev
 status: open
 created: 2026-03-20
 file: skills/request-refactor-plan/SKILL.md

@@ -1,12 +1,12 @@
 ---
 name: backlog-management
 description: >-
-  Persistent backlog for capturing implementation ideas outside active /plan
+  Persistent backlog for capturing implementation ideas outside active /spec
   sessions. Defines entry format, optimization rules, matching heuristics,
   and index management. Used by the backlog-curator agent and /backlog command.
   TRIGGER when: user says "add to backlog", "backlog idea", "park this idea",
   "save for later", or invokes /backlog.
-  DO NOT TRIGGER when: user wants immediate execution or is already in /plan.
+  DO NOT TRIGGER when: user wants immediate execution or is already in /spec.
 origin: core
 metadata:
   version: "1.0.0"
@@ -20,14 +20,14 @@ backlog so they are ready to execute when the time comes.
 ## When to Use
 
 - Capturing an idea during code review, debugging, or casual thinking
-- Parking a feature idea that isn't ready for `/plan` yet
+- Parking a feature idea that isn't ready for `/spec` yet
 - Reviewing what's in the backlog before starting new work
 - Cross-referencing a prompt against existing backlog entries
 
 ### Do Not Use When
 
-- The idea is ready to execute now (use `/plan` directly)
-- You are already inside a `/plan` session (finish the plan first)
+- The idea is ready to execute now (use `/spec` directly)
+- You are already inside a `/spec` session (finish the plan first)
 
 ## Entry Format
 
@@ -42,7 +42,7 @@ created: YYYY-MM-DD
 promoted_to: ""       # e.g., "US-001" or PR link (set on promotion)
 tags: [tag1, tag2]
 scope: MEDIUM         # TRIVIAL | LOW | MEDIUM | HIGH | EPIC
-target_command: /plan # /plan | /plan refactor | /plan security | /e2e | /doc-suite | /audit
+target_command: /spec # /spec | /spec refactor | /spec security | /e2e | /doc-suite | /audit
 ---
 
 ## Optimized Prompt
@@ -86,8 +86,8 @@ Links to other entries that overlap or depend on this one.
 
 | ID | Title | Status | Scope | Target | Created |
 |----|-------|--------|-------|--------|---------|
-| BL-001 | Add rate limiting to API endpoints | open | MEDIUM | /plan | 2026-03-15 |
-| BL-002 | Refactor auth middleware | promoted | HIGH | /plan refactor | 2026-03-10 |
+| BL-001 | Add rate limiting to API endpoints | open | MEDIUM | /spec | 2026-03-15 |
+| BL-002 | Refactor auth middleware | promoted | HIGH | /spec refactor | 2026-03-10 |
 ```
 
 Update this index whenever an entry is added, promoted, or archived.
@@ -99,7 +99,7 @@ open → promoted    Set promoted_to field, update index
 open → archived    Update index, entry file stays for reference
 ```
 
-- **promoted**: The idea was picked up by `/plan` or another command.
+- **promoted**: The idea was picked up by `/spec` or another command.
   Set `promoted_to` to the User Story ID, PR link, or commit hash.
 - **archived**: The idea is no longer relevant. Keep the file for history.
 
@@ -111,9 +111,9 @@ Transform a raw idea into a ready-to-execute prompt for the target command:
 
 | Target | Optimization Focus |
 |--------|--------------------|
-| `/plan` | Acceptance criteria, scope boundaries, phased breakdown, test targets |
-| `/plan refactor` | Current pain points, target architecture, files affected, risk areas |
-| `/plan security` | Threat model, attack vectors, compliance requirements, affected surfaces |
+| `/spec` | Acceptance criteria, scope boundaries, phased breakdown, test targets |
+| `/spec refactor` | Current pain points, target architecture, files affected, risk areas |
+| `/spec security` | Threat model, attack vectors, compliance requirements, affected surfaces |
 | `/e2e` | User flows, critical paths, edge cases, expected outcomes |
 | `/doc-suite` | Documentation gaps, target audience, modules to document |
 | `/audit` | Audit scope, specific concerns, areas to focus on |
@@ -165,6 +165,6 @@ Before adding a new entry, compare against all open entries:
 | Component | Relationship |
 |-----------|-------------|
 | `prompt-optimizer` | Used internally to optimize the raw idea into a polished prompt |
-| `/plan` | Primary consumer — cross-references backlog in Phase 0.25 |
+| `/spec` | Primary consumer — cross-references backlog in Phase 0.25 |
 | `backlog-curator` | Agent that implements the curation flow using this skill |
 | `/backlog` | Command that invokes the backlog-curator agent |

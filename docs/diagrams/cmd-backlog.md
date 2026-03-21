@@ -12,7 +12,7 @@ flowchart TD
     SUB -->|archive| ARCHIVE["Mark entry as archived"]
     SUB -->|match| MATCH["Cross-reference prompt<br/>against open entries"]
 
-    CHALLENGE --> TARGET["Determine target command<br/>/plan, /e2e, /audit, etc."]
+    CHALLENGE --> TARGET["Determine target command<br/>/spec, /e2e, /audit, etc."]
     TARGET --> OPTIMIZE["Optimize into<br/>ready-to-paste prompt"]
     OPTIMIZE --> DEDUP["Check duplicates<br/>against open entries"]
     DEDUP --> DUP{Duplicate?}
