@@ -20,6 +20,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- Refactor robert to read-only: remove Write from tools, add memory:project, architecture-review skill, anti-patterns section; /review now writes robert-notes.md (BL-004, BL-005)
 - Replace free-text "Wait for user approval" with AskUserQuestion in audit-orchestrator and doc-orchestrator (Tier B native tooling fixes)
 - Add context:"fork" to summary-output Task invocations in solution.md and verify.md
 - Add TodoWrite progress tracking to build-fix, backlog commands and 14 moderate-complexity agents
