@@ -45,7 +45,7 @@
 | BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | open | 2026-03-21 |
 | BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | open | 2026-03-21 |
 | BL-044 | Add grill-me interview step to /backlog add workflow | — | LOW | direct edit | open | 2026-03-21 |
-| BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | open | 2026-03-21 |
+| BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | implemented | 2026-03-21 |
 | BL-046 | Phase-gate hook blocks spec/plan/design file writes during active workflow phases | — | LOW | direct edit | open | 2026-03-21 |
 | BL-047 | Automatic session-to-memory persistence with daily files | — | HIGH | /spec dev | implemented | 2026-03-21 |
 
