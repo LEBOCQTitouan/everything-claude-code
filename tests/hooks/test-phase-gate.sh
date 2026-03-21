@@ -257,6 +257,14 @@ test_path_with_spaces() {
   teardown
 }
 
+# Test: Existing docs/user-stories/* path still allowed
+test_user_stories_existing() {
+  setup
+  write_state "plan"
+  assert_exit "user_stories_existing" 0 "Write" "docs/user-stories/US-001.md"
+  teardown
+}
+
 # --- Run all tests ---
 
 echo "=== Phase-Gate Hook Tests ==="
@@ -281,6 +289,7 @@ test_audits_existing
 test_backlog_existing
 test_integration_cycle
 test_path_with_spaces
+test_user_stories_existing
 
 echo ""
 echo "=== Summary: $PASS_COUNT passed, $FAIL_COUNT failed ==="

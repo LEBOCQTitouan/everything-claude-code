@@ -50,18 +50,14 @@ ALLOWED_PATHS=(
 
 is_allowed_path() {
   local path="$1"
-  case "$path" in
-    */.claude/workflow/*|.claude/workflow/*) return 0 ;;
-    */.claude/plans/*|.claude/plans/*) return 0 ;;
-    */docs/audits/*|docs/audits/*) return 0 ;;
-    */docs/backlog/*|docs/backlog/*) return 0 ;;
-    */docs/user-stories/*|docs/user-stories/*) return 0 ;;
-    */docs/specs/*|docs/specs/*) return 0 ;;
-    */docs/plans/*|docs/plans/*) return 0 ;;
-    */docs/designs/*|docs/designs/*) return 0 ;;
-    */docs/adr/*|docs/adr/*) return 0 ;;
-    *) return 1 ;;
-  esac
+  for pattern in "${ALLOWED_PATHS[@]}"; do
+    # Match both relative (docs/specs/*) and absolute (*/docs/specs/*) forms
+    # shellcheck disable=SC2254
+    case "$path" in
+      $pattern|*/$pattern) return 0 ;;
+    esac
+  done
+  return 1
 }
 
 # --- Write/Edit/MultiEdit: allow workflow and docs paths only ---
