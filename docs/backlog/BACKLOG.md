@@ -31,7 +31,7 @@
 | BL-028 | Add web search to /plan commands | 7 | MEDIUM | /spec commands | implemented | 2026-03-21 |
 | BL-029 | Persist specs and designs as versioned file artifacts | 8 | HIGH | /spec, /design | implemented | 2026-03-21 |
 | BL-030 | Persist tasks.md as trackable artifact | 8 | HIGH | /implement | open | 2026-03-21 |
-| BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | open | 2026-03-21 |
+| BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | implemented | 2026-03-21 |
 | BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | open | 2026-03-21 |
 | BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | open | 2026-03-21 |
 | BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | open | 2026-03-21 |
@@ -47,6 +47,7 @@
 | BL-044 | Add grill-me interview step to /backlog add workflow | — | LOW | direct edit | open | 2026-03-21 |
 | BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | open | 2026-03-21 |
 | BL-046 | Phase-gate hook blocks spec/plan/design file writes during active workflow phases | — | LOW | direct edit | open | 2026-03-21 |
+| BL-047 | Automatic session-to-memory persistence with daily files | — | HIGH | /spec dev | implemented | 2026-03-21 |
 
 ## Dependency Graph
 
@@ -65,6 +66,7 @@ BL-029 → BL-034 (spec files enable grill-me decision capture)
 BL-031 → BL-032 (subagent isolation enables wave-based parallelism)
 BL-030 → BL-017 (tasks.md enables /catchup progress display)
 BL-041 → BL-030 (task list ID complements file-based tasks)
+BL-047 → BL-027 (auto-memory extends cross-session memory system)
 ```
 
 ## Stats
