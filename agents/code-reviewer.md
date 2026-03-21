@@ -17,7 +17,7 @@ When invoked:
 2. **Understand scope** — Identify which files changed, what feature/fix they relate to, and how they connect.
 3. **Read surrounding code** — Don't review changes in isolation. Read the full file and understand imports, dependencies, and call sites.
 4. **Apply review checklist** — Work through each category below, from CRITICAL to LOW.
-5. **Call uncle-bob** — After your own review pass, delegate to the `uncle-bob` agent for a Clean Architecture and Clean Code audit (SOLID, naming, function size, dependency rule). Merge his findings into your final report: his CRITICAL and HIGH items are blockers alongside yours.
+5. **Call uncle-bob** (allowedTools: [Read, Grep, Glob]) — After your own review pass, delegate to the `uncle-bob` agent for a Clean Architecture and Clean Code audit (SOLID, naming, function size, dependency rule). Merge his findings into your final report: his CRITICAL and HIGH items are blockers alongside yours.
 6. **Report findings** — Use the output format below. Only report issues you are confident about (>80% sure it is a real problem). Clearly attribute uncle-bob's findings with `[Clean Code]` or `[Clean Architecture]` tags.
 
 ## Confidence-Based Filtering
