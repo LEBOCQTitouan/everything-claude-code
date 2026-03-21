@@ -215,7 +215,7 @@ mod tests {
             languages: vec!["rust".to_string()],
             artifacts: Artifacts {
                 agents: vec!["planner.md".to_string()],
-                commands: vec!["plan.md".to_string()],
+                commands: vec!["spec.md".to_string()],
                 skills: vec!["tdd".to_string()],
                 rules,
                 hook_descriptions: vec!["phase-gate".to_string()],

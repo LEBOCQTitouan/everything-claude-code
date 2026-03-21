@@ -206,7 +206,7 @@ mod tests {
                     name: None,
                 },
             ],
-            commands: vec!["plan.md".into()],
+            commands: vec!["spec.md".into()],
             skills: vec![],
             rules: BTreeMap::new(),
             hooks: vec![],

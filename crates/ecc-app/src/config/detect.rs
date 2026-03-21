@@ -224,11 +224,11 @@ mod tests {
     #[test]
     fn detect_commands_with_commands() {
         let fs = InMemoryFileSystem::new()
-            .with_file("/claude/commands/plan.md", "# Plan")
+            .with_file("/claude/commands/spec.md", "# Spec")
             .with_file("/claude/commands/verify.md", "# Verify");
 
         let commands = detect_commands(&fs, Path::new("/claude"));
-        assert_eq!(commands, vec!["plan.md", "verify.md"]);
+        assert_eq!(commands, vec!["spec.md", "verify.md"]);
     }
 
     // --- detect_skills ---

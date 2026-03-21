@@ -236,7 +236,7 @@ mod tests {
             languages: vec!["rust".to_string()],
             artifacts: Artifacts {
                 agents: vec!["planner.md".to_string()],
-                commands: vec!["plan.md".to_string()],
+                commands: vec!["spec.md".to_string()],
                 skills: vec!["tdd".to_string()],
                 rules,
                 hook_descriptions: vec![],
@@ -249,7 +249,7 @@ mod tests {
             .with_dir("/claude/agents")
             .with_file("/claude/agents/planner.md", "# Planner")
             .with_dir("/claude/commands")
-            .with_file("/claude/commands/plan.md", "# Plan")
+            .with_file("/claude/commands/spec.md", "# Spec")
             .with_dir("/claude/skills")
             .with_dir("/claude/skills/tdd")
             .with_file("/claude/skills/tdd/SKILL.md", "# TDD")
@@ -274,7 +274,7 @@ mod tests {
         assert!(report.errors.is_empty());
         assert!(!report.removed.is_empty());
         assert!(!fs.exists(&dir.join("agents/planner.md")));
-        assert!(!fs.exists(&dir.join("commands/plan.md")));
+        assert!(!fs.exists(&dir.join("commands/spec.md")));
         assert!(!fs.exists(&dir.join("rules/common/style.md")));
         assert!(!fs.exists(&dir.join("rules/common/security.md")));
         assert!(!fs.exists(&dir.join(".ecc-manifest.json")));
@@ -292,7 +292,7 @@ mod tests {
         assert!(report.removed.is_empty());
         assert!(!report.skipped.is_empty());
         assert!(report.errors.is_empty());
-        // agents/planner.md, commands/plan.md, skills/tdd, rules/common/style.md,
+        // agents/planner.md, commands/spec.md, skills/tdd, rules/common/style.md,
         // rules/common/security.md, .ecc-manifest.json = 6 skipped
         assert_eq!(report.skipped.len(), 6);
     }
@@ -309,7 +309,7 @@ mod tests {
         assert!(!report.removed.is_empty());
         // Files should still exist
         assert!(fs.exists(&dir.join("agents/planner.md")));
-        assert!(fs.exists(&dir.join("commands/plan.md")));
+        assert!(fs.exists(&dir.join("commands/spec.md")));
         assert!(fs.exists(&dir.join(".ecc-manifest.json")));
     }
 
@@ -354,7 +354,7 @@ mod tests {
 
         assert!(report.errors.is_empty());
         assert!(!fs.exists(&dir.join("agents/planner.md")));
-        assert!(!fs.exists(&dir.join("commands/plan.md")));
+        assert!(!fs.exists(&dir.join("commands/spec.md")));
         assert!(!fs.exists(&dir.join("skills/tdd/SKILL.md")));
     }
 
