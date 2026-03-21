@@ -21,6 +21,18 @@ fi
 # Create workflow directory
 mkdir -p "$WORKFLOW_DIR"
 
+# Warn and archive stale workflow state (> 7 days old)
+if [ -f "$STATE_FILE" ]; then
+  STALE_PHASE=$(jq -r '.phase // "unknown"' "$STATE_FILE" 2>/dev/null)
+  if [ "$STALE_PHASE" != "done" ]; then
+    echo "WARNING: Previous workflow stuck at phase '$STALE_PHASE' — archiving stale state."
+  fi
+  ARCHIVE_DIR="$WORKFLOW_DIR/archive"
+  mkdir -p "$ARCHIVE_DIR"
+  ARCHIVE_TS=$(date -u +"%Y%m%d-%H%M%S")
+  mv "$STATE_FILE" "$ARCHIVE_DIR/state-${ARCHIVE_TS}.json" 2>/dev/null || true
+fi
+
 # Clean previous artifacts
 rm -f "$WORKFLOW_DIR/implement-done.md" \
       "$WORKFLOW_DIR/.tdd-state"
