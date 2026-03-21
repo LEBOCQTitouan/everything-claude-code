@@ -22,6 +22,18 @@ If no subcommand is given, treat the input as `add`.
 
 ## What This Command Does
 
+> **Tracking**: Create a TodoWrite checklist for the backlog add workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Challenge idea"
+- "Determine target command and scope"
+- "Optimize into ready-to-paste prompt"
+- "Check duplicates against open entries"
+- "Persist entry to docs/backlog/"
+- "Update index at BACKLOG.md"
+
+Mark each item complete as the step finishes.
+
 1. **Challenges** the raw idea with 1-3 focused questions
 2. **Determines** the target command (`/plan`, `/e2e`, `/audit`, etc.) and scope
 3. **Optimizes** the idea into a self-contained, ready-to-paste prompt

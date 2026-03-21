@@ -8,6 +8,20 @@ description: Incrementally fix build and type errors with minimal, safe changes.
 
 Incrementally fix build and type errors with minimal, safe changes.
 
+> **Tracking**: Create a TodoWrite checklist for the build-fix workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Step 0: Prompt Refinement"
+- "Step 1: Detect Build System"
+- "Step 1.5: Error Classification"
+- "Step 2: Parse and Group Errors"
+- "Step 3: Fix Loop"
+- "Step 4: Guardrails"
+- "Step 5: Summary"
+- "Step 6: Commit After Each Fix"
+
+Mark each item complete as the step finishes.
+
 ## Step 0: Prompt Refinement
 
 Before executing, analyze the user's input using the `prompt-optimizer` skill:
