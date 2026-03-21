@@ -23,9 +23,23 @@ Build command: !`command -v cargo > /dev/null 2>&1 && echo "cargo build" || (tes
 
 Store these commands mentally for use in spec constraints.
 
+> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Phase 0: Project Detection"
+- "Phase 1: Investigation"
+- "Phase 2: Audit Context"
+- "Phase 3: Blast Radius"
+- "Phase 4: Grill-Me Interview"
+- "Phase 5: Write the Spec"
+- "Phase 6: Adversarial Review"
+- "Phase 7: Present and STOP"
+
+Mark each item complete as the phase finishes.
+
 ## Phase 1: Investigation
 
-Launch a Task with the `code-reviewer` agent in **read-only investigation mode**:
+Launch a Task with the `code-reviewer` agent in **read-only investigation mode** (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Provide the user's bug description as context
 - Agent investigates the codebase to identify:
@@ -48,7 +62,7 @@ Read `docs/audits/` for any existing audit reports relevant to the bug area:
 
 ## Phase 3: Blast Radius
 
-Launch a Task with the `architect` agent:
+Launch a Task with the `architect` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Provide the investigation findings from Phase 1 as context
 - Agent assesses:
@@ -145,7 +159,7 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 
 ## Phase 6: Adversarial Review
 
-Launch a Task with the `spec-adversary` agent:
+Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob]):
 
 - Pass the full spec from conversation context (Phase 5 output)
 - The agent attacks the spec on 7 dimensions: ambiguity, edge cases, scope, dependencies, testability, decisions, rollback

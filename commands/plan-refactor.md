@@ -23,24 +23,38 @@ Build command: !`command -v cargo > /dev/null 2>&1 && echo "cargo build" || (tes
 
 Store these commands mentally for use in spec constraints.
 
+> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Phase 0: Project Detection"
+- "Phase 1: Current State Analysis"
+- "Phase 2: Existing Audit Reports"
+- "Phase 3: Smell Catalog"
+- "Phase 4: Grill-Me Interview"
+- "Phase 5: Write the Spec"
+- "Phase 6: Adversarial Review"
+- "Phase 7: Present and STOP"
+
+Mark each item complete as the phase finishes.
+
 ## Phase 1: Current State Analysis
 
 Launch **three Tasks in parallel**:
 
 ### Task 1: Evolution Analysis
-Launch with `evolution-analyst` agent:
+Launch with `evolution-analyst` agent (allowedTools: [Read, Grep, Glob, Bash]):
 - Analyze git history for the affected area
 - Identify change frequency hotspots, co-change coupling, and bus factor
 - Flag complexity trends and churn indicators
 
 ### Task 2: Architecture Review
-Launch with `arch-reviewer` agent:
+Launch with `arch-reviewer` agent (allowedTools: [Read, Grep, Glob, Bash]):
 - Audit current structure for layering violations and dependency direction
 - Identify coupling, cohesion, and circular dependency issues
 - Check DDD/hexagonal compliance
 
 ### Task 3: Component Audit
-Launch with `component-auditor` agent:
+Launch with `component-auditor` agent (allowedTools: [Read, Grep, Glob, Bash]):
 - Evaluate package/module design against the 6 component principles (REP, CCP, CRP, ADP, SDP, SAP)
 - Compute instability, abstractness, and main sequence distance
 - Flag principle violations
@@ -157,7 +171,7 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 
 ## Phase 6: Adversarial Review
 
-Launch a Task with the `spec-adversary` agent:
+Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob]):
 
 - Pass the full spec from conversation context (Phase 5 output)
 - The agent attacks the spec on 7 dimensions: ambiguity, edge cases, scope, dependencies, testability, decisions, rollback

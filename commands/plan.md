@@ -50,9 +50,12 @@ Default to **dev** if no signal words match.
 Display exactly:
 
 > **Classified as: `<type>`** — delegating to `/plan-<type>`.
-> Say "fix", "dev", or "refactor" to redirect. Otherwise continuing in 3 seconds.
 
-Wait briefly for user correction via AskUserQuestion — but only if the classification confidence is low (e.g., no signal words matched, or multiple categories had equal matches). For clear-cut cases, proceed directly.
+If the classification confidence is low (no signal words matched, or multiple categories had equal matches), use AskUserQuestion with options `["dev", "fix", "refactor"]` to ask:
+
+> "I classified this as `<type>` but I'm not confident. Which type fits best?"
+
+If AskUserQuestion is unavailable, display the classification and proceed after a brief pause. For clear-cut cases, proceed directly.
 
 If the user provides a correction, use the corrected value.
 

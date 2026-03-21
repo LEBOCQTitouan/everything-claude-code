@@ -23,9 +23,24 @@ Build command: !`command -v cargo > /dev/null 2>&1 && echo "cargo build" || (tes
 
 Store these commands mentally for use in spec constraints.
 
+> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Phase 0: Project Detection"
+- "Phase 1: Requirements Analysis"
+- "Phase 2: Architecture Review"
+- "Phase 3: Prior Audit Check"
+- "Phase 4: Backlog Cross-Reference"
+- "Phase 5: Grill-Me Interview"
+- "Phase 6: Write the Spec"
+- "Phase 7: Adversarial Review"
+- "Phase 8: Present and STOP"
+
+Mark each item complete as the phase finishes.
+
 ## Phase 1: Requirements Analysis
 
-Launch a Task with the `requirements-analyst` agent:
+Launch a Task with the `requirements-analyst` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Provide the user's raw input as context
 - Agent decomposes input into formal User Stories (US-NNN) with acceptance criteria (AC-NNN.N)
@@ -35,7 +50,7 @@ Launch a Task with the `requirements-analyst` agent:
 
 ## Phase 2: Architecture Review
 
-Launch a Task with the `architect` agent:
+Launch a Task with the `architect` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Provide the user stories from Phase 1 as context
 - Agent identifies affected modules, hexagonal boundaries, port/adapter impacts
@@ -154,7 +169,7 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 
 ## Phase 7: Adversarial Review
 
-Launch a Task with the `spec-adversary` agent:
+Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob]):
 
 - Pass the full spec from conversation context (Phase 6 output)
 - The agent attacks the spec on 7 dimensions: ambiguity, edge cases, scope, dependencies, testability, decisions, rollback
