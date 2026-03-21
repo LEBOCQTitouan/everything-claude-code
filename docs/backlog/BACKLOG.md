@@ -5,35 +5,49 @@
 | BL-001 | Block auto-enable of MCP servers | 1 | LOW | direct edit | open | 2026-03-20 |
 | BL-002 | Pin all MCP package versions | 1 | LOW | direct edit | open | 2026-03-20 |
 | BL-003 | Prune stale local permissions | 1 | LOW | direct edit | open | 2026-03-20 |
-| BL-004 | robert: read-only + memory + negative examples | 2 | MEDIUM | direct edit | open | 2026-03-20 |
-| BL-005 | Update commands that call robert to handle his output | 2 | MEDIUM | direct edit | open | 2026-03-20 |
-| BL-006 | spec-adversary: skills preload + negative examples | 2 | LOW | direct edit | open | 2026-03-20 |
-| BL-007 | solution-adversary: skills preload + negative examples | 2 | LOW | direct edit | open | 2026-03-20 |
-| BL-008 | drift-checker: skills preload | 2 | LOW | direct edit | open | 2026-03-20 |
-| BL-009 | Add negative examples to planner agent | 2 | LOW | direct edit | open | 2026-03-20 |
-| BL-010 | Create ubiquitous-language skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-011 | Create grill-me skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
+| BL-004 | robert: read-only + memory + negative examples | 2 | MEDIUM | direct edit | implemented | 2026-03-20 |
+| BL-005 | Update commands that call robert to handle his output | 2 | MEDIUM | direct edit | implemented | 2026-03-20 |
+| BL-006 | spec-adversary: skills preload + negative examples | 2 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-007 | solution-adversary: skills preload + negative examples | 2 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-008 | drift-checker: skills preload | 2 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-009 | Add negative examples to planner agent | 2 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-010 | Create ubiquitous-language skill | 3 | MEDIUM | /plan dev | implemented | 2026-03-20 |
+| BL-011 | Create grill-me skill | 3 | MEDIUM | /plan dev | implemented | 2026-03-20 |
 | BL-012 | Create write-a-prd skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
 | BL-013 | Create interview-me skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
 | BL-014 | Create design-an-interface skill | 3 | HIGH | /plan dev | open | 2026-03-20 |
 | BL-015 | Create request-refactor-plan skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
 | BL-016 | Create prd-to-plan skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
 | BL-017 | Create /catchup command | 4 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-019 | Create /spec command | 4 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-020 | Create /design command | 4 | LOW | direct edit | open | 2026-03-20 |
+| BL-019 | Create /spec command | 4 | MEDIUM | /plan dev | implemented | 2026-03-20 |
+| BL-020 | Create /design command | 4 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-021 | Extract command reference tables from CLAUDE.md | 5 | LOW | direct edit | open | 2026-03-20 |
 | BL-022 | Replace CLAUDE.md architecture block with pointer | 5 | LOW | direct edit | open | 2026-03-20 |
 | BL-023 | Clean up stale workflow state | 5 | LOW | direct edit | open | 2026-03-20 |
 | BL-024 | Add context:fork to heavy skills | 6 | LOW | direct edit | open | 2026-03-20 |
 | BL-025 | Add memory:project to adversarial agents | 6 | LOW | direct edit | open | 2026-03-20 |
 | BL-026 | Quarterly MCP version audit | 6 | LOW | process | open | 2026-03-20 |
-| BL-027 | Cross-session memory system for actions, plans, and implementations | 7 | HIGH | /plan dev | implemented | 2026-03-21 |
-| BL-028 | Add active web search phase to /plan-dev, /plan-fix, /plan-refactor | 7 | MEDIUM | /plan-dev, /plan-fix, /plan-refactor | open | 2026-03-21 |
+| BL-027 | Cross-session memory system | 7 | HIGH | /plan dev | implemented | 2026-03-21 |
+| BL-028 | Add web search to /plan commands | 7 | MEDIUM | /spec commands | implemented | 2026-03-21 |
+| BL-029 | Persist specs and designs as versioned file artifacts | 8 | HIGH | /spec, /design | open | 2026-03-21 |
+| BL-030 | Persist tasks.md as trackable artifact | 8 | HIGH | /implement | open | 2026-03-21 |
+| BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | open | 2026-03-21 |
+| BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | open | 2026-03-21 |
+| BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | open | 2026-03-21 |
+| BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | open | 2026-03-21 |
+| BL-035 | Context window usage monitoring | 9 | MEDIUM | strategic-compact | open | 2026-03-21 |
+| BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | open | 2026-03-21 |
+| BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | open | 2026-03-21 |
+| BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | open | 2026-03-21 |
+| BL-039 | CronCreate suggestion for periodic commands | 9 | LOW | audit/review/verify | open | 2026-03-21 |
+| BL-040 | Meta-steering rules for ECC development | 9 | LOW | rules/ecc/ (new) | open | 2026-03-21 |
+| BL-041 | CLAUDE_CODE_TASK_LIST_ID for cross-session persistence | 9 | LOW | workflow-init.sh | open | 2026-03-21 |
+| BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | open | 2026-03-21 |
+| BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | open | 2026-03-21 |
 
 ## Dependency Graph
 
 ```
-BL-004 → BL-005 (robert read-only requires command updates)
 BL-010 → BL-004 (ubiquitous-language skill enables robert skill preload)
 BL-012 → BL-016 (prd-to-plan consumes write-a-prd output)
 BL-014 → BL-020 (/design command wraps design-an-interface skill)
@@ -42,11 +56,17 @@ BL-017 → BL-023 (/catchup prevents stale state recurrence)
 BL-027 → BL-017 (memory system feeds /catchup command)
 BL-027 → BL-004 (memory system feeds robert negative examples)
 BL-025 → BL-027 (per-agent memory flags complement cross-session log)
+BL-029 → BL-030 (spec files enable tasks.md persistence)
+BL-029 → BL-031 (spec files enable subagent isolation)
+BL-029 → BL-034 (spec files enable grill-me decision capture)
+BL-031 → BL-032 (subagent isolation enables wave-based parallelism)
+BL-030 → BL-017 (tasks.md enables /catchup progress display)
+BL-041 → BL-030 (task list ID complements file-based tasks)
 ```
 
 ## Stats
 
-- **Total:** 28
-- **Open:** 27
-- **Implemented:** 1
-- **By tier:** T1: 3 | T2: 6 | T3: 7 | T4: 3 | T5: 3 | T6: 3 | T7: 2
+- **Total:** 42
+- **Open:** 30
+- **Implemented:** 12
+- **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9
