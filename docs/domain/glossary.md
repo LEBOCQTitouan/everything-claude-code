@@ -103,6 +103,11 @@ Parent-side check after each [TDD Executor](#tdd-executor) subagent completes du
 - **Related:** [TDD Executor](#tdd-executor), [Context Brief](#context-brief), [Command](#command)
 - **Files:** [`commands/implement.md`](../commands/implement.md)
 
+### Task Tracker
+A file-based, session-independent implementation progress tracker persisted at `docs/specs/<slug>/tasks.md`. Written by the `/implement` parent orchestrator during Phase 2 with single-writer semantics — only the parent writes, all other consumers (including [TDD Executor](#tdd-executor) subagents and future `/catchup`) read only. Tracks PC statuses (`pending`, `red`, `green`, `done`, `failed`) and post-TDD phases (E2E, code review, doc updates, implement-done) with inline pipe-separated ISO 8601 timestamp trails. Serves as the authoritative cross-session resume source, replacing ephemeral TodoWrite for re-entry. Distinct from TodoWrite (ephemeral, session-bound) and TaskCreate (native Claude, lost on compaction).
+- **Related:** [TDD Executor](#tdd-executor), [Context Brief](#context-brief), [Command](#command)
+- **Files:** [`commands/implement.md`](../commands/implement.md)
+
 ### TDD Executor
 A subagent ([Agent](#agent)) that executes a single Pass Condition's RED-GREEN-REFACTOR cycle in an isolated context window. Receives a [Context Brief](#context-brief) from the parent, implements the PC, commits atomically (test, implementation, optional refactor), and returns structured results (pc_id, status, commits, files_changed, error). Owned by `/implement` Phase 3.
 - **Related:** [Context Brief](#context-brief), [Regression Verification](#regression-verification), [Agent](#agent)
