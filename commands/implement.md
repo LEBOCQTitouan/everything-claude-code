@@ -18,7 +18,12 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 4. If the spec or design is not in conversation context AND not available from file → ask the user:
    > "Spec and/or design not found in conversation context or on disk. Please re-run `/spec-*` and `/design` or paste the outputs here."
 5. Extract `concern` and `feature` from `state.json` for the implementation header
-6. **Re-entry**: If `phase` is `"implement"`, read existing TodoWrite items via TodoRead to resume progress from the last completed PC
+6. **Re-entry**: If `phase` is `"implement"`, resume using this priority:
+   1. **tasks.md is the authoritative, primary resume source.** Read `artifacts.tasks_path` from state.json. If the file exists, parse it to find the first incomplete (non-done) PC as the resume point. If a PC has status `failed`, treat it as the resume point and report: "PC-NNN previously failed: <error summary>. Re-dispatching." If all PCs are done, resume from the first incomplete Post-TDD phase (E2E, review, docs, implement-done).
+   2. **Rebuild TodoWrite from tasks.md.** For each entry in tasks.md, create a corresponding TodoWrite item. Mark items with status `done` as complete.
+   3. **Regenerate if tasks.md deleted.** If `artifacts.tasks_path` is set but the file does not exist, regenerate tasks.md from the solution's PC table. Infer completion status using `git log --oneline --after=<started_at from state.json> --grep="PC-NNN"` — if a commit message contains the PC ID after the workflow `started_at` timestamp, mark that PC as `done`. Emit warning: "tasks.md regenerated from git history — verify accuracy."
+   4. **Handle malformed tasks.md.** If tasks.md exists but cannot be parsed (malformed markdown), regenerate from the solution's PC table using the git-log inference above. Emit warning: "tasks.md was malformed; regenerated from solution."
+   5. **TodoRead fallback.** If `artifacts.tasks_path` is null (BL-029 not active), fall back to reading TodoRead for resume state.
 7. Run: `!bash .claude/hooks/phase-transition.sh implement`
 
 ## Phase 1: Enter Plan Mode
