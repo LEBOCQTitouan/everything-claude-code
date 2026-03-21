@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- Rename pipeline: /plan → /spec, /solution → /design with doc-first Plan Mode review in all 3 phases (ADR 0006)
 - Display open backlog items as selectable options when `/plan` is called without arguments
 - Add cross-session memory system: append-only action log + grouped work item files, written by phase-transition hooks (BL-027)
 - Add grill-me adversarial interview skill: 5-stage stress test with branch tracking, vocabulary detection, and transcript output (BL-011)
