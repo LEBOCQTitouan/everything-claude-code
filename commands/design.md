@@ -14,9 +14,9 @@ allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite, TodoRead, En
 1. Read `.claude/workflow/state.json`
 2. Verify `phase` is `"plan"` or `"solution"` (re-entry allowed). If any other phase → error:
    > "Current phase is `<phase>`. `/design` requires phase `plan`/`spec` or `solution`/`design`. Run the appropriate `/spec-*` command first."
-3. Verify the spec is available in conversation context (from the `/spec-*` command output). It must contain `## User Stories` with at least one `### US-` heading and `AC-` patterns (acceptance criteria).
-4. If the spec is not in conversation context → ask the user:
-   > "Spec not found in conversation context. Please re-run the `/spec-*` command or paste the spec output here."
+3. **Read spec from file if available**: If `artifacts.spec_path` exists in state.json, read the spec from that file path. If the file's modification time differs from the `artifacts.plan` timestamp, emit a warning: "Spec file was modified since the spec phase. Using file version." If the file does not exist, fall back to step 4.
+4. If the spec is not in conversation context AND not available from file → ask the user:
+   > "Spec not found in conversation context or on disk. Please re-run the `/spec-*` command or paste the spec output here."
 5. Extract `concern` and `feature` from `state.json` for the solution header
 6. **Re-entry**: If `phase` is `"solution"`, read existing TodoWrite items via TodoRead to resume progress
 
@@ -229,12 +229,21 @@ Track the current round number (starting at 1):
 
 - **FAIL**: Present the adversary's findings to the user. Return to **Phase 1 (Implementation Design)** to redesign. Re-run Phases 2-8 with the updated design, then re-run the adversary (Phase 9). Increment round.
 - **CONDITIONAL**: The adversary has suggested specific PCs to add or doc plan fixes. Update the solution in conversation. Re-run the adversary. Increment round.
-- **PASS**: Note "Adversarial Review: PASS" in conversation output. Run: `!bash .claude/hooks/phase-transition.sh implement solution`. Proceed to Phase 10.
+- **PASS**: Note "Adversarial Review: PASS" in conversation output. Then persist the design (see below). Run: `!bash .claude/hooks/phase-transition.sh implement solution <design_file_path>`. Proceed to Phase 11.
 
 After 3 FAIL rounds, ask the user:
 > "The solution has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon?"
-- If override: note "Adversarial Review: PASS (user override)" in conversation, run `!bash .claude/hooks/phase-transition.sh implement solution`, and proceed
+- If override: note "Adversarial Review: PASS (user override)" in conversation, persist the design, run `!bash .claude/hooks/phase-transition.sh implement solution <design_file_path>`, and proceed
 - If abandon: reset state to `"plan"` phase and exit
+
+### Persist Design to File
+
+After adversarial PASS (or user override), write the design to a versioned file:
+
+1. Read `artifacts.spec_path` from state.json to determine the spec directory (e.g., `docs/specs/2026-03-21-my-feature/`)
+2. Write the full design to `docs/specs/YYYY-MM-DD-<slug>/design.md` in the same directory as the spec
+3. If the file already exists (re-entry), append a `## Revision` block with timestamp instead of overwriting
+4. Pass the file path to the phase-transition command as the 3rd argument
 
 ## Phase 11: Present and STOP
 
