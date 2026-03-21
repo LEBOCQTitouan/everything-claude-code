@@ -28,6 +28,22 @@ You validate existing documentation against the actual code. You score quality, 
 
 ## Validation Pipeline
 
+> **Tracking**: Create a TodoWrite checklist for the validation pipeline. If TodoWrite is unavailable, proceed without tracking — the validation executes identically.
+
+TodoWrite items:
+- "Step 1: Accuracy Check"
+- "Step 2: Quality Scoring"
+- "Step 3: Contradiction Detection"
+- "Step 4: Duplicate Detection"
+- "Step 5: Example Verification"
+- "Step 6: Mermaid Diagram Validation"
+- "Step 7: Project Instructions Challenge"
+- "Step 8: Drift Detection"
+- "Step 9: Gap Analysis"
+- "Step 10: File Size Validation"
+
+Mark each item complete as the step finishes.
+
 ### Step 1: Accuracy Check
 
 For each documented public item:
