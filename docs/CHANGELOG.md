@@ -24,6 +24,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- Add skills preload and negative examples to spec-adversary, solution-adversary, drift-checker, planner agents (BL-006 through BL-009)
 - Refactor robert to read-only: remove Write from tools, add memory:project, architecture-review skill, anti-patterns section; /review now writes robert-notes.md (BL-004, BL-005)
 - Replace free-text "Wait for user approval" with AskUserQuestion in audit-orchestrator and doc-orchestrator (Tier B native tooling fixes)
 - Add context:"fork" to summary-output Task invocations in solution.md and verify.md
