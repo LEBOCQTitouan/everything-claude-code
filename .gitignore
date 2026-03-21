@@ -64,6 +64,8 @@ docs/CODEMAPS/
 # Workflow state (ephemeral, per-session)
 .claude/workflow/
 !.claude/workflow/README.md
+# Interview transcripts (session-specific, may contain sensitive product info)
+docs/interviews/
 # Cross-session memory (session-specific data, not source code)
 docs/memory/action-log.json
 docs/memory/work-items/
