@@ -10,6 +10,9 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- Add allowedTools scoping to sub-agent spawns in architect, architect-module, code-reviewer, arch-reviewer, and requirements-analyst agents (Tier A native tooling fixes)
+- Add context:"fork" isolation to parallel spawns in arch-reviewer and requirements-analyst agents
+- Add TodoWrite progress tracking to requirements-analyst, doc-validator, doc-analyzer agents and configure-ecc, django-verification, springboot-verification skills
 - Add TodoWrite progress tracking to plan-dev, plan-fix, plan-refactor, solution, audit-full, verify, audit-orchestrator, doc-orchestrator, spec-adversary, and solution-adversary
 - Add TodoRead re-entry support to solution and implement commands
 - Add allowedTools scoping to all agent spawn lines across 21 command and agent files
