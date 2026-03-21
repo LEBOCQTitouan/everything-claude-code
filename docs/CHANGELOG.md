@@ -8,6 +8,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## v4.1.0-alpha.1
 
+### Features
+
+- Display open backlog items as selectable options when `/plan` is called without arguments
+
 ### Fixes
 
 - Resolve MD028 blockquote lint errors in solution, implement, plan-dev, plan-fix, plan-refactor, and plan commands
