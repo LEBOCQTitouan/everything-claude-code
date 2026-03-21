@@ -60,7 +60,16 @@ Read `docs/audits/` for any existing audit reports relevant to the bug area:
 4. Check if the bug was already flagged by a prior audit
 5. If no audit reports exist or none are relevant, note "No prior audit findings applicable"
 
-## Phase 3: Blast Radius
+## Phase 3: Web Research
+
+Search the web for known issues, fix patterns, and related pitfalls for the bug's domain.
+
+1. Derive up to 3 focused search queries from the bug description + detected tech stack. Examples: "Rust async deadlock patterns", "tokio spawn_blocking best practices", "common causes of [error message]"
+2. Run each query using `WebSearch`. If WebSearch is unavailable, try `exa-web-search` MCP (`web_search_exa`). If both are unavailable, emit a warning: "Web research skipped: no search tool available" and proceed — do NOT hard-fail the plan.
+3. From the results, produce a **Research Summary** with 3-7 bullet points: known issues, fix patterns, pitfalls to avoid, and relevant documentation.
+4. Carry the Research Summary forward into the spec output.
+
+## Phase 4: Blast Radius
 
 Launch a Task with the `architect` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
@@ -73,7 +82,7 @@ Launch a Task with the `architect` agent (allowedTools: [Read, Grep, Glob, Bash]
   - Whether the fix requires a migration or data change
 - Collect the output — you will incorporate it into the spec
 
-## Phase 4: Grill-Me Interview
+## Phase 5: Grill-Me Interview
 
 **STOP all research. START interviewing the user.**
 
@@ -96,7 +105,7 @@ You have gathered investigation findings, audit context, and blast radius analys
 - The user can accept recommendations with "yes", override with their own answer, or say "spec it" to accept all remaining recommendations
 - Do NOT proceed until the user says **"spec it"** (or equivalent confirmation)
 
-## Phase 5: Write the Spec
+## Phase 6: Write the Spec
 
 Output the full spec in conversation using the exact schema below. Do NOT write `.claude/workflow/plan.md`. Every section is mandatory.
 
@@ -106,6 +115,10 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 ## Problem Statement
 
 <One paragraph describing the bug, its impact, and the root cause identified during investigation.>
+
+## Research Summary
+
+<3-7 bullet points from web research: known issues, fix patterns, pitfalls, relevant docs. If web research was skipped, note "Web research skipped: no search tool available.">
 
 ## Decisions Made
 
@@ -157,7 +170,7 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 <Should be empty after grill-me. If any remain, list them here.>
 ```
 
-## Phase 6: Adversarial Review
+## Phase 7: Adversarial Review
 
 Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob]):
 
@@ -178,7 +191,7 @@ After 3 FAIL rounds, ask the user:
 - If override: note "Adversarial Review: PASS (user override)" in conversation, run `!bash .claude/hooks/phase-transition.sh solution plan`, and proceed
 - If abandon: delete workflow artifacts and exit
 
-## Phase 7: Present and STOP
+## Phase 8: Present and STOP
 
 Display a summary of the spec:
 - Title
