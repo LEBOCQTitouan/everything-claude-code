@@ -18,29 +18,13 @@ All 12 hooks will fire normally. Exit Claude Code to return to bypassed mode.
 
 ## Isolated Test (worktree)
 
-Create an isolated worktree where hooks fire by default (no `.envrc`):
+Create an isolated worktree using Claude Code's native `EnterWorktree` tool:
 
-```bash
-git worktree add ../ecc-test -b ecc-config-dev
-```
-
-If the branch already exists:
-
-```bash
-git worktree add ../ecc-test ecc-config-dev
-```
-
-Then test in isolation:
-
-```bash
-cd ../ecc-test && claude
-```
-
-The worktree has no `.envrc`, so `ECC_WORKFLOW_BYPASS` is unset and hooks fire normally.
+1. Call `EnterWorktree` to create an isolated copy of the repository
+2. If the worktree path or branch already exists, `EnterWorktree` handles this automatically — no manual fallback needed
+3. In the worktree, `ECC_WORKFLOW_BYPASS` is unset (no `.envrc`), so hooks fire normally
+4. Run your tests with hooks active
 
 ## Cleanup
 
-```bash
-git worktree remove ../ecc-test
-git branch -d ecc-config-dev
-```
+Call `ExitWorktree` to clean up the isolated worktree. This removes the worktree directory and associated branch automatically.
