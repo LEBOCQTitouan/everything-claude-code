@@ -39,6 +39,15 @@ jobs:
       - name: Build ECC
         run: cargo build --release
 
+      - name: Test
+        run: cargo test
+
+      - name: Format check
+        run: cargo fmt -- --check
+
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+
       - name: Validate components
         run: |
           ./target/release/ecc validate agents
