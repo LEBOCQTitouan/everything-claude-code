@@ -24,6 +24,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixes
 
+- Fix phase-gate hook allowlist to allow spec/plan/design artifact writes during active workflow phases; refactor allowlist into `is_allowed_path` function with single-source-of-truth `ALLOWED_PATHS` array; add 20-case bash test suite (BL-046)
 - Replace 10 silent `let _ =` error-swallowing sites with `log::warn!` across ecc-app and ecc-infra
 - Fix CLAUDE.md test count (1185, was showing 1190/1180)
 - Add CODEOWNERS file and move CONTRIBUTING.md/CHANGELOG.md to repository root
