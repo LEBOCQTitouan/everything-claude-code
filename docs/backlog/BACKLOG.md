@@ -44,6 +44,8 @@
 | BL-041 | CLAUDE_CODE_TASK_LIST_ID for cross-session persistence | 9 | LOW | workflow-init.sh | implemented | 2026-03-21 |
 | BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | open | 2026-03-21 |
 | BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | open | 2026-03-21 |
+| BL-044 | Add grill-me interview step to /backlog add workflow | — | LOW | direct edit | open | 2026-03-21 |
+| BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | open | 2026-03-21 |
 
 ## Dependency Graph
 
@@ -66,7 +68,7 @@ BL-041 → BL-030 (task list ID complements file-based tasks)
 
 ## Stats
 
-- **Total:** 42
-- **Open:** 19
+- **Total:** 44
+- **Open:** 21
 - **Implemented:** 23
-- **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9
+- **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 2
