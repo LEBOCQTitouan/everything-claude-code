@@ -15,13 +15,14 @@ Standalone invocation of the `robert` meta-agent for professional craftsmanship 
 
 ## How It Works
 
-1. Invoke the `robert` agent with full access to the codebase and git history
+1. Invoke the `robert` agent (allowedTools: [Read, Grep, Glob, Bash]) for diagnostic evaluation
 2. The agent evaluates:
    - **Oath check**: relevant Programmer's Oath promises against recent work
    - **Self-audit**: ECC agent/command/skill files for SRP/DRY/consistency issues
    - **"Go well" metric**: rework ratio from recent git log
-3. Agent writes findings to `docs/audits/robert-notes.md`
-4. Display the summary to the user
+3. Capture robert's structured Markdown output from conversation
+4. Write the output to `docs/audits/robert-notes.md` (create `docs/audits/` if needed, overwrite existing file)
+5. Display the summary to the user
 
 ## When to Use
 
