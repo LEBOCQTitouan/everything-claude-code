@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- Add cargo test, cargo fmt --check, cargo clippy, and cargo audit to CI pipeline — closes critical quality gate gaps
 - Fresh context per TDD task: each PC's RED-GREEN-REFACTOR cycle runs in an isolated tdd-executor subagent with fresh context; parent owns regression verification and Loop Completion (BL-031, ADR 0007)
 - Persist specs and designs as versioned file artifacts in docs/specs/ — survive sessions, re-readable on /implement re-entry (BL-029)
 - Rename pipeline: /plan → /spec, /solution → /design with doc-first Plan Mode review in all 3 phases (ADR 0006)
@@ -21,12 +22,17 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixes
 
+- Replace 10 silent `let _ =` error-swallowing sites with `log::warn!` across ecc-app and ecc-infra
+- Fix CLAUDE.md test count (1185, was showing 1190/1180)
+- Add CODEOWNERS file and move CONTRIBUTING.md/CHANGELOG.md to repository root
 - Enforce atomic one-question-per-turn grill-me interviews via AskUserQuestion in all plan commands
 - Enforce Plan Mode and atomic commits in /implement with MUST/NEVER blocking language
 - Resolve MD028 blockquote lint errors in solution, implement, plan-dev, plan-fix, plan-refactor, and plan commands
 
 ### Refactoring
 
+- Decompose install/mod.rs (920 lines) into global.rs, init.rs, resolve.rs submodules — mod.rs reduced to 72 lines
+- Apply cargo fmt with edition 2024 across 543 files; add rustfmt.toml and .git-blame-ignore-revs
 - Add skills preload and negative examples to spec-adversary, solution-adversary, drift-checker, planner agents (BL-006 through BL-009)
 - Refactor robert to read-only: remove Write from tools, add memory:project, architecture-review skill, anti-patterns section; /review now writes robert-notes.md (BL-004, BL-005)
 - Replace free-text "Wait for user approval" with AskUserQuestion in audit-orchestrator and doc-orchestrator (Tier B native tooling fixes)
