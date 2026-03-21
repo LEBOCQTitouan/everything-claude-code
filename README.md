@@ -38,7 +38,7 @@ eval "$(ecc completion zsh)"   # add to ~/.zshrc — see docs/getting-started.md
 | [Getting Started](docs/getting-started.md) | Extended setup, usage, MCP config, repo structure |
 | [Architecture](docs/ARCHITECTURE.md) | System design and hexagonal layout |
 | [CLAUDE.md](CLAUDE.md) | Claude Code project instructions |
-| [Contributing](docs/CONTRIBUTING.md) | How to contribute |
+| [Contributing](CONTRIBUTING.md) | How to contribute |
 
 ## Credits
 

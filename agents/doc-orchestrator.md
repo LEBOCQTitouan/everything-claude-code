@@ -139,7 +139,7 @@ doc-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) --module=lib
 doc-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) --module=hooks  → docs/module-summaries/hooks.md
 
 # Plus non-module-scoped tasks:
-doc-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) --changelog     → docs/CHANGELOG.md (uses changelog-gen skill)
+doc-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) --changelog     → CHANGELOG.md (uses changelog-gen skill)
 diagram-generator (allowedTools: [Read, Write, Edit, Grep, Glob, Bash])             → docs/diagrams/*.md
 ```
 

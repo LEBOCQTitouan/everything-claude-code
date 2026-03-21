@@ -92,7 +92,7 @@ Follow the `changelog-gen` skill methodology:
 4. Rewrite terse commit messages into human-readable changelog entries
 5. Highlight breaking changes prominently
 6. Limit to last 100 commits or 6 months (whichever is smaller)
-7. Write to `docs/CHANGELOG.md`
+7. Write to `CHANGELOG.md`
 
 ### Step 5: Extract Usage Examples
 

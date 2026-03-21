@@ -29,7 +29,7 @@ Scan for documentation gaps across all layers:
 | **API reference** | `docs/API-SURFACE.md` or `docs/api-surface/` | No API docs |
 | **README** | `README.md` with setup, usage, structure | No entry point |
 | **CLAUDE.md** | Project instructions file | No AI-assisted development context |
-| **Changelog** | `CHANGELOG.md` or `docs/CHANGELOG.md` | No change history |
+| **Changelog** | `CHANGELOG.md` or `CHANGELOG.md` | No change history |
 | **Runbooks** | `docs/runbooks/` or deployment docs | No operational docs |
 | **Error docs** | Error code documentation | Undocumented failures |
 | **Config docs** | Env var / config documentation | Setup confusion |
