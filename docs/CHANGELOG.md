@@ -8,6 +8,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## v4.1.0-alpha.1
 
+### Fixes
+
+- Resolve MD028 blockquote lint errors in solution, implement, plan-dev, plan-fix, plan-refactor, and plan commands
+
 ### Refactoring
 
 - Replace free-text "Wait for user approval" with AskUserQuestion in audit-orchestrator and doc-orchestrator (Tier B native tooling fixes)
