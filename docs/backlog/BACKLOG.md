@@ -30,7 +30,7 @@
 | BL-027 | Cross-session memory system | 7 | HIGH | /plan dev | implemented | 2026-03-21 |
 | BL-028 | Add web search to /plan commands | 7 | MEDIUM | /spec commands | implemented | 2026-03-21 |
 | BL-029 | Persist specs and designs as versioned file artifacts | 8 | HIGH | /spec, /design | implemented | 2026-03-21 |
-| BL-030 | Persist tasks.md as trackable artifact | 8 | HIGH | /implement | open | 2026-03-21 |
+| BL-030 | Persist tasks.md as trackable artifact | 8 | HIGH | /implement | implemented | 2026-03-21 |
 | BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | implemented | 2026-03-21 |
 | BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | open | 2026-03-21 |
 | BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | open | 2026-03-21 |
