@@ -58,7 +58,16 @@ Launch a Task with the `architect` agent (allowedTools: [Read, Grep, Glob, Bash]
 - Agent assesses E2E boundary consequences
 - Collect the output — you will incorporate it into the spec
 
-## Phase 3: Prior Audit Check
+## Phase 3: Web Research
+
+Search the web for best practices, relevant libraries, patterns, and prior art related to the feature request. This grounds the plan in current external knowledge, not just training data and local codebase.
+
+1. Derive up to 3 focused search queries from the user's stated intent + detected tech stack. Examples: "Rust async error handling best practices 2025", "hexagonal architecture file-based persistence patterns", "Claude Code hook system design patterns"
+2. Run each query using `WebSearch`. If WebSearch is unavailable, try `exa-web-search` MCP (`web_search_exa`). If both are unavailable, emit a warning: "Web research skipped: no search tool available" and proceed to the next phase — do NOT hard-fail the plan.
+3. From the search results, produce a **Research Summary** with 3-7 bullet points: relevant libraries, best practices, patterns to follow, pitfalls to avoid, and prior art.
+4. Carry the Research Summary forward — it will be included in the spec output and referenced during the grill-me interview.
+
+## Phase 4: Prior Audit Check
 
 Read `docs/audits/` for any existing audit reports relevant to the feature area:
 
@@ -67,7 +76,7 @@ Read `docs/audits/` for any existing audit reports relevant to the feature area:
 3. Extract relevant findings (CRITICAL/HIGH severity) that should constrain the implementation
 4. If no audit reports exist or none are relevant, note "No prior audit findings applicable"
 
-## Phase 4: Backlog Cross-Reference
+## Phase 5: Backlog Cross-Reference
 
 Check if `docs/backlog/BACKLOG.md` exists:
 
@@ -79,7 +88,7 @@ Check if `docs/backlog/BACKLOG.md` exists:
 4. If user wants to include items, read their full optimized prompts and incorporate into planning context
 5. If `docs/backlog/BACKLOG.md` does not exist, skip silently
 
-## Phase 5: Grill-Me Interview
+## Phase 6: Grill-Me Interview
 
 **STOP all research. START interviewing the user.**
 
@@ -103,7 +112,7 @@ You have gathered requirements, architecture analysis, audit findings, and backl
 - The user can accept recommendations with "yes", override with their own answer, or say "spec it" to accept all remaining recommendations
 - Do NOT proceed until the user says **"spec it"** (or equivalent confirmation)
 
-## Phase 6: Write the Spec
+## Phase 7: Write the Spec
 
 Output the full spec in conversation using the exact schema below. Do NOT write `.claude/workflow/plan.md`. Every section is mandatory.
 
@@ -113,6 +122,10 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 ## Problem Statement
 
 <One paragraph describing the problem and why it needs solving.>
+
+## Research Summary
+
+<3-7 bullet points from web research: relevant libraries, best practices, patterns, pitfalls, prior art. If web research was skipped, note "Web research skipped: no search tool available.">
 
 ## Decisions Made
 
@@ -167,7 +180,7 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 <Should be empty after grill-me. If any remain, list them here.>
 ```
 
-## Phase 7: Adversarial Review
+## Phase 8: Adversarial Review
 
 Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob]):
 
@@ -188,7 +201,7 @@ After 3 FAIL rounds, ask the user:
 - If override: note "Adversarial Review: PASS (user override)" in conversation, run `!bash .claude/hooks/phase-transition.sh solution plan`, and proceed
 - If abandon: delete workflow artifacts and exit
 
-## Phase 8: Present and STOP
+## Phase 9: Present and STOP
 
 Display a summary of the spec:
 - Title
