@@ -314,3 +314,9 @@ Each phase follows the TDD cycle with three commits:
 - Never accumulate changes across multiple phases without committing
 - Each phase must be committed before starting the next phase
 - Build + full test suite must pass after each commit
+
+## Anti-Patterns
+
+- DO NOT produce plans with phases that can't be independently tested — every phase must have at least one verifiable pass condition
+- DO NOT skip the risk assessment for any phase regardless of perceived simplicity — simple changes break complex systems
+- DO NOT create horizontal slices — every phase must be a vertical tracer bullet from interface to persistence
