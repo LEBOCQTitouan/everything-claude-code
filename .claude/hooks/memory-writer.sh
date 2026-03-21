@@ -183,6 +183,141 @@ EOF
   esac
 }
 
+# Resolve project memory dir for daily files (BL-047)
+# Uses ~/.claude/projects/<project-hash>/memory/daily/
+resolve_daily_dir() {
+  local home="${HOME:-}"
+  local proj_dir="${CLAUDE_PROJECT_DIR:-.}"
+  if [ -z "$home" ]; then
+    echo "ERROR: HOME not set" >&2
+    return 1
+  fi
+  # Project hash: absolute path with / replaced by -
+  local abs_path
+  abs_path=$(cd "$proj_dir" 2>/dev/null && pwd) || abs_path="$proj_dir"
+  # Remove leading / and replace remaining / with -
+  local project_hash
+  project_hash=$(echo "$abs_path" | sed 's|^/||' | sed 's|/|-|g')
+  local daily_dir="$home/.claude/projects/$project_hash/memory/daily"
+  echo "$daily_dir"
+}
+
+# Write a daily memory entry (BL-047)
+write_daily() {
+  local phase="$1"
+  local feature="$2"
+  local concern="$3"
+  local daily_dir
+  daily_dir=$(resolve_daily_dir) || return 0
+
+  mkdir -p "$daily_dir" || return 0
+
+  local today
+  today=$(date -u +"%Y-%m-%d")
+  local daily_file="$daily_dir/${today}.md"
+  local now
+  now=$(date -u +"%H:%M")
+
+  # Init file if missing
+  if [ ! -f "$daily_file" ]; then
+    local tmpfile
+    tmpfile=$(mktemp "${daily_dir}/daily.XXXXXX") || return 0
+
+    {
+      echo "# Daily: $today"
+      echo ""
+
+      # Link to recent previous sessions
+      local recent_files
+      recent_files=$(ls -r "$daily_dir"/*.md 2>/dev/null | head -n 3)
+      if [ -n "$recent_files" ]; then
+        echo "## Context from previous sessions"
+        echo ""
+        echo "$recent_files" | while IFS= read -r f; do
+          local basename
+          basename=$(basename "$f")
+          echo "- [$basename]($basename)"
+        done
+        echo ""
+      fi
+
+      echo "## Activity"
+      echo ""
+      echo "## Insights"
+      echo ""
+    } > "$tmpfile"
+
+    mv "$tmpfile" "$daily_file"
+  fi
+
+  # Ensure ## Activity and ## Insights sections exist
+  if ! grep -q '## Activity' "$daily_file" 2>/dev/null; then
+    echo "" >> "$daily_file"
+    echo "## Activity" >> "$daily_file"
+    echo "" >> "$daily_file"
+  fi
+  if ! grep -q '## Insights' "$daily_file" 2>/dev/null; then
+    echo "" >> "$daily_file"
+    echo "## Insights" >> "$daily_file"
+    echo "" >> "$daily_file"
+  fi
+
+  # Append entry under ## Activity via atomic write
+  local tmpfile
+  tmpfile=$(mktemp "${daily_dir}/daily.XXXXXX") || return 0
+  local entry="- [$now] **$phase** $feature — $concern"
+
+  # Insert the entry after the ## Activity line
+  awk -v entry="$entry" '
+    /^## Activity/ { print; getline; print; print entry; next }
+    { print }
+  ' "$daily_file" > "$tmpfile" || { rm -f "$tmpfile"; return 0; }
+
+  mv "$tmpfile" "$daily_file"
+}
+
+# Update MEMORY.md index with daily file link (BL-047)
+write_memory_index() {
+  local daily_dir
+  daily_dir=$(resolve_daily_dir) || return 0
+  local memory_dir
+  memory_dir=$(dirname "$daily_dir")
+  local memory_file="$memory_dir/MEMORY.md"
+
+  # Create if missing
+  if [ ! -f "$memory_file" ]; then
+    mkdir -p "$memory_dir" || return 0
+    echo "# Memory Index" > "$memory_file"
+  fi
+
+  # Ensure ## Daily section exists
+  if ! grep -q '## Daily' "$memory_file" 2>/dev/null; then
+    echo "" >> "$memory_file"
+    echo "## Daily" >> "$memory_file"
+    echo "" >> "$memory_file"
+  fi
+
+  local today
+  today=$(date -u +"%Y-%m-%d")
+  local link="- [$today](daily/$today.md)"
+
+  # Skip if link already present (dedup)
+  if grep -qF "$link" "$memory_file" 2>/dev/null; then
+    return 0
+  fi
+
+  # Insert link in reverse chronological order (after ## Daily heading)
+  local tmpfile
+  tmpfile=$(mktemp "${memory_dir}/memory.XXXXXX") || return 0
+
+  awk -v link="$link" '
+    /^## Daily/ { print; getline; print; print link; next }
+    { print }
+  ' "$memory_file" > "$tmpfile" || { rm -f "$tmpfile"; return 0; }
+
+  mv "$tmpfile" "$memory_file"
+}
+
 # Main dispatch
 CMD="${1:-}"
 shift || true
@@ -194,8 +329,14 @@ case "$CMD" in
   work-item)
     write_work_item "${1:-}" "${2:-}" "${3:-}"
     ;;
+  daily)
+    write_daily "${1:-}" "${2:-}" "${3:-}"
+    ;;
+  memory-index)
+    write_memory_index
+    ;;
   *)
-    echo "Usage: memory-writer.sh action|work-item ..." >&2
+    echo "Usage: memory-writer.sh action|work-item|daily|memory-index ..." >&2
     exit 1
     ;;
 esac
