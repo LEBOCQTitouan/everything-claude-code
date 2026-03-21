@@ -48,6 +48,11 @@ Source-of-truth comparison of installed ECC artifacts against the package. Detec
 - **Related:** [Artifact](#artifact), [Manifest](#manifest), [Hook](#hook)
 - **Files:** [`config-audit.ts`](../src/lib/config-audit.ts) (9 exports)
 
+### Daily Memory File
+A date-stamped file at `memory/daily/YYYY-MM-DD.md` capturing session activity (auto-written by hooks) and insights (manually curated). New files auto-link to 1-3 recent predecessors.
+- **Related:** [Session](#session), [Insight Promotion](#insight-promotion)
+- **Files:** [`.claude/hooks/memory-writer.sh`](../../.claude/hooks/memory-writer.sh), [`daily.rs`](../../crates/ecc-app/src/hook/handlers/tier3_session/daily.rs)
+
 ### Custom Diagram Registry
 A manifest file (`docs/diagrams/CUSTOM.md`) that tracks manually created or customized Mermaid diagrams. Prevents the doc-suite regeneration pipeline from overwriting user-maintained diagrams. Referenced by the [Diagram Generator](#diagram-generator) agent during doc-suite runs.
 - **Related:** [Diagram Generator](#diagram-generator), [Artifact](#artifact)
@@ -134,6 +139,10 @@ The root directory of the installed ECC package. Resolved from `ECC_ROOT` or `CL
 One of three execution modes controlling which [Hooks](#hook) run: **minimal** (lifecycle only), **standard** (most hooks, default), **strict** (all hooks including warnings). Set via `ECC_HOOK_PROFILE` env var.
 - **Related:** [Hook](#hook), [Run With Flags](#run-with-flags)
 - **Files:** [`hook-flags.ts`](../src/lib/hook-flags.ts) (`HookProfile`, `VALID_PROFILES`, `getHookProfile`), [`run-with-flags.ts`](../src/hooks/run-with-flags.ts)
+
+### Insight Promotion
+Elevating a significant insight from a [Daily Memory File](#daily-memory-file) into a typed memory file (user, feedback, project, reference) with cross-references.
+- **Related:** [Daily Memory File](#daily-memory-file), [Session](#session)
 
 ### LCS Diff
 Longest Common Subsequence algorithm used to compute line-level diffs between file versions. Falls back to a simpler line-by-line comparison for files exceeding 1M line-pair products. Powers the colored side-by-side diff display.
