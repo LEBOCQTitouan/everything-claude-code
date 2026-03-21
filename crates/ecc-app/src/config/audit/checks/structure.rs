@@ -7,10 +7,7 @@ use std::path::Path;
 use super::super::read_json_safe;
 
 /// Check that ECC gitignore entries are present in .gitignore.
-pub fn check_gitignore(
-    fs: &dyn FileSystem,
-    project_dir: &Path,
-) -> AuditCheckResult {
+pub fn check_gitignore(fs: &dyn FileSystem, project_dir: &Path) -> AuditCheckResult {
     let mut findings = Vec::new();
     let gitignore_path = project_dir.join(".gitignore");
 
@@ -62,10 +59,7 @@ pub fn check_gitignore(
 }
 
 /// Check if global CLAUDE.md exists.
-pub fn check_global_claude_md(
-    fs: &dyn FileSystem,
-    claude_dir: &Path,
-) -> AuditCheckResult {
+pub fn check_global_claude_md(fs: &dyn FileSystem, claude_dir: &Path) -> AuditCheckResult {
     let mut findings = Vec::new();
     let claude_md_path = claude_dir.join("CLAUDE.md");
 
@@ -74,11 +68,9 @@ pub fn check_global_claude_md(
             id: "CMD-001".into(),
             severity: Severity::Medium,
             title: "No global ~/.claude/CLAUDE.md".into(),
-            detail:
-                "Critical cross-project instructions only load when rules match file paths."
-                    .into(),
-            fix: "Create ~/.claude/CLAUDE.md with a 50-80 line summary of key rules."
+            detail: "Critical cross-project instructions only load when rules match file paths."
                 .into(),
+            fix: "Create ~/.claude/CLAUDE.md with a 50-80 line summary of key rules.".into(),
         });
     }
 
@@ -90,10 +82,7 @@ pub fn check_global_claude_md(
 }
 
 /// Check that the ECC statusline script is installed and settings reference it.
-pub fn check_statusline(
-    fs: &dyn FileSystem,
-    claude_dir: &Path,
-) -> AuditCheckResult {
+pub fn check_statusline(fs: &dyn FileSystem, claude_dir: &Path) -> AuditCheckResult {
     let mut findings = Vec::new();
 
     let script_path = claude_dir.join(ecc_domain::config::statusline::STATUSLINE_SCRIPT_FILENAME);
@@ -136,10 +125,7 @@ pub fn check_statusline(
 }
 
 /// Check project CLAUDE.md line count.
-pub fn check_project_claude_md(
-    fs: &dyn FileSystem,
-    project_dir: &Path,
-) -> AuditCheckResult {
+pub fn check_project_claude_md(fs: &dyn FileSystem, project_dir: &Path) -> AuditCheckResult {
     let mut findings = Vec::new();
     let claude_md_path = project_dir.join("CLAUDE.md");
 
@@ -169,11 +155,8 @@ pub fn check_project_claude_md(
             id: "PCM-001".into(),
             severity: Severity::Medium,
             title: format!("CLAUDE.md is {lines} lines (recommended < 200)"),
-            detail:
-                "Large CLAUDE.md files consume context budget on every conversation."
-                    .into(),
-            fix: "Move detailed instructions to rules/ or skills/ and keep CLAUDE.md lean."
-                .into(),
+            detail: "Large CLAUDE.md files consume context budget on every conversation.".into(),
+            fix: "Move detailed instructions to rules/ or skills/ and keep CLAUDE.md lean.".into(),
         });
     }
 
@@ -200,8 +183,7 @@ mod tests {
             .map(|e| e.pattern)
             .collect::<Vec<_>>()
             .join("\n");
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/.gitignore", &content);
+        let fs = InMemoryFileSystem::new().with_file("/project/.gitignore", &content);
 
         let result = check_gitignore(&fs, Path::new("/project"));
         assert!(result.passed);
@@ -209,8 +191,7 @@ mod tests {
 
     #[test]
     fn check_gitignore_missing_entries() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/.gitignore", "node_modules\n");
+        let fs = InMemoryFileSystem::new().with_file("/project/.gitignore", "node_modules\n");
 
         let result = check_gitignore(&fs, Path::new("/project"));
         assert!(!result.passed);
@@ -230,8 +211,7 @@ mod tests {
 
     #[test]
     fn check_global_claude_md_exists() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/claude/CLAUDE.md", "# Global instructions");
+        let fs = InMemoryFileSystem::new().with_file("/claude/CLAUDE.md", "# Global instructions");
 
         let result = check_global_claude_md(&fs, Path::new("/claude"));
         assert!(result.passed);
@@ -265,8 +245,8 @@ mod tests {
         let settings = serde_json::json!({
             "statusLine": {"command": "/claude/statusline-command.sh"}
         });
-        let fs = InMemoryFileSystem::new()
-            .with_file("/claude/settings.json", &settings.to_string());
+        let fs =
+            InMemoryFileSystem::new().with_file("/claude/settings.json", &settings.to_string());
 
         let result = check_statusline(&fs, Path::new("/claude"));
         assert!(!result.passed);
@@ -289,8 +269,8 @@ mod tests {
         let settings = serde_json::json!({
             "statusLine": {"command": "my-custom.sh"}
         });
-        let fs = InMemoryFileSystem::new()
-            .with_file("/claude/settings.json", &settings.to_string());
+        let fs =
+            InMemoryFileSystem::new().with_file("/claude/settings.json", &settings.to_string());
 
         let result = check_statusline(&fs, Path::new("/claude"));
         assert!(!result.passed);
@@ -303,8 +283,7 @@ mod tests {
     #[test]
     fn check_project_claude_md_small() {
         let content = "# Title\nSome content\n";
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/CLAUDE.md", content);
+        let fs = InMemoryFileSystem::new().with_file("/project/CLAUDE.md", content);
 
         let result = check_project_claude_md(&fs, Path::new("/project"));
         assert!(result.passed);
@@ -316,8 +295,7 @@ mod tests {
             .map(|i| format!("Line {i}"))
             .collect::<Vec<_>>()
             .join("\n");
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/CLAUDE.md", &content);
+        let fs = InMemoryFileSystem::new().with_file("/project/CLAUDE.md", &content);
 
         let result = check_project_claude_md(&fs, Path::new("/project"));
         assert!(!result.passed);

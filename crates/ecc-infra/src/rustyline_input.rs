@@ -2,8 +2,8 @@
 
 use ecc_ports::repl::ReplInput;
 use ecc_ports::terminal::TerminalError;
-use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
+use rustyline::error::ReadlineError;
 use std::path::PathBuf;
 use std::sync::Mutex;
 

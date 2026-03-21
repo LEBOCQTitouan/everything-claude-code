@@ -44,7 +44,10 @@ pub fn smart_merge(
         return SmartMergeResult {
             success: false,
             merged: None,
-            error: Some("Claude CLI not found. Install it with: npm install -g @anthropic-ai/claude-code".to_string()),
+            error: Some(
+                "Claude CLI not found. Install it with: npm install -g @anthropic-ai/claude-code"
+                    .to_string(),
+            ),
         };
     }
 
@@ -70,7 +73,11 @@ pub fn smart_merge(
         Ok(output) => SmartMergeResult {
             success: false,
             merged: None,
-            error: Some(format!("Claude exited with code {}: {}", output.exit_code, output.stderr.trim())),
+            error: Some(format!(
+                "Claude exited with code {}: {}",
+                output.exit_code,
+                output.stderr.trim()
+            )),
         },
         Err(e) => SmartMergeResult {
             success: false,
@@ -134,16 +141,14 @@ mod tests {
 
     #[test]
     fn smart_merge_success() {
-        let shell = MockExecutor::new()
-            .with_command("claude")
-            .on(
-                "claude",
-                CommandOutput {
-                    stdout: "merged content\n".to_string(),
-                    stderr: String::new(),
-                    exit_code: 0,
-                },
-            );
+        let shell = MockExecutor::new().with_command("claude").on(
+            "claude",
+            CommandOutput {
+                stdout: "merged content\n".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
         let result = smart_merge(&shell, "old", "new", "test.md");
         assert!(result.success);
         assert_eq!(result.merged.unwrap(), "merged content");
@@ -152,16 +157,14 @@ mod tests {
 
     #[test]
     fn smart_merge_claude_exits_nonzero() {
-        let shell = MockExecutor::new()
-            .with_command("claude")
-            .on(
-                "claude",
-                CommandOutput {
-                    stdout: String::new(),
-                    stderr: "rate limited".to_string(),
-                    exit_code: 1,
-                },
-            );
+        let shell = MockExecutor::new().with_command("claude").on(
+            "claude",
+            CommandOutput {
+                stdout: String::new(),
+                stderr: "rate limited".to_string(),
+                exit_code: 1,
+            },
+        );
         let result = smart_merge(&shell, "old", "new", "test.md");
         assert!(!result.success);
         assert!(result.merged.is_none());
@@ -170,16 +173,14 @@ mod tests {
 
     #[test]
     fn smart_merge_empty_output() {
-        let shell = MockExecutor::new()
-            .with_command("claude")
-            .on(
-                "claude",
-                CommandOutput {
-                    stdout: "   \n".to_string(),
-                    stderr: String::new(),
-                    exit_code: 0,
-                },
-            );
+        let shell = MockExecutor::new().with_command("claude").on(
+            "claude",
+            CommandOutput {
+                stdout: "   \n".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
         let result = smart_merge(&shell, "old", "new", "test.md");
         assert!(!result.success);
         assert!(result.error.unwrap().contains("empty output"));

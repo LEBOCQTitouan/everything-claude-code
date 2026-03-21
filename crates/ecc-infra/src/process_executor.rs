@@ -7,16 +7,13 @@ pub struct ProcessExecutor;
 
 impl ShellExecutor for ProcessExecutor {
     fn run_command(&self, command: &str, args: &[&str]) -> Result<CommandOutput, ShellError> {
-        let output = Command::new(command)
-            .args(args)
-            .output()
-            .map_err(|e| {
-                if e.kind() == std::io::ErrorKind::NotFound {
-                    ShellError::NotFound(command.to_string())
-                } else {
-                    ShellError::Io(e.to_string())
-                }
-            })?;
+        let output = Command::new(command).args(args).output().map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                ShellError::NotFound(command.to_string())
+            } else {
+                ShellError::Io(e.to_string())
+            }
+        })?;
 
         Ok(CommandOutput {
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -86,7 +83,9 @@ impl ShellExecutor for ProcessExecutor {
                 .map_err(|e| ShellError::Io(e.to_string()))?;
         }
 
-        let output = child.wait_with_output().map_err(|e| ShellError::Io(e.to_string()))?;
+        let output = child
+            .wait_with_output()
+            .map_err(|e| ShellError::Io(e.to_string()))?;
 
         Ok(CommandOutput {
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),

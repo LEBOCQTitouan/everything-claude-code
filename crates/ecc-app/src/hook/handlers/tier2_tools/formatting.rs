@@ -52,7 +52,10 @@ pub fn post_edit_format(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 &project_root,
             ) {
                 Ok(out) if out.exit_code != 0 => {
-                    let msg = format!("[Hook] biome format failed (exit {}): {}", out.exit_code, out.stderr);
+                    let msg = format!(
+                        "[Hook] biome format failed (exit {}): {}",
+                        out.exit_code, out.stderr
+                    );
                     warn!("{}", msg);
                     return HookResult::warn(stdin, &format!("{msg}\n"));
                 }
@@ -70,7 +73,10 @@ pub fn post_edit_format(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 &project_root,
             ) {
                 Ok(out) if out.exit_code != 0 => {
-                    let msg = format!("[Hook] prettier format failed (exit {}): {}", out.exit_code, out.stderr);
+                    let msg = format!(
+                        "[Hook] prettier format failed (exit {}): {}",
+                        out.exit_code, out.stderr
+                    );
                     warn!("{}", msg);
                     return HookResult::warn(stdin, &format!("{msg}\n"));
                 }

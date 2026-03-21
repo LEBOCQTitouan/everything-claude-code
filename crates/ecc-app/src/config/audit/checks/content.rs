@@ -1,14 +1,11 @@
 //! Content audit checks — agent skills and command descriptions.
 
-use ecc_domain::config::audit::{parse_frontmatter, AuditCheckResult, AuditFinding, Severity};
+use ecc_domain::config::audit::{AuditCheckResult, AuditFinding, Severity, parse_frontmatter};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
 /// Check if agents have `skills:` frontmatter.
-pub fn check_agent_skills(
-    fs: &dyn FileSystem,
-    agents_dir: &Path,
-) -> AuditCheckResult {
+pub fn check_agent_skills(fs: &dyn FileSystem, agents_dir: &Path) -> AuditCheckResult {
     let mut findings = Vec::new();
 
     if !fs.exists(agents_dir) {
@@ -76,10 +73,7 @@ pub fn check_agent_skills(
 }
 
 /// Check if commands have `description:` frontmatter.
-pub fn check_command_descriptions(
-    fs: &dyn FileSystem,
-    commands_dir: &Path,
-) -> AuditCheckResult {
+pub fn check_command_descriptions(fs: &dyn FileSystem, commands_dir: &Path) -> AuditCheckResult {
     let mut findings = Vec::new();
 
     if !fs.exists(commands_dir) {
@@ -134,8 +128,7 @@ pub fn check_command_descriptions(
                 missing_desc.len()
             ),
             detail: format!("Missing: {}", missing_desc.join(", ")),
-            fix: "Add description: field to YAML frontmatter in each command file."
-                .into(),
+            fix: "Add description: field to YAML frontmatter in each command file.".into(),
         });
     }
 
@@ -220,8 +213,7 @@ mod tests {
 
     #[test]
     fn check_command_descriptions_skips_underscore() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/commands/_archive.md", "# No frontmatter");
+        let fs = InMemoryFileSystem::new().with_file("/commands/_archive.md", "# No frontmatter");
 
         let result = check_command_descriptions(&fs, Path::new("/commands"));
         assert!(result.passed);

@@ -226,7 +226,10 @@ mod tests {
     #[test]
     fn generate_report_with_rules_and_claude_md() {
         let mut rules = BTreeMap::new();
-        rules.insert("common".into(), vec!["style.md".into(), "security.md".into()]);
+        rules.insert(
+            "common".into(),
+            vec!["style.md".into(), "security.md".into()],
+        );
         rules.insert("typescript".into(), vec!["eslint.md".into()]);
 
         let result = DetectionResult {

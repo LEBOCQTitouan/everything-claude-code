@@ -108,8 +108,7 @@ pub fn is_legacy_pattern(cmd: &str) -> bool {
     }
 
     // Resolved absolute-path shell hook commands
-    if cmd.contains("/scripts/hooks/run-with-flags-shell.sh")
-        && !cmd.starts_with("ecc-shell-hook")
+    if cmd.contains("/scripts/hooks/run-with-flags-shell.sh") && !cmd.starts_with("ecc-shell-hook")
     {
         return true;
     }
@@ -137,10 +136,7 @@ pub fn is_legacy_pattern(cmd: &str) -> bool {
 /// 2. Contain a known ECC package identifier
 /// 3. Match any entry in the provided source hooks
 /// 4. Match legacy patterns
-pub fn is_ecc_managed_hook(
-    entry: &serde_json::Value,
-    source_hooks: &serde_json::Value,
-) -> bool {
+pub fn is_ecc_managed_hook(entry: &serde_json::Value, source_hooks: &serde_json::Value) -> bool {
     let hooks = match entry.get("hooks").and_then(|h| h.as_array()) {
         Some(h) => h,
         None => return false,
@@ -184,10 +180,7 @@ pub fn is_ecc_managed_hook(
 
 /// Check if an entry matches any hook in the source hooks by comparing
 /// their serialized `hooks` arrays.
-fn matches_source_hook(
-    entry: &serde_json::Value,
-    source_hooks: &serde_json::Value,
-) -> bool {
+fn matches_source_hook(entry: &serde_json::Value, source_hooks: &serde_json::Value) -> bool {
     let entry_key = match entry.get("hooks") {
         Some(h) => serde_json::to_string(h).unwrap_or_default(),
         None => return false,
@@ -226,8 +219,7 @@ fn matches_source_hook(
 ///
 /// Grade: A (90+), B (80+), C (70+), D (60+), F (<60)
 pub fn compute_audit_score(checks: &[AuditCheckResult]) -> (i32, String) {
-    let all_findings: Vec<&AuditFinding> =
-        checks.iter().flat_map(|c| &c.findings).collect();
+    let all_findings: Vec<&AuditFinding> = checks.iter().flat_map(|c| &c.findings).collect();
 
     let mut score: i32 = 100;
     for finding in &all_findings {
@@ -388,9 +380,7 @@ mod tests {
 
     #[test]
     fn is_legacy_pattern_not_shell_wrapper() {
-        assert!(!is_legacy_pattern(
-            "scripts/hooks/run-with-flags-shell.sh"
-        ));
+        assert!(!is_legacy_pattern("scripts/hooks/run-with-flags-shell.sh"));
     }
 
     #[test]

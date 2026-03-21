@@ -9,8 +9,14 @@ fn clean_removes_manifest_listed_files() {
 
     // Install first
     env.install(&[]).success();
-    assert!(env.file_exists("agents"), "agents/ should exist after install");
-    assert!(env.file_exists(".ecc-manifest.json"), "manifest should exist");
+    assert!(
+        env.file_exists("agents"),
+        "agents/ should exist after install"
+    );
+    assert!(
+        env.file_exists(".ecc-manifest.json"),
+        "manifest should exist"
+    );
 
     // Clean
     env.install(&["--clean"]).success();
@@ -103,7 +109,10 @@ fn clean_all_nukes_directories() {
 
     // Install first
     env.install(&[]).success();
-    assert!(env.file_exists("agents"), "agents/ should exist after install");
+    assert!(
+        env.file_exists("agents"),
+        "agents/ should exist after install"
+    );
 
     // Clean all + reinstall
     env.install(&["--clean-all"]).success();

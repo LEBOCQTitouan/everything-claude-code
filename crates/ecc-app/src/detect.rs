@@ -1,6 +1,6 @@
 //! Detection use case — thin wrapper around domain detect + report.
 
-use ecc_domain::config::detect::{generate_report, DetectionResult};
+use ecc_domain::config::detect::{DetectionResult, generate_report};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
@@ -68,9 +68,10 @@ mod tests {
 
     #[test]
     fn detect_and_report_with_project_dir() {
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/claude")
-            .with_file("/project/CLAUDE.md", "# Project\n## Architecture\n## Testing");
+        let fs = InMemoryFileSystem::new().with_dir("/claude").with_file(
+            "/project/CLAUDE.md",
+            "# Project\n## Architecture\n## Testing",
+        );
         let terminal = BufferedTerminal::new();
 
         let result = detect_and_report(

@@ -161,28 +161,46 @@ mod tests {
 
     #[test]
     fn profile_from_str_minimal() {
-        assert_eq!(HookProfile::from_str_opt("minimal"), Some(HookProfile::Minimal));
+        assert_eq!(
+            HookProfile::from_str_opt("minimal"),
+            Some(HookProfile::Minimal)
+        );
     }
 
     #[test]
     fn profile_from_str_standard() {
-        assert_eq!(HookProfile::from_str_opt("standard"), Some(HookProfile::Standard));
+        assert_eq!(
+            HookProfile::from_str_opt("standard"),
+            Some(HookProfile::Standard)
+        );
     }
 
     #[test]
     fn profile_from_str_strict() {
-        assert_eq!(HookProfile::from_str_opt("strict"), Some(HookProfile::Strict));
+        assert_eq!(
+            HookProfile::from_str_opt("strict"),
+            Some(HookProfile::Strict)
+        );
     }
 
     #[test]
     fn profile_from_str_case_insensitive() {
-        assert_eq!(HookProfile::from_str_opt("MINIMAL"), Some(HookProfile::Minimal));
-        assert_eq!(HookProfile::from_str_opt("Standard"), Some(HookProfile::Standard));
+        assert_eq!(
+            HookProfile::from_str_opt("MINIMAL"),
+            Some(HookProfile::Minimal)
+        );
+        assert_eq!(
+            HookProfile::from_str_opt("Standard"),
+            Some(HookProfile::Standard)
+        );
     }
 
     #[test]
     fn profile_from_str_with_whitespace() {
-        assert_eq!(HookProfile::from_str_opt("  strict  "), Some(HookProfile::Strict));
+        assert_eq!(
+            HookProfile::from_str_opt("  strict  "),
+            Some(HookProfile::Strict)
+        );
     }
 
     #[test]
@@ -348,27 +366,52 @@ mod tests {
     #[test]
     fn enabled_default_standard_profile() {
         // Default profile is standard, default allowed is [standard, strict]
-        assert!(is_hook_enabled("my-hook", None, None, &HookEnabledOptions::default()));
+        assert!(is_hook_enabled(
+            "my-hook",
+            None,
+            None,
+            &HookEnabledOptions::default()
+        ));
     }
 
     #[test]
     fn enabled_empty_id_always_true() {
-        assert!(is_hook_enabled("", None, None, &HookEnabledOptions::default()));
+        assert!(is_hook_enabled(
+            "",
+            None,
+            None,
+            &HookEnabledOptions::default()
+        ));
     }
 
     #[test]
     fn enabled_whitespace_id_always_true() {
-        assert!(is_hook_enabled("   ", None, None, &HookEnabledOptions::default()));
+        assert!(is_hook_enabled(
+            "   ",
+            None,
+            None,
+            &HookEnabledOptions::default()
+        ));
     }
 
     #[test]
     fn disabled_by_env() {
-        assert!(!is_hook_enabled("my-hook", None, Some("my-hook"), &HookEnabledOptions::default()));
+        assert!(!is_hook_enabled(
+            "my-hook",
+            None,
+            Some("my-hook"),
+            &HookEnabledOptions::default()
+        ));
     }
 
     #[test]
     fn disabled_by_env_case_insensitive() {
-        assert!(!is_hook_enabled("MY-HOOK", None, Some("my-hook"), &HookEnabledOptions::default()));
+        assert!(!is_hook_enabled(
+            "MY-HOOK",
+            None,
+            Some("my-hook"),
+            &HookEnabledOptions::default()
+        ));
     }
 
     #[test]
@@ -393,6 +436,11 @@ mod tests {
         let opts = HookEnabledOptions {
             profiles: Some("standard"),
         };
-        assert!(!is_hook_enabled("my-hook", Some("standard"), Some("my-hook"), &opts));
+        assert!(!is_hook_enabled(
+            "my-hook",
+            Some("standard"),
+            Some("my-hook"),
+            &opts
+        ));
     }
 }

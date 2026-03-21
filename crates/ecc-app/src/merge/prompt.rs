@@ -23,10 +23,7 @@ pub fn prompt_file_review(
     let colored = env.var("NO_COLOR").is_none();
 
     if file.is_new {
-        terminal.stdout_write(&format!(
-            "\n{progress} NEW: {}\n",
-            file.filename
-        ));
+        terminal.stdout_write(&format!("\n{progress} NEW: {}\n", file.filename));
         // Show preview of incoming file
         if let Ok(content) = fs.read_to_string(&file.src_path) {
             let preview: Vec<&str> = content.lines().take(10).collect();
@@ -39,10 +36,7 @@ pub fn prompt_file_review(
             }
         }
     } else {
-        terminal.stdout_write(&format!(
-            "\n{progress} CHANGED: {}\n",
-            file.filename
-        ));
+        terminal.stdout_write(&format!("\n{progress} CHANGED: {}\n", file.filename));
         // Show diff
         let existing = fs.read_to_string(&file.dest_path).unwrap_or_default();
         let incoming = fs.read_to_string(&file.src_path).unwrap_or_default();
@@ -99,19 +93,13 @@ pub fn apply_review_choice(
             report.skipped.push(file.filename.clone());
         }
         ReviewChoice::SmartMerge => {
-            let existing = fs
-                .read_to_string(&file.dest_path)
-                .unwrap_or_default();
-            let incoming = fs
-                .read_to_string(&file.src_path)
-                .unwrap_or_default();
+            let existing = fs.read_to_string(&file.dest_path).unwrap_or_default();
+            let incoming = fs.read_to_string(&file.src_path).unwrap_or_default();
 
             let result = smart_merge::smart_merge(shell, &existing, &incoming, &file.filename);
             if result.success {
                 if let Some(merged) = &result.merged {
-                    if !dry_run
-                        && let Err(e) = fs.write(&file.dest_path, merged)
-                    {
+                    if !dry_run && let Err(e) = fs.write(&file.dest_path, merged) {
                         report
                             .errors
                             .push(format!("{}: write error: {e}", file.filename));
@@ -254,13 +242,14 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/dest/agent.md", "old")
             .with_file("/src/agent.md", "new");
-        let shell = MockExecutor::new()
-            .with_command("claude")
-            .on("claude", CommandOutput {
+        let shell = MockExecutor::new().with_command("claude").on(
+            "claude",
+            CommandOutput {
                 stdout: "merged".to_string(),
                 stderr: String::new(),
                 exit_code: 0,
-            });
+            },
+        );
         let file = FileToReview {
             filename: "agent.md".into(),
             src_path: "/src/agent.md".into(),
@@ -269,10 +258,21 @@ mod tests {
         };
         let mut report = merge::empty_report();
 
-        apply_review_choice(&fs, &shell, ReviewChoice::SmartMerge, &file, true, &mut report);
+        apply_review_choice(
+            &fs,
+            &shell,
+            ReviewChoice::SmartMerge,
+            &file,
+            true,
+            &mut report,
+        );
 
         assert_eq!(report.smart_merged, vec!["agent.md"]);
         // dry_run: dest file must remain unchanged
-        assert_eq!(fs.read_to_string(std::path::Path::new("/dest/agent.md")).unwrap(), "old");
+        assert_eq!(
+            fs.read_to_string(std::path::Path::new("/dest/agent.md"))
+                .unwrap(),
+            "old"
+        );
     }
 }

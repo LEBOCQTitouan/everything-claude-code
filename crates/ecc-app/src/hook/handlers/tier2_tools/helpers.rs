@@ -106,10 +106,7 @@ pub(super) fn find_project_root(file_path: &Path, ports: &HookPorts<'_>) -> std:
             _ => break,
         }
     }
-    file_path
-        .parent()
-        .unwrap_or(file_path)
-        .to_path_buf()
+    file_path.parent().unwrap_or(file_path).to_path_buf()
 }
 
 /// Find an ancestor directory containing a specific file.

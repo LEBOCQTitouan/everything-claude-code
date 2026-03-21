@@ -230,11 +230,7 @@ mod tests {
         let ports = make_ports(&fs, &shell, &env, &term, &input);
         let mut state = default_state();
 
-        let result = dispatch_command(
-            &ClawCommand::Load("tdd".to_string()),
-            &mut state,
-            &ports,
-        );
+        let result = dispatch_command(&ClawCommand::Load("tdd".to_string()), &mut state, &ports);
         assert!(result.is_ok());
     }
 
@@ -266,11 +262,7 @@ mod tests {
         let ports = make_ports(&fs, &shell, &env, &term, &input);
         let mut state = default_state();
 
-        let result = dispatch_command(
-            &ClawCommand::UserMessage(String::new()),
-            &mut state,
-            &ports,
-        );
+        let result = dispatch_command(&ClawCommand::UserMessage(String::new()), &mut state, &ports);
         assert!(result.is_ok());
         assert!(state.turns().is_empty());
     }

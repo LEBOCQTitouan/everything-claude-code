@@ -11,8 +11,13 @@ pub fn load_skill(name: &str, ports: &ClawPorts<'_>) -> Result<String, String> {
 
     // Try multiple locations
     let candidates = [
-        home.join(".claude").join("skills").join(name).join("SKILL.md"),
-        home.join(".claude").join("skills").join(format!("{name}.md")),
+        home.join(".claude")
+            .join("skills")
+            .join(name)
+            .join("SKILL.md"),
+        home.join(".claude")
+            .join("skills")
+            .join(format!("{name}.md")),
     ];
 
     for path in &candidates {

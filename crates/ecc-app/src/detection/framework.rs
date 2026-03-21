@@ -1,25 +1,24 @@
 use ecc_domain::detection::framework::{
-    ProjectType, BACKEND_SIGNALS, FRAMEWORK_RULES, FRONTEND_SIGNALS,
+    BACKEND_SIGNALS, FRAMEWORK_RULES, FRONTEND_SIGNALS, ProjectType,
 };
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
 use super::language::{
-    get_composer_deps, get_elixir_deps, get_go_deps, get_package_json_deps,
-    get_python_deps, get_rust_deps,
+    get_composer_deps, get_elixir_deps, get_go_deps, get_package_json_deps, get_python_deps,
+    get_rust_deps,
 };
 
 /// Detect frameworks present in the given project directory.
 ///
 /// For each framework rule, checks marker files and dependency lists.
 /// The appropriate dependency extractor is selected based on `rule.language`.
-pub fn detect_frameworks(
-    fs: &dyn FileSystem,
-    dir: &Path,
-    languages: &[String],
-) -> Vec<String> {
+pub fn detect_frameworks(fs: &dyn FileSystem, dir: &Path, languages: &[String]) -> Vec<String> {
     // Pre-compute dependency lists only for languages actually detected
-    let npm_deps = if languages.iter().any(|l| l == "typescript" || l == "javascript") {
+    let npm_deps = if languages
+        .iter()
+        .any(|l| l == "typescript" || l == "javascript")
+    {
         get_package_json_deps(fs, dir)
     } else {
         Vec::new()
@@ -100,8 +99,12 @@ pub fn detect_project_type(fs: &dyn FileSystem, dir: &Path) -> ProjectType {
         "unknown".to_string()
     };
 
-    let has_frontend = frameworks.iter().any(|f| FRONTEND_SIGNALS.contains(&f.as_str()));
-    let has_backend = frameworks.iter().any(|f| BACKEND_SIGNALS.contains(&f.as_str()));
+    let has_frontend = frameworks
+        .iter()
+        .any(|f| FRONTEND_SIGNALS.contains(&f.as_str()));
+    let has_backend = frameworks
+        .iter()
+        .any(|f| BACKEND_SIGNALS.contains(&f.as_str()));
 
     if has_frontend && has_backend {
         primary = "fullstack".to_string();
@@ -131,8 +134,7 @@ mod tests {
 
     #[test]
     fn detect_frameworks_with_markers() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/manage.py", "");
+        let fs = InMemoryFileSystem::new().with_file("/project/manage.py", "");
         let langs = vec!["python".to_string()];
         let fws = detect_frameworks(&fs, dir(), &langs);
         assert!(fws.contains(&"django".to_string()));
@@ -160,8 +162,7 @@ mod tests {
 
     #[test]
     fn detect_frameworks_rails_by_marker() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/config/routes.rb", "");
+        let fs = InMemoryFileSystem::new().with_file("/project/config/routes.rb", "");
         let langs = vec!["ruby".to_string()];
         let fws = detect_frameworks(&fs, dir(), &langs);
         assert!(fws.contains(&"rails".to_string()));

@@ -1,6 +1,6 @@
 //! Hook dispatch use case — routes hookId to the appropriate handler.
 
-use ecc_domain::hook_runtime::profiles::{is_hook_enabled, HookEnabledOptions};
+use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
@@ -122,9 +122,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "pre:write:doc-file-warning" | "pre:edit-write:doc-file-warning" => {
             handlers::doc_file_warning(stdin)
         }
-        "post:edit-write:doc-coverage-reminder" => {
-            handlers::doc_coverage_reminder(stdin, ports)
-        }
+        "post:edit-write:doc-coverage-reminder" => handlers::doc_coverage_reminder(stdin, ports),
         "post:edit:console-warn" => handlers::post_edit_console_warn(stdin, ports),
         "pre:edit-write:suggest-compact" => handlers::suggest_compact(stdin, ports),
 

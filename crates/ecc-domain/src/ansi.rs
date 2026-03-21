@@ -31,7 +31,6 @@ pub fn cyan(text: &str, enabled: bool) -> String {
     wrap(text, "36", enabled)
 }
 
-
 fn wrap(text: &str, code: &str, enabled: bool) -> String {
     if enabled {
         format!("\x1b[{code}m{text}\x1b[0m")

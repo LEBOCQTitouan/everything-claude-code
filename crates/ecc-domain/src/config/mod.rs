@@ -15,5 +15,4 @@ pub mod statusline;
 pub mod validate;
 
 /// Known ECC package identifiers in npm paths.
-pub const ECC_PACKAGE_IDENTIFIERS: &[&str] =
-    &["@lebocqtitouan/ecc/", "everything-claude-code/"];
+pub const ECC_PACKAGE_IDENTIFIERS: &[&str] = &["@lebocqtitouan/ecc/", "everything-claude-code/"];

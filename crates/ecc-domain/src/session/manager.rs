@@ -100,33 +100,41 @@ pub struct SessionDetail {
 // ---------------------------------------------------------------------------
 
 static SESSION_FILENAME_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(\d{4}-\d{2}-\d{2})(?:-([a-z0-9]{8,}))?-session\.tmp$").expect("BUG: invalid SESSION_FILENAME_RE regex")
+    Regex::new(r"^(\d{4}-\d{2}-\d{2})(?:-([a-z0-9]{8,}))?-session\.tmp$")
+        .expect("BUG: invalid SESSION_FILENAME_RE regex")
 });
 
 static TITLE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?m)^#\s+(.+)$").expect("BUG: invalid TITLE_RE regex"));
 
-static DATE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})").expect("BUG: invalid regex constant"));
-
-static STARTED_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*\*Started:\*\*\s*([\d:]+)").expect("BUG: invalid regex constant"));
-
-static UPDATED_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\*\*Last Updated:\*\*\s*([\d:]+)").expect("BUG: invalid regex constant"));
-
-static COMPLETED_SECTION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)### Completed\s*\n(.*?)(?:###|\n\n|$)").expect("BUG: invalid regex constant"));
-
-static PROGRESS_SECTION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)### In Progress\s*\n(.*?)(?:###|\n\n|$)").expect("BUG: invalid regex constant"));
-
-static NOTES_SECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?s)### Notes for Next Session\s*\n(.*?)(?:###|\n\n|$)").expect("BUG: invalid regex constant")
+static DATE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})").expect("BUG: invalid regex constant")
 });
 
-static CONTEXT_SECTION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)### Context to Load\s*\n```\n(.*?)```").expect("BUG: invalid regex constant"));
+static STARTED_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\*\*Started:\*\*\s*([\d:]+)").expect("BUG: invalid regex constant")
+});
+
+static UPDATED_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\*\*Last Updated:\*\*\s*([\d:]+)").expect("BUG: invalid regex constant")
+});
+
+static COMPLETED_SECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?s)### Completed\s*\n(.*?)(?:###|\n\n|$)").expect("BUG: invalid regex constant")
+});
+
+static PROGRESS_SECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?s)### In Progress\s*\n(.*?)(?:###|\n\n|$)").expect("BUG: invalid regex constant")
+});
+
+static NOTES_SECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?s)### Notes for Next Session\s*\n(.*?)(?:###|\n\n|$)")
+        .expect("BUG: invalid regex constant")
+});
+
+static CONTEXT_SECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?s)### Context to Load\s*\n```\n(.*?)```").expect("BUG: invalid regex constant")
+});
 
 static COMPLETED_ITEM_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"- \[x\]\s*(.+)").expect("BUG: invalid regex constant"));
@@ -157,10 +165,7 @@ pub fn parse_session_filename(filename: &str) -> Option<SessionFilename> {
         return None;
     }
 
-    let short_id = caps
-        .get(2)
-        .map_or("no-id", |m| m.as_str())
-        .to_string();
+    let short_id = caps.get(2).map_or("no-id", |m| m.as_str()).to_string();
 
     Some(SessionFilename {
         filename: filename.to_string(),
@@ -280,8 +285,7 @@ mod tests {
 
     #[test]
     fn parse_filename_with_id() {
-        let result =
-            parse_session_filename("2024-03-15-abc12345-session.tmp").unwrap();
+        let result = parse_session_filename("2024-03-15-abc12345-session.tmp").unwrap();
         assert_eq!(result.short_id, "abc12345");
         assert_eq!(result.date, "2024-03-15");
         assert_eq!(result.filename, "2024-03-15-abc12345-session.tmp");
@@ -289,17 +293,14 @@ mod tests {
 
     #[test]
     fn parse_filename_with_long_id() {
-        let result =
-            parse_session_filename("2024-01-01-abcdefgh12345678-session.tmp")
-                .unwrap();
+        let result = parse_session_filename("2024-01-01-abcdefgh12345678-session.tmp").unwrap();
         assert_eq!(result.short_id, "abcdefgh12345678");
         assert_eq!(result.date, "2024-01-01");
     }
 
     #[test]
     fn parse_filename_without_id_gives_no_id() {
-        let result =
-            parse_session_filename("2024-03-15-session.tmp").unwrap();
+        let result = parse_session_filename("2024-03-15-session.tmp").unwrap();
         assert_eq!(result.short_id, "no-id");
         assert_eq!(result.date, "2024-03-15");
     }
@@ -314,59 +315,45 @@ mod tests {
 
     #[test]
     fn parse_filename_invalid_month_13() {
-        assert!(
-            parse_session_filename("2024-13-15-abc12345-session.tmp").is_none()
-        );
+        assert!(parse_session_filename("2024-13-15-abc12345-session.tmp").is_none());
     }
 
     #[test]
     fn parse_filename_invalid_day_32() {
-        assert!(
-            parse_session_filename("2024-03-32-abc12345-session.tmp").is_none()
-        );
+        assert!(parse_session_filename("2024-03-32-abc12345-session.tmp").is_none());
     }
 
     #[test]
     fn parse_filename_invalid_month_00() {
-        assert!(
-            parse_session_filename("2024-00-15-abc12345-session.tmp").is_none()
-        );
+        assert!(parse_session_filename("2024-00-15-abc12345-session.tmp").is_none());
     }
 
     #[test]
     fn parse_filename_invalid_day_00() {
-        assert!(
-            parse_session_filename("2024-03-00-abc12345-session.tmp").is_none()
-        );
+        assert!(parse_session_filename("2024-03-00-abc12345-session.tmp").is_none());
     }
 
     #[test]
     fn parse_filename_edge_date_month_12_day_31() {
-        let result =
-            parse_session_filename("2024-12-31-abc12345-session.tmp").unwrap();
+        let result = parse_session_filename("2024-12-31-abc12345-session.tmp").unwrap();
         assert_eq!(result.date, "2024-12-31");
     }
 
     #[test]
     fn parse_filename_edge_date_month_01_day_01() {
-        let result =
-            parse_session_filename("2024-01-01-abc12345-session.tmp").unwrap();
+        let result = parse_session_filename("2024-01-01-abc12345-session.tmp").unwrap();
         assert_eq!(result.date, "2024-01-01");
     }
 
     #[test]
     fn parse_filename_short_id_too_short_is_invalid() {
         // ID must be 8+ characters
-        assert!(
-            parse_session_filename("2024-03-15-abc-session.tmp").is_none()
-        );
+        assert!(parse_session_filename("2024-03-15-abc-session.tmp").is_none());
     }
 
     #[test]
     fn parse_filename_id_with_uppercase_is_invalid() {
-        assert!(
-            parse_session_filename("2024-03-15-ABCDEFGH-session.tmp").is_none()
-        );
+        assert!(parse_session_filename("2024-03-15-ABCDEFGH-session.tmp").is_none());
     }
 
     // -----------------------------------------------------------------------
@@ -395,8 +382,7 @@ mod tests {
 
     #[test]
     fn metadata_date() {
-        let meta =
-            parse_session_metadata(Some("**Date:** 2024-03-15\n"));
+        let meta = parse_session_metadata(Some("**Date:** 2024-03-15\n"));
         assert_eq!(meta.date.as_deref(), Some("2024-03-15"));
     }
 
@@ -408,8 +394,7 @@ mod tests {
 
     #[test]
     fn metadata_last_updated() {
-        let meta =
-            parse_session_metadata(Some("**Last Updated:** 16:45\n"));
+        let meta = parse_session_metadata(Some("**Last Updated:** 16:45\n"));
         assert_eq!(meta.last_updated.as_deref(), Some("16:45"));
     }
 
@@ -429,16 +414,14 @@ mod tests {
 
     #[test]
     fn metadata_notes_section() {
-        let content =
-            "### Notes for Next Session\nRemember to check the logs\n\n";
+        let content = "### Notes for Next Session\nRemember to check the logs\n\n";
         let meta = parse_session_metadata(Some(content));
         assert_eq!(meta.notes, "Remember to check the logs");
     }
 
     #[test]
     fn metadata_context_section() {
-        let content =
-            "### Context to Load\n```\nsome context data\n```\n";
+        let content = "### Context to Load\n```\nsome context data\n```\n";
         let meta = parse_session_metadata(Some(content));
         assert_eq!(meta.context, "some context data");
     }
@@ -554,10 +537,6 @@ ctx
     #[test]
     fn format_size_mb() {
         assert_eq!(format_session_size(1024 * 1024), "1.0 MB");
-        assert_eq!(
-            format_session_size(1024 * 1024 + 512 * 1024),
-            "1.5 MB"
-        );
+        assert_eq!(format_session_size(1024 * 1024 + 512 * 1024), "1.5 MB");
     }
-
 }

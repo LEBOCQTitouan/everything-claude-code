@@ -24,9 +24,7 @@ pub(in crate::install) fn collect_rule_groups(
         .filter(|p| fs.is_dir(p))
         .filter_map(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
         .filter(|name| {
-            name == "common"
-                || languages.is_empty()
-                || languages.iter().any(|l| l == name)
+            name == "common" || languages.is_empty() || languages.iter().any(|l| l == name)
         })
         .collect();
 
@@ -35,7 +33,10 @@ pub(in crate::install) fn collect_rule_groups(
 }
 
 /// Scan claude_dir for currently installed artifacts.
-pub(in crate::install) fn collect_installed_artifacts(fs: &dyn FileSystem, claude_dir: &Path) -> Artifacts {
+pub(in crate::install) fn collect_installed_artifacts(
+    fs: &dyn FileSystem,
+    claude_dir: &Path,
+) -> Artifacts {
     let agents = list_files_with_ext(fs, &claude_dir.join("agents"), ".md");
     let commands = list_files_with_ext(fs, &claude_dir.join("commands"), ".md");
     let skills = list_dirs(fs, &claude_dir.join("skills"));
@@ -114,7 +115,9 @@ mod tests {
     #[test]
     fn collect_rule_groups_with_languages() {
         let fs = InMemoryFileSystem::new()
-            .with_dir("/ecc/rules/common").with_dir("/ecc/rules/typescript").with_dir("/ecc/rules/python");
+            .with_dir("/ecc/rules/common")
+            .with_dir("/ecc/rules/typescript")
+            .with_dir("/ecc/rules/python");
 
         let groups = collect_rule_groups(&fs, Path::new("/ecc"), &["typescript".to_string()]);
         assert!(groups.contains(&"common".to_string()));
@@ -125,7 +128,8 @@ mod tests {
     #[test]
     fn collect_rule_groups_empty_languages() {
         let fs = InMemoryFileSystem::new()
-            .with_dir("/ecc/rules/common").with_dir("/ecc/rules/typescript");
+            .with_dir("/ecc/rules/common")
+            .with_dir("/ecc/rules/typescript");
 
         let groups = collect_rule_groups(&fs, Path::new("/ecc"), &[]);
         assert!(groups.contains(&"common".to_string()));

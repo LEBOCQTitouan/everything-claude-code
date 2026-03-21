@@ -33,22 +33,13 @@ pub(in crate::install) fn print_summary(
         ));
     }
     if summary.unchanged > 0 {
-        terminal.stdout_write(&format!(
-            "  {} unchanged\n",
-            summary.unchanged
-        ));
+        terminal.stdout_write(&format!("  {} unchanged\n", summary.unchanged));
     }
     if summary.skipped > 0 {
-        terminal.stdout_write(&format!(
-            "  {} skipped\n",
-            summary.skipped
-        ));
+        terminal.stdout_write(&format!("  {} skipped\n", summary.skipped));
     }
     if summary.smart_merged > 0 {
-        terminal.stdout_write(&format!(
-            "  {} smart-merged\n",
-            summary.smart_merged
-        ));
+        terminal.stdout_write(&format!("  {} smart-merged\n", summary.smart_merged));
     }
     if !summary.errors.is_empty() {
         terminal.stdout_write(&format!(

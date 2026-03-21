@@ -5,7 +5,7 @@
 
 use crate::config::clean::{clean_from_manifest, is_current_ecc_hook};
 use crate::config::manifest::read_manifest;
-use crate::install::{install_global, InstallContext, InstallOptions, InstallSummary};
+use crate::install::{InstallContext, InstallOptions, InstallSummary, install_global};
 use ecc_domain::config::clean::format_clean_report;
 use ecc_domain::config::manifest::EccManifest;
 use ecc_domain::config::merge as domain_merge;
@@ -241,8 +241,8 @@ mod tests {
     #[test]
     fn dev_status_active_when_manifest_exists() {
         let m = sample_manifest();
-        let fs = InMemoryFileSystem::new()
-            .with_file("/claude/.ecc-manifest.json", &manifest_json(&m));
+        let fs =
+            InMemoryFileSystem::new().with_file("/claude/.ecc-manifest.json", &manifest_json(&m));
 
         let status = dev_status(&fs, Path::new("/claude"));
 
@@ -253,10 +253,7 @@ mod tests {
         assert_eq!(status.skills, 1);
         assert_eq!(status.rules, 2);
         assert_eq!(status.hooks, 1);
-        assert_eq!(
-            status.installed_at.as_deref(),
-            Some("2026-03-14T00:00:00Z")
-        );
+        assert_eq!(status.installed_at.as_deref(), Some("2026-03-14T00:00:00Z"));
     }
 
     // --- dev_off ---
@@ -400,8 +397,7 @@ mod tests {
                 ]
             }
         }"#;
-        let fs = InMemoryFileSystem::new()
-            .with_file("/claude/settings.json", settings);
+        let fs = InMemoryFileSystem::new().with_file("/claude/settings.json", settings);
         assert_eq!(count_ecc_hooks_in_settings(&fs, Path::new("/claude")), 2);
     }
 }

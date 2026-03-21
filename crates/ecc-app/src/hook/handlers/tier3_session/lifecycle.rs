@@ -6,11 +6,11 @@ use crate::hook::{HookPorts, HookResult};
 use ecc_domain::time::{datetime_from_epoch, format_date, format_time};
 use std::path::Path;
 
-use super::helpers::{
-    append_project_detection, build_summary_section, count_files_with_ext,
-    extract_session_summary, find_files_by_suffix, find_last_updated_line,
-};
 use super::epoch_secs;
+use super::helpers::{
+    append_project_detection, build_summary_section, count_files_with_ext, extract_session_summary,
+    find_files_by_suffix, find_last_updated_line,
+};
 
 /// session-start: load previous context, detect project type.
 pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
@@ -43,31 +43,33 @@ pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         if let Some(latest) = session_files.first() {
             stderr_parts.push(format!("[SessionStart] Latest: {}", latest.display()));
             if let Ok(content) = ports.fs.read_to_string(latest)
-                && !content.contains("[Session context goes here]") && !content.trim().is_empty() {
-                    // Output previous session summary to stdout
-                    let mut out = format!("Previous session summary:\n{}", content);
-                    if !stdin.is_empty() {
-                        out = format!("{}\n{}", out, stdin);
-                    }
-                    // Load learned skills count
-                    let learned_count = count_files_with_ext(&learned_dir, ".md", ports);
-                    if learned_count > 0 {
-                        stderr_parts.push(format!(
-                            "[SessionStart] {} learned skill(s) available in {}",
-                            learned_count,
-                            learned_dir.display()
-                        ));
-                    }
-
-                    // Detect project type
-                    append_project_detection(&mut stderr_parts, ports);
-
-                    return HookResult {
-                        stdout: out,
-                        stderr: format!("{}\n", stderr_parts.join("\n")),
-                        exit_code: 0,
-                    };
+                && !content.contains("[Session context goes here]")
+                && !content.trim().is_empty()
+            {
+                // Output previous session summary to stdout
+                let mut out = format!("Previous session summary:\n{}", content);
+                if !stdin.is_empty() {
+                    out = format!("{}\n{}", out, stdin);
                 }
+                // Load learned skills count
+                let learned_count = count_files_with_ext(&learned_dir, ".md", ports);
+                if learned_count > 0 {
+                    stderr_parts.push(format!(
+                        "[SessionStart] {} learned skill(s) available in {}",
+                        learned_count,
+                        learned_dir.display()
+                    ));
+                }
+
+                // Detect project type
+                append_project_detection(&mut stderr_parts, ports);
+
+                return HookResult {
+                    stdout: out,
+                    stderr: format!("{}\n", stderr_parts.join("\n")),
+                    exit_code: 0,
+                };
+            }
         }
     }
 
@@ -117,32 +119,24 @@ pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let short_id = ports
         .env
         .var("CLAUDE_SESSION_ID")
-        .map(|s| {
-            if s.len() > 8 {
-                s[..8].to_string()
-            } else {
-                s
-            }
-        })
+        .map(|s| if s.len() > 8 { s[..8].to_string() } else { s })
         .unwrap_or_else(|| "unknown".to_string());
     let session_file = sessions_dir.join(format!("{}-{}-session.tmp", today, short_id));
     let current_time = format_time(&datetime_from_epoch(epoch_secs()));
 
     // Try to extract summary from transcript
-    let summary = transcript_path
-        .as_deref()
-        .and_then(|tp| {
-            let path = Path::new(tp);
-            if ports.fs.exists(path) {
-                ports
-                    .fs
-                    .read_to_string(path)
-                    .ok()
-                    .and_then(|content| extract_session_summary(&content))
-            } else {
-                None
-            }
-        });
+    let summary = transcript_path.as_deref().and_then(|tp| {
+        let path = Path::new(tp);
+        if ports.fs.exists(path) {
+            ports
+                .fs
+                .read_to_string(path)
+                .ok()
+                .and_then(|content| extract_session_summary(&content))
+        } else {
+            None
+        }
+    });
 
     if ports.fs.exists(&session_file) {
         // Update existing session file

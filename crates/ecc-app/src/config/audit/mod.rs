@@ -4,7 +4,7 @@ mod hooks_diff;
 pub use checks::*;
 pub use hooks_diff::*;
 
-use ecc_domain::config::audit::{compute_audit_score, AuditReport};
+use ecc_domain::config::audit::{AuditReport, compute_audit_score};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 

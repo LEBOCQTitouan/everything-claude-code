@@ -117,8 +117,7 @@ mod tests {
                 .all_entries_valid()
         );
         assert!(
-            !HookCommandValue::Array(vec!["echo".to_string(), "".to_string()])
-                .all_entries_valid()
+            !HookCommandValue::Array(vec!["echo".to_string(), "".to_string()]).all_entries_valid()
         );
         assert!(!HookCommandValue::Array(vec![]).all_entries_valid());
     }
@@ -172,19 +171,26 @@ mod tests {
 
     #[test]
     fn hook_entry_equality_enables_dedup() {
-        let entry1: HookEntry =
-            serde_json::from_str(r#"{"hooks": [{"type": "command", "command": "ecc-hook format"}]}"#).unwrap();
-        let entry2: HookEntry =
-            serde_json::from_str(r#"{"hooks": [{"type": "command", "command": "ecc-hook format"}]}"#).unwrap();
+        let entry1: HookEntry = serde_json::from_str(
+            r#"{"hooks": [{"type": "command", "command": "ecc-hook format"}]}"#,
+        )
+        .unwrap();
+        let entry2: HookEntry = serde_json::from_str(
+            r#"{"hooks": [{"type": "command", "command": "ecc-hook format"}]}"#,
+        )
+        .unwrap();
         assert_eq!(entry1, entry2);
     }
 
     #[test]
     fn hook_entry_inequality_different_commands() {
-        let entry1: HookEntry =
-            serde_json::from_str(r#"{"hooks": [{"type": "command", "command": "ecc-hook format"}]}"#).unwrap();
+        let entry1: HookEntry = serde_json::from_str(
+            r#"{"hooks": [{"type": "command", "command": "ecc-hook format"}]}"#,
+        )
+        .unwrap();
         let entry2: HookEntry =
-            serde_json::from_str(r#"{"hooks": [{"type": "command", "command": "ecc-hook lint"}]}"#).unwrap();
+            serde_json::from_str(r#"{"hooks": [{"type": "command", "command": "ecc-hook lint"}]}"#)
+                .unwrap();
         assert_ne!(entry1, entry2);
     }
 
@@ -192,7 +198,8 @@ mod tests {
 
     #[test]
     fn hooks_map_roundtrip() {
-        let json = r#"{"PreToolUse": [{"hooks": [{"type": "command", "command": "ecc-hook format"}]}]}"#;
+        let json =
+            r#"{"PreToolUse": [{"hooks": [{"type": "command", "command": "ecc-hook format"}]}]}"#;
         let map: HooksMap = serde_json::from_str(json).unwrap();
         assert!(map.contains_key("PreToolUse"));
 

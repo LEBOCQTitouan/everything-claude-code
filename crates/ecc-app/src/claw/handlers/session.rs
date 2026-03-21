@@ -25,19 +25,19 @@ pub fn handle_clear(state: &mut ClawState, ports: &ClawPorts<'_>) {
         let _ = super::super::storage::clear_session(&home, state.session_name(), ports.fs);
     }
 
-    ports.terminal.stderr_write(&format!("Cleared {count} turns.\n"));
+    ports
+        .terminal
+        .stderr_write(&format!("Cleared {count} turns.\n"));
 }
 
 /// List or switch sessions.
-pub fn handle_sessions(
-    target: &Option<String>,
-    state: &mut ClawState,
-    ports: &ClawPorts<'_>,
-) {
+pub fn handle_sessions(target: &Option<String>, state: &mut ClawState, ports: &ClawPorts<'_>) {
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => {
-            ports.terminal.stderr_write("Cannot determine home directory.\n");
+            ports
+                .terminal
+                .stderr_write("Cannot determine home directory.\n");
             return;
         }
     };
@@ -99,10 +99,9 @@ pub fn handle_model(target: &Option<String>, state: &mut ClawState, ports: &Claw
         Some(name) => match ClawModel::parse(name) {
             Some(model) => {
                 state.set_model(model);
-                ports.terminal.stderr_write(&format!(
-                    "Model changed to: {}\n",
-                    model.display_name()
-                ));
+                ports
+                    .terminal
+                    .stderr_write(&format!("Model changed to: {}\n", model.display_name()));
             }
             None => {
                 ports.terminal.stderr_write(&format!(
@@ -140,7 +139,9 @@ pub fn handle_branch(target_name: &str, state: &mut ClawState, ports: &ClawPorts
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => {
-            ports.terminal.stderr_write("Cannot determine home directory.\n");
+            ports
+                .terminal
+                .stderr_write("Cannot determine home directory.\n");
             return;
         }
     };
@@ -155,9 +156,9 @@ pub fn handle_branch(target_name: &str, state: &mut ClawState, ports: &ClawPorts
         Ok(()) => {
             let old_name = state.session_name().to_string();
             state.set_session_name(target_name.to_string());
-            ports.terminal.stderr_write(&format!(
-                "Branched '{old_name}' → '{target_name}'\n"
-            ));
+            ports
+                .terminal
+                .stderr_write(&format!("Branched '{old_name}' → '{target_name}'\n"));
         }
         Err(e) => {
             ports.terminal.stderr_write(&format!("Error: {e}\n"));
@@ -177,11 +178,7 @@ pub fn handle_compact(keep: &Option<usize>, state: &mut ClawState, ports: &ClawP
 }
 
 /// Handle a user message by running it through Claude.
-pub fn handle_user_message(
-    message: &str,
-    state: &mut ClawState,
-    ports: &ClawPorts<'_>,
-) {
+pub fn handle_user_message(message: &str, state: &mut ClawState, ports: &ClawPorts<'_>) {
     if message.is_empty() {
         return;
     }
@@ -325,8 +322,8 @@ mod tests {
         let mut state = default_state();
 
         handle_sessions(&Some("other".to_string()), &mut state, &ports);
-        assert_eq!(state.session_name(),"other");
-        assert_eq!(state.turns().len(),1);
+        assert_eq!(state.session_name(), "other");
+        assert_eq!(state.turns().len(), 1);
     }
 
     #[test]
@@ -395,8 +392,8 @@ mod tests {
 
     #[test]
     fn load_skill_success() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/skills/tdd/SKILL.md", "# TDD");
+        let fs =
+            InMemoryFileSystem::new().with_file("/home/test/.claude/skills/tdd/SKILL.md", "# TDD");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -405,7 +402,7 @@ mod tests {
         let mut state = default_state();
 
         handle_load("tdd", &mut state, &ports);
-        assert_eq!(state.loaded_skills().len(),1);
+        assert_eq!(state.loaded_skills().len(), 1);
     }
 
     #[test]
@@ -435,7 +432,7 @@ mod tests {
         let mut state = state_with_turns();
 
         handle_branch("new-branch", &mut state, &ports);
-        assert_eq!(state.session_name(),"new-branch");
+        assert_eq!(state.session_name(), "new-branch");
     }
 
     #[test]
@@ -449,7 +446,7 @@ mod tests {
         let mut state = state_with_turns();
 
         handle_branch("bad name!", &mut state, &ports);
-        assert_eq!(state.session_name(),"test"); // unchanged
+        assert_eq!(state.session_name(), "test"); // unchanged
     }
 
     // --- handle_compact ---
@@ -472,7 +469,7 @@ mod tests {
         }
 
         handle_compact(&Some(5), &mut state, &ports);
-        assert_eq!(state.turns().len(),6); // header + 5
+        assert_eq!(state.turns().len(), 6); // header + 5
     }
 
     // --- handle_user_message ---
@@ -495,7 +492,7 @@ mod tests {
         let mut state = default_state();
 
         handle_user_message("hello", &mut state, &ports);
-        assert_eq!(state.turns().len(),2); // user + assistant
+        assert_eq!(state.turns().len(), 2); // user + assistant
         assert_eq!(state.turns()[0].role, Role::User);
         assert_eq!(state.turns()[1].role, Role::Assistant);
     }

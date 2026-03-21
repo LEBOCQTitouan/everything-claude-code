@@ -1,13 +1,13 @@
 //! CLI command: `ecc claw` — NanoClaw interactive REPL.
 
 use clap::Args;
-use ecc_app::claw::{run_repl, ClawConfig, ClawPorts, Model as ClawModel};
-use ecc_ports::env::Environment;
+use ecc_app::claw::{ClawConfig, ClawPorts, Model as ClawModel, run_repl};
 use ecc_infra::os_env::OsEnvironment;
 use ecc_infra::os_fs::OsFileSystem;
 use ecc_infra::process_executor::ProcessExecutor;
 use ecc_infra::rustyline_input::RustylineInput;
 use ecc_infra::std_terminal::StdTerminal;
+use ecc_ports::env::Environment;
 
 #[derive(Args)]
 pub struct ClawArgs {
@@ -25,8 +25,12 @@ pub struct ClawArgs {
 }
 
 pub fn run(args: ClawArgs) -> anyhow::Result<()> {
-    let model = ClawModel::parse(&args.model)
-        .ok_or_else(|| anyhow::anyhow!("Invalid model: '{}'. Use sonnet, opus, or haiku.", args.model))?;
+    let model = ClawModel::parse(&args.model).ok_or_else(|| {
+        anyhow::anyhow!(
+            "Invalid model: '{}'. Use sonnet, opus, or haiku.",
+            args.model
+        )
+    })?;
 
     let config = ClawConfig {
         session_name: args.session,
@@ -41,11 +45,8 @@ pub fn run(args: ClawArgs) -> anyhow::Result<()> {
     let terminal = StdTerminal;
 
     // Set up rustyline with history in claw dir
-    let history_path = env.home_dir().map(|h| {
-        ecc_app::claw::history_path(&h)
-    });
-    let repl_input = RustylineInput::new(history_path)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let history_path = env.home_dir().map(|h| ecc_app::claw::history_path(&h));
+    let repl_input = RustylineInput::new(history_path).map_err(|e| anyhow::anyhow!(e))?;
 
     let ports = ClawPorts {
         fs: &fs,

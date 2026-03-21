@@ -37,7 +37,12 @@ pub fn parse_datetime(s: &str) -> Option<DateTime> {
         return None;
     }
     let bytes = s.as_bytes();
-    if bytes[4] != b'-' || bytes[7] != b'-' || (bytes[10] != b'T' && bytes[10] != b' ') || bytes[13] != b':' || bytes[16] != b':' {
+    if bytes[4] != b'-'
+        || bytes[7] != b'-'
+        || (bytes[10] != b'T' && bytes[10] != b' ')
+        || bytes[13] != b':'
+        || bytes[16] != b':'
+    {
         return None;
     }
 
@@ -104,7 +109,14 @@ mod tests {
     use super::*;
 
     fn dt(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> DateTime {
-        DateTime { year, month, day, hour, minute, second }
+        DateTime {
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+        }
     }
 
     // --- format_date ---

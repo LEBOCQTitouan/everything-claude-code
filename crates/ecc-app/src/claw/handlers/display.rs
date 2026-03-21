@@ -1,7 +1,7 @@
 //! Read-only command handlers for the Claw REPL.
 
 use super::super::{ClawPorts, ClawState};
-use ecc_domain::claw::export::{export_turns, ExportFormat};
+use ecc_domain::claw::export::{ExportFormat, export_turns};
 use ecc_domain::claw::metrics::{compute_metrics, format_metrics};
 use ecc_domain::claw::search::{format_search_results, search_turns};
 
@@ -47,18 +47,14 @@ pub fn handle_search(keyword: &str, state: &ClawState, ports: &ClawPorts<'_>) {
 }
 
 /// Export session.
-pub fn handle_export(
-    format_arg: &Option<String>,
-    state: &ClawState,
-    ports: &ClawPorts<'_>,
-) {
+pub fn handle_export(format_arg: &Option<String>, state: &ClawState, ports: &ClawPorts<'_>) {
     let format = match format_arg {
         Some(f) => match ExportFormat::parse(f) {
             Some(fmt) => fmt,
             None => {
-                ports.terminal.stderr_write(&format!(
-                    "Unknown format: '{f}'. Use md, json, or text.\n"
-                ));
+                ports
+                    .terminal
+                    .stderr_write(&format!("Unknown format: '{f}'. Use md, json, or text.\n"));
                 return;
             }
         },

@@ -233,21 +233,31 @@ mod tests {
     #[test]
     fn all_21_hook_events_accepted() {
         let expected = [
-            "PreToolUse", "PostToolUse", "PostToolUseFailure",
-            "PreCompact", "PostCompact",
-            "SessionStart", "SessionEnd", "Stop", "Notification",
-            "SubagentStart", "SubagentStop",
-            "UserPromptSubmit", "InstructionsLoaded", "PermissionRequest",
-            "TeammateIdle", "TaskCompleted", "ConfigChange",
-            "WorktreeCreate", "WorktreeRemove",
-            "Elicitation", "ElicitationResult",
+            "PreToolUse",
+            "PostToolUse",
+            "PostToolUseFailure",
+            "PreCompact",
+            "PostCompact",
+            "SessionStart",
+            "SessionEnd",
+            "Stop",
+            "Notification",
+            "SubagentStart",
+            "SubagentStop",
+            "UserPromptSubmit",
+            "InstructionsLoaded",
+            "PermissionRequest",
+            "TeammateIdle",
+            "TaskCompleted",
+            "ConfigChange",
+            "WorktreeCreate",
+            "WorktreeRemove",
+            "Elicitation",
+            "ElicitationResult",
         ];
         assert_eq!(VALID_HOOK_EVENTS.len(), 21);
         for event in &expected {
-            assert!(
-                VALID_HOOK_EVENTS.contains(event),
-                "Missing event: {event}"
-            );
+            assert!(VALID_HOOK_EVENTS.contains(event), "Missing event: {event}");
         }
     }
 

@@ -25,10 +25,7 @@ fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
             }
         }
         Platform::Windows => {
-            let ps_cmd = format!(
-                "New-BurntToastNotification -Text '{}','{}'",
-                title, message
-            );
+            let ps_cmd = format!("New-BurntToastNotification -Text '{}','{}'", title, message);
             let result = ports
                 .shell
                 .run_command("powershell", &["-Command", &ps_cmd]);
@@ -245,5 +242,4 @@ mod tests {
         assert_eq!(result.stdout, "{}");
         assert!(result.stderr.is_empty());
     }
-
 }

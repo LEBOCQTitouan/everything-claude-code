@@ -24,10 +24,7 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
 
     // Append to compaction log
-    let existing = ports
-        .fs
-        .read_to_string(&compaction_log)
-        .unwrap_or_default();
+    let existing = ports.fs.read_to_string(&compaction_log).unwrap_or_default();
     let new_content = format!("{}[{}] Context compaction triggered\n", existing, timestamp);
     if let Err(e) = ports.fs.write(&compaction_log, &new_content) {
         log_write_failure(&compaction_log, &e, None);
@@ -36,16 +33,17 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     // Append note to active session
     let session_files = find_files_by_suffix(&sessions_dir, "-session.tmp", ports);
     if let Some(active) = session_files.first()
-        && let Ok(content) = ports.fs.read_to_string(active) {
-            let time_str = format_time(&datetime_from_epoch(epoch_secs()));
-            let updated = format!(
-                "{}\n---\n**[Compaction occurred at {}]** - Context was summarized\n",
-                content, time_str
-            );
-            if let Err(e) = ports.fs.write(active, &updated) {
-                log_write_failure(active, &e, None);
-            }
+        && let Ok(content) = ports.fs.read_to_string(active)
+    {
+        let time_str = format_time(&datetime_from_epoch(epoch_secs()));
+        let updated = format!(
+            "{}\n---\n**[Compaction occurred at {}]** - Context was summarized\n",
+            content, time_str
+        );
+        if let Err(e) = ports.fs.write(active, &updated) {
+            log_write_failure(active, &e, None);
         }
+    }
 
     HookResult::warn(stdin, "[PreCompact] State saved before compaction\n")
 }

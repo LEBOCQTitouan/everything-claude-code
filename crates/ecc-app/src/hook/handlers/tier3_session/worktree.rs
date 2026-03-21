@@ -62,8 +62,10 @@ mod tests {
 
     #[test]
     fn worktree_create_init_logs_to_session() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp", "# Session");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -73,14 +75,20 @@ mod tests {
         let result = worktree_create_init(stdin, &ports);
         assert_eq!(result.exit_code, 0);
 
-        let content = fs.read_to_string(std::path::Path::new("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp")).unwrap();
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
         assert!(content.contains("[Worktree] Created: /tmp/wt-feature-y"));
     }
 
     #[test]
     fn worktree_create_init_missing_path_uses_unknown() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp", "# Session");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -89,7 +97,11 @@ mod tests {
         let result = worktree_create_init("{}", &ports);
         assert_eq!(result.exit_code, 0);
 
-        let content = fs.read_to_string(std::path::Path::new("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp")).unwrap();
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
         assert!(content.contains("[Worktree] Created: unknown"));
     }
 

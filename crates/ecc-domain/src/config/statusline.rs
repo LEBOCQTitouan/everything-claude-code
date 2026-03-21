@@ -76,7 +76,8 @@ mod tests {
     #[test]
     fn ensure_adds_to_empty_settings() {
         let settings = serde_json::json!({});
-        let (result, status) = ensure_statusline(&settings, "/home/user/.claude/statusline-command.sh");
+        let (result, status) =
+            ensure_statusline(&settings, "/home/user/.claude/statusline-command.sh");
         assert_eq!(status, StatusLineResult::Installed);
         let cmd = result["statusLine"]["command"].as_str().unwrap();
         assert_eq!(cmd, "/home/user/.claude/statusline-command.sh");
@@ -85,7 +86,8 @@ mod tests {
     #[test]
     fn ensure_adds_when_no_statusline_key() {
         let settings = serde_json::json!({"permissions": {"deny": []}});
-        let (result, status) = ensure_statusline(&settings, "/home/user/.claude/statusline-command.sh");
+        let (result, status) =
+            ensure_statusline(&settings, "/home/user/.claude/statusline-command.sh");
         assert_eq!(status, StatusLineResult::Installed);
         assert!(result["statusLine"]["command"].is_string());
         // Preserves existing keys
@@ -97,10 +99,14 @@ mod tests {
         let settings = serde_json::json!({
             "statusLine": {"command": "my-custom-statusline.sh"}
         });
-        let (result, status) = ensure_statusline(&settings, "/home/user/.claude/statusline-command.sh");
+        let (result, status) =
+            ensure_statusline(&settings, "/home/user/.claude/statusline-command.sh");
         assert_eq!(status, StatusLineResult::AlreadyCustom);
         // Original command preserved
-        assert_eq!(result["statusLine"]["command"].as_str().unwrap(), "my-custom-statusline.sh");
+        assert_eq!(
+            result["statusLine"]["command"].as_str().unwrap(),
+            "my-custom-statusline.sh"
+        );
     }
 
     #[test]
@@ -108,7 +114,8 @@ mod tests {
         let settings = serde_json::json!({
             "statusLine": {"command": "/old/path/.claude/statusline-command.sh"}
         });
-        let (result, status) = ensure_statusline(&settings, "/new/path/.claude/statusline-command.sh");
+        let (result, status) =
+            ensure_statusline(&settings, "/new/path/.claude/statusline-command.sh");
         assert_eq!(status, StatusLineResult::Updated);
         assert_eq!(
             result["statusLine"]["command"].as_str().unwrap(),

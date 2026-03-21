@@ -1,5 +1,5 @@
 use crate::hook::{HookPorts, HookResult};
-use ecc_domain::hook_runtime::profiles::{is_hook_enabled, HookEnabledOptions};
+use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 
 /// check-hook-enabled: returns "yes" or "no" based on profile.
 pub fn check_hook_enabled(stdin: &str, ports: &HookPorts<'_>) -> HookResult {

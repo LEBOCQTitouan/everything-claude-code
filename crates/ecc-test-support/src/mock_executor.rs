@@ -37,19 +37,13 @@ impl MockExecutor {
     /// Register a scripted response for a specific command + args combination.
     pub fn on_args(self, command: &str, args: &[&str], output: CommandOutput) -> Self {
         let key = Self::args_key(command, args);
-        self.args_responses
-            .lock()
-            .unwrap()
-            .insert(key, output);
+        self.args_responses.lock().unwrap().insert(key, output);
         self
     }
 
     /// Register a command as "existing" (for `command_exists`).
     pub fn with_command(self, name: &str) -> Self {
-        self.known_commands
-            .lock()
-            .unwrap()
-            .push(name.to_string());
+        self.known_commands.lock().unwrap().push(name.to_string());
         self
     }
 

@@ -71,9 +71,7 @@ pub fn doc_coverage_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .map(|e| e.to_string_lossy().to_lowercase())
         .unwrap_or_default();
 
-    let source_exts = [
-        "ts", "tsx", "js", "jsx", "py", "go", "rs", "java",
-    ];
+    let source_exts = ["ts", "tsx", "js", "jsx", "py", "go", "rs", "java"];
     if !source_exts.contains(&ext.as_str()) {
         return HookResult::passthrough(stdin);
     }
@@ -222,8 +220,8 @@ mod tests {
 
     #[test]
     fn doc_coverage_reminder_passthrough_when_all_documented() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/lib.rs", "/// Documented\npub fn foo() {}\n");
+        let fs =
+            InMemoryFileSystem::new().with_file("src/lib.rs", "/// Documented\npub fn foo() {}\n");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();

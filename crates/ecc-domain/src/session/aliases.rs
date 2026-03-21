@@ -368,10 +368,7 @@ mod tests {
             ("old", "/s/1", "2025-01-01T00:00:00Z", None),
             ("new", "/s/2", "2025-01-03T00:00:00Z", None),
         ]);
-        data.aliases
-            .get_mut("old")
-            .unwrap()
-            .updated_at = Some("2025-01-05T00:00:00Z".to_string());
+        data.aliases.get_mut("old").unwrap().updated_at = Some("2025-01-05T00:00:00Z".to_string());
 
         let list = list_aliases(&data, None, None);
         assert_eq!(list[0].name, "old"); // updated_at is newest
@@ -592,5 +589,4 @@ mod tests {
         assert!(paths.contains(&"/sessions/gone1"));
         assert!(paths.contains(&"/sessions/gone2"));
     }
-
 }

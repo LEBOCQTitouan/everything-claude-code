@@ -264,10 +264,7 @@ mod tests {
 
     #[test]
     fn parse_empty_input() {
-        assert_eq!(
-            parse_command(""),
-            ClawCommand::UserMessage(String::new())
-        );
+        assert_eq!(parse_command(""), ClawCommand::UserMessage(String::new()));
     }
 
     #[test]
@@ -289,10 +286,7 @@ mod tests {
     #[test]
     fn parse_preserves_arg_whitespace() {
         let cmd = parse_command("/search  multi word query ");
-        assert_eq!(
-            cmd,
-            ClawCommand::Search("multi word query".to_string())
-        );
+        assert_eq!(cmd, ClawCommand::Search("multi word query".to_string()));
     }
 
     #[test]

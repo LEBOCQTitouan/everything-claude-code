@@ -1,6 +1,6 @@
 use ecc_domain::config::gitignore::{
-    build_gitignore_section, parse_gitignore_patterns, GitignoreEntry, GitignoreResult,
-    ECC_GITIGNORE_ENTRIES,
+    ECC_GITIGNORE_ENTRIES, GitignoreEntry, GitignoreResult, build_gitignore_section,
+    parse_gitignore_patterns,
 };
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
@@ -33,9 +33,7 @@ pub fn ensure_gitignore_entries(
     }
 
     let gitignore_path = dir.join(".gitignore");
-    let existing_content = fs
-        .read_to_string(&gitignore_path)
-        .unwrap_or_default();
+    let existing_content = fs.read_to_string(&gitignore_path).unwrap_or_default();
 
     let existing_patterns = parse_gitignore_patterns(&existing_content);
     let mut added = Vec::new();
@@ -94,18 +92,14 @@ pub fn find_tracked_ecc_files(
             // Directory — check if any files inside are tracked
             let full_path = dir.join(entry.pattern);
             if fs.exists(&full_path)
-                && let Ok(out) =
-                    shell.run_command_in_dir("git", &["ls-files", entry.pattern], dir)
+                && let Ok(out) = shell.run_command_in_dir("git", &["ls-files", entry.pattern], dir)
                 && out.success()
                 && !out.stdout.trim().is_empty()
             {
                 tracked.push(entry.pattern.to_string());
             }
-        } else if let Ok(out) = shell.run_command_in_dir(
-            "git",
-            &["ls-files", "--error-unmatch", entry.pattern],
-            dir,
-        )
+        } else if let Ok(out) =
+            shell.run_command_in_dir("git", &["ls-files", "--error-unmatch", entry.pattern], dir)
             && out.success()
         {
             tracked.push(entry.pattern.to_string());

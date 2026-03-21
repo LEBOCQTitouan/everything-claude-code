@@ -186,8 +186,22 @@ pub const FRONTEND_SIGNALS: &[&str] = &[
 ];
 
 pub const BACKEND_SIGNALS: &[&str] = &[
-    "django", "fastapi", "flask", "express", "nestjs", "rails", "spring",
-    "laravel", "symfony", "phoenix", "gin", "echo", "actix", "axum", "ktor", "aspnetcore",
+    "django",
+    "fastapi",
+    "flask",
+    "express",
+    "nestjs",
+    "rails",
+    "spring",
+    "laravel",
+    "symfony",
+    "phoenix",
+    "gin",
+    "echo",
+    "actix",
+    "axum",
+    "ktor",
+    "aspnetcore",
 ];
 
 #[cfg(test)]
@@ -203,8 +217,15 @@ mod tests {
     #[test]
     fn all_framework_rules_have_nonempty_name_and_language() {
         for rule in FRAMEWORK_RULES {
-            assert!(!rule.framework.is_empty(), "framework name must not be empty");
-            assert!(!rule.language.is_empty(), "language must not be empty for {}", rule.framework);
+            assert!(
+                !rule.framework.is_empty(),
+                "framework name must not be empty"
+            );
+            assert!(
+                !rule.language.is_empty(),
+                "language must not be empty for {}",
+                rule.framework
+            );
         }
     }
 

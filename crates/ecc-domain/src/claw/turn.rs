@@ -53,7 +53,11 @@ pub fn format_turn(turn: &Turn) -> String {
 
 /// Format multiple turns to markdown, separated by blank lines.
 pub fn format_turns(turns: &[Turn]) -> String {
-    turns.iter().map(format_turn).collect::<Vec<_>>().join("\n\n")
+    turns
+        .iter()
+        .map(format_turn)
+        .collect::<Vec<_>>()
+        .join("\n\n")
 }
 
 /// Parse turns from markdown. Each turn is delimited by `---`.
@@ -166,7 +170,11 @@ mod tests {
 
     #[test]
     fn format_turn_multiline_content() {
-        let turn = make_turn("2026-03-14 10:00:00", Role::Assistant, "line1\nline2\nline3");
+        let turn = make_turn(
+            "2026-03-14 10:00:00",
+            Role::Assistant,
+            "line1\nline2\nline3",
+        );
         let formatted = format_turn(&turn);
         assert_eq!(
             formatted,

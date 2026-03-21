@@ -110,7 +110,15 @@ pub fn install_global(
     let existing_manifest = read_manifest(ctx.fs, claude_dir);
     let mut combined = step_merge_artifacts(ctx, ecc_root, claude_dir, options);
     step_hooks_and_settings(ctx, ecc_root, claude_dir, version, options);
-    step_write_manifest(ctx, claude_dir, version, now, options, &existing_manifest, &mut combined);
+    step_write_manifest(
+        ctx,
+        claude_dir,
+        version,
+        now,
+        options,
+        &existing_manifest,
+        &mut combined,
+    );
 
     let summary = InstallSummary {
         added: combined.added.len(),
@@ -248,18 +256,18 @@ fn step_hooks_and_settings(
 ) {
     let hooks_json = ecc_root.join("hooks").join("hooks.json");
     let settings_json = claude_dir.join("settings.json");
-    let (hooks_added, hooks_existing, hooks_legacy) =
-        if ctx.fs.exists(&hooks_json) {
-            match merge::merge_hooks(ctx.fs, &hooks_json, &settings_json, options.dry_run) {
-                Ok(counts) => counts,
-                Err(e) => {
-                    ctx.terminal.stderr_write(&format!("Hook merge error: {e}\n"));
-                    (0, 0, 0)
-                }
+    let (hooks_added, hooks_existing, hooks_legacy) = if ctx.fs.exists(&hooks_json) {
+        match merge::merge_hooks(ctx.fs, &hooks_json, &settings_json, options.dry_run) {
+            Ok(counts) => counts,
+            Err(e) => {
+                ctx.terminal
+                    .stderr_write(&format!("Hook merge error: {e}\n"));
+                (0, 0, 0)
             }
-        } else {
-            (0, 0, 0)
-        };
+        }
+    } else {
+        (0, 0, 0)
+    };
 
     if hooks_added > 0 || hooks_legacy > 0 {
         ctx.terminal.stdout_write(&format!(
@@ -292,7 +300,8 @@ fn step_hooks_and_settings(
             ctx.terminal.stdout_write("  Statusline: updated\n");
         }
         Some(ecc_domain::config::statusline::StatusLineResult::AlreadyCustom) => {
-            ctx.terminal.stdout_write("  Statusline: already custom (skipped)\n");
+            ctx.terminal
+                .stdout_write("  Statusline: already custom (skipped)\n");
         }
         None => {}
     }
@@ -311,14 +320,22 @@ fn step_write_manifest(
     let installed_artifacts = collect_installed_artifacts(ctx.fs, claude_dir);
     if !options.dry_run {
         let new_manifest = match existing_manifest {
-            Some(existing) => {
-                manifest::update_manifest(existing, version, now, &options.languages, installed_artifacts)
+            Some(existing) => manifest::update_manifest(
+                existing,
+                version,
+                now,
+                &options.languages,
+                installed_artifacts,
+            ),
+            None => {
+                manifest::create_manifest(version, now, &options.languages, installed_artifacts)
             }
-            None => manifest::create_manifest(version, now, &options.languages, installed_artifacts),
         };
         if let Err(e) = write_manifest(ctx.fs, claude_dir, &new_manifest) {
             log::warn!("Failed to write manifest: {}", e);
-            combined.errors.push(format!("Failed to write manifest: {e}"));
+            combined
+                .errors
+                .push(format!("Failed to write manifest: {e}"));
         }
     }
 }
@@ -371,10 +388,8 @@ fn init_project_dry_run(ctx: &InstallContext, project_dir: &Path) {
         ctx.terminal
             .stdout_write("All gitignore entries already present.\n");
     } else {
-        ctx.terminal.stdout_write(&format!(
-            "Would add {} gitignore entries:\n",
-            missing.len()
-        ));
+        ctx.terminal
+            .stdout_write(&format!("Would add {} gitignore entries:\n", missing.len()));
         for pattern in &missing {
             ctx.terminal.stdout_write(&format!("  {pattern}\n"));
         }
@@ -382,10 +397,8 @@ fn init_project_dry_run(ctx: &InstallContext, project_dir: &Path) {
 
     let tracked = app_gitignore::find_tracked_ecc_files(ctx.shell, ctx.fs, project_dir);
     if !tracked.is_empty() {
-        ctx.terminal.stdout_write(&format!(
-            "Would untrack {} file(s):\n",
-            tracked.len()
-        ));
+        ctx.terminal
+            .stdout_write(&format!("Would untrack {} file(s):\n", tracked.len()));
         for file in &tracked {
             ctx.terminal.stdout_write(&format!("  {file}\n"));
         }
@@ -416,11 +429,9 @@ fn init_project_apply(ctx: &InstallContext, project_dir: &Path) {
 
     let tracked = app_gitignore::find_tracked_ecc_files(ctx.shell, ctx.fs, project_dir);
     for file in &tracked {
-        let _ = ctx.shell.run_command_in_dir(
-            "git",
-            &["rm", "--cached", file],
-            project_dir,
-        );
+        let _ = ctx
+            .shell
+            .run_command_in_dir("git", &["rm", "--cached", file], project_dir);
         ctx.terminal.stdout_write(&format!("Untracked: {file}\n"));
     }
 }
@@ -515,8 +526,14 @@ mod tests {
     fn ecc_source_fs() -> InMemoryFileSystem {
         InMemoryFileSystem::new()
             .with_dir("/ecc/agents")
-            .with_file("/ecc/agents/planner.md", "---\nname: planner\n---\n# Planner")
-            .with_file("/ecc/agents/reviewer.md", "---\nname: reviewer\n---\n# Reviewer")
+            .with_file(
+                "/ecc/agents/planner.md",
+                "---\nname: planner\n---\n# Planner",
+            )
+            .with_file(
+                "/ecc/agents/reviewer.md",
+                "---\nname: reviewer\n---\n# Reviewer",
+            )
             .with_dir("/ecc/commands")
             .with_file("/ecc/commands/plan.md", "# Plan command")
             .with_dir("/ecc/skills")
@@ -541,9 +558,29 @@ mod tests {
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         assert!(summary.success);
         assert!(summary.added > 0);
         assert!(fs.exists(Path::new("/claude/agents/planner.md")));
@@ -560,9 +597,29 @@ mod tests {
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: true, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: true,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         assert!(summary.added > 0);
         assert!(!fs.exists(Path::new("/claude/agents/planner.md")));
         assert!(read_manifest(&fs, Path::new("/claude")).is_none());
@@ -570,13 +627,35 @@ mod tests {
 
     #[test]
     fn install_update_existing() {
-        let fs = ecc_source_fs().with_dir("/claude/agents").with_file("/claude/agents/planner.md", "# Old planner");
+        let fs = ecc_source_fs()
+            .with_dir("/claude/agents")
+            .with_file("/claude/agents/planner.md", "# Old planner");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         assert!(summary.success);
         assert!(summary.updated > 0);
         let output = terminal.stdout_output().join("");
@@ -589,22 +668,66 @@ mod tests {
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: false, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: false,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         assert!(summary.success);
         assert!(summary.added > 0);
     }
 
     #[test]
     fn install_with_clean_all() {
-        let fs = ecc_source_fs().with_dir("/claude/agents").with_file("/claude/agents/old.md", "# Old agent").with_dir("/claude/commands").with_file("/claude/commands/old.md", "# Old command");
+        let fs = ecc_source_fs()
+            .with_dir("/claude/agents")
+            .with_file("/claude/agents/old.md", "# Old agent")
+            .with_dir("/claude/commands")
+            .with_file("/claude/commands/old.md", "# Old command");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: true, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: true,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         assert!(summary.success);
         let output = terminal.stdout_output().join("");
         assert!(output.contains("Cleaning all ECC files"));
@@ -616,9 +739,29 @@ mod tests {
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: true, clean_all: false, languages: vec![] };
-        install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: true,
+            clean_all: false,
+            languages: vec![],
+        };
+        install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         let output = terminal.stdout_output().join("");
         assert!(output.contains("No manifest found"));
     }
@@ -629,10 +772,32 @@ mod tests {
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
-        let settings_content = fs.read_to_string(Path::new("/claude/settings.json")).unwrap();
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
+        let settings_content = fs
+            .read_to_string(Path::new("/claude/settings.json"))
+            .unwrap();
         let settings: serde_json::Value = serde_json::from_str(&settings_content).unwrap();
         let deny = settings["permissions"]["deny"].as_array().unwrap();
         assert!(deny.len() >= deny_rules::ECC_DENY_RULES.len());
@@ -644,9 +809,29 @@ mod tests {
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         let output = terminal.stdout_output().join("");
         assert!(output.contains("Install Summary"));
         assert!(output.contains("Install complete!"));
@@ -654,13 +839,37 @@ mod tests {
 
     #[test]
     fn install_with_languages() {
-        let fs = ecc_source_fs().with_dir("/ecc/rules/typescript").with_file("/ecc/rules/typescript/types.md", "# Types").with_dir("/ecc/rules/python").with_file("/ecc/rules/python/style.md", "# Python style");
+        let fs = ecc_source_fs()
+            .with_dir("/ecc/rules/typescript")
+            .with_file("/ecc/rules/typescript/types.md", "# Types")
+            .with_dir("/ecc/rules/python")
+            .with_file("/ecc/rules/python/style.md", "# Python style");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec!["typescript".to_string()] };
-        install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.0.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec!["typescript".to_string()],
+        };
+        install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         assert!(fs.exists(Path::new("/claude/rules/typescript/types.md")));
         assert!(fs.exists(Path::new("/claude/rules/common/style.md")));
         assert!(!fs.exists(Path::new("/claude/rules/python/style.md")));
@@ -673,8 +882,20 @@ mod tests {
         let fs = InMemoryFileSystem::new().with_dir("/project");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
-        let shell = MockExecutor::new().on("git", CommandOutput { stdout: String::new(), stderr: String::new(), exit_code: 0 });
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+        let shell = MockExecutor::new().on(
+            "git",
+            CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
         assert!(init_project(&ctx, Path::new("/project"), false, false));
         let output = terminal.stdout_output().join("");
         assert!(output.contains("Added"));
@@ -686,7 +907,12 @@ mod tests {
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
         assert!(init_project(&ctx, Path::new("/project"), true, false));
         let output = terminal.stdout_output().join("");
         assert!(output.contains("Skipping .gitignore"));
@@ -697,8 +923,20 @@ mod tests {
         let fs = InMemoryFileSystem::new().with_dir("/project");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
-        let shell = MockExecutor::new().on("git", CommandOutput { stdout: String::new(), stderr: String::new(), exit_code: 0 });
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+        let shell = MockExecutor::new().on(
+            "git",
+            CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
         assert!(init_project(&ctx, Path::new("/project"), false, true));
         let output = terminal.stdout_output().join("");
         assert!(output.contains("DRY RUN"));
@@ -710,8 +948,20 @@ mod tests {
         let fs = InMemoryFileSystem::new().with_dir("/project");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
-        let shell = MockExecutor::new().on("git", CommandOutput { stdout: String::new(), stderr: "not a git repo".into(), exit_code: 128 });
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+        let shell = MockExecutor::new().on(
+            "git",
+            CommandOutput {
+                stdout: String::new(),
+                stderr: "not a git repo".into(),
+                exit_code: 128,
+            },
+        );
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
         assert!(init_project(&ctx, Path::new("/project"), false, false));
         let output = terminal.stdout_output().join("");
         assert!(output.contains("Not a git repository"));
@@ -721,13 +971,38 @@ mod tests {
 
     #[test]
     fn install_with_empty_source_dir_succeeds_with_zero_artifacts() {
-        let fs = InMemoryFileSystem::new().with_dir("/ecc/agents").with_dir("/ecc/commands").with_dir("/ecc/skills").with_dir("/ecc/rules").with_dir("/claude");
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules")
+            .with_dir("/claude");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "1.0.0", "2026-03-15T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
         assert!(summary.success);
         assert_eq!(summary.added, 0);
         assert_eq!(summary.updated, 0);
@@ -735,26 +1010,62 @@ mod tests {
 
     #[test]
     fn install_with_missing_agents_dir_still_succeeds() {
-        let fs = InMemoryFileSystem::new().with_dir("/ecc").with_dir("/claude");
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc")
+            .with_dir("/claude");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "1.0.0", "2026-03-15T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
         assert!(summary.success);
         assert_eq!(summary.added, 0);
     }
 
     #[test]
     fn install_output_contains_install_header() {
-        let fs = InMemoryFileSystem::new().with_dir("/ecc").with_dir("/claude");
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc")
+            .with_dir("/claude");
         let env = no_color_env();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
         let options = default_install_options();
-        install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "1.0.0", "2026-03-15T00:00:00Z", &options);
+        install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "1.0.0",
+            "2026-03-15T00:00:00Z",
+            &options,
+        );
         let output = terminal.stdout_output().join("");
         assert!(output.contains("ECC Install"));
     }
@@ -764,43 +1075,121 @@ mod tests {
     #[test]
     fn install_first_time_installs_statusline() {
         let fs = ecc_source_fs();
-        let env = MockEnvironment::new().with_var("NO_COLOR", "1").with_home("/claude");
+        let env = MockEnvironment::new()
+            .with_var("NO_COLOR", "1")
+            .with_home("/claude");
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude/.claude"), "4.2.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude/.claude"),
+            "4.2.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         assert!(summary.success);
-        let script = fs.read_to_string(Path::new("/claude/.claude/statusline-command.sh")).unwrap();
+        let script = fs
+            .read_to_string(Path::new("/claude/.claude/statusline-command.sh"))
+            .unwrap();
         assert!(script.contains("4.2.0"));
         assert!(!script.contains("__ECC_VERSION__"));
-        let settings_str = fs.read_to_string(Path::new("/claude/.claude/settings.json")).unwrap();
+        let settings_str = fs
+            .read_to_string(Path::new("/claude/.claude/settings.json"))
+            .unwrap();
         let settings: serde_json::Value = serde_json::from_str(&settings_str).unwrap();
         assert!(settings["statusLine"]["command"].as_str().is_some());
     }
 
     #[test]
     fn install_preserves_custom_statusline() {
-        let fs = ecc_source_fs().with_file("/claude/settings.json", &serde_json::json!({"statusLine": {"command": "my-custom.sh"}}).to_string());
-        let env = MockEnvironment::new().with_var("NO_COLOR", "1").with_home("/claude");
+        let fs = ecc_source_fs().with_file(
+            "/claude/settings.json",
+            &serde_json::json!({"statusLine": {"command": "my-custom.sh"}}).to_string(),
+        );
+        let env = MockEnvironment::new()
+            .with_var("NO_COLOR", "1")
+            .with_home("/claude");
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.2.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.2.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         let output = terminal.stdout_output().join("");
         assert!(output.contains("already custom"));
     }
 
     #[test]
     fn install_missing_statusline_source_does_not_fail() {
-        let fs = InMemoryFileSystem::new().with_dir("/ecc/agents").with_dir("/ecc/commands").with_dir("/ecc/skills").with_dir("/ecc/rules").with_dir("/claude");
-        let env = MockEnvironment::new().with_var("NO_COLOR", "1").with_home("/home/user");
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules")
+            .with_dir("/claude");
+        let env = MockEnvironment::new()
+            .with_var("NO_COLOR", "1")
+            .with_home("/home/user");
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
-        let ctx = InstallContext { fs: &fs, shell: &shell, env: &env, terminal: &terminal };
-        let options = InstallOptions { dry_run: false, force: true, no_gitignore: false, interactive: false, clean: false, clean_all: false, languages: vec![] };
-        let summary = install_global(&ctx, Path::new("/ecc"), Path::new("/claude"), "4.2.0", "2026-03-14T00:00:00Z", &options);
+        let ctx = InstallContext {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &terminal,
+        };
+        let options = InstallOptions {
+            dry_run: false,
+            force: true,
+            no_gitignore: false,
+            interactive: false,
+            clean: false,
+            clean_all: false,
+            languages: vec![],
+        };
+        let summary = install_global(
+            &ctx,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            "4.2.0",
+            "2026-03-14T00:00:00Z",
+            &options,
+        );
         assert!(summary.success);
     }
 
@@ -808,16 +1197,12 @@ mod tests {
 
     #[test]
     fn resolve_ecc_root_finds_home_ecc() {
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/home/user/.ecc/agents");
+        let fs = InMemoryFileSystem::new().with_dir("/home/user/.ecc/agents");
         let env = MockEnvironment::new().with_home("/home/user");
 
         let result = resolve_ecc_root(&fs, &env);
         assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            std::path::PathBuf::from("/home/user/.ecc")
-        );
+        assert_eq!(result.unwrap(), std::path::PathBuf::from("/home/user/.ecc"));
     }
 
     #[test]
@@ -844,10 +1229,7 @@ mod tests {
         let result = resolve_ecc_root(&fs, &env);
         assert!(result.is_ok());
         // $HOME/.ecc/ should be preferred over npm paths
-        assert_eq!(
-            result.unwrap(),
-            std::path::PathBuf::from("/home/user/.ecc")
-        );
+        assert_eq!(result.unwrap(), std::path::PathBuf::from("/home/user/.ecc"));
     }
 
     #[test]
@@ -857,13 +1239,16 @@ mod tests {
 
         let result = resolve_ecc_root(&fs, &env);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Cannot find ECC assets directory"));
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Cannot find ECC assets directory")
+        );
     }
 
     #[test]
     fn resolve_ecc_root_uses_ecc_root_env_var() {
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/opt/ecc/agents");
+        let fs = InMemoryFileSystem::new().with_dir("/opt/ecc/agents");
         let env = MockEnvironment::new()
             .with_home("/home/user")
             .with_var("ECC_ROOT", "/opt/ecc");
@@ -889,8 +1274,7 @@ mod tests {
 
     #[test]
     fn resolve_ecc_root_skips_invalid_ecc_root_env_var() {
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/home/user/.ecc/agents");
+        let fs = InMemoryFileSystem::new().with_dir("/home/user/.ecc/agents");
         let env = MockEnvironment::new()
             .with_home("/home/user")
             .with_var("ECC_ROOT", "/nonexistent/path");
@@ -898,10 +1282,7 @@ mod tests {
         let result = resolve_ecc_root(&fs, &env);
         assert!(result.is_ok());
         // Falls through to $HOME/.ecc/
-        assert_eq!(
-            result.unwrap(),
-            std::path::PathBuf::from("/home/user/.ecc")
-        );
+        assert_eq!(result.unwrap(), std::path::PathBuf::from("/home/user/.ecc"));
     }
 
     #[test]

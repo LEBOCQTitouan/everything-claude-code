@@ -53,8 +53,7 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
         DevAction::On { dry_run, ecc_root } => {
             let ecc_root = match ecc_root {
                 Some(root) => root,
-                None => install::resolve_ecc_root(&fs, &env)
-                    .map_err(|e| anyhow::anyhow!(e))?,
+                None => install::resolve_ecc_root(&fs, &env).map_err(|e| anyhow::anyhow!(e))?,
             };
 
             let ctx = InstallContext {
@@ -65,7 +64,14 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
             };
 
             let now = format_now();
-            let summary = dev::dev_on(&ctx, &ecc_root, &claude_dir, version::version(), &now, dry_run);
+            let summary = dev::dev_on(
+                &ctx,
+                &ecc_root,
+                &claude_dir,
+                version::version(),
+                &now,
+                dry_run,
+            );
 
             if !summary.success {
                 std::process::exit(1);

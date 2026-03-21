@@ -14,7 +14,9 @@ pub fn is_valid_session_name(name: &str) -> bool {
     }
 
     // Rest must be alphanumeric or hyphen
-    bytes[1..].iter().all(|&b| b.is_ascii_alphanumeric() || b == b'-')
+    bytes[1..]
+        .iter()
+        .all(|&b| b.is_ascii_alphanumeric() || b == b'-')
 }
 
 /// Extract session name from a session file path (strip `.md` extension).

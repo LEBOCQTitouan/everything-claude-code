@@ -5,8 +5,7 @@ pub(super) fn read_json(fs: &dyn FileSystem, path: &Path) -> Result<serde_json::
     let content = fs
         .read_to_string(path)
         .map_err(|e| format!("Cannot read {}: {e}", path.display()))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Invalid JSON in {}: {e}", path.display()))
+    serde_json::from_str(&content).map_err(|e| format!("Invalid JSON in {}: {e}", path.display()))
 }
 
 pub(super) fn read_json_or_default(fs: &dyn FileSystem, path: &Path) -> serde_json::Value {
@@ -73,8 +72,7 @@ mod tests {
             is_new: false,
         };
 
-        let (choice, apply_all) =
-            prompt_file_review(&terminal, &fs, &env, &file, "[1/2]").unwrap();
+        let (choice, apply_all) = prompt_file_review(&terminal, &fs, &env, &file, "[1/2]").unwrap();
         assert_eq!(choice, ReviewChoice::Accept);
         assert!(!apply_all);
     }
@@ -129,8 +127,7 @@ mod tests {
             is_new: false,
         };
 
-        let (choice, apply_all) =
-            prompt_file_review(&terminal, &fs, &env, &file, "[1/2]").unwrap();
+        let (choice, apply_all) = prompt_file_review(&terminal, &fs, &env, &file, "[1/2]").unwrap();
         assert_eq!(choice, ReviewChoice::Accept);
         assert!(apply_all);
     }
@@ -149,16 +146,14 @@ mod tests {
             is_new: false,
         };
 
-        let (choice, apply_all) =
-            prompt_file_review(&terminal, &fs, &env, &file, "[1/2]").unwrap();
+        let (choice, apply_all) = prompt_file_review(&terminal, &fs, &env, &file, "[1/2]").unwrap();
         assert_eq!(choice, ReviewChoice::Keep);
         assert!(apply_all);
     }
 
     #[test]
     fn prompt_new_file_shows_preview() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/src/new.md", "# New agent\nLine 2\nLine 3");
+        let fs = InMemoryFileSystem::new().with_file("/src/new.md", "# New agent\nLine 2\nLine 3");
         let terminal = BufferedTerminal::new().with_input("a");
         let env = no_color_env();
         let file = FileToReview {
@@ -193,7 +188,10 @@ mod tests {
         apply_review_choice(&fs, &shell, ReviewChoice::Accept, &file, false, &mut report);
 
         assert_eq!(report.added, vec!["agent.md"]);
-        assert_eq!(fs.read_to_string(Path::new("/dest/agent.md")).unwrap(), "new content");
+        assert_eq!(
+            fs.read_to_string(Path::new("/dest/agent.md")).unwrap(),
+            "new content"
+        );
     }
 
     #[test]
@@ -238,9 +236,14 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/dest/agent.md", "old content")
             .with_file("/src/agent.md", "new content");
-        let shell = MockExecutor::new()
-            .with_command("claude")
-            .on("claude", CommandOutput { stdout: "merged content".to_string(), stderr: String::new(), exit_code: 0 });
+        let shell = MockExecutor::new().with_command("claude").on(
+            "claude",
+            CommandOutput {
+                stdout: "merged content".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
         let file = FileToReview {
             filename: "agent.md".into(),
             src_path: "/src/agent.md".into(),
@@ -249,10 +252,20 @@ mod tests {
         };
         let mut report = merge::empty_report();
 
-        apply_review_choice(&fs, &shell, ReviewChoice::SmartMerge, &file, false, &mut report);
+        apply_review_choice(
+            &fs,
+            &shell,
+            ReviewChoice::SmartMerge,
+            &file,
+            false,
+            &mut report,
+        );
 
         assert_eq!(report.smart_merged, vec!["agent.md"]);
-        assert_eq!(fs.read_to_string(Path::new("/dest/agent.md")).unwrap(), "merged content");
+        assert_eq!(
+            fs.read_to_string(Path::new("/dest/agent.md")).unwrap(),
+            "merged content"
+        );
     }
 
     #[test]
@@ -269,7 +282,14 @@ mod tests {
         };
         let mut report = merge::empty_report();
 
-        apply_review_choice(&fs, &shell, ReviewChoice::SmartMerge, &file, false, &mut report);
+        apply_review_choice(
+            &fs,
+            &shell,
+            ReviewChoice::SmartMerge,
+            &file,
+            false,
+            &mut report,
+        );
 
         assert!(!report.errors.is_empty());
         assert!(report.errors[0].contains("smart merge failed"));
@@ -286,10 +306,27 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: false, force: true, interactive: true, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: false,
+            force: true,
+            interactive: true,
+            apply_all: None,
+        };
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert_eq!(report.added.len(), 2);
         assert!(fs.exists(Path::new("/dest/agents/planner.md")));
@@ -303,11 +340,23 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
         let mut options = default_merge_options();
         options.force = true;
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert!(report.added.is_empty());
         assert!(report.updated.is_empty());
@@ -323,10 +372,27 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: false, force: false, interactive: false, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: false,
+            force: false,
+            interactive: false,
+            apply_all: None,
+        };
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert_eq!(report.added.len(), 2);
     }
@@ -339,10 +405,27 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: true, force: true, interactive: true, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: true,
+            force: true,
+            interactive: true,
+            apply_all: None,
+        };
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert_eq!(report.added, vec!["new.md"]);
         assert!(!fs.exists(Path::new("/dest/agents/new.md")));
@@ -360,10 +443,25 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: false, force: true, interactive: true, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: false,
+            force: true,
+            interactive: true,
+            apply_all: None,
+        };
 
-        let report = merge_skills(&ctx, Path::new("/src/skills"), Path::new("/dest/skills"), &mut options);
+        let report = merge_skills(
+            &ctx,
+            Path::new("/src/skills"),
+            Path::new("/dest/skills"),
+            &mut options,
+        );
 
         assert_eq!(report.added, vec!["tdd"]);
         assert!(fs.exists(Path::new("/dest/skills/tdd/SKILL.md")));
@@ -376,37 +474,74 @@ mod tests {
             .with_dir("/src/skills/security-review")
             .with_file("/src/skills/security-review/SKILL.md", "# Security Review")
             .with_dir("/src/skills/security-review/references")
-            .with_file("/src/skills/security-review/references/owasp.md", "# OWASP Top 10")
-            .with_file("/src/skills/security-review/references/checklist.md", "# Checklist")
+            .with_file(
+                "/src/skills/security-review/references/owasp.md",
+                "# OWASP Top 10",
+            )
+            .with_file(
+                "/src/skills/security-review/references/checklist.md",
+                "# Checklist",
+            )
             .with_dir("/dest/skills");
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: false, force: true, interactive: true, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: false,
+            force: true,
+            interactive: true,
+            apply_all: None,
+        };
 
-        let report = merge_skills(&ctx, Path::new("/src/skills"), Path::new("/dest/skills"), &mut options);
+        let report = merge_skills(
+            &ctx,
+            Path::new("/src/skills"),
+            Path::new("/dest/skills"),
+            &mut options,
+        );
 
         assert!(report.errors.is_empty(), "errors: {:?}", report.errors);
         assert_eq!(report.added, vec!["security-review"]);
         assert!(fs.exists(Path::new("/dest/skills/security-review/SKILL.md")));
-        assert!(fs.exists(Path::new("/dest/skills/security-review/references/owasp.md")));
-        assert!(fs.exists(Path::new("/dest/skills/security-review/references/checklist.md")));
+        assert!(fs.exists(Path::new(
+            "/dest/skills/security-review/references/owasp.md"
+        )));
+        assert!(fs.exists(Path::new(
+            "/dest/skills/security-review/references/checklist.md"
+        )));
     }
 
     #[test]
     fn merge_skills_unchanged_skipped() {
         let fs = InMemoryFileSystem::new()
-            .with_dir("/src/skills/tdd").with_file("/src/skills/tdd/SKILL.md", "same content")
-            .with_dir("/dest/skills/tdd").with_file("/dest/skills/tdd/SKILL.md", "same content");
+            .with_dir("/src/skills/tdd")
+            .with_file("/src/skills/tdd/SKILL.md", "same content")
+            .with_dir("/dest/skills/tdd")
+            .with_file("/dest/skills/tdd/SKILL.md", "same content");
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
         let mut options = default_merge_options();
         options.force = true;
 
-        let report = merge_skills(&ctx, Path::new("/src/skills"), Path::new("/dest/skills"), &mut options);
+        let report = merge_skills(
+            &ctx,
+            Path::new("/src/skills"),
+            Path::new("/dest/skills"),
+            &mut options,
+        );
 
         assert!(report.added.is_empty());
         assert_eq!(report.unchanged, vec!["tdd"]);
@@ -417,17 +552,35 @@ mod tests {
     #[test]
     fn merge_rules_force_mode() {
         let fs = InMemoryFileSystem::new()
-            .with_dir("/src/rules/common").with_file("/src/rules/common/style.md", "# Style")
-            .with_dir("/src/rules/typescript").with_file("/src/rules/typescript/types.md", "# Types")
+            .with_dir("/src/rules/common")
+            .with_file("/src/rules/common/style.md", "# Style")
+            .with_dir("/src/rules/typescript")
+            .with_file("/src/rules/typescript/types.md", "# Types")
             .with_dir("/dest/rules");
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: false, force: true, interactive: true, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: false,
+            force: true,
+            interactive: true,
+            apply_all: None,
+        };
 
         let groups = vec!["common".to_string(), "typescript".to_string()];
-        let report = merge_rules(&ctx, Path::new("/src/rules"), Path::new("/dest/rules"), &groups, &mut options);
+        let report = merge_rules(
+            &ctx,
+            Path::new("/src/rules"),
+            Path::new("/dest/rules"),
+            &groups,
+            &mut options,
+        );
 
         assert_eq!(report.added.len(), 2);
         assert!(fs.exists(Path::new("/dest/rules/common/style.md")));
@@ -443,13 +596,20 @@ mod tests {
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", "{}");
 
-        let (added, existing, legacy) = merge_hooks(&fs, Path::new("/hooks.json"), Path::new("/settings.json"), false).unwrap();
+        let (added, existing, legacy) = merge_hooks(
+            &fs,
+            Path::new("/hooks.json"),
+            Path::new("/settings.json"),
+            false,
+        )
+        .unwrap();
 
         assert_eq!(added, 1);
         assert_eq!(existing, 0);
         assert_eq!(legacy, 0);
 
-        let updated: serde_json::Value = serde_json::from_str(&fs.read_to_string(Path::new("/settings.json")).unwrap()).unwrap();
+        let updated: serde_json::Value =
+            serde_json::from_str(&fs.read_to_string(Path::new("/settings.json")).unwrap()).unwrap();
         assert!(updated["hooks"]["PreToolUse"].is_array());
     }
 
@@ -462,7 +622,13 @@ mod tests {
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", &serde_json::to_string(&settings).unwrap());
 
-        let (added, existing, _) = merge_hooks(&fs, Path::new("/hooks.json"), Path::new("/settings.json"), false).unwrap();
+        let (added, existing, _) = merge_hooks(
+            &fs,
+            Path::new("/hooks.json"),
+            Path::new("/settings.json"),
+            false,
+        )
+        .unwrap();
 
         assert_eq!(added, 0);
         assert_eq!(existing, 1);
@@ -477,7 +643,13 @@ mod tests {
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", &serde_json::to_string(&settings).unwrap());
 
-        let (_, _, legacy_removed) = merge_hooks(&fs, Path::new("/hooks.json"), Path::new("/settings.json"), false).unwrap();
+        let (_, _, legacy_removed) = merge_hooks(
+            &fs,
+            Path::new("/hooks.json"),
+            Path::new("/settings.json"),
+            false,
+        )
+        .unwrap();
 
         assert_eq!(legacy_removed, 1);
     }
@@ -494,15 +666,20 @@ mod tests {
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", &serde_json::to_string(&settings).unwrap());
 
-        let (added, _, legacy_removed) = merge_hooks(&fs, Path::new("/hooks.json"), Path::new("/settings.json"), false).unwrap();
+        let (added, _, legacy_removed) = merge_hooks(
+            &fs,
+            Path::new("/hooks.json"),
+            Path::new("/settings.json"),
+            false,
+        )
+        .unwrap();
 
         assert_eq!(added, 0);
         assert_eq!(legacy_removed, 1);
 
         // Verify settings.json was rewritten with legacy hook removed
-        let updated: serde_json::Value = serde_json::from_str(
-            &fs.read_to_string(Path::new("/settings.json")).unwrap()
-        ).unwrap();
+        let updated: serde_json::Value =
+            serde_json::from_str(&fs.read_to_string(Path::new("/settings.json")).unwrap()).unwrap();
         let pre_hooks = updated["hooks"]["PreToolUse"].as_array().unwrap();
         assert_eq!(pre_hooks.len(), 1);
         assert_eq!(pre_hooks[0]["description"], "user hook");
@@ -515,7 +692,13 @@ mod tests {
             .with_file("/hooks.json", &serde_json::to_string(&source).unwrap())
             .with_file("/settings.json", "{}");
 
-        let (added, _, _) = merge_hooks(&fs, Path::new("/hooks.json"), Path::new("/settings.json"), true).unwrap();
+        let (added, _, _) = merge_hooks(
+            &fs,
+            Path::new("/hooks.json"),
+            Path::new("/settings.json"),
+            true,
+        )
+        .unwrap();
 
         assert_eq!(added, 1);
         let settings = fs.read_to_string(Path::new("/settings.json")).unwrap();
@@ -528,7 +711,12 @@ mod tests {
             .with_file("/hooks.json", "not json")
             .with_file("/settings.json", "{}");
 
-        let result = merge_hooks(&fs, Path::new("/hooks.json"), Path::new("/settings.json"), false);
+        let result = merge_hooks(
+            &fs,
+            Path::new("/hooks.json"),
+            Path::new("/settings.json"),
+            false,
+        );
 
         assert!(result.is_err());
     }
@@ -543,10 +731,22 @@ mod tests {
         let terminal = BufferedTerminal::new().with_input("a");
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
         let mut options = default_merge_options();
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert_eq!(report.added, vec!["new.md"]);
     }
@@ -559,10 +759,22 @@ mod tests {
         let terminal = BufferedTerminal::new().with_input("k");
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
         let mut options = default_merge_options();
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert_eq!(report.skipped, vec!["existing.md"]);
     }
@@ -578,10 +790,27 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: false, force: true, interactive: false, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: false,
+            force: true,
+            interactive: false,
+            apply_all: None,
+        };
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert!(report.added.is_empty());
         assert!(report.updated.is_empty());
@@ -596,10 +825,27 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: false, force: true, interactive: false, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: false,
+            force: true,
+            interactive: false,
+            apply_all: None,
+        };
 
-        let report = merge_directory(&ctx, Path::new("/nonexistent/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/nonexistent/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert!(report.added.is_empty());
         assert!(report.errors.is_empty());
@@ -616,10 +862,22 @@ mod tests {
         let terminal = BufferedTerminal::new().with_input("A");
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
         let mut options = default_merge_options();
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert_eq!(report.added.len(), 2, "both files should be accepted");
         assert!(fs.exists(Path::new("/dest/agents/a.md")));
@@ -637,10 +895,27 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let env = no_color_env();
         let shell = MockExecutor::new();
-        let ctx = MergeContext { fs: &fs, terminal: &terminal, env: &env, shell: &shell };
-        let mut options = MergeOptions { dry_run: false, force: true, interactive: false, apply_all: None };
+        let ctx = MergeContext {
+            fs: &fs,
+            terminal: &terminal,
+            env: &env,
+            shell: &shell,
+        };
+        let mut options = MergeOptions {
+            dry_run: false,
+            force: true,
+            interactive: false,
+            apply_all: None,
+        };
 
-        let report = merge_directory(&ctx, Path::new("/src/agents"), Path::new("/dest/agents"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src/agents"),
+            Path::new("/dest/agents"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
 
         assert!(report.added.is_empty());
         assert!(report.updated.is_empty());

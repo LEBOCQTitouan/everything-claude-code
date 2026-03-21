@@ -1,6 +1,6 @@
 //! Claw REPL use case — persistent, session-aware REPL delegating to `claude -p`.
 
-use ecc_domain::claw::command::{parse_command, ClawCommand};
+use ecc_domain::claw::command::{ClawCommand, parse_command};
 use ecc_domain::claw::model::ClawModel;
 
 // Re-export ClawModel so CLI doesn't need to import from ecc-domain directly.
@@ -174,8 +174,7 @@ pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> anyhow::Result<()
 
     // Save session on exit
     if !state.turns().is_empty()
-        && let Err(e) =
-            storage::save_session(&home, state.session_name(), state.turns(), ports.fs)
+        && let Err(e) = storage::save_session(&home, state.session_name(), state.turns(), ports.fs)
     {
         ports
             .terminal
@@ -286,11 +285,10 @@ mod tests {
     #[test]
     fn run_repl_loads_existing_session() {
         let session_content = "### [ts1] User\nhello\n---\n\n### [ts2] Assistant\nhi\n---";
-        let fs = InMemoryFileSystem::new()
-            .with_file(
-                "/home/test/.claude/claw/sessions/default.md",
-                session_content,
-            );
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/claw/sessions/default.md",
+            session_content,
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();

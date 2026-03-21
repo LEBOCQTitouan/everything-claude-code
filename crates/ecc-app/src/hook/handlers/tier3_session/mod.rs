@@ -19,7 +19,11 @@ pub use tracking::{cost_tracker, evaluate_session};
 pub use worktree::worktree_create_init;
 
 /// Log a write failure and append the warning to stderr_parts if provided.
-fn log_write_failure(path: &Path, err: &ecc_ports::fs::FsError, stderr_parts: Option<&mut Vec<String>>) {
+fn log_write_failure(
+    path: &Path,
+    err: &ecc_ports::fs::FsError,
+    stderr_parts: Option<&mut Vec<String>>,
+) {
     let msg = format!("[Warning] Failed to write {}: {}", path.display(), err);
     warn!("{}", msg);
     if let Some(parts) = stderr_parts {

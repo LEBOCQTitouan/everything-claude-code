@@ -13,11 +13,17 @@ pub(in crate::install) fn ensure_deny_rules_in_settings(
     settings_path: &Path,
     dry_run: bool,
 ) -> Option<(usize, usize)> {
-    let content = fs.read_to_string(settings_path).unwrap_or_else(|_| "{}".to_string());
+    let content = fs
+        .read_to_string(settings_path)
+        .unwrap_or_else(|_| "{}".to_string());
     let mut settings: serde_json::Value = match serde_json::from_str(&content) {
         Ok(v) => v,
         Err(e) => {
-            log::warn!("Malformed settings.json at {}: {}", settings_path.display(), e);
+            log::warn!(
+                "Malformed settings.json at {}: {}",
+                settings_path.display(),
+                e
+            );
             return None;
         }
     };
@@ -40,14 +46,10 @@ pub(in crate::install) fn ensure_deny_rules_in_settings(
             .as_object_mut()?
             .entry("permissions")
             .or_insert_with(|| serde_json::json!({}));
-        permissions
-            .as_object_mut()?
-            .insert(
-                "deny".to_string(),
-                serde_json::Value::Array(
-                    merged.into_iter().map(serde_json::Value::String).collect(),
-                ),
-            );
+        permissions.as_object_mut()?.insert(
+            "deny".to_string(),
+            serde_json::Value::Array(merged.into_iter().map(serde_json::Value::String).collect()),
+        );
 
         let json = match serde_json::to_string_pretty(&settings) {
             Ok(j) => j,
@@ -85,11 +87,17 @@ pub(in crate::install) fn ensure_statusline_in_settings(
     dry_run: bool,
 ) -> Option<StatusLineResult> {
     // Read bundled script template
-    let source_script = ecc_root.join("statusline").join(statusline::STATUSLINE_SCRIPT_FILENAME);
+    let source_script = ecc_root
+        .join("statusline")
+        .join(statusline::STATUSLINE_SCRIPT_FILENAME);
     let template = match fs.read_to_string(&source_script) {
         Ok(t) => t,
         Err(e) => {
-            log::warn!("Cannot read statusline script at {}: {}", source_script.display(), e);
+            log::warn!(
+                "Cannot read statusline script at {}: {}",
+                source_script.display(),
+                e
+            );
             return None;
         }
     };
@@ -99,7 +107,9 @@ pub(in crate::install) fn ensure_statusline_in_settings(
 
     // Compute target paths
     let home = env.home_dir()?;
-    let target_script = home.join(".claude").join(statusline::STATUSLINE_SCRIPT_FILENAME);
+    let target_script = home
+        .join(".claude")
+        .join(statusline::STATUSLINE_SCRIPT_FILENAME);
     let absolute_script_path = target_script.to_string_lossy().to_string();
 
     if !dry_run {
@@ -111,11 +121,17 @@ pub(in crate::install) fn ensure_statusline_in_settings(
     }
 
     // Read settings
-    let content = fs.read_to_string(settings_path).unwrap_or_else(|_| "{}".to_string());
+    let content = fs
+        .read_to_string(settings_path)
+        .unwrap_or_else(|_| "{}".to_string());
     let settings: serde_json::Value = match serde_json::from_str(&content) {
         Ok(v) => v,
         Err(e) => {
-            log::warn!("Malformed settings.json at {}: {}", settings_path.display(), e);
+            log::warn!(
+                "Malformed settings.json at {}: {}",
+                settings_path.display(),
+                e
+            );
             return None;
         }
     };
@@ -124,7 +140,11 @@ pub(in crate::install) fn ensure_statusline_in_settings(
     let (new_settings, result) = statusline::ensure_statusline(&settings, &absolute_script_path);
 
     // Write back if changed
-    if matches!(result, StatusLineResult::Installed | StatusLineResult::Updated) && !dry_run {
+    if matches!(
+        result,
+        StatusLineResult::Installed | StatusLineResult::Updated
+    ) && !dry_run
+    {
         let json = match serde_json::to_string_pretty(&new_settings) {
             Ok(j) => j,
             Err(e) => {
@@ -169,7 +189,8 @@ mod tests {
         let env = statusline_env();
 
         let result = ensure_statusline_in_settings(
-            &fs, &env,
+            &fs,
+            &env,
             Path::new("/home/user/.claude/settings.json"),
             Path::new("/ecc"),
             "4.2.0",
@@ -178,13 +199,22 @@ mod tests {
 
         assert_eq!(result, Some(StatusLineResult::Installed));
 
-        let script = fs.read_to_string(Path::new("/home/user/.claude/statusline-command.sh")).unwrap();
+        let script = fs
+            .read_to_string(Path::new("/home/user/.claude/statusline-command.sh"))
+            .unwrap();
         assert!(script.contains("4.2.0"));
         assert!(!script.contains("__ECC_VERSION__"));
 
-        let settings_str = fs.read_to_string(Path::new("/home/user/.claude/settings.json")).unwrap();
+        let settings_str = fs
+            .read_to_string(Path::new("/home/user/.claude/settings.json"))
+            .unwrap();
         let settings: serde_json::Value = serde_json::from_str(&settings_str).unwrap();
-        assert!(settings["statusLine"]["command"].as_str().unwrap().contains("statusline-command.sh"));
+        assert!(
+            settings["statusLine"]["command"]
+                .as_str()
+                .unwrap()
+                .contains("statusline-command.sh")
+        );
     }
 
     #[test]
@@ -193,7 +223,8 @@ mod tests {
         let env = statusline_env();
 
         let result = ensure_statusline_in_settings(
-            &fs, &env,
+            &fs,
+            &env,
             Path::new("/home/user/.claude/settings.json"),
             Path::new("/ecc"),
             "4.2.0",
@@ -207,15 +238,15 @@ mod tests {
 
     #[test]
     fn statusline_does_not_overwrite_custom_settings() {
-        let fs = statusline_source_fs()
-            .with_file(
-                "/home/user/.claude/settings.json",
-                &serde_json::json!({"statusLine": {"command": "my-custom-script.sh"}}).to_string(),
-            );
+        let fs = statusline_source_fs().with_file(
+            "/home/user/.claude/settings.json",
+            &serde_json::json!({"statusLine": {"command": "my-custom-script.sh"}}).to_string(),
+        );
         let env = statusline_env();
 
         let result = ensure_statusline_in_settings(
-            &fs, &env,
+            &fs,
+            &env,
             Path::new("/home/user/.claude/settings.json"),
             Path::new("/ecc"),
             "4.2.0",
@@ -224,22 +255,28 @@ mod tests {
 
         assert_eq!(result, Some(StatusLineResult::AlreadyCustom));
 
-        let settings_str = fs.read_to_string(Path::new("/home/user/.claude/settings.json")).unwrap();
+        let settings_str = fs
+            .read_to_string(Path::new("/home/user/.claude/settings.json"))
+            .unwrap();
         let settings: serde_json::Value = serde_json::from_str(&settings_str).unwrap();
-        assert_eq!(settings["statusLine"]["command"].as_str().unwrap(), "my-custom-script.sh");
+        assert_eq!(
+            settings["statusLine"]["command"].as_str().unwrap(),
+            "my-custom-script.sh"
+        );
     }
 
     #[test]
     fn statusline_updates_existing_ecc_statusline() {
-        let fs = statusline_source_fs()
-            .with_file(
-                "/home/user/.claude/settings.json",
-                &serde_json::json!({"statusLine": {"command": "/old/path/statusline-command.sh"}}).to_string(),
-            );
+        let fs = statusline_source_fs().with_file(
+            "/home/user/.claude/settings.json",
+            &serde_json::json!({"statusLine": {"command": "/old/path/statusline-command.sh"}})
+                .to_string(),
+        );
         let env = statusline_env();
 
         let result = ensure_statusline_in_settings(
-            &fs, &env,
+            &fs,
+            &env,
             Path::new("/home/user/.claude/settings.json"),
             Path::new("/ecc"),
             "4.2.0",
@@ -248,7 +285,9 @@ mod tests {
 
         assert_eq!(result, Some(StatusLineResult::Updated));
 
-        let settings_str = fs.read_to_string(Path::new("/home/user/.claude/settings.json")).unwrap();
+        let settings_str = fs
+            .read_to_string(Path::new("/home/user/.claude/settings.json"))
+            .unwrap();
         let settings: serde_json::Value = serde_json::from_str(&settings_str).unwrap();
         assert_eq!(
             settings["statusLine"]["command"].as_str().unwrap(),
@@ -264,7 +303,8 @@ mod tests {
         let env = statusline_env();
 
         let result = ensure_statusline_in_settings(
-            &fs, &env,
+            &fs,
+            &env,
             Path::new("/home/user/.claude/settings.json"),
             Path::new("/ecc"),
             "4.2.0",
@@ -276,12 +316,13 @@ mod tests {
 
     #[test]
     fn statusline_handles_malformed_settings() {
-        let fs = statusline_source_fs()
-            .with_file("/home/user/.claude/settings.json", "not json{{{");
+        let fs =
+            statusline_source_fs().with_file("/home/user/.claude/settings.json", "not json{{{");
         let env = statusline_env();
 
         let result = ensure_statusline_in_settings(
-            &fs, &env,
+            &fs,
+            &env,
             Path::new("/home/user/.claude/settings.json"),
             Path::new("/ecc"),
             "4.2.0",
@@ -297,14 +338,17 @@ mod tests {
         let env = statusline_env();
 
         ensure_statusline_in_settings(
-            &fs, &env,
+            &fs,
+            &env,
             Path::new("/home/user/.claude/settings.json"),
             Path::new("/ecc"),
             "99.0.0-beta",
             false,
         );
 
-        let script = fs.read_to_string(Path::new("/home/user/.claude/statusline-command.sh")).unwrap();
+        let script = fs
+            .read_to_string(Path::new("/home/user/.claude/statusline-command.sh"))
+            .unwrap();
         assert!(script.contains("99.0.0-beta"));
     }
 }

@@ -56,8 +56,7 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
     // Resolve ECC assets root: explicit flag > env var > npm global install path
     let ecc_root = match args.ecc_root {
         Some(root) => root,
-        None => install::resolve_ecc_root(&fs, &env)
-            .map_err(|e| anyhow::anyhow!(e))?,
+        None => install::resolve_ecc_root(&fs, &env).map_err(|e| anyhow::anyhow!(e))?,
     };
 
     let ctx = InstallContext {
@@ -104,5 +103,3 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
 
     Ok(())
 }
-
-

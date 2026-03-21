@@ -34,8 +34,18 @@ const INFRA_IMPORT_PATTERNS: &[&str] = &[
 
 /// Generic names that indicate poor naming expressiveness.
 const GENERIC_NAMES: &[&str] = &[
-    "data", "temp", "result", "value", "item", "obj", "flag", "info", "manager", "processor",
-    "handler", "helper",
+    "data",
+    "temp",
+    "result",
+    "value",
+    "item",
+    "obj",
+    "flag",
+    "info",
+    "manager",
+    "processor",
+    "handler",
+    "helper",
 ];
 
 /// pre:edit:boundary-crossing — block edits that introduce outward imports in domain files.
@@ -46,9 +56,7 @@ pub fn pre_edit_boundary_crossing(stdin: &str, _ports: &HookPorts<'_>) -> HookRe
     }
 
     // Check if file is in a domain layer
-    let is_domain = DOMAIN_INDICATORS
-        .iter()
-        .any(|ind| file_path.contains(ind));
+    let is_domain = DOMAIN_INDICATORS.iter().any(|ind| file_path.contains(ind));
     if !is_domain {
         return HookResult::passthrough(stdin);
     }
@@ -162,7 +170,10 @@ pub fn post_edit_naming_review(stdin: &str, _ports: &HookPorts<'_>) -> HookResul
         // Extract identifiers from the line (simple heuristic)
         for word in extract_identifiers(trimmed) {
             let lower = word.to_lowercase();
-            if GENERIC_NAMES.iter().any(|g| lower == *g || lower.ends_with(g)) {
+            if GENERIC_NAMES
+                .iter()
+                .any(|g| lower == *g || lower.ends_with(g))
+            {
                 findings.push(format!("'{}' — consider a more descriptive name", word));
                 if findings.len() >= 3 {
                     break;
@@ -317,9 +328,10 @@ fn has_magic_number(line: &str) -> bool {
             }
             // Exclude common non-magic numbers
             if (num_str != "2" || line.contains("/ 2") || line.contains("* 2"))
-                && num_str.replace('_', "").parse::<f64>().is_ok_and(|n| {
-                    n > 1.0 && !line.contains("0x") && !line.contains("0b")
-                })
+                && num_str
+                    .replace('_', "")
+                    .parse::<f64>()
+                    .is_ok_and(|n| n > 1.0 && !line.contains("0x") && !line.contains("0b"))
             {
                 return true;
             }
@@ -331,7 +343,9 @@ fn has_magic_number(line: &str) -> bool {
 /// Extract identifiers from a line of code (simple word extraction).
 fn extract_identifiers(line: &str) -> Vec<&str> {
     line.split(|c: char| !c.is_alphanumeric() && c != '_')
-        .filter(|w| !w.is_empty() && w.len() > 1 && w.chars().next().is_some_and(|c| c.is_alphabetic()))
+        .filter(|w| {
+            !w.is_empty() && w.len() > 1 && w.chars().next().is_some_and(|c| c.is_alphabetic())
+        })
         .collect()
 }
 
@@ -404,7 +418,12 @@ fn contains_low_level_ops(line: &str) -> bool {
         return true;
     }
     // Bitwise operations
-    if line.contains(" & ") || line.contains(" | ") || line.contains(" ^ ") || line.contains(" << ") || line.contains(" >> ") {
+    if line.contains(" & ")
+        || line.contains(" | ")
+        || line.contains(" ^ ")
+        || line.contains(" << ")
+        || line.contains(" >> ")
+    {
         return true;
     }
     // Raw string manipulation

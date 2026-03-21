@@ -5,9 +5,7 @@ use super::helpers::{extract_command, extract_file_path};
 
 /// check-console-log: check modified git files for console.log.
 pub fn check_console_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
-    let is_git = ports
-        .shell
-        .run_command("git", &["rev-parse", "--git-dir"]);
+    let is_git = ports.shell.run_command("git", &["rev-parse", "--git-dir"]);
     if is_git.is_err() {
         return HookResult::passthrough(stdin);
     }
@@ -21,7 +19,12 @@ pub fn check_console_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     };
 
     let excluded = [
-        ".test.", ".spec.", ".config.", "scripts/", "__tests__/", "__mocks__/",
+        ".test.",
+        ".spec.",
+        ".config.",
+        "scripts/",
+        "__tests__/",
+        "__mocks__/",
     ];
 
     let mut warnings = Vec::new();
@@ -44,9 +47,10 @@ pub fn check_console_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
         let path = Path::new(file);
         if let Ok(content) = ports.fs.read_to_string(path)
-            && content.contains("console.log") {
-                warnings.push(format!("[Hook] WARNING: console.log found in {}", file));
-            }
+            && content.contains("console.log")
+        {
+            warnings.push(format!("[Hook] WARNING: console.log found in {}", file));
+        }
     }
 
     if warnings.is_empty() {
@@ -59,9 +63,7 @@ pub fn check_console_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
 /// stop-uncommitted-reminder: warn about uncommitted changes.
 pub fn stop_uncommitted_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
-    let is_git = ports
-        .shell
-        .run_command("git", &["rev-parse", "--git-dir"]);
+    let is_git = ports.shell.run_command("git", &["rev-parse", "--git-dir"]);
     if is_git.is_err() {
         return HookResult::passthrough(stdin);
     }
@@ -193,8 +195,8 @@ mod tests {
 
     #[test]
     fn check_console_log_warns_on_console_log_in_ts_file() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/app.ts", "const x = 1;\nconsole.log(x);\n");
+        let fs =
+            InMemoryFileSystem::new().with_file("src/app.ts", "const x = 1;\nconsole.log(x);\n");
         let shell = MockExecutor::new()
             .on_args(
                 "git",
@@ -225,8 +227,7 @@ mod tests {
 
     #[test]
     fn check_console_log_skips_spec_files() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/app.spec.ts", "console.log('test');");
+        let fs = InMemoryFileSystem::new().with_file("src/app.spec.ts", "console.log('test');");
         let shell = MockExecutor::new()
             .on_args(
                 "git",
@@ -256,8 +257,7 @@ mod tests {
 
     #[test]
     fn check_console_log_passthrough_when_no_console_log_present() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/app.ts", "const x = 1;\n");
+        let fs = InMemoryFileSystem::new().with_file("src/app.ts", "const x = 1;\n");
         let shell = MockExecutor::new()
             .on_args(
                 "git",
@@ -384,8 +384,8 @@ mod tests {
 
     #[test]
     fn post_edit_console_warn_warns_when_console_log_present() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/index.ts", "const y = 2;\nconsole.log(y);\n");
+        let fs =
+            InMemoryFileSystem::new().with_file("src/index.ts", "const y = 2;\nconsole.log(y);\n");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -399,8 +399,7 @@ mod tests {
 
     #[test]
     fn post_edit_console_warn_passthrough_for_rust_file() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/lib.rs", "println!(\"hello\");");
+        let fs = InMemoryFileSystem::new().with_file("src/lib.rs", "println!(\"hello\");");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -413,8 +412,7 @@ mod tests {
 
     #[test]
     fn post_edit_console_warn_passthrough_when_no_console_log_in_js() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/app.js", "const x = 1;\n");
+        let fs = InMemoryFileSystem::new().with_file("src/app.js", "const x = 1;\n");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();

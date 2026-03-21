@@ -62,7 +62,9 @@ pub fn claw_history_path(home: &Path) -> PathBuf {
 
 /// Get a specific Claw session file path.
 pub fn claw_session_path(home: &Path, session_name: &str) -> PathBuf {
-    claw_dir(home).join("sessions").join(format!("{session_name}.md"))
+    claw_dir(home)
+        .join("sessions")
+        .join(format!("{session_name}.md"))
 }
 
 #[cfg(test)]
@@ -79,7 +81,10 @@ mod tests {
     #[test]
     fn sessions_dir_under_claude() {
         let home = Path::new("/home/user");
-        assert_eq!(sessions_dir(home), PathBuf::from("/home/user/.claude/sessions"));
+        assert_eq!(
+            sessions_dir(home),
+            PathBuf::from("/home/user/.claude/sessions")
+        );
     }
 
     #[test]

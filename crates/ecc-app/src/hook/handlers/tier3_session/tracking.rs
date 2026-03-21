@@ -6,8 +6,8 @@ use crate::hook::{HookPorts, HookResult};
 use ecc_domain::time::{datetime_from_epoch, format_datetime};
 use std::path::Path;
 
-use super::helpers::{estimate_cost, to_u64};
 use super::epoch_secs;
+use super::helpers::{estimate_cost, to_u64};
 
 /// evaluate-session: count messages and log evaluation hint.
 pub fn evaluate_session(stdin: &str, ports: &HookPorts<'_>) -> HookResult {

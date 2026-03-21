@@ -22,18 +22,17 @@ pub fn write_manifest(
 ) -> Result<(), ecc_ports::fs::FsError> {
     fs.create_dir_all(dir)?;
     let manifest_path = dir.join(MANIFEST_FILENAME);
-    let json = serde_json::to_string_pretty(manifest)
-        .map_err(|e| ecc_ports::fs::FsError::Io {
-            path: manifest_path.clone(),
-            message: format!("serialization failed: {e}"),
-        })?;
+    let json = serde_json::to_string_pretty(manifest).map_err(|e| ecc_ports::fs::FsError::Io {
+        path: manifest_path.clone(),
+        message: format!("serialization failed: {e}"),
+    })?;
     fs.write(&manifest_path, &format!("{json}\n"))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ecc_domain::config::manifest::{create_manifest, Artifacts};
+    use ecc_domain::config::manifest::{Artifacts, create_manifest};
     use ecc_test_support::InMemoryFileSystem;
     use std::collections::BTreeMap;
     use std::path::Path;
@@ -60,8 +59,8 @@ mod tests {
 
     #[test]
     fn read_manifest_invalid_json() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/.claude/.ecc-manifest.json", "not json");
+        let fs =
+            InMemoryFileSystem::new().with_file("/project/.claude/.ecc-manifest.json", "not json");
         assert!(read_manifest(&fs, Path::new("/project/.claude")).is_none());
     }
 

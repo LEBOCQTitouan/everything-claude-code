@@ -1,5 +1,5 @@
 use ecc_domain::detection::package_manager::{
-    find_config, DetectionSource, PackageManagerResult, DETECTION_PRIORITY,
+    DETECTION_PRIORITY, DetectionSource, PackageManagerResult, find_config,
 };
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
@@ -92,7 +92,8 @@ pub fn get_package_manager(
 
     // 5. Global user preference
     if let Some(home) = env.home_dir()
-        && let Some(pm_name) = read_pm_from_json(fs, &home.join(".claude").join("package-manager.json"))
+        && let Some(pm_name) =
+            read_pm_from_json(fs, &home.join(".claude").join("package-manager.json"))
         && let Some(config) = find_config(&pm_name)
     {
         return PackageManagerResult {
@@ -119,30 +120,38 @@ mod tests {
 
     #[test]
     fn detect_lock_file_pnpm() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/pnpm-lock.yaml", "");
-        assert_eq!(detect_from_lock_file(&fs, Path::new("/project")), Some("pnpm"));
+        let fs = InMemoryFileSystem::new().with_file("/project/pnpm-lock.yaml", "");
+        assert_eq!(
+            detect_from_lock_file(&fs, Path::new("/project")),
+            Some("pnpm")
+        );
     }
 
     #[test]
     fn detect_lock_file_npm() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/package-lock.json", "{}");
-        assert_eq!(detect_from_lock_file(&fs, Path::new("/project")), Some("npm"));
+        let fs = InMemoryFileSystem::new().with_file("/project/package-lock.json", "{}");
+        assert_eq!(
+            detect_from_lock_file(&fs, Path::new("/project")),
+            Some("npm")
+        );
     }
 
     #[test]
     fn detect_lock_file_yarn() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/yarn.lock", "");
-        assert_eq!(detect_from_lock_file(&fs, Path::new("/project")), Some("yarn"));
+        let fs = InMemoryFileSystem::new().with_file("/project/yarn.lock", "");
+        assert_eq!(
+            detect_from_lock_file(&fs, Path::new("/project")),
+            Some("yarn")
+        );
     }
 
     #[test]
     fn detect_lock_file_bun() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/bun.lockb", "");
-        assert_eq!(detect_from_lock_file(&fs, Path::new("/project")), Some("bun"));
+        let fs = InMemoryFileSystem::new().with_file("/project/bun.lockb", "");
+        assert_eq!(
+            detect_from_lock_file(&fs, Path::new("/project")),
+            Some("bun")
+        );
     }
 
     #[test]
@@ -151,7 +160,10 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/project/pnpm-lock.yaml", "")
             .with_file("/project/package-lock.json", "{}");
-        assert_eq!(detect_from_lock_file(&fs, Path::new("/project")), Some("pnpm"));
+        assert_eq!(
+            detect_from_lock_file(&fs, Path::new("/project")),
+            Some("pnpm")
+        );
     }
 
     #[test]
@@ -164,29 +176,39 @@ mod tests {
 
     #[test]
     fn detect_package_json_pnpm() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/package.json", r#"{"packageManager": "pnpm@8.0.0"}"#);
-        assert_eq!(detect_from_package_json(&fs, Path::new("/project")), Some("pnpm"));
+        let fs = InMemoryFileSystem::new().with_file(
+            "/project/package.json",
+            r#"{"packageManager": "pnpm@8.0.0"}"#,
+        );
+        assert_eq!(
+            detect_from_package_json(&fs, Path::new("/project")),
+            Some("pnpm")
+        );
     }
 
     #[test]
     fn detect_package_json_yarn() {
         let fs = InMemoryFileSystem::new()
             .with_file("/project/package.json", r#"{"packageManager": "yarn@3"}"#);
-        assert_eq!(detect_from_package_json(&fs, Path::new("/project")), Some("yarn"));
+        assert_eq!(
+            detect_from_package_json(&fs, Path::new("/project")),
+            Some("yarn")
+        );
     }
 
     #[test]
     fn detect_package_json_no_field() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/package.json", r#"{"name": "test"}"#);
+        let fs =
+            InMemoryFileSystem::new().with_file("/project/package.json", r#"{"name": "test"}"#);
         assert_eq!(detect_from_package_json(&fs, Path::new("/project")), None);
     }
 
     #[test]
     fn detect_package_json_unknown_pm() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/package.json", r#"{"packageManager": "unknown@1"}"#);
+        let fs = InMemoryFileSystem::new().with_file(
+            "/project/package.json",
+            r#"{"packageManager": "unknown@1"}"#,
+        );
         assert_eq!(detect_from_package_json(&fs, Path::new("/project")), None);
     }
 
@@ -198,8 +220,7 @@ mod tests {
 
     #[test]
     fn detect_package_json_invalid_json() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/package.json", "not json");
+        let fs = InMemoryFileSystem::new().with_file("/project/package.json", "not json");
         assert_eq!(detect_from_package_json(&fs, Path::new("/project")), None);
     }
 
@@ -224,8 +245,10 @@ mod tests {
 
     #[test]
     fn get_pm_project_config() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/.claude/package-manager.json", r#"{"packageManager": "yarn"}"#);
+        let fs = InMemoryFileSystem::new().with_file(
+            "/project/.claude/package-manager.json",
+            r#"{"packageManager": "yarn"}"#,
+        );
         let env = MockEnvironment::new();
         let result = get_package_manager(&fs, &env, Path::new("/project"));
         assert_eq!(result.name, "yarn");
@@ -244,8 +267,7 @@ mod tests {
 
     #[test]
     fn get_pm_lock_file() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/yarn.lock", "");
+        let fs = InMemoryFileSystem::new().with_file("/project/yarn.lock", "");
         let env = MockEnvironment::new();
         let result = get_package_manager(&fs, &env, Path::new("/project"));
         assert_eq!(result.name, "yarn");
@@ -254,8 +276,10 @@ mod tests {
 
     #[test]
     fn get_pm_global_config() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/package-manager.json", r#"{"packageManager": "pnpm"}"#);
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/package-manager.json",
+            r#"{"packageManager": "pnpm"}"#,
+        );
         let env = MockEnvironment::new();
         let result = get_package_manager(&fs, &env, Path::new("/project"));
         assert_eq!(result.name, "pnpm");
@@ -273,8 +297,7 @@ mod tests {
 
     #[test]
     fn get_pm_priority_env_over_lock() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/yarn.lock", "");
+        let fs = InMemoryFileSystem::new().with_file("/project/yarn.lock", "");
         let env = MockEnvironment::new().with_var("CLAUDE_PACKAGE_MANAGER", "pnpm");
         let result = get_package_manager(&fs, &env, Path::new("/project"));
         assert_eq!(result.name, "pnpm");
@@ -284,7 +307,10 @@ mod tests {
     #[test]
     fn get_pm_priority_project_config_over_package_json() {
         let fs = InMemoryFileSystem::new()
-            .with_file("/project/.claude/package-manager.json", r#"{"packageManager": "yarn"}"#)
+            .with_file(
+                "/project/.claude/package-manager.json",
+                r#"{"packageManager": "yarn"}"#,
+            )
             .with_file("/project/package.json", r#"{"packageManager": "pnpm@8"}"#);
         let env = MockEnvironment::new();
         let result = get_package_manager(&fs, &env, Path::new("/project"));

@@ -44,9 +44,7 @@ pub(super) fn regex_find_pr_url(text: &str) -> Option<String> {
     let start = text.find(marker)?;
     let rest = &text[start..];
     // Find end of URL (whitespace or end of string)
-    let end = rest
-        .find(|c: char| c.is_whitespace())
-        .unwrap_or(rest.len());
+    let end = rest.find(|c: char| c.is_whitespace()).unwrap_or(rest.len());
     let url = &rest[..end];
     // Validate it looks like a PR URL
     if url.contains("/pull/") {
@@ -65,19 +63,21 @@ pub(super) fn scan_exports(content: &str, ext: &str) -> (usize, usize) {
     for (i, line) in lines.iter().enumerate() {
         let trimmed = line.trim();
         let is_export = match ext {
-            "ts" | "tsx" | "js" | "jsx" => trimmed.starts_with("export ") && {
-                let rest = &trimmed[7..];
-                rest.starts_with("function ")
-                    || rest.starts_with("class ")
-                    || rest.starts_with("const ")
-                    || rest.starts_with("let ")
-                    || rest.starts_with("var ")
-                    || rest.starts_with("type ")
-                    || rest.starts_with("interface ")
-                    || rest.starts_with("enum ")
-                    || rest.starts_with("default ")
-                    || rest.starts_with("async function")
-            },
+            "ts" | "tsx" | "js" | "jsx" => {
+                trimmed.starts_with("export ") && {
+                    let rest = &trimmed[7..];
+                    rest.starts_with("function ")
+                        || rest.starts_with("class ")
+                        || rest.starts_with("const ")
+                        || rest.starts_with("let ")
+                        || rest.starts_with("var ")
+                        || rest.starts_with("type ")
+                        || rest.starts_with("interface ")
+                        || rest.starts_with("enum ")
+                        || rest.starts_with("default ")
+                        || rest.starts_with("async function")
+                }
+            }
             "py" => {
                 (trimmed.starts_with("def ") || trimmed.starts_with("class "))
                     && !trimmed.starts_with("def _")
@@ -93,14 +93,16 @@ pub(super) fn scan_exports(content: &str, ext: &str) -> (usize, usize) {
                         .nth(1)
                         .is_some_and(|w| w.starts_with(|c: char| c.is_uppercase()))
             }
-            "rs" => trimmed.starts_with("pub fn ")
-                || trimmed.starts_with("pub struct ")
-                || trimmed.starts_with("pub enum ")
-                || trimmed.starts_with("pub trait ")
-                || trimmed.starts_with("pub type ")
-                || trimmed.starts_with("pub const ")
-                || trimmed.starts_with("pub static ")
-                || trimmed.starts_with("pub mod "),
+            "rs" => {
+                trimmed.starts_with("pub fn ")
+                    || trimmed.starts_with("pub struct ")
+                    || trimmed.starts_with("pub enum ")
+                    || trimmed.starts_with("pub trait ")
+                    || trimmed.starts_with("pub type ")
+                    || trimmed.starts_with("pub const ")
+                    || trimmed.starts_with("pub static ")
+                    || trimmed.starts_with("pub mod ")
+            }
             "java" => {
                 trimmed.starts_with("public ")
                     && (trimmed.contains("class ")
@@ -167,8 +169,8 @@ pub(super) fn has_doc_comment(lines: &[&str], export_line: usize, ext: &str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::hook::handlers::tier1_simple::*;
     use crate::hook::HookPorts;
+    use crate::hook::handlers::tier1_simple::*;
     use ecc_ports::shell::CommandOutput;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
 
@@ -243,8 +245,8 @@ mod tests {
 
     #[test]
     fn check_console_log_warns_when_found() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/main.ts", "console.log('debug');\nlet x = 1;");
+        let fs =
+            InMemoryFileSystem::new().with_file("src/main.ts", "console.log('debug');\nlet x = 1;");
         let shell = MockExecutor::new()
             .on_args(
                 "git",
@@ -274,8 +276,8 @@ mod tests {
 
     #[test]
     fn check_console_log_skips_test_files() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/main.test.ts", "console.log('test debug');");
+        let fs =
+            InMemoryFileSystem::new().with_file("src/main.test.ts", "console.log('test debug');");
         let shell = MockExecutor::new()
             .on_args(
                 "git",
@@ -483,8 +485,8 @@ mod tests {
 
     #[test]
     fn doc_coverage_warns_undocumented() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/lib.rs", "pub fn foo() {}\npub fn bar() {}\n");
+        let fs =
+            InMemoryFileSystem::new().with_file("src/lib.rs", "pub fn foo() {}\npub fn bar() {}\n");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -498,8 +500,8 @@ mod tests {
 
     #[test]
     fn doc_coverage_ok_when_documented() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/lib.rs", "/// Documented\npub fn foo() {}\n");
+        let fs =
+            InMemoryFileSystem::new().with_file("src/lib.rs", "/// Documented\npub fn foo() {}\n");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -514,8 +516,8 @@ mod tests {
 
     #[test]
     fn post_edit_console_warn_finds_console_log() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/app.ts", "const x = 1;\nconsole.log(x);\n");
+        let fs =
+            InMemoryFileSystem::new().with_file("src/app.ts", "const x = 1;\nconsole.log(x);\n");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -528,8 +530,7 @@ mod tests {
 
     #[test]
     fn post_edit_console_warn_ignores_non_js() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("src/lib.rs", "println!(\"hello\");");
+        let fs = InMemoryFileSystem::new().with_file("src/lib.rs", "println!(\"hello\");");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -546,8 +547,7 @@ mod tests {
     fn suggest_compact_first_call_no_suggestion() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
-        let env = MockEnvironment::new()
-            .with_var("CLAUDE_SESSION_ID", "test-session");
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "test-session");
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
@@ -557,11 +557,9 @@ mod tests {
 
     #[test]
     fn suggest_compact_at_threshold() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/tmp/claude-tool-count-test-session", "49");
+        let fs = InMemoryFileSystem::new().with_file("/tmp/claude-tool-count-test-session", "49");
         let shell = MockExecutor::new();
-        let env = MockEnvironment::new()
-            .with_var("CLAUDE_SESSION_ID", "test-session");
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "test-session");
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
@@ -571,11 +569,9 @@ mod tests {
 
     #[test]
     fn suggest_compact_periodic_reminder() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/tmp/claude-tool-count-test-session", "74");
+        let fs = InMemoryFileSystem::new().with_file("/tmp/claude-tool-count-test-session", "74");
         let shell = MockExecutor::new();
-        let env = MockEnvironment::new()
-            .with_var("CLAUDE_SESSION_ID", "test-session");
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "test-session");
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 

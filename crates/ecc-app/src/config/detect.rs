@@ -1,5 +1,5 @@
 use ecc_domain::config::detect::{
-    extract_frontmatter_name, DetectedAgent, DetectedHook, DetectedSkill, DetectionResult,
+    DetectedAgent, DetectedHook, DetectedSkill, DetectionResult, extract_frontmatter_name,
 };
 use ecc_ports::fs::FileSystem;
 use std::collections::BTreeMap;
@@ -161,11 +161,7 @@ fn detect_claude_md(fs: &dyn FileSystem, project_dir: &Path) -> Vec<String> {
 
 /// Run full detection on a Claude Code config directory.
 /// `project_dir` is the project root (for CLAUDE.md detection).
-pub fn detect(
-    fs: &dyn FileSystem,
-    dir: &Path,
-    project_dir: Option<&Path>,
-) -> DetectionResult {
+pub fn detect(fs: &dyn FileSystem, dir: &Path, project_dir: Option<&Path>) -> DetectionResult {
     let claude_md_headings = match project_dir {
         Some(pd) => detect_claude_md(fs, pd),
         None => Vec::new(),
@@ -285,16 +281,12 @@ mod tests {
             rules["common"],
             vec!["security.md".to_string(), "style.md".to_string()]
         );
-        assert_eq!(
-            rules["typescript"],
-            vec!["eslint.md".to_string()]
-        );
+        assert_eq!(rules["typescript"], vec!["eslint.md".to_string()]);
     }
 
     #[test]
     fn detect_rules_empty_subdir_excluded() {
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/claude/rules/empty");
+        let fs = InMemoryFileSystem::new().with_dir("/claude/rules/empty");
 
         let rules = detect_rules(&fs, Path::new("/claude"));
         assert!(rules.is_empty());
@@ -346,7 +338,10 @@ mod tests {
                 "/claude/settings.json",
                 r#"{"hooks": {"PreToolUse": [{"description": "test", "matcher": "Write"}]}}"#,
             )
-            .with_file("/project/CLAUDE.md", "# Title\n## Section One\n## Section Two\n");
+            .with_file(
+                "/project/CLAUDE.md",
+                "# Title\n## Section One\n## Section Two\n",
+            );
 
         let result = detect(&fs, Path::new("/claude"), Some(Path::new("/project")));
 

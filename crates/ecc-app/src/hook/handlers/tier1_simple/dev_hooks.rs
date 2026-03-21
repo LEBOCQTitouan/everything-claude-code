@@ -32,9 +32,7 @@ pub fn pre_bash_tmux_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResult 
         "playwright",
     ];
 
-    let has_long_running = long_running_patterns
-        .iter()
-        .any(|pat| cmd.contains(pat));
+    let has_long_running = long_running_patterns.iter().any(|pat| cmd.contains(pat));
 
     if has_long_running {
         let msg = "[Hook] Consider running in tmux for session persistence\n\
@@ -157,8 +155,21 @@ pub fn post_failure_error_context(stdin: &str, _ports: &HookPorts<'_>) -> HookRe
 
     let error_lower = error.to_lowercase();
 
-    let build_keywords = ["build failed", "compile error", "compilation failed", "cannot find module", "syntax error", "type error"];
-    let test_keywords = ["test failed", "assertion failed", "expected", "test error", "failures:"];
+    let build_keywords = [
+        "build failed",
+        "compile error",
+        "compilation failed",
+        "cannot find module",
+        "syntax error",
+        "type error",
+    ];
+    let test_keywords = [
+        "test failed",
+        "assertion failed",
+        "expected",
+        "test error",
+        "failures:",
+    ];
 
     if build_keywords.iter().any(|kw| error_lower.contains(kw)) {
         return HookResult::warn(
@@ -185,9 +196,7 @@ pub fn pre_prompt_context_inject(stdin: &str, ports: &HookPorts<'_>) -> HookResu
         .shell
         .run_command("git", &["diff", "--stat", "--cached"]);
 
-    let unstaged_output = ports
-        .shell
-        .run_command("git", &["diff", "--stat"]);
+    let unstaged_output = ports.shell.run_command("git", &["diff", "--stat"]);
 
     let cached_count = diff_output
         .as_ref()
@@ -241,16 +250,14 @@ pub fn instructions_loaded_validate(stdin: &str, ports: &HookPorts<'_>) -> HookR
         Ok(content) if content.trim().is_empty() => {
             HookResult::warn(stdin, "[Hook] Instructions file is empty\n")
         }
-        Ok(content) if content.trim().len() < 10 => {
-            HookResult::warn(
-                stdin,
-                &format!(
-                    "[Hook] Instructions file suspiciously short ({} chars): {}\n",
-                    content.trim().len(),
-                    path_str
-                ),
-            )
-        }
+        Ok(content) if content.trim().len() < 10 => HookResult::warn(
+            stdin,
+            &format!(
+                "[Hook] Instructions file suspiciously short ({} chars): {}\n",
+                content.trim().len(),
+                path_str
+            ),
+        ),
         Ok(_) => HookResult::passthrough(stdin),
         Err(_) => HookResult::warn(
             stdin,
@@ -322,7 +329,8 @@ mod tests {
 
     #[test]
     fn post_bash_pr_created_passthrough_pr_cmd_without_url_in_output() {
-        let stdin = r#"{"tool_input":{"command":"gh pr create"},"tool_output":{"output":"Draft saved\n"}}"#;
+        let stdin =
+            r#"{"tool_input":{"command":"gh pr create"},"tool_output":{"output":"Draft saved\n"}}"#;
         let result = post_bash_pr_created(stdin);
         assert!(result.stderr.is_empty());
     }
@@ -368,8 +376,7 @@ mod tests {
     #[test]
     fn suggest_compact_warns_at_threshold() {
         // Counter file holds "49" → next count = 50 = threshold
-        let fs = InMemoryFileSystem::new()
-            .with_file("/tmp/claude-tool-count-sess-b", "49");
+        let fs = InMemoryFileSystem::new().with_file("/tmp/claude-tool-count-sess-b", "49");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "sess-b");
         let term = BufferedTerminal::new();
@@ -382,8 +389,7 @@ mod tests {
     #[test]
     fn suggest_compact_warns_at_periodic_checkpoint() {
         // Counter holds "74" → next = 75 = threshold(50) + 25 → periodic reminder
-        let fs = InMemoryFileSystem::new()
-            .with_file("/tmp/claude-tool-count-sess-c", "74");
+        let fs = InMemoryFileSystem::new().with_file("/tmp/claude-tool-count-sess-c", "74");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "sess-c");
         let term = BufferedTerminal::new();
@@ -397,8 +403,7 @@ mod tests {
     #[test]
     fn suggest_compact_custom_threshold_triggers_at_that_count() {
         // COMPACT_THRESHOLD=5, counter = "4" → next = 5 → warning
-        let fs = InMemoryFileSystem::new()
-            .with_file("/tmp/claude-tool-count-sess-d", "4");
+        let fs = InMemoryFileSystem::new().with_file("/tmp/claude-tool-count-sess-d", "4");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new()
             .with_var("CLAUDE_SESSION_ID", "sess-d")
@@ -471,16 +476,24 @@ mod tests {
     fn pre_prompt_with_uncommitted_changes() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new()
-            .on_args("git", &["diff", "--stat", "--cached"], ecc_ports::shell::CommandOutput {
-                stdout: " src/main.rs | 5 ++---\n 1 file changed\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            })
-            .on_args("git", &["diff", "--stat"], ecc_ports::shell::CommandOutput {
-                stdout: " src/lib.rs | 2 +-\n 1 file changed\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            });
+            .on_args(
+                "git",
+                &["diff", "--stat", "--cached"],
+                ecc_ports::shell::CommandOutput {
+                    stdout: " src/main.rs | 5 ++---\n 1 file changed\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "git",
+                &["diff", "--stat"],
+                ecc_ports::shell::CommandOutput {
+                    stdout: " src/lib.rs | 2 +-\n 1 file changed\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
@@ -505,16 +518,24 @@ mod tests {
     fn pre_prompt_no_uncommitted_changes() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new()
-            .on_args("git", &["diff", "--stat", "--cached"], ecc_ports::shell::CommandOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                exit_code: 0,
-            })
-            .on_args("git", &["diff", "--stat"], ecc_ports::shell::CommandOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                exit_code: 0,
-            });
+            .on_args(
+                "git",
+                &["diff", "--stat", "--cached"],
+                ecc_ports::shell::CommandOutput {
+                    stdout: String::new(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "git",
+                &["diff", "--stat"],
+                ecc_ports::shell::CommandOutput {
+                    stdout: String::new(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
@@ -579,8 +600,10 @@ mod tests {
 
     #[test]
     fn instructions_loaded_normal_file_passthrough() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/tmp/instructions.md", "# Project\n\nThis is a valid instructions file with enough content.");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/tmp/instructions.md",
+            "# Project\n\nThis is a valid instructions file with enough content.",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();

@@ -30,9 +30,7 @@ pub fn compact_turns(turns: &[Turn], keep: Option<usize>) -> Vec<Turn> {
 /// Build a compaction summary message.
 pub fn compaction_summary(original_count: usize, kept_count: usize) -> String {
     let dropped = original_count.saturating_sub(kept_count);
-    format!(
-        "Compacted session: kept {kept_count} turns, removed {dropped} turns"
-    )
+    format!("Compacted session: kept {kept_count} turns, removed {dropped} turns")
 }
 
 #[cfg(test)]

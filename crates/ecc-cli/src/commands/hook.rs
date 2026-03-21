@@ -3,7 +3,7 @@
 //! Reads stdin, dispatches to the appropriate hook handler, writes stdout/stderr.
 
 use clap::Args;
-use ecc_app::hook::{dispatch, HookContext, HookPorts, MAX_STDIN};
+use ecc_app::hook::{HookContext, HookPorts, MAX_STDIN, dispatch};
 use ecc_infra::os_env::OsEnvironment;
 use ecc_infra::os_fs::OsFileSystem;
 use ecc_infra::process_executor::ProcessExecutor;

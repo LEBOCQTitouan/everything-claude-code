@@ -54,7 +54,10 @@ pub fn combine_reports(reports: &[MergeReport]) -> MergeReport {
         updated: reports.iter().flat_map(|r| r.updated.clone()).collect(),
         unchanged: reports.iter().flat_map(|r| r.unchanged.clone()).collect(),
         skipped: reports.iter().flat_map(|r| r.skipped.clone()).collect(),
-        smart_merged: reports.iter().flat_map(|r| r.smart_merged.clone()).collect(),
+        smart_merged: reports
+            .iter()
+            .flat_map(|r| r.smart_merged.clone())
+            .collect(),
         errors: reports.iter().flat_map(|r| r.errors.clone()).collect(),
     }
 }
@@ -136,9 +139,7 @@ pub fn is_legacy_ecc_hook(entry: &serde_json::Value) -> bool {
 
 /// Remove legacy hooks from a hooks object.
 /// Returns a new hooks value with legacy hooks removed, and the count of removed hooks.
-pub fn remove_legacy_hooks(
-    hooks: &serde_json::Value,
-) -> (serde_json::Value, usize) {
+pub fn remove_legacy_hooks(hooks: &serde_json::Value) -> (serde_json::Value, usize) {
     let obj = match hooks.as_object() {
         Some(o) => o,
         None => return (hooks.clone(), 0),
@@ -190,12 +191,7 @@ pub fn merge_hooks_pure(
     let source_obj = match source_hooks.as_object() {
         Some(o) => o,
         None => {
-            return (
-                serde_json::Value::Object(merged),
-                0,
-                0,
-                legacy_removed,
-            );
+            return (serde_json::Value::Object(merged), 0, 0, legacy_removed);
         }
     };
 
@@ -636,15 +632,11 @@ mod tests {
         });
         let existing = serde_json::json!({});
 
-        let (merged, added, existing_count, legacy) =
-            merge_hooks_pure(&source, &existing);
+        let (merged, added, existing_count, legacy) = merge_hooks_pure(&source, &existing);
         assert_eq!(added, 1);
         assert_eq!(existing_count, 0);
         assert_eq!(legacy, 0);
-        assert_eq!(
-            merged["PreToolUse"].as_array().unwrap().len(),
-            1
-        );
+        assert_eq!(merged["PreToolUse"].as_array().unwrap().len(), 1);
     }
 
     #[test]
@@ -660,14 +652,10 @@ mod tests {
             ]
         });
 
-        let (merged, added, existing_count, _) =
-            merge_hooks_pure(&source, &existing);
+        let (merged, added, existing_count, _) = merge_hooks_pure(&source, &existing);
         assert_eq!(added, 0);
         assert_eq!(existing_count, 1);
-        assert_eq!(
-            merged["PreToolUse"].as_array().unwrap().len(),
-            1
-        );
+        assert_eq!(merged["PreToolUse"].as_array().unwrap().len(), 1);
     }
 
     #[test]
@@ -683,14 +671,10 @@ mod tests {
             ]
         });
 
-        let (merged, added, _, legacy) =
-            merge_hooks_pure(&source, &existing);
+        let (merged, added, _, legacy) = merge_hooks_pure(&source, &existing);
         assert_eq!(added, 1);
         assert_eq!(legacy, 1);
-        assert_eq!(
-            merged["PreToolUse"].as_array().unwrap().len(),
-            1
-        );
+        assert_eq!(merged["PreToolUse"].as_array().unwrap().len(), 1);
     }
 
     #[test]
@@ -706,15 +690,11 @@ mod tests {
             ]
         });
 
-        let (merged, added, _, legacy) =
-            merge_hooks_pure(&source, &existing);
+        let (merged, added, _, legacy) = merge_hooks_pure(&source, &existing);
         assert_eq!(added, 1);
         assert_eq!(legacy, 0);
         // User hook + new hook
-        assert_eq!(
-            merged["PreToolUse"].as_array().unwrap().len(),
-            2
-        );
+        assert_eq!(merged["PreToolUse"].as_array().unwrap().len(), 2);
     }
 
     // --- contents_differ ---
@@ -779,5 +759,4 @@ mod tests {
         assert!(output.contains("1 smart-merged"));
         assert!(output.contains("1 errors"));
     }
-
 }

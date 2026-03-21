@@ -11,9 +11,7 @@ use super::{epoch_secs, log_write_failure};
 /// stop:oath-reflection — summarize session against Programmer's Oath.
 pub fn oath_reflection(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     // Parse recent git log to count commit types
-    let log_output = ports
-        .shell
-        .run_command("git", &["log", "--oneline", "-50"]);
+    let log_output = ports.shell.run_command("git", &["log", "--oneline", "-50"]);
     let log_lines = match log_output {
         Ok(ref out) if out.success() => out.stdout.clone(),
         _ => return HookResult::passthrough(stdin),
@@ -59,11 +57,12 @@ pub fn oath_reflection(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     // Check for oath notes file
-    let oath_notes_exist = ports
-        .fs
-        .exists(Path::new("docs/audits/robert-notes.md"));
+    let oath_notes_exist = ports.fs.exists(Path::new("docs/audits/robert-notes.md"));
     let oath_summary = if oath_notes_exist {
-        match ports.fs.read_to_string(Path::new("docs/audits/robert-notes.md")) {
+        match ports
+            .fs
+            .read_to_string(Path::new("docs/audits/robert-notes.md"))
+        {
             Ok(content) => {
                 let warning_count = content.matches("WARNING").count();
                 let violation_count = content.matches("VIOLATION").count();
@@ -98,9 +97,7 @@ pub fn craft_velocity(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         None => return HookResult::passthrough(stdin),
     };
 
-    let log_output = ports
-        .shell
-        .run_command("git", &["log", "--oneline", "-50"]);
+    let log_output = ports.shell.run_command("git", &["log", "--oneline", "-50"]);
     let log_lines = match log_output {
         Ok(ref out) if out.success() => out.stdout.clone(),
         _ => return HookResult::passthrough(stdin),
@@ -124,9 +121,20 @@ pub fn craft_velocity(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
             .map(|(_, rest)| rest)
             .unwrap_or(trimmed);
 
-        if msg.starts_with("feat:") || msg.starts_with("feat(") || msg.starts_with("test:") || msg.starts_with("test(") || msg.starts_with("docs:") || msg.starts_with("docs(") || msg.starts_with("chore(scout)") {
+        if msg.starts_with("feat:")
+            || msg.starts_with("feat(")
+            || msg.starts_with("test:")
+            || msg.starts_with("test(")
+            || msg.starts_with("docs:")
+            || msg.starts_with("docs(")
+            || msg.starts_with("chore(scout)")
+        {
             forward += 1;
-        } else if msg.starts_with("fix:") || msg.starts_with("fix(") || msg.starts_with("chore:") || msg.starts_with("chore(") {
+        } else if msg.starts_with("fix:")
+            || msg.starts_with("fix(")
+            || msg.starts_with("chore:")
+            || msg.starts_with("chore(")
+        {
             // chore(scout) already captured above
             if !msg.starts_with("chore(scout)") {
                 rework += 1;

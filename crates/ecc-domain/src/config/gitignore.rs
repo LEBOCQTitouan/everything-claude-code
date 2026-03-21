@@ -128,11 +128,19 @@ mod tests {
 
     #[test]
     fn entries_contain_manifest() {
-        assert!(ECC_GITIGNORE_ENTRIES.iter().any(|e| e.pattern == ".claude/.ecc-manifest.json"));
+        assert!(
+            ECC_GITIGNORE_ENTRIES
+                .iter()
+                .any(|e| e.pattern == ".claude/.ecc-manifest.json")
+        );
     }
 
     #[test]
     fn entries_contain_mcp() {
-        assert!(ECC_GITIGNORE_ENTRIES.iter().any(|e| e.pattern == ".mcp.json"));
+        assert!(
+            ECC_GITIGNORE_ENTRIES
+                .iter()
+                .any(|e| e.pattern == ".mcp.json")
+        );
     }
 }

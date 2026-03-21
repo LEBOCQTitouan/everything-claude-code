@@ -3,14 +3,16 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
 /// Find files in a directory ending with a specific suffix.
-pub(super) fn find_files_by_suffix(dir: &Path, suffix: &str, ports: &HookPorts<'_>) -> Vec<PathBuf> {
+pub(super) fn find_files_by_suffix(
+    dir: &Path,
+    suffix: &str,
+    ports: &HookPorts<'_>,
+) -> Vec<PathBuf> {
     match ports.fs.read_dir(dir) {
         Ok(entries) => {
             let mut files: Vec<PathBuf> = entries
                 .into_iter()
-                .filter(|p| {
-                    p.to_string_lossy().ends_with(suffix)
-                })
+                .filter(|p| p.to_string_lossy().ends_with(suffix))
                 .collect();
             files.sort();
             files.reverse(); // Most recent first (assuming date-prefixed names)
@@ -155,9 +157,10 @@ pub(super) fn extract_session_summary(content: &str) -> Option<SessionSummary> {
                 .and_then(|ti| ti.get("file_path"))
                 .and_then(|fp| fp.as_str());
             if let Some(fp) = file_path
-                && (name == "Edit" || name == "Write") {
-                    files_modified.insert(fp.to_string());
-                }
+                && (name == "Edit" || name == "Write")
+            {
+                files_modified.insert(fp.to_string());
+            }
         }
 
         // Check assistant message content blocks for tool use
@@ -168,14 +171,18 @@ pub(super) fn extract_session_summary(content: &str) -> Option<SessionSummary> {
         {
             for block in blocks {
                 if block.get("type").and_then(|t| t.as_str()) == Some("tool_use")
-                    && let Some(name) = block.get("name").and_then(|n| n.as_str()) {
-                        tools_used.insert(name.to_string());
-                        if let Some(fp) =
-                            block.get("input").and_then(|i| i.get("file_path")).and_then(|f| f.as_str())
-                            && (name == "Edit" || name == "Write") {
-                                files_modified.insert(fp.to_string());
-                            }
+                    && let Some(name) = block.get("name").and_then(|n| n.as_str())
+                {
+                    tools_used.insert(name.to_string());
+                    if let Some(fp) = block
+                        .get("input")
+                        .and_then(|i| i.get("file_path"))
+                        .and_then(|f| f.as_str())
+                        && (name == "Edit" || name == "Write")
+                    {
+                        files_modified.insert(fp.to_string());
                     }
+                }
             }
         }
     }
@@ -186,7 +193,14 @@ pub(super) fn extract_session_summary(content: &str) -> Option<SessionSummary> {
 
     let total = user_messages.len();
     Some(SessionSummary {
-        user_messages: user_messages.into_iter().rev().take(10).collect::<Vec<_>>().into_iter().rev().collect(),
+        user_messages: user_messages
+            .into_iter()
+            .rev()
+            .take(10)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect(),
         tools_used: tools_used.into_iter().take(20).collect(),
         files_modified: files_modified.into_iter().take(30).collect(),
         total_messages: total,
@@ -255,18 +269,18 @@ pub(super) fn estimate_cost(model: &str, input_tokens: u64, output_tokens: u64) 
         (3.0, 15.0)
     };
 
-    let cost =
-        (input_tokens as f64 / 1_000_000.0) * in_rate + (output_tokens as f64 / 1_000_000.0) * out_rate;
+    let cost = (input_tokens as f64 / 1_000_000.0) * in_rate
+        + (output_tokens as f64 / 1_000_000.0) * out_rate;
     (cost * 1_000_000.0).round() / 1_000_000.0
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::hook::HookPorts;
     use crate::hook::handlers::tier3_session::{
         cost_tracker, evaluate_session, pre_compact, session_end, session_start,
     };
-    use crate::hook::HookPorts;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
 
     fn make_ports<'a>(
@@ -292,8 +306,7 @@ mod tests {
             .with_dir("/home/test/.claude/sessions")
             .with_dir("/home/test/.claude/learned-skills");
         let shell = MockExecutor::new();
-        let env = MockEnvironment::new()
-            .with_home("/home/test");
+        let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
@@ -336,8 +349,7 @@ mod tests {
 
     #[test]
     fn session_end_creates_new_file() {
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/home/test/.claude/sessions");
+        let fs = InMemoryFileSystem::new().with_dir("/home/test/.claude/sessions");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new()
             .with_home("/home/test")
@@ -349,7 +361,10 @@ mod tests {
         assert_eq!(result.exit_code, 0);
 
         // Verify session file was created
-        let files = ports.fs.read_dir(Path::new("/home/test/.claude/sessions")).unwrap();
+        let files = ports
+            .fs
+            .read_dir(Path::new("/home/test/.claude/sessions"))
+            .unwrap();
         let session_files: Vec<_> = files
             .iter()
             .filter(|f| f.to_string_lossy().ends_with("-session.tmp"))
@@ -376,7 +391,10 @@ mod tests {
         assert_eq!(result.exit_code, 0);
 
         // Verify the session file contains summary
-        let files = ports.fs.read_dir(Path::new("/home/test/.claude/sessions")).unwrap();
+        let files = ports
+            .fs
+            .read_dir(Path::new("/home/test/.claude/sessions"))
+            .unwrap();
         let session_file = files
             .iter()
             .find(|f| f.to_string_lossy().ends_with("-session.tmp"))
@@ -390,8 +408,7 @@ mod tests {
 
     #[test]
     fn pre_compact_writes_log() {
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/home/test/.claude/sessions");
+        let fs = InMemoryFileSystem::new().with_dir("/home/test/.claude/sessions");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -409,11 +426,10 @@ mod tests {
 
     #[test]
     fn pre_compact_appends_to_active_session() {
-        let fs = InMemoryFileSystem::new()
-            .with_file(
-                "/home/test/.claude/sessions/2026-03-14-test-session.tmp",
-                "# Session\nContent here",
-            );
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-03-14-test-session.tmp",
+            "# Session\nContent here",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -436,8 +452,7 @@ mod tests {
     fn evaluate_session_short_session() {
         let transcript = r#"{"type":"user","content":"hello"}
 {"type":"user","content":"world"}"#;
-        let fs = InMemoryFileSystem::new()
-            .with_file("/tmp/transcript.jsonl", transcript);
+        let fs = InMemoryFileSystem::new().with_file("/tmp/transcript.jsonl", transcript);
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -452,14 +467,10 @@ mod tests {
     fn evaluate_session_long_enough() {
         let mut transcript_lines = Vec::new();
         for i in 0..15 {
-            transcript_lines.push(format!(
-                r#"{{"type":"user","content":"message {}"}}"#,
-                i
-            ));
+            transcript_lines.push(format!(r#"{{"type":"user","content":"message {}"}}"#, i));
         }
         let transcript = transcript_lines.join("\n");
-        let fs = InMemoryFileSystem::new()
-            .with_file("/tmp/transcript.jsonl", &transcript);
+        let fs = InMemoryFileSystem::new().with_file("/tmp/transcript.jsonl", &transcript);
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -487,8 +498,7 @@ mod tests {
 
     #[test]
     fn cost_tracker_writes_jsonl() {
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/home/test/.claude/metrics");
+        let fs = InMemoryFileSystem::new().with_dir("/home/test/.claude/metrics");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new()
             .with_home("/home/test")

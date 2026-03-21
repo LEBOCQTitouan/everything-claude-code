@@ -33,10 +33,7 @@ impl InMemoryFileSystem {
 
     /// Pre-populate a directory for test setup.
     pub fn with_dir(self, path: &str) -> Self {
-        self.dirs
-            .lock()
-            .unwrap()
-            .insert(PathBuf::from(path), ());
+        self.dirs.lock().unwrap().insert(PathBuf::from(path), ());
         self
     }
 }
@@ -179,7 +176,10 @@ mod tests {
     fn write_and_read() {
         let fs = InMemoryFileSystem::new();
         fs.write(Path::new("/tmp/test.txt"), "hello").unwrap();
-        assert_eq!(fs.read_to_string(Path::new("/tmp/test.txt")).unwrap(), "hello");
+        assert_eq!(
+            fs.read_to_string(Path::new("/tmp/test.txt")).unwrap(),
+            "hello"
+        );
     }
 
     #[test]
@@ -200,7 +200,8 @@ mod tests {
     #[test]
     fn copy_file() {
         let fs = InMemoryFileSystem::new().with_file("/src.txt", "data");
-        fs.copy(Path::new("/src.txt"), Path::new("/dst.txt")).unwrap();
+        fs.copy(Path::new("/src.txt"), Path::new("/dst.txt"))
+            .unwrap();
         assert_eq!(fs.read_to_string(Path::new("/dst.txt")).unwrap(), "data");
     }
 

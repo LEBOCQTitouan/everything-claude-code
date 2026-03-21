@@ -4,8 +4,8 @@
 //! This module provides I/O functions that depend on `FileSystem`.
 
 use ecc_domain::session::aliases::{
-    default_aliases, validate_alias_name, AliasEntry, AliasMetadata, AliasesData,
-    DeleteAliasResult, RenameAliasResult, SetAliasResult, ALIAS_VERSION,
+    ALIAS_VERSION, AliasEntry, AliasMetadata, AliasesData, DeleteAliasResult, RenameAliasResult,
+    SetAliasResult, default_aliases, validate_alias_name,
 };
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
@@ -40,12 +40,7 @@ pub fn load_aliases(fs: &dyn FileSystem, path: &Path, now: &str) -> AliasesData 
 
 /// Save aliases to the file at `path`. Updates metadata before writing.
 /// Returns `true` on success.
-pub fn save_aliases(
-    fs: &dyn FileSystem,
-    path: &Path,
-    data: &mut AliasesData,
-    now: &str,
-) -> bool {
+pub fn save_aliases(fs: &dyn FileSystem, path: &Path, data: &mut AliasesData, now: &str) -> bool {
     data.metadata = AliasMetadata {
         total_count: data.aliases.len(),
         last_updated: now.to_string(),
@@ -137,12 +132,7 @@ pub fn set_alias(
 }
 
 /// Delete an alias. Returns the deleted session path on success.
-pub fn delete_alias(
-    fs: &dyn FileSystem,
-    path: &Path,
-    alias: &str,
-    now: &str,
-) -> DeleteAliasResult {
+pub fn delete_alias(fs: &dyn FileSystem, path: &Path, alias: &str, now: &str) -> DeleteAliasResult {
     let mut data = load_aliases(fs, path, now);
 
     let Some(entry) = data.aliases.remove(alias) else {
@@ -290,8 +280,7 @@ mod tests {
 
     #[test]
     fn load_empty_file_returns_default() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/user/.claude/session-aliases.json", "");
+        let fs = InMemoryFileSystem::new().with_file("/home/user/.claude/session-aliases.json", "");
         let data = load_aliases(&fs, &aliases_path(), NOW);
         assert!(data.aliases.is_empty());
     }
@@ -306,9 +295,12 @@ mod tests {
 
     #[test]
     fn load_valid_file() {
-        let content = serde_json::to_string_pretty(&make_data(&[
-            ("proj", "/sessions/abc", NOW, Some("My Project")),
-        ]))
+        let content = serde_json::to_string_pretty(&make_data(&[(
+            "proj",
+            "/sessions/abc",
+            NOW,
+            Some("My Project"),
+        )]))
         .unwrap();
         let fs = InMemoryFileSystem::new()
             .with_file("/home/user/.claude/session-aliases.json", &content);
@@ -499,7 +491,10 @@ mod tests {
         let result = delete_alias(&fs, &path, "proj", LATER);
         assert!(result.success);
         assert_eq!(result.alias.as_deref(), Some("proj"));
-        assert_eq!(result.deleted_session_path.as_deref(), Some("/sessions/abc"));
+        assert_eq!(
+            result.deleted_session_path.as_deref(),
+            Some("/sessions/abc")
+        );
 
         let data = load_aliases(&fs, &path, LATER);
         assert!(!data.aliases.contains_key("proj"));
@@ -632,7 +627,14 @@ mod tests {
         let path = aliases_path();
 
         // Create
-        let set_result = set_alias(&fs, &path, "myproj", "/sessions/abc", Some("My Project"), NOW);
+        let set_result = set_alias(
+            &fs,
+            &path,
+            "myproj",
+            "/sessions/abc",
+            Some("My Project"),
+            NOW,
+        );
         assert!(set_result.success);
         assert_eq!(set_result.is_new, Some(true));
 

@@ -3,11 +3,7 @@ use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
 /// Check whether any file in `dir` (non-recursive) has one of the given extensions.
-pub fn has_file_with_extension(
-    fs: &dyn FileSystem,
-    dir: &Path,
-    extensions: &[&str],
-) -> bool {
+pub fn has_file_with_extension(fs: &dyn FileSystem, dir: &Path, extensions: &[&str]) -> bool {
     let Ok(entries) = fs.read_dir(dir) else {
         return false;
     };
@@ -26,8 +22,8 @@ pub fn detect_languages(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
 
     for rule in LANGUAGE_RULES {
         let has_marker = rule.markers.iter().any(|m| fs.exists(&dir.join(m)));
-        let has_ext = !rule.extensions.is_empty()
-            && has_file_with_extension(fs, dir, rule.extensions);
+        let has_ext =
+            !rule.extensions.is_empty() && has_file_with_extension(fs, dir, rule.extensions);
 
         if has_marker || has_ext {
             languages.push(rule.lang_type.to_string());
@@ -73,10 +69,7 @@ pub fn get_python_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     if let Ok(content) = fs.read_to_string(&dir.join("requirements.txt")) {
         for line in content.lines() {
             let trimmed = line.trim();
-            if trimmed.is_empty()
-                || trimmed.starts_with('#')
-                || trimmed.starts_with('-')
-            {
+            if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with('-') {
                 continue;
             }
             let name = trimmed
@@ -93,8 +86,7 @@ pub fn get_python_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
 
     // pyproject.toml
     if let Ok(content) = fs.read_to_string(&dir.join("pyproject.toml")) {
-        let re_block =
-            regex::Regex::new(r"dependencies\s*=\s*\[([\s\S]*?)\]").unwrap();
+        let re_block = regex::Regex::new(r"dependencies\s*=\s*\[([\s\S]*?)\]").unwrap();
         if let Some(captures) = re_block.captures(&content) {
             let block = &captures[1];
             let re_quoted = regex::Regex::new(r#""([^"]+)""#).unwrap();
@@ -147,8 +139,7 @@ pub fn get_rust_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     };
 
     let mut deps = Vec::new();
-    let re_header =
-        regex::Regex::new(r"^\[(dev-)?dependencies\]\s*$").unwrap();
+    let re_header = regex::Regex::new(r"^\[(dev-)?dependencies\]\s*$").unwrap();
     let re_name = regex::Regex::new(r"^([a-zA-Z0-9_-]+)\s*=").unwrap();
 
     let mut in_deps_section = false;
@@ -161,9 +152,7 @@ pub fn get_rust_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
             in_deps_section = false;
             continue;
         }
-        if in_deps_section
-            && let Some(name_match) = re_name.captures(line)
-        {
+        if in_deps_section && let Some(name_match) = re_name.captures(line) {
             deps.push(name_match[1].to_string());
         }
     }
@@ -221,16 +210,14 @@ mod tests {
 
     #[test]
     fn detect_languages_with_marker_files() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/Cargo.toml", "[package]");
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[package]");
         let langs = detect_languages(&fs, dir());
         assert!(langs.contains(&"rust".to_string()));
     }
 
     #[test]
     fn detect_languages_with_extensions() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/main.py", "print('hello')");
+        let fs = InMemoryFileSystem::new().with_file("/project/main.py", "print('hello')");
         let langs = detect_languages(&fs, dir());
         assert!(langs.contains(&"python".to_string()));
     }
@@ -266,15 +253,13 @@ mod tests {
 
     #[test]
     fn has_file_with_extension_found() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/app.ts", "");
+        let fs = InMemoryFileSystem::new().with_file("/project/app.ts", "");
         assert!(has_file_with_extension(&fs, dir(), &[".ts", ".tsx"]));
     }
 
     #[test]
     fn has_file_with_extension_not_found() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/readme.md", "");
+        let fs = InMemoryFileSystem::new().with_file("/project/readme.md", "");
         assert!(!has_file_with_extension(&fs, dir(), &[".ts", ".tsx"]));
     }
 
@@ -300,8 +285,7 @@ mod tests {
 
     #[test]
     fn package_json_deps_invalid_json() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/package.json", "not json");
+        let fs = InMemoryFileSystem::new().with_file("/project/package.json", "not json");
         let deps = get_package_json_deps(&fs, dir());
         assert!(deps.is_empty());
     }
@@ -346,8 +330,7 @@ dependencies = [
 
     #[test]
     fn python_deps_empty_content() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/requirements.txt", "");
+        let fs = InMemoryFileSystem::new().with_file("/project/requirements.txt", "");
         let deps = get_python_deps(&fs, dir());
         assert!(deps.is_empty());
     }
@@ -374,8 +357,8 @@ dependencies = [
 
     #[test]
     fn go_deps_no_require_block() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/go.mod", "module example.com/test\n");
+        let fs =
+            InMemoryFileSystem::new().with_file("/project/go.mod", "module example.com/test\n");
         let deps = get_go_deps(&fs, dir());
         assert!(deps.is_empty());
     }
@@ -431,8 +414,7 @@ dependencies = [
 
     #[test]
     fn composer_deps_invalid_json() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/composer.json", "not json");
+        let fs = InMemoryFileSystem::new().with_file("/project/composer.json", "not json");
         let deps = get_composer_deps(&fs, dir());
         assert!(deps.is_empty());
     }
@@ -459,8 +441,8 @@ dependencies = [
 
     #[test]
     fn elixir_deps_no_deps_block() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/mix.exs", "defmodule MyApp do\nend\n");
+        let fs =
+            InMemoryFileSystem::new().with_file("/project/mix.exs", "defmodule MyApp do\nend\n");
         let deps = get_elixir_deps(&fs, dir());
         assert!(deps.is_empty());
     }

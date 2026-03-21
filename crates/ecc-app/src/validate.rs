@@ -1,7 +1,7 @@
 //! Validate use case — validates content files (agents, commands, hooks, skills, rules, paths).
 
 use ecc_domain::config::validate::{
-    check_hook_entry, extract_frontmatter, VALID_HOOK_EVENTS, VALID_MODELS,
+    VALID_HOOK_EVENTS, VALID_MODELS, check_hook_entry, extract_frontmatter,
 };
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
@@ -236,7 +236,10 @@ fn validate_hook_matcher(
     let obj = match matcher.as_object() {
         Some(o) => o,
         None => {
-            terminal.stderr_write(&format!("ERROR: {}[{}] is not an object\n", event_type, idx));
+            terminal.stderr_write(&format!(
+                "ERROR: {}[{}] is not an object\n",
+                event_type, idx
+            ));
             return false;
         }
     };
@@ -403,10 +406,7 @@ fn validate_paths(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -
             match fs.read_dir_recursive(&target_path) {
                 Ok(f) => f,
                 Err(e) => {
-                    terminal.stderr_write(&format!(
-                        "ERROR: Cannot read {}: {}\n",
-                        target, e
-                    ));
+                    terminal.stderr_write(&format!("ERROR: Cannot read {}: {}\n", target, e));
                     failures += 1;
                     continue;
                 }
@@ -442,7 +442,8 @@ fn validate_paths(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -
         return false;
     }
 
-    terminal.stdout_write("Validated: no personal absolute paths in shipped docs/skills/commands\n");
+    terminal
+        .stdout_write("Validated: no personal absolute paths in shipped docs/skills/commands\n");
     true
 }
 
@@ -461,7 +462,12 @@ mod tests {
     fn agents_no_dir_succeeds() {
         let fs = InMemoryFileSystem::new();
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
     }
 
     #[test]
@@ -471,27 +477,47 @@ mod tests {
             "---\nmodel: sonnet\ntools: Read\n---\n# Agent",
         );
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
     }
 
     #[test]
     fn agents_missing_frontmatter() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/agents/bad.md", "# No frontmatter");
+        let fs = InMemoryFileSystem::new().with_file("/root/agents/bad.md", "# No frontmatter");
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
-        assert!(t.stderr_output().iter().any(|s| s.contains("Missing frontmatter")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing frontmatter"))
+        );
     }
 
     #[test]
     fn agents_missing_required_field() {
-        let fs = InMemoryFileSystem::new().with_file(
-            "/root/agents/bad.md",
-            "---\nmodel: sonnet\n---\n# Agent",
-        );
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/agents/bad.md", "---\nmodel: sonnet\n---\n# Agent");
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
-        assert!(t.stderr_output().iter().any(|s| s.contains("Missing required field")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required field"))
+        );
     }
 
     #[test]
@@ -501,8 +527,17 @@ mod tests {
             "---\nmodel: gpt4\ntools: Read\n---\n# Agent",
         );
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Agents, Path::new("/root")));
-        assert!(t.stderr_output().iter().any(|s| s.contains("Invalid model")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Invalid model"))
+        );
     }
 
     // --- validate_commands ---
@@ -511,24 +546,41 @@ mod tests {
     fn commands_no_dir_succeeds() {
         let fs = InMemoryFileSystem::new();
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Commands, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Commands,
+            Path::new("/root")
+        ));
     }
 
     #[test]
     fn commands_valid_file() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/commands/test.md", "# Command");
+        let fs = InMemoryFileSystem::new().with_file("/root/commands/test.md", "# Command");
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Commands, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Commands,
+            Path::new("/root")
+        ));
     }
 
     #[test]
     fn commands_empty_file() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/commands/bad.md", "   ");
+        let fs = InMemoryFileSystem::new().with_file("/root/commands/bad.md", "   ");
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Commands, Path::new("/root")));
-        assert!(t.stderr_output().iter().any(|s| s.contains("Empty command file")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Commands,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Empty command file"))
+        );
     }
 
     // --- validate_hooks ---
@@ -537,35 +589,56 @@ mod tests {
     fn hooks_no_file_succeeds() {
         let fs = InMemoryFileSystem::new();
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Hooks, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Hooks,
+            Path::new("/root")
+        ));
     }
 
     #[test]
     fn hooks_valid() {
         let json = r#"{"PreToolUse": [{"matcher": "Write", "hooks": [{"type": "command", "command": "echo ok"}]}]}"#;
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/hooks/hooks.json", json);
+        let fs = InMemoryFileSystem::new().with_file("/root/hooks/hooks.json", json);
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Hooks, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Hooks,
+            Path::new("/root")
+        ));
     }
 
     #[test]
     fn hooks_invalid_json() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/hooks/hooks.json", "not json");
+        let fs = InMemoryFileSystem::new().with_file("/root/hooks/hooks.json", "not json");
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Hooks, Path::new("/root")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Hooks,
+            Path::new("/root")
+        ));
         assert!(t.stderr_output().iter().any(|s| s.contains("Invalid JSON")));
     }
 
     #[test]
     fn hooks_invalid_event() {
         let json = r#"{"InvalidEvent": [{"matcher": "x", "hooks": [{"type": "command", "command": "echo"}]}]}"#;
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/hooks/hooks.json", json);
+        let fs = InMemoryFileSystem::new().with_file("/root/hooks/hooks.json", json);
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Hooks, Path::new("/root")));
-        assert!(t.stderr_output().iter().any(|s| s.contains("Invalid event type")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Hooks,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Invalid event type"))
+        );
     }
 
     // --- validate_skills ---
@@ -574,7 +647,12 @@ mod tests {
     fn skills_no_dir_succeeds() {
         let fs = InMemoryFileSystem::new();
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Skills, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Skills,
+            Path::new("/root")
+        ));
     }
 
     #[test]
@@ -583,7 +661,12 @@ mod tests {
             .with_file("/root/skills/tdd/SKILL.md", "# TDD Skill")
             .with_dir("/root/skills/tdd");
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Skills, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Skills,
+            Path::new("/root")
+        ));
     }
 
     #[test]
@@ -592,8 +675,17 @@ mod tests {
             .with_dir("/root/skills")
             .with_dir("/root/skills/empty-skill");
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Skills, Path::new("/root")));
-        assert!(t.stderr_output().iter().any(|s| s.contains("Missing SKILL.md")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Skills,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing SKILL.md"))
+        );
     }
 
     // --- validate_rules ---
@@ -602,7 +694,12 @@ mod tests {
     fn rules_no_dir_succeeds() {
         let fs = InMemoryFileSystem::new();
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Rules, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Rules,
+            Path::new("/root")
+        ));
     }
 
     #[test]
@@ -611,7 +708,12 @@ mod tests {
             .with_dir("/root/rules")
             .with_file("/root/rules/common/test.md", "# Rule");
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Rules, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Rules,
+            Path::new("/root")
+        ));
     }
 
     #[test]
@@ -620,8 +722,17 @@ mod tests {
             .with_dir("/root/rules")
             .with_file("/root/rules/common/bad.md", "  ");
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Rules, Path::new("/root")));
-        assert!(t.stderr_output().iter().any(|s| s.contains("Empty rule file")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Rules,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Empty rule file"))
+        );
     }
 
     // --- validate_paths ---
@@ -630,15 +741,25 @@ mod tests {
     fn paths_no_targets_succeeds() {
         let fs = InMemoryFileSystem::new();
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Paths,
+            Path::new("/root")
+        ));
     }
 
     #[test]
     fn paths_clean_files() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/README.md", "# Project\nClean content.");
+        let fs =
+            InMemoryFileSystem::new().with_file("/root/README.md", "# Project\nClean content.");
         let t = term();
-        assert!(run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root")));
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Paths,
+            Path::new("/root")
+        ));
     }
 
     #[test]
@@ -646,15 +767,23 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/README.md", "See /Users/affoon/code for details.");
         let t = term();
-        assert!(!run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root")));
-        assert!(t.stderr_output().iter().any(|s| s.contains("personal path detected")));
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Paths,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("personal path detected"))
+        );
     }
 
     #[test]
     fn paths_read_dir_error_reported() {
         // Verify that read_dir errors are now reported (fixes ERR-008)
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/skills/test.md", "content");
+        let fs = InMemoryFileSystem::new().with_file("/root/skills/test.md", "content");
         let t = term();
         // skills dir exists as a file (not a dir), so read_dir_recursive will fail
         // This verifies the error path is now surfaced

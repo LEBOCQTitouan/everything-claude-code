@@ -7,17 +7,15 @@ mod prompt;
 
 use crate::config::merge as config_merge;
 use crate::smart_merge;
-use ecc_domain::config::merge::{
-    self, FileToReview, MergeReport,
-};
+use ecc_domain::config::merge::{self, FileToReview, MergeReport};
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
-pub use prompt::{apply_review_choice, prompt_file_review};
 use helpers::{copy_dir_recursive, read_json, read_json_or_default};
+pub use prompt::{apply_review_choice, prompt_file_review};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -86,7 +84,8 @@ pub fn merge_directory(
 ) -> MergeReport {
     let mut report = merge::empty_report();
 
-    let (files_to_review, unchanged) = config_merge::pre_scan_directory(ctx.fs, src_dir, dest_dir, ext);
+    let (files_to_review, unchanged) =
+        config_merge::pre_scan_directory(ctx.fs, src_dir, dest_dir, ext);
     report.unchanged = unchanged;
 
     if files_to_review.is_empty() {
@@ -98,7 +97,14 @@ pub fn merge_directory(
         let progress = format!("[{}/{}]", i + 1, total);
 
         let choice = resolve_choice(ctx, file, &progress, options);
-        apply_review_choice(ctx.fs, ctx.shell, choice, file, options.dry_run, &mut report);
+        apply_review_choice(
+            ctx.fs,
+            ctx.shell,
+            choice,
+            file,
+            options.dry_run,
+            &mut report,
+        );
     }
 
     if !report.added.is_empty() || !report.updated.is_empty() {
@@ -228,9 +234,9 @@ pub fn merge_skills(
                                 continue;
                             }
                             if let Err(e) = ctx.fs.write(&dest_skill_md, merged) {
-                                report.errors.push(format!(
-                                    "{skill_name}/SKILL.md: write error: {e}"
-                                ));
+                                report
+                                    .errors
+                                    .push(format!("{skill_name}/SKILL.md: write error: {e}"));
                                 continue;
                             }
                         }
@@ -247,8 +253,10 @@ pub fn merge_skills(
     }
 
     if !report.added.is_empty() || !report.updated.is_empty() {
-        ctx.terminal
-            .stdout_write(&format!("{}\n", merge::format_merge_report("Skills", &report)));
+        ctx.terminal.stdout_write(&format!(
+            "{}\n",
+            merge::format_merge_report("Skills", &report)
+        ));
     }
 
     report
@@ -312,10 +320,8 @@ pub fn merge_hooks(
         .unwrap_or_else(|| serde_json::json!({}));
 
     // Deserialize at boundary into typed model
-    let source_hooks: HooksMap = serde_json::from_value(source_hooks_value)
-        .unwrap_or_default();
-    let existing_hooks: HooksMap = serde_json::from_value(existing_hooks_value)
-        .unwrap_or_default();
+    let source_hooks: HooksMap = serde_json::from_value(source_hooks_value).unwrap_or_default();
+    let existing_hooks: HooksMap = serde_json::from_value(existing_hooks_value).unwrap_or_default();
 
     // Call typed domain function
     let (merged_hooks, added, existing, legacy_removed) =
@@ -323,8 +329,8 @@ pub fn merge_hooks(
 
     if (added > 0 || legacy_removed > 0) && !dry_run {
         // Serialize back at boundary
-        let merged_value = serde_json::to_value(&merged_hooks)
-            .map_err(|e| format!("Serialization error: {e}"))?;
+        let merged_value =
+            serde_json::to_value(&merged_hooks).map_err(|e| format!("Serialization error: {e}"))?;
 
         let mut settings = existing_settings;
         settings

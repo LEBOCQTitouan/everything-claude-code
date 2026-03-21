@@ -116,7 +116,7 @@ mod tests {
     #[test]
     fn metrics_char_count_accumulates() {
         let turns = vec![
-            make_turn(Role::User, "1234"),     // 4
+            make_turn(Role::User, "1234"),       // 4
             make_turn(Role::Assistant, "12345"), // 5
         ];
         let m = compute_metrics(&turns);

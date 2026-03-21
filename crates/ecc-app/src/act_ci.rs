@@ -255,8 +255,7 @@ mod tests {
 
     #[test]
     fn validate_actrc_missing_platform() {
-        let fs =
-            InMemoryFileSystem::new().with_file("/project/.actrc", "--secret-file .secrets\n");
+        let fs = InMemoryFileSystem::new().with_file("/project/.actrc", "--secret-file .secrets\n");
         let check = validate_actrc(&fs, Path::new("/project"));
         assert_eq!(check.status, CheckStatus::Fail);
         assert!(check.detail.contains("-P"));
@@ -390,10 +389,7 @@ mod tests {
         let env = MockEnvironment::new();
 
         let report = validate_all(&fs, &shell, &env, Path::new("/project"));
-        assert!(report
-            .checks
-            .iter()
-            .all(|c| c.status == CheckStatus::Pass));
+        assert!(report.checks.iter().all(|c| c.status == CheckStatus::Pass));
     }
 
     #[test]
@@ -424,11 +420,7 @@ mod tests {
         assert_eq!(secrets.status, CheckStatus::Pass);
 
         // Shell-dependent check is warned/skipped
-        let jobs = report
-            .checks
-            .iter()
-            .find(|c| c.name == "act-jobs")
-            .unwrap();
+        let jobs = report.checks.iter().find(|c| c.name == "act-jobs").unwrap();
         assert_eq!(jobs.status, CheckStatus::Warn);
     }
 }

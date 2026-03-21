@@ -1,4 +1,4 @@
-use ecc_domain::config::clean::{CleanReport, ARTIFACT_DIRS};
+use ecc_domain::config::clean::{ARTIFACT_DIRS, CleanReport};
 use ecc_domain::config::manifest::{EccManifest, MANIFEST_FILENAME};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
@@ -102,8 +102,7 @@ fn remove_ecc_hooks(
     }
 
     if !dry_run {
-        let json =
-            serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
+        let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
         fs.write(settings_path, &format!("{json}\n"))
             .map_err(|e| e.to_string())?;
     }
@@ -324,20 +323,14 @@ mod tests {
                 ]
             }
         }"#;
-        let fs = build_populated_fs()
-            .with_file("/claude/settings.json", settings);
+        let fs = build_populated_fs().with_file("/claude/settings.json", settings);
         let manifest = sample_manifest();
         let dir = Path::new("/claude");
         let no_legacy = |_: &serde_json::Value| false;
 
         let report = clean_from_manifest(&fs, dir, &manifest, &no_legacy, false);
 
-        assert!(
-            report
-                .removed
-                .iter()
-                .any(|r| r.contains("1 ECC hook(s)"))
-        );
+        assert!(report.removed.iter().any(|r| r.contains("1 ECC hook(s)")));
 
         // Verify user hook preserved
         let updated = fs
@@ -385,12 +378,7 @@ mod tests {
         let report = clean_all(&fs, dir, &no_legacy, false);
 
         // Should have removed 1 ECC hook
-        assert!(
-            report
-                .removed
-                .iter()
-                .any(|r| r.contains("1 ECC hook(s)"))
-        );
+        assert!(report.removed.iter().any(|r| r.contains("1 ECC hook(s)")));
 
         // Verify settings.json was rewritten with user hook preserved
         let updated = fs
@@ -418,17 +406,11 @@ mod tests {
             .with_file("/claude/settings.json", settings)
             .with_file("/claude/.ecc-manifest.json", "{}");
         let dir = Path::new("/claude");
-        let is_legacy = |v: &serde_json::Value| {
-            v.get("type").and_then(|t| t.as_str()) == Some("legacy")
-        };
+        let is_legacy =
+            |v: &serde_json::Value| v.get("type").and_then(|t| t.as_str()) == Some("legacy");
 
         let report = clean_all(&fs, dir, &is_legacy, false);
 
-        assert!(
-            report
-                .removed
-                .iter()
-                .any(|r| r.contains("1 ECC hook(s)"))
-        );
+        assert!(report.removed.iter().any(|r| r.contains("1 ECC hook(s)")));
     }
 }

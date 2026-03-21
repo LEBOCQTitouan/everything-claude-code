@@ -1,4 +1,4 @@
-use super::turn::{format_turns, Turn};
+use super::turn::{Turn, format_turns};
 
 /// Export format for session output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,7 +77,10 @@ mod tests {
 
     #[test]
     fn parse_markdown() {
-        assert_eq!(ExportFormat::parse("markdown"), Some(ExportFormat::Markdown));
+        assert_eq!(
+            ExportFormat::parse("markdown"),
+            Some(ExportFormat::Markdown)
+        );
     }
 
     #[test]
@@ -108,7 +111,12 @@ mod tests {
     #[test]
     fn export_markdown_header() {
         let turns = vec![make_turn("ts1", Role::User, "hello")];
-        let result = export_turns("test-session", &turns, ExportFormat::Markdown, test_json_serializer);
+        let result = export_turns(
+            "test-session",
+            &turns,
+            ExportFormat::Markdown,
+            test_json_serializer,
+        );
         assert!(result.starts_with("# Session: test-session"));
     }
 
@@ -174,5 +182,4 @@ mod tests {
         assert!(result.contains("[ts1] User: hi"));
         assert!(result.contains("[ts2] Assistant: hey"));
     }
-
 }

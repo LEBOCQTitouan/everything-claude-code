@@ -1,4 +1,4 @@
-use super::turn::{format_turns, Turn};
+use super::turn::{Turn, format_turns};
 
 /// Assemble a full prompt for `claude -p` from system context, history, and user message.
 ///

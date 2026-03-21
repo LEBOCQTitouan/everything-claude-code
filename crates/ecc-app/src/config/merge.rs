@@ -1,4 +1,4 @@
-use ecc_domain::config::merge::{contents_differ, FileToReview};
+use ecc_domain::config::merge::{FileToReview, contents_differ};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
@@ -135,8 +135,7 @@ mod tests {
             .with_file("/src/a.md", "content")
             .with_file("/src/b.txt", "content");
 
-        let (to_review, _) =
-            pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
+        let (to_review, _) = pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
         assert_eq!(to_review.len(), 1);
         assert_eq!(to_review[0].filename, "a.md");
     }
@@ -169,15 +168,9 @@ mod tests {
 
     #[test]
     fn apply_accept_copies_file() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/src/a.md", "content");
+        let fs = InMemoryFileSystem::new().with_file("/src/a.md", "content");
 
-        let result = apply_accept(
-            &fs,
-            Path::new("/src/a.md"),
-            Path::new("/dest/a.md"),
-            false,
-        );
+        let result = apply_accept(&fs, Path::new("/src/a.md"), Path::new("/dest/a.md"), false);
         assert!(result.is_ok());
         assert_eq!(
             fs.read_to_string(Path::new("/dest/a.md")).unwrap(),
@@ -187,23 +180,16 @@ mod tests {
 
     #[test]
     fn apply_accept_dry_run_skips() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/src/a.md", "content");
+        let fs = InMemoryFileSystem::new().with_file("/src/a.md", "content");
 
-        let result = apply_accept(
-            &fs,
-            Path::new("/src/a.md"),
-            Path::new("/dest/a.md"),
-            true,
-        );
+        let result = apply_accept(&fs, Path::new("/src/a.md"), Path::new("/dest/a.md"), true);
         assert!(result.is_ok());
         assert!(!fs.exists(Path::new("/dest/a.md")));
     }
 
     #[test]
     fn apply_accept_creates_parent_dirs() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/src/a.md", "content");
+        let fs = InMemoryFileSystem::new().with_file("/src/a.md", "content");
 
         let result = apply_accept(
             &fs,

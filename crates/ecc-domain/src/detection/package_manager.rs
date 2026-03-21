@@ -106,11 +106,13 @@ pub struct PackageManagerResult {
 
 use std::sync::LazyLock;
 
-static SAFE_NAME_RE: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(SAFE_NAME_PATTERN).expect("BUG: invalid SAFE_NAME_PATTERN regex"));
+static SAFE_NAME_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(SAFE_NAME_PATTERN).expect("BUG: invalid SAFE_NAME_PATTERN regex")
+});
 
-static SAFE_ARGS_RE: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(SAFE_ARGS_PATTERN).expect("BUG: invalid SAFE_ARGS_PATTERN regex"));
+static SAFE_ARGS_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(SAFE_ARGS_PATTERN).expect("BUG: invalid SAFE_ARGS_PATTERN regex")
+});
 
 /// Validate a script name contains only safe characters.
 pub fn validate_script_name(name: &str) -> Result<(), String> {
@@ -387,7 +389,10 @@ mod tests {
 
     #[test]
     fn exec_command_bun() {
-        assert_eq!(get_exec_command(&BUN, "vitest", None).unwrap(), "bunx vitest");
+        assert_eq!(
+            get_exec_command(&BUN, "vitest", None).unwrap(),
+            "bunx vitest"
+        );
     }
 
     #[test]

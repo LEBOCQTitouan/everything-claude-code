@@ -84,11 +84,7 @@ pub fn update_manifest(
 }
 
 /// Check if a specific artifact is managed by ECC.
-pub fn is_ecc_managed(
-    manifest: Option<&EccManifest>,
-    artifact_type: &str,
-    filename: &str,
-) -> bool {
+pub fn is_ecc_managed(manifest: Option<&EccManifest>, artifact_type: &str, filename: &str) -> bool {
     let manifest = match manifest {
         Some(m) => m,
         None => return false,
@@ -105,11 +101,7 @@ pub fn is_ecc_managed(
 }
 
 /// Check if a rule file is managed by ECC.
-pub fn is_ecc_managed_rule(
-    manifest: Option<&EccManifest>,
-    group: &str,
-    filename: &str,
-) -> bool {
+pub fn is_ecc_managed_rule(manifest: Option<&EccManifest>, group: &str, filename: &str) -> bool {
     let manifest = match manifest {
         Some(m) => m,
         None => return false,
@@ -193,14 +185,21 @@ mod tests {
     #[test]
     fn update_manifest_preserves_installed_at() {
         let original = create_manifest("3.0.0", "2025-01-01T00:00:00Z", &[], Artifacts::default());
-        let updated = update_manifest(&original, "4.0.0", "2026-03-14T00:00:00Z", &[], Artifacts::default());
+        let updated = update_manifest(
+            &original,
+            "4.0.0",
+            "2026-03-14T00:00:00Z",
+            &[],
+            Artifacts::default(),
+        );
         assert_eq!(updated.installed_at, "2025-01-01T00:00:00Z");
         assert_eq!(updated.updated_at, "2026-03-14T00:00:00Z");
     }
 
     #[test]
     fn update_manifest_merges_languages() {
-        let original = create_manifest("3.0.0", "now", &["typescript".into()], Artifacts::default());
+        let original =
+            create_manifest("3.0.0", "now", &["typescript".into()], Artifacts::default());
         let updated = update_manifest(
             &original,
             "4.0.0",
@@ -302,5 +301,4 @@ mod tests {
         assert_eq!(diff.updated, vec!["a.md", "b.md"]);
         assert!(diff.removed.is_empty());
     }
-
 }

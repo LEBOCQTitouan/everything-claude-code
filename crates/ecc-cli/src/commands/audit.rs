@@ -13,7 +13,9 @@ pub fn run(_args: AuditArgs) -> anyhow::Result<()> {
     let env = OsEnvironment;
     let terminal = StdTerminal;
 
-    let home = env.home_dir().ok_or_else(|| anyhow::anyhow!("Cannot determine home directory"))?;
+    let home = env
+        .home_dir()
+        .ok_or_else(|| anyhow::anyhow!("Cannot determine home directory"))?;
     let claude_dir = home.join(".claude");
     let project_dir = env.current_dir().unwrap_or_else(|| {
         eprintln!("Warning: cannot determine current directory, using '.'");

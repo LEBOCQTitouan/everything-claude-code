@@ -26,13 +26,17 @@ pub fn subagent_start_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let session_files = find_files_by_suffix(&sessions_dir, "-session.tmp", ports);
 
     if let Some(active) = session_files.first()
-        && let Ok(content) = ports.fs.read_to_string(active) {
-            let timestamp = format_time(&datetime_from_epoch(epoch_secs()));
-            let updated = format!("{}\n[{}] [Subagent] Started: {}\n", content, timestamp, agent_type);
-            if let Err(e) = ports.fs.write(active, &updated) {
-                log_write_failure(active, &e, None);
-            }
+        && let Ok(content) = ports.fs.read_to_string(active)
+    {
+        let timestamp = format_time(&datetime_from_epoch(epoch_secs()));
+        let updated = format!(
+            "{}\n[{}] [Subagent] Started: {}\n",
+            content, timestamp, agent_type
+        );
+        if let Err(e) = ports.fs.write(active, &updated) {
+            log_write_failure(active, &e, None);
         }
+    }
 
     HookResult::passthrough(stdin)
 }
@@ -55,13 +59,17 @@ pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let session_files = find_files_by_suffix(&sessions_dir, "-session.tmp", ports);
 
     if let Some(active) = session_files.first()
-        && let Ok(content) = ports.fs.read_to_string(active) {
-            let timestamp = format_time(&datetime_from_epoch(epoch_secs()));
-            let updated = format!("{}\n[{}] [Subagent] Completed: {}\n", content, timestamp, agent_type);
-            if let Err(e) = ports.fs.write(active, &updated) {
-                log_write_failure(active, &e, None);
-            }
+        && let Ok(content) = ports.fs.read_to_string(active)
+    {
+        let timestamp = format_time(&datetime_from_epoch(epoch_secs()));
+        let updated = format!(
+            "{}\n[{}] [Subagent] Completed: {}\n",
+            content, timestamp, agent_type
+        );
+        if let Err(e) = ports.fs.write(active, &updated) {
+            log_write_failure(active, &e, None);
         }
+    }
 
     HookResult::passthrough(stdin)
 }
@@ -130,8 +138,10 @@ mod tests {
 
     #[test]
     fn subagent_start_log_with_agent_type() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp", "# Session");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -141,14 +151,20 @@ mod tests {
         let result = subagent_start_log(stdin, &ports);
         assert_eq!(result.exit_code, 0);
 
-        let content = fs.read_to_string(std::path::Path::new("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp")).unwrap();
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
         assert!(content.contains("[Subagent] Started: code-reviewer"));
     }
 
     #[test]
     fn subagent_start_log_missing_agent_type() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp", "# Session");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -157,7 +173,11 @@ mod tests {
         let result = subagent_start_log("{}", &ports);
         assert_eq!(result.exit_code, 0);
 
-        let content = fs.read_to_string(std::path::Path::new("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp")).unwrap();
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
         assert!(content.contains("[Subagent] Started: unknown"));
     }
 
@@ -165,8 +185,10 @@ mod tests {
 
     #[test]
     fn subagent_stop_log_with_fields() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp", "# Session");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -176,14 +198,20 @@ mod tests {
         let result = subagent_stop_log(stdin, &ports);
         assert_eq!(result.exit_code, 0);
 
-        let content = fs.read_to_string(std::path::Path::new("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp")).unwrap();
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
         assert!(content.contains("[Subagent] Completed: architect"));
     }
 
     #[test]
     fn subagent_stop_log_missing_fields() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp", "# Session");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
@@ -192,7 +220,11 @@ mod tests {
         let result = subagent_stop_log("{}", &ports);
         assert_eq!(result.exit_code, 0);
 
-        let content = fs.read_to_string(std::path::Path::new("/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp")).unwrap();
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
         assert!(content.contains("[Subagent] Completed: unknown"));
     }
 
@@ -246,8 +278,10 @@ mod tests {
 
     #[test]
     fn config_change_log_appends_to_existing() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/test/.claude/sessions/config-changes.log", "[old] existing entry\n");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/config-changes.log",
+            "[old] existing entry\n",
+        );
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();

@@ -120,12 +120,12 @@ mod tests {
                 "/claude/settings.json",
                 &serde_json::to_string(&settings).unwrap(),
             )
-            .with_file("/claude/CLAUDE.md", "# Global\n## Instructions\nContent here")
-            .with_file("/claude/statusline-command.sh", "#!/bin/bash\necho ok")
             .with_file(
-                "/project/.gitignore",
-                &gitignore_entries.join("\n"),
+                "/claude/CLAUDE.md",
+                "# Global\n## Instructions\nContent here",
             )
+            .with_file("/claude/statusline-command.sh", "#!/bin/bash\necho ok")
+            .with_file("/project/.gitignore", &gitignore_entries.join("\n"))
             .with_file("/project/CLAUDE.md", "# Project\n## Architecture\nContent")
             .with_dir("/ecc/agents")
             .with_dir("/ecc/commands")

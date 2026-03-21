@@ -7,10 +7,7 @@ use std::path::Path;
 use super::super::read_json_safe;
 
 /// Check that ECC deny rules are present in settings.json.
-pub fn check_deny_rules(
-    fs: &dyn FileSystem,
-    settings_path: &Path,
-) -> AuditCheckResult {
+pub fn check_deny_rules(fs: &dyn FileSystem, settings_path: &Path) -> AuditCheckResult {
     let mut findings = Vec::new();
 
     let settings = match read_json_safe(fs, settings_path) {
@@ -49,15 +46,10 @@ pub fn check_deny_rules(
         .get("permissions")
         .and_then(|p| p.get("deny"))
         .and_then(|d| d.as_array())
-        .map(|arr| {
-            arr.iter()
-                .filter_map(|v| v.as_str())
-                .collect()
-        })
+        .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect())
         .unwrap_or_default();
 
-    let deny_set: std::collections::HashSet<&str> =
-        deny.into_iter().collect();
+    let deny_set: std::collections::HashSet<&str> = deny.into_iter().collect();
 
     let missing: Vec<&&str> = ecc_domain::config::deny_rules::ECC_DENY_RULES
         .iter()
@@ -65,8 +57,7 @@ pub fn check_deny_rules(
         .collect();
 
     if !missing.is_empty() {
-        let preview: Vec<&str> =
-            missing.iter().take(3).map(|r| **r).collect();
+        let preview: Vec<&str> = missing.iter().take(3).map(|r| **r).collect();
         let suffix = if missing.len() > 3 {
             format!(" (and {} more)", missing.len() - 3)
         } else {
@@ -90,10 +81,7 @@ pub fn check_deny_rules(
 }
 
 /// Check for duplicate hooks in settings.json.
-pub fn check_hook_duplicates(
-    fs: &dyn FileSystem,
-    settings_path: &Path,
-) -> AuditCheckResult {
+pub fn check_hook_duplicates(fs: &dyn FileSystem, settings_path: &Path) -> AuditCheckResult {
     let mut findings = Vec::new();
 
     let settings = match read_json_safe(fs, settings_path) {
@@ -142,10 +130,8 @@ pub fn check_hook_duplicates(
             id: "HOOK-001".into(),
             severity: Severity::High,
             title: format!("{total_duplicates} duplicate hook(s) found"),
-            detail: "Duplicate hooks fire multiple times per event, wasting resources."
-                .into(),
-            fix: "Run `ecc install` to replace hooks section with the clean source."
-                .into(),
+            detail: "Duplicate hooks fire multiple times per event, wasting resources.".into(),
+            fix: "Run `ecc install` to replace hooks section with the clean source.".into(),
         });
     }
 
@@ -167,16 +153,14 @@ mod tests {
 
     #[test]
     fn check_deny_rules_all_present() {
-        let deny_array: Vec<serde_json::Value> =
-            ecc_domain::config::deny_rules::ECC_DENY_RULES
-                .iter()
-                .map(|r| serde_json::Value::String(r.to_string()))
-                .collect();
+        let deny_array: Vec<serde_json::Value> = ecc_domain::config::deny_rules::ECC_DENY_RULES
+            .iter()
+            .map(|r| serde_json::Value::String(r.to_string()))
+            .collect();
         let settings = serde_json::json!({
             "permissions": { "deny": deny_array }
         });
-        let fs = InMemoryFileSystem::new()
-            .with_file("/settings.json", &settings.to_string());
+        let fs = InMemoryFileSystem::new().with_file("/settings.json", &settings.to_string());
 
         let result = check_deny_rules(&fs, Path::new("/settings.json"));
         assert!(result.passed);
@@ -188,8 +172,7 @@ mod tests {
         let settings = serde_json::json!({
             "permissions": { "deny": ["Read(//**/.env)"] }
         });
-        let fs = InMemoryFileSystem::new()
-            .with_file("/settings.json", &settings.to_string());
+        let fs = InMemoryFileSystem::new().with_file("/settings.json", &settings.to_string());
 
         let result = check_deny_rules(&fs, Path::new("/settings.json"));
         assert!(!result.passed);
@@ -209,8 +192,7 @@ mod tests {
     #[test]
     fn check_deny_rules_no_permissions_key() {
         let settings = serde_json::json!({"hooks": {}});
-        let fs = InMemoryFileSystem::new()
-            .with_file("/settings.json", &settings.to_string());
+        let fs = InMemoryFileSystem::new().with_file("/settings.json", &settings.to_string());
 
         let result = check_deny_rules(&fs, Path::new("/settings.json"));
         assert!(!result.passed);
@@ -229,8 +211,7 @@ mod tests {
                 ]
             }
         });
-        let fs = InMemoryFileSystem::new()
-            .with_file("/settings.json", &settings.to_string());
+        let fs = InMemoryFileSystem::new().with_file("/settings.json", &settings.to_string());
 
         let result = check_hook_duplicates(&fs, Path::new("/settings.json"));
         assert!(result.passed);
@@ -246,8 +227,7 @@ mod tests {
                 ]
             }
         });
-        let fs = InMemoryFileSystem::new()
-            .with_file("/settings.json", &settings.to_string());
+        let fs = InMemoryFileSystem::new().with_file("/settings.json", &settings.to_string());
 
         let result = check_hook_duplicates(&fs, Path::new("/settings.json"));
         assert!(!result.passed);
@@ -264,8 +244,7 @@ mod tests {
     #[test]
     fn check_hook_duplicates_no_hooks_key() {
         let settings = serde_json::json!({"permissions": {}});
-        let fs = InMemoryFileSystem::new()
-            .with_file("/settings.json", &settings.to_string());
+        let fs = InMemoryFileSystem::new().with_file("/settings.json", &settings.to_string());
 
         let result = check_hook_duplicates(&fs, Path::new("/settings.json"));
         assert!(result.passed);

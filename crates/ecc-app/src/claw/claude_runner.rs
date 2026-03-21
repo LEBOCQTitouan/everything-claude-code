@@ -5,11 +5,7 @@ use ecc_domain::claw::model::ClawModel;
 use ecc_ports::shell::CommandOutput;
 
 /// Run a prompt through `claude -p` and return the response.
-pub fn run_claude(
-    prompt: &str,
-    model: ClawModel,
-    ports: &ClawPorts<'_>,
-) -> Result<String, String> {
+pub fn run_claude(prompt: &str, model: ClawModel, ports: &ClawPorts<'_>) -> Result<String, String> {
     let model_flag = model.to_flag();
     let args: &[&str] = &["-p", "--model", model_flag];
 

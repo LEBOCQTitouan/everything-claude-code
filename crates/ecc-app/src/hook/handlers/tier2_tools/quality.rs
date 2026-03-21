@@ -53,27 +53,28 @@ pub fn post_edit_typecheck(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     );
 
     if let Ok(output) = result
-        && output.exit_code != 0 {
-            let all_output = format!("{}{}", output.stdout, output.stderr);
-            let basename = Path::new(&file_path)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_default();
+        && output.exit_code != 0
+    {
+        let all_output = format!("{}{}", output.stdout, output.stderr);
+        let basename = Path::new(&file_path)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
 
-            let relevant: Vec<&str> = all_output
-                .lines()
-                .filter(|line| line.contains(&file_path) || line.contains(&basename))
-                .take(10)
-                .collect();
+        let relevant: Vec<&str> = all_output
+            .lines()
+            .filter(|line| line.contains(&file_path) || line.contains(&basename))
+            .take(10)
+            .collect();
 
-            if !relevant.is_empty() {
-                let mut msg = format!("[Hook] TypeScript errors in {}:\n", basename);
-                for line in relevant {
-                    msg.push_str(&format!("{}\n", line));
-                }
-                return HookResult::warn(stdin, &msg);
+        if !relevant.is_empty() {
+            let mut msg = format!("[Hook] TypeScript errors in {}:\n", basename);
+            for line in relevant {
+                msg.push_str(&format!("{}\n", line));
             }
+            return HookResult::warn(stdin, &msg);
         }
+    }
 
     HookResult::passthrough(stdin)
 }
@@ -122,13 +123,12 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 }
                 let result = ports.shell.run_command("npx", &args);
                 if let Ok(out) = result
-                    && out.exit_code != 0 && strict {
-                        let msg = format!(
-                            "[QualityGate] Biome check failed for {}\n",
-                            file_path
-                        );
-                        return HookResult::warn(stdin, &msg);
-                    }
+                    && out.exit_code != 0
+                    && strict
+                {
+                    let msg = format!("[QualityGate] Biome check failed for {}\n", file_path);
+                    return HookResult::warn(stdin, &msg);
+                }
                 return HookResult::passthrough(stdin);
             }
 
@@ -138,13 +138,12 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 .shell
                 .run_command("npx", &["prettier", action, &file_path]);
             if let Ok(out) = result
-                && out.exit_code != 0 && strict {
-                    let msg = format!(
-                        "[QualityGate] Prettier check failed for {}\n",
-                        file_path
-                    );
-                    return HookResult::warn(stdin, &msg);
-                }
+                && out.exit_code != 0
+                && strict
+            {
+                let msg = format!("[QualityGate] Prettier check failed for {}\n", file_path);
+                return HookResult::warn(stdin, &msg);
+            }
         }
         "go" if fix => {
             if let Err(e) = ports.shell.run_command("gofmt", &["-w", &file_path]) {
@@ -160,13 +159,12 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
             args.push(&file_path);
             let result = ports.shell.run_command("ruff", &args);
             if let Ok(out) = result
-                && out.exit_code != 0 && strict {
-                    let msg = format!(
-                        "[QualityGate] Ruff check failed for {}\n",
-                        file_path
-                    );
-                    return HookResult::warn(stdin, &msg);
-                }
+                && out.exit_code != 0
+                && strict
+            {
+                let msg = format!("[QualityGate] Ruff check failed for {}\n", file_path);
+                return HookResult::warn(stdin, &msg);
+            }
         }
         _ => {}
     }
@@ -287,8 +285,7 @@ mod tests {
                 exit_code: 1,
             },
         );
-        let env = MockEnvironment::new()
-            .with_var("ECC_QUALITY_GATE_STRICT", "true");
+        let env = MockEnvironment::new().with_var("ECC_QUALITY_GATE_STRICT", "true");
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 

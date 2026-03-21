@@ -133,7 +133,13 @@ pub fn format_side_by_side_diff(
                         ansi::red(&truncate(line, col_width), colors_enabled)
                     )
                 } else {
-                    format!("{:>gutter$} {:col_width$}", "", "", gutter = gutter, col_width = col_width)
+                    format!(
+                        "{:>gutter$} {:col_width$}",
+                        "",
+                        "",
+                        gutter = gutter,
+                        col_width = col_width
+                    )
                 };
 
                 let right_part = if let Some(line) = chunk.added.get(i) {
@@ -179,10 +185,22 @@ mod tests {
 
     fn make_diff() -> Vec<DiffLine> {
         vec![
-            DiffLine { kind: DiffType::Same, content: "unchanged".into() },
-            DiffLine { kind: DiffType::Removed, content: "old line".into() },
-            DiffLine { kind: DiffType::Added, content: "new line".into() },
-            DiffLine { kind: DiffType::Same, content: "also unchanged".into() },
+            DiffLine {
+                kind: DiffType::Same,
+                content: "unchanged".into(),
+            },
+            DiffLine {
+                kind: DiffType::Removed,
+                content: "old line".into(),
+            },
+            DiffLine {
+                kind: DiffType::Added,
+                content: "new line".into(),
+            },
+            DiffLine {
+                kind: DiffType::Same,
+                content: "also unchanged".into(),
+            },
         ]
     }
 
