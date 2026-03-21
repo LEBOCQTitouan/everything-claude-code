@@ -106,4 +106,7 @@ if [ -x "$MEMORY_WRITER" ] && [ -n "$ARTIFACT" ]; then
   if [ -n "$WI_PHASE" ]; then
     "$MEMORY_WRITER" work-item "$WI_PHASE" "$FEATURE" "$CONCERN" 2>/dev/null || true
   fi
+  # Write to daily memory file (BL-047)
+  "$MEMORY_WRITER" daily "$ARTIFACT" "$FEATURE" "$CONCERN" 2>/dev/null || true
+  "$MEMORY_WRITER" memory-index 2>/dev/null || true
 fi
