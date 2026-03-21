@@ -21,15 +21,15 @@
 | BL-017 | Create /catchup command | 4 | MEDIUM | /plan dev | open | 2026-03-20 |
 | BL-019 | Create /spec command | 4 | MEDIUM | /plan dev | implemented | 2026-03-20 |
 | BL-020 | Create /design command | 4 | LOW | direct edit | implemented | 2026-03-20 |
-| BL-021 | Extract command reference tables from CLAUDE.md | 5 | LOW | direct edit | open | 2026-03-20 |
-| BL-022 | Replace CLAUDE.md architecture block with pointer | 5 | LOW | direct edit | open | 2026-03-20 |
-| BL-023 | Clean up stale workflow state | 5 | LOW | direct edit | open | 2026-03-20 |
-| BL-024 | Add context:fork to heavy skills | 6 | LOW | direct edit | open | 2026-03-20 |
-| BL-025 | Add memory:project to adversarial agents | 6 | LOW | direct edit | open | 2026-03-20 |
+| BL-021 | Extract command reference tables from CLAUDE.md | 5 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-022 | Replace CLAUDE.md architecture block with pointer | 5 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-023 | Clean up stale workflow state | 5 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-024 | Add context:fork to heavy skills | 6 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-025 | Add memory:project to adversarial agents | 6 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-026 | Quarterly MCP version audit | 6 | LOW | process | open | 2026-03-20 |
 | BL-027 | Cross-session memory system | 7 | HIGH | /plan dev | implemented | 2026-03-21 |
 | BL-028 | Add web search to /plan commands | 7 | MEDIUM | /spec commands | implemented | 2026-03-21 |
-| BL-029 | Persist specs and designs as versioned file artifacts | 8 | HIGH | /spec, /design | open | 2026-03-21 |
+| BL-029 | Persist specs and designs as versioned file artifacts | 8 | HIGH | /spec, /design | implemented | 2026-03-21 |
 | BL-030 | Persist tasks.md as trackable artifact | 8 | HIGH | /implement | open | 2026-03-21 |
 | BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | open | 2026-03-21 |
 | BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | open | 2026-03-21 |
@@ -40,8 +40,8 @@
 | BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | open | 2026-03-21 |
 | BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | open | 2026-03-21 |
 | BL-039 | CronCreate suggestion for periodic commands | 9 | LOW | audit/review/verify | open | 2026-03-21 |
-| BL-040 | Meta-steering rules for ECC development | 9 | LOW | rules/ecc/ (new) | open | 2026-03-21 |
-| BL-041 | CLAUDE_CODE_TASK_LIST_ID for cross-session persistence | 9 | LOW | workflow-init.sh | open | 2026-03-21 |
+| BL-040 | Meta-steering rules for ECC development | 9 | LOW | rules/ecc/ (new) | implemented | 2026-03-21 |
+| BL-041 | CLAUDE_CODE_TASK_LIST_ID for cross-session persistence | 9 | LOW | workflow-init.sh | implemented | 2026-03-21 |
 | BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | open | 2026-03-21 |
 | BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | open | 2026-03-21 |
 
@@ -67,6 +67,6 @@ BL-041 → BL-030 (task list ID complements file-based tasks)
 ## Stats
 
 - **Total:** 42
-- **Open:** 27
-- **Implemented:** 15
+- **Open:** 19
+- **Implemented:** 23
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9
