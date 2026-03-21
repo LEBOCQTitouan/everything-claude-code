@@ -1,6 +1,6 @@
 ---
 description: "Implement the solution — Phase 3. Deterministic TDD loop with mandatory doc updates."
-allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWrite, TodoRead, EnterPlanMode, ExitPlanMode]
+allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWrite, TodoRead, EnterPlanMode, ExitPlanMode, TaskCreate, TaskUpdate, TaskGet, TaskList]
 ---
 
 # Implement Command
@@ -65,6 +65,13 @@ Create a TodoWrite checklist from the PCs in TDD order:
 - `[ ] Code review`
 - `[ ] Doc updates`
 - `[ ] Write implement-done.md`
+
+Also create native tasks via `TaskCreate` for each PC in TDD order. Each task should have:
+- **subject**: `PC-NNN: <Description>`
+- **description**: The PC's full details (type, AC, command, expected)
+- **activeForm**: `Implementing PC-NNN`
+
+Use `TaskUpdate` to mark each task `in_progress` when starting and `completed` when the PC passes. This provides spinner UX and persists across context compaction.
 
 ## Phase 3: TDD Loop
 
