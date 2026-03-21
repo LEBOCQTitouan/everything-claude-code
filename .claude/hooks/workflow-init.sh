@@ -37,6 +37,10 @@ fi
 rm -f "$WORKFLOW_DIR/implement-done.md" \
       "$WORKFLOW_DIR/.tdd-state"
 
+# Generate cross-session task list ID (BL-041)
+TASK_LIST_ID="${CONCERN}-$(date -u +"%Y%m%d-%H%M%S")-$$"
+export CLAUDE_CODE_TASK_LIST_ID="$TASK_LIST_ID"
+
 # Build state JSON
 STARTED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
