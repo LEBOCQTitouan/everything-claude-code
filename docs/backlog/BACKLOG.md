@@ -2,9 +2,9 @@
 
 | ID | Title | Tier | Scope | Target | Status | Created |
 |----|-------|------|-------|--------|--------|---------|
-| BL-001 | Block auto-enable of MCP servers | 1 | LOW | direct edit | open | 2026-03-20 |
-| BL-002 | Pin all MCP package versions | 1 | LOW | direct edit | open | 2026-03-20 |
-| BL-003 | Prune stale local permissions | 1 | LOW | direct edit | open | 2026-03-20 |
+| BL-001 | Block auto-enable of MCP servers | 1 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-002 | Pin all MCP package versions | 1 | LOW | direct edit | implemented | 2026-03-20 |
+| BL-003 | Prune stale local permissions | 1 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-004 | robert: read-only + memory + negative examples | 2 | MEDIUM | direct edit | implemented | 2026-03-20 |
 | BL-005 | Update commands that call robert to handle his output | 2 | MEDIUM | direct edit | implemented | 2026-03-20 |
 | BL-006 | spec-adversary: skills preload + negative examples | 2 | LOW | direct edit | implemented | 2026-03-20 |
@@ -67,6 +67,6 @@ BL-041 → BL-030 (task list ID complements file-based tasks)
 ## Stats
 
 - **Total:** 42
-- **Open:** 30
-- **Implemented:** 12
+- **Open:** 27
+- **Implemented:** 15
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9
