@@ -19,7 +19,6 @@
 | BL-015 | Create request-refactor-plan skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
 | BL-016 | Create prd-to-plan skill | 3 | MEDIUM | /plan dev | open | 2026-03-20 |
 | BL-017 | Create /catchup command | 4 | MEDIUM | /plan dev | open | 2026-03-20 |
-| BL-018 | Create /grill command | 4 | LOW | direct edit | open | 2026-03-20 |
 | BL-019 | Create /spec command | 4 | MEDIUM | /plan dev | open | 2026-03-20 |
 | BL-020 | Create /design command | 4 | LOW | direct edit | open | 2026-03-20 |
 | BL-021 | Extract command reference tables from CLAUDE.md | 5 | LOW | direct edit | open | 2026-03-20 |
@@ -35,7 +34,6 @@
 ```
 BL-004 → BL-005 (robert read-only requires command updates)
 BL-010 → BL-004 (ubiquitous-language skill enables robert skill preload)
-BL-011 → BL-018 (/grill command wraps grill-me skill)
 BL-012 → BL-016 (prd-to-plan consumes write-a-prd output)
 BL-014 → BL-020 (/design command wraps design-an-interface skill)
 BL-002 → BL-026 (quarterly audit requires initial pinning)
@@ -47,6 +45,6 @@ BL-025 → BL-027 (per-agent memory flags complement cross-session log)
 
 ## Stats
 
-- **Total:** 27
-- **Open:** 27
-- **By tier:** T1: 3 | T2: 6 | T3: 7 | T4: 4 | T5: 3 | T6: 3 | T7: 1
+- **Total:** 26
+- **Open:** 26
+- **By tier:** T1: 3 | T2: 6 | T3: 7 | T4: 3 | T5: 3 | T6: 3 | T7: 1
