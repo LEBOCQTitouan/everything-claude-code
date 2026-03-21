@@ -252,7 +252,7 @@ Based on codebase size, write to `docs/`:
 | Severity | Claim | Finding |
 |----------|-------|---------|
 | MEDIUM | "1272 tests" | Actual count: 1362 |
-| LOW | "commands/ Slash commands (/tdd, /plan, ...)" | /tdd is archived, should reference current commands |
+| LOW | "commands/ Slash commands (/tdd, /spec, ...)" | /tdd is archived, should reference current commands |
 
 ### File Size Violations
 

@@ -1,6 +1,6 @@
 ---
 name: robert
-description: Professional conscience meta-agent. Reviews the review process itself — evaluates work against the Programmer's Oath, audits ECC's own files for SRP/DRY violations, calculates rework ratio trends, and writes findings to docs/audits/robert-notes.md. Invoked as final phase of /plan, /verify, /audit, and standalone via /uncle-bob-audit.
+description: Professional conscience meta-agent. Reviews the review process itself — evaluates work against the Programmer's Oath, audits ECC's own files for SRP/DRY violations, calculates rework ratio trends, and writes findings to docs/audits/robert-notes.md. Invoked as final phase of /spec, /verify, /audit, and standalone via /uncle-bob-audit.
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: opus
 skills: ["clean-craft", "component-principles", "architecture-review"]
