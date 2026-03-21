@@ -6,6 +6,17 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.1.0-alpha.1
+
+### Refactoring
+
+- Add TodoWrite progress tracking to plan-dev, plan-fix, plan-refactor, solution, audit-full, verify, audit-orchestrator, doc-orchestrator, spec-adversary, and solution-adversary
+- Add TodoRead re-entry support to solution and implement commands
+- Add allowedTools scoping to all agent spawn lines across 21 command and agent files
+- Add context:"fork" isolation to parallel agent spawns in audit-orchestrator and doc-orchestrator
+- Replace free-text correction in plan router with AskUserQuestion structured options
+- Add graceful degradation for TodoWrite unavailability across all commands
+
 ## v2.0.0
 
 ### Features
