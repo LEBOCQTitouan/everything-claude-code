@@ -156,6 +156,7 @@ For each PC (sequential, in Test Strategy order):
 2. Launch a Task with the `tdd-executor` agent (allowedTools: [Read, Write, Edit, MultiEdit, Bash, Grep, Glob])
 3. The subagent executes RED → GREEN → REFACTOR and commits atomically
 4. Receive the subagent's structured result: pc_id, status, red_result, green_result, refactor_result, commits, files_changed, error
+   - **Commit SHA Accumulator**: After each successful subagent, accumulate all commit SHA hashes and messages into a structured list. Extract SHAs from the subagent's `commits` field. This accumulated list is used in the Phase Summary.
 5. If the subagent returns `RED_ALREADY_PASSES` → investigate. The feature may already exist or the test is wrong.
 6. If the subagent crashes or times out after partial commits → report: subagent exit state, last commit SHA(s) via `git log -3 --oneline`, and the PC in progress. Do NOT auto-revert.
 7. If the subagent returns `failure` → **STOP** and report the error to the user. If the failure message mentions a prior PC or a structural conflict, report it as a potential PC conflict (the subagent believes making its test pass necessarily breaks prior code — analogous to the old Loop Invariant). If the failure suggests a test/spec mismatch, the parent should investigate and, if confirmed, fix the test locally (with a TDD Log note) and re-dispatch the PC. Do not proceed to the next PC.
@@ -352,14 +353,36 @@ Verify stop hook requirements are met:
 5. **scope-check**: review any warnings about files changed outside the solution's File Changes table. If unexpected files were flagged, verify they are legitimate (test helpers, lock files, etc.) before proceeding.
 6. **doc-level-check**: review any warnings about doc size limits (CLAUDE.md < 200 lines, README < 300 lines, ARCHITECTURE.md code blocks < 20 lines). Address if practical.
 
-Display a summary:
-- **Title**: from the spec
-- **PCs passed**: N/N
-- **E2E tests**: N passed or "none required"
-- **Docs updated**: count
-- **ADRs created**: count or "none"
-- **Code review**: PASS or findings addressed
-- **Suggested commit**: the message from implement-done.md
+Display a comprehensive Phase Summary using these tables:
+
+### Tasks Executed
+
+| PC ID | Description | RED-GREEN Status | Commit Count |
+|-------|-------------|------------------|--------------|
+| PC-001 | <description> | GREEN | <count> |
+
+### Commits Made
+
+| Hash (short) | Message |
+|--------------|---------|
+| <SHA> | <commit message> |
+
+### Docs Updated
+
+| Doc File | Level | What Changed |
+|----------|-------|--------------|
+| CHANGELOG.md | project | Added <feature> entry |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| .claude/workflow/implement-done.md | Full implementation summary |
+| docs/specs/.../tasks.md | Tasks with completion status |
+
+### Phase Summary Persistence
+
+Append a `## Phase Summary` section containing all 4 tables above to the tasks.md file. If `## Phase Summary` already exists in the tasks.md file, overwrite it (idempotent).
 
 Then STOP. The workflow is complete.
 
