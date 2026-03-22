@@ -72,6 +72,14 @@ assert_file_not_contains() {
 
 # (Test functions will be added in subsequent PCs)
 
+test_spec_design_paths() {
+  echo "--- test_spec_design_paths ---"
+  assert_file_contains "displays spec_path" "$COMMAND_FILE" "spec_path"
+  assert_file_contains "displays design_path" "$COMMAND_FILE" "design_path"
+  assert_file_contains "displays artifacts.spec_path" "$COMMAND_FILE" "artifacts\.spec_path"
+  assert_file_contains "displays artifacts.design_path" "$COMMAND_FILE" "artifacts\.design_path"
+}
+
 test_workflow_done() {
   echo "--- test_workflow_done ---"
   assert_file_contains "shows workflow complete" "$COMMAND_FILE" "Workflow complete"
@@ -131,6 +139,7 @@ run_tests() {
     test_tasks_missing
     test_no_workflow
     test_workflow_done
+    test_spec_design_paths
   fi
 
   echo ""
