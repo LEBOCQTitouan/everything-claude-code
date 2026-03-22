@@ -35,7 +35,7 @@
 | BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | open | 2026-03-21 |
 | BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | archived | 2026-03-21 |
 | BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | open | 2026-03-21 |
-| BL-035 | Context window usage monitoring | 9 | MEDIUM | strategic-compact | open | 2026-03-21 |
+| BL-035 | Campaign file manifest for amnesiac agents | 9 | MEDIUM | /spec refactor | open | 2026-03-21 |
 | BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | open | 2026-03-21 |
 | BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | open | 2026-03-21 |
 | BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | open | 2026-03-21 |
@@ -54,6 +54,8 @@
 | BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | implemented | 2026-03-22 |
 | BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | open | 2026-03-22 |
 | BL-053 | Deploy poweruser statusline via ecc install | — | MEDIUM | /spec dev | open | 2026-03-22 |
+| BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | open | 2026-03-22 |
+| BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | open | 2026-03-22 |
 
 ## Dependency Graph
 
@@ -77,7 +79,7 @@ BL-047 → BL-027 (auto-memory extends cross-session memory system)
 
 ## Stats
 
-- **Total:** 50
-- **Open:** 27
+- **Total:** 52
+- **Open:** 29
 - **Implemented:** 23
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 3
