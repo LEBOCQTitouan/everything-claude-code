@@ -56,6 +56,8 @@
 | BL-053 | Deploy poweruser statusline via ecc install | — | MEDIUM | /spec dev | open | 2026-03-22 |
 | BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | open | 2026-03-22 |
 | BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | open | 2026-03-22 |
+| BL-056 | Context-aware doc generation step at end of /implement | — | HIGH | /spec dev | open | 2026-03-22 |
+| BL-057 | Create grill-me-adversary companion skill with adaptive loop | — | MEDIUM | /spec | open | 2026-03-22 |
 
 ## Dependency Graph
 
@@ -79,7 +81,7 @@ BL-047 → BL-027 (auto-memory extends cross-session memory system)
 
 ## Stats
 
-- **Total:** 52
-- **Open:** 29
+- **Total:** 54
+- **Open:** 31
 - **Implemented:** 23
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 3
