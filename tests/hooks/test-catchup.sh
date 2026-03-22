@@ -157,6 +157,13 @@ test_stale_detection() {
   assert_file_contains "offers Reset option" "$COMMAND_FILE" "Reset"
 }
 
+test_stale_reset() {
+  echo "--- test_stale_reset ---"
+  assert_file_contains "archives state" "$COMMAND_FILE" "archive"
+  assert_file_contains "uses timestamped filename" "$COMMAND_FILE" "state-"
+  assert_file_contains "deletes state.json" "$COMMAND_FILE" "delete"
+}
+
 test_workflow_active_state() {
   echo "--- test_workflow_active_state ---"
   assert_file_contains "has Workflow State section" "$COMMAND_FILE" "## Workflow State"
@@ -182,6 +189,7 @@ run_tests() {
   fi
   if [ -z "${1:-}" ]; then
     test_stale_detection
+    test_stale_reset
     test_workflow_active_state
     test_tasks_progress
     test_tasks_missing
