@@ -86,6 +86,12 @@ test_git_stashes() {
   assert_file_contains "shows stash entries" "$COMMAND_FILE" "stash"
 }
 
+test_git_worktrees() {
+  echo "--- test_git_worktrees ---"
+  assert_file_contains "runs git worktree list" "$COMMAND_FILE" "git worktree list"
+  assert_file_contains "mentions worktree paths" "$COMMAND_FILE" "worktree"
+}
+
 test_malformed_json() {
   echo "--- test_malformed_json ---"
   assert_file_contains "warns about malformed state" "$COMMAND_FILE" "state\.json is malformed"
@@ -163,6 +169,7 @@ run_tests() {
     test_malformed_json
     test_git_uncommitted
     test_git_stashes
+    test_git_worktrees
   fi
 
   echo ""
