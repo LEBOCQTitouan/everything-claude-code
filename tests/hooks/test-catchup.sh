@@ -72,6 +72,12 @@ assert_file_not_contains() {
 
 # (Test functions will be added in subsequent PCs)
 
+test_workflow_done() {
+  echo "--- test_workflow_done ---"
+  assert_file_contains "shows workflow complete" "$COMMAND_FILE" "Workflow complete"
+  assert_file_contains "handles done phase" "$COMMAND_FILE" "done"
+}
+
 test_no_workflow() {
   echo "--- test_no_workflow ---"
   assert_file_contains "reports no active workflow" "$COMMAND_FILE" "No active workflow"
@@ -124,6 +130,7 @@ run_tests() {
     test_tasks_progress
     test_tasks_missing
     test_no_workflow
+    test_workflow_done
   fi
 
   echo ""
