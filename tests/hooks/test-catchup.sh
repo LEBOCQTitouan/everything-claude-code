@@ -92,6 +92,12 @@ test_git_worktrees() {
   assert_file_contains "mentions worktree paths" "$COMMAND_FILE" "worktree"
 }
 
+test_git_clean() {
+  echo "--- test_git_clean ---"
+  assert_file_contains "reports clean state" "$COMMAND_FILE" "Clean"
+  assert_file_contains "mentions no uncommitted work" "$COMMAND_FILE" "no uncommitted"
+}
+
 test_malformed_json() {
   echo "--- test_malformed_json ---"
   assert_file_contains "warns about malformed state" "$COMMAND_FILE" "state\.json is malformed"
@@ -170,6 +176,7 @@ run_tests() {
     test_git_uncommitted
     test_git_stashes
     test_git_worktrees
+    test_git_clean
   fi
 
   echo ""
