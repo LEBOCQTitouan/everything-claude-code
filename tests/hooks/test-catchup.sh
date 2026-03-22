@@ -176,6 +176,25 @@ test_stale_reset() {
   assert_file_contains "deletes state.json" "$COMMAND_FILE" "delete"
 }
 
+test_memory_today() {
+  echo "--- test_memory_today ---"
+  assert_file_contains "has Recent Activity section" "$COMMAND_FILE" "## Recent Activity"
+  assert_file_contains "references daily memory path" "$COMMAND_FILE" "memory/daily"
+  assert_file_contains "uses today date pattern" "$COMMAND_FILE" "YYYY-MM-DD"
+  assert_file_contains "displays Activity section" "$COMMAND_FILE" "Activity"
+}
+
+test_memory_previous() {
+  echo "--- test_memory_previous ---"
+  assert_file_contains "shows from label for previous day" "$COMMAND_FILE" "(from"
+  assert_file_contains "falls back to most recent file" "$COMMAND_FILE" "most recent"
+}
+
+test_memory_none() {
+  echo "--- test_memory_none ---"
+  assert_file_contains "shows no history message" "$COMMAND_FILE" "No session history available"
+}
+
 test_workflow_active_state() {
   echo "--- test_workflow_active_state ---"
   assert_file_contains "has Workflow State section" "$COMMAND_FILE" "## Workflow State"
@@ -216,6 +235,7 @@ run_tests() {
     test_git_worktrees
     test_git_clean
     test_git_zero_commits
+    test_memory_today
   fi
 
   echo ""
