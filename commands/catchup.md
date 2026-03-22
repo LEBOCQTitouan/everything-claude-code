@@ -30,7 +30,9 @@ If no state.json exists or the phase is `done`, report that no active workflow i
 
 Only display this section when the current phase is `implement`.
 
-Read `artifacts.tasks_path` from state.json. If the path is set and the tasks.md file exists, parse it to display a progress summary:
+Read `artifacts.tasks_path` from state.json. If `tasks_path` is set but the file does not exist, report "tasks.md not found at <tasks_path>" and skip the progress summary without erroring.
+
+If the path is set and the tasks.md file exists, parse it to display a progress summary:
 
 - **total**: count all Pass Condition (PC) entries in tasks.md
 - **completed (done)**: count entries marked with `[x]` (checked checkbox)
