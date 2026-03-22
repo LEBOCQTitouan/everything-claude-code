@@ -155,6 +155,16 @@ An orchestration [Agent](#agent) that spawns parallel sub-agents to explore radi
 - **Related:** [Agent](#agent), [Skill](#skill)
 - **Files:** [`agents/interface-designer.md`](../agents/interface-designer.md), [`skills/design-an-interface/SKILL.md`](../skills/design-an-interface/SKILL.md)
 
+### Interview Me
+A collaborative (non-adversarial) requirements interview [Skill](#skill) that defines structured extraction methodology. Covers 8 stages: current state, desired state, constraints, security checkpoint, stakeholders, dependencies, prior art, and failure modes. Distinct from [Grill Me](#grill-me) which is adversarial. Hard-blocks on unaddressed security implications.
+- **Related:** [Skill](#skill), [Interviewer](#interviewer), [Grill Me](#grill-me)
+- **Files:** [`skills/interview-me/SKILL.md`](../skills/interview-me/SKILL.md)
+
+### Interviewer
+An orchestration [Agent](#agent) that conducts collaborative requirements interviews with codebase-aware questioning. Reads the codebase before asking questions to avoid redundant queries. Uses AskUserQuestion one per turn. Persists structured notes to `docs/interviews/{topic}-{date}.md`. Uses the `interview-me` [Skill](#skill) for methodology.
+- **Related:** [Agent](#agent), [Skill](#skill), [Interview Me](#interview-me)
+- **Files:** [`agents/interviewer.md`](../agents/interviewer.md), [`skills/interview-me/SKILL.md`](../skills/interview-me/SKILL.md)
+
 ### Insight Promotion
 Elevating a significant insight from a [Daily Memory File](#daily-memory-file) into a typed memory file (user, feedback, project, reference) with cross-references.
 - **Related:** [Daily Memory File](#daily-memory-file), [Session](#session)
