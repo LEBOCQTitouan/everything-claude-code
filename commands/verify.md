@@ -5,6 +5,8 @@ allowed-tools: [Bash, Task, Read, Grep, Glob, LS, TodoWrite, TodoRead]
 
 # Verify
 
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
+
 Run a single-shot quality gate on the current codebase.
 
 ## Arguments
@@ -59,6 +61,8 @@ Report pass/fail count.
 **If `quick` → stop here.**
 
 ### 4. Code Review
+
+> Before dispatching, tell the user which reviewer agents are being launched and why both code-reviewer and arch-reviewer are needed: one checks code quality, the other checks structural integrity.
 
 Invoke the **code-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) with `context: "fork"` on `git diff HEAD`. Auto-detect language-specific reviewers:
 - Go project → also invoke **go-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash])

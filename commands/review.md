@@ -5,6 +5,8 @@ description: Robert professional conscience check
 # Uncle Bob Audit
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before dispatching the agent, tell the user what is happening and why. Explain what the Programmer's Oath evaluation means: `robert` checks recent work against professional craftsmanship promises.
 
 Standalone invocation of the `robert` meta-agent for professional craftsmanship evaluation.
 

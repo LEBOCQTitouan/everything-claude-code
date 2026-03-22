@@ -8,6 +8,8 @@ allowed-tools: [Read, Grep, Glob, Bash, Skill, AskUserQuestion]
 > **Thin router**: This command classifies intent and delegates to `/spec-dev`, `/spec-fix`, or `/spec-refactor`. All workflow logic lives in the delegated command.
 >
 > **Do NOT enter Plan Mode. Do NOT directly edit `.claude/workflow/state.json`.** This is a thin router.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before delegating, tell the user the classification result and which spec command will handle their request.
 
 ## Phase 0 — Validate Input
 

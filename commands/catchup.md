@@ -5,6 +5,8 @@ allowed-tools: [Bash, Read, Grep, Glob, LS, AskUserQuestion, TodoWrite]
 
 # Catchup
 
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each phase transition, tell the user what is happening and why.
+
 Resume a development session by gathering context from the current project state.
 
 ## Workflow State
@@ -38,6 +40,7 @@ After reading the workflow state, if the workflow is active (phase is not `done`
 2. Get the current time via `date +%s`
 3. Calculate the difference in seconds
 4. If the difference is greater than 3600 seconds (1 hour), the workflow is **STALE**:
+   - Before offering reset, explain the consequences of resetting: archiving the current state, losing in-progress tracking, and requiring a fresh `/spec` run.
    - Flag the output with "**STALE** — last commit is more than 1 hour old"
    - Use `AskUserQuestion` to prompt the user with two options:
      - "Resume current workflow" — continue normally with no state modifications

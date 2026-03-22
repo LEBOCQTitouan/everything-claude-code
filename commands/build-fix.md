@@ -5,6 +5,8 @@ description: Incrementally fix build and type errors with minimal, safe changes.
 # Build and Fix
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each phase transition, tell the user what is happening and why.
 
 Incrementally fix build and type errors with minimal, safe changes.
 
@@ -48,6 +50,8 @@ Identify the project's build tool and run the build:
 | `pyproject.toml` | `python -m py_compile` or `mypy .` |
 
 ## Step 1.5: Error Classification
+
+> After classifying errors, explain the classification to the user: how many are Structural, Contractual, or Incidental, and what each category means for the fix strategy.
 
 Before fixing, classify each error to guide the response:
 
