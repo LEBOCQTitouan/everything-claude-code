@@ -35,7 +35,7 @@
 | BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | implemented | 2026-03-21 |
 | BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | archived | 2026-03-21 |
 | BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | open | 2026-03-21 |
-| BL-035 | Campaign file manifest for amnesiac agents | 9 | MEDIUM | /spec refactor | open | 2026-03-21 |
+| BL-035 | Campaign file manifest for amnesiac agents | 9 | MEDIUM | /spec refactor | implemented | 2026-03-21 |
 | BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | open | 2026-03-21 |
 | BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | open | 2026-03-21 |
 | BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | open | 2026-03-21 |

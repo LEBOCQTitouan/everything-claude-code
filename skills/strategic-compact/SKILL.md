@@ -72,7 +72,8 @@ Use this table to decide when to compact:
 | Planning → Implementation | Yes | Plan is in TodoWrite or a file; free up context for code |
 | Implementation → Testing | Maybe | Keep if tests reference recent code; compact if switching focus |
 | Debugging → Next feature | Yes | Debug traces pollute context for unrelated work |
-| Mid-implementation | No | Losing variable names, file paths, and partial state is costly |
+| Mid-pipeline (with campaign) | Yes | Campaign manifest externalizes all state — toolchain, decisions, progress, commit trail are on disk |
+| Mid-implementation | No | Losing variable names, file paths, and partial state is costly (unless campaign manifest is active) |
 | After a failed approach | Yes | Clear the dead-end reasoning before trying a new approach |
 
 ## What Survives Compaction
@@ -85,7 +86,8 @@ Understanding what persists helps you compact with confidence:
 | TodoWrite task list | File contents you previously read |
 | Memory files (`~/.claude/memory/`) | Multi-step conversation context |
 | Git state (commits, branches) | Tool call history and counts |
-| Files on disk | Nuanced user preferences stated verbally |
+| Campaign manifest (`docs/specs/.../campaign.md`) | Nuanced user preferences stated verbally |
+| Files on disk | — |
 
 ## Best Practices
 

@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- Add campaign manifest for amnesiac agents: externalize all pipeline state to disk via campaign.md per work item, toolchain persistence in state.json, draft spec persistence before adversary review, disk fallbacks in design command, scope-check.sh bug fix, implement.md decomposition into 4 sub-skills (BL-035, ADR 0013)
 - Add wave-based parallel TDD execution: group independent PCs into waves, dispatch concurrently via worktree-isolated subagents (max 4 per wave), wave-boundary regression verification, git tags for rollback, backward compatible with sequential execution (BL-032, ADR 0012)
 - Add explanatory narrative to all 22 ECC commands: "narrate before acting" convention with shared narrative-conventions skill, agent delegation narration, gate failure remediation, and progress communication across pipeline, audit, and utility commands (BL-051, ADR 0011)
 - Add interview-me skill and interviewer agent: collaborative requirements interview with 8-stage methodology, codebase-aware questioning, security hard-gate, and structured output to docs/interviews/; enhance ecc validate skills with frontmatter field validation (BL-013, ADR 0010)

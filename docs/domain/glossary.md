@@ -33,6 +33,11 @@ The structured input passed from the `/implement` parent orchestrator to a [TDD 
 - **Related:** [TDD Executor](#tdd-executor), [Command](#command)
 - **Files:** [`commands/implement.md`](../commands/implement.md), [`agents/tdd-executor.md`](../agents/tdd-executor.md)
 
+### Campaign Manifest
+A Markdown file (`campaign.md`) per work item that indexes all artifacts, decisions, and progress. Bootstraps in `.claude/workflow/` at Phase 0, moves to `docs/specs/YYYY-MM-DD-<slug>/` after spec directory creation. Contains: Status, Artifacts table, Toolchain, Grill-Me Decisions, Adversary History, Agent Outputs, Commit Trail, and Resumption Pointer. A fresh agent reads this single file to orient instantly.
+- **Related:** [Artifact](#artifact), [Task Tracker](#task-tracker), [Skill](#skill)
+- **Files:** [`skills/campaign-manifest/SKILL.md`](../skills/campaign-manifest/SKILL.md), [`skills/artifact-schemas/SKILL.md`](../skills/artifact-schemas/SKILL.md)
+
 ### Clean
 Surgical or full removal of ECC-managed [Artifacts](#artifact). Manifest-based cleanup removes only tracked files; nuclear cleanup (`--clean-all`) removes entire artifact directories and ECC hooks from settings.json.
 - **Related:** [Manifest](#manifest), [Artifact](#artifact)
@@ -107,6 +112,11 @@ A directory containing `SKILL.md` that provides domain knowledge to Claude Code.
 Parent-side check after each [TDD Executor](#tdd-executor) subagent completes during `/implement` Phase 3. Runs all PC commands from PC-001 through PC-N. Must pass before marking PC-N as complete. Failure triggers a hard stop — the parent reports the regressing PC and halts the loop.
 - **Related:** [TDD Executor](#tdd-executor), [Context Brief](#context-brief), [Command](#command)
 - **Files:** [`commands/implement.md`](../commands/implement.md)
+
+### Resumption Pointer
+A section in campaign.md that tells a fresh agent exactly where the work item stands and what to do next. Updated at each phase transition and PC completion. Format: `Current step: <description>` + `Next action: <what to do>`. Enables instant orientation without parsing the full campaign manifest or tasks.md.
+- **Related:** [Campaign Manifest](#campaign-manifest), [Task Tracker](#task-tracker)
+- **Files:** [`skills/campaign-manifest/SKILL.md`](../skills/campaign-manifest/SKILL.md)
 
 ### Task Tracker
 A file-based, session-independent implementation progress tracker persisted at `docs/specs/<slug>/tasks.md`. Written by the `/implement` parent orchestrator during Phase 2 with single-writer semantics — only the parent writes, all other consumers (including [TDD Executor](#tdd-executor) subagents and future `/catchup`) read only. Tracks PC statuses (`pending`, `red`, `green`, `done`, `failed`) and post-TDD phases (E2E, code review, doc updates, implement-done) with inline pipe-separated ISO 8601 timestamp trails. Serves as the authoritative cross-session resume source, replacing ephemeral TodoWrite for re-entry. Distinct from TodoWrite (ephemeral, session-bound) and TaskCreate (native Claude, lost on compaction).

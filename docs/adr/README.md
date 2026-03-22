@@ -31,3 +31,4 @@ ADRs are numbered sequentially: `0001-short-title.md`, `0002-short-title.md`, et
 | [0010](0010-skill-frontmatter-validation.md) | Skill Frontmatter Validation | Accepted |
 | [0011](0011-command-narrative-convention.md) | Command Narrative Convention | Accepted |
 | [0012](0012-wave-parallel-tdd.md) | Wave-Based Parallel TDD Execution | Accepted |
+| [0013](0013-campaign-manifest-convention.md) | Campaign Manifest Convention | Accepted |
