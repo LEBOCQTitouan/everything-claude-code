@@ -24,7 +24,9 @@ Check which artifacts have non-null timestamps in state.json:
 
 If `spec_path` or `design_path` are set in state.json, reference them so the user can review the persisted spec and design documents.
 
-If no state.json exists or the phase is `done`, report that no active workflow is in progress.
+If no state.json exists, report "No active workflow" and continue to the Git Status and Recent Activity sections.
+
+If the phase is `done`, report "No active workflow" as well, noting that the previous workflow is complete, then continue to Git Status.
 
 ## Tasks Progress
 
@@ -41,3 +43,7 @@ If the path is set and the tasks.md file exists, parse it to display a progress 
 - **pending**: count entries that have not yet been started (unchecked, no status trail)
 
 Format the output as a concise progress table so the user can quickly see where the implementation stands.
+
+## Git Status
+
+Run `git status` and `git log --oneline -10` to show the current branch, uncommitted changes, and recent commit history. This provides context on where the codebase stands regardless of workflow state.
