@@ -72,6 +72,12 @@ assert_file_not_contains() {
 
 # (Test functions will be added in subsequent PCs)
 
+test_tasks_missing() {
+  echo "--- test_tasks_missing ---"
+  assert_file_contains "reports tasks.md not found" "$COMMAND_FILE" "tasks\.md not found"
+  assert_file_contains "shows path when tasks missing" "$COMMAND_FILE" "tasks_path"
+}
+
 test_tasks_progress() {
   echo "--- test_tasks_progress ---"
   assert_file_contains "has Tasks Progress section" "$COMMAND_FILE" "## Tasks Progress"
@@ -110,6 +116,7 @@ run_tests() {
   if [ -z "${1:-}" ]; then
     test_workflow_active_state
     test_tasks_progress
+    test_tasks_missing
   fi
 
   echo ""
