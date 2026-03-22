@@ -38,6 +38,11 @@ Surgical or full removal of ECC-managed [Artifacts](#artifact). Manifest-based c
 - **Related:** [Manifest](#manifest), [Artifact](#artifact)
 - **Files:** [`clean.ts`](../src/lib/clean.ts) (4 exports), [`install-orchestrator.ts`](../src/install-orchestrator.ts)
 
+### Catchup
+A read-only session resumption command (`/catchup`) that summarizes current workflow state, git status, stale detection, and recent memory activity. Provides structured output across four sections: Workflow State, Tasks Progress, Git Status, and Recent Activity.
+- **Related:** [Command](#command), [Workflow State](#workflow-state)
+- **Files:** [`commands/catchup.md`](../commands/catchup.md)
+
 ### Command
 A markdown slash command file (e.g., `/tdd`, `/spec`, `/doc-diagrams`). Canonical command names: `/spec`, `/spec-dev`, `/spec-fix`, `/spec-refactor`, `/design`, `/implement`. Commands are validated for non-empty content and valid cross-references to other commands, [Agents](#agent), and [Skills](#skill).
 - **Related:** [Agent](#agent), [Skill](#skill)
