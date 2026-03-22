@@ -28,7 +28,7 @@ jq --arg test "$TEST_CMD" \
    --arg lint "$LINT_CMD" \
    --arg build "$BUILD_CMD" \
    '.toolchain.test = $test | .toolchain.lint = $lint | .toolchain.build = $build' \
-   "$STATE_FILE" > "$TMPFILE"
+   "$STATE_FILE" > "$TMPFILE" || { rm -f "$TMPFILE"; exit 1; }
 
 mv "$TMPFILE" "$STATE_FILE"
 echo "Toolchain persisted: test=$TEST_CMD, lint=$LINT_CMD, build=$BUILD_CMD"

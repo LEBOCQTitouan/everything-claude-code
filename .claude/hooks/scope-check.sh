@@ -17,10 +17,15 @@ PHASE=$(jq -r '.phase // "plan"' "$STATE_FILE" 2>/dev/null) || exit 0
 DESIGN_PATH=$(jq -r '.artifacts.design_path // empty' "$STATE_FILE" 2>/dev/null) || true
 SOLUTION_FILE=""
 if [ -n "$DESIGN_PATH" ]; then
-  RESOLVED=$(cd "$PROJECT_DIR" && realpath -m "$DESIGN_PATH" 2>/dev/null) || true
+  # Portable path resolution (no GNU realpath -m)
+  if [ -f "$PROJECT_DIR/$DESIGN_PATH" ]; then
+    RESOLVED=$(cd "$PROJECT_DIR" && realpath "$DESIGN_PATH" 2>/dev/null || echo "$PROJECT_DIR/$DESIGN_PATH")
+  elif [ -f "$DESIGN_PATH" ]; then
+    RESOLVED=$(realpath "$DESIGN_PATH" 2>/dev/null || echo "$DESIGN_PATH")
+  fi
   case "${RESOLVED:-}" in
     "$PROJECT_DIR"/*) SOLUTION_FILE="$RESOLVED" ;;
-    *) echo "WARNING: design_path escapes project directory, ignoring." >&2 ;;
+    *) [ -n "${RESOLVED:-}" ] && echo "WARNING: design_path escapes project directory, ignoring." >&2 ;;
   esac
 fi
 
