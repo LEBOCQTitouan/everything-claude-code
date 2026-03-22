@@ -92,8 +92,12 @@ If the user wants none of the designs, suggest re-running the agent with differe
 
 ## Phase 8: Output Persistence
 
-Write the final design document to `docs/designs/{module}-interface-{date}.md`.
+Write the final design document. The output path depends on invocation context:
 
+- **Standalone** (triggered conversationally): write to `docs/designs/{module}-interface-{date}.md`
+- **From /design pipeline**: write to `docs/specs/{slug}/{module}-interface-{date}.md` (follows the spec directory convention)
+
+In both cases:
 - Create the directory if it does not exist (mkdir -p equivalent).
 - If the file already exists, append a numeric suffix (e.g., `-1`, `-2`) to avoid overwriting.
 

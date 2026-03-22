@@ -424,6 +424,11 @@ test_design_command_optional() {
   fi
 }
 
+test_agent_spec_directory_output() {
+  echo "--- test_agent_spec_directory_output ---"
+  assert_file_contains "agent supports spec directory output" "$AGENT_FILE" "docs/specs/"
+}
+
 test_glossary_entry() {
   echo "--- test_glossary_entry ---"
   assert_file_contains "glossary has Interface Designer entry" "$PROJECT_ROOT/docs/domain/glossary.md" "Interface Designer"
@@ -504,6 +509,7 @@ run_tests() {
     test_agent_numeric_suffix
     test_design_command_reference
     test_design_command_optional
+    test_agent_spec_directory_output
     test_glossary_entry
     test_changelog_entry
     test_adr_exists
