@@ -72,6 +72,14 @@ assert_file_not_contains() {
 
 # (Test functions will be added in subsequent PCs)
 
+test_git_uncommitted() {
+  echo "--- test_git_uncommitted ---"
+  assert_file_contains "mentions git status" "$COMMAND_FILE" "git status --short"
+  assert_file_contains "reports modified files" "$COMMAND_FILE" "modified"
+  assert_file_contains "reports untracked files" "$COMMAND_FILE" "untracked"
+  assert_file_contains "reports staged files" "$COMMAND_FILE" "staged"
+}
+
 test_malformed_json() {
   echo "--- test_malformed_json ---"
   assert_file_contains "warns about malformed state" "$COMMAND_FILE" "state\.json is malformed"
@@ -147,6 +155,7 @@ run_tests() {
     test_workflow_done
     test_spec_design_paths
     test_malformed_json
+    test_git_uncommitted
   fi
 
   echo ""
