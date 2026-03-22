@@ -406,6 +406,61 @@ test_agent_numeric_suffix() {
   fi
 }
 
+# --- Command & Doc Tests ---
+
+test_design_command_reference() {
+  echo "--- test_design_command_reference ---"
+  assert_file_contains "design command references interface-designer" "$COMMAND_FILE" "interface-designer"
+}
+
+test_design_command_optional() {
+  echo "--- test_design_command_optional ---"
+  if grep -qi "optional.*interface-designer\|interface-designer.*optional" "$COMMAND_FILE"; then
+    echo "PASS  design command marks interface-designer as optional"
+    PASS_COUNT=$((PASS_COUNT + 1))
+  else
+    echo "FAIL  design command does not mark interface-designer as optional"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+  fi
+}
+
+test_glossary_entry() {
+  echo "--- test_glossary_entry ---"
+  assert_file_contains "glossary has Interface Designer entry" "$PROJECT_ROOT/docs/domain/glossary.md" "Interface Designer"
+}
+
+test_changelog_entry() {
+  echo "--- test_changelog_entry ---"
+  assert_file_contains "changelog has BL-014 entry" "$PROJECT_ROOT/CHANGELOG.md" "BL-014"
+}
+
+test_adr_exists() {
+  echo "--- test_adr_exists ---"
+  local adr_file="$PROJECT_ROOT/docs/adr/0008-designs-directory-convention.md"
+  if test -f "$adr_file"; then
+    echo "PASS  ADR 0008 file exists"
+    PASS_COUNT=$((PASS_COUNT + 1))
+  else
+    echo "FAIL  ADR 0008 file does not exist ($adr_file)"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+  fi
+}
+
+test_adr_structure() {
+  echo "--- test_adr_structure ---"
+  local adr_file="$PROJECT_ROOT/docs/adr/0008-designs-directory-convention.md"
+  local count=0
+  grep -q "## Status" "$adr_file" && count=$((count + 1))
+  grep -q "## Decision" "$adr_file" && count=$((count + 1))
+  if [ "$count" -ge 2 ]; then
+    echo "PASS  ADR 0008 has Status and Decision sections"
+    PASS_COUNT=$((PASS_COUNT + 1))
+  else
+    echo "FAIL  ADR 0008 missing Status or Decision sections (found $count/2)"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+  fi
+}
+
 # --- Run tests ---
 
 run_tests() {
@@ -447,6 +502,12 @@ run_tests() {
     test_agent_output_path
     test_agent_create_dir
     test_agent_numeric_suffix
+    test_design_command_reference
+    test_design_command_optional
+    test_glossary_entry
+    test_changelog_entry
+    test_adr_exists
+    test_adr_structure
   fi
 
   echo ""
