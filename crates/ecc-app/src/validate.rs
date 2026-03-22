@@ -279,6 +279,50 @@ fn validate_hook_matcher(
     valid
 }
 
+fn validate_skill_file(
+    name: &str,
+    content: &str,
+    terminal: &dyn TerminalIO,
+) -> bool {
+    let fm = extract_frontmatter(content);
+    let required_fields = ["name", "description", "origin"];
+    let mut has_errors = false;
+
+    match fm {
+        Some(ref map) => {
+            for field in &required_fields {
+                match map.get(*field) {
+                    Some(v) if !v.trim().is_empty() => {}
+                    _ => {
+                        terminal.stderr_write(&format!(
+                            "ERROR: {}/SKILL.md - Missing required frontmatter field '{}'\n",
+                            name, field
+                        ));
+                        has_errors = true;
+                    }
+                }
+            }
+            for warn_field in &["model", "tools"] {
+                if map.contains_key(*warn_field) {
+                    terminal.stdout_write(&format!(
+                        "WARNING: {}/SKILL.md - Skills should not have '{}' field (use agents for behavioral configuration)\n",
+                        name, warn_field
+                    ));
+                }
+            }
+        }
+        None => {
+            terminal.stderr_write(&format!(
+                "ERROR: {}/SKILL.md - No frontmatter found (requires name, description, origin)\n",
+                name
+            ));
+            has_errors = true;
+        }
+    }
+
+    !has_errors
+}
+
 fn validate_skills(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let skills_dir = root.join("skills");
     if !fs.exists(&skills_dir) {
@@ -323,47 +367,10 @@ fn validate_skills(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) 
                 has_errors = true;
             }
             Ok(content) => {
-                let fm = extract_frontmatter(&content);
-                let required_fields = ["name", "description", "origin"];
-                let mut field_errors = false;
-
-                match fm {
-                    Some(ref map) => {
-                        for field in &required_fields {
-                            match map.get(*field) {
-                                Some(v) if !v.trim().is_empty() => {}
-                                _ => {
-                                    terminal.stderr_write(&format!(
-                                        "ERROR: {}/SKILL.md - Missing required frontmatter field '{}'\n",
-                                        name, field
-                                    ));
-                                    field_errors = true;
-                                }
-                            }
-                        }
-
-                        for warn_field in &["model", "tools"] {
-                            if map.contains_key(*warn_field) {
-                                terminal.stdout_write(&format!(
-                                    "WARNING: {}/SKILL.md - Skills should not have '{}' field (use agents for behavioral configuration)\n",
-                                    name, warn_field
-                                ));
-                            }
-                        }
-                    }
-                    None => {
-                        terminal.stderr_write(&format!(
-                            "ERROR: {}/SKILL.md - No frontmatter found (requires name, description, origin)\n",
-                            name
-                        ));
-                        field_errors = true;
-                    }
-                }
-
-                if field_errors {
-                    has_errors = true;
-                } else {
+                if validate_skill_file(&name, &content, terminal) {
                     valid_count += 1;
+                } else {
+                    has_errors = true;
                 }
             }
         }

@@ -156,8 +156,8 @@ An orchestration [Agent](#agent) that spawns parallel sub-agents to explore radi
 - **Files:** [`agents/interface-designer.md`](../agents/interface-designer.md), [`skills/design-an-interface/SKILL.md`](../skills/design-an-interface/SKILL.md)
 
 ### Interview Me
-A collaborative (non-adversarial) requirements interview [Skill](#skill) that defines structured extraction methodology. Covers 8 stages: current state, desired state, constraints, security checkpoint, stakeholders, dependencies, prior art, and failure modes. Distinct from [Grill Me](#grill-me) which is adversarial. Hard-blocks on unaddressed security implications.
-- **Related:** [Skill](#skill), [Interviewer](#interviewer), [Grill Me](#grill-me)
+A collaborative (non-adversarial) requirements interview [Skill](#skill) that defines structured extraction methodology. Covers 8 stages: current state, desired state, constraints, security checkpoint, stakeholders, dependencies, prior art, and failure modes. Distinct from the grill-me skill which is adversarial. Hard-blocks on unaddressed security implications.
+- **Related:** [Skill](#skill), [Interviewer](#interviewer)
 - **Files:** [`skills/interview-me/SKILL.md`](../skills/interview-me/SKILL.md)
 
 ### Interviewer
