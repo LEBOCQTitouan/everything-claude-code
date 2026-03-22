@@ -24,6 +24,8 @@ Check which artifacts have non-null timestamps in state.json:
 
 If `artifacts.spec_path` or `artifacts.design_path` are set in state.json, display their file paths so the user can review the persisted spec and design documents.
 
+If state.json exists but cannot be parsed (invalid JSON), warn "state.json is malformed" and continue to the Git Status and Recent Activity sections.
+
 If no state.json exists, report "No active workflow" and continue to the Git Status and Recent Activity sections.
 
 If the phase is `done`, report "Workflow complete: <feature>" along with the completion timestamp from state.json, then continue to Git Status.
