@@ -22,7 +22,7 @@ Check which artifacts have non-null timestamps in state.json:
 - **solution**: whether a solution/design artifact has been produced
 - **implement**: whether an implement artifact has been produced
 
-If `spec_path` or `design_path` are set in state.json, reference them so the user can review the persisted spec and design documents.
+If `artifacts.spec_path` or `artifacts.design_path` are set in state.json, display their file paths so the user can review the persisted spec and design documents.
 
 If no state.json exists, report "No active workflow" and continue to the Git Status and Recent Activity sections.
 
