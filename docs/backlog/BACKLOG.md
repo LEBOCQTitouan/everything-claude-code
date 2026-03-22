@@ -15,10 +15,10 @@
 | BL-011 | Create grill-me skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-012 | Create write-a-prd skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
 | BL-013 | Create interview-me skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
-| BL-014 | Create design-an-interface skill | 3 | HIGH | /spec dev | open | 2026-03-20 |
+| BL-014 | Create design-an-interface skill | 3 | HIGH | /spec dev | implemented | 2026-03-20 |
 | BL-015 | Create request-refactor-plan skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
 | BL-016 | Create prd-to-plan skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
-| BL-017 | Create /catchup command | 4 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-017 | Create /catchup command | 4 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-019 | Create /spec command | 4 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-020 | Create /design command | 4 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-021 | Extract command reference tables from CLAUDE.md | 5 | LOW | direct edit | implemented | 2026-03-20 |
