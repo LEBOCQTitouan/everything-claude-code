@@ -249,15 +249,37 @@ After adversarial PASS (or user override), write the design to a versioned file:
 
 ## Phase 11: Present and STOP
 
-Display a summary:
-- **Title**: from the spec
-- **File changes**: count of files to create/modify/delete
-- **Pass conditions**: count of PCs
-- **Uncovered ACs**: count (should be zero)
-- **SOLID**: PASS or finding count
-- **Robert**: CLEAN or warning count
-- **Security**: CLEAR or finding count
-- **Adversarial review**: PASS, round number
+Display a comprehensive Phase Summary using these tables:
+
+### Design Reviews
+
+| Review Type | Verdict | Finding Count |
+|-------------|---------|---------------|
+| SOLID | PASS/findings | <count> |
+| Robert | CLEAN/warnings | <count> |
+| Security | CLEAR/findings | <count> |
+
+### Adversary Findings
+
+| Dimension | Verdict | Key Rationale |
+|-----------|---------|---------------|
+| <dimension> | PASS/FAIL/CONDITIONAL | <rationale> |
+
+### File Changes Summary
+
+| # | File | Action | Spec Ref |
+|---|------|--------|----------|
+| 1 | <file> | create/modify/delete | US-NNN, AC-NNN.N |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/YYYY-MM-DD-<slug>/design.md | Full design |
+
+### Phase Summary Persistence
+
+Append a `## Phase Summary` section containing all 4 tables above to the persisted design file (`docs/specs/YYYY-MM-DD-<slug>/design.md`). If `## Phase Summary` already exists in the design file, overwrite it (idempotent).
 
 > **Note:** If continuing in a new session, copy the spec and solution recaps above or re-run the commands.
 
