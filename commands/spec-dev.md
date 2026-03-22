@@ -13,6 +13,8 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUs
 
 ## Phase 0: Project Detection
 
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Project Detection section for auto-detection logic.
+
 Detect the project's test, lint, and build commands:
 
 Test command: !`command -v cargo > /dev/null 2>&1 && echo "cargo test" || (test -f package.json && echo "npm test" || (test -f go.mod && echo "go test ./..." || (test -f pyproject.toml && echo "pytest" || echo "echo 'no test runner detected'")))`
@@ -107,11 +109,17 @@ You have gathered requirements, architecture analysis, audit findings, and backl
 
 ### Rules
 
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Grill-Me Interview Rules section.
+
 - Ask **one question at a time** using `AskUserQuestion`. WAIT for the user's response before asking the next question. NEVER present multiple questions in a single turn.
 - For each question, use `AskUserQuestion` with the recommended answer as the first option (append "(Recommended)" to the label). Add 1-2 alternative options where relevant. The user can always select "Other" to provide a custom answer.
 - Explore the codebase yourself instead of asking the user when the answer is findable in code
 - The user can say **"spec it"** at any point to accept all remaining recommended answers and skip to the spec. Check for this after each answer.
 - Do NOT proceed to the spec until the user says **"spec it"** or all questions are answered
+
+### Grill-Me Accumulator
+
+During each grill-me question, accumulate the question and the user's answer (or accepted recommendation) into a structured list. Track the Source for each answer as either "Recommended" (user accepted) or "User" (user overrode). This accumulated list is used in the Phase Summary.
 
 ## Phase 7: Doc-First Review (Plan Mode)
 
@@ -217,6 +225,8 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 
 ## Phase 9: Adversarial Review
 
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Adversarial Review + Verdict Handling section.
+
 Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob]):
 
 - Pass the full spec from conversation context (Phase 6 output)
@@ -248,13 +258,41 @@ After adversarial PASS (or user override), write the spec to a versioned file:
 
 ## Phase 10: Present and STOP
 
-Display a summary of the spec:
-- Title
-- Number of user stories
-- Key decisions
-- Affected modules (brief)
-- Adversarial review result (PASS, round number)
-- Any open questions remaining
+Display a comprehensive Phase Summary using these tables:
+
+### Grill-Me Decisions
+
+| # | Question | Answer | Source |
+|---|----------|--------|--------|
+| 1 | <question text> | <answer text> | Recommended / User |
+
+### User Stories
+
+| ID | Title | AC Count | Dependencies |
+|----|-------|----------|--------------|
+| US-001 | <title> | <count> | <none or US-NNN> |
+
+### Acceptance Criteria
+
+| AC ID | Description | Source US |
+|-------|-------------|----------|
+| AC-001.1 | <description> | US-001 |
+
+### Adversary Findings
+
+| Dimension | Verdict | Key Rationale |
+|-----------|---------|---------------|
+| <dimension> | PASS/FAIL/CONDITIONAL | <rationale> |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/YYYY-MM-DD-<slug>/spec.md | Full spec |
+
+### Phase Summary Persistence
+
+Append a `## Phase Summary` section containing all 5 tables above to the persisted spec file (`docs/specs/YYYY-MM-DD-<slug>/spec.md`). If `## Phase Summary` already exists in the file, overwrite it (idempotent).
 
 > **Note:** If continuing in a new session, copy the spec recap above or re-run `/spec-dev`.
 
