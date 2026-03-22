@@ -72,6 +72,18 @@ assert_file_not_contains() {
 
 # (Test functions will be added in subsequent PCs)
 
+test_tasks_progress() {
+  echo "--- test_tasks_progress ---"
+  assert_file_contains "has Tasks Progress section" "$COMMAND_FILE" "## Tasks Progress"
+  assert_file_contains "reads tasks_path from state" "$COMMAND_FILE" "tasks_path"
+  assert_file_contains "reads tasks.md" "$COMMAND_FILE" "tasks\.md"
+  assert_file_contains "counts completed tasks" "$COMMAND_FILE" "\[x\]"
+  assert_file_contains "detects pending tasks" "$COMMAND_FILE" "pending"
+  assert_file_contains "detects failed tasks" "$COMMAND_FILE" "failed"
+  assert_file_contains "shows total PCs" "$COMMAND_FILE" "total"
+  assert_file_contains "detects in-progress tasks" "$COMMAND_FILE" "in-progress"
+}
+
 test_workflow_active_state() {
   echo "--- test_workflow_active_state ---"
   assert_file_contains "has Workflow State section" "$COMMAND_FILE" "## Workflow State"
@@ -97,6 +109,7 @@ run_tests() {
   fi
   if [ -z "${1:-}" ]; then
     test_workflow_active_state
+    test_tasks_progress
   fi
 
   echo ""
