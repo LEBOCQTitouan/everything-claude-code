@@ -8,11 +8,13 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 >
 > **Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
 
 ## Phase 0: State Validation
 
 1. Read `.claude/workflow/state.json`
-2. Verify `phase` is `"solution"` or `"implement"` (re-entry allowed). If any other phase → error:
+2. Verify `phase` is `"solution"` or `"implement"` (re-entry allowed). If this gate blocks, explain what failed and provide specific remediation steps. If any other phase → error:
    > "Current phase is `<phase>`. `/implement` requires phase `solution`. Run `/design` first."
 3. **Read spec and design from files if available**: If `artifacts.spec_path` exists in state.json, read the spec from that file. If `artifacts.design_path` exists, read the design from that file. If either file's modification time differs from its artifact timestamp, emit a warning: "File was modified since the original phase. Using file version." If a file path is set but the file does not exist on disk, fall back to step 4.
 4. If the spec or design is not in conversation context AND not available from file → ask the user:
@@ -152,6 +154,8 @@ The RED-GREEN-REFACTOR instructions from the `tdd-executor` agent.
 
 For each PC (sequential, in Test Strategy order):
 
+> Before dispatching each subagent, tell the user which PC is being implemented, what AC it covers, and what to expect from the TDD cycle.
+
 1. Build the context brief using the headings above
 2. Launch a Task with the `tdd-executor` agent (allowedTools: [Read, Write, Edit, MultiEdit, Bash, Grep, Glob])
 3. The subagent executes RED → GREEN → REFACTOR and commits atomically
@@ -162,6 +166,8 @@ For each PC (sequential, in Test Strategy order):
 7. If the subagent returns `failure` → **STOP** and report the error to the user. If the failure message mentions a prior PC or a structural conflict, report it as a potential PC conflict (the subagent believes making its test pass necessarily breaks prior code — analogous to the old Loop Invariant). If the failure suggests a test/spec mismatch, the parent should investigate and, if confirmed, fix the test locally (with a TDD Log note) and re-dispatch the PC. Do not proceed to the next PC.
 
 ### Parent Regression Verification
+
+> After each subagent completes, report how many prior PCs were re-verified and the result. If a regression is detected, explain what was found and provide specific remediation steps.
 
 After each subagent completes successfully:
 
@@ -215,6 +221,8 @@ Launch a Task with the `code-reviewer` agent:
 - Pass the solution (from the Solution section of the plan file) as the design reference
 - Agent reviews for: quality, security, maintainability, spec compliance
 - Collect findings
+
+> After receiving the code review output, summarize what was found conversationally before applying fixes.
 
 If CRITICAL or HIGH findings:
 1. Fix each finding

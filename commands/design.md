@@ -8,11 +8,13 @@ allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite, TodoRead, En
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 >
 > **Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
 
 ## Phase 0: State Validation
 
 1. Read `.claude/workflow/state.json`
-2. Verify `phase` is `"plan"` or `"solution"` (re-entry allowed). If any other phase → error:
+2. Verify `phase` is `"plan"` or `"solution"` (re-entry allowed). If this gate blocks, explain what failed and provide specific remediation steps. If any other phase → error:
    > "Current phase is `<phase>`. `/design` requires phase `plan`/`spec` or `solution`/`design`. Run the appropriate `/spec-*` command first."
 3. **Read spec from file if available**: If `artifacts.spec_path` exists in state.json, read the spec from that file path. If the file's modification time differs from the `artifacts.plan` timestamp, emit a warning: "Spec file was modified since the spec phase. Using file version." If the file does not exist, fall back to step 4.
 4. If the spec is not in conversation context AND not available from file → ask the user:
@@ -59,6 +61,8 @@ Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
 > **Optional**: For specs involving new ports, adapters, or public interfaces, consider invoking the `interface-designer` agent (optional) to explore radically different interface shapes before committing to a design. This spawns parallel sub-agents with divergent constraints and produces a comparison matrix. See the `design-an-interface` skill for methodology.
 
 ## Phase 2: SOLID Validation
+
+> Before dispatching, tell the user which validation agent is being launched (`uncle-bob`) and that it will evaluate the design against SOLID and Clean Architecture principles.
 
 Launch a Task with the `uncle-bob` agent (allowedTools: [Read, Grep, Glob]) with `context: "fork"` (summary output sufficient):
 
@@ -114,6 +118,8 @@ Launch a Task with the `security-reviewer` agent (allowedTools: [Read, Grep, Glo
 5. Reference the spec's US/AC for each doc action
 
 ## Phase 7: AC Coverage Verification
+
+> After computing the coverage result, summarize it conversationally: how many ACs are covered, how many are uncovered, and what action is needed.
 
 This is the critical gate — every acceptance criterion must be testable.
 
