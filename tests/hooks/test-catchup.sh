@@ -157,6 +157,12 @@ test_stale_detection() {
   assert_file_contains "offers Reset option" "$COMMAND_FILE" "Reset"
 }
 
+test_stale_resume() {
+  echo "--- test_stale_resume ---"
+  assert_file_contains "resume option exists" "$COMMAND_FILE" "Resume"
+  assert_file_contains "no modifications on resume" "$COMMAND_FILE" "no.*modif"
+}
+
 test_stale_reset() {
   echo "--- test_stale_reset ---"
   assert_file_contains "archives state" "$COMMAND_FILE" "archive"
@@ -189,6 +195,7 @@ run_tests() {
   fi
   if [ -z "${1:-}" ]; then
     test_stale_detection
+    test_stale_resume
     test_stale_reset
     test_workflow_active_state
     test_tasks_progress
