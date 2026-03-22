@@ -123,6 +123,14 @@ A structured subsection in each phase of a [planner](#agent) output that specifi
 - **Related:** [Agent](#agent), [Command](#command)
 - **Files:** [`planner.md`](../agents/planner.md), [`spec.md`](../commands/spec.md), [`validate-plan-tdd.test.js`](../tests/ci/validate-plan-tdd.test.js)
 
+### Wave
+A group of independent [Pass Conditions](#pass-condition) that can be executed in parallel during `/implement`. PCs within a wave touch different files and have no data dependencies. Waves are dispatched concurrently using worktree-isolated subagents, with regression verification at wave boundaries.
+- **Related:** [Wave Plan](#wave-plan), [Pass Condition](#pass-condition)
+
+### Wave Plan
+The ordered list of [Waves](#wave) computed from the dependency graph of [Pass Conditions](#pass-condition). Produced by left-to-right scan of the Test Strategy with adjacent + no file overlap grouping. Displayed to the user before TDD execution begins.
+- **Related:** [Wave](#wave), [Test Strategy](#test-strategy)
+
 ## Infrastructure Terms
 
 ### Apply All
