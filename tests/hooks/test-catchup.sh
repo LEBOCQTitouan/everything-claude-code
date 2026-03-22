@@ -72,6 +72,12 @@ assert_file_not_contains() {
 
 # (Test functions will be added in subsequent PCs)
 
+test_no_workflow() {
+  echo "--- test_no_workflow ---"
+  assert_file_contains "reports no active workflow" "$COMMAND_FILE" "No active workflow"
+  assert_file_contains "continues to git and memory" "$COMMAND_FILE" "Git Status"
+}
+
 test_tasks_missing() {
   echo "--- test_tasks_missing ---"
   assert_file_contains "reports tasks.md not found" "$COMMAND_FILE" "tasks\.md not found"
@@ -117,6 +123,7 @@ run_tests() {
     test_workflow_active_state
     test_tasks_progress
     test_tasks_missing
+    test_no_workflow
   fi
 
   echo ""
