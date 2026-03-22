@@ -25,7 +25,9 @@ Lint command: !`command -v cargo > /dev/null 2>&1 && echo "cargo clippy -- -D wa
 
 Build command: !`command -v cargo > /dev/null 2>&1 && echo "cargo build" || (test -f package.json && echo "npm run build" || (test -f go.mod && echo "go build ./..." || echo "echo 'no build command detected'"))`
 
-Store these commands mentally for use in spec constraints.
+Persist detected commands to state.json and create campaign manifest:
+
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Project Detection section for toolchain-persist.sh usage and Campaign Init section for campaign.md creation.
 
 > **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
 
@@ -129,6 +131,10 @@ You have gathered evolution analysis, architecture review, component audit, exis
 
 During each grill-me question, accumulate the question and the user's answer (or accepted recommendation) into a structured list. Track the Source for each answer as either "Recommended" (user accepted) or "User" (user overrode). This accumulated list is used in the Phase Summary.
 
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Grill-Me Disk Persistence section. After each answer, persist to campaign.md.
+
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Agent Output Tracking section. After each agent task returns, persist summary to campaign.md.
+
 ## Phase 6: Doc-First Review (Plan Mode)
 
 > **BLOCKING**: You MUST call `EnterPlanMode` here. NEVER skip this phase.
@@ -164,6 +170,8 @@ Draft of upper-level doc updates:
 3. Call `ExitPlanMode` — wait for user approval before proceeding
 
 ## Phase 7: Write the Spec
+
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Draft Spec Persistence section. Write spec-draft.md before adversary dispatch.
 
 Output the full spec in conversation using the exact schema below. Do NOT write `.claude/workflow/plan.md`. Every section is mandatory.
 
@@ -233,7 +241,7 @@ Output the full spec in conversation using the exact schema below. Do NOT write 
 
 ## Phase 8: Adversarial Review
 
-> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Adversarial Review + Verdict Handling section.
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Adversarial Review + Verdict Handling section, and Adversary History Tracking section for campaign.md persistence.
 
 Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob]):
 

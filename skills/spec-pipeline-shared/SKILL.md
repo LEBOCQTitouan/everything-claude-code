@@ -16,7 +16,13 @@ Detect the project's test, lint, and build commands using auto-detection:
 - **Lint**: `cargo clippy -- -D warnings` → `npm run lint` → `golangci-lint run` → `ruff check .`
 - **Build**: `cargo build` → `npm run build` → `go build ./...`
 
-Store detected commands for use in spec constraints and pass conditions.
+Persist detected commands to state.json via `toolchain-persist.sh`:
+
+```
+!bash .claude/hooks/toolchain-persist.sh "<test_cmd>" "<lint_cmd>" "<build_cmd>"
+```
+
+On re-entry, read toolchain from `state.json` instead of re-detecting.
 
 ## Grill-Me Interview Rules
 
@@ -55,3 +61,23 @@ After 3 FAIL rounds, offer user override or abandon.
 All spec commands output these mandatory sections:
 
 `# Spec: <title>` → `## Problem Statement` → `## Research Summary` → `## Decisions Made` (table) → `## User Stories` (US-NNN with ACs) → `## Affected Modules` → `## Constraints` → `## Non-Requirements` → `## E2E Boundaries Affected` (table) → `## Doc Impact Assessment` (table) → `## Open Questions`
+
+## Campaign Init
+
+Create `campaign.md` in `.claude/workflow/campaign.md` at Phase 0 when toolchain detection completes. Use the schema from `skills/campaign-manifest/SKILL.md`. Initial state: `Status: in-progress`, empty tables, toolchain populated. When the spec directory is created after adversary PASS, move `campaign.md` there and update `artifacts.campaign_path` in state.json.
+
+## Grill-Me Disk Persistence
+
+After each grill-me question is answered, append the Q&A pair to campaign.md's `## Grill-Me Decisions` table. Track Source as "Recommended" (user accepted) or "User" (user overrode). This ensures interview decisions survive session interruption.
+
+## Draft Spec Persistence
+
+Before dispatching the adversary, write the draft spec to `spec-draft.md` in the campaign.md directory. After adversary PASS, rename/overwrite `spec-draft.md` to `spec.md` in the final spec directory. This eliminates the chicken-and-egg fragility where the adversary reviews context-only content.
+
+## Adversary History Tracking
+
+After each adversary review round, append a row to campaign.md's `## Adversary History` table with Round number, Phase (spec/design), Verdict (PASS/CONDITIONAL/FAIL), and Key Findings summary.
+
+## Agent Output Tracking
+
+After each agent task (requirements-analyst, architect, evolution-analyst, etc.) returns, append a summary row to campaign.md's `## Agent Outputs` table with Agent name, Phase, and one-line Summary.
