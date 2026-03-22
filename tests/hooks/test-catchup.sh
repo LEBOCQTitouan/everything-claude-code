@@ -96,6 +96,33 @@ test_frontmatter_valid() {
   assert_file_contains "frontmatter has description field" "$COMMAND_FILE" "^description:"
 }
 
+test_allowed_tools() {
+  echo "--- test_allowed_tools ---"
+  # Extract frontmatter (between first and second --- delimiters)
+  local frontmatter
+  frontmatter="$(awk 'NR==1{next} /^---$/{exit} {print}' "$COMMAND_FILE")"
+  # Check allowed-tools line exists
+  assert_contains "has allowed-tools line" "$frontmatter" "allowed-tools:"
+  # Check required tools are listed
+  assert_contains "allowed-tools includes Bash" "$frontmatter" "Bash"
+  assert_contains "allowed-tools includes Read" "$frontmatter" "Read"
+  assert_contains "allowed-tools includes Grep" "$frontmatter" "Grep"
+  assert_contains "allowed-tools includes Glob" "$frontmatter" "Glob"
+  assert_contains "allowed-tools includes LS" "$frontmatter" "LS"
+  assert_contains "allowed-tools includes AskUserQuestion" "$frontmatter" "AskUserQuestion"
+  assert_contains "allowed-tools includes TodoWrite" "$frontmatter" "TodoWrite"
+  # Check no write/edit tools in frontmatter (careful: TodoWrite contains "Write")
+  local allowed_line
+  allowed_line="$(echo "$frontmatter" | grep 'allowed-tools:')"
+  # Remove "TodoWrite" before checking for standalone "Write"
+  local sanitized
+  sanitized="$(echo "$allowed_line" | sed 's/TodoWrite//g')"
+  assert_not_contains "allowed-tools excludes standalone Write" "$sanitized" "Write"
+  assert_not_contains "allowed-tools excludes Edit" "$allowed_line" "Edit"
+  assert_not_contains "allowed-tools excludes Task" "$allowed_line" "Task"
+  assert_not_contains "allowed-tools excludes Agent" "$allowed_line" "Agent"
+}
+
 test_git_uncommitted() {
   echo "--- test_git_uncommitted ---"
   assert_file_contains "mentions git status" "$COMMAND_FILE" "git status --short"
@@ -263,6 +290,7 @@ run_tests() {
     test_memory_previous
     test_memory_none
     test_frontmatter_valid
+    test_allowed_tools
   fi
 
   echo ""
