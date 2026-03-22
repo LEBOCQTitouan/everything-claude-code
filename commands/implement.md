@@ -114,9 +114,33 @@ Status updates during the TDD loop (Phase 3) append to each line's trail:
 - Regression verification passes: append `| done@<ISO 8601 timestamp>` and mark `[x]`
 - Failure: append `| failed@<ISO 8601 timestamp> ERROR: <summary>`
 
+### Wave Analysis
+
+After generating tasks.md, analyze the dependency graph between PCs to enable parallel execution.
+
+#### Algorithm
+
+Scan PCs left-to-right in Test Strategy order. Start a new wave. For each subsequent PC, add it to the current wave if it shares no files (from "Files to Modify") with any PC already in the wave. If it does share files, close the current wave and start a new one. This produces waves of adjacent, file-independent PCs.
+
+#### Concurrency Cap
+
+If a wave contains more than 4 PCs, split it into sub-batches of maximum 4 concurrent subagents.
+
+#### Wave Plan Display
+
+Before proceeding to Phase 3, display the wave plan to the user:
+
+> **Wave Plan**: Show each wave with its PC IDs, files affected, and parallelism factor. Example: "Wave 1: PC-003, PC-004, PC-005 [3 parallel] | Wave 2: PC-006 [sequential]"
+
+#### Degenerate Cases
+
+- **All PCs overlap** (same file): each PC gets its own wave — fully sequential. Wave machinery is skipped.
+- **All PCs independent**: one wave containing all PCs (split into sub-batches of 4 if > 4).
+- **Single-PC implementation**: one wave with one PC — no overhead.
+
 ## Phase 3: TDD Loop (Subagent Dispatch)
 
-For each PC in the order specified by Test Strategy, dispatch to an isolated `tdd-executor` subagent. PCs are dispatched **sequentially** — one at a time, never in parallel. Each subagent gets a fresh context window.
+For each PC in the order specified by Test Strategy, dispatch to an isolated `tdd-executor` subagent. PCs are dispatched in **waves**. Within each wave, independent PCs are dispatched concurrently. Waves are executed sequentially. If all waves contain a single PC, behavior is identical to sequential dispatch (backward compatible). Each subagent gets a fresh context window.
 
 ### Context Brief Construction
 
@@ -150,9 +174,18 @@ The commit message templates for RED, GREEN, REFACTOR.
 
 The RED-GREEN-REFACTOR instructions from the `tdd-executor` agent.
 
-### Per-PC Subagent Dispatch
+### Wave Dispatch
 
-For each PC (sequential, in Test Strategy order):
+For each wave in the wave plan:
+
+#### Pre-Wave Setup
+
+1. Create a git tag `wave-N-start` (where N is the wave number) for rollback safety
+2. Update tasks.md: mark all PCs in the wave as `red@<timestamp>`
+
+#### Single-PC Wave (Backward Compatible)
+
+If the wave contains exactly one PC, dispatch it using the existing sequential process (no worktree isolation). This preserves current behavior exactly.
 
 > Before dispatching each subagent, tell the user which PC is being implemented, what AC it covers, and what to expect from the TDD cycle.
 
@@ -165,16 +198,43 @@ For each PC (sequential, in Test Strategy order):
 6. If the subagent crashes or times out after partial commits → report: subagent exit state, last commit SHA(s) via `git log -3 --oneline`, and the PC in progress. Do NOT auto-revert.
 7. If the subagent returns `failure` → **STOP** and report the error to the user. If the failure message mentions a prior PC or a structural conflict, report it as a potential PC conflict (the subagent believes making its test pass necessarily breaks prior code — analogous to the old Loop Invariant). If the failure suggests a test/spec mismatch, the parent should investigate and, if confirmed, fix the test locally (with a TDD Log note) and re-dispatch the PC. Do not proceed to the next PC.
 
-### Parent Regression Verification
+#### Multi-PC Wave (Parallel Dispatch)
 
-> After each subagent completes, report how many prior PCs were re-verified and the result. If a regression is detected, explain what was found and provide specific remediation steps.
+If the wave contains 2+ PCs, dispatch all concurrently:
 
-After each subagent completes successfully:
+1. For each PC in the wave, launch a Task with the `tdd-executor` agent using `isolation: "worktree"` on the Agent call
+2. Each subagent operates in its own git worktree — a valid repo checkout where tdd-executor runs unchanged
+3. Build context briefs as before, but "Prior PC Results" includes only PCs from completed prior waves (not same-wave PCs)
+4. Wait for ALL subagents in the wave to complete before proceeding
 
-1. Run every PC command from PC-001 through the just-completed PC-N (run ALL prior PCs' commands plus PC-N's command)
-2. For the first PC (PC-001), skip regression check — there are no prior PCs to verify
-3. Regression check MUST pass BEFORE marking PC-N as complete — if any prior PC fails, PC-N is NOT marked complete
-4. If a regression is detected → **STOP** and report: the regressing PC ID, the failing command, actual vs expected output, and the PC-N that caused it. Do not proceed.
+#### Post-Wave Merge
+
+After all subagents in a wave complete:
+
+1. Merge each subagent's worktree branch into the main branch, sequentially in PC-ID order
+2. If a merge conflict is detected, STOP and report: the conflicting PCs, files, and suggest manual resolution
+3. If a worktree creation failed, STOP and report the error with remediation guidance
+4. Claude Code's automatic worktree cleanup handles temporary worktrees
+
+### Wave Regression Verification
+
+After all subagents in a wave complete and branches are merged:
+
+> After each wave completes, report how many prior PCs were re-verified and the result. If a regression is detected, explain what was found and provide specific remediation steps.
+
+1. Run ALL PC commands from waves 1 through the current wave W (all completed PCs)
+2. For the first wave, only verify the wave's own PCs
+3. If regression passes, mark all PCs in the wave as complete
+4. If regression fails, STOP and report: the failing PC command, AND list all PCs in wave W as potential culprits (since any parallel PC could be the cause)
+
+### Wave Failure Handling
+
+If one or more PCs in a wave fail:
+
+1. Let all other subagents in the wave finish (their work is valid — PCs are independent)
+2. Merge successful PCs' branches. Discard failed PCs' branches.
+3. STOP and report the failure. Do not proceed to the next wave.
+4. On re-entry, re-derive the wave plan from tasks.md. Skip completed PCs (`[x]`). Re-dispatch only failed/incomplete PCs in the first incomplete wave.
 
 ### Progress Tracking (Parent-Owned)
 
@@ -337,6 +397,8 @@ All pass conditions: N/N ✅
 | PC-001 | success | 3 | 2 |
 (or "Inline execution — subagent dispatch not used" for pre-BL-031 implementations)
 
+If wave-based parallel execution was used (any wave had 2+ PCs), add a `Wave` column to TDD Log and Subagent Execution tables showing which wave each PC belonged to. If all waves had only 1 PC (fully sequential), omit the Wave column for backward compatibility.
+
 ## Code Review
 <summary — PASS or findings addressed>
 
@@ -403,6 +465,10 @@ Then STOP. The workflow is complete.
 - Doc updates happen BEFORE writing implement-done.md (they are part of implementation, not an afterthought)
 - implement-done.md schema is EXACT — stop hooks parse it
 - One PC at a time — never batch multiple PCs
+- Wave grouping uses left-to-right scan with adjacent + no file overlap
+- Max 4 concurrent subagents per wave (split larger waves into sub-batches)
+- Single-PC waves dispatch without worktree isolation (backward compatible)
+- Git tags at wave boundaries (`wave-N-start`) for rollback
 
 ## Related Agents
 
