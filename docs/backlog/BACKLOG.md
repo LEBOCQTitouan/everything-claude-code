@@ -32,7 +32,7 @@
 | BL-029 | Persist specs and designs as versioned file artifacts | 8 | HIGH | /spec, /design | implemented | 2026-03-21 |
 | BL-030 | Persist tasks.md as trackable artifact | 8 | HIGH | /implement | implemented | 2026-03-21 |
 | BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | implemented | 2026-03-21 |
-| BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | open | 2026-03-21 |
+| BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | implemented | 2026-03-21 |
 | BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | archived | 2026-03-21 |
 | BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | open | 2026-03-21 |
 | BL-035 | Campaign file manifest for amnesiac agents | 9 | MEDIUM | /spec refactor | open | 2026-03-21 |
