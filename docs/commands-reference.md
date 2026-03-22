@@ -23,4 +23,5 @@
 | `/review` | Robert professional conscience check |
 | `/backlog` | Capture and manage implementation ideas |
 | `/build-fix` | Fix build/type errors reactively |
+| `/catchup` | Session resumption — workflow state, git status, stale detection, memory |
 | `/ecc-test-mode` | Isolated worktree for testing ECC config changes |
