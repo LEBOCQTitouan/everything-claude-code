@@ -50,6 +50,7 @@
 | BL-047 | Automatic session-to-memory persistence with daily files | — | HIGH | /spec dev | implemented | 2026-03-21 |
 | BL-048 | Comprehensive output summaries for spec → design → implement pipeline | — | MEDIUM | /spec-refactor | open | 2026-03-22 |
 | BL-049 | Offload web research phase to Task subagents in /spec-* commands | — | MEDIUM | /spec-refactor | open | 2026-03-22 |
+| BL-050 | Deferred summary tables: coverage delta, bounded contexts, per-test-name | — | MEDIUM | /spec-dev | open | 2026-03-22 |
 
 ## Dependency Graph
 

@@ -316,7 +316,7 @@ test_changelog_bl048() {
 
 test_deferred_items() {
   echo "--- test_deferred_items ---"
-  if find "$BACKLOG_DIR" -type f -exec grep -lqi "coverage delta\|bounded context\|per-test-name" {} + 2>/dev/null | head -1 | grep -q .; then
+  if find "$BACKLOG_DIR" -type f -name "*.md" -exec grep -li "coverage delta\|bounded context\|per-test-name" {} + 2>/dev/null | head -1 | grep -q .; then
     echo "PASS  backlog has deferred items"
     PASS_COUNT=$((PASS_COUNT + 1))
   else
