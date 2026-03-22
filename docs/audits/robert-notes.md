@@ -1,19 +1,19 @@
-# Robert Notes — 2026-03-22
+# Robert Notes -- 2026-03-22
 
 ## Oath Evaluation
 
-Subject: BL-013 — Interview-me skill + interviewer agent (design review).
+Subject: BL-051 -- Explanatory narrative audit design review (24 PCs, 25 ACs, 22 command files + 1 shared skill, no logic changes).
 
 ```
-Oath 1 (no harmful code): CLEAN — design fixes 4 malformed skills and adds validation to prevent future defects; no harmful structure introduced
-Oath 2 (no mess): CLEAN — single crate modified (ecc-app), clean phase decomposition, skill under 500 words, agent follows established pattern
-Oath 3 (proof): CLEAN — 34 pass conditions covering all 27 ACs; TDD order explicit with RED-GREEN commits per phase; Rust unit tests for validation logic, bash tests for content
-Oath 4 (small releases): CLEAN — 5 phases with atomic RED/GREEN commits; each phase leaves codebase in valid state; Phase 6 is verification-only
-Oath 5 (fearless improvement): CLEAN — Boy Scout deltas planned for each phase (scan nearby files for cleanup)
-Oath 6 (productivity): CLEAN — reuses existing patterns (test harness from test-interface-designer.sh, extract_frontmatter for parsing, docs/interviews/ convention)
-Oath 7 (easy substitution): CLEAN — skill/agent split follows established port pattern; interview-me is standalone with no pipeline coupling
-Oath 8 (honest estimates): N/A — no estimates given
-Oath 9 (continuous learning): N/A — not applicable
+Oath 1 (no harmful code): CLEAN -- design explicitly constrains scope to "narrative instruction additions only, no phase logic, tool selection, or agent configuration changes"
+Oath 2 (no mess): CLEAN -- shared narrative-conventions skill extracts common patterns (DRY); 800-line file limit enforced by PC-18; existing narration augmented not rewritten
+Oath 3 (proof): CLEAN -- 24 PCs cover all 25 ACs; bash grep test suite (following established test-pipeline-summaries.sh pattern) provides automated regression; cargo test/clippy/build gates prevent Rust regressions
+Oath 4 (small releases): CLEAN -- 6 TDD phases with atomic commits at each RED/GREEN/REFACTOR boundary; Phase 6 is validation-only (no commit)
+Oath 5 (fearless improvement): CLEAN -- Boy Scout candidates identified (build-fix.md and review.md missing allowed-tools frontmatter)
+Oath 6 (productivity): CLEAN -- narrative additions are additive; no throughput-decreasing structural changes; reuses established test harness pattern
+Oath 7 (easy substitution): CLEAN -- shared skill is standalone; any command can reference it independently; no coupling between command narratives
+Oath 8 (honest estimates): N/A -- no estimates given
+Oath 9 (continuous learning): N/A -- not applicable this session
 ```
 
 Zero violations. Zero warnings.
@@ -21,24 +21,30 @@ Zero violations. Zero warnings.
 ## Self-Audit
 
 ```
-[SELF-001] DRY: Previous finding (Commit Cadence in 13+ agent files) — status unchanged, still a candidate for extraction into a shared skill
-[SELF-002] DRY: Previous finding (TPP table in 3 files) — status unchanged
-[SELF-003] SRP: All agents under 400 lines. Largest is doc-orchestrator.md at 398 lines — acceptable.
-[SELF-004] Consistency: All 45 agents have model, description, and skills fields in frontmatter. (Agent count increased from 44 to 45 since last session.)
+[SELF-001] NOTE: catchup.md exists only in project-level commands/ (not ~/.claude/commands/); spec correctly targets it but the asymmetry between directories could cause confusion during implementation
+[SELF-002] DRY: Previous finding (Commit Cadence in 13+ agent files) -- status unchanged, candidate for extraction
+[SELF-003] DRY: Previous finding (TPP table in 3 files) -- status unchanged
+[SELF-004] SRP: All agents under 400 lines. Largest is doc-orchestrator.md at 398 lines.
+[SELF-005] Consistency: All 45 agents have model, description, and skills fields in frontmatter.
 ```
 
 ## "Go Well" Metric
 
 ```
 Session commits (last 50): 50
-Forward: 41 (feat: 10, test: 11, docs: 18, chore(implement-done): 2)
-Rework: 7 (fix: 5, chore: 2)
-Neutral: 0
-Rework ratio: 0.14 (Healthy — mostly forward progress)
+  Forward: 37
+    feat:  11
+    test:   6
+    docs:  20
+  Rework:  8
+    fix:    7
+    chore:  1 (non-scout)
+  Neutral:  5 (administrative docs)
+  Rework ratio: 0.16 (Healthy -- mostly forward progress)
 ```
 
-Fix commits are minor corrections (broken glossary link, backlog status marks, agent clarification, spec-directory path). No architectural rework or test regressions.
+Fix commits are minor corrections (broken glossary link, backlog status marks, agent clarification, spec-directory path, skill frontmatter). No architectural rework.
 
 ## Summary
 
-0 oath warnings, 2 self-audit DRY findings (carried forward, unchanged), rework ratio 0.14.
+0 oath warnings, 1 new self-audit note (SELF-001 command directory asymmetry), 2 carried-forward DRY findings, rework ratio 0.16.
