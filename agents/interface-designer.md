@@ -30,7 +30,7 @@ Create a TodoWrite checklist to track progress through each phase of the workflo
 
 ## Phase 4: Parallel Sub-Agent Dispatch
 
-Spawn at least 3 sub-agents in parallel using the Agent tool. Each sub-agent references the `architect-module` agent and receives `allowedTools: [Read, Grep, Glob]`.
+Spawn 4 sub-agents in parallel using the Agent tool (one per mandatory constraint). Each sub-agent references the `architect-module` agent and receives `allowedTools: [Read, Grep, Glob]`.
 
 ### Mandatory Constraints (one per sub-agent)
 
