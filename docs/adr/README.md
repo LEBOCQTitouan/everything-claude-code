@@ -29,3 +29,4 @@ ADRs are numbered sequentially: `0001-short-title.md`, `0002-short-title.md`, et
 | [0008](0008-designs-directory-convention.md) | Designs Directory Convention | Accepted |
 | [0009](0009-phase-summary-convention.md) | Phase Summary Convention | Accepted |
 | [0010](0010-skill-frontmatter-validation.md) | Skill Frontmatter Validation | Accepted |
+| [0011](0011-command-narrative-convention.md) | Command Narrative Convention | Accepted |
