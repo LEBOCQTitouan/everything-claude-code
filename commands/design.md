@@ -56,6 +56,8 @@ Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
   6. Final PCs must include lint and build checks
 - Collect the output: File Changes table + Pass Conditions table + TDD order
 
+> **Optional**: For specs involving new ports, adapters, or public interfaces, consider invoking the `interface-designer` agent (optional) to explore radically different interface shapes before committing to a design. This spawns parallel sub-agents with divergent constraints and produces a comparison matrix. See the `design-an-interface` skill for methodology.
+
 ## Phase 2: SOLID Validation
 
 Launch a Task with the `uncle-bob` agent (allowedTools: [Read, Grep, Glob]) with `context: "fork"` (summary output sufficient):
