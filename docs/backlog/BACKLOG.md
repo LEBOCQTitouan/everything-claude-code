@@ -49,6 +49,7 @@
 | BL-046 | Phase-gate hook blocks spec/plan/design file writes during active workflow phases | — | LOW | direct edit | implemented | 2026-03-21 |
 | BL-047 | Automatic session-to-memory persistence with daily files | — | HIGH | /spec dev | implemented | 2026-03-21 |
 | BL-048 | Comprehensive output summaries for spec → design → implement pipeline | — | MEDIUM | /spec-refactor | open | 2026-03-22 |
+| BL-049 | Offload web research phase to Task subagents in /spec-* commands | — | MEDIUM | /spec-refactor | open | 2026-03-22 |
 
 ## Dependency Graph
 
@@ -72,7 +73,7 @@ BL-047 → BL-027 (auto-memory extends cross-session memory system)
 
 ## Stats
 
-- **Total:** 46
-- **Open:** 23
+- **Total:** 47
+- **Open:** 24
 - **Implemented:** 23
-- **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 2
+- **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 3
