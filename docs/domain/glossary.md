@@ -150,6 +150,11 @@ One of three execution modes controlling which [Hooks](#hook) run: **minimal** (
 - **Related:** [Hook](#hook), [Run With Flags](#run-with-flags)
 - **Files:** [`hook-flags.ts`](../src/lib/hook-flags.ts) (`HookProfile`, `VALID_PROFILES`, `getHookProfile`), [`run-with-flags.ts`](../src/hooks/run-with-flags.ts)
 
+### Interface Designer
+An orchestration [Agent](#agent) that spawns parallel sub-agents to explore radically different interface designs for a module or port. Each sub-agent operates under a unique constraint (minimize methods, maximize flexibility, optimize common case, named paradigm). Designs are compared on 5 dimensions and synthesized via user feedback. Uses the `design-an-interface` [Skill](#skill) for methodology.
+- **Related:** [Agent](#agent), [Skill](#skill)
+- **Files:** [`agents/interface-designer.md`](../agents/interface-designer.md), [`skills/design-an-interface/SKILL.md`](../skills/design-an-interface/SKILL.md)
+
 ### Insight Promotion
 Elevating a significant insight from a [Daily Memory File](#daily-memory-file) into a typed memory file (user, feedback, project, reference) with cross-references.
 - **Related:** [Daily Memory File](#daily-memory-file), [Session](#session)
