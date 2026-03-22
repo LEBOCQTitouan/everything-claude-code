@@ -43,7 +43,7 @@ Mark each item complete as the phase finishes.
 
 Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
-- Pass the full spec content from conversation context
+- Pass the full spec content. If not in conversation context, read from `artifacts.spec_path` in state.json (disk fallback).
 - Instruct the agent to:
   1. Design file changes in dependency order (what to create, modify, or delete)
   2. Map each file change to its spec reference (US-NNN, AC-NNN.N)
@@ -93,7 +93,7 @@ Launch a Task with the `security-reviewer` agent (allowedTools: [Read, Grep, Glo
 
 ## Phase 5: E2E Boundary Detection
 
-1. Read the spec's `## E2E Boundaries Affected` table from conversation context
+1. Read the spec's `## E2E Boundaries Affected` table. If not in conversation context, read from the spec file on disk via `artifacts.spec_path`
 2. Scan Phase 1 file changes for any port or adapter touches (files in `crates/ecc-ports/`, `crates/ecc-infra/`, or adapter-layer paths)
 3. Expand each boundary into concrete E2E test entries:
 
@@ -107,7 +107,7 @@ Launch a Task with the `security-reviewer` agent (allowedTools: [Read, Grep, Glo
 
 ## Phase 6: Doc Update Plan
 
-1. Read the spec's `## Doc Impact Assessment` table from conversation context
+1. Read the spec's `## Doc Impact Assessment` table. If not in conversation context, read from the spec file on disk via `artifacts.spec_path`
 2. Expand each entry into a concrete doc action:
 
 | # | Doc File | Level | Action | Content Summary | Spec Ref |
@@ -123,7 +123,7 @@ Launch a Task with the `security-reviewer` agent (allowedTools: [Read, Grep, Glo
 
 This is the critical gate — every acceptance criterion must be testable.
 
-1. Collect ALL `AC-NNN.N` identifiers from the spec in conversation context
+1. Collect ALL `AC-NNN.N` identifiers from the spec. If not in conversation context, read from the spec file on disk via `artifacts.spec_path`
 2. Collect ALL `PC-NNN` pass conditions from the Phase 1 design
 3. For each AC, verify it appears in at least one PC's "Verifies AC" column
 4. List any uncovered ACs with an explanation
@@ -227,7 +227,7 @@ The solution is output in conversation only — no file is written.
 
 Launch a Task with the `solution-adversary` agent (allowedTools: [Read, Bash, Grep, Glob]):
 
-- Pass the full spec AND solution from conversation context
+- Pass the full spec AND solution. If not in conversation context, read spec from `artifacts.spec_path` and design from the current output on disk
 - The agent attacks the solution on 8 dimensions: coverage, order, fragility, rollback, architecture, blast radius, missing PCs, doc plan
 - The agent returns a verdict in conversation (no file writes)
 
@@ -252,6 +252,9 @@ After adversarial PASS (or user override), write the design to a versioned file:
 2. Write the full design to `docs/specs/YYYY-MM-DD-<slug>/design.md` in the same directory as the spec
 3. If the file already exists (re-entry), append a `## Revision` block with timestamp instead of overwriting
 4. Pass the file path to the phase-transition command as the 3rd argument
+5. Update campaign.md: set Design row in `## Artifacts` table to the design file path with status `passed`. Update `## Resumption Pointer` with `Current step: Design complete. Next action: Run /implement.`
+
+> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Adversary History Tracking section for campaign.md verdict persistence during design adversarial review.
 
 ## Phase 11: Present and STOP
 
