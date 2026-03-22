@@ -89,7 +89,7 @@ Generate tasks.md in the spec directory using the tasks-generation skill's forma
 
 ### Wave Analysis
 
-> **Shared**: See `skills/wave-analysis/SKILL.md` for the full wave grouping algorithm, concurrency cap, and degenerate cases.
+> **Shared**: See `skills/wave-analysis/SKILL.md` for the full wave grouping algorithm — left-to-right scan, adjacent PCs with no file overlap grouped into waves, max 4 concurrent subagents per wave (cap), and degenerate cases.
 
 After generating tasks.md, analyze the PC dependency graph and display the wave plan to the user before proceeding to Phase 3.
 
@@ -131,9 +131,9 @@ The RED-GREEN-REFACTOR instructions from the `tdd-executor` agent.
 
 ### Wave Dispatch
 
-> **Shared**: See `skills/wave-dispatch/SKILL.md` for the full wave dispatch logic — pre-wave setup, single-PC/multi-PC dispatch, post-wave merge, regression verification, and failure handling.
+> **Shared**: See `skills/wave-dispatch/SKILL.md` for the full wave dispatch logic — pre-wave setup with git tag `wave-N-start`, single-PC wave (backward compatible, no worktree isolation), multi-PC wave (parallel dispatch with `isolation: "worktree"`, prior waves only in context briefs), post-wave merge (sequential in PC-ID order, merge conflict detection), wave regression verification (run all PC commands from waves 1..W), and wave failure handling (let wave finish, merge successful, discard failed PCs' branches, re-derive on re-entry).
 
-Execute wave dispatch per the wave-dispatch skill. For each commit, also append the SHA and message to campaign.md's `## Commit Trail` table (parent orchestrator only, never subagents).
+Execute wave dispatch per the skill. Accumulate commit SHA hashes for the Phase Summary. For each commit, also append the SHA and message to campaign.md's `## Commit Trail` table (parent orchestrator only, never subagents). Status updates: append `red@<timestamp>` on dispatch, `green@<timestamp>` on success, `done@<timestamp>` after regression passes.
 
 ### Progress Tracking (Parent-Owned)
 
