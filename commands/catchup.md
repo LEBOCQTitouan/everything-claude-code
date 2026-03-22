@@ -30,6 +30,20 @@ If no state.json exists, report "No active workflow" and continue to the Git Sta
 
 If the phase is `done`, report "Workflow complete: <feature>" along with the completion timestamp from state.json, then continue to Git Status.
 
+## Stale Workflow Detection
+
+After reading the workflow state, if the workflow is active (phase is not `done` and state.json exists with valid JSON), check for staleness:
+
+1. Run `git log -1 --format=%ct HEAD` to get the last commit timestamp
+2. Get the current time via `date +%s`
+3. Calculate the difference in seconds
+4. If the difference is greater than 3600 seconds (1 hour), the workflow is **STALE**:
+   - Flag the output with "**STALE** — last commit is more than 1 hour old"
+   - Use `AskUserQuestion` to prompt the user with two options:
+     - "Resume current workflow" — continue normally with no state modifications
+     - "Reset workflow state" — archive state.json to `.claude/workflow/archive/state-<timestamp>.json` then delete state.json
+5. If the difference is less than or equal to 3600 seconds, do NOT show a staleness warning — proceed normally
+
 ## Tasks Progress
 
 Only display this section when the current phase is `implement`.
