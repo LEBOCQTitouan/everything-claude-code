@@ -157,6 +157,12 @@ test_stale_detection() {
   assert_file_contains "offers Reset option" "$COMMAND_FILE" "Reset"
 }
 
+test_not_stale() {
+  echo "--- test_not_stale ---"
+  assert_file_contains "threshold is 3600 seconds" "$COMMAND_FILE" "3600"
+  assert_file_contains "no warning when recent" "$COMMAND_FILE" "do NOT show.*staleness"
+}
+
 test_stale_resume() {
   echo "--- test_stale_resume ---"
   assert_file_contains "resume option exists" "$COMMAND_FILE" "Resume"
@@ -195,6 +201,7 @@ run_tests() {
   fi
   if [ -z "${1:-}" ]; then
     test_stale_detection
+    test_not_stale
     test_stale_resume
     test_stale_reset
     test_workflow_active_state
