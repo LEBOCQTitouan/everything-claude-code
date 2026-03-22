@@ -123,6 +123,14 @@ test_allowed_tools() {
   assert_not_contains "allowed-tools excludes Agent" "$allowed_line" "Agent"
 }
 
+test_section_headers() {
+  echo "--- test_section_headers ---"
+  assert_file_contains "has Workflow State header" "$COMMAND_FILE" "^## Workflow State"
+  assert_file_contains "has Tasks Progress header" "$COMMAND_FILE" "^## Tasks Progress"
+  assert_file_contains "has Git Status header" "$COMMAND_FILE" "^## Git Status"
+  assert_file_contains "has Recent Activity header" "$COMMAND_FILE" "^## Recent Activity"
+}
+
 test_git_uncommitted() {
   echo "--- test_git_uncommitted ---"
   assert_file_contains "mentions git status" "$COMMAND_FILE" "git status --short"
@@ -291,6 +299,7 @@ run_tests() {
     test_memory_none
     test_frontmatter_valid
     test_allowed_tools
+    test_section_headers
   fi
 
   echo ""
