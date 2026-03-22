@@ -72,6 +72,19 @@ assert_file_not_contains() {
 
 # (Test functions will be added in subsequent PCs)
 
+test_workflow_active_state() {
+  echo "--- test_workflow_active_state ---"
+  assert_file_contains "has Workflow State section" "$COMMAND_FILE" "## Workflow State"
+  assert_file_contains "reads state.json" "$COMMAND_FILE" "state\.json"
+  assert_file_contains "displays phase" "$COMMAND_FILE" "phase"
+  assert_file_contains "displays feature" "$COMMAND_FILE" "feature"
+  assert_file_contains "displays concern" "$COMMAND_FILE" "concern"
+  assert_file_contains "displays started_at" "$COMMAND_FILE" "started_at"
+  assert_file_contains "checks artifact timestamps" "$COMMAND_FILE" "plan"
+  assert_file_contains "checks solution artifact" "$COMMAND_FILE" "solution"
+  assert_file_contains "checks implement artifact" "$COMMAND_FILE" "implement"
+}
+
 # --- Run tests ---
 
 run_tests() {
@@ -82,7 +95,9 @@ run_tests() {
     # Run a single named test
     "$1"
   fi
-  # No test functions yet — subsequent PCs will add them
+  if [ -z "${1:-}" ]; then
+    test_workflow_active_state
+  fi
 
   echo ""
   echo "=== Summary: $PASS_COUNT passed, $FAIL_COUNT failed ==="
