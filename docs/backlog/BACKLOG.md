@@ -51,8 +51,9 @@
 | BL-048 | Comprehensive output summaries for spec → design → implement pipeline | — | MEDIUM | /spec-refactor | implemented | 2026-03-22 |
 | BL-049 | Offload web research phase to Task subagents in /spec-* commands | — | MEDIUM | /spec-refactor | open | 2026-03-22 |
 | BL-050 | Deferred summary tables: coverage delta, bounded contexts, per-test-name | — | MEDIUM | /spec-dev | open | 2026-03-22 |
-| BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | open | 2026-03-22 |
+| BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | implemented | 2026-03-22 |
 | BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | open | 2026-03-22 |
+| BL-053 | Deploy poweruser statusline via ecc install | — | MEDIUM | /spec dev | open | 2026-03-22 |
 
 ## Dependency Graph
 
@@ -76,7 +77,7 @@ BL-047 → BL-027 (auto-memory extends cross-session memory system)
 
 ## Stats
 
-- **Total:** 49
-- **Open:** 26
+- **Total:** 50
+- **Open:** 27
 - **Implemented:** 23
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 3
