@@ -6,6 +6,8 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
 # Test Architecture Audit
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, tell the user what is happening and why.
 
 Focused test architecture analysis of the codebase. Includes special E2E boundary coverage analysis for hexagonal architectures. Produces a dated report in `docs/audits/` with actionable findings.
 

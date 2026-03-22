@@ -6,6 +6,10 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
 # Full Codebase Audit
 
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
+
+> Before dispatching, tell the user which domain agents will run and in what order (evolution first, then all domains in parallel).
 
 Comprehensive audit across all domains with cross-domain correlation. Delegates to the `audit-orchestrator` agent which coordinates all domain-specific agents. Produces a dated report in `docs/audits/` with correlated findings and a prioritized remediation roadmap.
 
@@ -195,6 +199,8 @@ To act on these findings, run `/spec` referencing this report.
 ```
 
 ## 3. Present
+
+> As each domain audit completes, report its completion status to the user conversationally before moving to the next.
 
 Display a console summary:
 
