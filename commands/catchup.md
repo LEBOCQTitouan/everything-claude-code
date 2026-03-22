@@ -76,3 +76,13 @@ Run `git worktree list` to check for multiple worktrees. If more than one worktr
 Run `git log --oneline -10` to show recent commit history. If `git log` fails (e.g., a new repository with zero commits), display "No commits yet" instead of erroring.
 
 This provides context on where the codebase stands regardless of workflow state.
+
+## Recent Activity
+
+Check the project memory directory for daily memory files at `memory/daily/YYYY-MM-DD.md` (relative to the project memory path, e.g., `~/.claude/projects/<hash>/memory/daily/`).
+
+1. **Today's file exists**: If `memory/daily/YYYY-MM-DD.md` exists for today's date, read it and display its Activity section entries as a summary of recent work.
+
+2. **Fallback to most recent file**: If today's file does not exist but other daily files exist in `memory/daily/`, find the most recent one by filename sort order. Display its Activity section with a label: "(from YYYY-MM-DD)" indicating the date of the file used.
+
+3. **No daily files**: If no daily memory files exist in the `memory/daily/` directory (or the directory does not exist), state: "No session history available."
