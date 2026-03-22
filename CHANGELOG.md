@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- Add comprehensive pipeline output summaries: table-based Phase Summary sections for /spec-*, /design, and /implement commands with grill-me decisions, adversary findings, artifact persistence, and idempotent overwrite; extract shared spec sections into spec-pipeline-shared skill (BL-048, ADR 0009)
 - Add design-an-interface skill and interface-designer agent: divergent interface exploration with parallel sub-agents, 5-dimension comparison matrix, convergence detection, and user synthesis (BL-014, ADR 0008)
 - Add /catchup session resumption command: structured summary of workflow state, tasks progress, git status, stale detection, and daily memory activity (BL-017)
 - Persist tasks.md as session-independent implementation progress tracker alongside spec.md and design.md in `docs/specs/` — tracks PC statuses with timestamp trails, serves as authoritative cross-session resume source (BL-030)
