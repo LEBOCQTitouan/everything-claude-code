@@ -236,6 +236,7 @@ run_tests() {
     test_git_clean
     test_git_zero_commits
     test_memory_today
+    test_memory_previous
   fi
 
   echo ""
