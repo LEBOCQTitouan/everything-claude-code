@@ -26,6 +26,7 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
    3. **Regenerate if tasks.md deleted.** If `artifacts.tasks_path` is set but the file does not exist, regenerate tasks.md from the solution's PC table. Infer completion status using `git log --oneline --after=<started_at from state.json> --grep="PC-NNN"` — if a commit message contains the PC ID after the workflow `started_at` timestamp, mark that PC as `done`. Emit warning: "tasks.md regenerated from git history — verify accuracy."
    4. **Handle malformed tasks.md.** If tasks.md exists but cannot be parsed (malformed markdown), regenerate from the solution's PC table using the git-log inference above. Emit warning: "tasks.md was malformed; regenerated from solution."
    5. **TodoRead fallback.** If `artifacts.tasks_path` is null (BL-029 not active), fall back to reading TodoRead for resume state.
+   6. **Campaign re-entry orientation.** If `artifacts.campaign_path` exists in state.json and the file exists, read campaign.md for orientation context: toolchain commands, grill-me decisions, commit trail, and resumption pointer.
 7. Run: `!bash .claude/hooks/phase-transition.sh implement`
 
 ## Phase 1: Enter Plan Mode
@@ -82,61 +83,15 @@ Use `TaskUpdate` to mark each task `in_progress` when starting and `completed` w
 
 ### Generate tasks.md
 
-Persist a session-independent task tracker alongside the spec and design artifacts in `docs/specs/YYYY-MM-DD-<slug>/tasks.md`:
+> **Shared**: See `skills/tasks-generation/SKILL.md` for the full tasks.md format and status trail conventions.
 
-1. Read `artifacts.spec_path` from `state.json`. If `spec_path` is null or the spec directory is not available, emit a warning: "Spec directory not available. tasks.md generation skipped." and skip this subsection.
-2. Derive the spec directory from `spec_path` (e.g., `docs/specs/2026-03-21-my-feature/`)
-3. Write `tasks.md` in that directory using this exact format:
-
-```markdown
-# Tasks: <feature title>
-
-## Pass Conditions
-
-- [ ] PC-001: <description> | `<command>` | pending@<ISO 8601 timestamp>
-- [ ] PC-002: <description> | `<command>` | pending@<ISO 8601 timestamp>
-...
-
-## Post-TDD
-
-- [ ] E2E tests | pending@<ISO 8601 timestamp>
-- [ ] Code review | pending@<ISO 8601 timestamp>
-- [ ] Doc updates | pending@<ISO 8601 timestamp>
-- [ ] Write implement-done.md | pending@<ISO 8601 timestamp>
-```
-
-4. Store `artifacts.tasks_path` in state.json: run `!bash .claude/hooks/phase-transition.sh implement implement <tasks_path>`
-5. Commit: `docs: write tasks.md for <feature>`
-
-Status updates during the TDD loop (Phase 3) append to each line's trail:
-- Dispatch: append `| red@<ISO 8601 timestamp>`
-- Subagent success: append `| green@<ISO 8601 timestamp>`
-- Regression verification passes: append `| done@<ISO 8601 timestamp>` and mark `[x]`
-- Failure: append `| failed@<ISO 8601 timestamp> ERROR: <summary>`
+Generate tasks.md in the spec directory using the tasks-generation skill's format. Store `artifacts.tasks_path` in state.json via phase-transition.sh. Commit: `docs: write tasks.md for <feature>`.
 
 ### Wave Analysis
 
-After generating tasks.md, analyze the dependency graph between PCs to enable parallel execution.
+> **Shared**: See `skills/wave-analysis/SKILL.md` for the full wave grouping algorithm, concurrency cap, and degenerate cases.
 
-#### Algorithm
-
-Scan PCs left-to-right in Test Strategy order. Start a new wave. For each subsequent PC, add it to the current wave if it shares no files (from "Files to Modify") with any PC already in the wave. If it does share files, close the current wave and start a new one. This produces waves of adjacent, file-independent PCs.
-
-#### Concurrency Cap
-
-If a wave contains more than 4 PCs, split it into sub-batches of maximum 4 concurrent subagents.
-
-#### Wave Plan Display
-
-Before proceeding to Phase 3, display the wave plan to the user:
-
-> **Wave Plan**: Show each wave with its PC IDs, files affected, and parallelism factor. Example: "Wave 1: PC-003, PC-004, PC-005 [3 parallel] | Wave 2: PC-006 [sequential]"
-
-#### Degenerate Cases
-
-- **All PCs overlap** (same file): each PC gets its own wave — fully sequential. Wave machinery is skipped.
-- **All PCs independent**: one wave containing all PCs (split into sub-batches of 4 if > 4).
-- **Single-PC implementation**: one wave with one PC — no overhead.
+After generating tasks.md, analyze the PC dependency graph and display the wave plan to the user before proceeding to Phase 3.
 
 ## Phase 3: TDD Loop (Subagent Dispatch)
 
@@ -176,88 +131,13 @@ The RED-GREEN-REFACTOR instructions from the `tdd-executor` agent.
 
 ### Wave Dispatch
 
-For each wave in the wave plan:
+> **Shared**: See `skills/wave-dispatch/SKILL.md` for the full wave dispatch logic — pre-wave setup, single-PC/multi-PC dispatch, post-wave merge, regression verification, and failure handling.
 
-#### Pre-Wave Setup
-
-1. Create a git tag `wave-N-start` (where N is the wave number) for rollback safety
-2. Update tasks.md: mark all PCs in the wave as `red@<timestamp>`
-
-#### Single-PC Wave (Backward Compatible)
-
-If the wave contains exactly one PC, dispatch it using the existing sequential process (no worktree isolation). This preserves current behavior exactly.
-
-> Before dispatching each subagent, tell the user which PC is being implemented, what AC it covers, and what to expect from the TDD cycle.
-
-1. Build the context brief using the headings above
-2. Launch a Task with the `tdd-executor` agent (allowedTools: [Read, Write, Edit, MultiEdit, Bash, Grep, Glob])
-3. The subagent executes RED → GREEN → REFACTOR and commits atomically
-4. Receive the subagent's structured result: pc_id, status, red_result, green_result, refactor_result, commits, files_changed, error
-   - **Commit SHA Accumulator**: After each successful subagent, accumulate all commit SHA hashes and messages into a structured list. Extract SHAs from the subagent's `commits` field. This accumulated list is used in the Phase Summary.
-5. If the subagent returns `RED_ALREADY_PASSES` → investigate. The feature may already exist or the test is wrong.
-6. If the subagent crashes or times out after partial commits → report: subagent exit state, last commit SHA(s) via `git log -3 --oneline`, and the PC in progress. Do NOT auto-revert.
-7. If the subagent returns `failure` → **STOP** and report the error to the user. If the failure message mentions a prior PC or a structural conflict, report it as a potential PC conflict (the subagent believes making its test pass necessarily breaks prior code — analogous to the old Loop Invariant). If the failure suggests a test/spec mismatch, the parent should investigate and, if confirmed, fix the test locally (with a TDD Log note) and re-dispatch the PC. Do not proceed to the next PC.
-
-#### Multi-PC Wave (Parallel Dispatch)
-
-If the wave contains 2+ PCs, dispatch all concurrently:
-
-1. For each PC in the wave, launch a Task with the `tdd-executor` agent using `isolation: "worktree"` on the Agent call
-2. Each subagent operates in its own git worktree — a valid repo checkout where tdd-executor runs unchanged
-3. Build context briefs as before, but "Prior PC Results" includes only PCs from completed prior waves (not same-wave PCs)
-4. Wait for ALL subagents in the wave to complete before proceeding
-
-#### Post-Wave Merge
-
-After all subagents in a wave complete:
-
-1. Merge each subagent's worktree branch into the main branch, sequentially in PC-ID order
-2. If a merge conflict is detected, STOP and report: the conflicting PCs, files, and suggest manual resolution
-3. If a worktree creation failed, STOP and report the error with remediation guidance
-4. Claude Code's automatic worktree cleanup handles temporary worktrees
-
-### Wave Regression Verification
-
-After all subagents in a wave complete and branches are merged:
-
-> After each wave completes, report how many prior PCs were re-verified and the result. If a regression is detected, explain what was found and provide specific remediation steps.
-
-1. Run ALL PC commands from waves 1 through the current wave W (all completed PCs)
-2. For the first wave, only verify the wave's own PCs
-3. If regression passes, mark all PCs in the wave as complete
-4. If regression fails, STOP and report: the failing PC command, AND list all PCs in wave W as potential culprits (since any parallel PC could be the cause)
-
-### Wave Failure Handling
-
-If one or more PCs in a wave fail:
-
-1. Let all other subagents in the wave finish (their work is valid — PCs are independent)
-2. Merge successful PCs' branches. Discard failed PCs' branches.
-3. STOP and report the failure. Do not proceed to the next wave.
-4. On re-entry, re-derive the wave plan from tasks.md. Skip completed PCs (`[x]`). Re-dispatch only failed/incomplete PCs in the first incomplete wave.
+Execute wave dispatch per the wave-dispatch skill. For each commit, also append the SHA and message to campaign.md's `## Commit Trail` table (parent orchestrator only, never subagents).
 
 ### Progress Tracking (Parent-Owned)
 
-After regression verification passes:
-
-1. Update TodoWrite to mark PC-NNN as complete
-2. Call TaskUpdate to mark PC-N's task as completed
-3. Update `tasks.md` status for the completed PC:
-   - Before dispatch: update the PC line from `pending` to append `| red@<ISO 8601 timestamp>`
-   - On subagent success (green_result): append `| green@<ISO 8601 timestamp>`
-   - After regression verification passes: append `| done@<ISO 8601 timestamp>` and change `[ ]` to `[x]`
-   - On subagent failure: append `| failed@<ISO 8601 timestamp> ERROR: <error summary>` — do NOT mark `[x]`
-4. If the subagent failed, do NOT mark the PC as complete — TodoWrite, Task, and tasks.md remain in-progress
-5. On re-entry (implement phase re-entry), tasks.md is the authoritative resume source (see Phase 0 step 6)
-
-### Loop Completion (Parent-Owned)
-
-After ALL PCs complete successfully:
-
-1. Run every PC's Command one final time. Record results.
-2. Run the lint PC (e.g., `cargo clippy -- -D warnings`). Must pass.
-3. Run the build PC (e.g., `cargo build`). Must pass.
-4. Update the TodoWrite checklist: mark all PC items complete.
+> **Shared**: See `skills/progress-tracking/SKILL.md` for the full progress tracking logic — TodoWrite, TaskUpdate, tasks.md status updates, and loop completion.
 
 ## Phase 4: E2E Tests
 
@@ -291,7 +171,7 @@ If CRITICAL or HIGH findings:
 
 Max 2 fix rounds. If CRITICAL/HIGH findings persist after 2 rounds, report to user and proceed.
 
-Record: code review summary (PASS or findings addressed)
+Record: code review summary (PASS or findings addressed). Also append findings summary to campaign.md's `## Agent Outputs` table (Agent: code-reviewer, Phase: implement).
 
 After code review completes, update tasks.md: set "Code review" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
 
@@ -314,26 +194,7 @@ Apply these rules based on the doc target:
 
 ### ADR Creation
 
-For each decision marked `ADR Needed? Yes` in the spec's Decisions table:
-1. Create `docs/adr/NNN-<slug>.md` using the standard ADR format:
-   ```
-   # NNN. <Decision Title>
-
-   Date: YYYY-MM-DD
-
-   ## Status
-   Accepted
-
-   ## Context
-   <why this decision was needed>
-
-   ## Decision
-   <what was decided>
-
-   ## Consequences
-   <positive and negative impacts>
-   ```
-2. Commit: `docs(adr): add ADR NNN — <decision title>`
+For each decision marked `ADR Needed? Yes` in the spec's Decisions table, create `docs/adr/NNN-<slug>.md` using the standard Status/Context/Decision/Consequences format. Commit: `docs(adr): add ADR NNN — <decision title>`.
 
 ### Other Doc Updates
 
@@ -464,11 +325,8 @@ Then STOP. The workflow is complete.
 - You MUST commit immediately after every RED, GREEN, REFACTOR, and doc update step — never defer commits, never batch multiple steps into one commit, never ask the user whether to commit
 - Doc updates happen BEFORE writing implement-done.md (they are part of implementation, not an afterthought)
 - implement-done.md schema is EXACT — stop hooks parse it
-- One PC at a time — never batch multiple PCs
-- Wave grouping uses left-to-right scan with adjacent + no file overlap
-- Max 4 concurrent subagents per wave (split larger waves into sub-batches)
-- Single-PC waves dispatch without worktree isolation (backward compatible)
-- Git tags at wave boundaries (`wave-N-start`) for rollback
+- One PC at a time — never batch multiple PCs (wave dispatch groups independent PCs per `skills/wave-dispatch/SKILL.md`)
+- Campaign.md writes by parent orchestrator only, never by subagents
 
 ## Related Agents
 

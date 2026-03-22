@@ -1,0 +1,67 @@
+---
+name: wave-dispatch
+description: Wave dispatch logic for parallel TDD execution — worktree isolation, sequential merge, wave regression, failure handling
+origin: ECC
+---
+
+# Wave Dispatch
+
+For each wave in the wave plan:
+
+## Pre-Wave Setup
+
+1. Create a git tag `wave-N-start` (where N is the wave number) for rollback safety
+2. Update tasks.md: mark all PCs in the wave as `red@<timestamp>`
+
+## Single-PC Wave (Backward Compatible)
+
+If the wave contains exactly one PC, dispatch it using the existing sequential process (no worktree isolation). This preserves current behavior exactly.
+
+> Before dispatching each subagent, tell the user which PC is being implemented, what AC it covers, and what to expect from the TDD cycle.
+
+1. Build the context brief using the standard headings (PC Spec, File Paths, Files to Modify, Prior PC Results, Commit Rules, TDD Cycle Rules)
+2. Launch a Task with the `tdd-executor` agent (allowedTools: [Read, Write, Edit, MultiEdit, Bash, Grep, Glob])
+3. The subagent executes RED → GREEN → REFACTOR and commits atomically
+4. Receive the subagent's structured result: pc_id, status, red_result, green_result, refactor_result, commits, files_changed, error
+   - **Commit SHA Accumulator**: After each successful subagent, accumulate all commit SHA hashes and messages. Also append each SHA and message to the campaign manifest's `## Commit Trail` table (parent orchestrator only, never subagents).
+5. If the subagent returns `RED_ALREADY_PASSES` → investigate
+6. If the subagent crashes or times out → report and do NOT auto-revert
+7. If the subagent returns `failure` → STOP and report
+
+## Multi-PC Wave (Parallel Dispatch)
+
+If the wave contains 2+ PCs, dispatch all concurrently:
+
+1. For each PC in the wave, launch a Task with the `tdd-executor` agent using `isolation: "worktree"` on the Agent call
+2. Each subagent operates in its own git worktree
+3. Build context briefs as before, but "Prior PC Results" includes only PCs from completed prior waves (not same-wave PCs)
+4. Wait for ALL subagents in the wave to complete before proceeding
+
+## Post-Wave Merge
+
+After all subagents in a wave complete:
+
+1. Merge each subagent's worktree branch into the main branch, sequentially in PC-ID order
+2. If a merge conflict is detected, STOP and report
+3. If a worktree creation failed, STOP and report
+4. Claude Code's automatic worktree cleanup handles temporary worktrees
+
+## Wave Regression Verification
+
+After all subagents in a wave complete and branches are merged:
+
+> After each wave completes, report how many prior PCs were re-verified and the result.
+
+1. Run ALL PC commands from waves 1 through the current wave W
+2. For the first wave, only verify the wave's own PCs
+3. If regression passes, mark all PCs in the wave as complete
+4. If regression fails, STOP and report all PCs in wave W as potential culprits
+
+## Wave Failure Handling
+
+If one or more PCs in a wave fail:
+
+1. Let all other subagents in the wave finish (their work is valid — PCs are independent)
+2. Merge successful PCs' branches. Discard failed PCs' branches.
+3. STOP and report the failure. Do not proceed to the next wave.
+4. On re-entry, re-derive the wave plan from tasks.md. Skip completed PCs. Re-dispatch only failed/incomplete PCs in the first incomplete wave.
