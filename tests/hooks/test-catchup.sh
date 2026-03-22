@@ -237,6 +237,7 @@ run_tests() {
     test_git_zero_commits
     test_memory_today
     test_memory_previous
+    test_memory_none
   fi
 
   echo ""
