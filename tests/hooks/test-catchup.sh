@@ -70,7 +70,31 @@ assert_file_not_contains() {
 
 # --- Tests ---
 
-# (Test functions will be added in subsequent PCs)
+test_frontmatter_valid() {
+  echo "--- test_frontmatter_valid ---"
+  # Check file starts with YAML frontmatter delimiter
+  local first_line
+  first_line="$(head -1 "$COMMAND_FILE")"
+  if [ "$first_line" = "---" ]; then
+    echo "PASS  frontmatter opens with ---"
+    PASS_COUNT=$((PASS_COUNT + 1))
+  else
+    echo "FAIL  frontmatter opens with --- (got '$first_line')"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+  fi
+  # Check for closing delimiter
+  local closing_count
+  closing_count="$(grep -c '^---$' "$COMMAND_FILE")"
+  if [ "$closing_count" -ge 2 ]; then
+    echo "PASS  frontmatter has closing ---"
+    PASS_COUNT=$((PASS_COUNT + 1))
+  else
+    echo "FAIL  frontmatter has closing --- (found $closing_count delimiters)"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+  fi
+  # Check for description field in frontmatter
+  assert_file_contains "frontmatter has description field" "$COMMAND_FILE" "^description:"
+}
 
 test_git_uncommitted() {
   echo "--- test_git_uncommitted ---"
@@ -238,6 +262,7 @@ run_tests() {
     test_memory_today
     test_memory_previous
     test_memory_none
+    test_frontmatter_valid
   fi
 
   echo ""
