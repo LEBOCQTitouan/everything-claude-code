@@ -72,6 +72,12 @@ assert_file_not_contains() {
 
 # (Test functions will be added in subsequent PCs)
 
+test_malformed_json() {
+  echo "--- test_malformed_json ---"
+  assert_file_contains "warns about malformed state" "$COMMAND_FILE" "state\.json is malformed"
+  assert_file_contains "continues after malformed json" "$COMMAND_FILE" "continue"
+}
+
 test_spec_design_paths() {
   echo "--- test_spec_design_paths ---"
   assert_file_contains "displays spec_path" "$COMMAND_FILE" "spec_path"
@@ -140,6 +146,7 @@ run_tests() {
     test_no_workflow
     test_workflow_done
     test_spec_design_paths
+    test_malformed_json
   fi
 
   echo ""
