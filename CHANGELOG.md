@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- Add /catchup session resumption command: structured summary of workflow state, tasks progress, git status, stale detection, and daily memory activity (BL-017)
 - Persist tasks.md as session-independent implementation progress tracker alongside spec.md and design.md in `docs/specs/` — tracks PC statuses with timestamp trails, serves as authoritative cross-session resume source (BL-030)
 - Automatic session-to-memory persistence: daily files at `memory/daily/YYYY-MM-DD.md` with activity auto-capture on phase transitions and session stop, cross-day context linking (BL-047)
 - Add cargo test, cargo fmt --check, cargo clippy, and cargo audit to CI pipeline — closes critical quality gate gaps
