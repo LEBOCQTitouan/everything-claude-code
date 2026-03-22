@@ -60,29 +60,34 @@ fi
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-# Build jq expression
-JQ_EXPR=".phase = \"$TARGET\""
+# Build jq filter using --arg for injection safety (BL-035)
+JQ_FILTER='.phase = $target'
+JQ_ARGS=(--arg target "$TARGET" --arg timestamp "$TIMESTAMP")
 
 if [ -n "$ARTIFACT" ]; then
-  JQ_EXPR="$JQ_EXPR | .artifacts.$ARTIFACT = \"$TIMESTAMP\""
+  JQ_ARGS+=(--arg artifact "$ARTIFACT")
+  JQ_FILTER="$JQ_FILTER | .artifacts[\$artifact] = \$timestamp"
 fi
 
-# Store spec/design file paths in state.json (BL-029)
+# Store spec/design/tasks/campaign file paths in state.json (BL-029, BL-035)
 if [ -n "$ARTIFACT_PATH" ]; then
+  JQ_ARGS+=(--arg path "$ARTIFACT_PATH")
   case "$ARTIFACT" in
-    plan)      JQ_EXPR="$JQ_EXPR | .artifacts.spec_path = \"$ARTIFACT_PATH\"" ;;
-    solution)  JQ_EXPR="$JQ_EXPR | .artifacts.design_path = \"$ARTIFACT_PATH\"" ;;
-    implement) JQ_EXPR="$JQ_EXPR | .artifacts.tasks_path = \"$ARTIFACT_PATH\"" ;;
+    plan)      JQ_FILTER="$JQ_FILTER | .artifacts.spec_path = \$path" ;;
+    solution)  JQ_FILTER="$JQ_FILTER | .artifacts.design_path = \$path" ;;
+    implement) JQ_FILTER="$JQ_FILTER | .artifacts.tasks_path = \$path" ;;
+    campaign)  JQ_FILTER="$JQ_FILTER | .artifacts.campaign_path = \$path" ;;
   esac
 fi
 
 if [ "$TARGET" = "done" ]; then
-  JQ_EXPR="$JQ_EXPR | .completed += [{\"phase\": \"$ARTIFACT\", \"file\": \"implement-done.md\", \"at\": \"$TIMESTAMP\"}]"
+  JQ_ARGS+=(--arg done_artifact "${ARTIFACT:-}")
+  JQ_FILTER="$JQ_FILTER | .completed += [{\"phase\": \$done_artifact, \"file\": \"implement-done.md\", \"at\": \$timestamp}]"
 fi
 
 # Atomic write via mktemp+mv
 TMPFILE=$(mktemp "${WORKFLOW_DIR}/state.XXXXXX") || exit 1
-jq "$JQ_EXPR" "$STATE_FILE" > "$TMPFILE" || { rm -f "$TMPFILE"; exit 1; }
+jq "${JQ_ARGS[@]}" "$JQ_FILTER" "$STATE_FILE" > "$TMPFILE" || { rm -f "$TMPFILE"; exit 1; }
 mv "$TMPFILE" "$STATE_FILE"
 
 echo "Phase transition: $CURRENT -> $TARGET"

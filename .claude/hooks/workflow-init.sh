@@ -58,12 +58,14 @@ if command -v jq >/dev/null 2>&1; then
       phase: $phase,
       feature: $feature,
       started_at: $started_at,
-      artifacts: { plan: null, solution: null, implement: null },
+      toolchain: { test: null, lint: null, build: null },
+      artifacts: { plan: null, solution: null, implement: null, campaign_path: null },
       completed: []
     }' > "$TMPFILE"
 else
-  printf '{"concern":"%s","phase":"plan","feature":"%s","started_at":"%s","artifacts":{"plan":null,"solution":null,"implement":null},"completed":[]}\n' \
-    "$CONCERN" "$FEATURE" "$STARTED_AT" > "$TMPFILE"
+  echo "ERROR: jq is required but not found. Install jq to continue." >&2
+  rm -f "$TMPFILE"
+  exit 1
 fi
 
 mv "$TMPFILE" "$STATE_FILE"

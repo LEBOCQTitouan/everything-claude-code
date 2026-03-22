@@ -13,9 +13,23 @@ PHASE=$(jq -r '.phase // "plan"' "$STATE_FILE" 2>/dev/null) || exit 0
 # Only active during implement or done phases
 [ "$PHASE" != "implement" ] && [ "$PHASE" != "done" ] && exit 0
 
-SOLUTION_FILE="$PROJECT_DIR/.claude/workflow/solution.md"
+# Read design path from state.json artifacts.design_path (BL-035)
+DESIGN_PATH=$(jq -r '.artifacts.design_path // empty' "$STATE_FILE" 2>/dev/null) || true
+SOLUTION_FILE=""
+if [ -n "$DESIGN_PATH" ]; then
+  RESOLVED=$(cd "$PROJECT_DIR" && realpath -m "$DESIGN_PATH" 2>/dev/null) || true
+  case "${RESOLVED:-}" in
+    "$PROJECT_DIR"/*) SOLUTION_FILE="$RESOLVED" ;;
+    *) echo "WARNING: design_path escapes project directory, ignoring." >&2 ;;
+  esac
+fi
 
-# Need solution file
+# Fallback to legacy path
+if [ -z "$SOLUTION_FILE" ] || [ ! -f "$SOLUTION_FILE" ]; then
+  SOLUTION_FILE="$PROJECT_DIR/.claude/workflow/solution.md"
+fi
+
+# Need design/solution file
 [ ! -f "$SOLUTION_FILE" ] && exit 0
 
 # Extract expected file paths from solution.md File Changes table
