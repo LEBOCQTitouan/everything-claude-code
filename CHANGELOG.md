@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- Add interview-me skill and interviewer agent: collaborative requirements interview with 8-stage methodology, codebase-aware questioning, security hard-gate, and structured output to docs/interviews/; enhance ecc validate skills with frontmatter field validation (BL-013, ADR 0010)
 - Add comprehensive pipeline output summaries: table-based Phase Summary sections for /spec-*, /design, and /implement commands with grill-me decisions, adversary findings, artifact persistence, and idempotent overwrite; extract shared spec sections into spec-pipeline-shared skill (BL-048, ADR 0009)
 - Add design-an-interface skill and interface-designer agent: divergent interface exploration with parallel sub-agents, 5-dimension comparison matrix, convergence detection, and user synthesis (BL-014, ADR 0008)
 - Add /catchup session resumption command: structured summary of workflow state, tasks progress, git status, stale detection, and daily memory activity (BL-017)
