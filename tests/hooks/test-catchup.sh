@@ -148,6 +148,15 @@ test_tasks_progress() {
   assert_file_contains "detects in-progress tasks" "$COMMAND_FILE" "in-progress"
 }
 
+test_stale_detection() {
+  echo "--- test_stale_detection ---"
+  assert_file_contains "flags STALE" "$COMMAND_FILE" "STALE"
+  assert_file_contains "mentions 1 hour threshold" "$COMMAND_FILE" "1 hour"
+  assert_file_contains "uses AskUserQuestion" "$COMMAND_FILE" "AskUserQuestion"
+  assert_file_contains "offers Resume option" "$COMMAND_FILE" "Resume"
+  assert_file_contains "offers Reset option" "$COMMAND_FILE" "Reset"
+}
+
 test_workflow_active_state() {
   echo "--- test_workflow_active_state ---"
   assert_file_contains "has Workflow State section" "$COMMAND_FILE" "## Workflow State"
@@ -172,6 +181,7 @@ run_tests() {
     "$1"
   fi
   if [ -z "${1:-}" ]; then
+    test_stale_detection
     test_workflow_active_state
     test_tasks_progress
     test_tasks_missing
