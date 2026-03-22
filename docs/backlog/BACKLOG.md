@@ -33,7 +33,7 @@
 | BL-030 | Persist tasks.md as trackable artifact | 8 | HIGH | /implement | implemented | 2026-03-21 |
 | BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | implemented | 2026-03-21 |
 | BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | open | 2026-03-21 |
-| BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | open | 2026-03-21 |
+| BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | archived | 2026-03-21 |
 | BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | open | 2026-03-21 |
 | BL-035 | Context window usage monitoring | 9 | MEDIUM | strategic-compact | open | 2026-03-21 |
 | BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | open | 2026-03-21 |
@@ -48,6 +48,7 @@
 | BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | implemented | 2026-03-21 |
 | BL-046 | Phase-gate hook blocks spec/plan/design file writes during active workflow phases | — | LOW | direct edit | implemented | 2026-03-21 |
 | BL-047 | Automatic session-to-memory persistence with daily files | — | HIGH | /spec dev | implemented | 2026-03-21 |
+| BL-048 | Comprehensive output summaries for spec → design → implement pipeline | — | MEDIUM | /spec-refactor | open | 2026-03-22 |
 
 ## Dependency Graph
 
@@ -71,7 +72,7 @@ BL-047 → BL-027 (auto-memory extends cross-session memory system)
 
 ## Stats
 
-- **Total:** 45
-- **Open:** 22
+- **Total:** 46
+- **Open:** 23
 - **Implemented:** 23
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 2

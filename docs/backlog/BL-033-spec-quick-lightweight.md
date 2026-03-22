@@ -1,7 +1,7 @@
 ---
 id: BL-033
 title: Add /spec-quick for lightweight changes
-status: open
+status: archived
 created: 2026-03-21
 scope: MEDIUM
 target_command: /spec-quick (new command)
