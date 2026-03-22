@@ -8,6 +8,8 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUs
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 >
 > **Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
 
 !`bash .claude/hooks/workflow-init.sh fix "$ARGUMENTS"`
 
@@ -41,6 +43,8 @@ Mark each item complete as the phase finishes.
 
 ## Phase 1: Investigation
 
+> Before dispatching, tell the user which agent is being launched (`code-reviewer` in read-only mode) and that it will investigate the root cause without making changes.
+
 Launch a Task with the `code-reviewer` agent in **read-only investigation mode** (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Provide the user's bug description as context
@@ -63,6 +67,8 @@ Read `docs/audits/` for any existing audit reports relevant to the bug area:
 5. If no audit reports exist or none are relevant, note "No prior audit findings applicable"
 
 ## Phase 3: Web Research
+
+> Tell the user this phase is starting: you are now searching for known issues and fix patterns. Explain what queries you are running.
 
 Search the web for known issues, fix patterns, and related pitfalls for the bug's domain.
 
@@ -224,6 +230,8 @@ Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob])
 - The agent returns a verdict in conversation (no file writes)
 
 ### Verdict Handling (max 3 rounds)
+
+> After receiving the adversary verdict, translate the findings into plain language. If this gate blocks, explain what failed and provide specific remediation steps.
 
 Track the current round number (starting at 1):
 

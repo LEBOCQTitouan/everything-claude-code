@@ -8,6 +8,8 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUs
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 >
 > **Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
 
 !`bash .claude/hooks/workflow-init.sh refactor "$ARGUMENTS"`
 
@@ -40,6 +42,8 @@ TodoWrite items:
 Mark each item complete as the phase finishes.
 
 ## Phase 1: Current State Analysis
+
+> Before dispatching, tell the user which agents are being launched in parallel (`evolution-analyst`, `arch-reviewer`, `component-auditor`) and what each will analyze.
 
 Launch **three Tasks in parallel**:
 
@@ -74,6 +78,8 @@ Read `docs/audits/` for any existing audit reports relevant to the refactoring a
 5. If no audit reports exist or none are relevant, note "No prior audit findings applicable"
 
 ## Phase 3: Web Research
+
+> Tell the user this phase is starting: you are now searching for refactoring patterns and migration guides. Explain what queries you are running.
 
 Search the web for refactoring patterns, migration guides, and best practices relevant to the refactoring scope.
 
@@ -236,6 +242,8 @@ Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob])
 - The agent returns a verdict in conversation (no file writes)
 
 ### Verdict Handling (max 3 rounds)
+
+> After receiving the adversary verdict, translate the findings into plain language. If this gate blocks, explain what failed and provide specific remediation steps.
 
 Track the current round number (starting at 1):
 

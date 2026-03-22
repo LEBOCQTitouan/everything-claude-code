@@ -8,6 +8,8 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUs
 > **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
 >
 > **Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only.
+>
+> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
 
 !`bash .claude/hooks/workflow-init.sh dev "$ARGUMENTS"`
 
@@ -42,6 +44,8 @@ Mark each item complete as the phase finishes.
 
 ## Phase 1: Requirements Analysis
 
+> Before dispatching, tell the user which agent is being launched (`requirements-analyst`), that it will decompose their input into formal user stories, and what to expect from its output.
+
 Launch a Task with the `requirements-analyst` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Provide the user's raw input as context
@@ -52,6 +56,8 @@ Launch a Task with the `requirements-analyst` agent (allowedTools: [Read, Grep, 
 
 ## Phase 2: Architecture Review
 
+> Before dispatching, tell the user which agent is being launched (`architect`), that it will review the architecture impact, and what to expect from its output.
+
 Launch a Task with the `architect` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 - Provide the user stories from Phase 1 as context
@@ -61,6 +67,8 @@ Launch a Task with the `architect` agent (allowedTools: [Read, Grep, Glob, Bash]
 - Collect the output — you will incorporate it into the spec
 
 ## Phase 3: Web Research
+
+> Tell the user this phase is starting: you are now searching for external best practices, libraries, and prior art. Explain what queries you are running and why.
 
 Search the web for best practices, relevant libraries, patterns, and prior art related to the feature request. This grounds the plan in current external knowledge, not just training data and local codebase.
 
@@ -234,6 +242,8 @@ Launch a Task with the `spec-adversary` agent (allowedTools: [Read, Grep, Glob])
 - The agent returns a verdict in conversation (no file writes)
 
 ### Verdict Handling (max 3 rounds)
+
+> After receiving the adversary verdict, translate the findings into plain language for the user. If the gate blocks, explain what failed and provide specific remediation steps so the user understands what to fix.
 
 Track the current round number (starting at 1):
 
