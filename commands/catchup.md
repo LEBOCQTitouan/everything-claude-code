@@ -26,7 +26,7 @@ If `spec_path` or `design_path` are set in state.json, reference them so the use
 
 If no state.json exists, report "No active workflow" and continue to the Git Status and Recent Activity sections.
 
-If the phase is `done`, report "No active workflow" as well, noting that the previous workflow is complete, then continue to Git Status.
+If the phase is `done`, report "Workflow complete: <feature>" along with the completion timestamp from state.json, then continue to Git Status.
 
 ## Tasks Progress
 
