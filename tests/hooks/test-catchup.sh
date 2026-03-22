@@ -80,6 +80,12 @@ test_git_uncommitted() {
   assert_file_contains "reports staged files" "$COMMAND_FILE" "staged"
 }
 
+test_git_stashes() {
+  echo "--- test_git_stashes ---"
+  assert_file_contains "runs git stash list" "$COMMAND_FILE" "git stash list"
+  assert_file_contains "shows stash entries" "$COMMAND_FILE" "stash"
+}
+
 test_malformed_json() {
   echo "--- test_malformed_json ---"
   assert_file_contains "warns about malformed state" "$COMMAND_FILE" "state\.json is malformed"
@@ -156,6 +162,7 @@ run_tests() {
     test_spec_design_paths
     test_malformed_json
     test_git_uncommitted
+    test_git_stashes
   fi
 
   echo ""
