@@ -40,7 +40,7 @@ Surgical or full removal of ECC-managed [Artifacts](#artifact). Manifest-based c
 
 ### Catchup
 A read-only session resumption command (`/catchup`) that summarizes current workflow state, git status, stale detection, and recent memory activity. Provides structured output across four sections: Workflow State, Tasks Progress, Git Status, and Recent Activity.
-- **Related:** [Command](#command), [Workflow State](#workflow-state)
+- **Related:** [Command](#command)
 - **Files:** [`commands/catchup.md`](../commands/catchup.md)
 
 ### Command
