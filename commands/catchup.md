@@ -48,4 +48,17 @@ Format the output as a concise progress table so the user can quickly see where 
 
 ## Git Status
 
-Run `git status` and `git log --oneline -10` to show the current branch, uncommitted changes, and recent commit history. This provides context on where the codebase stands regardless of workflow state.
+Run `git status --short` to detect uncommitted changes. Categorize and count the output lines:
+- **modified**: files with `M` status (tracked files with modifications)
+- **untracked**: files with `??` status (new files not yet tracked)
+- **staged**: files with status in the index column (`A`, `M`, `D`, `R` in first column)
+
+If there are no uncommitted changes, no stashes, and only a single worktree, report: "Clean — no uncommitted work, no stashes, single worktree."
+
+Run `git stash list` to check for stashed work. If stash entries exist, list each stash entry showing its index, branch, and description.
+
+Run `git worktree list` to check for multiple worktrees. If more than one worktree exists, list all worktrees with their paths and branches.
+
+Run `git log --oneline -10` to show recent commit history. If `git log` fails (e.g., a new repository with zero commits), display "No commits yet" instead of erroring.
+
+This provides context on where the codebase stands regardless of workflow state.
