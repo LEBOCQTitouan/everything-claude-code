@@ -25,3 +25,17 @@ Check which artifacts have non-null timestamps in state.json:
 If `spec_path` or `design_path` are set in state.json, reference them so the user can review the persisted spec and design documents.
 
 If no state.json exists or the phase is `done`, report that no active workflow is in progress.
+
+## Tasks Progress
+
+Only display this section when the current phase is `implement`.
+
+Read `artifacts.tasks_path` from state.json. If the path is set and the tasks.md file exists, parse it to display a progress summary:
+
+- **total**: count all Pass Condition (PC) entries in tasks.md
+- **completed (done)**: count entries marked with `[x]` (checked checkbox)
+- **in-progress**: identify tasks whose latest status trail entry indicates active work (neither completed nor failed)
+- **failed**: count entries with a failed status, and include a brief error summary for each
+- **pending**: count entries that have not yet been started (unchecked, no status trail)
+
+Format the output as a concise progress table so the user can quickly see where the implementation stands.
