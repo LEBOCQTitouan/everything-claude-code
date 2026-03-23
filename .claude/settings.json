@@ -86,6 +86,16 @@
           }
         ],
         "description": "Pipeline: warn about doc content level violations"
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/grill-me-gate.sh"
+          }
+        ],
+        "description": "Pipeline: warn when grill-me interview not completed in spec output"
       }
     ]
   }
