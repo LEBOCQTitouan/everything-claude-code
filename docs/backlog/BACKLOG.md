@@ -54,8 +54,8 @@
 | BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | implemented | 2026-03-22 |
 | BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | open | 2026-03-22 |
 | BL-053 | Deploy poweruser statusline via ecc install | — | MEDIUM | /spec dev | open | 2026-03-22 |
-| BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | open | 2026-03-22 |
-| BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | open | 2026-03-22 |
+| BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | implemented | 2026-03-22 |
+| BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | implemented | 2026-03-22 |
 | BL-056 | Context-aware doc generation step at end of /implement | — | HIGH | /spec dev | open | 2026-03-22 |
 | BL-057 | Create grill-me-adversary companion skill with adaptive loop | — | MEDIUM | /spec | open | 2026-03-22 |
 | BL-058 | Symlink-based instant config switching for ecc dev | — | MEDIUM | /spec-dev | open | 2026-03-22 |
