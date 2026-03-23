@@ -70,6 +70,7 @@ When the spec directory `docs/specs/YYYY-MM-DD-<slug>/` is created after adversa
 - **Adversary rounds**: Append verdict row after each adversary round
 - **Commit trail**: Parent orchestrator appends SHA after each TDD commit (never subagents directly)
 - **Resumption pointer**: Update at each phase transition and PC completion
+- **Context checkpoint**: When a graceful exit triggers (85%+ context), the Resumption Pointer is updated with mid-phase granularity — current PC/wave for /implement, current domain + partial dir path for /audit-full.
 
 ### Malformed Recovery
 

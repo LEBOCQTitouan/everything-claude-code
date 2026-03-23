@@ -74,6 +74,7 @@ Use this table to decide when to compact:
 | Debugging → Next feature | Yes | Debug traces pollute context for unrelated work |
 | Mid-pipeline (with campaign) | Yes | Campaign manifest externalizes all state — toolchain, decisions, progress, commit trail are on disk |
 | Mid-implementation | No | Losing variable names, file paths, and partial state is costly (unless campaign manifest is active) |
+| Context at 85%+ | No (graceful-exit handles it) | If context reaches 85%, the command saves state and exits automatically via the graceful-exit skill. Start a fresh session instead of compacting. |
 | After a failed approach | Yes | Clear the dead-end reasoning before trying a new approach |
 
 ## What Survives Compaction
