@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- **Context-aware doc generation at end of /implement (BL-056)**: Phase 7.5 dispatches two parallel agents (`module-summary-updater`, `diagram-updater`) to capture MODULE-SUMMARIES entries and Mermaid diagrams while session context is fresh. Non-blocking failures, cross-link fixup pass, doc-enforcement hook extension, ADR 0015
 - **Grill-me-adversary companion skill (BL-057)**: Opt-in "adversary mode" for grill-me interviews with adaptive adversarial questioning, answer scoring (completeness + specificity 0-3), follow-up probing, question-generation challenge, and three-attempt cap with branch status labels
 - **Graceful mid-session exit (BL-055, BL-054)**: Context-aware exit for /implement and /audit-full. Statusline side-channel writes context % to temp file; commands check at breakpoints. Two thresholds: 75% warn, 85% exit, 95% hard ceiling. Audit re-entry skips completed domains.
 - Add campaign manifest for amnesiac agents: externalize all pipeline state to disk via campaign.md per work item, toolchain persistence in state.json, draft spec persistence before adversary review, disk fallbacks in design command, scope-check.sh bug fix, implement.md decomposition into 4 sub-skills (BL-035, ADR 0013)
