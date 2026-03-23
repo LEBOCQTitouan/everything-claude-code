@@ -20,9 +20,9 @@ At the start of each stage, evaluate grill-me's planned question: "Is this the h
 
 Between questions within a stage, synthesize a devil's-advocate angle before picking the next question. Target the weakest point in the user's answers so far using these heuristics:
 
-1. **Lowest-scored axis** from prior answers in this stage
-2. **Most hedging or vague language** in the user's responses
-3. **Most critical to overall proposal viability** — the point whose failure would invalidate the entire idea
+1. **lowest-scored axis** from prior answers in this stage
+2. **most hedging or vague language** in the user's responses
+3. **most critical to overall proposal viability** — the point whose failure would invalidate the entire idea
 
 Avoid angles the user has already been pushed on. Never repeat a challenge already covered.
 
