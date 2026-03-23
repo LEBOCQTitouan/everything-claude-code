@@ -232,3 +232,90 @@ No Rust code changes. No port/adapter/domain impact.
 ## Open Questions
 
 None — all resolved during grill-me interview and adversarial review.
+
+## Phase Summary
+
+### Grill-Me Decisions
+
+| # | Question | Answer | Source |
+|---|----------|--------|--------|
+| 1 | Scope boundaries | Backlog boundaries sufficient (5 exclusions) | Recommended |
+| 2 | Edge case: no harder question | Always show challenge result (kept/replaced) | User |
+| 3 | Test strategy | Structural grep + validate + word count | Recommended |
+| 4 | UX risk: defensive users | Add "firm but curious" tone guidance | Recommended |
+| 5 | Placement of opt-in section | After Negative Examples, before Output | Recommended |
+| 6 | Glossary entries | Add "Adversary Mode" to glossary | User |
+| 7 | ADR decisions | No ADR needed | Recommended |
+
+### User Stories
+
+| ID | Title | AC Count | Dependencies |
+|----|-------|----------|--------------|
+| US-001 | Skill directory + frontmatter | 4 | none |
+| US-002 | Adversarial question generation | 3 | US-001 |
+| US-003 | Question-generation challenge | 4 | US-001 |
+| US-004 | Answer evaluation rubric | 5 | US-001 |
+| US-005 | Adaptive loop exit + labels | 6 | US-004 |
+| US-006 | 500-word limit | 2 | US-002, US-003, US-004, US-005 |
+| US-007 | Grill-me opt-in section | 7 | US-001 |
+| US-008 | Validation gate | 3 | US-006, US-007 |
+| US-009 | Glossary + CHANGELOG | 2 | US-006, US-007 |
+
+### Acceptance Criteria
+
+| AC ID | Description | Source US |
+|-------|-------------|----------|
+| AC-001.1 | Skill directory discovered by validator | US-001 |
+| AC-001.2 | Frontmatter: name, description, origin | US-001 |
+| AC-001.3 | No model/tools fields (convention) | US-001 |
+| AC-001.4 | Directory name matches name field (convention) | US-001 |
+| AC-002.1 | Devil's-advocate angle synthesis | US-002 |
+| AC-002.2 | Weakness heuristics (lowest score, hedging, viability) | US-002 |
+| AC-002.3 | Avoid repeated angles | US-002 |
+| AC-003.1 | Challenge planned question at stage start | US-003 |
+| AC-003.2 | Substitute harder question (operational definition) | US-003 |
+| AC-003.3 | Always show challenge result | US-003 |
+| AC-003.4 | Five-stage structure preserved | US-003 |
+| AC-004.1 | Two scoring axes: completeness + specificity | US-004 |
+| AC-004.2 | Single-sentence behavioral anchors | US-004 |
+| AC-004.3 | Follow-up on score < 2 | US-004 |
+| AC-004.4 | Inline score display | US-004 |
+| AC-004.5 | Deflections redirected, not scored | US-004 |
+| AC-005.1 | Exit when both axes >= 2 | US-005 |
+| AC-005.2 | Exit after three attempts | US-005 |
+| AC-005.3 | "Stress-tested but unresolved" label | US-005 |
+| AC-005.4 | Checkmark for resolved branches | US-005 |
+| AC-005.5 | Three-attempt cap explicit | US-005 |
+| AC-005.6 | "Skipped" label distinct from exhaustion | US-005 |
+| AC-006.1 | Body <= 500 words (manual check) | US-006 |
+| AC-006.2 | All content fits budget | US-006 |
+| AC-007.1 | Adversary Mode section exists | US-007 |
+| AC-007.2 | Section <= 5 lines | US-007 |
+| AC-007.3 | Activation: "adversary mode" or "hard mode" | US-007 |
+| AC-007.4 | References grill-me-adversary | US-007 |
+| AC-007.5 | No other sections modified | US-007 |
+| AC-007.6 | No scoring UI in base skill | US-007 |
+| AC-007.7 | Placed after Negative Examples, before Output | US-007 |
+| AC-008.1 | ecc validate skills passes | US-008 |
+| AC-008.2 | cargo clippy passes | US-008 |
+| AC-008.3 | cargo test passes | US-008 |
+| AC-009.1 | Glossary "Adversary Mode" entry | US-009 |
+| AC-009.2 | CHANGELOG BL-057 entry | US-009 |
+
+### Adversary Findings
+
+| Dimension | Verdict | Key Rationale |
+|-----------|---------|---------------|
+| Ambiguity | PASS (R2) | Weakness heuristics, "harder" definition, rubric anchors added |
+| Edge Cases | PASS (R2) | Deflection handling + skip behavior ACs added |
+| Scope | PASS (R2) | Single-sentence anchor format resolves 500-word tension |
+| Dependencies | PASS (R2) | US-009 covers glossary + CHANGELOG |
+| Testability | PASS (R2) | Convention vs. validator distinction clarified |
+| Decisions | PASS (R2) | Decision 9 (anchor tradeoff) closes rationale gap |
+| Rollback | PASS | Trivial — delete directory + revert section |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/2026-03-23-grill-me-adversary-companion/spec.md | Full spec |
