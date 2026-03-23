@@ -15,6 +15,18 @@ Comprehensive audit across all domains with cross-domain correlation. Delegates 
 
 Scope: $ARGUMENTS (or full codebase if none provided)
 
+## 0. Re-entry Check (Graceful Exit Recovery)
+
+Before starting the main audit flow, check for a previous graceful exit that left partial results:
+
+1. **Check for resumption pointer**: Read `campaign.md` for a Resumption Pointer section. If `campaign.md` does not exist, check `.claude/workflow/audit-resume.md` as a fallback.
+2. **If a partial results directory is recorded** (e.g., `docs/audits/partial-<timestamp>/`):
+   - Read the partial results directory and extract the list of completed domain names from its contents
+   - Pass the completed domains list to the `audit-orchestrator` agent so it can skip already-finished domains
+   - Inform the user: "Resuming audit from graceful exit. Skipping completed domains: [list]."
+3. **If no partial results exist** (first run or clean re-run):
+   - Run all domains normally with no skip list
+
 > **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
 
 TodoWrite items:
@@ -225,6 +237,16 @@ Full Codebase Audit Complete
   Report: docs/audits/full-YYYY-MM-DD.md
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+## 4. Cleanup Partial Results on Success
+
+After the final report is successfully generated, clean up intermediate state from prior graceful exits:
+
+- Remove all `docs/audits/partial-*/` directories left by previous graceful exit checkpoints
+- Remove `.claude/workflow/audit-resume.md` if it exists
+- Remove the Resumption Pointer section from `campaign.md` if present
+
+This ensures a successful full audit completion leaves no stale partial results behind.
 
 **STOP. DO NOT modify source code.**
 
