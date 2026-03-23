@@ -21,7 +21,7 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
    > "Spec and/or design not found in conversation context or on disk. Please re-run `/spec-*` then `/design` or paste the outputs here."
 5. Extract `concern` and `feature` from `state.json` for the implementation header
 6. **Re-entry**: If `phase` is `"implement"`, resume using this priority:
-   1. **tasks.md is the authoritative, primary resume source.** Read `artifacts.tasks_path` from state.json. If the file exists, parse it to find the first incomplete (non-done) PC as the resume point. If a PC has status `failed`, treat it as the resume point and report: "PC-NNN previously failed: <error summary>. Re-dispatching." If all PCs are done, resume from the first incomplete Post-TDD phase (E2E, review, docs, implement-done).
+   1. **tasks.md is the authoritative, primary resume source.** Read `artifacts.tasks_path` from state.json. If the file exists, parse it to find the first incomplete (non-done) PC as the resume point. If a PC has status `failed`, treat it as the resume point and report: "PC-NNN previously failed: <error summary>. Re-dispatching." If all PCs are done, resume from the first incomplete Post-TDD phase (E2E, review, docs, Supplemental docs, implement-done).
    2. **Rebuild TodoWrite from tasks.md.** For each entry in tasks.md, create a corresponding TodoWrite item. Mark items with status `done` as complete.
    3. **Regenerate if tasks.md deleted.** If `artifacts.tasks_path` is set but the file does not exist, regenerate tasks.md from the solution's PC table. Infer completion status using `git log --oneline --after=<started_at from state.json> --grep="PC-NNN"` — if a commit message contains the PC ID after the workflow `started_at` timestamp, mark that PC as `done`. Emit warning: "tasks.md regenerated from git history — verify accuracy."
    4. **Handle malformed tasks.md.** If tasks.md exists but cannot be parsed (malformed markdown), regenerate from the solution's PC table using the git-log inference above. Emit warning: "tasks.md was malformed; regenerated from solution."
@@ -79,6 +79,7 @@ Create a TodoWrite checklist from the PCs in TDD order:
 - `[ ] E2E tests (if activated)`
 - `[ ] Code review`
 - `[ ] Doc updates`
+- `[ ] Supplemental docs`
 - `[ ] Write implement-done.md`
 
 Also create native tasks via `TaskCreate` for each PC in TDD order. Each task should have:
@@ -234,6 +235,42 @@ For CHANGELOG.md (always required):
 
 After all doc updates complete, update tasks.md: set "Doc updates" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
 
+## Phase 7.5: Supplemental Doc Generation
+
+> **Context Checkpoint**: Before starting this phase, run the graceful-exit checkpoint per `skills/graceful-exit/SKILL.md`. If >= 85%, save state and exit. If >= 75%, warn and continue.
+
+Generate context-aware supplemental documentation while session context is fresh. Phase 7.5 is non-blocking — if a subagent fails, commit successful output, record the failure, and proceed to Phase 7.
+
+### Dispatch
+
+Launch two Task subagents in parallel:
+
+1. **module-summary-updater** (allowedTools: [Read, Write, Edit, Grep, Glob]) — updates `docs/MODULE-SUMMARIES.md` with entries for each Rust crate modified during the TDD loop
+2. **diagram-updater** (allowedTools: [Read, Write, Edit, Grep, Glob]) — generates Mermaid diagrams for new cross-module flows, state machines, or bounded contexts
+
+Pass each subagent:
+- The list of files changed during the TDD loop
+- The spec and design file paths from state.json
+- The feature name from state.json
+
+Wait for both tasks to reach a terminal status (completed or failed) before proceeding.
+
+### Result Handling
+
+For each subagent:
+- **Success**: Commit output. Module summaries: `docs: update MODULE-SUMMARIES for <feature>`. Diagrams: `docs(diagrams): add <feature> diagrams`
+- **Failure (partial failure)**: Record the failure in implement-done.md `## Supplemental Docs` section. Proceed — Phase 7.5 failures are non-blocking.
+
+### Cross-Link Fixup Pass
+
+After both subagents complete:
+
+1. If diagram-updater produced diagrams AND module-summary-updater produced entries, patch MODULE-SUMMARIES entries with links to related diagrams (cross-link fixup)
+2. If no diagrams were produced, skip (no-op — no diagram links to add)
+3. If the fixup pass made changes, commit: `docs: cross-link MODULE-SUMMARIES to diagrams for <feature>`
+
+After Phase 7.5 completes, update tasks.md: set "Supplemental docs" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
+
 ## Phase 7: Write implement-done.md
 
 > **Context Checkpoint**: Before starting this phase, run the graceful-exit checkpoint per `skills/graceful-exit/SKILL.md`. If >= 85%, save state and exit. If >= 75%, warn and continue.
@@ -280,6 +317,13 @@ All pass conditions: N/N ✅
 |---|------|----------|
 (or "None required")
 
+## Supplemental Docs
+| Subagent | Status | Output File | Commit SHA | Notes |
+|----------|--------|-------------|------------|-------|
+| module-summary-updater | success | docs/MODULE-SUMMARIES.md | abc1234 | -- |
+| diagram-updater | success | docs/diagrams/feature-x.md | def5678 | -- |
+(or "No supplemental docs generated — change scope did not warrant module summary or diagram updates")
+
 ## Subagent Execution
 | PC ID | Status | Commit Count | Files Changed Count |
 |-------|--------|--------------|---------------------|
@@ -311,6 +355,7 @@ Verify stop hook requirements are met:
 4. **e2e-boundary-check**: if solution had `## E2E Test Plan` entries, `## E2E Tests` section exists ✅
 5. **scope-check**: review any warnings about files changed outside the solution's File Changes table. If unexpected files were flagged, verify they are legitimate (test helpers, lock files, etc.) before proceeding.
 6. **doc-level-check**: review any warnings about doc size limits (CLAUDE.md < 200 lines, README < 300 lines, ARCHITECTURE.md code blocks < 20 lines). Address if practical.
+7. **supplemental-docs-check**: `## Supplemental Docs` section is present in implement-done.md ✅
 
 Display a comprehensive Phase Summary using these tables:
 
@@ -361,3 +406,5 @@ Then STOP. The workflow is complete.
 This command invokes:
 - `tdd-executor` — executes each PC's RED → GREEN → REFACTOR cycle in an isolated subagent with fresh context
 - `code-reviewer` — reviews all changes against spec and solution after TDD loop completes
+- `module-summary-updater` — updates MODULE-SUMMARIES.md with per-crate entries during Phase 7.5
+- `diagram-updater` — generates Mermaid diagrams for cross-module flows during Phase 7.5
