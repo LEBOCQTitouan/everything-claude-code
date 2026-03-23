@@ -1,5 +1,6 @@
 ---
 description: Capture, challenge, optimize, and manage implementation ideas in a persistent backlog.
+allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, AskUserQuestion]
 ---
 
 # Backlog Command
@@ -36,9 +37,9 @@ TodoWrite items:
 
 Mark each item complete as the step finishes.
 
-1. **Challenges** the raw idea with 1-3 focused questions
+1. **Challenges** the raw idea using the `grill-me` skill in backlog-mode. For LOW/MEDIUM scope items, grill-me runs max 3 stages with max 2 questions per stage. For HIGH/EPIC scope items, grill-me runs all 5 stages. The grill-me output feeds into prompt optimization.
 2. **Determines** the target command (`/spec`, `/e2e`, `/audit`, etc.) and scope
-3. **Optimizes** the idea into a self-contained, ready-to-paste prompt
+3. **Optimizes** the idea into a self-contained, ready-to-paste prompt, using the grill-me output as input
 4. **Checks duplicates** against existing open entries
 5. **Persists** the entry to `docs/backlog/BL-NNN-<slug>.md`
 6. **Updates** the index at `docs/backlog/BACKLOG.md`

@@ -57,8 +57,8 @@ The raw idea as the user expressed it, preserved verbatim.
 
 ## Challenge Log
 
-Questions asked during curation and the user's answers.
-Captures decisions and rationale.
+The Challenge Log contains the grill-me output: stages, questions, answers, and challenge threads.
+Captures decisions and rationale from each grill-me stage.
 
 ## Related Backlog Items
 
