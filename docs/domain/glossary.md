@@ -28,6 +28,10 @@ A 7-domain codebase health assessment system orchestrated by the [audit-orchestr
 - **Related:** [Agent](#agent), [Command](#command)
 - **Files:** [`agents/audit-orchestrator.md`](../agents/audit-orchestrator.md), [`agents/evolution-analyst.md`](../agents/evolution-analyst.md), [`agents/test-auditor.md`](../agents/test-auditor.md), [`agents/observability-auditor.md`](../agents/observability-auditor.md), [`agents/error-handling-auditor.md`](../agents/error-handling-auditor.md), [`agents/convention-auditor.md`](../agents/convention-auditor.md), [`commands/audit.md`](../commands/audit.md)
 
+### Context Checkpoint
+A breakpoint in a long-running command where context window usage is checked against defined thresholds (75% warn, 85% exit, 95% hard ceiling). Checkpoints run between TDD waves, at phase transitions, and after individual audit domain completions.
+- **Related:** [Graceful Exit](#graceful-exit), [Campaign Manifest](#campaign-manifest), [Resumption Pointer](#resumption-pointer)
+
 ### Context Brief
 The structured input passed from the `/implement` parent orchestrator to a [TDD Executor](#tdd-executor) subagent for a single Pass Condition. Contains 6 exact headings: PC Spec, File Paths, Files to Modify, Prior PC Results, Commit Rules, TDD Cycle Rules. Max 500 lines. Excludes full spec/design content and prior PC implementation reasoning.
 - **Related:** [TDD Executor](#tdd-executor), [Command](#command)
@@ -72,6 +76,10 @@ A manifest file (`docs/diagrams/CUSTOM.md`) that tracks manually created or cust
 A doc-system [Agent](#agent) (`diagram-generator.md`) that analyzes codebase structure and generates Mermaid diagrams (module dependency graphs, data flow, sequence diagrams). Part of the 6-agent doc system alongside doc-orchestrator, doc-analyzer, doc-generator, doc-validator, and doc-reporter. Respects the [Custom Diagram Registry](#custom-diagram-registry) to avoid overwriting user-maintained diagrams.
 - **Related:** [Custom Diagram Registry](#custom-diagram-registry), [Agent](#agent)
 - **Files:** [`agents/diagram-generator.md`](../agents/diagram-generator.md), [`skills/diagram-generation/`](../skills/diagram-generation/), [`commands/doc-diagrams.md`](../commands/doc-diagrams.md)
+
+### Graceful Exit
+A context-aware pattern where a long-running command detects high context usage, saves current state to campaign.md (or audit-resume.md), informs the user, and STOPs cleanly. The next session resumes from the saved Resumption Pointer. See `skills/graceful-exit/SKILL.md`.
+- **Related:** [Context Checkpoint](#context-checkpoint), [Campaign Manifest](#campaign-manifest), [Resumption Pointer](#resumption-pointer)
 
 ### Hook
 A Claude Code lifecycle event handler. Each hook is a Node.js script that reads JSON from stdin, performs an action, and writes to stdout/stderr. Execution is gated by [Hook Profiles](#hook-profile) via [Run With Flags](#run-with-flags).
