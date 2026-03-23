@@ -18,6 +18,10 @@ A user-defined short name for a Claude Code [Session](#session). Stored in `~/.c
 - **Related:** [Session](#session), [Session Manager](#session-manager)
 - **Files:** [`session-aliases.ts`](../src/lib/session-aliases.ts) (21 exports), [`session-start.ts`](../src/hooks/session-start.ts), [`session-manager.ts`](../src/lib/session-manager.ts)
 
+### Adversary Mode
+An opt-in enhancement to the [grill-me](#grill-me) interview skill that adds adaptive adversarial questioning with answer scoring (completeness and specificity 0-3), follow-up probing on weak answers, and question-generation challenge at each stage. Activated when a user says "adversary mode" or "hard mode".
+- **Related:** [Skill](#skill)
+
 ### Artifact
 A file managed by ECC -- [Agents](#agent), [Commands](#command), [Skills](#skill), [Rules](#rule), or hook descriptions. Tracked in the [Manifest](#manifest) for ownership differentiation during updates.
 - **Related:** [Manifest](#manifest), [Merge Report](#merge-report)
