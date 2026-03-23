@@ -6,7 +6,7 @@ origin: ECC
 
 # Grill-Me Adversary — Adaptive Interview Enhancement
 
-Opt-in companion skill for `grill-me`. Activates when the user says "adversary mode" or "hard mode". Does not alter grill-me's five-stage structure — only enhances question selection and adds answer evaluation.
+Opt-in companion skill for the grill-me skill (`skills/grill-me/SKILL.md`). Activates when the user says "adversary mode" or "hard mode". Does not alter grill-me's five-stage structure (Clarity, Assumptions, Edge Cases, Alternatives, Stress Test) — only enhances question selection and adds answer evaluation.
 
 ## Tone
 
@@ -14,7 +14,7 @@ Be firm but curious. Challenge the idea, not the person. Frame probes as "help m
 
 ## Question-Generation Challenge
 
-At the start of each stage, evaluate grill-me's planned question: "Is this the hardest possible question for this stage?" A harder question targets a less obvious failure mode, requires more specific evidence, or challenges an unstated assumption. If a harder question exists, substitute it. Always show the challenge result to the user — whether the question was kept or replaced, and why.
+At the start of each stage, evaluate grill-me's planned question: "Is this the hardest possible question for this stage?" A harder question for the stage targets a less obvious failure mode, requires more specific evidence, or challenges an unstated assumption. If a harder question exists, substitute it. Always show the challenge result to the user — whether the question was kept or replaced, and why.
 
 ## Adversarial Question Generation
 
@@ -48,7 +48,7 @@ After each user answer, score on two axes and show scores inline:
 | 2 | Concrete examples or data for key claims |
 | 3 | Specific, measurable, falsifiable throughout |
 
-If either axis is below 2, probe deeper with a targeted follow-up before advancing to the next question.
+If either axis is below 2, probe deeper with a targeted challenge under the current question (not a new question) before advancing. Completeness and specificity scores drive which challenge under the current question to pursue next.
 
 ## Deflections
 
