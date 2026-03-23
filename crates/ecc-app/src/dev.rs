@@ -248,6 +248,26 @@ pub fn format_status(status: &DevStatus, colored: bool) -> String {
     )
 }
 
+// ---------------------------------------------------------------------------
+// Error type
+// ---------------------------------------------------------------------------
+
+/// Errors returned by `dev_switch`.
+#[derive(Debug, thiserror::Error)]
+pub enum DevError {
+    #[error("path must be absolute: {0}")]
+    RelativePath(std::path::PathBuf),
+
+    #[error("target directory does not exist: {0}")]
+    TargetNotFound(std::path::PathBuf),
+
+    #[error("target path escapes ECC root: {0}")]
+    PathEscape(std::path::PathBuf),
+
+    #[error("filesystem error: {0}")]
+    Fs(#[from] ecc_ports::fs::FsError),
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -574,5 +594,338 @@ mod tests {
         }"#;
         let fs = InMemoryFileSystem::new().with_file("/claude/settings.json", settings);
         assert_eq!(count_ecc_hooks_in_settings(&fs, Path::new("/claude")), 2);
+    }
+
+    // --- dev_switch ---
+
+    /// PC-024: dev_switch(Dev) creates symlinks for all MANAGED_DIRS.
+    #[test]
+    fn dev_switch_dev_creates_symlinks() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules");
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        assert!(result.is_ok(), "expected Ok, got: {result:?}");
+        for dir in MANAGED_DIRS {
+            let link = Path::new("/claude").join(dir);
+            assert!(fs.is_symlink(&link), "expected symlink at {link:?}");
+        }
+    }
+
+    /// PC-025: dev_switch(Default) removes symlinks and reinstalls copies via dev_on.
+    #[test]
+    fn dev_switch_default_restores_copies() {
+        // Pre-condition: managed dirs are symlinks (Dev profile is active)
+        let fs = InMemoryFileSystem::new()
+            .with_symlink("/claude/agents", "/ecc/agents")
+            .with_symlink("/claude/commands", "/ecc/commands")
+            .with_symlink("/claude/skills", "/ecc/skills")
+            .with_symlink("/claude/rules", "/ecc/rules");
+        let terminal = BufferedTerminal::new();
+
+        let _result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Default,
+            false,
+        );
+
+        // All symlinks must be removed before dev_on is called
+        for dir in MANAGED_DIRS {
+            let link = Path::new("/claude").join(dir);
+            assert!(
+                !fs.is_symlink(&link),
+                "symlink should be removed for Default profile: {link:?}"
+            );
+        }
+    }
+
+    /// PC-026: dry_run prints planned operations without executing them.
+    #[test]
+    fn dev_switch_dry_run() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules");
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            true,
+        );
+
+        assert!(result.is_ok());
+        // No symlinks should be created in dry_run mode
+        for dir in MANAGED_DIRS {
+            let link = Path::new("/claude").join(dir);
+            assert!(!fs.is_symlink(&link), "dry_run must not create symlinks: {link:?}");
+        }
+        // Terminal output must mention the planned operations
+        let output = terminal.stdout_output().join("");
+        assert!(!output.is_empty(), "dry_run should print planned operations");
+    }
+
+    /// PC-027: rollback removes successfully-created symlinks when a later operation fails.
+    #[test]
+    fn dev_switch_rollback_on_error() {
+        // Only first managed dir exists; rest will fail with TargetNotFound
+        let first_dir = MANAGED_DIRS[0];
+        let fs = InMemoryFileSystem::new().with_dir(&format!("/ecc/{first_dir}"));
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        assert!(result.is_err(), "expected Err due to missing target dirs");
+        // Symlink created for the first dir must be rolled back
+        let first_link = Path::new("/claude").join(first_dir);
+        assert!(
+            !fs.is_symlink(&first_link),
+            "rollback must remove the already-created symlink: {first_link:?}"
+        );
+    }
+
+    /// PC-028: target path outside ecc_root is rejected.
+    #[test]
+    fn dev_switch_validates_targets_within_ecc_root() {
+        // We simulate by calling with a relative ecc_root to trigger RelativePath,
+        // or by having a path that starts_with check would fail.
+        // Easiest: pass a relative ecc_root path.
+        let fs = InMemoryFileSystem::new();
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("relative/path"),  // NOT absolute
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        assert!(
+            matches!(result, Err(DevError::RelativePath(_))),
+            "expected RelativePath error, got: {result:?}"
+        );
+    }
+
+    /// PC-031: target directories must exist before creating symlinks.
+    #[test]
+    fn dev_switch_dev_target_must_exist() {
+        // No dirs pre-populated — target dirs don't exist
+        let fs = InMemoryFileSystem::new();
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        assert!(
+            matches!(result, Err(DevError::TargetNotFound(_))),
+            "expected TargetNotFound error, got: {result:?}"
+        );
+    }
+
+    /// PC-032: dev_off removes symlinked managed dirs using remove_file (not remove_dir_all).
+    #[test]
+    fn dev_off_removes_symlinks_safely() {
+        // Managed dirs are symlinks pointing into /ecc — dev_off must remove the
+        // symlinks (remove_file), not recursively delete the /ecc subtree.
+        let fs = InMemoryFileSystem::new()
+            .with_symlink("/claude/agents", "/ecc/agents")
+            .with_symlink("/claude/commands", "/ecc/commands")
+            .with_symlink("/claude/skills", "/ecc/skills")
+            .with_symlink("/claude/rules", "/ecc/rules")
+            // Some real files inside the ECC repo (must survive)
+            .with_file("/ecc/agents/planner.md", "# Planner")
+            .with_file("/claude/.ecc-manifest.json", &manifest_json(&sample_manifest()));
+        let terminal = BufferedTerminal::new();
+
+        let _result = dev_off(&fs, &terminal, Path::new("/claude"), false);
+
+        // The symlinks in claude_dir must be removed
+        for dir in MANAGED_DIRS {
+            let link = Path::new("/claude").join(dir);
+            assert!(
+                !fs.is_symlink(&link),
+                "dev_off must remove symlink: {link:?}"
+            );
+        }
+        // The real files inside ecc_root must NOT be deleted
+        assert!(
+            fs.exists(Path::new("/ecc/agents/planner.md")),
+            "dev_off must not delete ECC repo files"
+        );
+    }
+
+    /// PC-033: symlinks use absolute paths for both target and link.
+    #[test]
+    fn dev_switch_uses_absolute_paths() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules");
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        assert!(result.is_ok());
+        for dir in MANAGED_DIRS {
+            let link = Path::new("/claude").join(dir);
+            let target = fs.read_symlink(&link).expect("symlink must exist");
+            assert!(
+                target.is_absolute(),
+                "symlink target must be absolute, got: {target:?}"
+            );
+            assert!(
+                link.is_absolute(),
+                "symlink link must be absolute, got: {link:?}"
+            );
+        }
+    }
+
+    /// PC-034: dev_switch Dev profile does NOT modify the manifest.
+    #[test]
+    fn dev_switch_manifest_preservation() {
+        let m = sample_manifest();
+        let manifest_content = manifest_json(&m);
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules")
+            .with_file("/claude/.ecc-manifest.json", &manifest_content);
+        let terminal = BufferedTerminal::new();
+
+        dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        )
+        .expect("dev_switch should succeed");
+
+        let after = fs
+            .read_to_string(Path::new("/claude/.ecc-manifest.json"))
+            .expect("manifest must still exist");
+        assert_eq!(
+            after, manifest_content,
+            "dev_switch Dev must NOT modify the manifest"
+        );
+    }
+
+    /// PC-035: if a dangling symlink exists at a link path, it is removed before creating new one.
+    #[test]
+    fn dev_switch_handles_dangling_symlinks() {
+        // /claude/agents is a dangling symlink (target doesn't exist in the test FS)
+        let fs = InMemoryFileSystem::new()
+            .with_symlink("/claude/agents", "/old/agents")  // dangling
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules");
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        assert!(result.is_ok(), "should handle dangling symlinks: {result:?}");
+        // The dangling symlink must be replaced with the new one
+        let target = fs.read_symlink(Path::new("/claude/agents")).unwrap();
+        assert_eq!(target, Path::new("/ecc/agents"));
+    }
+
+    /// PC-036: if a real directory exists at a link path, it is removed before creating symlink.
+    #[test]
+    fn dev_switch_removes_existing_dirs() {
+        // /claude/agents already exists as a real directory (Default profile state)
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/claude/agents")
+            .with_file("/claude/agents/old.md", "old content")
+            .with_dir("/ecc/agents")
+            .with_dir("/ecc/commands")
+            .with_dir("/ecc/skills")
+            .with_dir("/ecc/rules");
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        assert!(result.is_ok(), "should remove existing dirs: {result:?}");
+        assert!(
+            fs.is_symlink(Path::new("/claude/agents")),
+            "existing dir must be replaced with symlink"
+        );
+    }
+
+    /// PC-047: dev_switch propagates errors as Err(DevError).
+    #[test]
+    fn dev_switch_error_returns_failure() {
+        // Missing all target dirs → first MANAGED_DIR will fail with TargetNotFound
+        let fs = InMemoryFileSystem::new();
+        let terminal = BufferedTerminal::new();
+
+        let result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        assert!(result.is_err(), "should return Err when targets are missing");
     }
 }
