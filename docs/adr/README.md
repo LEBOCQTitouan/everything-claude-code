@@ -32,3 +32,4 @@ ADRs are numbered sequentially: `0001-short-title.md`, `0002-short-title.md`, et
 | [0011](0011-command-narrative-convention.md) | Command Narrative Convention | Accepted |
 | [0012](0012-wave-parallel-tdd.md) | Wave-Based Parallel TDD Execution | Accepted |
 | [0013](0013-campaign-manifest-convention.md) | Campaign Manifest Convention | Accepted |
+| [0014](0014-context-aware-graceful-exit.md) | Context-Aware Graceful Exit Convention | Accepted |
