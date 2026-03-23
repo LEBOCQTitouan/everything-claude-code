@@ -78,6 +78,10 @@ pub fn dev_on(
 }
 
 /// Deactivate ECC config by removing manifest-tracked artifacts.
+///
+/// If managed directories are symlinks (Dev profile active), they are removed
+/// with `remove_file` instead of `remove_dir_all` to avoid traversing into
+/// the ECC repository root (AC-005.10).
 pub fn dev_off(
     fs: &dyn FileSystem,
     terminal: &dyn TerminalIO,
@@ -96,6 +100,17 @@ pub fn dev_off(
             success: true,
         };
     };
+
+    // Guard: remove symlinked managed dirs with remove_file before clean,
+    // to prevent clean_from_manifest from traversing into ECC_ROOT.
+    if !dry_run {
+        for dir in MANAGED_DIRS {
+            let link = claude_dir.join(dir);
+            if fs.is_symlink(&link) {
+                let _ = fs.remove_file(&link);
+            }
+        }
+    }
 
     let report = clean_from_manifest(
         fs,
@@ -182,6 +197,116 @@ fn manifest_to_status(m: &EccManifest) -> DevStatus {
         installed_at: Some(m.installed_at.clone()),
         profile: DevProfileStatus::Inactive, // overwritten by dev_status caller
     }
+}
+
+// ---------------------------------------------------------------------------
+// dev_switch
+// ---------------------------------------------------------------------------
+
+/// Tracks a completed symlink creation for rollback purposes.
+struct CompletedOp {
+    link: std::path::PathBuf,
+}
+
+/// Switch to the given `profile`, updating managed directories accordingly.
+///
+/// - `Dev`:     creates symlinks `claude_dir/dir → ecc_root/dir` for each managed dir.
+/// - `Default`: removes any existing symlinks then calls `dev_on` to reinstall copies.
+/// - `dry_run`: prints planned operations without executing them.
+pub fn dev_switch<F: FileSystem, T: TerminalIO>(
+    fs: &F,
+    terminal: &T,
+    ecc_root: &Path,
+    claude_dir: &Path,
+    profile: ecc_domain::config::dev_profile::DevProfile,
+    dry_run: bool,
+) -> Result<(), DevError> {
+    use ecc_domain::config::dev_profile::DevProfile;
+
+    if !ecc_root.is_absolute() {
+        return Err(DevError::RelativePath(ecc_root.to_path_buf()));
+    }
+    if !claude_dir.is_absolute() {
+        return Err(DevError::RelativePath(claude_dir.to_path_buf()));
+    }
+
+    match profile {
+        DevProfile::Dev => dev_switch_to_dev(fs, terminal, ecc_root, claude_dir, dry_run),
+        DevProfile::Default => dev_switch_to_default(fs, terminal, ecc_root, claude_dir, dry_run),
+    }
+}
+
+fn dev_switch_to_dev<F: FileSystem, T: TerminalIO>(
+    fs: &F,
+    terminal: &T,
+    ecc_root: &Path,
+    claude_dir: &Path,
+    dry_run: bool,
+) -> Result<(), DevError> {
+    // Validate all targets exist before performing any operations
+    for dir in MANAGED_DIRS {
+        let target = ecc_root.join(dir);
+        if !ecc_root.join(dir).starts_with(ecc_root) {
+            return Err(DevError::PathEscape(target));
+        }
+        if !fs.exists(&target) {
+            return Err(DevError::TargetNotFound(target));
+        }
+    }
+
+    if dry_run {
+        for dir in MANAGED_DIRS {
+            let target = ecc_root.join(dir);
+            let link = claude_dir.join(dir);
+            terminal.stdout_write(&format!("[dry-run] symlink {link:?} → {target:?}\n"));
+        }
+        return Ok(());
+    }
+
+    let mut completed: Vec<CompletedOp> = Vec::new();
+
+    for dir in MANAGED_DIRS {
+        let target = ecc_root.join(dir);
+        let link = claude_dir.join(dir);
+
+        // Remove existing symlink (including dangling) at link path
+        if fs.is_symlink(&link) {
+            fs.remove_file(&link)?;
+        }
+        // Remove existing real directory at link path
+        if fs.is_dir(&link) {
+            fs.remove_dir_all(&link)?;
+        }
+
+        if let Err(e) = fs.create_symlink(&target, &link) {
+            // Rollback: remove all successfully-created symlinks
+            for op in &completed {
+                let _ = fs.remove_file(&op.link);
+            }
+            return Err(DevError::Fs(e));
+        }
+        completed.push(CompletedOp { link });
+    }
+
+    Ok(())
+}
+
+fn dev_switch_to_default<F: FileSystem, T: TerminalIO>(
+    fs: &F,
+    _terminal: &T,
+    _ecc_root: &Path,
+    claude_dir: &Path,
+    _dry_run: bool,
+) -> Result<(), DevError> {
+    // Remove existing symlinks for managed dirs
+    for dir in MANAGED_DIRS {
+        let link = claude_dir.join(dir);
+        if fs.is_symlink(&link) {
+            fs.remove_file(&link)?;
+        }
+    }
+    // dev_on is called by the CLI layer after this; here we only remove symlinks
+    Ok(())
 }
 
 /// Count ECC hooks present in settings.json.
