@@ -10,7 +10,11 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
-- **Symlink-based instant config switching (BL-058)**: `ecc dev switch dev|default [--dry-run]` with directory-level symlinks for zero-copy config switching between release-installed and local ECC checkout. FileSystem trait extension (`create_symlink`, `read_symlink`, `is_symlink`), InMemoryFileSystem symlink stub, dev_off symlink safety guard, best-effort rollback, path canonicalization, ADR 0016
+- **Symlink-based instant config switching (BL-058)**:
+
+### Refactoring
+
+- **Unified grill-me universal questioning protocol (BL-061)**: Refactored 3 independent questioning systems (standalone grill-me, spec-pipeline inline rules, backlog-curator ad-hoc questions) into a single universal grill-me protocol with stage-by-stage AskUserQuestion interaction, challenge loops, cross-stage mutation, question cap (25), and hook-based enforcement (grill-me-gate.sh). Canonical stages: Clarity, Assumptions, Edge Cases, Alternatives, Stress Test. Three modes: standalone, spec-mode, backlog-mode. Decomposed spec-pipeline-shared grab-bag. ADR 0017 `ecc dev switch dev|default [--dry-run]` with directory-level symlinks for zero-copy config switching between release-installed and local ECC checkout. FileSystem trait extension (`create_symlink`, `read_symlink`, `is_symlink`), InMemoryFileSystem symlink stub, dev_off symlink safety guard, best-effort rollback, path canonicalization, ADR 0016
 - **Context-aware doc generation at end of /implement (BL-056)**: Phase 7.5 dispatches two parallel agents (`module-summary-updater`, `diagram-updater`) to capture MODULE-SUMMARIES entries and Mermaid diagrams while session context is fresh. Non-blocking failures, cross-link fixup pass, doc-enforcement hook extension, ADR 0015
 - **Grill-me-adversary companion skill (BL-057)**: Opt-in "adversary mode" for grill-me interviews with adaptive adversarial questioning, answer scoring (completeness + specificity 0-3), follow-up probing, question-generation challenge, and three-attempt cap with branch status labels
 - **Graceful mid-session exit (BL-055, BL-054)**: Context-aware exit for /implement and /audit-full. Statusline side-channel writes context % to temp file; commands check at breakpoints. Two thresholds: 75% warn, 85% exit, 95% hard ceiling. Audit re-entry skips completed domains.
