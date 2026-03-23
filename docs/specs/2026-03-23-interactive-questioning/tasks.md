@@ -2,17 +2,17 @@
 
 ## Pass Conditions
 
-- [ ] PC-001–015: Grill-me core rewrite | pending@2026-03-23T22:15:00Z
-- [ ] PC-016–020: Adversary alignment | pending@2026-03-23T22:15:00Z
-- [ ] PC-021–032: Spec pipeline refactor | pending@2026-03-23T22:15:00Z
-- [ ] PC-033–037: Backlog integration | pending@2026-03-23T22:15:00Z
-- [ ] PC-038–044: Hook enforcement | pending@2026-03-23T22:15:00Z
-- [ ] PC-045–049: Documentation | pending@2026-03-23T22:15:00Z
-- [ ] PC-050–054: Final gate | pending@2026-03-23T22:15:00Z
+- [x] PC-001–015: Grill-me core rewrite | done@2026-03-23T22:25:00Z
+- [x] PC-016–020: Adversary alignment | done@2026-03-23T22:28:00Z
+- [x] PC-021–032: Spec pipeline refactor | done@2026-03-23T22:32:00Z
+- [x] PC-033–037: Backlog integration | done@2026-03-23T22:35:00Z
+- [x] PC-038–044: Hook enforcement | done@2026-03-23T22:38:00Z
+- [x] PC-045–049: Documentation | done@2026-03-23T22:42:00Z
+- [x] PC-050–054: Final gate | done@2026-03-23T22:45:00Z
 
 ## Post-TDD
 
-- [ ] E2E tests | pending@2026-03-23T22:15:00Z
-- [ ] Code review | pending@2026-03-23T22:15:00Z
-- [ ] Doc updates | pending@2026-03-23T22:15:00Z
-- [ ] Write implement-done.md | pending@2026-03-23T22:15:00Z
+- [x] E2E tests | done@2026-03-23T22:46:00Z
+- [x] Code review | done@2026-03-23T22:50:00Z
+- [x] Doc updates | done@2026-03-23T22:52:00Z
+- [x] Write implement-done.md | done@2026-03-23T22:55:00Z
