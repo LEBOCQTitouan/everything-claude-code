@@ -1,13 +1,32 @@
-use clap::{Args, Subcommand};
+use clap::{Args, Subcommand, ValueEnum};
 use ecc_app::dev;
 use ecc_app::install::{self, InstallContext};
 use ecc_app::version;
+use ecc_domain::config::dev_profile::DevProfile;
 use ecc_infra::os_env::OsEnvironment;
 use ecc_infra::os_fs::OsFileSystem;
 use ecc_infra::process_executor::ProcessExecutor;
 use ecc_infra::std_terminal::StdTerminal;
 use ecc_ports::env::Environment;
 use ecc_ports::terminal::TerminalIO;
+
+/// CLI-level wrapper for `DevProfile` that derives `ValueEnum`.
+#[derive(Debug, Clone, ValueEnum)]
+pub enum CliDevProfile {
+    /// Production profile: real `~/.claude/` install (no symlinks).
+    Default,
+    /// Development profile: symlinks from ECC repo into `~/.claude/`.
+    Dev,
+}
+
+impl From<CliDevProfile> for DevProfile {
+    fn from(p: CliDevProfile) -> Self {
+        match p {
+            CliDevProfile::Default => DevProfile::Default,
+            CliDevProfile::Dev => DevProfile::Dev,
+        }
+    }
+}
 
 #[derive(Args)]
 pub struct DevArgs {
@@ -35,6 +54,14 @@ pub enum DevAction {
     },
     /// Show current ECC installation status
     Status,
+    /// Switch to the given config profile (dev or default)
+    Switch {
+        /// Target profile to activate
+        profile: CliDevProfile,
+        /// Preview changes without writing
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 pub fn run(args: DevArgs) -> anyhow::Result<()> {
@@ -87,6 +114,16 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
             let status = dev::dev_status(&fs, &claude_dir);
             let output = dev::format_status(&status, colored);
             terminal.stdout_write(&output);
+        }
+        DevAction::Switch { profile, dry_run } => {
+            let ecc_root =
+                install::resolve_ecc_root(&fs, &env).map_err(|e| anyhow::anyhow!(e))?;
+            dev::dev_switch(&fs, &terminal, &ecc_root, &claude_dir, profile.into(), dry_run)
+                .map_err(|e| {
+                    eprintln!("Error: {e}");
+                    std::process::exit(1);
+                })
+                .unwrap_or(())
         }
     }
 
