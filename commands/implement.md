@@ -142,11 +142,26 @@ The RED-GREEN-REFACTOR instructions from the `tdd-executor` agent.
 
 Execute wave dispatch per the skill. Accumulate commit SHA hashes for the Phase Summary. For each commit, also append the SHA and message to campaign.md's `## Commit Trail` table (parent orchestrator only, never subagents). Status updates: append `red@<timestamp>` on dispatch, `green@<timestamp>` on success, `done@<timestamp>` after regression passes.
 
+### Context Checkpoint (Between Waves)
+
+> **Shared**: See `skills/graceful-exit/SKILL.md` for thresholds and protocol.
+
+After each wave completes and regression verification passes, before starting the next wave, run a context checkpoint:
+
+1. Run `!bash skills/graceful-exit/read-context-percentage.sh`
+2. If >= 85%: save tasks.md + update campaign.md Resumption Pointer with last completed wave/PC and next action. Display exit message per graceful-exit skill. STOP. The 85% threshold is independent of any prior 75% warning — it triggers regardless.
+3. If >= 75% and < 85%: warn "Context at XX%. Consider running `/compact` or finishing the current phase." Continue.
+4. If < 75% or "unknown": proceed silently with no action.
+
+Never interrupt mid-regression — the checkpoint runs only after regression passes.
+
 ### Progress Tracking (Parent-Owned)
 
 > **Shared**: See `skills/progress-tracking/SKILL.md` for the full progress tracking logic — TodoWrite, TaskUpdate, tasks.md status updates, and loop completion.
 
 ## Phase 4: E2E Tests
+
+> **Context Checkpoint**: Before starting this phase, run the graceful-exit checkpoint per `skills/graceful-exit/SKILL.md`. If >= 85%, save state and exit. If >= 75%, warn and continue.
 
 Read the solution's `## E2E Activation Rules`:
 
@@ -160,6 +175,8 @@ Read the solution's `## E2E Activation Rules`:
 After E2E phase completes (whether tests ran or not), update tasks.md: set "E2E tests" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
 
 ## Phase 5: Code Review
+
+> **Context Checkpoint**: Before starting this phase, run the graceful-exit checkpoint per `skills/graceful-exit/SKILL.md`. If >= 85%, save state and exit. If >= 75%, warn and continue.
 
 Launch a Task with the `code-reviewer` agent:
 
@@ -183,6 +200,8 @@ Record: code review summary (PASS or findings addressed). Also append findings s
 After code review completes, update tasks.md: set "Code review" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
 
 ## Phase 6: Doc Updates
+
+> **Context Checkpoint**: Before starting this phase, run the graceful-exit checkpoint per `skills/graceful-exit/SKILL.md`. If >= 85%, save state and exit. If >= 75%, warn and continue.
 
 Execute every row from the solution's `## Doc Update Plan`. Doc updates are part of implementation — they happen BEFORE writing implement-done.md.
 
@@ -216,6 +235,8 @@ For CHANGELOG.md (always required):
 After all doc updates complete, update tasks.md: set "Doc updates" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.
 
 ## Phase 7: Write implement-done.md
+
+> **Context Checkpoint**: Before starting this phase, run the graceful-exit checkpoint per `skills/graceful-exit/SKILL.md`. If >= 85%, save state and exit. If >= 75%, warn and continue.
 
 Write `.claude/workflow/implement-done.md` using the exact schema below. Every section is mandatory.
 
