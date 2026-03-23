@@ -145,3 +145,41 @@ Reverse dependency order:
 2. Revert `docs/domain/glossary.md` entry
 3. Revert `skills/grill-me/SKILL.md` (remove Adversary Mode section)
 4. Delete `skills/grill-me-adversary/` directory
+
+## Phase Summary
+
+### Design Reviews
+
+| Review Type | Verdict | Finding Count |
+|-------------|---------|---------------|
+| SOLID | PASS | 0 |
+| Robert | CLEAN | 0 |
+| Security | CLEAR | 0 |
+
+### Adversary Findings
+
+| Dimension | Verdict | Key Rationale |
+|-----------|---------|---------------|
+| Coverage | PASS (R2) | Full AC-to-PC traceability table, PC-035 added for name match |
+| Order | PASS | Phases correctly sequenced |
+| Fragility | PASS (R2) | PC-022 frontmatter stripping explained, PC-021 relabeled |
+| Rollback | PASS | Clean reverse-order, all changes reversible |
+| Architecture | PASS | Correct ECC companion skill pattern |
+| Blast Radius | PASS | 4 files, additive only |
+| Missing PCs | PASS (R2) | PC-035 added, negative constraints covered by design |
+| Doc Plan | PASS (R2) | Glossary durability confirmed via BL-055 precedent |
+
+### File Changes Summary
+
+| # | File | Action | Spec Ref |
+|---|------|--------|----------|
+| 1 | `skills/grill-me-adversary/SKILL.md` | create | US-001–006 |
+| 2 | `skills/grill-me/SKILL.md` | modify | US-007 |
+| 3 | `docs/domain/glossary.md` | modify | US-009, AC-009.1 |
+| 4 | `CHANGELOG.md` | modify | US-009, AC-009.2 |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/2026-03-23-grill-me-adversary-companion/design.md | Full design |
