@@ -26,8 +26,15 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
    3. **Regenerate if tasks.md deleted.** If `artifacts.tasks_path` is set but the file does not exist, regenerate tasks.md from the solution's PC table. Infer completion status using `git log --oneline --after=<started_at from state.json> --grep="PC-NNN"` — if a commit message contains the PC ID after the workflow `started_at` timestamp, mark that PC as `done`. Emit warning: "tasks.md regenerated from git history — verify accuracy."
    4. **Handle malformed tasks.md.** If tasks.md exists but cannot be parsed (malformed markdown), regenerate from the solution's PC table using the git-log inference above. Emit warning: "tasks.md was malformed; regenerated from solution."
    5. **TodoRead fallback.** If `artifacts.tasks_path` is null (BL-029 not active), fall back to reading TodoRead for resume state.
-   6. **Campaign re-entry orientation.** If `artifacts.campaign_path` exists in state.json and the file exists, read campaign.md for orientation context: toolchain commands, grill-me decisions, commit trail, and resumption pointer.
-7. Run: `!bash .claude/hooks/phase-transition.sh implement`
+   6. **Campaign re-entry orientation.** If `artifacts.campaign_path` exists in state.json and the file exists, read campaign.md for orientation context: toolchain commands, grill-me decisions, commit trail, and Resumption Pointer. Resume from the campaign Resumption Pointer to re-enter at the correct wave/PC.
+7. **Context Clear Gate (BL-054)**: Read context percentage by running `!bash skills/graceful-exit/read-context-percentage.sh`.
+   - If the result is a number (not "unknown"):
+     - Display: "Context is at XX%. Implementation starts from disk artifacts."
+     - Use `AskUserQuestion` with options: `["Clear and restart (Recommended)", "Continue in current context"]`
+     - If "Clear and restart": instruct "Run `/compact` then re-run `/implement`. All state is on disk. After compacting, read `campaign.md` Resumption Pointer for re-entry context." Then STOP.
+     - If "Continue in current context": proceed normally.
+   - If "unknown": skip this gate silently — no question asked, proceed to next step.
+8. Run: `!bash .claude/hooks/phase-transition.sh implement`
 
 ## Phase 1: Enter Plan Mode
 
