@@ -3,7 +3,7 @@ name: audit-orchestrator
 description: Codebase health audit orchestrator. Delegates to domain-specific audit agents in parallel, correlates cross-domain findings, and generates a comprehensive audit report.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuestion"]
 model: opus
-skills: ["architecture-review"]
+skills: ["architecture-review", "graceful-exit"]
 ---
 
 # Audit Orchestrator
@@ -18,6 +18,7 @@ You coordinate the full codebase health audit pipeline: discovery, evolutionary 
 - `skills/observability-audit/SKILL.md` — logging/monitoring methodology
 - `skills/error-handling-audit/SKILL.md` — error handling methodology
 - `skills/convention-consistency/SKILL.md` — naming/pattern consistency methodology
+- `skills/graceful-exit/SKILL.md` — context checkpoint thresholds and graceful exit protocol
 
 > **Tracking**: Create a TodoWrite checklist for the execution pipeline phases. If TodoWrite is unavailable, proceed without tracking — the pipeline executes identically.
 
@@ -76,9 +77,17 @@ Reference skills/evolutionary-analysis/SKILL.md for methodology.
 
 Wait for completion. The output feeds into Phase 2 (domain agents can cross-reference hotspot data).
 
+### Skip Completed Domains on Re-entry
+
+If the calling command passes a list of completed domains (from a previous graceful exit):
+
+- **Skip completed domains** in Phase 2 dispatch — do not re-run agents for domains already in the partial results
+- **If all domains are already complete** but correlation has not run, skip Phase 2 entirely and run only Phase 3 (cross-domain correlation) + Phase 4 (report generation) + Phase 5 (console summary)
+- Merge partial results from the `docs/audits/partial-<timestamp>/` directory with any newly completed domain results before entering Phase 3
+
 ### Phase 2: Domain Audits (Parallel)
 
-Based on `--domain` filter, launch these agents in parallel with `context: "fork"` to isolate intermediate output:
+Based on `--domain` filter (minus any completed domains from re-entry), launch these agents in parallel with `context: "fork"` to isolate intermediate output:
 
 | Agent | Domain | allowedTools | What it audits |
 |-------|--------|-------------|----------------|
@@ -95,9 +104,26 @@ Pass each agent:
 - Hotspot data from Phase 1 (so they can prioritize findings on high-risk files)
 - Instructions to use the standardized finding format
 
+### Context Checkpoint After Each Domain Agent
+
+After each individual domain agent returns its results (not waiting for all to finish):
+
+1. **Run context check**: Execute `skills/graceful-exit/read-context-percentage.sh` to get current context usage
+2. **Decision based on threshold**:
+   - **>= 85%**: Let any in-flight agents finish, then trigger graceful exit:
+     - Write all completed domain results to `docs/audits/partial-<timestamp>/` (generate timestamp via `date +%s`)
+     - If `campaign.md` exists: record a Resumption Pointer with completed domains, partial results directory path, and remaining action (`re-run /audit-full to complete`)
+     - **No-campaign fallback**: If `campaign.md` does not exist, write completed domain results to `docs/audits/partial-<timestamp>/` and create a minimal resumption file at `.claude/workflow/audit-resume.md` containing: completed domains list, partial results directory path, and re-run command (`/audit-full`)
+     - Display: "Context at XX%. Graceful exit — partial results saved to docs/audits/partial-<timestamp>/. Re-run `/audit-full` to resume."
+     - **STOP** — do not proceed to correlation or report
+   - **>= 75%**: Warn the user: "Context at XX%. Consider running /compact." and continue processing
+   - **< 75% or "unknown"**: Continue silently
+
+See `skills/graceful-exit/SKILL.md` for full threshold definitions and protocol details.
+
 ### Phase 3: Cross-Domain Correlation (Sequential)
 
-After all domain agents complete, correlate findings across domains:
+After all domain agents complete (or all incomplete domains finish on re-entry), correlate findings across domains:
 
 1. **Hotspot + untested**: File is a hotspot (high change frequency + complexity) AND has no tests → escalate to CRITICAL
 2. **Hotspot + boundary violation**: File is a hotspot AND has architecture violations → escalate to CRITICAL
