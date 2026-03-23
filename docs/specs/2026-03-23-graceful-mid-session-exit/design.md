@@ -138,3 +138,49 @@ Reverse dependency order:
 3. skills/graceful-exit/SKILL.md — delete
 2. skills/graceful-exit/read-context-percentage.sh — delete
 1. statusline/context-persist.sh — delete
+
+## Phase Summary
+
+### Design Reviews
+
+| Review Type | Verdict | Finding Count |
+|-------------|---------|---------------|
+| SOLID | NEEDS WORK → addressed (SRP fix, rename) | 2 prescriptions |
+| Robert | CLEAN | 1 warning (implement.md size) |
+| Security | 1 CRITICAL + 1 HIGH → mitigated | 4 findings |
+
+### Adversary Findings
+
+| Dimension | Verdict | Key Rationale |
+|-----------|---------|---------------|
+| Coverage | PASS (R2 fix) | 8 PCs added for uncovered ACs |
+| Order | PASS | 7 TDD groups in dependency order |
+| Fragility | PASS (R2 fix) | Env var naming consistency PC added |
+| Rollback | PASS | 12-step reverse dependency order |
+| Architecture | PASS | Content-layer only, no Rust changes |
+| Blast radius | PASS | 12 files, scoped to 2 commands |
+| Missing PCs | PASS (R2 fix) | Round-trip integration test added |
+| Doc plan | PASS | 6 doc actions including ADR 0014 |
+
+### File Changes Summary
+
+| # | File | Action | Spec Ref |
+|---|------|--------|----------|
+| 1 | statusline/context-persist.sh | Create | US-001 |
+| 2 | skills/graceful-exit/read-context-percentage.sh | Create | US-001, US-002 |
+| 3 | skills/graceful-exit/SKILL.md | Create | US-002 |
+| 4 | commands/implement.md | Modify | US-003, US-004 |
+| 5 | commands/audit-full.md | Modify | US-005 |
+| 6 | agents/audit-orchestrator.md | Modify | US-005 |
+| 7 | skills/strategic-compact/SKILL.md | Modify | US-006 |
+| 8 | skills/campaign-manifest/SKILL.md | Modify | US-006 |
+| 9 | docs/domain/glossary.md | Modify | US-006 |
+| 10 | docs/adr/0014-context-aware-graceful-exit.md | Create | US-006 |
+| 11 | docs/adr/README.md | Modify | US-006 |
+| 12 | CHANGELOG.md | Modify | US-006 |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/2026-03-23-graceful-mid-session-exit/design.md | Full design |
