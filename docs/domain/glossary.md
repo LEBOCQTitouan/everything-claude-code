@@ -19,7 +19,7 @@ A user-defined short name for a Claude Code [Session](#session). Stored in `~/.c
 - **Files:** [`session-aliases.ts`](../src/lib/session-aliases.ts) (21 exports), [`session-start.ts`](../src/hooks/session-start.ts), [`session-manager.ts`](../src/lib/session-manager.ts)
 
 ### Adversary Mode
-An opt-in enhancement to the [grill-me](#grill-me) interview skill that adds adaptive adversarial questioning with answer scoring (completeness and specificity 0-3), follow-up probing on weak answers, and question-generation challenge at each stage. Activated when a user says "adversary mode" or "hard mode".
+An opt-in enhancement to the grill-me interview skill that adds adaptive adversarial questioning with answer scoring (completeness and specificity 0-3), follow-up probing on weak answers, and question-generation challenge at each stage. Activated when a user says "adversary mode" or "hard mode".
 - **Related:** [Skill](#skill)
 
 ### Artifact
