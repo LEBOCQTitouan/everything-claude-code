@@ -84,4 +84,30 @@ impl FileSystem for OsFileSystem {
         paths.sort();
         Ok(paths)
     }
+
+    #[cfg(unix)]
+    fn create_symlink(&self, target: &Path, link: &Path) -> Result<(), FsError> {
+        if link.exists() || std::fs::symlink_metadata(link).is_ok() {
+            std::fs::remove_file(link).map_err(|e| FsError::io(link, e))?;
+        }
+        std::os::unix::fs::symlink(target, link).map_err(|e| FsError::io(link, e))
+    }
+
+    #[cfg(not(unix))]
+    fn create_symlink(&self, _target: &Path, link: &Path) -> Result<(), FsError> {
+        Err(FsError::Unsupported(format!(
+            "symlinks are not supported on this platform: {}",
+            link.display()
+        )))
+    }
+
+    fn read_symlink(&self, link: &Path) -> Result<PathBuf, FsError> {
+        std::fs::read_link(link).map_err(|e| FsError::io(link, e))
+    }
+
+    fn is_symlink(&self, path: &Path) -> bool {
+        std::fs::symlink_metadata(path)
+            .map(|m| m.file_type().is_symlink())
+            .unwrap_or(false)
+    }
 }

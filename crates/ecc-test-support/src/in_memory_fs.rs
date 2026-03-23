@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 pub struct InMemoryFileSystem {
     files: Arc<Mutex<BTreeMap<PathBuf, Vec<u8>>>>,
     dirs: Arc<Mutex<BTreeMap<PathBuf, ()>>>,
+    symlinks: Arc<Mutex<BTreeMap<PathBuf, PathBuf>>>,
 }
 
 impl InMemoryFileSystem {
@@ -15,6 +16,7 @@ impl InMemoryFileSystem {
         Self {
             files: Arc::new(Mutex::new(BTreeMap::new())),
             dirs: Arc::new(Mutex::new(BTreeMap::new())),
+            symlinks: Arc::new(Mutex::new(BTreeMap::new())),
         }
     }
 
@@ -34,6 +36,15 @@ impl InMemoryFileSystem {
     /// Pre-populate a directory for test setup.
     pub fn with_dir(self, path: &str) -> Self {
         self.dirs.lock().unwrap().insert(PathBuf::from(path), ());
+        self
+    }
+
+    /// Pre-populate a symlink for test setup.
+    pub fn with_symlink(self, link: impl Into<PathBuf>, target: impl Into<PathBuf>) -> Self {
+        self.symlinks
+            .lock()
+            .unwrap()
+            .insert(link.into(), target.into());
         self
     }
 }
@@ -79,7 +90,8 @@ impl FileSystem for InMemoryFileSystem {
     fn exists(&self, path: &Path) -> bool {
         let files = self.files.lock().unwrap();
         let dirs = self.dirs.lock().unwrap();
-        files.contains_key(path) || dirs.contains_key(path)
+        let symlinks = self.symlinks.lock().unwrap();
+        files.contains_key(path) || dirs.contains_key(path) || symlinks.contains_key(path)
     }
 
     fn is_dir(&self, path: &Path) -> bool {
@@ -104,12 +116,13 @@ impl FileSystem for InMemoryFileSystem {
     }
 
     fn remove_file(&self, path: &Path) -> Result<(), FsError> {
-        self.files
-            .lock()
-            .unwrap()
-            .remove(path)
-            .map(|_| ())
-            .ok_or_else(|| FsError::NotFound(path.to_path_buf()))
+        let removed_file = self.files.lock().unwrap().remove(path).is_some();
+        let removed_symlink = self.symlinks.lock().unwrap().remove(path).is_some();
+        if removed_file || removed_symlink {
+            Ok(())
+        } else {
+            Err(FsError::NotFound(path.to_path_buf()))
+        }
     }
 
     fn remove_dir_all(&self, path: &Path) -> Result<(), FsError> {
@@ -165,6 +178,28 @@ impl FileSystem for InMemoryFileSystem {
         }
         entries.sort();
         Ok(entries)
+    }
+
+    fn create_symlink(&self, target: &Path, link: &Path) -> Result<(), FsError> {
+        self.files.lock().unwrap().remove(link);
+        self.symlinks
+            .lock()
+            .unwrap()
+            .insert(link.to_path_buf(), target.to_path_buf());
+        Ok(())
+    }
+
+    fn read_symlink(&self, link: &Path) -> Result<PathBuf, FsError> {
+        self.symlinks
+            .lock()
+            .unwrap()
+            .get(link)
+            .cloned()
+            .ok_or_else(|| FsError::NotFound(link.to_path_buf()))
+    }
+
+    fn is_symlink(&self, path: &Path) -> bool {
+        self.symlinks.lock().unwrap().contains_key(path)
     }
 }
 

@@ -16,6 +16,9 @@ pub trait FileSystem: Send + Sync {
     fn copy(&self, from: &Path, to: &Path) -> Result<(), FsError>;
     fn read_dir(&self, path: &Path) -> Result<Vec<PathBuf>, FsError>;
     fn read_dir_recursive(&self, path: &Path) -> Result<Vec<PathBuf>, FsError>;
+    fn create_symlink(&self, target: &Path, link: &Path) -> Result<(), FsError>;
+    fn read_symlink(&self, link: &Path) -> Result<PathBuf, FsError>;
+    fn is_symlink(&self, path: &Path) -> bool;
 }
 
 /// Errors that can occur during filesystem operations.
@@ -29,6 +32,9 @@ pub enum FsError {
 
     #[error("I/O error on {path}: {message}")]
     Io { path: PathBuf, message: String },
+
+    #[error("unsupported operation: {0}")]
+    Unsupported(String),
 }
 
 impl FsError {
