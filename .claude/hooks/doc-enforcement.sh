@@ -36,4 +36,10 @@ if ! echo "$DOCS_SECTION" | grep -qE '^\s*[-*]|^\|'; then
   exit 0
 fi
 
+# Check for ## Supplemental Docs heading
+if ! grep -q '^## Supplemental Docs' "$IMPL_FILE"; then
+  echo "WARNING: implement-done.md missing '## Supplemental Docs' section." >&2
+  exit 0
+fi
+
 exit 0
