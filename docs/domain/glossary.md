@@ -90,6 +90,11 @@ A doc-system [Agent](#agent) (`diagram-generator.md`) that analyzes codebase str
 A context-aware pattern where a long-running command detects high context usage, saves current state to campaign.md (or audit-resume.md), informs the user, and STOPs cleanly. The next session resumes from the saved Resumption Pointer. See `skills/graceful-exit/SKILL.md`.
 - **Related:** [Context Checkpoint](#context-checkpoint), [Campaign Manifest](#campaign-manifest), [Resumption Pointer](#resumption-pointer)
 
+### Grill Me
+The universal questioning protocol for ECC. A stage-by-stage adversarial interview that challenges ideas through 5 canonical stages (Clarity, Assumptions, Edge Cases, Alternatives, Stress Test) using `AskUserQuestion` one question at a time with challenge loops and cross-stage mutation. Operates in three modes: standalone (default, all 5 stages), spec-mode (recommended answers, "spec it" shortcut), and backlog-mode (lighter, max 3 stages). Enforced by the `grill-me-gate.sh` Stop hook.
+- **Related:** [Adversary Mode](#adversary-mode), [Skill](#skill)
+- **Files:** [`skills/grill-me/SKILL.md`](../skills/grill-me/SKILL.md), [`skills/grill-me-adversary/SKILL.md`](../skills/grill-me-adversary/SKILL.md), [`.claude/hooks/grill-me-gate.sh`](../../.claude/hooks/grill-me-gate.sh)
+
 ### Hook
 A Claude Code lifecycle event handler. Each hook is a Node.js script that reads JSON from stdin, performs an action, and writes to stdout/stderr. Execution is gated by [Hook Profiles](#hook-profile) via [Run With Flags](#run-with-flags).
 - **Related:** [Hook Profile](#hook-profile), [Run With Flags](#run-with-flags), [Stdin Passthrough](#stdin-passthrough)
