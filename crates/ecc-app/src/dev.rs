@@ -298,19 +298,23 @@ fn dev_switch_to_dev<F: FileSystem, T: TerminalIO>(
 
 fn dev_switch_to_default<F: FileSystem, T: TerminalIO>(
     fs: &F,
-    _terminal: &T,
+    terminal: &T,
     _ecc_root: &Path,
     claude_dir: &Path,
-    _dry_run: bool,
+    dry_run: bool,
 ) -> Result<(), DevError> {
     // Remove existing symlinks for managed dirs
     for dir in MANAGED_DIRS {
         let link = claude_dir.join(dir);
         if fs.is_symlink(&link) {
-            fs.remove_file(&link)?;
+            if dry_run {
+                terminal.stdout_write(&format!("Would remove symlink: {}\n", link.display()));
+            } else {
+                fs.remove_file(&link)?;
+            }
         }
     }
-    // dev_on is called by the CLI layer after this; here we only remove symlinks
+    // Note: the CLI layer calls dev_on after this to reinstall copied files
     Ok(())
 }
 

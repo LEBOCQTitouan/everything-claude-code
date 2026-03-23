@@ -87,8 +87,12 @@ impl FileSystem for OsFileSystem {
 
     #[cfg(unix)]
     fn create_symlink(&self, target: &Path, link: &Path) -> Result<(), FsError> {
-        if link.exists() || std::fs::symlink_metadata(link).is_ok() {
-            std::fs::remove_file(link).map_err(|e| FsError::io(link, e))?;
+        if std::fs::symlink_metadata(link).is_ok() {
+            if link.is_dir() && !self.is_symlink(link) {
+                std::fs::remove_dir_all(link).map_err(|e| FsError::io(link, e))?;
+            } else {
+                std::fs::remove_file(link).map_err(|e| FsError::io(link, e))?;
+            }
         }
         std::os::unix::fs::symlink(target, link).map_err(|e| FsError::io(link, e))
     }
