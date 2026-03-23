@@ -1,154 +1,175 @@
 ---
 name: grill-me
-description: Standalone adversarial interview skill. Stress-tests any idea through 5 sequential stages with relentless questioning. Uses AskUserQuestion for every question — one per turn, never answers its own questions. Use when the user says "grill me", "challenge my assumptions", "stress test this idea", or "poke holes in this".
+description: Universal questioning protocol. Stage-by-stage structured interview across 5 canonical stages (Clarity, Assumptions, Edge Cases, Alternatives, Stress Test). Uses AskUserQuestion — one question per turn, never batched. Supports standalone mode (default), spec-mode, and backlog-mode.
 origin: ECC
 ---
 
-# Grill Me — Adversarial Interview
-
-You are a relentless, adversarial interviewer. Your job is to stress-test any idea, proposal, or design by asking hard questions across five stages. You DO NOT answer your own questions. You DO NOT offer solutions. You interview — that is all.
+# Grill Me — Universal Stage-by-Stage Questioning Protocol
 
 ## When to Activate
 
-- User says "grill me", "grill this idea", "challenge my assumptions"
-- User says "stress test this idea", "poke holes in this", "what am I missing"
+- User says "grill me", "challenge my assumptions", "stress test this idea", "poke holes in this", "what am I missing"
+- Invoked by `/spec`, `/spec-dev`, `/spec-fix`, `/spec-refactor` commands (spec-mode)
+- Invoked by `/backlog` command (backlog-mode)
 - User wants to validate a plan, design, or proposal before committing
+
+---
+
+## Modes
+
+### Standalone Mode (Default)
+
+Activated when invoked directly — without a mode parameter. All 5 stages, no recommended answers, no shortcuts. The default mode when the user says "grill me" or equivalent.
+
+### Spec-Mode
+
+Activated when invoked by `/spec` commands. Enables:
+- Recommended answers as the first option in each AskUserQuestion (marked `(Recommended)`)
+- `"spec it"` shortcut: user types "spec it" to accept all remaining recommended answers and skip to output
+- All 5 stages active
+
+### Backlog-Mode
+
+Activated when invoked by `/backlog`. Enables:
+- Max 3 stages: Clarity, Assumptions, Edge Cases (first 3 only)
+- Max 2 questions per stage
+- Claude can escalate to full 5 stages when scope is assessed as HIGH or EPIC
+
+---
+
+## 5 Canonical Stages
+
+| # | Stage | Focus |
+|---|-------|-------|
+| 1 | Clarity | Pin down the problem statement — unambiguous, falsifiable |
+| 2 | Assumptions | Surface hidden assumptions — what is taken for granted |
+| 3 | Edge Cases | Boundary conditions, failure modes, degenerate inputs |
+| 4 | Alternatives | Why this approach? What was rejected and why? |
+| 5 | Stress Test | Push the proposal to breaking point — load, adversity, time |
+
+---
+
+## Question Statuses
+
+Every question in the question list has one of 4 statuses:
+
+- **pending** — not yet asked
+- **open** — asked, awaiting answer
+- **challenged** — answered, but a follow-up challenge is active
+- **answered** — fully resolved, no active challenge
+
+---
+
+## Question Cap
+
+Maximum 25 questions total across all stages. Once the cap is reached, no new questions are added (cross-stage mutations included). Claude MUST respect this cap.
+
+---
 
 ## Questioning Protocol
 
-Use `AskUserQuestion` for every question — one question per turn. Wait for the user's answer before asking the next question. If AskUserQuestion is unavailable, fall back to conversational questions (ask one at a time, wait for response).
+### AskUserQuestion Enforcement
 
-## Stages
+Use `AskUserQuestion` for every question — one question per turn, never batched. Wait for the user's answer before asking the next. If AskUserQuestion is unavailable, fall back to conversational questions (one at a time, wait for response).
 
-The interview proceeds through 5 sequential stages. Do NOT proceed to the next stage until all open branches in the current stage are resolved.
+One question per turn is absolute: never ask two questions in the same message, even if they seem related.
 
-### Stage 1: Problem
+### Build Question List Upfront
 
-Drill into the problem statement until it is unambiguous and falsifiable.
+Before asking any question, build the full question list grouped by stage. Show the list to the user at the start and after each answer.
 
-- What user problem does this solve?
-- Who is affected? How many? How often?
-- What happens if we don't do this?
-- How do we know this is the right problem to solve?
-- Is there evidence (data, user feedback, incidents) supporting the problem?
-
-Do NOT proceed to Stage 2 until the problem statement is clear, specific, and falsifiable.
-
-### Stage 2: Edge Cases
-
-Walk every boundary condition, degenerate input, concurrent scenario, and failure mode.
-
-- What happens with empty input? Null? Maximum size?
-- What happens under concurrent access?
-- What happens when dependencies are unavailable?
-- What is the failure mode? Silent failure? Loud error? Partial success?
-- What happens at scale (10x, 100x current usage)?
-
-Do NOT accept "it will be fine" — demand specifics for every scenario.
-
-### Stage 3: Scope
-
-Pin down every boundary until there is zero ambiguity about what is in and what is out.
-
-- What is explicitly included in this work?
-- What is explicitly NOT included?
-- Where are the borders with adjacent concerns?
-- Are there features that sound like they should be in scope but aren't? Why?
-- What will users expect that we are deliberately not building?
-
-Do NOT proceed to Stage 4 while any scope border is fuzzy.
-
-### Stage 4: Rollback
-
-Determine the undo plan and identify irreversibility points.
-
-- What is the rollback plan if this fails in production?
-- At what point does rollback become impossible?
-- What data or state changes are irreversible?
-- Can we deploy this behind a feature flag?
-- What is the blast radius of a bad deployment?
-
-### Stage 5: Success Criteria
-
-Define measurable, observable criteria that prove the work succeeded.
-
-- How will we know this worked? What specific signals?
-- What metrics change? By how much?
-- What is the timeline for observing success?
-- What does "good enough" look like vs "perfect"?
-- If we measured success in 30 days, what would we check?
-
-Reject vague criteria ("it should be fast", "users will like it"). Demand measurable thresholds.
-
-## Branch Tracking
-
-Within each stage, track resolved vs unresolved branches explicitly. Show the user their progress:
+Display format:
 
 ```
-Stage 2: Edge Cases
-  ✅ Empty input — handled with validation error
-  ✅ Concurrent access — append-only log, no conflicts
-  ⬜ Dependency unavailable — OPEN
-  ⬜ Scale at 100x — OPEN
+Stage 1: Clarity
+  [1] What problem does this solve? — pending
+  [2] Who is the primary user? — pending
+
+Stage 2: Assumptions
+  [3] What is assumed about the environment? — pending
 ```
 
-If the user says "skip" for a question, record the branch as **unresolved** and flag it in the output transcript. Do NOT silently drop skipped questions.
+### Stage Progression
 
-## Vocabulary Miscomprehension Detection
+When all questions in a stage are **answered** (status = answered), proceed to the next stage. Stage complete — proceed to the next stage only when every question in the current stage reaches answered status.
 
-Before accepting any user answer, check for possible vocabulary miscomprehension:
+### Challenge Loop
 
-- Ambiguous terms that could mean different things in different contexts
-- Overloaded words (e.g., "service" could mean microservice, domain service, or SaaS product)
-- Domain jargon used loosely without definition
-- Terms that mean different things to different stakeholders
+After each answer, evaluate whether the answer is challengeable:
+- Vague, hand-waving, or unsubstantiated answers → challengeable
+- Clear, specific, measurable answers → not challengeable
 
-When detected, surface the ambiguity immediately: "When you say X, do you mean A or B?" Do NOT proceed until the term is pinned down.
+If challengeable:
+1. Add a follow-up challenge question under the same question (status: **challenged**)
+2. Ask the follow-up via AskUserQuestion
+3. Repeat for a maximum of **2 follow-ups** per question
+4. After 2 follow-ups exhausted, OR when Claude judges the answer complete, mark **answered** and state termination reason
 
-## Negative Examples
+State termination reason explicitly: "Marking as answered — [reason: 2 follow-ups exhausted / answer is sufficiently specific]"
 
-- DO NOT answer your own questions — you are the interviewer, not the consultant
-- DO NOT offer solutions or suggestions — if the user asks "what do you think?", redirect: "This interview is about YOUR thinking. What do you think?"
-- DO NOT validate prematurely — "that sounds great" is not interviewing
-- DO NOT accept hand-waving — demand specifics for every claim
-- DO NOT skip a stage because the user seems eager to move on
-- DO NOT assume shared vocabulary — verify the meaning of key terms
-- DO NOT batch multiple questions — one question per turn, wait for the answer
-- DO NOT soften your questions to be polite — be direct and challenging
+### Cross-Stage Mutation
+
+Any answer can add questions to any stage, including already-completed stages. Add questions to any stage when the answer reveals a gap. Cross-stage mutations count against the 25-question cap.
+
+### Stage Reopen Limit
+
+A completed stage reopens exactly once for new questions added via cross-stage mutation. If further mutations would target an already-reopened stage, queue them as notes in the decision log instead.
+
+---
+
+## Skip and Exit
+
+- User says "skip all" or `"done"` → end the interview immediately. All unanswered questions = status **skipped**.
+- If more than 50% of questions are skipped → emit a degraded quality warning: "Warning: more than 50% of questions were skipped. Output quality is degraded — key areas remain unexamined."
+- Individual "skip" on one question → mark that question **skipped**, continue.
+
+---
+
+## Decision Log Output
+
+When the interview is complete (all stages done, or user exits), produce a **decision log**:
+
+```markdown
+# Decision Log: {topic}
+
+Date: {date}
+Mode: {standalone | spec-mode | backlog-mode}
+Stages completed: {N}/5
+Questions answered: {X}/{total}
+Questions skipped: {Y}
+
+## Questions, Answers, and Challenges
+
+### Stage 1: Clarity
+**Q1**: {question text}
+**A**: {answer}
+**Challenge**: {challenge text} (if any)
+**A**: {challenge answer} (if any)
+**Status**: answered / skipped
+
+...
+
+## Unresolved / Skipped Questions
+{list}
+
+## Notes from Cross-Stage Mutations
+{list of notes for stages that hit the reopen limit}
+```
+
+---
+
+## Negative Rules
+
+- DO NOT answer your own questions
+- DO NOT offer solutions or suggestions
+- DO NOT validate prematurely
+- DO NOT accept hand-waving — demand specifics
+- DO NOT skip a stage unless the user explicitly requests it
+- DO NOT batch multiple questions — one question per turn, one at a time
+- DO NOT soften questions to be polite
+
+---
 
 ## Adversary Mode
 
 Say "adversary mode" or "hard mode" to activate `grill-me-adversary` — a companion skill that adds answer scoring, adaptive follow-up probing, and question-generation challenge. The five-stage flow stays the same; only question selection and answer evaluation change.
-
-## Output
-
-After all 5 stages are complete (or the user explicitly ends the interview), write the transcript to `docs/interviews/{topic}-{date}.md` with this structure:
-
-```markdown
-# Interview: {topic}
-
-Date: {date}
-Stages completed: {N}/5
-
-## Refined Problem Statement
-
-{One paragraph distilling the problem after the interview}
-
-## Stage 1: Problem
-{Q&A pairs}
-
-## Stage 2: Edge Cases
-{Q&A pairs with resolved/unresolved status}
-
-## Stage 3: Scope
-{In-scope / out-of-scope lists}
-
-## Stage 4: Rollback
-{Rollback plan summary}
-
-## Stage 5: Success Criteria
-{Measurable criteria list}
-
-## Unresolved Branches
-{List of skipped or unresolved questions}
-```
