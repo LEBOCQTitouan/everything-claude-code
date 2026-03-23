@@ -7,6 +7,7 @@ use crate::config::clean::{clean_from_manifest, is_current_ecc_hook};
 use crate::config::manifest::read_manifest;
 use crate::install::{InstallContext, InstallOptions, InstallSummary, install_global};
 use ecc_domain::config::clean::format_clean_report;
+use ecc_domain::config::dev_profile::MANAGED_DIRS;
 use ecc_domain::config::manifest::EccManifest;
 use ecc_domain::config::merge as domain_merge;
 use ecc_ports::fs::FileSystem;
@@ -16,6 +17,19 @@ use std::path::Path;
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+/// Profile state of the managed ECC directories.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DevProfileStatus {
+    /// All managed dirs are symlinks (development profile active).
+    Dev,
+    /// All managed dirs exist as real directories (production/copied profile).
+    Default,
+    /// No managed dirs exist — ECC is not installed.
+    Inactive,
+    /// Some dirs are symlinks, others are real dirs.
+    Mixed,
+}
 
 /// Result of `dev off`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,6 +51,7 @@ pub struct DevStatus {
     pub rules: usize,
     pub hooks: usize,
     pub installed_at: Option<String>,
+    pub profile: DevProfileStatus,
 }
 
 // ---------------------------------------------------------------------------
@@ -107,9 +122,14 @@ pub fn dev_off(
 /// Check whether ECC is currently active by reading the manifest.
 pub fn dev_status(fs: &dyn FileSystem, claude_dir: &Path) -> DevStatus {
     let manifest = read_manifest(fs, claude_dir);
+    let profile = detect_profile(fs, claude_dir);
 
     match manifest {
-        Some(m) => manifest_to_status(&m),
+        Some(m) => {
+            let mut status = manifest_to_status(&m);
+            status.profile = profile;
+            status
+        }
         None => DevStatus {
             active: false,
             version: None,
@@ -119,7 +139,32 @@ pub fn dev_status(fs: &dyn FileSystem, claude_dir: &Path) -> DevStatus {
             rules: 0,
             hooks: 0,
             installed_at: None,
+            profile,
         },
+    }
+}
+
+/// Detect which profile is active by inspecting the managed directories.
+fn detect_profile(fs: &dyn FileSystem, claude_dir: &Path) -> DevProfileStatus {
+    let symlinked = MANAGED_DIRS
+        .iter()
+        .filter(|dir| fs.is_symlink(&claude_dir.join(dir)))
+        .count();
+    let existing = MANAGED_DIRS
+        .iter()
+        .filter(|dir| fs.exists(&claude_dir.join(dir)))
+        .count();
+
+    let total = MANAGED_DIRS.len();
+
+    if existing == 0 {
+        DevProfileStatus::Inactive
+    } else if symlinked == total {
+        DevProfileStatus::Dev
+    } else if symlinked == 0 {
+        DevProfileStatus::Default
+    } else {
+        DevProfileStatus::Mixed
     }
 }
 
@@ -135,6 +180,7 @@ fn manifest_to_status(m: &EccManifest) -> DevStatus {
         rules,
         hooks: m.artifacts.hook_descriptions.len(),
         installed_at: Some(m.installed_at.clone()),
+        profile: DevProfileStatus::Inactive, // overwritten by dev_status caller
     }
 }
 
@@ -176,10 +222,18 @@ pub fn format_status(status: &DevStatus, colored: bool) -> String {
     let version = status.version.as_deref().unwrap_or("unknown");
     let installed_at = status.installed_at.as_deref().unwrap_or("unknown");
 
+    let profile_label = match status.profile {
+        DevProfileStatus::Dev => "Dev (symlinked)",
+        DevProfileStatus::Default => "Default (copied)",
+        DevProfileStatus::Inactive => "Inactive",
+        DevProfileStatus::Mixed => "Mixed",
+    };
+
     format!(
         "{}\n\n\
          Version:    {version}\n\
          Installed:  {installed_at}\n\
+         Profile:    {profile_label}\n\
          Agents:     {}\n\
          Commands:   {}\n\
          Skills:     {}\n\
@@ -263,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    fn dev_status() {
+    fn dev_status_all_three_states() {
         // Covers all three states: Dev, Default, Inactive
         let m = sample_manifest();
 
@@ -275,7 +329,7 @@ mod tests {
             .with_symlink("/claude/skills", "/ecc/skills")
             .with_symlink("/claude/rules", "/ecc/rules");
         assert_eq!(
-            dev_status(&fs_dev, Path::new("/claude")).profile,
+            super::dev_status(&fs_dev, Path::new("/claude")).profile,
             DevProfileStatus::Dev
         );
 
@@ -287,14 +341,14 @@ mod tests {
             .with_dir("/claude/skills")
             .with_dir("/claude/rules");
         assert_eq!(
-            dev_status(&fs_default, Path::new("/claude")).profile,
+            super::dev_status(&fs_default, Path::new("/claude")).profile,
             DevProfileStatus::Default
         );
 
         // Inactive state
         let fs_inactive = InMemoryFileSystem::new();
         assert_eq!(
-            dev_status(&fs_inactive, Path::new("/claude")).profile,
+            super::dev_status(&fs_inactive, Path::new("/claude")).profile,
             DevProfileStatus::Inactive
         );
     }
@@ -470,6 +524,7 @@ mod tests {
             rules: 0,
             hooks: 0,
             installed_at: None,
+            profile: DevProfileStatus::Inactive,
         };
         let output = format_status(&status, false);
         assert!(output.contains("inactive"));
@@ -487,6 +542,7 @@ mod tests {
             rules: 8,
             hooks: 12,
             installed_at: Some("2026-03-14T00:00:00Z".to_string()),
+            profile: DevProfileStatus::Default,
         };
         let output = format_status(&status, false);
         assert!(output.contains("active"));
