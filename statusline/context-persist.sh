@@ -15,6 +15,8 @@ USED_PCT=$(echo "$INPUT" | jq -r '.context_window.used_percentage // empty')
 if [ -z "${USED_PCT:-}" ]; then
   exit 0
 fi
+# Truncate decimal to integer (API may send 85.7, reader expects integer)
+USED_PCT="${USED_PCT%.*}"
 
 # --- Sanitize session ID ---
 RAW_SESSION="${CLAUDE_SESSION_ID:-$PPID}"
