@@ -216,4 +216,69 @@ mod tests {
         assert!(!fs.exists(Path::new("/dir/sub/b.txt")));
         assert!(fs.exists(Path::new("/other/c.txt")));
     }
+
+    #[test]
+    fn create_symlink_inserts_and_removes_file() {
+        let fs = InMemoryFileSystem::new().with_file("/real.txt", "data");
+        fs.create_symlink(Path::new("/real.txt"), Path::new("/link.txt"))
+            .unwrap();
+        // symlink exists in the symlinks map
+        assert!(fs.is_symlink(Path::new("/link.txt")));
+        // creating a symlink on an existing file path removes that file entry
+        fs.write(Path::new("/file-then-link.txt"), "content")
+            .unwrap();
+        assert!(fs.is_file(Path::new("/file-then-link.txt")));
+        fs.create_symlink(Path::new("/real.txt"), Path::new("/file-then-link.txt"))
+            .unwrap();
+        assert!(!fs.is_file(Path::new("/file-then-link.txt")));
+        assert!(fs.is_symlink(Path::new("/file-then-link.txt")));
+    }
+
+    #[test]
+    fn read_symlink() {
+        let fs = InMemoryFileSystem::new();
+        fs.create_symlink(Path::new("/target.txt"), Path::new("/link.txt"))
+            .unwrap();
+        let target = fs.read_symlink(Path::new("/link.txt")).unwrap();
+        assert_eq!(target, PathBuf::from("/target.txt"));
+        // reading a non-existent symlink returns NotFound
+        let err = fs.read_symlink(Path::new("/no-such-link")).unwrap_err();
+        assert!(matches!(err, FsError::NotFound(_)));
+    }
+
+    #[test]
+    fn is_symlink_detection() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/real.txt", "data")
+            .with_symlink("/link.txt", "/real.txt");
+        assert!(fs.is_symlink(Path::new("/link.txt")));
+        assert!(!fs.is_symlink(Path::new("/real.txt")));
+        assert!(!fs.is_symlink(Path::new("/absent")));
+    }
+
+    #[test]
+    fn exists_includes_symlinks() {
+        let fs = InMemoryFileSystem::new().with_symlink("/link.txt", "/target.txt");
+        assert!(fs.exists(Path::new("/link.txt")));
+        assert!(!fs.exists(Path::new("/absent")));
+    }
+
+    #[test]
+    fn remove_file_removes_symlink() {
+        let fs = InMemoryFileSystem::new().with_symlink("/link.txt", "/target.txt");
+        assert!(fs.is_symlink(Path::new("/link.txt")));
+        fs.remove_file(Path::new("/link.txt")).unwrap();
+        assert!(!fs.is_symlink(Path::new("/link.txt")));
+        assert!(!fs.exists(Path::new("/link.txt")));
+    }
+
+    #[test]
+    fn with_symlink_builder() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/real.txt", "hello")
+            .with_symlink("/link.txt", "/real.txt");
+        assert!(fs.is_symlink(Path::new("/link.txt")));
+        let target = fs.read_symlink(Path::new("/link.txt")).unwrap();
+        assert_eq!(target, PathBuf::from("/real.txt"));
+    }
 }
