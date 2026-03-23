@@ -1,7 +1,7 @@
 ---
 id: BL-055
 title: Graceful mid-session exit when context gets heavy
-status: open
+status: archived
 created: 2026-03-22
 scope: MEDIUM
 target_command: /spec dev

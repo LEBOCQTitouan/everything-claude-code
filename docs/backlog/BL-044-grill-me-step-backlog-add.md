@@ -1,7 +1,7 @@
 ---
 id: BL-044
 title: Add grill-me interview step to /backlog add workflow
-status: open
+status: archived
 created: 2026-03-21
 promoted_to: ""
 tags: [backlog, grill-me, curation, ux, workflow]

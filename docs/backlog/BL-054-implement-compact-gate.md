@@ -1,7 +1,7 @@
 ---
 id: BL-054
 title: Full context clear + confirmation gate at /implement start
-status: open
+status: archived
 created: 2026-03-22
 scope: LOW
 target_command: direct edit

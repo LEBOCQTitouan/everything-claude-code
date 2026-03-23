@@ -44,7 +44,7 @@
 | BL-041 | CLAUDE_CODE_TASK_LIST_ID for cross-session persistence | 9 | LOW | workflow-init.sh | implemented | 2026-03-21 |
 | BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | open | 2026-03-21 |
 | BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | open | 2026-03-21 |
-| BL-044 | Add grill-me interview step to /backlog add workflow | — | LOW | direct edit | open | 2026-03-21 |
+| BL-044 | Add grill-me interview step to /backlog add workflow | — | LOW | direct edit | archived | 2026-03-21 |
 | BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | implemented | 2026-03-21 |
 | BL-046 | Phase-gate hook blocks spec/plan/design file writes during active workflow phases | — | LOW | direct edit | implemented | 2026-03-21 |
 | BL-047 | Automatic session-to-memory persistence with daily files | — | HIGH | /spec dev | implemented | 2026-03-21 |
@@ -54,12 +54,14 @@
 | BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | implemented | 2026-03-22 |
 | BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | open | 2026-03-22 |
 | BL-053 | Deploy poweruser statusline via ecc install | — | MEDIUM | /spec dev | open | 2026-03-22 |
-| BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | implemented | 2026-03-22 |
-| BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | implemented | 2026-03-22 |
+| BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | archived | 2026-03-22 |
+| BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | archived | 2026-03-22 |
 | BL-056 | Context-aware doc generation step at end of /implement | — | HIGH | /spec dev | open | 2026-03-22 |
 | BL-057 | Create grill-me-adversary companion skill with adaptive loop | — | MEDIUM | /spec | implemented | 2026-03-22 |
 | BL-058 | Symlink-based instant config switching for ecc dev | — | MEDIUM | /spec-dev | open | 2026-03-22 |
 | BL-059 | Auto-commit backlog edits at end of /backlog command | — | LOW | /spec-dev | open | 2026-03-22 |
+| BL-060 | Simplify context management — remove graceful exit, keep warnings only | — | HIGH | /spec-refactor | open | 2026-03-23 |
+| BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | open | 2026-03-23 |
 
 ## Dependency Graph
 
@@ -83,7 +85,8 @@ BL-047 → BL-027 (auto-memory extends cross-session memory system)
 
 ## Stats
 
-- **Total:** 56
-- **Open:** 33
-- **Implemented:** 23
+- **Total:** 57
+- **Open:** 22
+- **Implemented:** 21
+- **Archived:** 3
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 3
