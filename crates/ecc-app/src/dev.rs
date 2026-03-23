@@ -236,6 +236,25 @@ pub fn dev_switch<F: FileSystem, T: TerminalIO>(
     }
 }
 
+fn validate_dev_targets<F: FileSystem>(fs: &F, ecc_root: &Path) -> Result<(), DevError> {
+    for dir in MANAGED_DIRS {
+        let target = ecc_root.join(dir);
+        if !target.starts_with(ecc_root) {
+            return Err(DevError::PathEscape(target));
+        }
+        if !fs.exists(&target) {
+            return Err(DevError::TargetNotFound(target));
+        }
+    }
+    Ok(())
+}
+
+fn rollback_completed<F: FileSystem>(fs: &F, completed: &[CompletedOp]) {
+    for op in completed {
+        let _ = fs.remove_file(&op.link);
+    }
+}
+
 fn dev_switch_to_dev<F: FileSystem, T: TerminalIO>(
     fs: &F,
     terminal: &T,
@@ -243,16 +262,7 @@ fn dev_switch_to_dev<F: FileSystem, T: TerminalIO>(
     claude_dir: &Path,
     dry_run: bool,
 ) -> Result<(), DevError> {
-    // Validate all targets exist before performing any operations
-    for dir in MANAGED_DIRS {
-        let target = ecc_root.join(dir);
-        if !ecc_root.join(dir).starts_with(ecc_root) {
-            return Err(DevError::PathEscape(target));
-        }
-        if !fs.exists(&target) {
-            return Err(DevError::TargetNotFound(target));
-        }
-    }
+    validate_dev_targets(fs, ecc_root)?;
 
     if dry_run {
         for dir in MANAGED_DIRS {
@@ -269,20 +279,15 @@ fn dev_switch_to_dev<F: FileSystem, T: TerminalIO>(
         let target = ecc_root.join(dir);
         let link = claude_dir.join(dir);
 
-        // Remove existing symlink (including dangling) at link path
         if fs.is_symlink(&link) {
             fs.remove_file(&link)?;
         }
-        // Remove existing real directory at link path
         if fs.is_dir(&link) {
             fs.remove_dir_all(&link)?;
         }
 
         if let Err(e) = fs.create_symlink(&target, &link) {
-            // Rollback: remove all successfully-created symlinks
-            for op in &completed {
-                let _ = fs.remove_file(&op.link);
-            }
+            rollback_completed(fs, &completed);
             return Err(DevError::Fs(e));
         }
         completed.push(CompletedOp { link });
