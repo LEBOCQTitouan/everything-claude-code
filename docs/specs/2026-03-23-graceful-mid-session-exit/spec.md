@@ -200,3 +200,58 @@ Long-running ECC pipeline commands (`/implement`, `/audit-full`) can exhaust the
 ## Open Questions
 
 None — all resolved during grill-me interview and adversarial review.
+
+## Phase Summary
+
+### Grill-Me Decisions
+
+| # | Question | Answer | Source |
+|---|----------|--------|--------|
+| 1 | Scope boundaries | /implement + /audit-full only (spec/design out of scope) | User |
+| 2 | Detection mechanism | Statusline side-channel (statusline writes % to temp file) | User (overrode recommended agent self-assessment) |
+| 3 | Threshold | 75% warn + 85% exit (two-stage) | User |
+| 4 | Warn action | Warn + continue, user decides | Recommended |
+| 5 | Audit re-entry | Full re-entry: skip completed domains | User |
+| 6 | BL-054 coordination | Bundle BL-054 into this spec | User |
+| 7 | Temp file location | Session-scoped temp file ($TMPDIR/ecc-context-$SESSION_ID.pct) | Recommended |
+| 8 | ADR/Glossary | One ADR + glossary entries | Recommended |
+
+### User Stories
+
+| ID | Title | AC Count | Dependencies |
+|----|-------|----------|--------------|
+| US-001 | Context percentage side-channel | 8 | none |
+| US-002 | Graceful-exit skill (shared protocol) | 9 | US-001 |
+| US-003 | /implement context clear gate (BL-054) | 5 | US-001, US-002 |
+| US-004 | /implement graceful exit at breakpoints | 8 | US-002 |
+| US-005 | /audit-full graceful exit with domain re-entry | 10 | US-002 |
+| US-006 | Documentation and glossary updates | 5 | none |
+
+### Acceptance Criteria
+
+| AC ID | Description | Source US |
+|-------|-------------|----------|
+| AC-001.1–001.8 | Side-channel file write, read, atomic, fallback, session ID, validation | US-001 |
+| AC-002.1–002.9 | Skill protocol, thresholds, state-dump, exit message, hard ceiling, standalone script | US-002 |
+| AC-003.1–003.5 | Context clear gate, AskUserQuestion, skip on unknown | US-003 |
+| AC-004.1–004.8 | Implement breakpoints, wave/phase checkpoints, re-entry, threshold independence | US-004 |
+| AC-005.1–005.10 | Audit checkpoints, partial dirs, re-entry, orchestrator ownership, cleanup, no-campaign fallback | US-005 |
+| AC-006.1–006.5 | Glossary, ADR 0014, strategic-compact, campaign-manifest, CHANGELOG | US-006 |
+
+### Adversary Findings
+
+| Dimension | Verdict | Key Rationale |
+|-----------|---------|---------------|
+| Ambiguity | PASS (R2 fix) | Session ID source, logical unit bounds, batch definition — all resolved with ACs |
+| Edge Cases | PASS (R2 fix) | Partial dir lifecycle, garbage data, TMPDIR fallback, no-campaign fallback — all resolved |
+| Scope Creep Risk | PASS | Tight Non-Requirements, named exclusions |
+| Dependency Gaps | PASS (R2 fix) | audit-orchestrator added to Affected Modules, BL-035 runtime dependency declared |
+| Testability | PASS (R1 fix) | Standalone context-check.sh, atomic write AC, mock temp file pattern |
+| Decision Completeness | PASS (R1 fix) | Decision #6 ADR-worthy, #9 thresholds fixed, #10 hard ceiling |
+| Rollback & Failure | PASS (R2 fix) | Partial dir cleanup AC, post-compact recovery message, no-campaign fallback |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/2026-03-23-graceful-mid-session-exit/spec.md | Full spec |
