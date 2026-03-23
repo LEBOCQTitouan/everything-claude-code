@@ -201,6 +201,125 @@ mod tests {
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
     use std::collections::BTreeMap;
 
+    // --- DevProfileStatus / profile detection ---
+
+    #[test]
+    fn dev_status_symlinked_profile() {
+        // All MANAGED_DIRS are symlinks → profile should be Dev
+        let m = sample_manifest();
+        let fs = InMemoryFileSystem::new()
+            .with_file("/claude/.ecc-manifest.json", &manifest_json(&m))
+            .with_symlink("/claude/agents", "/ecc/agents")
+            .with_symlink("/claude/commands", "/ecc/commands")
+            .with_symlink("/claude/skills", "/ecc/skills")
+            .with_symlink("/claude/rules", "/ecc/rules");
+
+        let status = dev_status(&fs, Path::new("/claude"));
+
+        assert_eq!(status.profile, DevProfileStatus::Dev);
+    }
+
+    #[test]
+    fn dev_status_copied_profile() {
+        // All MANAGED_DIRS exist as real dirs (not symlinks) → profile should be Default
+        let m = sample_manifest();
+        let fs = InMemoryFileSystem::new()
+            .with_file("/claude/.ecc-manifest.json", &manifest_json(&m))
+            .with_dir("/claude/agents")
+            .with_dir("/claude/commands")
+            .with_dir("/claude/skills")
+            .with_dir("/claude/rules");
+
+        let status = dev_status(&fs, Path::new("/claude"));
+
+        assert_eq!(status.profile, DevProfileStatus::Default);
+    }
+
+    #[test]
+    fn dev_status_inactive_no_errors() {
+        // No manifest, no dirs → profile should be Inactive
+        let fs = InMemoryFileSystem::new();
+
+        let status = dev_status(&fs, Path::new("/claude"));
+
+        assert!(!status.active);
+        assert_eq!(status.profile, DevProfileStatus::Inactive);
+    }
+
+    #[test]
+    fn dev_status_mixed_state() {
+        // Some dirs are symlinks, some are real dirs → Mixed
+        let m = sample_manifest();
+        let fs = InMemoryFileSystem::new()
+            .with_file("/claude/.ecc-manifest.json", &manifest_json(&m))
+            .with_symlink("/claude/agents", "/ecc/agents")
+            .with_dir("/claude/commands")
+            .with_symlink("/claude/skills", "/ecc/skills")
+            .with_dir("/claude/rules");
+
+        let status = dev_status(&fs, Path::new("/claude"));
+
+        assert_eq!(status.profile, DevProfileStatus::Mixed);
+    }
+
+    #[test]
+    fn dev_status() {
+        // Covers all three states: Dev, Default, Inactive
+        let m = sample_manifest();
+
+        // Dev state
+        let fs_dev = InMemoryFileSystem::new()
+            .with_file("/claude/.ecc-manifest.json", &manifest_json(&m))
+            .with_symlink("/claude/agents", "/ecc/agents")
+            .with_symlink("/claude/commands", "/ecc/commands")
+            .with_symlink("/claude/skills", "/ecc/skills")
+            .with_symlink("/claude/rules", "/ecc/rules");
+        assert_eq!(
+            dev_status(&fs_dev, Path::new("/claude")).profile,
+            DevProfileStatus::Dev
+        );
+
+        // Default state
+        let fs_default = InMemoryFileSystem::new()
+            .with_file("/claude/.ecc-manifest.json", &manifest_json(&m))
+            .with_dir("/claude/agents")
+            .with_dir("/claude/commands")
+            .with_dir("/claude/skills")
+            .with_dir("/claude/rules");
+        assert_eq!(
+            dev_status(&fs_default, Path::new("/claude")).profile,
+            DevProfileStatus::Default
+        );
+
+        // Inactive state
+        let fs_inactive = InMemoryFileSystem::new();
+        assert_eq!(
+            dev_status(&fs_inactive, Path::new("/claude")).profile,
+            DevProfileStatus::Inactive
+        );
+    }
+
+    #[test]
+    fn format_status_includes_profile() {
+        // Active status with Dev profile → output must contain "Profile:" line
+        let status = DevStatus {
+            active: true,
+            version: Some("4.0.0".to_string()),
+            agents: 1,
+            commands: 1,
+            skills: 1,
+            rules: 2,
+            hooks: 1,
+            installed_at: Some("2026-03-23T00:00:00Z".to_string()),
+            profile: DevProfileStatus::Dev,
+        };
+
+        let output = format_status(&status, false);
+
+        assert!(output.contains("Profile:"), "output must contain 'Profile:' line");
+        assert!(output.contains("Dev"), "output must display the Dev profile name");
+    }
+
     fn sample_manifest() -> EccManifest {
         let mut rules = BTreeMap::new();
         rules.insert(
