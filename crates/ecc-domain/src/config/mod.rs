@@ -4,6 +4,7 @@
 //! cleanup, validation, and gitignore handling for ECC configuration files.
 
 pub mod audit;
+pub mod dev_profile;
 pub mod clean;
 pub mod deny_rules;
 pub mod detect;
