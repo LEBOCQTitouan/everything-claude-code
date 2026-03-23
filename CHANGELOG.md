@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- **Grill-me-adversary companion skill (BL-057)**: Opt-in "adversary mode" for grill-me interviews with adaptive adversarial questioning, answer scoring (completeness + specificity 0-3), follow-up probing, question-generation challenge, and three-attempt cap with branch status labels
 - **Graceful mid-session exit (BL-055, BL-054)**: Context-aware exit for /implement and /audit-full. Statusline side-channel writes context % to temp file; commands check at breakpoints. Two thresholds: 75% warn, 85% exit, 95% hard ceiling. Audit re-entry skips completed domains.
 - Add campaign manifest for amnesiac agents: externalize all pipeline state to disk via campaign.md per work item, toolchain persistence in state.json, draft spec persistence before adversary review, disk fallbacks in design command, scope-check.sh bug fix, implement.md decomposition into 4 sub-skills (BL-035, ADR 0013)
 - Add wave-based parallel TDD execution: group independent PCs into waves, dispatch concurrently via worktree-isolated subagents (max 4 per wave), wave-boundary regression verification, git tags for rollback, backward compatible with sequential execution (BL-032, ADR 0012)
