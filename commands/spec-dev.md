@@ -119,13 +119,7 @@ You have gathered requirements, architecture analysis, audit findings, and backl
 
 ### Rules
 
-> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Grill-Me Interview Rules section.
-
-- Ask **one question at a time** using `AskUserQuestion`. WAIT for the user's response before asking the next question. NEVER present multiple questions in a single turn.
-- For each question, use `AskUserQuestion` with the recommended answer as the first option (append "(Recommended)" to the label). Add 1-2 alternative options where relevant. The user can always select "Other" to provide a custom answer.
-- Explore the codebase yourself instead of asking the user when the answer is findable in code
-- The user can say **"spec it"** at any point to accept all remaining recommended answers and skip to the spec. Check for this after each answer.
-- Do NOT proceed to the spec until the user says **"spec it"** or all questions are answered
+> **Shared**: Use the `grill-me` skill in spec-mode for the interview. See `skills/grill-me/SKILL.md`.
 
 ### Grill-Me Accumulator
 

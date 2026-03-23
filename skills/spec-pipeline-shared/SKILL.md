@@ -1,6 +1,6 @@
 ---
 name: spec-pipeline-shared
-description: Shared sections for spec-dev, spec-fix, and spec-refactor commands — project detection, grill-me interview rules, adversarial review + verdict handling, and spec output schema.
+description: Shared sections for spec-dev, spec-fix, and spec-refactor commands — project detection, adversarial review + verdict handling, and spec output schema.
 origin: ECC
 ---
 
@@ -24,15 +24,7 @@ Persist detected commands to state.json via `toolchain-persist.sh`:
 
 On re-entry, read toolchain from `state.json` instead of re-detecting.
 
-## Grill-Me Interview Rules
-
-These rules govern all grill-me interviews across spec commands:
-
-- Ask **one question at a time** using `AskUserQuestion`. WAIT for the user's response before asking the next question. NEVER present multiple questions in a single turn.
-- For each question, use `AskUserQuestion` with the recommended answer as the first option (append "(Recommended)" to the label). Add 1-2 alternative options where relevant. The user can always select "Other" to provide a custom answer.
-- Explore the codebase yourself instead of asking the user when the answer is findable in code.
-- The user can say **"spec it"** at any point to accept all remaining recommended answers and skip to the spec. Check for this after each answer.
-- Do NOT proceed to the spec until the user says **"spec it"** or all questions are answered.
+> **Shared**: Use the grill-me skill for all interview phases. See `skills/grill-me/SKILL.md` for the universal protocol with spec-mode parameters.
 
 ## Adversarial Review + Verdict Handling
 
