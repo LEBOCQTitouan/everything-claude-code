@@ -116,6 +116,10 @@ When detected, surface the ambiguity immediately: "When you say X, do you mean A
 - DO NOT batch multiple questions — one question per turn, wait for the answer
 - DO NOT soften your questions to be polite — be direct and challenging
 
+## Adversary Mode
+
+Say "adversary mode" or "hard mode" to activate `grill-me-adversary` — a companion skill that adds answer scoring, adaptive follow-up probing, and question-generation challenge. The five-stage flow stays the same; only question selection and answer evaluation change.
+
 ## Output
 
 After all 5 stages are complete (or the user explicitly ends the interview), write the transcript to `docs/interviews/{topic}-{date}.md` with this structure:
