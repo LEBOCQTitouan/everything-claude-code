@@ -1,63 +1,65 @@
-# Implementation Complete: Graceful Mid-Session Exit + Implement Context Clear (BL-055, BL-054)
+# Implementation Complete: Grill-Me-Adversary Companion Skill (BL-057)
 
 ## Spec Reference
-Concern: dev, Feature: Graceful mid-session exit when context gets heavy (BL-055)
+Concern: dev, Feature: Create grill-me-adversary companion skill with adaptive loop (BL-057)
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
-| 1 | statusline/context-persist.sh | create | PC-001-003, PC-047 | structural + integration | done |
-| 2 | skills/graceful-exit/read-context-percentage.sh | create | PC-004-008, PC-047 | integration | done |
-| 3 | skills/graceful-exit/SKILL.md | create | PC-009-014 | structural | done |
-| 4 | commands/implement.md | modify | PC-015-021, PC-041-045 | structural | done |
-| 5 | commands/audit-full.md | modify | PC-022-023 | structural | done |
-| 6 | agents/audit-orchestrator.md | modify | PC-024-028, PC-046 | structural | done |
-| 7 | skills/strategic-compact/SKILL.md | modify | PC-029 | structural | done |
-| 8 | skills/campaign-manifest/SKILL.md | modify | PC-030 | structural | done |
-| 9 | docs/domain/glossary.md | modify | PC-031-032 | structural | done |
-| 10 | docs/adr/0014-context-aware-graceful-exit.md | create | PC-033-034 | structural | done |
-| 11 | docs/adr/README.md | modify | PC-035 | structural | done |
-| 12 | CHANGELOG.md | modify | PC-036 | structural | done |
+| 1 | skills/grill-me-adversary/SKILL.md | create | PC-001–022, PC-035 | structural + word count | done |
+| 2 | skills/grill-me/SKILL.md | modify | PC-023–028 | structural | done |
+| 3 | docs/domain/glossary.md | modify | PC-029 | structural | done |
+| 4 | CHANGELOG.md | modify | PC-030 | structural | done |
 
 ## TDD Log
 | PC ID | RED | GREEN | REFACTOR | Notes |
 |-------|-----|-------|----------|-------|
-| PC-001-003 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | context-persist.sh structural |
-| PC-004-008 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | read-context-percentage.sh integration |
-| PC-047-048 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | round-trip + env var consistency |
-| PC-009-014 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | SKILL.md structural |
-| PC-015-017, PC-041 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | implement.md gate |
-| PC-018-021, PC-042-045 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | implement.md checkpoints |
-| PC-022-028, PC-046 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | audit-full + orchestrator |
-| PC-029-036 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | docs |
-| PC-037-040 | — | ✅ passes | ⏭ no refactor needed | verification (lint N/A, build+test+clippy pass) |
+| PC-001–006, PC-035 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | frontmatter skeleton |
+| PC-007–022 | ✅ fails (PC-007 case mismatch) | ✅ passes after lowercase fix | ⏭ no refactor needed | skill content |
+| PC-023–028 | ✅ fails as expected | ✅ passes after scoring terms removed from opt-in text | ⏭ no refactor needed | grill-me edit |
+| PC-029–030 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | docs |
+| PC-031–034 | — | ✅ passes | ⏭ no refactor needed | regression gates |
 
 ## Pass Condition Results
 | PC ID | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|
-| PC-001 | grep checks on context-persist.sh | >= 1 | PASS | ✅ |
-| PC-002 | grep PPID | match | PASS | ✅ |
-| PC-003 | grep ECC_RUNTIME_DIR | match | PASS | ✅ |
-| PC-004 | integration: missing file | "unknown" | "unknown" | ✅ |
-| PC-005 | integration: valid percentage | "42" | "42" | ✅ |
-| PC-006 | integration: garbage | "unknown" | "unknown" | ✅ |
-| PC-007 | integration: out-of-range | "unknown" | "unknown" | ✅ |
-| PC-008 | integration: path traversal | "unknown" | "unknown" | ✅ |
-| PC-009-014 | SKILL.md structural checks | >= 1 | PASS | ✅ |
-| PC-015-017 | implement.md gate checks | >= 1 | PASS | ✅ |
-| PC-018-021 | implement.md checkpoint checks | >= 1 | PASS | ✅ |
-| PC-022-028 | audit checks | >= 1 | PASS | ✅ |
-| PC-029-036 | doc checks | >= 1 | PASS | ✅ |
-| PC-037 | npm run lint | exit 0 | N/A (no package.json) | ✅ |
-| PC-038 | cargo build | exit 0 | PASS | ✅ |
-| PC-039 | cargo test | exit 0 | PASS | ✅ |
-| PC-040 | cargo clippy -- -D warnings | exit 0 | PASS | ✅ |
-| PC-041-045 | implement.md additional checks | >= 1 | PASS | ✅ |
-| PC-046 | audit-orchestrator 75% warn | >= 1 | PASS | ✅ |
-| PC-047 | round-trip integration | "67" | "67" | ✅ |
-| PC-048 | env var consistency | >= 2 | PASS | ✅ |
+| PC-001 | `test -f skills/grill-me-adversary/SKILL.md` | PASS | PASS | ✅ |
+| PC-002 | `grep -c '^name: grill-me-adversary$'` | 1 | 1 | ✅ |
+| PC-003 | `grep -q '^description: .'` | PASS | PASS | ✅ |
+| PC-004 | `grep -c '^origin: ECC$'` | 1 | 1 | ✅ |
+| PC-005 | `grep -c '^model:'` | 0 | 0 | ✅ |
+| PC-006 | `grep -c '^tools:'` | 0 | 0 | ✅ |
+| PC-035 | `awk name match` | PASS | PASS | ✅ |
+| PC-007 | `grep lowest-scored, hedging, viability` | PASS | PASS | ✅ |
+| PC-008 | `grep already pushed/covered` | PASS | PASS | ✅ |
+| PC-009 | `grep hardest/harder question` | PASS | PASS | ✅ |
+| PC-010 | `grep kept/replaced` | PASS | PASS | ✅ |
+| PC-011 | `grep five-stage` | PASS | PASS | ✅ |
+| PC-012 | `grep completeness + specificity` | PASS | PASS | ✅ |
+| PC-013 | `grep completeness anchors` | 4 | 4 | ✅ |
+| PC-014 | `grep specificity anchors` | 4 | 4 | ✅ |
+| PC-015 | `grep below 2` | PASS | PASS | ✅ |
+| PC-016 | `grep inline/show score` | PASS | PASS | ✅ |
+| PC-017 | `grep deflect` | PASS | PASS | ✅ |
+| PC-018 | `grep three attempt` | PASS | PASS | ✅ |
+| PC-019 | `grep stress-tested but unresolved` | PASS | PASS | ✅ |
+| PC-020 | `grep skipped` | PASS | PASS | ✅ |
+| PC-021 | `grep firm curious` | PASS | PASS | ✅ |
+| PC-022 | `awk body wc -w` | PASS (<=500) | PASS (440 words) | ✅ |
+| PC-023 | `grep '## Adversary Mode'` | 1 | 1 | ✅ |
+| PC-024 | `awk line count` | PASS (<=5) | PASS (1 line) | ✅ |
+| PC-025 | `grep adversary mode + hard mode` | PASS | PASS | ✅ |
+| PC-026 | `grep grill-me-adversary` | PASS | PASS | ✅ |
+| PC-027 | `awk NR order` | PASS | PASS | ✅ |
+| PC-028 | `grep completeness/specificity/0-3` | 0 | 0 | ✅ |
+| PC-029 | `grep Adversary Mode` (glossary) | PASS | PASS | ✅ |
+| PC-030 | `grep BL-057` (CHANGELOG) | PASS | PASS | ✅ |
+| PC-031 | `cargo run -- validate skills` | 0 errors | 0 errors | ✅ |
+| PC-032 | `cargo clippy -- -D warnings` | exit 0 | exit 0 | ✅ |
+| PC-033 | `cargo build` | exit 0 | exit 0 | ✅ |
+| PC-034 | `cargo test` | exit 0 | exit 0 | ✅ |
 
-All pass conditions: 48/48 ✅
+All pass conditions: 35/35 ✅
 
 ## E2E Tests
 No E2E tests required by solution
@@ -65,23 +67,17 @@ No E2E tests required by solution
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | skills/strategic-compact/SKILL.md | Skill | Added graceful-exit backstop row |
-| 2 | skills/campaign-manifest/SKILL.md | Skill | Added checkpoint Resumption Pointer docs |
-| 3 | docs/domain/glossary.md | Domain | Added "Graceful Exit" and "Context Checkpoint" |
-| 4 | docs/adr/0014-context-aware-graceful-exit.md | ADR | Context-aware graceful exit convention |
-| 5 | docs/adr/README.md | Index | Added ADR 0014 |
-| 6 | CHANGELOG.md | Project | Added BL-055 + BL-054 entry |
+| 1 | docs/domain/glossary.md | Domain | Added "Adversary Mode" entry |
+| 2 | CHANGELOG.md | Project | Added BL-057 entry |
 
 ## ADRs Created
-| # | File | Decision |
-|---|------|----------|
-| 1 | docs/adr/0014-context-aware-graceful-exit.md | Context-aware graceful exit convention (two-threshold, statusline side-channel, audit re-entry) |
+None required
 
 ## Subagent Execution
-Inline execution — subagent dispatch not used (pure Markdown/shell changes)
+Inline execution — subagent dispatch not used (pure Markdown changes)
 
 ## Code Review
-1 HIGH finding addressed: decimal percentage truncation in context-persist.sh (API sends 85.7, reader expects integer — fixed by adding `USED_PCT="${USED_PCT%.*}"` matching statusline-command.sh pattern). 4 MEDIUM informational, 2 LOW notes.
+1 MEDIUM finding addressed: broken glossary anchor link to #grill-me (no such heading). Fixed by removing the link wrapper. 1 LOW informational (glossary alphabetical ordering — pre-existing, not a regression).
 
 ## Suggested Commit
-feat(pipeline): add context-aware graceful exit to /implement and /audit-full (BL-055, BL-054)
+feat(skills): add grill-me-adversary companion skill with adaptive loop (BL-057)

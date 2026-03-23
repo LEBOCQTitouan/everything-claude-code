@@ -1,7 +1,7 @@
 ---
 id: BL-057
 title: Create grill-me-adversary companion skill with adaptive loop
-status: open
+status: implemented
 created: 2026-03-22
 promoted_to: ""
 tags: [skills, grill-me, adversarial, adaptive, interview]

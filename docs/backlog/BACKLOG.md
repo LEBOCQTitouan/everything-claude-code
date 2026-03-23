@@ -57,7 +57,7 @@
 | BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | implemented | 2026-03-22 |
 | BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | implemented | 2026-03-22 |
 | BL-056 | Context-aware doc generation step at end of /implement | — | HIGH | /spec dev | open | 2026-03-22 |
-| BL-057 | Create grill-me-adversary companion skill with adaptive loop | — | MEDIUM | /spec | open | 2026-03-22 |
+| BL-057 | Create grill-me-adversary companion skill with adaptive loop | — | MEDIUM | /spec | implemented | 2026-03-22 |
 | BL-058 | Symlink-based instant config switching for ecc dev | — | MEDIUM | /spec-dev | open | 2026-03-22 |
 | BL-059 | Auto-commit backlog edits at end of /backlog command | — | LOW | /spec-dev | open | 2026-03-22 |
 
