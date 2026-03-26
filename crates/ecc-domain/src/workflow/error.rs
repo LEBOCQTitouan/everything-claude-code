@@ -11,6 +11,8 @@ pub enum WorkflowError {
     IllegalTransition { from: Phase, to: Phase },
     /// The workflow state is invalid (e.g. corrupted JSON).
     InvalidState(String),
+    /// An unknown phase name was provided.
+    UnknownPhase(String),
 }
 
 impl fmt::Display for WorkflowError {
@@ -20,6 +22,7 @@ impl fmt::Display for WorkflowError {
                 write!(f, "illegal transition from {from} to {to}")
             }
             Self::InvalidState(msg) => write!(f, "invalid workflow state: {msg}"),
+            Self::UnknownPhase(name) => write!(f, "unknown phase: {name}"),
         }
     }
 }

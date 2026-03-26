@@ -30,6 +30,23 @@ pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, Workfl
     }
 }
 
+/// Resolve a phase transition by target name string.
+///
+/// The `target_name` is parsed via `Phase::from_str`, which handles aliases:
+/// - "spec" -> Plan
+/// - "design" -> Solution
+///
+/// Returns `Ok(target_phase)` for legal transitions, or an error for unknown names or illegal transitions.
+pub fn resolve_transition_by_name(
+    current: Phase,
+    target_name: &str,
+) -> Result<Phase, WorkflowError> {
+    let target = target_name
+        .parse::<Phase>()
+        .map_err(|e| WorkflowError::UnknownPhase(e.0))?;
+    resolve_transition(current, target)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
