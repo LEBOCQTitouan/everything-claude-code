@@ -32,17 +32,13 @@ A 7-domain codebase health assessment system orchestrated by the [audit-orchestr
 - **Related:** [Agent](#agent), [Command](#command)
 - **Files:** [`agents/audit-orchestrator.md`](../agents/audit-orchestrator.md), [`agents/evolution-analyst.md`](../agents/evolution-analyst.md), [`agents/test-auditor.md`](../agents/test-auditor.md), [`agents/observability-auditor.md`](../agents/observability-auditor.md), [`agents/error-handling-auditor.md`](../agents/error-handling-auditor.md), [`agents/convention-auditor.md`](../agents/convention-auditor.md), [`commands/audit.md`](../commands/audit.md)
 
-### Context Checkpoint
-A breakpoint in a long-running command where context window usage is checked against defined thresholds (75% warn, 85% exit, 95% hard ceiling). Checkpoints run between TDD waves, at phase transitions, and after individual audit domain completions.
-- **Related:** [Graceful Exit](#graceful-exit), [Campaign Manifest](#campaign-manifest), [Resumption Pointer](#resumption-pointer)
-
 ### Context Brief
 The structured input passed from the `/implement` parent orchestrator to a [TDD Executor](#tdd-executor) subagent for a single Pass Condition. Contains 6 exact headings: PC Spec, File Paths, Files to Modify, Prior PC Results, Commit Rules, TDD Cycle Rules. Max 500 lines. Excludes full spec/design content and prior PC implementation reasoning.
 - **Related:** [TDD Executor](#tdd-executor), [Command](#command)
 - **Files:** [`commands/implement.md`](../commands/implement.md), [`agents/tdd-executor.md`](../agents/tdd-executor.md)
 
 ### Campaign Manifest
-A Markdown file (`campaign.md`) per work item that indexes all artifacts, decisions, and progress. Bootstraps in `.claude/workflow/` at Phase 0, moves to `docs/specs/YYYY-MM-DD-<slug>/` after spec directory creation. Contains: Status, Artifacts table, Toolchain, Grill-Me Decisions, Adversary History, Agent Outputs, Commit Trail, and Resumption Pointer. A fresh agent reads this single file to orient instantly.
+A Markdown file (`campaign.md`) per work item that indexes all artifacts, decisions, and progress. Bootstraps in `.claude/workflow/` at Phase 0, moves to `docs/specs/YYYY-MM-DD-<slug>/` after spec directory creation. Contains: Status, Artifacts table, Toolchain, Grill-Me Decisions, Adversary History, Agent Outputs, and Commit Trail. A fresh agent reads this single file to orient instantly.
 - **Related:** [Artifact](#artifact), [Task Tracker](#task-tracker), [Skill](#skill)
 - **Files:** [`skills/campaign-manifest/SKILL.md`](../skills/campaign-manifest/SKILL.md), [`skills/artifact-schemas/SKILL.md`](../skills/artifact-schemas/SKILL.md)
 
@@ -85,10 +81,6 @@ An enum representing the ECC configuration source mode. `Default` = release-inst
 A doc-system [Agent](#agent) (`diagram-generator.md`) that analyzes codebase structure and generates Mermaid diagrams (module dependency graphs, data flow, sequence diagrams). Part of the 6-agent doc system alongside doc-orchestrator, doc-analyzer, doc-generator, doc-validator, and doc-reporter. Respects the [Custom Diagram Registry](#custom-diagram-registry) to avoid overwriting user-maintained diagrams.
 - **Related:** [Custom Diagram Registry](#custom-diagram-registry), [Agent](#agent)
 - **Files:** [`agents/diagram-generator.md`](../agents/diagram-generator.md), [`skills/diagram-generation/`](../skills/diagram-generation/), [`commands/doc-diagrams.md`](../commands/doc-diagrams.md)
-
-### Graceful Exit
-A context-aware pattern where a long-running command detects high context usage, saves current state to campaign.md (or audit-resume.md), informs the user, and STOPs cleanly. The next session resumes from the saved Resumption Pointer. See `skills/graceful-exit/SKILL.md`.
-- **Related:** [Context Checkpoint](#context-checkpoint), [Campaign Manifest](#campaign-manifest), [Resumption Pointer](#resumption-pointer)
 
 ### StatuslineConfig
 A domain value object in `ecc-domain` that models the statusline display configuration: field visibility order (`Vec<StatuslineField>`), context window color thresholds (`ContextThresholds` with yellow and red percentages), and git branch cache TTL in seconds. Used by `ecc validate statusline` to verify the installed statusline script against expected configuration.
@@ -139,11 +131,6 @@ A directory containing `SKILL.md` that provides domain knowledge to Claude Code.
 Parent-side check after each [TDD Executor](#tdd-executor) subagent completes during `/implement` Phase 3. Runs all PC commands from PC-001 through PC-N. Must pass before marking PC-N as complete. Failure triggers a hard stop — the parent reports the regressing PC and halts the loop.
 - **Related:** [TDD Executor](#tdd-executor), [Context Brief](#context-brief), [Command](#command)
 - **Files:** [`commands/implement.md`](../commands/implement.md)
-
-### Resumption Pointer
-A section in campaign.md that tells a fresh agent exactly where the work item stands and what to do next. Updated at each phase transition and PC completion. Format: `Current step: <description>` + `Next action: <what to do>`. Enables instant orientation without parsing the full campaign manifest or tasks.md.
-- **Related:** [Campaign Manifest](#campaign-manifest), [Task Tracker](#task-tracker)
-- **Files:** [`skills/campaign-manifest/SKILL.md`](../skills/campaign-manifest/SKILL.md)
 
 ### Task Tracker
 A file-based, session-independent implementation progress tracker persisted at `docs/specs/<slug>/tasks.md`. Written by the `/implement` parent orchestrator during Phase 2 with single-writer semantics — only the parent writes, all other consumers (including [TDD Executor](#tdd-executor) subagents and future `/catchup`) read only. Tracks PC statuses (`pending`, `red`, `green`, `done`, `failed`) and post-TDD phases (E2E, code review, doc updates, implement-done) with inline pipe-separated ISO 8601 timestamp trails. Serves as the authoritative cross-session resume source, replacing ephemeral TodoWrite for re-entry. Distinct from TodoWrite (ephemeral, session-bound) and TaskCreate (native Claude, lost on compaction).
