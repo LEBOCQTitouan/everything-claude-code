@@ -16,6 +16,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- **Simplify context management (BL-060)**: Removed graceful exit infrastructure (BL-054/BL-055), context checkpoints from /implement and /audit-full, Resumption Pointer from campaign manifest, strategic compact skill. Superseded ADR-0014. Rely on native plan-accept context clear.
 - **Unified grill-me universal questioning protocol (BL-061)**: Refactored 3 independent questioning systems (standalone grill-me, spec-pipeline inline rules, backlog-curator ad-hoc questions) into a single universal grill-me protocol with stage-by-stage AskUserQuestion interaction, challenge loops, cross-stage mutation, question cap (25), and hook-based enforcement (grill-me-gate.sh). Canonical stages: Clarity, Assumptions, Edge Cases, Alternatives, Stress Test. Three modes: standalone, spec-mode, backlog-mode. Decomposed spec-pipeline-shared grab-bag. ADR 0017
 - **Context-aware doc generation at end of /implement (BL-056)**: Phase 7.5 dispatches two parallel agents (`module-summary-updater`, `diagram-updater`) to capture MODULE-SUMMARIES entries and Mermaid diagrams while session context is fresh. Non-blocking failures, cross-link fixup pass, doc-enforcement hook extension, ADR 0015
 - **Grill-me-adversary companion skill (BL-057)**: Opt-in "adversary mode" for grill-me interviews with adaptive adversarial questioning, answer scoring (completeness + specificity 0-3), follow-up probing, question-generation challenge, and three-attempt cap with branch status labels
