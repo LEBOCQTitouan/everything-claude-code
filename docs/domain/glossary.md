@@ -127,6 +127,11 @@ A directory containing `SKILL.md` that provides domain knowledge to Claude Code.
 - **Related:** [Agent](#agent), [Command](#command), [Artifact](#artifact)
 - **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-skills.ts`](../src/ci/validate-skills.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts), [`claw.ts`](../src/claw.ts)
 
+### Quality Score
+A numeric 0-100 rating assigned by adversary agents (spec-adversary, solution-adversary) to each review dimension. Scoring scale: 0-30 = major gaps, 31-49 = significant issues, 50-69 = adequate with concerns, 70-89 = good, 90-100 = excellent. Verdict thresholds: >=70 average with no dimension <50 = PASS, 50-69 average or any dimension <50 = CONDITIONAL, <50 average = FAIL. Persisted in spec and design Phase Summary tables for quality trend analysis.
+- **Related:** [Agent](#agent)
+- **Files:** [`agents/spec-adversary.md`](../agents/spec-adversary.md), [`agents/solution-adversary.md`](../agents/solution-adversary.md)
+
 ### Regression Verification
 Parent-side check after each [TDD Executor](#tdd-executor) subagent completes during `/implement` Phase 3. Runs all PC commands from PC-001 through PC-N. Must pass before marking PC-N as complete. Failure triggers a hard stop — the parent reports the regressing PC and halts the loop.
 - **Related:** [TDD Executor](#tdd-executor), [Context Brief](#context-brief), [Command](#command)
