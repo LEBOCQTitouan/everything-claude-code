@@ -62,6 +62,7 @@
 | BL-059 | Auto-commit backlog edits at end of /backlog command | — | LOW | /spec-dev | open | 2026-03-22 |
 | BL-060 | Simplify context management — remove graceful exit, keep warnings only | — | HIGH | /spec-refactor | open | 2026-03-23 |
 | BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | open | 2026-03-23 |
+| BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | open | 2026-03-26 |
 
 ## Dependency Graph
 
@@ -85,8 +86,8 @@ BL-047 → BL-027 (auto-memory extends cross-session memory system)
 
 ## Stats
 
-- **Total:** 57
-- **Open:** 22
+- **Total:** 58
+- **Open:** 23
 - **Implemented:** 21
 - **Archived:** 3
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 3
