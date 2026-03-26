@@ -172,10 +172,23 @@ mod tests {
             .with_dir("/ecc/statusline")
             .with_file(
                 "/ecc/statusline/statusline-command.sh",
-                "#!/bin/bash\nECC_VERSION=\"__ECC_VERSION__\"\necho $ECC_VERSION",
+                POWERUSER_STATUSLINE_TEMPLATE,
             )
             .with_dir("/home/user/.claude")
     }
+
+    /// Realistic power-user statusline template with cost/token/jq markers.
+    const POWERUSER_STATUSLINE_TEMPLATE: &str = concat!(
+        "#!/usr/bin/env bash\n",
+        "set -uo pipefail\n",
+        "ECC_VERSION=\"__ECC_VERSION__\"\n",
+        "command -v jq >/dev/null 2>&1 || { echo \"ECC\"; exit 0; }\n",
+        "INPUT=$(cat)\n",
+        "COST_USD=$(echo \"$INPUT\" | jq -r '.cost.total_cost_usd // 0')\n",
+        "DISPLAY_NAME=$(echo \"$INPUT\" | jq -r '.model.display_name // \"\"')\n",
+        "USED_PCT=$(echo \"$INPUT\" | jq -r '.context_window.used_percentage // 0')\n",
+        "echo \"$DISPLAY_NAME $COST_USD $ECC_VERSION\"\n",
+    );
 
     fn statusline_env() -> MockEnvironment {
         MockEnvironment::new()
@@ -237,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn statusline_does_not_overwrite_custom_settings() {
+    fn statusline_does_not_overwrite_custom() {
         let fs = statusline_source_fs().with_file(
             "/home/user/.claude/settings.json",
             &serde_json::json!({"statusLine": {"command": "my-custom-script.sh"}}).to_string(),
@@ -330,6 +343,39 @@ mod tests {
         );
 
         assert_eq!(result, None);
+    }
+
+    /// PC-038 — deployed script must contain power-user markers from the real template.
+    #[test]
+    fn install_deploys_poweruser_statusline() {
+        let fs = statusline_source_fs();
+        let env = statusline_env();
+
+        ensure_statusline_in_settings(
+            &fs,
+            &env,
+            Path::new("/home/user/.claude/settings.json"),
+            Path::new("/ecc"),
+            "1.0.0",
+            false,
+        );
+
+        let deployed = fs
+            .read_to_string(Path::new("/home/user/.claude/statusline-command.sh"))
+            .expect("deployed script must exist");
+
+        assert!(
+            deployed.contains("total_cost_usd"),
+            "deployed script must contain power-user marker 'total_cost_usd'"
+        );
+        assert!(
+            deployed.contains("jq"),
+            "deployed script must depend on jq"
+        );
+        assert!(
+            deployed.starts_with("#!/usr/bin/env bash"),
+            "deployed script must have a valid shebang"
+        );
     }
 
     #[test]
