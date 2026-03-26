@@ -168,4 +168,50 @@ mod tests {
         let result = prepare_script(template, "5.0.0");
         assert_eq!(result, "5.0.0 and 5.0.0");
     }
+
+    // --- StatuslineConfig, ContextThresholds, StatuslineField ---
+
+    #[test]
+    fn statusline_config_default_construction() {
+        let config = StatuslineConfig::default();
+        // Must not panic and must return a valid config
+        assert!(config.cache_ttl_secs > 0);
+        assert!(!config.field_order.is_empty());
+    }
+
+    #[test]
+    fn statusline_field_variants() {
+        // Verify all 11 variants exist by constructing each one
+        let variants = [
+            StatuslineField::Model,
+            StatuslineField::ContextBar,
+            StatuslineField::Cost,
+            StatuslineField::Duration,
+            StatuslineField::LinesChanged,
+            StatuslineField::GitBranch,
+            StatuslineField::RateLimit,
+            StatuslineField::TokenCounts,
+            StatuslineField::EccVersion,
+            StatuslineField::Worktree,
+            StatuslineField::VimMode,
+        ];
+        assert_eq!(variants.len(), 11);
+    }
+
+    #[test]
+    fn statusline_config_default_values() {
+        let config = StatuslineConfig::default();
+        assert_eq!(config.cache_ttl_secs, 5);
+        assert_eq!(config.context_thresholds.yellow_pct, 60);
+        assert_eq!(config.context_thresholds.red_pct, 80);
+    }
+
+    #[test]
+    fn statusline_config_derives() {
+        let a = StatuslineConfig::default();
+        let b = a.clone();
+        assert_eq!(a, b);
+        // Debug: must not panic
+        let _ = format!("{:?}", a);
+    }
 }
