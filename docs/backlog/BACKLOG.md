@@ -53,7 +53,7 @@
 | BL-050 | Deferred summary tables: coverage delta, bounded contexts, per-test-name | — | MEDIUM | /spec-dev | open | 2026-03-22 |
 | BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | implemented | 2026-03-22 |
 | BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | open | 2026-03-22 |
-| BL-053 | Deploy poweruser statusline via ecc install | — | MEDIUM | /spec dev | open | 2026-03-22 |
+| BL-053 | Poweruser statusline — labels, usage bars, UX overhaul, install fix | — | HIGH | /spec dev | open | 2026-03-22 |
 | BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | archived | 2026-03-22 |
 | BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | archived | 2026-03-22 |
 | BL-056 | Context-aware doc generation step at end of /implement | — | HIGH | /spec dev | open | 2026-03-22 |
@@ -64,6 +64,18 @@
 | BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | open | 2026-03-23 |
 | BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | open | 2026-03-26 |
 | BL-063 | Create /commit slash command | — | MEDIUM | /spec-dev | open | 2026-03-26 |
+| BL-064 | Full app cartography — user journeys, data flows, element registry | — | EPIC | /spec dev | open | 2026-03-26 |
+| BL-065 | Concurrent session safety — worktree isolation, serialized merge, audit fixes | — | EPIC | /spec dev | open | 2026-03-26 |
+| BL-066 | Deterministic backlog management — ID generation, duplicate detection, index auto-gen | — | MEDIUM | /spec dev | open | 2026-03-26 |
+| BL-067 | Deterministic spec/design artifact validation — AC format, PC table, coverage mapping | — | HIGH | /spec dev | open | 2026-03-26 |
+| BL-068 | Deterministic workflow state machine — typed state.json, phase transitions | — | HIGH | /spec dev | open | 2026-03-26 |
+| BL-069 | Deterministic convention linting — naming, placement, frontmatter values | — | MEDIUM | /spec dev | open | 2026-03-26 |
+| BL-070 | Deterministic wave grouping algorithm — PC parallelization from file-overlap | — | MEDIUM | /spec dev | open | 2026-03-26 |
+| BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | open | 2026-03-26 |
+| BL-072 | Deterministic artifact scaffolding — spec, solution, tasks templates | — | MEDIUM | /spec dev | open | 2026-03-26 |
+| BL-073 | Deterministic diagram trigger heuristics — auto-detect diagram needs | — | LOW | /spec dev | open | 2026-03-26 |
+| BL-074 | Deterministic doc metrics — staleness, coverage, severity counting | — | LOW | /spec dev | open | 2026-03-26 |
+| BL-075 | Deterministic task synchronization — single source of truth for tasks | — | HIGH | /spec dev | open | 2026-03-26 |
 
 ## Dependency Graph
 
@@ -83,12 +95,27 @@ BL-031 → BL-032 (subagent isolation enables wave-based parallelism)
 BL-030 → BL-017 (tasks.md enables /catchup progress display)
 BL-041 → BL-030 (task list ID complements file-based tasks)
 BL-047 → BL-027 (auto-memory extends cross-session memory system)
+BL-064 → BL-056 (full cartography extends implement-end doc generation)
+BL-064 → BL-029 (cartography consumes spec artifacts)
+BL-064 → BL-030 (cartography consumes task artifacts)
+BL-065 → BL-052 (Rust binaries solve race conditions natively)
+BL-065 → BL-031 (extends subagent worktree isolation to full sessions)
+BL-065 → BL-046 (phase-gate affected by state.json TOCTOU)
+BL-066 → BL-059 (backlog auto-commit benefits from deterministic reindex)
+BL-067 → BL-029 (spec validation operates on persisted spec artifacts)
+BL-068 → BL-046 (typed state machine replaces shell-based phase gate)
+BL-068 → BL-052 (Rust state machine replaces shell hook scripts)
+BL-070 → BL-032 (deterministic wave grouping replaces LLM-based wave dispatch)
+BL-072 → BL-029 (scaffolding generates the artifact files that persistence manages)
+BL-072 → BL-030 (scaffolding generates tasks.md from solution PCs)
+BL-075 → BL-030 (task sync manages the persisted tasks.md)
+BL-075 → BL-041 (task sync complements task list ID persistence)
 ```
 
 ## Stats
 
-- **Total:** 59
-- **Open:** 24
-- **Implemented:** 21
-- **Archived:** 3
-- **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 3
+- **Total:** 71
+- **Open:** 36
+- **Implemented:** 31
+- **Archived:** 4
+- **Deterministic upgrades:** 10 (BL-066 through BL-075)
