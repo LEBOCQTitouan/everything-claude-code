@@ -252,7 +252,7 @@ After adversarial PASS (or user override), write the design to a versioned file:
 2. Write the full design to `docs/specs/YYYY-MM-DD-<slug>/design.md` in the same directory as the spec
 3. If the file already exists (re-entry), append a `## Revision` block with timestamp instead of overwriting
 4. Pass the file path to the phase-transition command as the 3rd argument
-5. Update campaign.md: set Design row in `## Artifacts` table to the design file path with status `passed`. Update `## Resumption Pointer` with `Current step: Design complete. Next action: Run /implement.`
+5. Update campaign.md: set Design row in `## Artifacts` table to the design file path with status `passed`.
 
 > **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Adversary History Tracking section for campaign.md verdict persistence during design adversarial review.
 
