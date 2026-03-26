@@ -272,9 +272,9 @@ Display a comprehensive Phase Summary using these tables:
 
 ### Adversary Findings
 
-| Dimension | Verdict | Key Rationale |
-|-----------|---------|---------------|
-| <dimension> | PASS/FAIL/CONDITIONAL | <rationale> |
+| Dimension | Score | Verdict | Key Rationale |
+|-----------|-------|---------|---------------|
+| <dimension> | <0-100> | PASS/FAIL/CONDITIONAL | <rationale> |
 
 ### File Changes Summary
 
