@@ -63,6 +63,7 @@
 | BL-060 | Simplify context management — remove graceful exit, keep warnings only | — | HIGH | /spec-refactor | open | 2026-03-23 |
 | BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | open | 2026-03-23 |
 | BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | open | 2026-03-26 |
+| BL-063 | Create /commit slash command | — | MEDIUM | /spec-dev | open | 2026-03-26 |
 
 ## Dependency Graph
 
@@ -86,8 +87,8 @@ BL-047 → BL-027 (auto-memory extends cross-session memory system)
 
 ## Stats
 
-- **Total:** 58
-- **Open:** 23
+- **Total:** 59
+- **Open:** 24
 - **Implemented:** 21
 - **Archived:** 3
 - **By tier:** T1: 3 | T2: 0 (all implemented) | T3: 5 (2 implemented) | T4: 1 (2 implemented) | T5: 3 | T6: 3 | T7: 0 (all implemented) | T8: 6 | T9: 9 | T—: 3
