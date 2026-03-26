@@ -12,6 +12,8 @@ use super::phase::Phase;
 /// - Solution -> Implement
 /// - Implement -> Done
 ///
+/// Re-entry transitions (same phase) are accepted idempotently.
+///
 /// Everything else is illegal (including Done -> anything and backward transitions).
 pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, WorkflowError> {
     let legal = matches!(
@@ -183,11 +185,33 @@ mod tests {
                 "error message should mention both phases, got: {msg}"
             );
         }
+    }
+
+    mod reentry_transitions {
+        use super::*;
 
         #[test]
-        fn done_to_done_returns_err() {
+        fn plan_to_plan_returns_ok() {
+            let result = resolve_transition(Phase::Plan, Phase::Plan);
+            assert_eq!(result, Ok(Phase::Plan));
+        }
+
+        #[test]
+        fn solution_to_solution_returns_ok() {
+            let result = resolve_transition(Phase::Solution, Phase::Solution);
+            assert_eq!(result, Ok(Phase::Solution));
+        }
+
+        #[test]
+        fn implement_to_implement_returns_ok() {
+            let result = resolve_transition(Phase::Implement, Phase::Implement);
+            assert_eq!(result, Ok(Phase::Implement));
+        }
+
+        #[test]
+        fn done_to_done_returns_ok() {
             let result = resolve_transition(Phase::Done, Phase::Done);
-            assert!(result.is_err(), "done->done should be illegal");
+            assert_eq!(result, Ok(Phase::Done));
         }
     }
 
