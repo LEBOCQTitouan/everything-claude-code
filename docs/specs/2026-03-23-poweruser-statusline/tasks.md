@@ -2,18 +2,18 @@
 
 ## Pass Conditions
 
-- [ ] PC-001–007: Domain types (StatuslineConfig, ContextThresholds, StatuslineField) | pending@2026-03-26T21:00:00Z
-- [ ] PC-008–014: App validate (validate_statusline) | pending@2026-03-26T21:00:00Z
-- [ ] PC-015–034: Shell script rewrite | pending@2026-03-26T21:00:00Z
-- [ ] PC-035: CLI wire (CliValidateTarget::Statusline) | pending@2026-03-26T21:00:00Z
-- [ ] PC-036–038: Install integration tests | pending@2026-03-26T21:00:00Z
-- [ ] PC-046–049: Behavioral shell tests | pending@2026-03-26T21:00:00Z
-- [ ] PC-039–045: Docs + quality gate | pending@2026-03-26T21:00:00Z
+- [x] PC-001–007: Domain types | done@2026-03-26T21:05:00Z
+- [x] PC-008–014: App validate | done@2026-03-26T21:10:00Z
+- [x] PC-015–034: Shell script rewrite | done@2026-03-26T21:15:00Z
+- [x] PC-035: CLI wire | done@2026-03-26T21:18:00Z
+- [x] PC-036–038: Install integration tests | done@2026-03-26T21:22:00Z
+- [x] PC-046–049: Behavioral shell tests | done@2026-03-26T21:25:00Z
+- [x] PC-039–045: Docs + quality gate | done@2026-03-26T21:30:00Z
 
 ## Post-TDD
 
-- [ ] E2E tests | pending@2026-03-26T21:00:00Z
-- [ ] Code review | pending@2026-03-26T21:00:00Z
-- [ ] Doc updates | pending@2026-03-26T21:00:00Z
-- [ ] Supplemental docs | pending@2026-03-26T21:00:00Z
-- [ ] Write implement-done.md | pending@2026-03-26T21:00:00Z
+- [x] E2E tests | done@2026-03-26T21:31:00Z
+- [x] Code review | done@2026-03-26T21:32:00Z
+- [x] Doc updates | done@2026-03-26T21:33:00Z
+- [x] Supplemental docs | done@2026-03-26T21:34:00Z
+- [x] Write implement-done.md | done@2026-03-26T21:35:00Z
