@@ -14,7 +14,20 @@ use super::phase::Phase;
 ///
 /// Everything else is illegal (including Done -> anything and backward transitions).
 pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, WorkflowError> {
-    todo!("implement resolve_transition")
+    let legal = matches!(
+        (current, target),
+        (Phase::Plan, Phase::Solution)
+            | (Phase::Solution, Phase::Implement)
+            | (Phase::Implement, Phase::Done)
+    );
+    if legal {
+        Ok(target)
+    } else {
+        Err(WorkflowError::IllegalTransition {
+            from: current,
+            to: target,
+        })
+    }
 }
 
 #[cfg(test)]
