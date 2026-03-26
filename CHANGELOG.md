@@ -16,6 +16,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- **Offload web research to Task subagents (BL-049)**: Phase 3 in /spec-dev, /spec-fix, /spec-refactor now delegates WebSearch to a Task subagent with isolated context. Raw search tokens stay in subagent; main session receives only the condensed Research Summary.
 - **Simplify context management (BL-060)**: Removed graceful exit infrastructure (BL-054/BL-055), context checkpoints from /implement and /audit-full, Resumption Pointer from campaign manifest, strategic compact skill. Superseded ADR-0014. Rely on native plan-accept context clear.
 - **Unified grill-me universal questioning protocol (BL-061)**: Refactored 3 independent questioning systems (standalone grill-me, spec-pipeline inline rules, backlog-curator ad-hoc questions) into a single universal grill-me protocol with stage-by-stage AskUserQuestion interaction, challenge loops, cross-stage mutation, question cap (25), and hook-based enforcement (grill-me-gate.sh). Canonical stages: Clarity, Assumptions, Edge Cases, Alternatives, Stress Test. Three modes: standalone, spec-mode, backlog-mode. Decomposed spec-pipeline-shared grab-bag. ADR 0017
 - **Context-aware doc generation at end of /implement (BL-056)**: Phase 7.5 dispatches two parallel agents (`module-summary-updater`, `diagram-updater`) to capture MODULE-SUMMARIES entries and Mermaid diagrams while session context is fresh. Non-blocking failures, cross-link fixup pass, doc-enforcement hook extension, ADR 0015
