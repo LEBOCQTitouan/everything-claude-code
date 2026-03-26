@@ -48,9 +48,6 @@ Updated: <ISO 8601>
 | SHA | Message | PC |
 |-----|---------|-----|
 
-## Resumption Pointer
-Current step: <description>
-Next action: <what to do next>
 ```
 
 ## Lifecycle
@@ -69,12 +66,9 @@ When the spec directory `docs/specs/YYYY-MM-DD-<slug>/` is created after adversa
 - **Agent outputs**: Append summary row after each agent task completes
 - **Adversary rounds**: Append verdict row after each adversary round
 - **Commit trail**: Parent orchestrator appends SHA after each TDD commit (never subagents directly)
-- **Resumption pointer**: Update at each phase transition and PC completion
-- **Context checkpoint**: When a graceful exit triggers (85%+ context), the Resumption Pointer is updated with mid-phase granularity — current PC/wave for /implement, current domain + partial dir path for /audit-full.
-
 ### Malformed Recovery
 
-Malformed means: missing any required section header (Status, Artifacts, Grill-Me Decisions, Adversary History, Agent Outputs, Commit Trail, Resumption Pointer) OR table bodies unparseable when rows expected per state.json timestamps. Regenerate from state.json artifacts and persisted files with warning.
+Malformed means: missing any required section header (Status, Artifacts, Grill-Me Decisions, Adversary History, Agent Outputs, Commit Trail) OR table bodies unparseable when rows expected per state.json timestamps. Regenerate from state.json artifacts and persisted files with warning.
 
 ### Write Mechanism
 
