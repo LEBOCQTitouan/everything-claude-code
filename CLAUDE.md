@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all tests (1224 tests)
+cargo test              # Run all tests (1235 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo build --release   # Build release binary
 npm run lint            # Lint all Markdown files
@@ -30,6 +30,7 @@ ecc hook <id> [profiles]  Run a hook by ID
 ecc validate <target>     Validate content files (agents|commands|hooks|skills|rules|paths)
 ecc dev on|off|status     Toggle ECC config on/off
 ecc dev switch dev|default [--dry-run]  Instant config switching via symlinks
+ecc validate statusline   Verify statusline installation
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ```
