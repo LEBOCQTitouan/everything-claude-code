@@ -12,10 +12,13 @@ use super::phase::Phase;
 /// - Solution -> Implement
 /// - Implement -> Done
 ///
-/// Re-entry transitions (same phase) are accepted idempotently.
+/// Re-entry transitions (current == target) are accepted idempotently.
 ///
 /// Everything else is illegal (including Done -> anything and backward transitions).
 pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, WorkflowError> {
+    if current == target {
+        return Ok(target);
+    }
     let legal = matches!(
         (current, target),
         (Phase::Plan, Phase::Solution)
