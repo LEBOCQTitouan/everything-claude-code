@@ -173,4 +173,44 @@ mod tests {
             assert!(result.is_err(), "done->done should be illegal");
         }
     }
+
+    mod alias_transitions {
+        use super::*;
+        use std::str::FromStr;
+
+        #[test]
+        fn spec_to_design_resolves_plan_to_solution() {
+            // "spec" alias resolves to Plan, "design" alias resolves to Solution
+            let current = Phase::from_str("spec").expect("spec should parse to Plan");
+            let result = resolve_transition_by_name(current, "design");
+            assert_eq!(result, Ok(Phase::Solution));
+        }
+
+        #[test]
+        fn design_to_implement_resolves_solution_to_implement() {
+            // "design" alias resolves to Solution, "implement" resolves to Implement
+            let current = Phase::from_str("design").expect("design should parse to Solution");
+            let result = resolve_transition_by_name(current, "implement");
+            assert_eq!(result, Ok(Phase::Implement));
+        }
+
+        #[test]
+        fn spec_alias_parses_to_plan() {
+            let phase = Phase::from_str("spec").expect("spec should resolve");
+            assert_eq!(phase, Phase::Plan);
+        }
+
+        #[test]
+        fn design_alias_parses_to_solution() {
+            let phase = Phase::from_str("design").expect("design should resolve");
+            assert_eq!(phase, Phase::Solution);
+        }
+
+        #[test]
+        fn unknown_alias_returns_err() {
+            let current = Phase::Plan;
+            let result = resolve_transition_by_name(current, "unknown-alias");
+            assert!(result.is_err(), "unknown alias should return an error");
+        }
+    }
 }
