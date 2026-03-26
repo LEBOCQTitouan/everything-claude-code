@@ -70,14 +70,16 @@ Read `docs/audits/` for any existing audit reports relevant to the bug area:
 
 ## Phase 3: Web Research
 
-> Tell the user this phase is starting: you are now searching for known issues and fix patterns. Explain what queries you are running.
+> Tell the user this phase is starting: web research will be delegated to a Task subagent to keep the main context lean.
 
-Search the web for known issues, fix patterns, and related pitfalls for the bug's domain.
+Launch a Task subagent (allowedTools: [WebSearch]) to perform web research in an isolated context:
 
-1. Derive up to 3 focused search queries from the bug description + detected tech stack. Examples: "Rust async deadlock patterns", "tokio spawn_blocking best practices", "common causes of [error message]"
-2. Run each query using `WebSearch`. If WebSearch is unavailable, try `exa-web-search` MCP (`web_search_exa`). If both are unavailable, emit a warning: "Web research skipped: no search tool available" and proceed — do NOT hard-fail the plan.
-3. From the results, produce a **Research Summary** with 3-7 bullet points: known issues, fix patterns, pitfalls to avoid, and relevant documentation.
-4. Carry the Research Summary forward into the spec output.
+**Subagent prompt**: Search the web for known issues, fix patterns, and related pitfalls for the bug's domain. Derive up to 3 focused search queries from the bug description and detected tech stack. Examples: "Rust async deadlock patterns", "tokio spawn_blocking best practices", "common causes of [error message]". Run each query using WebSearch. If WebSearch is unavailable, try exa-web-search MCP (`web_search_exa`). If both are unavailable, return: "Web research skipped: no search tool available." From the results, produce a **Research Summary** with 3-7 bullet points: known issues, fix patterns, pitfalls to avoid, and relevant documentation. Return ONLY the Research Summary.
+
+**Subagent input**: The user's raw bug description and the detected tech stack from Phase 0.
+
+**On success**: Carry the returned Research Summary forward into the spec output.
+**On failure** (subagent failed or timed out): Record "Web research skipped: subagent failed" and proceed to the next phase — do NOT hard-fail.
 
 ## Phase 4: Blast Radius
 

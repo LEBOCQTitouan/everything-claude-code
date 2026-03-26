@@ -70,14 +70,16 @@ Launch a Task with the `architect` agent (allowedTools: [Read, Grep, Glob, Bash]
 
 ## Phase 3: Web Research
 
-> Tell the user this phase is starting: you are now searching for external best practices, libraries, and prior art. Explain what queries you are running and why.
+> Tell the user this phase is starting: web research will be delegated to a Task subagent to keep the main context lean.
 
-Search the web for best practices, relevant libraries, patterns, and prior art related to the feature request. This grounds the plan in current external knowledge, not just training data and local codebase.
+Launch a Task subagent (allowedTools: [WebSearch]) to perform web research in an isolated context:
 
-1. Derive up to 3 focused search queries from the user's stated intent + detected tech stack. Examples: "Rust async error handling best practices 2025", "hexagonal architecture file-based persistence patterns", "Claude Code hook system design patterns"
-2. Run each query using `WebSearch`. If WebSearch is unavailable, try `exa-web-search` MCP (`web_search_exa`). If both are unavailable, emit a warning: "Web research skipped: no search tool available" and proceed to the next phase — do NOT hard-fail the plan.
-3. From the search results, produce a **Research Summary** with 3-7 bullet points: relevant libraries, best practices, patterns to follow, pitfalls to avoid, and prior art.
-4. Carry the Research Summary forward — it will be included in the spec output and referenced during the grill-me interview.
+**Subagent prompt**: Search the web for best practices, relevant libraries, patterns, and prior art related to the feature request. Derive up to 3 focused search queries from the user's stated intent and detected tech stack. Examples: "Rust async error handling best practices 2025", "hexagonal architecture file-based persistence patterns", "Claude Code hook system design patterns". Run each query using WebSearch. If WebSearch is unavailable, try exa-web-search MCP (`web_search_exa`). If both are unavailable, return: "Web research skipped: no search tool available." From the results, produce a **Research Summary** with 3-7 bullet points: relevant libraries, best practices, patterns to follow, pitfalls to avoid, and prior art. Return ONLY the Research Summary.
+
+**Subagent input**: The user's raw input/idea and the detected tech stack from Phase 0.
+
+**On success**: Carry the returned Research Summary forward to subsequent phases — it will be included in the spec output and referenced during the grill-me interview.
+**On failure** (subagent failed or timed out): Record "Web research skipped: subagent failed" and proceed to the next phase — do NOT hard-fail.
 
 ## Phase 4: Prior Audit Check
 

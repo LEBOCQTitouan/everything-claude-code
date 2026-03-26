@@ -81,14 +81,16 @@ Read `docs/audits/` for any existing audit reports relevant to the refactoring a
 
 ## Phase 3: Web Research
 
-> Tell the user this phase is starting: you are now searching for refactoring patterns and migration guides. Explain what queries you are running.
+> Tell the user this phase is starting: web research will be delegated to a Task subagent to keep the main context lean.
 
-Search the web for refactoring patterns, migration guides, and best practices relevant to the refactoring scope.
+Launch a Task subagent (allowedTools: [WebSearch]) to perform web research in an isolated context:
 
-1. Derive up to 3 focused search queries from the refactoring goal + detected tech stack. Examples: "Rust module decomposition patterns", "extract method refactoring hexagonal architecture", "safe migration strategies for [framework]"
-2. Run each query using `WebSearch`. If WebSearch is unavailable, try `exa-web-search` MCP (`web_search_exa`). If both are unavailable, emit a warning: "Web research skipped: no search tool available" and proceed — do NOT hard-fail the plan.
-3. From the results, produce a **Research Summary** with 3-7 bullet points: refactoring patterns, migration strategies, pitfalls to avoid, and relevant guides.
-4. Carry the Research Summary forward into the spec output.
+**Subagent prompt**: Search the web for refactoring patterns, migration guides, and best practices relevant to the refactoring scope. Derive up to 3 focused search queries from the refactoring goal and detected tech stack. Examples: "Rust module decomposition patterns", "extract method refactoring hexagonal architecture", "safe migration strategies for [framework]". Run each query using WebSearch. If WebSearch is unavailable, try exa-web-search MCP (`web_search_exa`). If both are unavailable, return: "Web research skipped: no search tool available." From the results, produce a **Research Summary** with 3-7 bullet points: refactoring patterns, migration strategies, pitfalls to avoid, and relevant guides. Return ONLY the Research Summary.
+
+**Subagent input**: The user's raw refactoring goal and the detected tech stack from Phase 0.
+
+**On success**: Carry the returned Research Summary forward into the spec output.
+**On failure** (subagent failed or timed out): Record "Web research skipped: subagent failed" and proceed to the next phase — do NOT hard-fail.
 
 ## Phase 4: Smell Catalog
 
