@@ -63,7 +63,7 @@ Options:
   - "Both" — "Common/shared items user-level, project-specific items project-level"
 ```
 
-When options have structurally different outcomes, include `preview` on each option showing the resulting directory structure. For example, user-level vs project-level installs produce different file trees — preview each.
+When options have structurally different outcomes, include `preview` on each option showing the resulting directory structure (under 15 lines per option). For example, user-level vs project-level installs produce different file trees — preview each.
 
 Store the choice as `INSTALL_LEVEL`. Set the target directory:
 - User-level: `TARGET=~/.claude`

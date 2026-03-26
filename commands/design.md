@@ -60,7 +60,7 @@ Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 > **Optional**: For specs involving new ports, adapters, or public interfaces, consider invoking the `interface-designer` agent (optional) to explore radically different interface shapes before committing to a design. This spawns parallel sub-agents with divergent constraints and produces a comparison matrix. See the `design-an-interface` skill for methodology.
 
-> **Preview for alternatives**: When the planner produces 2+ viable design approaches, use `AskUserQuestion` with the `preview` field to present each approach visually. Each option's preview should contain a Mermaid component diagram, file-change summary, or code structure comparison. If only one viable approach exists, proceed directly without injecting a forced AskUserQuestion.
+> **Preview for alternatives**: When the planner produces 2+ viable design approaches, use `AskUserQuestion` with the `preview` field to present each approach visually. Each option's preview should contain a Mermaid component diagram, file-change summary, or code structure comparison (under 15 lines per option). If only one viable approach exists, proceed directly without injecting a forced AskUserQuestion.
 
 ## Phase 2: SOLID Validation
 
