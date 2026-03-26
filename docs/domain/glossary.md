@@ -90,6 +90,11 @@ A doc-system [Agent](#agent) (`diagram-generator.md`) that analyzes codebase str
 A context-aware pattern where a long-running command detects high context usage, saves current state to campaign.md (or audit-resume.md), informs the user, and STOPs cleanly. The next session resumes from the saved Resumption Pointer. See `skills/graceful-exit/SKILL.md`.
 - **Related:** [Context Checkpoint](#context-checkpoint), [Campaign Manifest](#campaign-manifest), [Resumption Pointer](#resumption-pointer)
 
+### StatuslineConfig
+A domain value object in `ecc-domain` that models the statusline display configuration: field visibility order (`Vec<StatuslineField>`), context window color thresholds (`ContextThresholds` with yellow and red percentages), and git branch cache TTL in seconds. Used by `ecc validate statusline` to verify the installed statusline script against expected configuration.
+- **Related:** [Artifact](#artifact)
+- **Files:** [`statusline.rs`](../../crates/ecc-domain/src/config/statusline.rs)
+
 ### Grill Me
 The universal questioning protocol for ECC. A stage-by-stage adversarial interview that challenges ideas through 5 canonical stages (Clarity, Assumptions, Edge Cases, Alternatives, Stress Test) using `AskUserQuestion` one question at a time with challenge loops and cross-stage mutation. Operates in three modes: standalone (default, all 5 stages), spec-mode (recommended answers, "spec it" shortcut), and backlog-mode (lighter, max 3 stages). Enforced by the `grill-me-gate.sh` Stop hook.
 - **Related:** [Adversary Mode](#adversary-mode), [Skill](#skill)
