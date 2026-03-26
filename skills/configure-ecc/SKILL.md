@@ -79,13 +79,13 @@ mkdir -p $TARGET/skills $TARGET/rules
 
 ### 2a: Choose Scope (Core vs Niche)
 
-Default to **Core (recommended for new users)** — copy `.agents/skills/*` plus `skills/search-first/` for research-first workflows. This bundle covers engineering, evals, verification, security, strategic compaction, frontend design, and Anthropic cross-functional skills (article-writing, content-engine, market-research, frontend-slides).
+Default to **Core (recommended for new users)** — copy `.agents/skills/*` plus `skills/search-first/` for research-first workflows. This bundle covers engineering, evals, verification, security, frontend design, and Anthropic cross-functional skills (article-writing, content-engine, market-research, frontend-slides).
 
 Use `AskUserQuestion` (single select):
 ```
 Question: "Install core skills only, or include niche/framework packs?"
 Options:
-  - "Core only (recommended)" — "tdd, e2e, evals, verification, research-first, security, frontend patterns, compacting, cross-functional Anthropic skills"
+  - "Core only (recommended)" — "tdd, e2e, evals, verification, research-first, security, frontend patterns, cross-functional Anthropic skills"
   - "Core + selected niche" — "Add framework/domain-specific skills after core"
   - "Niche only" — "Skip core, install specific framework/domain skills"
 Default: Core only
@@ -95,7 +95,7 @@ If the user chooses niche or core + niche, continue to category selection below 
 
 ### 2b: Choose Skill Categories
 
-There are 27 skills organized into 4 categories. Use `AskUserQuestion` with `multiSelect: true`:
+There are 26 skills organized into 4 categories. Use `AskUserQuestion` with `multiSelect: true`:
 
 ```
 Question: "Which skill categories do you want to install?"
@@ -140,7 +140,7 @@ For each selected category, print the full list of skills below and ask the user
 | `jpa-patterns` | JPA/Hibernate entity design, relationships, query optimization, transactions |
 | `postgres-patterns` | PostgreSQL query optimization, schema design, indexing, security |
 
-**Category: Workflow & Quality (8 skills)**
+**Category: Workflow & Quality (6 skills)**
 
 | Skill | Description |
 |-------|-------------|
@@ -148,7 +148,6 @@ For each selected category, print the full list of skills below and ask the user
 | `eval-harness` | Formal evaluation framework for eval-driven development (EDD) |
 | `iterative-retrieval` | Progressive context refinement for subagent context problem |
 | `security-review` | Security checklist: auth, input, secrets, API, payment features |
-| `strategic-compact` | Suggests manual context compaction at logical intervals |
 | `tdd-workflow` | Enforces TDD with 80%+ coverage: unit, integration, E2E |
 | `verification-loop` | Verification and quality loop patterns |
 
