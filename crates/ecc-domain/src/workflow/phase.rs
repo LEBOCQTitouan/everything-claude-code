@@ -1,5 +1,57 @@
 //! Phase value object for workflow state machine.
 
+use std::fmt;
+use std::str::FromStr;
+
+use serde::{Deserialize, Serialize};
+
+/// Legal workflow phases.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Phase {
+    Plan,
+    Solution,
+    Implement,
+    Done,
+}
+
+impl fmt::Display for Phase {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Plan => write!(f, "plan"),
+            Self::Solution => write!(f, "solution"),
+            Self::Implement => write!(f, "implement"),
+            Self::Done => write!(f, "done"),
+        }
+    }
+}
+
+/// Parse error for unknown phase strings.
+#[derive(Debug, PartialEq, Eq)]
+pub struct UnknownPhase(pub String);
+
+impl fmt::Display for UnknownPhase {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown phase: {}", self.0)
+    }
+}
+
+impl std::error::Error for UnknownPhase {}
+
+impl FromStr for Phase {
+    type Err = UnknownPhase;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "plan" | "spec" => Ok(Self::Plan),
+            "solution" | "design" => Ok(Self::Solution),
+            "implement" => Ok(Self::Implement),
+            "done" => Ok(Self::Done),
+            other => Err(UnknownPhase(other.to_owned())),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Phase;
