@@ -146,7 +146,8 @@ ACTIVE=("${CANDIDATES[0]}")
 for seg in "${CANDIDATES[@]:1}"; do
   [ -z "$seg" ] && continue
   CANDIDATE_LINE=$(build_line "${ACTIVE[@]}" "$seg")
-  VISIBLE_LEN=${#$(strip_ansi "$CANDIDATE_LINE")}
+  STRIPPED=$(strip_ansi "$CANDIDATE_LINE")
+  VISIBLE_LEN=${#STRIPPED}
   if [ "$VISIBLE_LEN" -le "$TERM_WIDTH" ] 2>/dev/null; then
     ACTIVE+=("$seg")
   fi
