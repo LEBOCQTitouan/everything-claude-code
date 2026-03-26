@@ -111,7 +111,7 @@ You have gathered evolution analysis, architecture review, component audit, exis
 ### Mandatory Questions
 
 1. **Smell triage** — "Here are [N] smells detected. Which should we address now vs defer?" (Recommend based on severity and coupling to the refactoring goal)
-2. **Target architecture** — "What should the target state look like? Current violations: [list]" (Recommend based on arch-reviewer output)
+2. **Target architecture** — "What should the target state look like? Current violations: [list]" (Recommend based on arch-reviewer output). When current and target states differ visually, use AskUserQuestion with `preview` showing before/after architecture — Mermaid diagrams, module dependency graphs, or file tree comparisons. If the refactoring is purely behavioral (no structural change), skip preview.
 3. **Step independence** — "Can each refactoring step be shipped independently, or do some require atomic grouping?" (Recommend based on dependency analysis)
 4. **Downstream dependencies** — "These [N] modules depend on the code being refactored. How do we ensure they stay green?" (Recommend based on component-auditor output)
 5. **Rename vs behavioral change** — "Which changes are pure renames/moves vs behavioral modifications?" (Recommend based on evolution-analyst output)

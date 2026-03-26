@@ -103,7 +103,7 @@ You have gathered investigation findings, audit context, and blast radius analys
 ### Mandatory Questions
 
 1. **Root cause vs symptom** — "Is this the root cause or a downstream symptom? Evidence: [investigation findings]" (Recommend based on code-reviewer output)
-2. **Minimal vs proper fix** — "Should we apply a minimal patch or a proper structural fix?" (Recommend based on blast radius and time constraints)
+2. **Minimal vs proper fix** — "Should we apply a minimal patch or a proper structural fix?" (Recommend based on blast radius and time constraints). When both approaches are viable, use AskUserQuestion with `preview` showing each approach — the minimal patch as a code diff snippet and the structural fix as a file-change summary or architecture diagram. If only one approach is viable, skip preview.
 3. **Missing tests** — "The affected area has [N] tests covering [X]%. Which scenarios are untested?" (Recommend based on investigation)
 4. **Regression risk** — "These [N] modules share code paths with the bug. What regressions should we watch for?" (Recommend based on architect output)
 5. **Related audit findings** — "Prior audits flagged [findings]. Should we address these in the same fix?" (Recommend based on severity and relatedness)

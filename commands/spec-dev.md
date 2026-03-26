@@ -119,6 +119,10 @@ You have gathered requirements, architecture analysis, audit findings, and backl
 7. **Domain concepts** — "Are there domain terms that need defining in the glossary?" (Recommend based on new concepts found)
 8. **ADR decisions** — "Which decisions are significant enough to warrant an ADR?" (Recommend based on architect output)
 
+### Preview for Architecture Comparisons
+
+When a mandatory question involves architecture comparisons — especially questions informed by the architect agent output (e.g., breaking changes with multiple mitigation strategies, or alternative module structures) — use AskUserQuestion with `preview` showing each approach's structure (Mermaid diagram, code snippet, or file tree). Purely textual mandatory questions (e.g., scope boundaries, test strategy, domain concepts) MUST NOT force preview. See `skills/grill-me/SKILL.md` § Preview for Visual Alternatives.
+
 ### Rules
 
 > **Shared**: Use the `grill-me` skill in spec-mode for the interview. See `skills/grill-me/SKILL.md`.
