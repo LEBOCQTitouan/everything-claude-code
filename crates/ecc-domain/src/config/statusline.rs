@@ -60,6 +60,60 @@ pub fn ensure_statusline(
     }
 }
 
+/// Fields displayable in the statusline
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StatuslineField {
+    Model,
+    ContextBar,
+    Cost,
+    Duration,
+    LinesChanged,
+    GitBranch,
+    RateLimit,
+    TokenCounts,
+    EccVersion,
+    Worktree,
+    VimMode,
+}
+
+/// Color thresholds for the context window progress bar
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContextThresholds {
+    pub yellow_pct: u32,
+    pub red_pct: u32,
+}
+
+/// Configuration for the statusline display
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StatuslineConfig {
+    pub cache_ttl_secs: u32,
+    pub context_thresholds: ContextThresholds,
+    pub field_order: Vec<StatuslineField>,
+}
+
+impl Default for StatuslineConfig {
+    fn default() -> Self {
+        Self {
+            cache_ttl_secs: 5,
+            context_thresholds: ContextThresholds {
+                yellow_pct: 60,
+                red_pct: 80,
+            },
+            field_order: vec![
+                StatuslineField::Model,
+                StatuslineField::ContextBar,
+                StatuslineField::Cost,
+                StatuslineField::Duration,
+                StatuslineField::LinesChanged,
+                StatuslineField::GitBranch,
+                StatuslineField::RateLimit,
+                StatuslineField::TokenCounts,
+                StatuslineField::EccVersion,
+            ],
+        }
+    }
+}
+
 /// Replace the version placeholder in a script template.
 ///
 /// Returns a new string with all occurrences of `__ECC_VERSION__` replaced by `version`.
