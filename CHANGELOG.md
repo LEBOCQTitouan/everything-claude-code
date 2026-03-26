@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Features
 
+- **Quarterly MCP version audit script (BL-026)**: Shell script (`scripts/audit-mcp-versions.sh`) that checks pinned MCP server versions against npm registry and reports outdated packages. Includes bats test suite (15 tests), quarterly audit runbook (`docs/runbooks/audit-mcp-versions.md`), package name validation for injection prevention, and exit code semantics (0=current, 1=outdated)
 - **Deploy poweruser statusline via ecc install (BL-053)**: Upgraded statusline script with full power-user fields (cost, duration, lines, rate limits, tokens), ANSI color-coded context bar, git branch caching (5s TTL with cross-platform support), terminal-width-aware truncation. Added `StatuslineConfig` domain type, `ecc validate statusline` subcommand, and install integration tests
 - **Symlink-based instant config switching (BL-058)**: `ecc dev switch dev|default [--dry-run]` with directory-level symlinks for zero-copy config switching between release-installed and local ECC checkout. FileSystem trait extension (`create_symlink`, `read_symlink`, `is_symlink`), InMemoryFileSystem symlink stub, dev_off symlink safety guard, best-effort rollback, path canonicalization, ADR 0016
 
