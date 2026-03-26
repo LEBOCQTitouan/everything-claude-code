@@ -284,9 +284,9 @@ Variant: Include a **Root cause** row summarizing the identified root cause vs s
 
 ### Adversary Findings
 
-| Dimension | Verdict | Key Rationale |
-|-----------|---------|---------------|
-| <dimension> | PASS/FAIL/CONDITIONAL | <rationale> |
+| Dimension | Score | Verdict | Key Rationale |
+|-----------|-------|---------|---------------|
+| <dimension> | <0-100> | PASS/FAIL/CONDITIONAL | <rationale> |
 
 ### Artifacts Persisted
 
