@@ -86,19 +86,19 @@ Write `.claude/workflow/spec-adversary-report.md` with this structure:
 # Spec Adversary Report
 
 ## Summary
-Verdict: <PASS|FAIL|CONDITIONAL>
+Verdict: <PASS|FAIL|CONDITIONAL> (avg: <score>/100)
 Rounds: <N of 3>
 
 ## Dimension Results
-| # | Dimension | Verdict | Critical Findings |
-|---|-----------|---------|-------------------|
-| 1 | Ambiguity | PASS/FAIL/CONDITIONAL | ... |
-| 2 | Edge Cases | PASS/FAIL/CONDITIONAL | ... |
-| 3 | Scope Creep Risk | PASS/FAIL/CONDITIONAL | ... |
-| 4 | Dependency Gaps | PASS/FAIL/CONDITIONAL | ... |
-| 5 | Testability | PASS/FAIL/CONDITIONAL | ... |
-| 6 | Decision Completeness | PASS/FAIL/CONDITIONAL | ... |
-| 7 | Rollback & Failure | PASS/FAIL/CONDITIONAL | ... |
+| # | Dimension | Score | Verdict | Critical Findings |
+|---|-----------|-------|---------|-------------------|
+| 1 | Ambiguity | <0-100> | PASS/FAIL/CONDITIONAL | ... |
+| 2 | Edge Cases | <0-100> | PASS/FAIL/CONDITIONAL | ... |
+| 3 | Scope Creep Risk | <0-100> | PASS/FAIL/CONDITIONAL | ... |
+| 4 | Dependency Gaps | <0-100> | PASS/FAIL/CONDITIONAL | ... |
+| 5 | Testability | <0-100> | PASS/FAIL/CONDITIONAL | ... |
+| 6 | Decision Completeness | <0-100> | PASS/FAIL/CONDITIONAL | ... |
+| 7 | Rollback & Failure | <0-100> | PASS/FAIL/CONDITIONAL | ... |
 
 ## Detailed Findings
 
@@ -114,11 +114,48 @@ Rounds: <N of 3>
 <Why this verdict — reference specific findings>
 ```
 
+## Scoring Rubric
+
+Each dimension receives an independent 0-100 integer score. Score each dimension before assigning its verdict.
+
+### Scale
+
+| Range | Label | Meaning |
+|-------|-------|---------|
+| 90-100 | Excellent | No meaningful gaps; production-ready |
+| 70-89 | Good | Minor concerns only; acceptable quality |
+| 50-69 | Adequate | Notable concerns that should be addressed |
+| 31-49 | Significant issues | Major gaps that risk implementation failure |
+| 0-30 | Major gaps | Fundamental problems; dimension is unacceptable |
+
+### Threshold Rules
+
+- **PASS**: Average score >= 70 AND no single dimension < 50
+- **CONDITIONAL**: Average score 50-69, OR any single dimension < 50 (regardless of average)
+- **FAIL**: Average score < 50
+
+### Output Format
+
+The Dimension Results table MUST include a Score column:
+
+```markdown
+| Dimension | Score | Verdict | Key Rationale |
+|-----------|-------|---------|---------------|
+| Ambiguity | 82 | PASS | ... |
+| Edge Cases | 45 | FAIL | ... |
+```
+
+The overall verdict line MUST include the average score:
+
+```
+Verdict: PASS (avg: 82/100)
+```
+
 ## Verdict Rules
 
-- **PASS**: All 7 dimensions pass. Spec is ready for `/design`.
-- **FAIL**: Any dimension has a critical finding that cannot be addressed by adding ACs. Spec needs fundamental rework (return to grill-me).
-- **CONDITIONAL**: Some dimensions have gaps addressable by adding specific ACs. List the suggested ACs.
+- **PASS**: Average score >= 70 AND no single dimension < 50. Spec is ready for `/design`.
+- **FAIL**: Average score < 50, or any dimension has a critical finding that cannot be addressed by adding ACs. Spec needs fundamental rework (return to grill-me).
+- **CONDITIONAL**: Average score 50-69, OR any single dimension < 50 but addressable by adding specific ACs. List the suggested ACs.
 
 ## Tone
 
