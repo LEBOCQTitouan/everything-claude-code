@@ -24,8 +24,6 @@ User request → Claude picks a tool → PreToolUse hook runs → Tool executes 
 | **Tmux reminder** | `Bash` | Suggests tmux for long-running commands (npm test, cargo build, docker) | 0 (warns) |
 | **Git push reminder** | `Bash` | Reminds to review changes before `git push` | 0 (warns) |
 | **Doc file warning** | `Write` | Warns about non-standard `.md`/`.txt` files (allows README, CLAUDE, CONTRIBUTING, CHANGELOG, LICENSE, SKILL, docs/, skills/); cross-platform path handling | 0 (warns) |
-| **Strategic compact** | `Edit\|Write` | Suggests manual `/compact` at logical intervals (every ~50 tool calls) | 0 (warns) |
-
 ### PostToolUse Hooks
 
 | Hook | Matcher | What It Does |
@@ -194,5 +192,4 @@ All hooks in this plugin use Node.js (`node -e` or `node script.js`) for maximum
 ## Related
 
 - [rules/common/hooks.md](../rules/common/hooks.md) — Hook architecture guidelines
-- [skills/strategic-compact/](../skills/strategic-compact/) — Strategic compaction skill
 - [src/hooks/](../src/hooks/) — Hook script implementations (TypeScript source)
