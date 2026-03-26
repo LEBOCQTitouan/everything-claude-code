@@ -296,9 +296,9 @@ Variant: Include rows for **Smells addressed** (smells tackled in this refactor)
 
 ### Adversary Findings
 
-| Dimension | Verdict | Key Rationale |
-|-----------|---------|---------------|
-| <dimension> | PASS/FAIL/CONDITIONAL | <rationale> |
+| Dimension | Score | Verdict | Key Rationale |
+|-----------|-------|---------|---------------|
+| <dimension> | <0-100> | PASS/FAIL/CONDITIONAL | <rationale> |
 
 ### Artifacts Persisted
 
