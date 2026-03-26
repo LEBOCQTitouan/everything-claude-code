@@ -16,6 +16,7 @@ pub enum ValidateTarget {
     Skills,
     Rules,
     Paths,
+    Statusline,
 }
 
 /// Run validation for the given target. Returns `true` on success, `false` on errors.
@@ -32,6 +33,7 @@ pub fn run_validate(
         ValidateTarget::Skills => validate_skills(root, fs, terminal),
         ValidateTarget::Rules => validate_rules(root, fs, terminal),
         ValidateTarget::Paths => validate_paths(root, fs, terminal),
+        ValidateTarget::Statusline => validate_statusline(root, fs, terminal),
     }
 }
 
@@ -998,5 +1000,113 @@ mod tests {
         let result = run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root"));
         // Should still pass since this path is not a checked extension
         assert!(result);
+    }
+
+    // --- validate_statusline ---
+
+    fn valid_script() -> &'static str {
+        "#!/usr/bin/env bash\n# ECC statusline\njq '.model' <<< \"$CLAUDE_DATA\"\necho done\n"
+    }
+
+    fn valid_settings() -> &'static str {
+        r#"{"statusLine": {"command": "/home/user/.claude/statusline-command.sh"}}"#
+    }
+
+    #[test]
+    fn validate_statusline_pass_valid() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/statusline/statusline-command.sh", valid_script())
+            .with_file("/root/settings.json", valid_settings());
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Statusline,
+            Path::new("/root")
+        ));
+        let stdout: Vec<_> = t.stdout_output();
+        assert!(stdout.iter().any(|s| s.contains('✓')));
+    }
+
+    #[test]
+    fn validate_statusline_fail_missing_script() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/settings.json", valid_settings());
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Statusline,
+            Path::new("/root")
+        ));
+        let stdout: Vec<_> = t.stdout_output();
+        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("Script exists")));
+    }
+
+    #[test]
+    fn validate_statusline_fail_unresolved_placeholder() {
+        let script = "#!/usr/bin/env bash\njq '.x'\nECC_VERSION=\"__ECC_VERSION__\"\n";
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/statusline/statusline-command.sh", script)
+            .with_file("/root/settings.json", valid_settings());
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Statusline,
+            Path::new("/root")
+        ));
+        let stdout: Vec<_> = t.stdout_output();
+        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("placeholder")));
+    }
+
+    #[test]
+    fn validate_statusline_pass_settings_command() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/statusline/statusline-command.sh", valid_script())
+            .with_file("/root/settings.json", valid_settings());
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Statusline,
+            Path::new("/root")
+        ));
+        let stdout: Vec<_> = t.stdout_output();
+        assert!(stdout.iter().any(|s| s.contains('✓') && s.contains("settings")));
+    }
+
+    #[test]
+    fn validate_statusline_fail_bad_shebang() {
+        let script = "#!/usr/bin/python\njq '.x'\n";
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/statusline/statusline-command.sh", script)
+            .with_file("/root/settings.json", valid_settings());
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Statusline,
+            Path::new("/root")
+        ));
+        let stdout: Vec<_> = t.stdout_output();
+        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("shebang")));
+    }
+
+    #[test]
+    fn validate_statusline_fail_no_jq() {
+        let script = "#!/usr/bin/env bash\necho hello\n";
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/statusline/statusline-command.sh", script)
+            .with_file("/root/settings.json", valid_settings());
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Statusline,
+            Path::new("/root")
+        ));
+        let stdout: Vec<_> = t.stdout_output();
+        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("jq")));
     }
 }
