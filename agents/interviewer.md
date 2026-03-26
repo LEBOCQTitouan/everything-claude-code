@@ -45,6 +45,8 @@ If TodoWrite is unavailable, graceful degradation applies — proceed without tr
 
 For each of the 8 stages, use AskUserQuestion to ask one question per turn. Never batch multiple questions into a single turn.
 
+When a stage involves choosing between 2+ approaches with visual differences (e.g., Desired State with competing architectures, or Constraints with different technical tradeoffs), use `preview` on each AskUserQuestion option showing the relevant code, architecture diagram, or file structure. For stages that are purely conversational (e.g., Stakeholders, Prior Art), do not force preview.
+
 Skip questions whose answers are already evident from codebase exploration — tell the user what the agent already knows and ask them to confirm or correct.
 
 ### Stage 1: Current State

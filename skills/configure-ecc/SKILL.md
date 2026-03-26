@@ -63,6 +63,8 @@ Options:
   - "Both" — "Common/shared items user-level, project-specific items project-level"
 ```
 
+When options have structurally different outcomes, include `preview` on each option showing the resulting directory structure. For example, user-level vs project-level installs produce different file trees — preview each.
+
 Store the choice as `INSTALL_LEVEL`. Set the target directory:
 - User-level: `TARGET=~/.claude`
 - Project-level: `TARGET=.claude` (relative to current project root)
@@ -95,7 +97,7 @@ If the user chooses niche or core + niche, continue to category selection below 
 
 ### 2b: Choose Skill Categories
 
-There are 26 skills organized into 4 categories. Use `AskUserQuestion` with `multiSelect: true`:
+There are 26 skills organized into 4 categories. Use `AskUserQuestion` with `multiSelect: true`. Note: multiSelect questions MUST NOT use `preview` — preview is for single-select only.
 
 ```
 Question: "Which skill categories do you want to install?"
