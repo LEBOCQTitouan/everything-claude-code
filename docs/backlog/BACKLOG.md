@@ -26,7 +26,7 @@
 | BL-023 | Clean up stale workflow state | 5 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-024 | Add context:fork to heavy skills | 6 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-025 | Add memory:project to adversarial agents | 6 | LOW | direct edit | implemented | 2026-03-20 |
-| BL-026 | Quarterly MCP version audit | 6 | LOW | process | open | 2026-03-20 |
+| BL-026 | Quarterly MCP version audit | 6 | LOW | process | implemented | 2026-03-20 |
 | BL-027 | Cross-session memory system | 7 | HIGH | /spec dev | implemented | 2026-03-21 |
 | BL-028 | Add web search to /spec commands | 7 | MEDIUM | /spec commands | implemented | 2026-03-21 |
 | BL-029 | Persist specs and designs as versioned file artifacts | 8 | HIGH | /spec, /design | implemented | 2026-03-21 |
