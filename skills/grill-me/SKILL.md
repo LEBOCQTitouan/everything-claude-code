@@ -74,6 +74,20 @@ Use `AskUserQuestion` for every question — one question per turn, never batche
 
 One question per turn is absolute: never ask two questions in the same message, even if they seem related.
 
+### Preview for Visual Alternatives
+
+When a question presents 2+ distinct approaches with structural differences (architecture diagrams, code snippets, file trees), use `preview` on each AskUserQuestion option. Each preview should contain a Markdown code block showing the approach — Mermaid diagram source, code snippet, or ASCII layout. Keep preview content concise (under 15 lines per option) for the 60-second AskUserQuestion timeout.
+
+**When to use preview:**
+- Stage 4 (Alternatives): comparing architecture approaches, data models, API shapes
+- Any stage where the user must choose between visual alternatives with structural differences
+
+**When NOT to use preview:**
+- Purely textual questions with no visual alternatives (e.g., "What is out of scope?") MUST NOT include preview
+- Questions with a single approach (no comparison needed) skip preview
+
+**Fallback:** If AskUserQuestion is unavailable, show preview content inline as Markdown code blocks in the conversational question.
+
 ### Build Question List Upfront
 
 Before asking any question, build the full question list grouped by stage. Show the list to the user at the start and after each answer.
