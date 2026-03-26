@@ -102,20 +102,20 @@ Write `.claude/workflow/solution-adversary-report.md` with this structure:
 # Solution Adversary Report
 
 ## Summary
-Verdict: <PASS|FAIL|CONDITIONAL>
+Verdict: <PASS|FAIL|CONDITIONAL> (avg: <score>/100)
 Rounds: <N of 3>
 
 ## Dimension Results
-| # | Dimension | Verdict | Critical Findings |
-|---|-----------|---------|-------------------|
-| 1 | AC Coverage | ... | ... |
-| 2 | Execution Order | ... | ... |
-| 3 | Fragility | ... | ... |
-| 4 | Rollback Adequacy | ... | ... |
-| 5 | Architecture Compliance | ... | ... |
-| 6 | Blast Radius | ... | ... |
-| 7 | Missing Pass Conditions | ... | ... |
-| 8 | Doc Plan Completeness | ... | ... |
+| # | Dimension | Score | Verdict | Critical Findings |
+|---|-----------|-------|---------|-------------------|
+| 1 | AC Coverage | <0-100> | ... | ... |
+| 2 | Execution Order | <0-100> | ... | ... |
+| 3 | Fragility | <0-100> | ... | ... |
+| 4 | Rollback Adequacy | <0-100> | ... | ... |
+| 5 | Architecture Compliance | <0-100> | ... | ... |
+| 6 | Blast Radius | <0-100> | ... | ... |
+| 7 | Missing Pass Conditions | <0-100> | ... | ... |
+| 8 | Doc Plan Completeness | <0-100> | ... | ... |
 
 ## Uncovered ACs
 | AC | Description (from spec) | Suggested PC |
@@ -135,11 +135,48 @@ Rounds: <N of 3>
 <Why this verdict — reference specific findings>
 ```
 
+## Scoring Rubric
+
+Each dimension receives an independent 0-100 integer score. Score each dimension before assigning its verdict.
+
+### Scale
+
+| Range | Label | Meaning |
+|-------|-------|---------|
+| 90-100 | Excellent | No meaningful gaps; production-ready |
+| 70-89 | Good | Minor concerns only; acceptable quality |
+| 50-69 | Adequate | Notable concerns that should be addressed |
+| 31-49 | Significant issues | Major gaps that risk implementation failure |
+| 0-30 | Major gaps | Fundamental problems; dimension is unacceptable |
+
+### Threshold Rules
+
+- **PASS**: Average score >= 70 AND no single dimension < 50
+- **CONDITIONAL**: Average score 50-69, OR any single dimension < 50 (regardless of average)
+- **FAIL**: Average score < 50
+
+### Output Format
+
+The Dimension Results table MUST include a Score column:
+
+```markdown
+| Dimension | Score | Verdict | Key Rationale |
+|-----------|-------|---------|---------------|
+| AC Coverage | 85 | PASS | ... |
+| Fragility | 42 | FAIL | ... |
+```
+
+The overall verdict line MUST include the average score:
+
+```
+Verdict: PASS (avg: 78/100)
+```
+
 ## Verdict Rules
 
-- **PASS**: All 8 dimensions pass. Solution is ready for `/implement`.
-- **FAIL**: Critical gaps that require redesigning the solution (return to Phase 1).
-- **CONDITIONAL**: Gaps addressable by adding specific PCs or fixing the doc plan. List the fixes.
+- **PASS**: Average score >= 70 AND no single dimension < 50. Solution is ready for `/implement`.
+- **FAIL**: Average score < 50, or critical gaps that require redesigning the solution (return to Phase 1).
+- **CONDITIONAL**: Average score 50-69, OR any single dimension < 50 but addressable by adding specific PCs or fixing the doc plan. List the fixes.
 
 ## Tone
 
