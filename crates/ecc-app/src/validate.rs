@@ -434,6 +434,100 @@ fn validate_rules(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -
     true
 }
 
+fn validate_statusline(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
+    let script_path = root.join("statusline").join("statusline-command.sh");
+    let script_exists = fs.exists(&script_path);
+
+    if script_exists {
+        terminal.stdout_write("✓ Script exists\n");
+    } else {
+        terminal.stdout_write("✗ Script exists: statusline/statusline-command.sh not found\n");
+    }
+
+    let script_content = if script_exists {
+        match fs.read_to_string(&script_path) {
+            Ok(c) => Some(c),
+            Err(e) => {
+                terminal.stderr_write(&format!("ERROR: Cannot read statusline script: {e}\n"));
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    let placeholder_ok = match &script_content {
+        Some(c) => {
+            let ok = !c.contains("__ECC_VERSION__");
+            if ok {
+                terminal.stdout_write("✓ No unresolved placeholder\n");
+            } else {
+                terminal.stdout_write("✗ No unresolved placeholder: __ECC_VERSION__ found in script\n");
+            }
+            ok
+        }
+        None => {
+            terminal.stdout_write("✗ No unresolved placeholder: script unavailable\n");
+            false
+        }
+    };
+
+    let shebang_ok = match &script_content {
+        Some(c) => {
+            let ok = c.starts_with("#!/usr/bin/env bash") || c.starts_with("#!/bin/bash");
+            if ok {
+                terminal.stdout_write("✓ Valid shebang\n");
+            } else {
+                terminal.stdout_write("✗ Valid shebang: must start with #!/usr/bin/env bash or #!/bin/bash\n");
+            }
+            ok
+        }
+        None => {
+            terminal.stdout_write("✗ Valid shebang: script unavailable\n");
+            false
+        }
+    };
+
+    let jq_ok = match &script_content {
+        Some(c) => {
+            let ok = c.contains("jq");
+            if ok {
+                terminal.stdout_write("✓ Uses jq\n");
+            } else {
+                terminal.stdout_write("✗ Uses jq: jq not found in script\n");
+            }
+            ok
+        }
+        None => {
+            terminal.stdout_write("✗ Uses jq: script unavailable\n");
+            false
+        }
+    };
+
+    let settings_path = root.join("settings.json");
+    let settings_ok = match fs.read_to_string(&settings_path) {
+        Ok(content) => {
+            let ok = content.contains("statusline-command.sh");
+            if ok {
+                terminal.stdout_write("✓ settings.json references statusline-command.sh\n");
+            } else {
+                terminal.stdout_write(
+                    "✗ settings.json references statusline-command.sh: statusLine not configured\n",
+                );
+            }
+            ok
+        }
+        Err(_) => {
+            terminal.stdout_write(
+                "✗ settings.json references statusline-command.sh: settings.json not found\n",
+            );
+            false
+        }
+    };
+
+    script_exists && placeholder_ok && shebang_ok && jq_ok && settings_ok
+}
+
 fn validate_paths(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let targets = ["README.md", "skills", "commands", "agents", "docs"];
 
