@@ -43,6 +43,7 @@ Mark each item complete as the step finishes.
 4. **Checks duplicates** against existing open entries
 5. **Persists** the entry to `docs/backlog/BL-NNN-<slug>.md`
 6. **Updates** the index at `docs/backlog/BACKLOG.md`
+7. **Commits**: You MUST commit immediately after updating the backlog files. Run `git add docs/backlog/` then commit with message: `docs(backlog): add BL-NNN <slug>` (e.g., `docs(backlog): add BL-059 backlog-autocommit`).
 
 ## When to Use
 
@@ -105,6 +106,18 @@ No Phase 0 prompt refinement — the curator does its own optimization.
 - `/spec` cross-references the backlog in Phase 0.25 before entering Plan Mode
 - `prompt-optimizer` checks the backlog in Phase 2.5 during prompt diagnosis
 - Both surface HIGH and MEDIUM confidence matches to the user
+
+## Commit Rules for Mutating Subcommands
+
+Every mutating subcommand (`add`, `promote`, `archive`) MUST commit its changes immediately after completing. Read-only subcommands (`list`, `match`) MUST NOT trigger commits.
+
+| Subcommand | Commit Message Format | Example |
+|------------|----------------------|---------|
+| `add` | `docs(backlog): add BL-NNN <slug>` | `docs(backlog): add BL-059 backlog-autocommit` |
+| `promote` | `docs(backlog): promote BL-NNN` | `docs(backlog): promote BL-001` |
+| `archive` | `docs(backlog): archive BL-NNN` | `docs(backlog): archive BL-005` |
+
+For each: run `git add docs/backlog/` then commit with the message above. You MUST commit immediately — do not defer or batch.
 
 ## Related Agents
 
