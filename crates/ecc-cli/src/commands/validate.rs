@@ -31,6 +31,8 @@ pub enum CliValidateTarget {
     Rules,
     /// Check for personal paths in shipped files
     Paths,
+    /// Validate statusline installation
+    Statusline,
 }
 
 pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
@@ -53,5 +55,6 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Skills => ecc_app::validate::ValidateTarget::Skills,
         CliValidateTarget::Rules => ecc_app::validate::ValidateTarget::Rules,
         CliValidateTarget::Paths => ecc_app::validate::ValidateTarget::Paths,
+        CliValidateTarget::Statusline => ecc_app::validate::ValidateTarget::Statusline,
     }
 }
