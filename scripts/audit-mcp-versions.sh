@@ -112,8 +112,11 @@ main() {
     [ -z "$arg" ] && continue
 
     local package version
-    read -r package <<< "$(extract_package_and_version "$arg" | head -1)"
-    read -r version <<< "$(extract_package_and_version "$arg" | tail -1)"
+    local result
+    result=$(extract_package_and_version "$arg")
+    mapfile -t parts <<< "$result"
+    package="${parts[0]}"
+    version="${parts[1]:-}"
 
     if [ -z "$version" ]; then
       print_row "$package" "unpinned" "-" "unpinned"

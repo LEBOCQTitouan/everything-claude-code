@@ -149,12 +149,21 @@ FIXTURE
 }
 
 # Mock curl: returns controlled version responses
+# Helper: find URL argument from curl args (position-agnostic)
+find_url_in_args() {
+  for a in "$@"; do
+    if [[ "$a" == *"registry.npmjs.org"* ]]; then
+      echo "$a"
+      return
+    fi
+  done
+}
+export -f find_url_in_args
+
 mock_curl_current() {
-  # Mock curl to always return the pinned version as latest
   curl() {
-    local url="$2"
-    # Extract package name from URL pattern: registry.npmjs.org/<pkg>/latest
-    # Return matching pinned version
+    local url
+    url=$(find_url_in_args "$@")
     if [[ "$url" == *"server-github"* ]]; then
       echo '{"version":"2025.4.8"}'
     elif [[ "$url" == *"server-supabase"* ]]; then
@@ -183,9 +192,10 @@ mock_curl_outdated() {
 
 mock_curl_unreachable() {
   curl() {
-    local url="${2:-$1}"
+    local url
+    url=$(find_url_in_args "$@")
     if [[ "$url" == *"this-does-not-exist"* ]]; then
-      return 22  # curl error code for HTTP 404
+      return 22
     fi
     echo '{"version":"2025.4.8"}'
     return 0
@@ -378,6 +388,27 @@ mock_curl_unreachable() {
   [[ "$output" == *"firecrawl"* ]]
   # Should NOT contain HTTP servers
   [[ "$output" != *"vercel"* ]]
+}
+
+# ============================================================
+# Security: Rejects invalid package names
+# ============================================================
+
+@test "rejects invalid package names with injection characters" {
+  local file="$FIXTURES_DIR/mcp-injection.json"
+  cat > "$file" <<'FIXTURE'
+{
+  "mcpServers": {
+    "evil": {
+      "command": "npx",
+      "args": ["-y", "evil-pkg;rm -rf /@1.0.0"]
+    }
+  }
+}
+FIXTURE
+  mock_curl_current
+  run bash "$SCRIPT" "$file"
+  [[ "$output" == *"WARN"* ]] || [[ "$output" == *"invalid"* ]] || [[ "$output" == *"skip"* ]]
 }
 
 # ============================================================
