@@ -4,7 +4,7 @@ Date: 2026-03-23
 
 ## Status
 
-Accepted
+Superseded by BL-060
 
 ## Context
 
