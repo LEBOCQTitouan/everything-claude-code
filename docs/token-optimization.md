@@ -2,7 +2,7 @@
 
 Practical settings and habits to reduce token consumption, extend session quality, and get more work done within daily limits.
 
-> See also: `rules/common/performance.md` for model selection strategy, `skills/strategic-compact/` for automated compaction suggestions.
+> See also: `rules/common/performance.md` for model selection strategy.
 
 ---
 
@@ -70,8 +70,6 @@ Switch models mid-session:
 | `/cost` | Check token spending for the current session. |
 
 ### Strategic compaction
-
-The `strategic-compact` skill (in `skills/strategic-compact/`) suggests `/compact` at logical intervals rather than relying on auto-compaction, which can trigger mid-task. See the skill's README for hook setup instructions.
 
 **When to compact:**
 - After exploration, before implementation
