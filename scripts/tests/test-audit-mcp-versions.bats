@@ -3,6 +3,8 @@
 # Test suite for scripts/audit-mcp-versions.sh (BL-026)
 # Tests use fixture JSON and mocked curl to avoid network dependency.
 
+bats_require_minimum_version 1.5.0
+
 SCRIPT_DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
 SCRIPT="$SCRIPT_DIR/audit-mcp-versions.sh"
 FIXTURES_DIR="$BATS_TEST_TMPDIR/fixtures"
@@ -196,23 +198,8 @@ mock_curl_unreachable() {
 # ============================================================
 
 @test "exits with error when required tool is missing" {
-  # Temporarily hide jq by prepending a dir with a fake PATH
-  local tmpbin="$BATS_TEST_TMPDIR/fakebin"
-  mkdir -p "$tmpbin"
-  # Create a wrapper that shadows jq with a failing command
-  PATH="$tmpbin" run bash -c "
-    jq() { return 127; }
-    export -f jq
-    command() {
-      if [[ \"\$2\" == 'jq' ]]; then return 1; fi
-      builtin command \"\$@\"
-    }
-    export -f command
-    source '$SCRIPT' --check-only 2>&1
-  "
-  # The script should detect missing tool and exit non-zero
-  run env PATH="/usr/bin:/bin" bash "$SCRIPT" "$FIXTURES_DIR/mcp-servers.json"
-  [ "$status" -ne 0 ]
+  # Run script with PATH restricted to exclude jq
+  run -2 env PATH="/usr/bin:/bin" bash "$SCRIPT" "$FIXTURES_DIR/mcp-servers.json"
   [[ "$output" == *"required"* ]] || [[ "$output" == *"not found"* ]] || [[ "$output" == *"jq"* ]]
 }
 
