@@ -83,10 +83,10 @@ Present the comparison as a structured table. Never skip this step — you must 
 
 Use AskUserQuestion to ask the user:
 
-1. "Which design best fits your primary use case?"
+1. "Which design best fits your primary use case?" — each option MUST include a `preview` field showing the interface signature and a short usage example from that design's sub-agent output. Preview content should be a Markdown code block (under 15 lines) for quick visual comparison.
 2. "Are there elements from other designs you'd like to incorporate?"
 
-If AskUserQuestion is unavailable, present all designs inline as a graceful fallback and ask the user to respond in the conversation.
+If AskUserQuestion is unavailable, present all designs inline as a graceful fallback with preview content shown as Markdown code blocks, and ask the user to respond in the conversation.
 
 If the user wants none of the designs, suggest re-running the agent with different constraints.
 
