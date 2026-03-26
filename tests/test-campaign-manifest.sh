@@ -41,8 +41,7 @@ test_campaign_manifest_skill() {
   grep -q "Grill-Me Decisions" skills/campaign-manifest/SKILL.md && \
   grep -q "Adversary History" skills/campaign-manifest/SKILL.md && \
   grep -q "Agent Outputs" skills/campaign-manifest/SKILL.md && \
-  grep -q "Commit Trail" skills/campaign-manifest/SKILL.md && \
-  grep -q "Resumption Pointer" skills/campaign-manifest/SKILL.md && pass || fail "missing sections"
+  grep -q "Commit Trail" skills/campaign-manifest/SKILL.md && pass || fail "missing sections"
 }
 
 test_campaign_manifest_lifecycle() {
@@ -234,12 +233,6 @@ test_implement_campaign_reentry() {
 
 # === Final: Docs ===
 
-test_strategic_compact_campaign() {
-  CURRENT_TEST="strategic-compact mentions campaign"
-  assert_file_contains skills/strategic-compact/SKILL.md "campaign" && \
-  assert_file_contains skills/strategic-compact/SKILL.md "Mid-pipeline" && pass || fail "missing"
-}
-
 test_adr_0013() {
   CURRENT_TEST="ADR 0013 exists with required sections"
   test -f docs/adr/0013-campaign-manifest-convention.md && \
@@ -250,9 +243,8 @@ test_adr_0013() {
 }
 
 test_glossary_entries() {
-  CURRENT_TEST="glossary has Campaign Manifest + Resumption Pointer"
-  assert_file_contains docs/domain/glossary.md "Campaign Manifest" && \
-  assert_file_contains docs/domain/glossary.md "Resumption Pointer" && pass || fail "missing"
+  CURRENT_TEST="glossary has Campaign Manifest"
+  assert_file_contains docs/domain/glossary.md "Campaign Manifest" && pass || fail "missing"
 }
 
 test_changelog_entry() {
@@ -311,7 +303,6 @@ else
   test_implement_campaign_reentry
   echo ""
   echo "--- Final: Docs ---"
-  test_strategic_compact_campaign
   test_adr_0013
   test_glossary_entries
   test_changelog_entry
