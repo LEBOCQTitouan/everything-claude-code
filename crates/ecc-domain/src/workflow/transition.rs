@@ -34,6 +34,28 @@ pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, Workfl
 mod tests {
     use super::*;
 
+    mod legal_transitions {
+        use super::*;
+
+        #[test]
+        fn plan_to_solution_returns_ok() {
+            let result = resolve_transition(Phase::Plan, Phase::Solution);
+            assert_eq!(result, Ok(Phase::Solution));
+        }
+
+        #[test]
+        fn solution_to_implement_returns_ok() {
+            let result = resolve_transition(Phase::Solution, Phase::Implement);
+            assert_eq!(result, Ok(Phase::Implement));
+        }
+
+        #[test]
+        fn implement_to_done_returns_ok() {
+            let result = resolve_transition(Phase::Implement, Phase::Done);
+            assert_eq!(result, Ok(Phase::Done));
+        }
+    }
+
     mod illegal_transitions {
         use super::*;
 
