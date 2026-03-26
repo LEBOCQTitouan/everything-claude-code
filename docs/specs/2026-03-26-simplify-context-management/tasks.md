@@ -2,16 +2,16 @@
 
 ## Pass Conditions
 
-- [ ] PC-001–007: Delete files + absence checks | pending@2026-03-26T21:40:00Z
-- [ ] PC-008–013: Modify implement.md | pending@2026-03-26T21:40:00Z
-- [ ] PC-014–022: Audit + campaign + design | pending@2026-03-26T21:40:00Z
-- [ ] PC-023–034: ADR + glossary + backlog + tests + refs | pending@2026-03-26T21:40:00Z
-- [ ] PC-035–038: CHANGELOG + quality gate | pending@2026-03-26T21:40:00Z
+- [x] PC-001–007: Delete files + absence checks | done@2026-03-26T21:45:00Z
+- [x] PC-008–013: Modify implement.md | done@2026-03-26T21:50:00Z
+- [x] PC-014–022: Audit + campaign + design | done@2026-03-26T21:55:00Z
+- [x] PC-023–034: ADR + glossary + backlog + tests + refs | done@2026-03-26T22:00:00Z
+- [x] PC-035–038: CHANGELOG + quality gate | done@2026-03-26T22:05:00Z
 
 ## Post-TDD
 
-- [ ] E2E tests | pending@2026-03-26T21:40:00Z
-- [ ] Code review | pending@2026-03-26T21:40:00Z
-- [ ] Doc updates | pending@2026-03-26T21:40:00Z
-- [ ] Supplemental docs | pending@2026-03-26T21:40:00Z
-- [ ] Write implement-done.md | pending@2026-03-26T21:40:00Z
+- [x] E2E tests | done@2026-03-26T22:06:00Z
+- [x] Code review | done@2026-03-26T22:07:00Z
+- [x] Doc updates | done@2026-03-26T22:08:00Z
+- [x] Supplemental docs | done@2026-03-26T22:09:00Z
+- [x] Write implement-done.md | done@2026-03-26T22:10:00Z
