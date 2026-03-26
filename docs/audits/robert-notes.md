@@ -1,50 +1,43 @@
-# Robert Notes -- 2026-03-22
+# Robert Notes -- 2026-03-23
 
 ## Oath Evaluation
 
-Subject: BL-051 -- Explanatory narrative audit design review (24 PCs, 25 ACs, 22 command files + 1 shared skill, no logic changes).
+Subject: BL-056 -- Context-Aware Doc Generation at End of /implement (spec + design review). 8 user stories, 50 ACs, 41 pass conditions, 8 file changes (2 new agents, 1 command mod, 1 hook extension, 4 doc updates). Content-layer only (no Rust changes).
 
 ```
-Oath 1 (no harmful code): CLEAN -- design explicitly constrains scope to "narrative instruction additions only, no phase logic, tool selection, or agent configuration changes"
-Oath 2 (no mess): CLEAN -- shared narrative-conventions skill extracts common patterns (DRY); 800-line file limit enforced by PC-18; existing narration augmented not rewritten
-Oath 3 (proof): CLEAN -- 24 PCs cover all 25 ACs; bash grep test suite (following established test-pipeline-summaries.sh pattern) provides automated regression; cargo test/clippy/build gates prevent Rust regressions
-Oath 4 (small releases): CLEAN -- 6 TDD phases with atomic commits at each RED/GREEN/REFACTOR boundary; Phase 6 is validation-only (no commit)
-Oath 5 (fearless improvement): CLEAN -- Boy Scout candidates identified (build-fix.md and review.md missing allowed-tools frontmatter)
-Oath 6 (productivity): CLEAN -- narrative additions are additive; no throughput-decreasing structural changes; reuses established test harness pattern
-Oath 7 (easy substitution): CLEAN -- shared skill is standalone; any command can reference it independently; no coupling between command narratives
-Oath 8 (honest estimates): N/A -- no estimates given
-Oath 9 (continuous learning): N/A -- not applicable this session
+Oath 1 (no harmful code): CLEAN -- non-blocking failures (D-10) prevent Phase 7.5 from breaking /implement. Explicit ownership boundaries (D-4/12) prevent destructive overwrites of CUSTOM.md and module-dependency-graph.md. Partial commit handling (AC-001.8) ensures successful output is never lost.
+Oath 2 (no mess): CLEAN -- separate agent files (D-1) maintain SRP. implement.md 800-line constraint explicitly stated in Constraints section. IMPLEMENT-GENERATED markers create clean ownership boundary with AUTO-GENERATED section. No structural rewrites to existing files.
+Oath 3 (proof): CLEAN -- 41 pass conditions covering all 50 ACs. Concrete trigger heuristics in AC-003.12. Enumerated table schemas (AC-001.12, AC-005.1) enable structural validation. TDD in 3 phases with clear phase gates.
+Oath 4 (small releases): CLEAN -- 3 implementation phases (agent creation, implement.md modification, hook/docs/CHANGELOG), each independently committable. US dependency chain enables atomic groups.
+Oath 5 (fearless improvement): CLEAN -- extends existing doc-enforcement.sh (D-9) rather than adding new hook. Protected diagram category prevents future regeneration conflicts. Context checkpoint (D-6) follows established pattern from Phases 4-7.
+Oath 6 (productivity): CLEAN -- haiku model for both agents (D-7, 3x cost savings). Parallel subagent dispatch. Non-blocking failures prevent pipeline stalls. No new friction in non-doc execution paths.
+Oath 7 (easy substitution): CLEAN -- separate agent files enable independent replacement. CUSTOM.md exclusion (D-12) preserves clean ownership. Cross-link fixup is a parent-level pass, not baked into subagents.
+Oath 8 (honest estimates): WARNING -- design specifies 8 file changes but no explicit effort estimate or session count. Content-layer-only scope reduces risk, but oath calls for explicit uncertainty communication.
+Oath 9 (continuous learning): N/A
 ```
-
-Zero violations. Zero warnings.
 
 ## Self-Audit
 
 ```
-[SELF-001] NOTE: catchup.md exists only in project-level commands/ (not ~/.claude/commands/); spec correctly targets it but the asymmetry between directories could cause confusion during implementation
-[SELF-002] DRY: Previous finding (Commit Cadence in 13+ agent files) -- status unchanged, candidate for extraction
-[SELF-003] DRY: Previous finding (TPP table in 3 files) -- status unchanged
-[SELF-004] SRP: All agents under 400 lines. Largest is doc-orchestrator.md at 398 lines.
-[SELF-005] Consistency: All 45 agents have model, description, and skills fields in frontmatter.
+[SELF-001] SRP (monitor): implement.md at 411 lines -- Phase 7.5 insertion will grow it further. BL-035 sub-skill extraction should land first or concurrently to offset growth. Risk of approaching 800-line limit if multiple features add phases.
+[SELF-002] SRP (carried): doc-orchestrator.md at 398 lines -- approaching 400-line threshold. No change from prior session.
+[SELF-003] DRY: TodoWrite graceful degradation boilerplate ("If TodoWrite is unavailable, proceed without tracking") present in 23 agent files. Candidate for extraction into a shared skill or frontmatter convention.
+[SELF-004] Consistency: 4 commands missing allowed-tools in frontmatter: backlog.md, build-fix.md, ecc-test-mode.md, review.md (ECC convention: "All commands MUST have allowed-tools").
+[SELF-005] Consistency: All 47 agents have complete frontmatter (name, description, model, tools, skills). No issues.
 ```
 
 ## "Go Well" Metric
 
 ```
 Session commits (last 50): 50
-  Forward: 37
-    feat:  11
-    test:   6
-    docs:  20
-  Rework:  8
-    fix:    7
-    chore:  1 (non-scout)
-  Neutral:  5 (administrative docs)
-  Rework ratio: 0.16 (Healthy -- mostly forward progress)
+  Forward: 36 (docs: 21, feat: 13, test: 1, chore(scout): 1)
+  Rework: 5 (fix: 5)
+  Neutral: 9 (refactor: 1, chore: 8)
+  Rework ratio: 0.10 (Healthy -- mostly forward progress)
 ```
 
-Fix commits are minor corrections (broken glossary link, backlog status marks, agent clarification, spec-directory path, skill frontmatter). No architectural rework.
+Fix commits are lightweight: glossary link fix, jq error handling, lowercase heuristic match, backlog status correction. No architectural rework or regression fixes. Heavy doc-forward session from spec/design pipeline.
 
 ## Summary
 
-0 oath warnings, 1 new self-audit note (SELF-001 command directory asymmetry), 2 carried-forward DRY findings, rework ratio 0.16.
+1 oath warning (Oath 8: no explicit effort estimate), 5 self-audit findings (1 SRP concern for implement.md growth, 1 SRP carried, 1 DRY candidate, 1 consistency gap in 4 commands, 1 consistency clean), rework ratio 0.10.
