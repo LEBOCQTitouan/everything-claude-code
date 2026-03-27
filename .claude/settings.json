@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/phase-gate.sh"
+            "command": "ecc-workflow phase-gate"
           }
         ],
         "description": "Pipeline: block source writes during spec/design phases"
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/tdd-enforcement.sh",
+            "command": "ecc-workflow tdd-enforcement",
             "async": true,
             "timeout": 5
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/stop-gate.sh"
+            "command": "ecc-workflow stop-gate"
           }
         ],
         "description": "Pipeline: warn when workflow incomplete"
@@ -92,7 +92,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/grill-me-gate.sh"
+            "command": "ecc-workflow grill-me-gate"
           }
         ],
         "description": "Pipeline: warn when grill-me interview not completed in spec output"
