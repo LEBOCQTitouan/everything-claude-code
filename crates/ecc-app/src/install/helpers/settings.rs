@@ -118,6 +118,10 @@ pub(in crate::install) fn ensure_statusline_in_settings(
             log::warn!("Failed to write statusline script: {}", e);
             return None;
         }
+        // Set executable permissions
+        if let Err(e) = fs.set_permissions(&target_script, 0o755) {
+            log::warn!("Failed to set statusline script permissions: {}", e);
+        }
     }
 
     // Read settings
@@ -376,6 +380,24 @@ mod tests {
             deployed.starts_with("#!/usr/bin/env bash"),
             "deployed script must have a valid shebang"
         );
+    }
+
+    #[test]
+    fn statusline_script_has_executable_permissions() {
+        let fs = statusline_source_fs();
+        let env = statusline_env();
+
+        ensure_statusline_in_settings(
+            &fs,
+            &env,
+            Path::new("/home/user/.claude/settings.json"),
+            Path::new("/ecc"),
+            "4.2.0",
+            false,
+        );
+
+        let perms = fs.get_permissions(Path::new("/home/user/.claude/statusline-command.sh"));
+        assert_eq!(perms, Some(0o755), "statusline script must be executable");
     }
 
     #[test]
