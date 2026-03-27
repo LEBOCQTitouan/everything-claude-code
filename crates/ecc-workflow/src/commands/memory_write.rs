@@ -79,7 +79,7 @@ fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Err
 
 // ── action ────────────────────────────────────────────────────────────────────
 
-fn write_action(
+pub fn write_action(
     action_type: &str,
     description: &str,
     outcome: &str,
@@ -140,7 +140,7 @@ fn write_action(
 
 // ── work-item ─────────────────────────────────────────────────────────────────
 
-fn write_work_item(
+pub fn write_work_item(
     phase: &str,
     description: &str,
     concern: &str,
@@ -256,7 +256,7 @@ fn write_work_item(
 
 // ── daily ─────────────────────────────────────────────────────────────────────
 
-fn write_daily(
+pub fn write_daily(
     phase: &str,
     feature: &str,
     concern: &str,
@@ -374,7 +374,7 @@ fn insert_after_activity(content: &str, entry: &str) -> String {
 
 // ── memory-index ──────────────────────────────────────────────────────────────
 
-fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
+pub fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
     let memory_dir =
         resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     std::fs::create_dir_all(&memory_dir)

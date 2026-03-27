@@ -77,9 +77,44 @@ pub fn run(
     }
 
     match write_state_atomic(project_dir, &state) {
-        Ok(()) => WorkflowOutput::pass(format!(
-            "Phase transition: {from} -> {to}"
-        )),
+        Ok(()) => {
+            // Best-effort memory writes (ignore errors — like shell || true)
+            if let Some(artifact_name) = artifact {
+                let feature = &state.feature;
+                let concern = &state.concern;
+
+                // Map artifact name to work-item phase
+                let wi_phase = match artifact_name {
+                    "plan" => "plan",
+                    "solution" => "solution",
+                    "implement" => "implementation",
+                    _ => artifact_name,
+                };
+
+                let _ = crate::commands::memory_write::write_action(
+                    artifact_name,
+                    feature,
+                    "success",
+                    "[]",
+                    project_dir,
+                );
+                let _ = crate::commands::memory_write::write_work_item(
+                    wi_phase,
+                    feature,
+                    concern,
+                    project_dir,
+                );
+                let _ = crate::commands::memory_write::write_daily(
+                    wi_phase,
+                    feature,
+                    concern,
+                    project_dir,
+                );
+                let _ = crate::commands::memory_write::write_memory_index(project_dir);
+            }
+
+            WorkflowOutput::pass(format!("Phase transition: {from} -> {to}"))
+        }
         Err(e) => WorkflowOutput::block(format!("Failed to write state.json: {e}")),
     }
 }
