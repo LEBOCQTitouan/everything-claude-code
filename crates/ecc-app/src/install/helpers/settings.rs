@@ -181,16 +181,19 @@ mod tests {
             .with_dir("/home/user/.claude")
     }
 
-    /// Realistic power-user statusline template with cost/token/jq markers.
+    /// Realistic power-user statusline template with cost/token/jq/rate_limits markers.
     const POWERUSER_STATUSLINE_TEMPLATE: &str = concat!(
         "#!/usr/bin/env bash\n",
         "set -uo pipefail\n",
         "ECC_VERSION=\"__ECC_VERSION__\"\n",
         "command -v jq >/dev/null 2>&1 || { echo \"ECC\"; exit 0; }\n",
         "INPUT=$(cat)\n",
-        "COST_USD=$(echo \"$INPUT\" | jq -r '.cost.total_cost_usd // 0')\n",
-        "DISPLAY_NAME=$(echo \"$INPUT\" | jq -r '.model.display_name // \"\"')\n",
-        "USED_PCT=$(echo \"$INPUT\" | jq -r '.context_window.used_percentage // 0')\n",
+        "eval \"$(echo \"$INPUT\" | jq -r '\n",
+        "  @sh \"COST_USD=\\(.cost.total_cost_usd // 0)\",\n",
+        "  @sh \"DISPLAY_NAME=\\(.model.display_name // \\\"\\\")\",\n",
+        "  @sh \"USED_PCT=\\(.context_window.used_percentage // 0)\",\n",
+        "  @sh \"RL_5H=\\(.rate_limits.five_hour.used_percentage // \\\"\\\")\"\n",
+        "')\"\n",
         "echo \"$DISPLAY_NAME $COST_USD $ECC_VERSION\"\n",
     );
 

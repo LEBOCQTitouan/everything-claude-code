@@ -225,7 +225,7 @@ impl FileSystem for InMemoryFileSystem {
             .lock()
             .unwrap()
             .get(path)
-            .map_or(false, |m| m & 0o111 != 0)
+            .is_some_and(|m| m & 0o111 != 0)
     }
 }
 
