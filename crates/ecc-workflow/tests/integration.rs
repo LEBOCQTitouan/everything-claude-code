@@ -254,3 +254,87 @@ fn init_creates_state_json() {
         "expected completed == []"
     );
 }
+
+#[test]
+fn transition_updates_state() {
+    let bin = binary_path();
+    assert!(
+        bin.exists(),
+        "ecc-workflow binary not found at {:?}",
+        bin
+    );
+
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Step 1: init to create state.json with phase=plan
+    let init_output = Command::new(&bin)
+        .args(["init", "dev", "test feature"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow init");
+
+    assert_eq!(
+        init_output.status.code(),
+        Some(0),
+        "init must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        init_output.status.code(),
+        std::str::from_utf8(&init_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&init_output.stderr).unwrap_or(""),
+    );
+
+    // Step 2: transition to solution with --artifact plan
+    let transition_output = Command::new(&bin)
+        .args(["transition", "solution", "--artifact", "plan"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow transition");
+
+    assert_eq!(
+        transition_output.status.code(),
+        Some(0),
+        "transition must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        transition_output.status.code(),
+        std::str::from_utf8(&transition_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&transition_output.stderr).unwrap_or(""),
+    );
+
+    // Step 3: read state.json and verify
+    let state_path = temp_dir.path().join(".claude/workflow/state.json");
+    let content = std::fs::read_to_string(&state_path)
+        .expect("failed to read state.json after transition");
+
+    let value: serde_json::Value = serde_json::from_str(&content)
+        .unwrap_or_else(|e| panic!("state.json is not valid JSON: {e}\ncontent: {content}"));
+
+    // phase == "solution"
+    assert_eq!(
+        value.get("phase").and_then(|v| v.as_str()),
+        Some("solution"),
+        "expected phase 'solution' after transition, got: {:?}",
+        value.get("phase")
+    );
+
+    // artifacts.plan has an ISO 8601 timestamp (not null)
+    let artifacts = value
+        .get("artifacts")
+        .unwrap_or_else(|| panic!("missing 'artifacts' field in state.json"));
+
+    let plan_ts = artifacts
+        .get("plan")
+        .unwrap_or_else(|| panic!("missing 'artifacts.plan' field"));
+
+    assert!(
+        !plan_ts.is_null(),
+        "artifacts.plan must not be null after transition with --artifact plan"
+    );
+
+    let plan_str = plan_ts
+        .as_str()
+        .unwrap_or_else(|| panic!("artifacts.plan must be a string, got: {plan_ts}"));
+
+    // ISO 8601 UTC: YYYY-MM-DDTHH:MM:SSZ — length 20, ends with Z, contains T
+    assert!(
+        plan_str.len() == 20 && plan_str.ends_with('Z') && plan_str.contains('T'),
+        "artifacts.plan must be ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ), got: '{plan_str}'"
+    );
+}
