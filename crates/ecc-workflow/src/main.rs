@@ -39,6 +39,10 @@ enum Commands {
     /// Gate Write/Edit/MultiEdit and destructive Bash commands during plan/solution phases.
     /// Reads hook protocol JSON from stdin.
     PhaseGate,
+    /// Warn on stderr when the workflow is in an incomplete phase.
+    /// Called by the Stop hook at the end of a Claude session.
+    /// Always exits 0 — informational only.
+    StopGate,
 }
 
 fn main() {
@@ -82,6 +86,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
             commands::memory_write::run(&kind, &args, &project_dir())
         }
         Commands::PhaseGate => commands::phase_gate::run(&project_dir()),
+        Commands::StopGate => commands::stop_gate::run(&project_dir()),
     }
 }
 
@@ -93,7 +98,10 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
 fn emit_and_exit(output: WorkflowOutput) -> ! {
     match output.status {
         output::Status::Pass => {
-            println!("{output}");
+            // Only print if message is non-empty (stop-gate uses empty pass for silence)
+            if !output.message.is_empty() {
+                println!("{output}");
+            }
             std::process::exit(0);
         }
         output::Status::Warn => {
