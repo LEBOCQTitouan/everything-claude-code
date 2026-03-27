@@ -81,6 +81,7 @@
 | BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | open | 2026-03-27 |
 | BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | open | 2026-03-27 |
 | BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | open | 2026-03-27 |
+| BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | open | 2026-03-27 |
 
 ## Dependency Graph
 
@@ -116,12 +117,13 @@ BL-072 → BL-030 (scaffolding generates tasks.md from solution PCs)
 BL-075 → BL-030 (task sync manages the persisted tasks.md)
 BL-075 → BL-041 (task sync complements task list ID persistence)
 BL-078 → BL-052 (Rust hook binaries make pre-hydration faster)
+BL-081 → BL-078 (web audit benefits from context pre-hydration for inventory phase)
 ```
 
 ## Stats
 
-- **Total:** 76
-- **Open:** 32
+- **Total:** 77
+- **Open:** 33
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
