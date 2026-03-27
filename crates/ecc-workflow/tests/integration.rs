@@ -1941,3 +1941,168 @@ fn grill_me_gate_no_state_is_silent() {
         "expected no WARNING when no state.json, got: '{stderr}'"
     );
 }
+
+// ─────────────────────────────────────────────────────────
+// tdd-enforcement integration tests
+// ─────────────────────────────────────────────────────────
+
+/// Helper: pipe stdin JSON to `ecc-workflow tdd-enforcement` and return the Output.
+fn run_tdd_enforcement(project_dir: &std::path::Path, stdin_json: &str) -> std::process::Output {
+    use std::io::Write as _;
+    use std::process::Stdio;
+
+    let bin = binary_path();
+    let mut child = std::process::Command::new(&bin)
+        .args(["tdd-enforcement"])
+        .env("CLAUDE_PROJECT_DIR", project_dir)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("failed to spawn ecc-workflow tdd-enforcement");
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(stdin_json.as_bytes()).ok();
+    }
+    child
+        .wait_with_output()
+        .expect("failed to wait for ecc-workflow tdd-enforcement")
+}
+
+/// tdd_enforcement: verify that `ecc-workflow tdd-enforcement` reads stdin and tracks
+/// RED/GREEN/REFACTOR state correctly.
+///
+/// AC-004.5 — tdd-enforcement subcommand:
+///   1. Write to test file in implement phase → .tdd-state becomes "RED"
+///   2. Write to source file when state=RED → .tdd-state becomes "GREEN"
+///   3. Phase=plan → exits 0 silently (no tracking)
+///   4. No state.json → exits 0 silently
+#[test]
+fn tdd_enforcement() {
+    // ── Scenario 1: implement phase, Write to test file → state = RED ────────────────────────
+    let dir_impl = tempfile::tempdir().unwrap();
+    let workflow_dir = dir_impl.path().join(".claude/workflow");
+    std::fs::create_dir_all(&workflow_dir).unwrap();
+
+    let state_impl = serde_json::json!({
+        "concern": "dev", "phase": "implement", "feature": "test",
+        "started_at": "2026-01-01T00:00:00Z",
+        "toolchain": { "test": null, "lint": null, "build": null },
+        "artifacts": { "plan": null, "solution": null, "implement": null,
+                       "campaign_path": null, "spec_path": null,
+                       "design_path": null, "tasks_path": null },
+        "completed": []
+    });
+    std::fs::write(
+        workflow_dir.join("state.json"),
+        serde_json::to_string_pretty(&state_impl).unwrap(),
+    )
+    .unwrap();
+
+    let write_test_json = serde_json::json!({
+        "tool_name": "Write",
+        "tool_input": { "file_path": "crates/mylib/tests/integration.rs" }
+    })
+    .to_string();
+
+    let out1 = run_tdd_enforcement(dir_impl.path(), &write_test_json);
+    assert_eq!(
+        out1.status.code(),
+        Some(0),
+        "tdd-enforcement must always exit 0\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out1.stdout).unwrap_or(""),
+        std::str::from_utf8(&out1.stderr).unwrap_or(""),
+    );
+
+    let tdd_state_path = workflow_dir.join(".tdd-state");
+    assert!(
+        tdd_state_path.exists(),
+        ".tdd-state must be created after Write to test file in implement phase"
+    );
+    let tdd_state = std::fs::read_to_string(&tdd_state_path).expect("failed to read .tdd-state");
+    assert_eq!(
+        tdd_state.trim(),
+        "RED",
+        ".tdd-state must be RED after Write to test file, got: {}",
+        tdd_state.trim()
+    );
+
+    // ── Scenario 2: implement phase, Write to source file when state=RED → state = GREEN ──────
+    let write_src_json = serde_json::json!({
+        "tool_name": "Write",
+        "tool_input": { "file_path": "crates/mylib/src/lib.rs" }
+    })
+    .to_string();
+
+    let out2 = run_tdd_enforcement(dir_impl.path(), &write_src_json);
+    assert_eq!(
+        out2.status.code(),
+        Some(0),
+        "tdd-enforcement must always exit 0\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out2.stdout).unwrap_or(""),
+        std::str::from_utf8(&out2.stderr).unwrap_or(""),
+    );
+
+    let tdd_state2 = std::fs::read_to_string(&tdd_state_path).expect("failed to read .tdd-state");
+    assert_eq!(
+        tdd_state2.trim(),
+        "GREEN",
+        ".tdd-state must be GREEN after Write to src file when state=RED, got: {}",
+        tdd_state2.trim()
+    );
+
+    // ── Scenario 3: phase=plan → exits 0, no .tdd-state written ─────────────────────────────
+    let dir_plan = tempfile::tempdir().unwrap();
+    let workflow_dir_plan = dir_plan.path().join(".claude/workflow");
+    std::fs::create_dir_all(&workflow_dir_plan).unwrap();
+
+    let state_plan = serde_json::json!({
+        "concern": "dev", "phase": "plan", "feature": "test",
+        "started_at": "2026-01-01T00:00:00Z",
+        "toolchain": { "test": null, "lint": null, "build": null },
+        "artifacts": { "plan": null, "solution": null, "implement": null,
+                       "campaign_path": null, "spec_path": null,
+                       "design_path": null, "tasks_path": null },
+        "completed": []
+    });
+    std::fs::write(
+        workflow_dir_plan.join("state.json"),
+        serde_json::to_string_pretty(&state_plan).unwrap(),
+    )
+    .unwrap();
+
+    let out3 = run_tdd_enforcement(dir_plan.path(), &write_test_json);
+    assert_eq!(
+        out3.status.code(),
+        Some(0),
+        "tdd-enforcement must exit 0 silently in plan phase\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out3.stdout).unwrap_or(""),
+        std::str::from_utf8(&out3.stderr).unwrap_or(""),
+    );
+
+    let tdd_state_plan = workflow_dir_plan.join(".tdd-state");
+    assert!(
+        !tdd_state_plan.exists(),
+        ".tdd-state must NOT be created in plan phase"
+    );
+
+    // ── Scenario 4: no state.json → exits 0 silently ────────────────────────────────────────
+    let dir_no_state = tempfile::tempdir().unwrap();
+
+    let out4 = run_tdd_enforcement(dir_no_state.path(), &write_test_json);
+    assert_eq!(
+        out4.status.code(),
+        Some(0),
+        "tdd-enforcement must exit 0 silently with no state.json\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out4.stdout).unwrap_or(""),
+        std::str::from_utf8(&out4.stderr).unwrap_or(""),
+    );
+
+    let tdd_state_no_state = dir_no_state
+        .path()
+        .join(".claude/workflow/.tdd-state");
+    assert!(
+        !tdd_state_no_state.exists(),
+        ".tdd-state must NOT be created when no state.json exists"
+    );
+}
