@@ -340,6 +340,7 @@ dependencies = [
  "ecc-domain",
  "serde",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]
