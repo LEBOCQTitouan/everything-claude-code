@@ -31,7 +31,7 @@ Persist a session-independent task tracker alongside the spec and design artifac
 - [ ] Write implement-done.md | pending@<ISO 8601 timestamp>
 ```
 
-4. Store `artifacts.tasks_path` in state.json: run `!bash .claude/hooks/phase-transition.sh implement implement <tasks_path>`
+4. Store `artifacts.tasks_path` in state.json: run `!ecc-workflow transition implement --artifact implement --path <tasks_path>`
 5. Commit: `docs: write tasks.md for <feature>`
 
 ## Status Trail

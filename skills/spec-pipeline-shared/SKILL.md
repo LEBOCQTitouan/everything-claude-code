@@ -19,7 +19,7 @@ Detect the project's test, lint, and build commands using auto-detection:
 Persist detected commands to state.json via `toolchain-persist.sh`:
 
 ```
-!bash .claude/hooks/toolchain-persist.sh "<test_cmd>" "<lint_cmd>" "<build_cmd>"
+!ecc-workflow toolchain-persist "<test_cmd>" "<lint_cmd>" "<build_cmd>"
 ```
 
 On re-entry, read toolchain from `state.json` instead of re-detecting.
@@ -37,7 +37,7 @@ After spec output, launch a Task with the `spec-adversary` agent (allowedTools: 
 
 - **FAIL**: Return to Grill-Me to address issues. Re-output spec, re-run adversary. Increment round.
 - **CONDITIONAL**: Add suggested ACs to spec. Re-run adversary. Increment round.
-- **PASS**: Persist spec to `docs/specs/YYYY-MM-DD-<slug>/spec.md`. Run `!bash .claude/hooks/phase-transition.sh solution plan <spec_file_path>`.
+- **PASS**: Persist spec to `docs/specs/YYYY-MM-DD-<slug>/spec.md`. Run `!ecc-workflow transition solution --artifact plan --path <spec_file_path>`.
 
 After 3 FAIL rounds, offer user override or abandon.
 

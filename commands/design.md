@@ -239,11 +239,11 @@ Track the current round number (starting at 1):
 
 - **FAIL**: Present the adversary's findings to the user. Return to **Phase 1 (Implementation Design)** to redesign. Re-run Phases 2-8 with the updated design, then re-run the adversary (Phase 9). Increment round.
 - **CONDITIONAL**: The adversary has suggested specific PCs to add or doc plan fixes. Update the solution in conversation. Re-run the adversary. Increment round.
-- **PASS**: Note "Adversarial Review: PASS" in conversation output. Then persist the design (see below). Run: `!bash .claude/hooks/phase-transition.sh implement solution <design_file_path>`. Proceed to Phase 11.
+- **PASS**: Note "Adversarial Review: PASS" in conversation output. Then persist the design (see below). Run: `!ecc-workflow transition implement --artifact solution --path <design_file_path>`. Proceed to Phase 11.
 
 After 3 FAIL rounds, ask the user:
 > "The solution has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon?"
-- If override: note "Adversarial Review: PASS (user override)" in conversation, persist the design, run `!bash .claude/hooks/phase-transition.sh implement solution <design_file_path>`, and proceed
+- If override: note "Adversarial Review: PASS (user override)" in conversation, persist the design, run `!ecc-workflow transition implement --artifact solution --path <design_file_path>`, and proceed
 - If abandon: reset state to `"plan"` phase and exit
 
 ### Persist Design to File

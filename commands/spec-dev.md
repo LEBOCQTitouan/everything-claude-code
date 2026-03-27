@@ -11,7 +11,7 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUs
 >
 > **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
 
-!`bash .claude/hooks/workflow-init.sh dev "$ARGUMENTS"`
+!`ecc-workflow init dev "$ARGUMENTS"`
 
 ## Phase 0: Project Detection
 
@@ -257,11 +257,11 @@ Track the current round number (starting at 1):
 
 - **FAIL**: Present the adversary's findings to the user. Return to **Phase 5 (Grill-Me)** to address the fundamental issues. After the user confirms updates, re-output the spec (Phase 6), then re-run the adversary (Phase 7). Increment round.
 - **CONDITIONAL**: The adversary has suggested specific ACs to add. Update the spec in conversation with the suggested ACs. Re-run the adversary. Increment round.
-- **PASS**: Note "Adversarial Review: PASS" in conversation output. Then persist the spec (see below). Run: `!bash .claude/hooks/phase-transition.sh solution plan <spec_file_path>`. Proceed to Phase 10.
+- **PASS**: Note "Adversarial Review: PASS" in conversation output. Then persist the spec (see below). Run: `!ecc-workflow transition solution --artifact plan --path <spec_file_path>`. Proceed to Phase 10.
 
 After 3 FAIL rounds, ask the user:
 > "The spec has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon this spec?"
-- If override: note "Adversarial Review: PASS (user override)" in conversation, persist the spec, run `!bash .claude/hooks/phase-transition.sh solution plan <spec_file_path>`, and proceed
+- If override: note "Adversarial Review: PASS (user override)" in conversation, persist the spec, run `!ecc-workflow transition solution --artifact plan --path <spec_file_path>`, and proceed
 - If abandon: delete workflow artifacts and exit
 
 ### Persist Spec to File

@@ -27,7 +27,7 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
    4. **Handle malformed tasks.md.** If tasks.md exists but cannot be parsed (malformed markdown), regenerate from the solution's PC table using the git-log inference above. Emit warning: "tasks.md was malformed; regenerated from solution."
    5. **TodoRead fallback.** If `artifacts.tasks_path` is null (BL-029 not active), fall back to reading TodoRead for resume state.
    6. **Campaign re-entry orientation.** If `artifacts.campaign_path` exists in state.json and the file exists, read campaign.md for orientation context: toolchain commands, grill-me decisions, and commit trail.
-7. Run: `!bash .claude/hooks/phase-transition.sh implement`
+7. Run: `!ecc-workflow transition implement`
 
 ## Phase 1: Enter Plan Mode
 
@@ -312,7 +312,7 @@ If wave-based parallel execution was used (any wave had 2+ PCs), add a `Wave` co
 After writing:
 1. Update tasks.md: set "Write implement-done.md" entry to `done@<ISO 8601 timestamp>` and mark `[x]`
 2. Commit tasks.md final state: `docs: finalize tasks.md for <feature>`
-3. Run: `!bash .claude/hooks/phase-transition.sh done implement`
+3. Run: `!ecc-workflow transition done --artifact implement`
 4. Commit: `chore: write implement-done.md`
 
 ## Phase 8: Final Verification and STOP
