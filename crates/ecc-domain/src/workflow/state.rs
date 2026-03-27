@@ -1,9 +1,53 @@
 //! WorkflowState aggregate for the ECC workflow state machine.
 
+use serde::{Deserialize, Serialize};
+
+use super::phase::Phase;
+
+/// Toolchain commands used during this workflow run.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Toolchain {
+    pub test: Option<String>,
+    pub lint: Option<String>,
+    pub build: Option<String>,
+}
+
+/// Artifact timestamps and paths accumulated during the workflow.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Artifacts {
+    pub plan: Option<String>,
+    pub solution: Option<String>,
+    pub implement: Option<String>,
+    pub campaign_path: Option<String>,
+    pub spec_path: Option<String>,
+    pub design_path: Option<String>,
+    pub tasks_path: Option<String>,
+}
+
+/// A single completed phase record.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Completion {
+    pub phase: String,
+    pub file: String,
+    pub at: String,
+}
+
+/// The root aggregate for workflow state machine data.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WorkflowState {
+    pub phase: Phase,
+    pub concern: String,
+    pub feature: String,
+    pub started_at: String,
+    pub toolchain: Toolchain,
+    pub artifacts: Artifacts,
+    pub completed: Vec<Completion>,
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::workflow::phase::Phase;
     use super::*;
+    use crate::workflow::phase::Phase;
 
     #[test]
     fn creates_workflow_state_with_all_fields() {
