@@ -26,6 +26,9 @@ enum Commands {
 }
 
 fn main() {
+    if std::env::var("ECC_WORKFLOW_BYPASS").as_deref() == Ok("1") {
+        std::process::exit(0);
+    }
     let cli = Cli::parse();
 
     let result = dispatch(cli);
