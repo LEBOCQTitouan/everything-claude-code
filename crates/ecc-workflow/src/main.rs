@@ -16,7 +16,13 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Init { concern: String, feature: String },
-    Transition { target: String },
+    Transition {
+        target: String,
+        #[arg(long)]
+        artifact: Option<String>,
+        #[arg(long)]
+        path: Option<String>,
+    },
 }
 
 fn main() {
@@ -38,17 +44,16 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::Init { concern, feature } => {
             commands::init::run(&concern, &feature, &project_dir())
         }
-        Commands::Transition { target } => {
-            match io::read_state(&project_dir()) {
-                Ok(None) => WorkflowOutput::warn(
-                    "No state.json found — workflow not initialized",
-                ),
-                Ok(Some(_state)) => WorkflowOutput::warn(format!(
-                    "transition to '{target}' not yet implemented"
-                )),
-                Err(e) => WorkflowOutput::warn(format!("Failed to read state: {e}")),
-            }
-        }
+        Commands::Transition {
+            target,
+            artifact,
+            path,
+        } => commands::transition::run(
+            &target,
+            artifact.as_deref(),
+            path.as_deref(),
+            &project_dir(),
+        ),
     }
 }
 
