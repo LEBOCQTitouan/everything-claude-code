@@ -141,4 +141,8 @@ impl FileSystem for OsFileSystem {
     fn is_executable(&self, _path: &Path) -> bool {
         false
     }
+
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), FsError> {
+        std::fs::rename(from, to).map_err(|e| FsError::io(from, e))
+    }
 }

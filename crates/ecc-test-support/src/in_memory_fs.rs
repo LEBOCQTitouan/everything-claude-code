@@ -227,6 +227,23 @@ impl FileSystem for InMemoryFileSystem {
             .get(path)
             .is_some_and(|m| m & 0o111 != 0)
     }
+
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), FsError> {
+        let content = {
+            let mut files = self.files.lock().unwrap();
+            files
+                .remove(from)
+                .ok_or_else(|| FsError::NotFound(from.to_path_buf()))?
+        };
+        self.files
+            .lock()
+            .unwrap()
+            .insert(to.to_path_buf(), content);
+        if let Some(parent) = to.parent() {
+            self.dirs.lock().unwrap().insert(parent.to_path_buf(), ());
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
