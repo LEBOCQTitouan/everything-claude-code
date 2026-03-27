@@ -4,6 +4,7 @@ pub mod init;
 pub mod memory_write;
 pub mod phase_gate;
 pub mod reset;
+pub mod scope_check;
 pub mod status;
 pub mod stop_gate;
 pub mod tdd_enforcement;

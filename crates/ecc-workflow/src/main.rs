@@ -63,6 +63,9 @@ enum Commands {
         #[arg(long)]
         force: bool,
     },
+    /// Compare git diff against expected files in the design's File Changes table.
+    /// Warns about unexpected files but always exits 0.
+    ScopeCheck,
 }
 
 fn main() {
@@ -114,6 +117,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
             commands::artifact::run(&artifact_type, &project_dir())
         }
         Commands::Reset { force } => commands::reset::run(force, &project_dir()),
+        Commands::ScopeCheck => commands::scope_check::run(&project_dir()),
     }
 }
 
