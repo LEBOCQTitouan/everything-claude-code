@@ -525,7 +525,20 @@ fn validate_statusline(root: &Path, fs: &dyn FileSystem, terminal: &dyn Terminal
         }
     };
 
-    script_exists && placeholder_ok && shebang_ok && jq_ok && settings_ok
+    let executable_ok = if script_exists {
+        let ok = fs.is_executable(&script_path);
+        if ok {
+            terminal.stdout_write("✓ Script is executable\n");
+        } else {
+            terminal.stdout_write("✗ Script is executable: missing execute permission (chmod +x)\n");
+        }
+        ok
+    } else {
+        terminal.stdout_write("✗ Script is executable: script not found\n");
+        false
+    };
+
+    script_exists && placeholder_ok && shebang_ok && jq_ok && settings_ok && executable_ok
 }
 
 fn validate_paths(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
@@ -1111,6 +1124,8 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/statusline/statusline-command.sh", valid_script())
             .with_file("/root/settings.json", valid_settings());
+        fs.set_permissions(Path::new("/root/statusline/statusline-command.sh"), 0o755)
+            .unwrap();
         let t = term();
         assert!(run_validate(
             &fs,
@@ -1159,6 +1174,8 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/root/statusline/statusline-command.sh", valid_script())
             .with_file("/root/settings.json", valid_settings());
+        fs.set_permissions(Path::new("/root/statusline/statusline-command.sh"), 0o755)
+            .unwrap();
         let t = term();
         assert!(run_validate(
             &fs,
@@ -1202,5 +1219,22 @@ mod tests {
         ));
         let stdout: Vec<_> = t.stdout_output();
         assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("jq")));
+    }
+
+    #[test]
+    fn validate_statusline_fail_not_executable() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/root/statusline/statusline-command.sh", valid_script())
+            .with_file("/root/settings.json", valid_settings());
+        // Script exists but no executable permission set
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &ValidateTarget::Statusline,
+            Path::new("/root")
+        ));
+        let stdout: Vec<_> = t.stdout_output();
+        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("executable")));
     }
 }
