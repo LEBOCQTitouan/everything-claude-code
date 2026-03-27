@@ -37,7 +37,7 @@ ecc completion <shell>    Generate shell completions
 
 ## Slash Commands
 
-Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/ecc-test-mode`): see `docs/commands-reference.md`.
+Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/commit`, `/ecc-test-mode`): see `docs/commands-reference.md`.
 
 ### Spec-Driven Pipeline (Doc-First)
 
