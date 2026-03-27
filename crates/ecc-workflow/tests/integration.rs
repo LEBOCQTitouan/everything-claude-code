@@ -489,6 +489,126 @@ fn bypass_env_var() {
     );
 }
 
+/// transition_writes_memory: after a successful transition, memory files are created as internal
+/// function calls (not subprocesses). Verifies AC-004.2 and AC-004.4.
+///
+/// Steps:
+///   1. `ecc-workflow init dev "test feature"`
+///   2. `ecc-workflow transition solution --artifact plan`
+///   3. action-log.json must exist with at least one entry
+///   4. work-items/YYYY-MM-DD-test-feature/plan.md must exist
+///   5. daily/<today>.md must exist in the project memory dir
+#[test]
+fn transition_writes_memory() {
+    let bin = binary_path();
+    assert!(
+        bin.exists(),
+        "ecc-workflow binary not found at {:?}",
+        bin
+    );
+
+    let temp_dir = tempfile::tempdir().unwrap();
+    let home_dir = tempfile::tempdir().unwrap();
+
+    // Step 1: init
+    let init_output = Command::new(&bin)
+        .args(["init", "dev", "test feature"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .env("HOME", home_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow init");
+
+    assert_eq!(
+        init_output.status.code(),
+        Some(0),
+        "init must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        init_output.status.code(),
+        std::str::from_utf8(&init_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&init_output.stderr).unwrap_or(""),
+    );
+
+    // Step 2: transition to solution with --artifact plan
+    let transition_output = Command::new(&bin)
+        .args(["transition", "solution", "--artifact", "plan"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .env("HOME", home_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow transition");
+
+    assert_eq!(
+        transition_output.status.code(),
+        Some(0),
+        "transition must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        transition_output.status.code(),
+        std::str::from_utf8(&transition_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&transition_output.stderr).unwrap_or(""),
+    );
+
+    // Step 3: action-log.json must exist with at least one entry
+    let action_log_path = temp_dir.path().join("docs/memory/action-log.json");
+    assert!(
+        action_log_path.exists(),
+        "action-log.json must exist after transition, checked at {:?}",
+        action_log_path
+    );
+
+    let action_log_content = std::fs::read_to_string(&action_log_path)
+        .expect("failed to read action-log.json");
+    let action_log: serde_json::Value = serde_json::from_str(&action_log_content)
+        .unwrap_or_else(|e| panic!("action-log.json is not valid JSON: {e}\ncontent: {action_log_content}"));
+    let entries = action_log.as_array()
+        .unwrap_or_else(|| panic!("action-log.json must be an array, got: {action_log}"));
+    assert!(
+        !entries.is_empty(),
+        "action-log.json must have at least one entry after transition"
+    );
+
+    // Step 4: work-items/<today>-test-feature/plan.md must exist
+    let work_items_dir = temp_dir.path().join("docs/memory/work-items");
+    let today = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let days = secs / 86400;
+        let z = days + 719_468;
+        let era = z / 146_097;
+        let doe = z % 146_097;
+        let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+        let y = yoe + era * 400;
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        let mp = (5 * doy + 2) / 153;
+        let d = doy - (153 * mp + 2) / 5 + 1;
+        let m = if mp < 10 { mp + 3 } else { mp - 9 };
+        let y = if m <= 2 { y + 1 } else { y };
+        format!("{y:04}-{m:02}-{d:02}")
+    };
+
+    let plan_md_path = work_items_dir.join(format!("{today}-test-feature")).join("plan.md");
+    assert!(
+        plan_md_path.exists(),
+        "work-items/{today}-test-feature/plan.md must exist after transition, checked at {:?}",
+        plan_md_path
+    );
+
+    // Step 5: daily/<today>.md must exist in the project memory dir under HOME
+    let abs_project = std::fs::canonicalize(temp_dir.path())
+        .unwrap_or_else(|_| temp_dir.path().to_path_buf());
+    let abs_str = abs_project.to_string_lossy();
+    let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
+    let daily_dir = home_dir.path()
+        .join(".claude/projects")
+        .join(&project_hash)
+        .join("memory/daily");
+    let daily_file = daily_dir.join(format!("{today}.md"));
+    assert!(
+        daily_file.exists(),
+        "daily/{today}.md must exist after transition, checked at {:?}",
+        daily_file
+    );
+}
+
 /// dual_invocation: verify both CLI args mode and stdin JSON mode produce equivalent results.
 ///
 /// Test 1 — CLI mode: `ecc-workflow init dev "test feature"` with no stdin piped.
