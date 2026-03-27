@@ -50,6 +50,19 @@ enum Commands {
     /// Reads hook protocol JSON from stdin.
     /// Always exits 0 — informational only.
     TddEnforcement,
+    /// Show current workflow phase, feature, and artifact paths.
+    Status,
+    /// Resolve and validate an artifact path (spec, design, tasks, campaign).
+    Artifact {
+        /// Artifact type: spec, design, tasks, campaign
+        artifact_type: String,
+    },
+    /// Reset workflow to idle state. Requires --force.
+    Reset {
+        /// Confirm reset (required)
+        #[arg(long)]
+        force: bool,
+    },
 }
 
 fn main() {
@@ -96,6 +109,11 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::StopGate => commands::stop_gate::run(&project_dir()),
         Commands::GrillMeGate => commands::grill_me_gate::run(&project_dir()),
         Commands::TddEnforcement => commands::tdd_enforcement::run(&project_dir()),
+        Commands::Status => commands::status::run(&project_dir()),
+        Commands::Artifact { artifact_type } => {
+            commands::artifact::run(&artifact_type, &project_dir())
+        }
+        Commands::Reset { force } => commands::reset::run(force, &project_dir()),
     }
 }
 

@@ -1,7 +1,10 @@
+pub mod artifact;
 pub mod grill_me_gate;
 pub mod init;
 pub mod memory_write;
 pub mod phase_gate;
+pub mod reset;
+pub mod status;
 pub mod stop_gate;
 pub mod tdd_enforcement;
 pub mod toolchain_persist;
