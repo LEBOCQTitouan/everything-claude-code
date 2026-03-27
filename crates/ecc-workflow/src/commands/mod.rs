@@ -1,6 +1,7 @@
 pub mod artifact;
 pub mod doc_enforcement;
 pub mod doc_level_check;
+pub mod e2e_boundary_check;
 pub mod grill_me_gate;
 pub mod init;
 pub mod memory_write;

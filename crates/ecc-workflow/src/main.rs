@@ -75,6 +75,9 @@ enum Commands {
     /// Check implement-done.md for pass condition results at "done" phase.
     /// Warns on stderr if the section is missing or failures are found, always exits 0.
     PassConditionCheck,
+    /// Check implement-done.md for an "## E2E Tests" section at "done" phase.
+    /// Warns on stderr if the section is missing, always exits 0.
+    E2eBoundaryCheck,
 }
 
 fn main() {
@@ -130,6 +133,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::DocEnforcement => commands::doc_enforcement::run(&project_dir()),
         Commands::DocLevelCheck => commands::doc_level_check::run(&project_dir()),
         Commands::PassConditionCheck => commands::pass_condition_check::run(&project_dir()),
+        Commands::E2eBoundaryCheck => commands::e2e_boundary_check::run(&project_dir()),
     }
 }
 
