@@ -2,27 +2,63 @@
 //!
 //! Orchestrates domain logic through the FileSystem port.
 
-use ecc_domain::backlog::entry::{extract_id_from_filename, parse_frontmatter, BacklogEntry};
+use ecc_domain::backlog::entry::{
+    extract_id_from_filename, parse_frontmatter, BacklogEntry, BacklogError,
+};
 use ecc_domain::backlog::index::{extract_dependency_graph, generate_index_table, generate_stats};
-use ecc_domain::backlog::similarity::{composite_score, DuplicateCandidate};
+use ecc_domain::backlog::similarity::{composite_score, DuplicateCandidate, DUPLICATE_THRESHOLD};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
+
+/// Load all valid BacklogEntry structs from BL-*.md files in a directory.
+///
+/// Skips non-BL files and files with malformed frontmatter (logs warning).
+fn load_entries(
+    fs: &dyn FileSystem,
+    backlog_dir: &Path,
+) -> Result<Vec<BacklogEntry>, BacklogError> {
+    let paths = fs
+        .read_dir(backlog_dir)
+        .map_err(|e| BacklogError::IoError(e.to_string()))?;
+
+    let mut entries = Vec::new();
+    for path in &paths {
+        let filename = match path.file_name() {
+            Some(name) => name.to_string_lossy().to_string(),
+            None => continue,
+        };
+        if extract_id_from_filename(&filename).is_none() {
+            continue;
+        }
+        let content = match fs.read_to_string(path) {
+            Ok(c) => c,
+            Err(e) => {
+                log::warn!("skipping {filename}: {e}");
+                continue;
+            }
+        };
+        match parse_frontmatter(&content) {
+            Ok(entry) => entries.push(entry),
+            Err(e) => {
+                log::warn!("skipping {filename}: {e}");
+            }
+        }
+    }
+    Ok(entries)
+}
 
 /// Compute the next sequential backlog ID from existing BL-*.md files.
 ///
 /// Returns `"BL-NNN"` where NNN is max existing ID + 1, zero-padded to 3 digits.
-pub fn next_id(fs: &dyn FileSystem, backlog_dir: &Path) -> Result<String, String> {
+pub fn next_id(fs: &dyn FileSystem, backlog_dir: &Path) -> Result<String, BacklogError> {
     if !fs.is_dir(backlog_dir) {
-        return Err(format!(
-            "backlog directory not found: {}",
-            backlog_dir.display()
-        ));
+        return Err(BacklogError::DirectoryNotFound(backlog_dir.to_path_buf()));
     }
-    let entries = fs
+    let paths = fs
         .read_dir(backlog_dir)
-        .map_err(|e| format!("cannot read backlog directory: {e}"))?;
+        .map_err(|e| BacklogError::IoError(e.to_string()))?;
 
-    let max_id = entries
+    let max_id = paths
         .iter()
         .filter_map(|p| p.file_name())
         .filter_map(|name| extract_id_from_filename(&name.to_string_lossy()))
@@ -34,61 +70,31 @@ pub fn next_id(fs: &dyn FileSystem, backlog_dir: &Path) -> Result<String, String
 
 /// Check for duplicate backlog entries by title similarity.
 ///
-/// Filters to `open` and `in-progress` entries only.
-/// Returns candidates sorted by score descending, filtered to score >= 0.6.
+/// Filters to active entries (open/in-progress) only.
+/// Returns candidates sorted by score descending, filtered to score >= DUPLICATE_THRESHOLD.
 pub fn check_duplicates(
     fs: &dyn FileSystem,
     backlog_dir: &Path,
     query: &str,
     query_tags: &[String],
-) -> Result<Vec<DuplicateCandidate>, String> {
+) -> Result<Vec<DuplicateCandidate>, BacklogError> {
     if query.is_empty() {
-        return Err("query must not be empty".to_string());
+        return Err(BacklogError::EmptyQuery);
     }
 
-    let entries = fs
-        .read_dir(backlog_dir)
-        .map_err(|e| format!("cannot read backlog directory: {e}"))?;
-
+    let entries = load_entries(fs, backlog_dir)?;
     let mut candidates = Vec::new();
 
-    for path in &entries {
-        let filename = match path.file_name() {
-            Some(name) => name.to_string_lossy().to_string(),
-            None => continue,
-        };
-        if extract_id_from_filename(&filename).is_none() {
+    for entry in &entries {
+        if !entry.status.is_active() {
             continue;
         }
-
-        let content = match fs.read_to_string(path) {
-            Ok(c) => c,
-            Err(e) => {
-                log::warn!("skipping {filename}: {e}");
-                continue;
-            }
-        };
-
-        let entry = match parse_frontmatter(&content) {
-            Ok(e) => e,
-            Err(e) => {
-                log::warn!("skipping {filename}: {e}");
-                continue;
-            }
-        };
-
-        // Filter to open/in-progress only
-        let status = entry.status.to_lowercase();
-        if status != "open" && status != "in-progress" {
-            continue;
-        }
-
         let score = composite_score(query, &entry.title, query_tags, &entry.tags);
-        if score >= 0.6 {
+        if score >= DUPLICATE_THRESHOLD {
             candidates.push(DuplicateCandidate {
-                id: entry.id,
-                title: entry.title,
-                score: (score * 100.0).round() / 100.0, // round to 2 decimal places
+                id: entry.id.clone(),
+                title: entry.title.clone(),
+                score: (score * 100.0).round() / 100.0,
             });
         }
     }
@@ -100,47 +106,17 @@ pub fn check_duplicates(
 /// Regenerate BACKLOG.md from all BL-*.md files.
 ///
 /// If `dry_run` is true, returns the generated content without writing.
-/// Uses atomic write (tempfile + rename) for safety.
+/// Uses atomic write (tempfile + rename) for safety, with cleanup on failure.
 pub fn reindex(
     fs: &dyn FileSystem,
     backlog_dir: &Path,
     dry_run: bool,
-) -> Result<Option<String>, String> {
-    let entries_paths = fs
-        .read_dir(backlog_dir)
-        .map_err(|e| format!("cannot read backlog directory: {e}"))?;
-
-    let mut entries: Vec<BacklogEntry> = Vec::new();
-
-    for path in &entries_paths {
-        let filename = match path.file_name() {
-            Some(name) => name.to_string_lossy().to_string(),
-            None => continue,
-        };
-        if extract_id_from_filename(&filename).is_none() {
-            continue;
-        }
-
-        let content = match fs.read_to_string(path) {
-            Ok(c) => c,
-            Err(e) => {
-                log::warn!("skipping {filename}: {e}");
-                continue;
-            }
-        };
-
-        match parse_frontmatter(&content) {
-            Ok(entry) => entries.push(entry),
-            Err(e) => {
-                log::warn!("skipping {filename}: {e}");
-            }
-        }
-    }
+) -> Result<Option<String>, BacklogError> {
+    let entries = load_entries(fs, backlog_dir)?;
 
     let table = generate_index_table(&entries);
     let stats = generate_stats(&entries);
 
-    // Preserve dependency graph from existing BACKLOG.md
     let backlog_path = backlog_dir.join("BACKLOG.md");
     let dep_graph = if fs.exists(&backlog_path) {
         fs.read_to_string(&backlog_path)
@@ -165,12 +141,16 @@ pub fn reindex(
         return Ok(Some(output));
     }
 
-    // Atomic write: temp file + rename
+    // Atomic write: temp file + rename, with cleanup on failure
     let tmp_path = backlog_dir.join("BACKLOG.md.tmp");
     fs.write(&tmp_path, &output)
-        .map_err(|e| format!("failed to write temp file: {e}"))?;
-    fs.rename(&tmp_path, &backlog_path)
-        .map_err(|e| format!("failed to rename temp file: {e}"))?;
+        .map_err(|e| BacklogError::IoError(format!("failed to write temp file: {e}")))?;
+    if let Err(e) = fs.rename(&tmp_path, &backlog_path) {
+        let _ = fs.remove_file(&tmp_path); // best-effort cleanup
+        return Err(BacklogError::IoError(format!(
+            "failed to rename temp file: {e}"
+        )));
+    }
 
     Ok(None)
 }
@@ -243,7 +223,7 @@ mod tests {
     fn next_id_missing_dir() {
         let fs = InMemoryFileSystem::new();
         let result = next_id(&fs, Path::new("/nonexistent"));
-        assert!(result.is_err());
+        assert!(matches!(result, Err(BacklogError::DirectoryNotFound(_))));
     }
 
     // --- check_duplicates tests ---
@@ -267,7 +247,12 @@ mod tests {
         )
         .unwrap();
         assert!(!result.is_empty(), "expected at least one candidate");
-        assert!(result[0].score >= 0.6, "score {} < 0.6", result[0].score);
+        assert!(
+            result[0].score >= DUPLICATE_THRESHOLD,
+            "score {} < {}",
+            result[0].score,
+            DUPLICATE_THRESHOLD
+        );
     }
 
     #[test]
@@ -276,13 +261,8 @@ mod tests {
             "/backlog/BL-001-test.md",
             &bl_file_with_tags(1, "Some feature title", "open", &["rust", "hooks"]),
         );
-        let without_tags = check_duplicates(
-            &fs,
-            Path::new("/backlog"),
-            "Some feature title",
-            &[],
-        )
-        .unwrap();
+        let without_tags =
+            check_duplicates(&fs, Path::new("/backlog"), "Some feature title", &[]).unwrap();
         let with_tags = check_duplicates(
             &fs,
             Path::new("/backlog"),
@@ -290,7 +270,6 @@ mod tests {
             &["rust".into(), "hooks".into()],
         )
         .unwrap();
-        // Both should find it, but with_tags should have higher score
         assert!(!without_tags.is_empty());
         assert!(!with_tags.is_empty());
         assert!(with_tags[0].score > without_tags[0].score);
@@ -323,14 +302,8 @@ mod tests {
                 "/backlog/BL-002-implemented.md",
                 &bl_file(2, "Same title here", "implemented"),
             );
-        let result = check_duplicates(
-            &fs,
-            Path::new("/backlog"),
-            "Same title here",
-            &[],
-        )
-        .unwrap();
-        // Only the open entry should be returned
+        let result =
+            check_duplicates(&fs, Path::new("/backlog"), "Same title here", &[]).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].id, "BL-001");
     }
@@ -346,13 +319,8 @@ mod tests {
                 "/backlog/BL-002-high.md",
                 &bl_file(2, "Exact match query title", "open"),
             );
-        let result = check_duplicates(
-            &fs,
-            Path::new("/backlog"),
-            "Exact match query title",
-            &[],
-        )
-        .unwrap();
+        let result =
+            check_duplicates(&fs, Path::new("/backlog"), "Exact match query title", &[]).unwrap();
         if result.len() >= 2 {
             assert!(result[0].score >= result[1].score);
         }
@@ -366,14 +334,8 @@ mod tests {
                 "/backlog/BL-002-malformed.md",
                 "not valid yaml frontmatter",
             );
-        let result = check_duplicates(
-            &fs,
-            Path::new("/backlog"),
-            "Valid entry",
-            &[],
-        )
-        .unwrap();
-        // Should not crash; valid entry should still be found
+        let result =
+            check_duplicates(&fs, Path::new("/backlog"), "Valid entry", &[]).unwrap();
         assert!(!result.is_empty());
     }
 
@@ -381,7 +343,7 @@ mod tests {
     fn check_duplicates_empty_query() {
         let fs = InMemoryFileSystem::new().with_dir("/backlog");
         let result = check_duplicates(&fs, Path::new("/backlog"), "", &[]);
-        assert!(result.is_err());
+        assert!(matches!(result, Err(BacklogError::EmptyQuery)));
     }
 
     // --- reindex tests ---
@@ -389,7 +351,8 @@ mod tests {
     #[test]
     fn reindex_full() {
         let dep_graph = "## Dependency Graph\n\n```\nBL-001 → BL-002\n```";
-        let existing_backlog = format!("# Backlog\n\n| old table |\n\n{dep_graph}\n\n## Stats\n\n- old stats\n");
+        let existing_backlog =
+            format!("# Backlog\n\n| old table |\n\n{dep_graph}\n\n## Stats\n\n- old stats\n");
 
         let fs = InMemoryFileSystem::new()
             .with_file("/backlog/BACKLOG.md", &existing_backlog)
@@ -426,8 +389,6 @@ mod tests {
         let content = result.unwrap();
         assert!(content.contains("BL-001"));
         assert!(content.contains("**Total:** 1"));
-
-        // File should NOT have been written
         assert!(!fs.exists(Path::new("/backlog/BACKLOG.md")));
     }
 
@@ -438,9 +399,7 @@ mod tests {
 
         reindex(&fs, Path::new("/backlog"), false).unwrap();
 
-        // Temp file should not exist after rename
         assert!(!fs.exists(Path::new("/backlog/BACKLOG.md.tmp")));
-        // Final file should exist
         assert!(fs.exists(Path::new("/backlog/BACKLOG.md")));
     }
 
@@ -456,7 +415,7 @@ mod tests {
             .read_to_string(Path::new("/backlog/BACKLOG.md"))
             .unwrap();
         assert!(content.contains("BL-001"));
-        assert!(!content.contains("BL-002")); // malformed was skipped
+        assert!(!content.contains("BL-002"));
         assert!(content.contains("**Total:** 1"));
     }
 
@@ -464,7 +423,6 @@ mod tests {
     fn reindex_creates_new_file() {
         let fs = InMemoryFileSystem::new()
             .with_file("/backlog/BL-001-item.md", &bl_file(1, "Item", "open"));
-        // No existing BACKLOG.md
 
         reindex(&fs, Path::new("/backlog"), false).unwrap();
 
@@ -473,6 +431,6 @@ mod tests {
             .unwrap();
         assert!(content.contains("# Backlog Index"));
         assert!(content.contains("BL-001"));
-        assert!(!content.contains("Dependency Graph")); // no graph to preserve
+        assert!(!content.contains("Dependency Graph"));
     }
 }
