@@ -69,7 +69,8 @@ pub enum StatuslineField {
     Duration,
     LinesChanged,
     GitBranch,
-    RateLimit,
+    RateLimitFiveHour,
+    RateLimitSevenDay,
     TokenCounts,
     EccVersion,
     Worktree,
@@ -102,12 +103,13 @@ impl Default for StatuslineConfig {
             field_order: vec![
                 StatuslineField::Model,
                 StatuslineField::ContextBar,
-                StatuslineField::Cost,
-                StatuslineField::Duration,
-                StatuslineField::LinesChanged,
-                StatuslineField::GitBranch,
-                StatuslineField::RateLimit,
+                StatuslineField::RateLimitFiveHour,
+                StatuslineField::RateLimitSevenDay,
                 StatuslineField::TokenCounts,
+                StatuslineField::LinesChanged,
+                StatuslineField::Duration,
+                StatuslineField::Cost,
+                StatuslineField::GitBranch,
                 StatuslineField::EccVersion,
             ],
         }
@@ -235,7 +237,7 @@ mod tests {
 
     #[test]
     fn statusline_field_variants() {
-        // Verify all 11 variants exist by constructing each one
+        // Verify all 12 variants exist by constructing each one
         let variants = [
             StatuslineField::Model,
             StatuslineField::ContextBar,
@@ -243,13 +245,14 @@ mod tests {
             StatuslineField::Duration,
             StatuslineField::LinesChanged,
             StatuslineField::GitBranch,
-            StatuslineField::RateLimit,
+            StatuslineField::RateLimitFiveHour,
+            StatuslineField::RateLimitSevenDay,
             StatuslineField::TokenCounts,
             StatuslineField::EccVersion,
             StatuslineField::Worktree,
             StatuslineField::VimMode,
         ];
-        assert_eq!(variants.len(), 11);
+        assert_eq!(variants.len(), 12);
     }
 
     #[test]
