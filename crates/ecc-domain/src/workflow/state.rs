@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::error::WorkflowError;
 use super::phase::Phase;
 
 /// Toolchain commands used during this workflow run.
@@ -42,6 +43,14 @@ pub struct WorkflowState {
     pub toolchain: Toolchain,
     pub artifacts: Artifacts,
     pub completed: Vec<Completion>,
+}
+
+impl WorkflowState {
+    /// Deserialize a `WorkflowState` from a JSON string, mapping parse errors to
+    /// [`WorkflowError::InvalidState`] with a descriptive message.
+    pub fn from_json(json: &str) -> Result<Self, WorkflowError> {
+        serde_json::from_str(json).map_err(|e| WorkflowError::InvalidState(e.to_string()))
+    }
 }
 
 #[cfg(test)]
