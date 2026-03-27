@@ -6,6 +6,7 @@
 
 pub mod act_ci;
 pub mod audit;
+pub mod backlog;
 pub mod claw;
 pub mod config;
 pub mod detect;
