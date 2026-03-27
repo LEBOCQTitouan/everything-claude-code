@@ -37,6 +37,8 @@ enum Command {
     Claw(commands::claw::ClawArgs),
     /// Toggle ECC config on/off
     Dev(commands::dev::DevArgs),
+    /// Deterministic backlog management
+    Backlog(commands::backlog::BacklogArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -59,5 +61,6 @@ fn main() -> anyhow::Result<()> {
         Command::Validate(args) => commands::validate::run(args),
         Command::Claw(args) => commands::claw::run(args),
         Command::Dev(args) => commands::dev::run(args),
+        Command::Backlog(args) => commands::backlog::run(args),
     }
 }
