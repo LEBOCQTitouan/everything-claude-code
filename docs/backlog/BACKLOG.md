@@ -82,6 +82,7 @@
 | BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | open | 2026-03-27 |
 | BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | open | 2026-03-27 |
 | BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | open | 2026-03-27 |
+| BL-082 | Add worktree display segment to statusline | — | LOW | direct edit | open | 2026-03-27 |
 
 ## Dependency Graph
 
@@ -122,8 +123,8 @@ BL-081 → BL-078 (web audit benefits from context pre-hydration for inventory p
 
 ## Stats
 
-- **Total:** 77
-- **Open:** 33
+- **Total:** 78
+- **Open:** 34
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
