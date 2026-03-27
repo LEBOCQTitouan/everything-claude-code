@@ -327,6 +327,10 @@ Verify stop hook requirements are met:
 6. **doc-level-check**: review any warnings about doc size limits (CLAUDE.md < 200 lines, README < 300 lines, ARCHITECTURE.md code blocks < 20 lines). Address if practical.
 7. **supplemental-docs-check**: `## Supplemental Docs` section is present in implement-done.md ✅
 
+### Full Artifact Display
+
+Read the full artifact from `artifacts.tasks_path` in state.json using the Read tool. Display the complete file content inline in conversation as the tasks document body — no truncation, no summary. If the path is null or the file does not exist, emit a warning ("Tasks artifact not found at the expected path; skipping inline display") and skip to the summary tables.
+
 Display a comprehensive Phase Summary using these tables:
 
 ### Tasks Executed
@@ -357,6 +361,13 @@ Display a comprehensive Phase Summary using these tables:
 ### Phase Summary Persistence
 
 Append a `## Phase Summary` section containing all 4 tables above to the tasks.md file. If `## Phase Summary` already exists in the tasks.md file, overwrite it (idempotent).
+
+### Artifact File Path
+
+Display the persisted file paths for future access:
+
+> **Tasks persisted at:** `<tasks_path from state.json>`
+> **Implement-done at:** `.claude/workflow/implement-done.md`
 
 Then STOP. The workflow is complete.
 
