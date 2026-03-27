@@ -260,6 +260,10 @@ After adversarial PASS (or user override), write the design to a versioned file:
 
 ## Phase 11: Present and STOP
 
+### Full Artifact Display
+
+Read the full artifact from `artifacts.design_path` in state.json using the Read tool. Display the complete file content inline in conversation as the design document body — no truncation, no summary. If the path is null or the file does not exist, emit a warning ("Design artifact not found at the expected path; skipping inline display") and skip to the summary tables.
+
 Display a comprehensive Phase Summary using these tables:
 
 ### Design Reviews
@@ -293,6 +297,12 @@ Display a comprehensive Phase Summary using these tables:
 Append a `## Phase Summary` section containing all 4 tables above to the persisted design file (`docs/specs/YYYY-MM-DD-<slug>/design.md`). If `## Phase Summary` already exists in the design file, overwrite it (idempotent).
 
 > **Note:** If continuing in a new session, copy the spec and solution recaps above or re-run the commands.
+
+### Artifact File Path
+
+Display the persisted file path for future access:
+
+> **Design persisted at:** `docs/specs/YYYY-MM-DD-<slug>/design.md`
 
 Then STOP. Say:
 
