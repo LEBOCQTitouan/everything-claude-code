@@ -412,3 +412,146 @@ fn transition_illegal_exits_nonzero() {
         "expected non-empty message for illegal transition block"
     );
 }
+
+/// dual_invocation: verify both CLI args mode and stdin JSON mode produce equivalent results.
+///
+/// Test 1 — CLI mode: `ecc-workflow init dev "test feature"` with no stdin piped.
+/// Test 2 — Stdin JSON mode: pipe JSON context on stdin while running `ecc-workflow init dev "test feature"`.
+///
+/// Both modes must exit 0 and produce structured JSON with status "pass".
+#[test]
+fn dual_invocation() {
+    let bin = binary_path();
+    assert!(
+        bin.exists(),
+        "ecc-workflow binary not found at {:?}",
+        bin
+    );
+
+    // --- Test 1: CLI mode (no stdin) ---
+    let temp_dir_cli = tempfile::tempdir().unwrap();
+
+    let cli_output = Command::new(&bin)
+        .args(["init", "dev", "test feature"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir_cli.path())
+        // Explicitly set stdin to null/empty to ensure no piped data.
+        .stdin(std::process::Stdio::null())
+        .output()
+        .expect("failed to execute ecc-workflow init (CLI mode)");
+
+    assert_eq!(
+        cli_output.status.code(),
+        Some(0),
+        "CLI mode must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        cli_output.status.code(),
+        std::str::from_utf8(&cli_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&cli_output.stderr).unwrap_or(""),
+    );
+
+    assert_structured_json_output(&cli_output);
+
+    let cli_stdout = std::str::from_utf8(&cli_output.stdout).unwrap_or("").trim().to_string();
+    let cli_value: serde_json::Value = serde_json::from_str(&cli_stdout)
+        .unwrap_or_else(|e| panic!("CLI mode stdout is not valid JSON: {e}\nstdout: {cli_stdout}"));
+
+    assert_eq!(
+        cli_value.get("status").and_then(|v| v.as_str()),
+        Some("pass"),
+        "CLI mode expected status 'pass', got: {:?}",
+        cli_value.get("status")
+    );
+
+    // --- Test 2: Stdin JSON mode ---
+    // Pipe a hooks.json-style JSON context on stdin. The binary should read and
+    // process the stdin context without crashing, and still complete the init command
+    // using the CLI args.
+    let temp_dir_stdin = tempfile::tempdir().unwrap();
+
+    let stdin_json = serde_json::json!({
+        "tool_name": "Bash",
+        "tool_input": {
+            "command": "ecc-workflow init dev \"test feature\""
+        }
+    })
+    .to_string();
+
+    let stdin_output = Command::new(&bin)
+        .args(["init", "dev", "test feature"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir_stdin.path())
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .and_then(|mut child| {
+            use std::io::Write;
+            if let Some(mut stdin) = child.stdin.take() {
+                stdin.write_all(stdin_json.as_bytes()).ok();
+                // Drop stdin to signal EOF
+            }
+            child.wait_with_output()
+        })
+        .expect("failed to execute ecc-workflow init (stdin JSON mode)");
+
+    assert_eq!(
+        stdin_output.status.code(),
+        Some(0),
+        "stdin JSON mode must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        stdin_output.status.code(),
+        std::str::from_utf8(&stdin_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&stdin_output.stderr).unwrap_or(""),
+    );
+
+    assert_structured_json_output(&stdin_output);
+
+    let stdin_stdout = std::str::from_utf8(&stdin_output.stdout).unwrap_or("").trim().to_string();
+    let stdin_value: serde_json::Value = serde_json::from_str(&stdin_stdout)
+        .unwrap_or_else(|e| panic!("Stdin JSON mode stdout is not valid JSON: {e}\nstdout: {stdin_stdout}"));
+
+    assert_eq!(
+        stdin_value.get("status").and_then(|v| v.as_str()),
+        Some("pass"),
+        "Stdin JSON mode expected status 'pass', got: {:?}",
+        stdin_value.get("status")
+    );
+
+    // Both modes must produce the same status
+    assert_eq!(
+        cli_value.get("status"),
+        stdin_value.get("status"),
+        "CLI and stdin JSON modes must produce equivalent status"
+    );
+
+    // Both modes must create state.json with identical phase
+    let cli_state_path = temp_dir_cli.path().join(".claude/workflow/state.json");
+    let stdin_state_path = temp_dir_stdin.path().join(".claude/workflow/state.json");
+
+    let cli_state: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(&cli_state_path)
+            .unwrap_or_else(|_| panic!("CLI mode state.json not found at {:?}", cli_state_path)),
+    )
+    .expect("CLI mode state.json is not valid JSON");
+
+    let stdin_state: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(&stdin_state_path)
+            .unwrap_or_else(|_| panic!("Stdin JSON mode state.json not found at {:?}", stdin_state_path)),
+    )
+    .expect("Stdin JSON mode state.json is not valid JSON");
+
+    assert_eq!(
+        cli_state.get("phase"),
+        stdin_state.get("phase"),
+        "Both modes must produce the same phase in state.json"
+    );
+
+    assert_eq!(
+        cli_state.get("concern"),
+        stdin_state.get("concern"),
+        "Both modes must produce the same concern in state.json"
+    );
+
+    assert_eq!(
+        cli_state.get("feature"),
+        stdin_state.get("feature"),
+        "Both modes must produce the same feature in state.json"
+    );
+}
