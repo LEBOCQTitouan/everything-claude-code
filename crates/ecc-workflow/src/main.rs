@@ -32,7 +32,18 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
             commands::init::run(&concern, &feature)
         }
         Commands::Transition { target } => {
-            WorkflowOutput::warn(format!("transition to '{target}' not yet implemented"))
+            let project_dir = std::env::var("CLAUDE_PROJECT_DIR")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|_| std::path::PathBuf::from("."));
+            match io::read_state(&project_dir) {
+                Ok(None) => WorkflowOutput::warn(
+                    "No state.json found — workflow not initialized",
+                ),
+                Ok(Some(_state)) => WorkflowOutput::warn(format!(
+                    "transition to '{target}' not yet implemented"
+                )),
+                Err(e) => WorkflowOutput::warn(format!("Failed to read state: {e}")),
+            }
         }
     }
 }
