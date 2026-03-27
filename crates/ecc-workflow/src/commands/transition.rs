@@ -42,13 +42,13 @@ pub fn run(
     // Update phase
     state.phase = to;
 
-    // Stamp artifact timestamp
+    // Stamp artifact timestamp and handle side-effects of the named artifact.
     if let Some(artifact_name) = artifact {
         let now = utc_now_iso8601();
         match artifact_name {
-            "plan" => state.artifacts.plan = Some(now.clone()),
-            "solution" => state.artifacts.solution = Some(now.clone()),
-            "implement" => state.artifacts.implement = Some(now.clone()),
+            "plan" => state.artifacts.plan = Some(now),
+            "solution" => state.artifacts.solution = Some(now),
+            "implement" => state.artifacts.implement = Some(now),
             other => {
                 return WorkflowOutput::block(format!(
                     "Unknown artifact '{other}' — expected plan, solution, or implement"
@@ -56,7 +56,7 @@ pub fn run(
             }
         }
 
-        // Store optional path into the corresponding path field
+        // Store optional path into the corresponding path field.
         if let Some(p) = path {
             match artifact_name {
                 "plan" => state.artifacts.spec_path = Some(p.to_owned()),
@@ -66,14 +66,13 @@ pub fn run(
             }
         }
 
-        // On done transition, append to completed array
+        // On done transition, append a completion record to the completed array.
         if to == Phase::Done {
-            let completion = Completion {
+            state.completed.push(Completion {
                 phase: artifact_name.to_owned(),
                 file: "implement-done.md".to_owned(),
                 at: utc_now_iso8601(),
-            };
-            state.completed.push(completion);
+            });
         }
     }
 
