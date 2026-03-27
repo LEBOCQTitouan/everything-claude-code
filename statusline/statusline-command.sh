@@ -177,11 +177,13 @@ fi
 # Segments in priority order (highest = kept longest, lowest = first dropped)
 # Model and context bar are always included if they fit
 build_output() {
+  # Priority order: model > context > rate limits > branch > tokens > lines > duration > cost > version
+  # Rate limits are high priority since they show quota pressure
   local segments=()
   segments+=("$SEG_MODEL")
   segments+=("$SEG_CTX")
-  [ -n "$SEG_BRANCH" ]   && segments+=("$SEG_BRANCH")
   [ -n "$SEG_RL" ]        && segments+=("$SEG_RL")
+  [ -n "$SEG_BRANCH" ]   && segments+=("$SEG_BRANCH")
   segments+=("$SEG_TOKENS")
   segments+=("$SEG_LINES")
   segments+=("$SEG_DURATION")
@@ -218,9 +220,18 @@ join_segments() {
   printf '%s' "$result"
 }
 
-# Try full-width first, then narrow rate limits if too wide
+# Try full-width first. If RL bars don't fit, try narrow RL (text-only).
+# Then try narrow context bar. Each retry rebuilds from scratch.
 OUTPUT=$(build_output)
 STRIPPED=$(strip_ansi "$OUTPUT")
+
+# Check if RL was included in output; if not and we have RL, try narrow version
+if [ -n "$SEG_RL" ] && ! echo "$STRIPPED" | grep -q '5h:\|7d:'; then
+  SEG_RL="$SEG_RL_NARROW"
+  OUTPUT=$(build_output)
+  STRIPPED=$(strip_ansi "$OUTPUT")
+fi
+
 if [ "${#STRIPPED}" -gt "$TERM_WIDTH" ] 2>/dev/null && [ -n "$SEG_RL_NARROW" ]; then
   SEG_RL="$SEG_RL_NARROW"
   OUTPUT=$(build_output)
