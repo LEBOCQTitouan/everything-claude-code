@@ -76,6 +76,7 @@
 | BL-073 | Deterministic diagram trigger heuristics — auto-detect diagram needs | — | LOW | /spec dev | open | 2026-03-26 |
 | BL-074 | Deterministic doc metrics — staleness, coverage, severity counting | — | LOW | /spec dev | open | 2026-03-26 |
 | BL-075 | Deterministic task synchronization — single source of truth for tasks | — | HIGH | /spec dev | open | 2026-03-26 |
+| BL-076 | Statusline Unicode byte-counting bug hides rate limit segments | — | LOW | /spec-fix | open | 2026-03-27 |
 
 ## Dependency Graph
 
@@ -114,8 +115,8 @@ BL-075 → BL-041 (task sync complements task list ID persistence)
 
 ## Stats
 
-- **Total:** 71
-- **Open:** 27
+- **Total:** 72
+- **Open:** 28
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
