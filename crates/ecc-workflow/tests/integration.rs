@@ -338,3 +338,77 @@ fn transition_updates_state() {
         "artifacts.plan must be ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ), got: '{plan_str}'"
     );
 }
+
+#[test]
+fn transition_illegal_exits_nonzero() {
+    let bin = binary_path();
+    assert!(
+        bin.exists(),
+        "ecc-workflow binary not found at {:?}",
+        bin
+    );
+
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Step 1: init to create state.json with phase=plan
+    let init_output = Command::new(&bin)
+        .args(["init", "dev", "test feature"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow init");
+
+    assert_eq!(
+        init_output.status.code(),
+        Some(0),
+        "init must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        init_output.status.code(),
+        std::str::from_utf8(&init_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&init_output.stderr).unwrap_or(""),
+    );
+
+    // Step 2: attempt illegal transition plan->done (plan phase only allows solution)
+    let transition_output = Command::new(&bin)
+        .args(["transition", "done"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow transition done");
+
+    // Exit code must be non-zero (expected: 2 for block)
+    let code = transition_output.status.code();
+    assert!(
+        code != Some(0),
+        "expected non-zero exit for illegal transition plan->done, got exit 0"
+    );
+
+    // stderr must contain JSON with status "block"
+    let stderr = std::str::from_utf8(&transition_output.stderr).unwrap_or("");
+    assert!(
+        !stderr.trim().is_empty(),
+        "expected non-empty stderr for illegal transition"
+    );
+
+    let value: serde_json::Value = serde_json::from_str(stderr.trim())
+        .unwrap_or_else(|e| panic!("stderr is not valid JSON: {e}\nstderr was: {stderr}"));
+
+    let status = value
+        .get("status")
+        .unwrap_or_else(|| panic!("JSON missing \'status\' field: {value}"))
+        .as_str()
+        .unwrap_or_else(|| panic!("\'status\' is not a string: {value}"));
+
+    assert_eq!(
+        status, "block",
+        "expected status \'block\' for illegal transition, got \'{status}\'"
+    );
+
+    let message = value
+        .get("message")
+        .unwrap_or_else(|| panic!("JSON missing \'message\' field: {value}"))
+        .as_str()
+        .unwrap_or_else(|| panic!("\'message\' is not a string: {value}"));
+
+    assert!(
+        !message.is_empty(),
+        "expected non-empty message for illegal transition block"
+    );
+}
