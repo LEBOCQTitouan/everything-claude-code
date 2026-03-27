@@ -66,6 +66,9 @@ enum Commands {
     /// Compare git diff against expected files in the design's File Changes table.
     /// Warns about unexpected files but always exits 0.
     ScopeCheck,
+    /// Check implement-done.md for required documentation sections at "done" phase.
+    /// Warns on stderr if sections are missing, always exits 0.
+    DocEnforcement,
 }
 
 fn main() {
@@ -118,6 +121,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         }
         Commands::Reset { force } => commands::reset::run(force, &project_dir()),
         Commands::ScopeCheck => commands::scope_check::run(&project_dir()),
+        Commands::DocEnforcement => commands::doc_enforcement::run(&project_dir()),
     }
 }
 

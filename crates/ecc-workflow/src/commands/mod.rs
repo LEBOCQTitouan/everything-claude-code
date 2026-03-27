@@ -1,4 +1,5 @@
 pub mod artifact;
+pub mod doc_enforcement;
 pub mod grill_me_gate;
 pub mod init;
 pub mod memory_write;
