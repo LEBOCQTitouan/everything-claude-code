@@ -62,7 +62,7 @@
 | BL-059 | Auto-commit backlog edits at end of /backlog command | — | LOW | /spec-dev | open | 2026-03-22 |
 | BL-060 | Simplify context management — remove graceful exit, keep warnings only | — | HIGH | /spec-refactor | implemented | 2026-03-23 |
 | BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | implemented | 2026-03-23 |
-| BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | open | 2026-03-26 |
+| BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | implemented | 2026-03-26 |
 | BL-063 | Create /commit slash command | — | MEDIUM | /spec-dev | open | 2026-03-26 |
 | BL-064 | Full app cartography — user journeys, data flows, element registry | — | EPIC | /spec dev | open | 2026-03-26 |
 | BL-065 | Concurrent session safety — worktree isolation, serialized merge, audit fixes | — | EPIC | /spec dev | open | 2026-03-26 |

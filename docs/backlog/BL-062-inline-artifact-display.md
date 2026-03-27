@@ -1,7 +1,7 @@
 ---
 id: BL-062
 title: Display full spec/design/implement artifacts inline in terminal
-status: open
+status: implemented
 created: 2026-03-26
 promoted_to: ""
 tags: [spec, design, implement, output, inline, terminal, ux]
