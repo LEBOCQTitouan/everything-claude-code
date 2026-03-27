@@ -69,6 +69,9 @@ enum Commands {
     /// Check implement-done.md for required documentation sections at "done" phase.
     /// Warns on stderr if sections are missing, always exits 0.
     DocEnforcement,
+    /// Warn when CLAUDE.md, README.md, or ARCHITECTURE.md exceed recommended size limits.
+    /// Only runs at "done" phase. Always exits 0 — informational only.
+    DocLevelCheck,
 }
 
 fn main() {
@@ -122,6 +125,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::Reset { force } => commands::reset::run(force, &project_dir()),
         Commands::ScopeCheck => commands::scope_check::run(&project_dir()),
         Commands::DocEnforcement => commands::doc_enforcement::run(&project_dir()),
+        Commands::DocLevelCheck => commands::doc_level_check::run(&project_dir()),
     }
 }
 
