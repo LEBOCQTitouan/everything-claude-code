@@ -23,6 +23,11 @@ enum Commands {
         #[arg(long)]
         path: Option<String>,
     },
+    ToolchainPersist {
+        test_cmd: String,
+        lint_cmd: String,
+        build_cmd: String,
+    },
 }
 
 fn main() {
@@ -57,6 +62,11 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
             path.as_deref(),
             &project_dir(),
         ),
+        Commands::ToolchainPersist {
+            test_cmd,
+            lint_cmd,
+            build_cmd,
+        } => commands::toolchain_persist::run(&test_cmd, &lint_cmd, &build_cmd, &project_dir()),
     }
 }
 
