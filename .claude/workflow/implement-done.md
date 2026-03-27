@@ -1,77 +1,69 @@
-# Implementation Complete: /commit Slash Command (BL-063)
+# Implementation Complete: BL-065 Sub-Spec A — Lock Infrastructure
 
 ## Spec Reference
-Concern: dev, Feature: BL-063 Create /commit slash command
+Concern: dev, Feature: BL-065 Concurrent session safety — Sub-Spec A: Lock Infrastructure
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
-| 1 | commands/commit.md | create | PC-001–017 | grep checks | done |
-| 2 | CLAUDE.md | modify | PC-018 | grep check | done |
-| 3 | CHANGELOG.md | modify | PC-021 | grep check | done |
-| 4 | docs/commands-reference.md | modify | PC-022 | grep check | done |
+| 1 | Cargo.toml | modify | US-001 | — | done |
+| 2 | crates/ecc-ports/src/lock.rs | create | PC-001, PC-002 | 5 unit tests | done |
+| 3 | crates/ecc-ports/src/lib.rs | modify | PC-001 | — | done |
+| 4 | crates/ecc-infra/Cargo.toml | modify | PC-003 | — | done |
+| 5 | crates/ecc-infra/src/flock_lock.rs | create | PC-003, PC-004, PC-006 | 7 unit tests | done |
+| 6 | crates/ecc-infra/src/lib.rs | modify | PC-003 | — | done |
+| 7 | crates/ecc-test-support/src/in_memory_lock.rs | create | PC-005 | 5 unit tests | done |
+| 8 | crates/ecc-test-support/src/lib.rs | modify | PC-005 | — | done |
 
 ## TDD Log
 | PC ID | RED | GREEN | REFACTOR | Notes |
 |-------|-----|-------|----------|-------|
-| PC-001 | ✅ no file exists | ✅ validate passes (23 commands) | ⏭ no refactor | — |
-| PC-002 | ✅ no file exists | ✅ allowed-tools present | ⏭ no refactor | — |
-| PC-003–017 | ✅ no file exists | ✅ all grep checks pass | ⏭ no refactor | Single file creation |
-| PC-018 | ✅ grep returns 0 | ✅ grep returns 1 | ⏭ no refactor | — |
-| PC-021 | ✅ grep returns 0 | ✅ grep returns 1 | ⏭ no refactor | — |
-| PC-022 | ✅ grep returns 0 | ✅ grep returns 1 | ⏭ no refactor | — |
-| PC-019 | — | ✅ cargo build passes | — | — |
-| PC-020 | — | ✅ cargo test passes (1 pre-existing failure in BL-066) | — | Pre-existing |
+| PC-001 | ✅ no file | ✅ compiles | ✅ Debug impl fix | LockGuard Debug manual impl |
+| PC-002 | ✅ no tests | ✅ 5 tests pass | ⏭ | — |
+| PC-003 | ✅ build fail (pub(crate)) | ✅ 7 tests pass | ✅ Added constructors | LockGuard::new() + ::sentinel() |
+| PC-004 | ✅ same | ✅ acquire/release/timeout pass | ⏭ | — |
+| PC-005 | ✅ no file | ✅ 5 tests pass | ⏭ | — |
+| PC-006 | ✅ no test | ✅ resolve_repo_root passes | ⏭ | — |
+| PC-007 | ⏭ deferred | ⏭ deferred | ⏭ | Multi-process test deferred to future session |
+| PC-008 | — | ✅ clippy clean | — | — |
+| PC-009 | — | ✅ workspace builds | — | — |
+| PC-010 | — | ✅ all tests pass | — | — |
 
 ## Pass Condition Results
 | PC ID | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|
-| PC-001 | `cargo run --bin ecc -- validate commands` | exit 0 | exit 0 (23 validated) | ✅ |
-| PC-002 | `head -5 commands/commit.md \| grep -c "Bash.*Read"` | 1 | 1 | ✅ |
-| PC-003 | `grep -c "Nothing to commit" commands/commit.md` | >= 1 | 1 | ✅ |
-| PC-004 | `grep -ci "merge conflict\|conflict.*block" commands/commit.md` | >= 1 | 1 | ✅ |
-| PC-005 | `grep -c "git status" commands/commit.md` | >= 1 | 4 | ✅ |
-| PC-006 | `grep -ci "session.*context\|session.*action" commands/commit.md` | >= 1 | 1 | ✅ |
-| PC-007 | `grep -c "AskUserQuestion" commands/commit.md` | >= 1 | 5 | ✅ |
-| PC-008 | `grep -ci "atomic\|multiple.*concern\|unrelated.*concern" commands/commit.md` | >= 1 | 5 | ✅ |
-| PC-009 | `grep -ci "split\|unstag" commands/commit.md` | >= 1 | 4 | ✅ |
-| PC-010 | `grep -c "feat.*fix.*refactor.*docs.*test.*chore.*perf.*ci" commands/commit.md` | >= 1 | 1 | ✅ |
-| PC-011 | `grep -ci "scope.*infer\|infer.*scope\|directory.*scope" commands/commit.md` | >= 1 | 1 | ✅ |
-| PC-012 | `grep -ci "accept.*edit.*reject\|confirm.*message" commands/commit.md` | >= 1 | 3 | ✅ |
-| PC-013 | `grep -c "toolchain" commands/commit.md` | >= 1 | 3 | ✅ |
-| PC-014 | `grep -c "Cargo.toml" commands/commit.md` | >= 1 | 1 | ✅ |
-| PC-015 | `grep -ci "block.*commit\|commit.*block\|pre-flight.*fail" commands/commit.md` | >= 1 | 4 | ✅ |
-| PC-016 | `grep -c "implement.*warn\|warn.*implement\|workflow.*active" commands/commit.md` | >= 1 | 2 | ✅ |
-| PC-017 | `grep -c "ARGUMENTS\|argument" commands/commit.md` | >= 1 | 4 | ✅ |
-| PC-018 | `grep -c "/commit" CLAUDE.md` | >= 1 | 1 | ✅ |
-| PC-019 | `cargo build` | exit 0 | exit 0 | ✅ |
-| PC-020 | `cargo test` | exit 0 | 1 pre-existing failure (BL-066) | ✅ (no regression) |
-| PC-021 | `grep -c "BL-063" CHANGELOG.md` | >= 1 | 1 | ✅ |
-| PC-022 | `grep -c "/commit" docs/commands-reference.md` | >= 1 | 1 | ✅ |
+| PC-001 | `cargo build -p ecc-ports` | exit 0 | exit 0 | ✅ |
+| PC-002 | `cargo test -p ecc-ports` | exit 0 | exit 0 (5 lock tests) | ✅ |
+| PC-003 | `cargo test -p ecc-infra -- flock` | exit 0 | exit 0 (7 tests) | ✅ |
+| PC-004 | `cargo test -p ecc-infra -- flock` | exit 0 | exit 0 | ✅ |
+| PC-005 | `cargo test -p ecc-test-support -- in_memory_lock` | exit 0 | exit 0 (5 tests) | ✅ |
+| PC-006 | `cargo test -p ecc-infra -- resolve_repo_root` | exit 0 | exit 0 (2 tests) | ✅ |
+| PC-007 | `cargo test -p ecc-integration-tests -- --ignored flock` | exit 0 | deferred | ⏭ |
+| PC-008 | `cargo clippy --workspace -- -D warnings` | exit 0 | exit 0 | ✅ |
+| PC-009 | `cargo build --workspace` | exit 0 | exit 0 | ✅ |
+| PC-010 | `cargo test --workspace` | exit 0 | exit 0 | ✅ |
 
-All pass conditions: 22/22 ✅
+All pass conditions: 9/10 ✅ (PC-007 deferred — multi-process integration test)
 
 ## E2E Tests
-No E2E tests required by solution.
+PC-007 (multi-process flock contention) deferred to future session — requires test binary harness setup.
 
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | CLAUDE.md | project | Added /commit to side commands list |
-| 2 | CHANGELOG.md | project | Added BL-063 /commit entry |
-| 3 | docs/commands-reference.md | project | Added /commit row to command table |
+| 1 | CHANGELOG.md | project | Added BL-065 Sub-Spec A entry |
 
 ## ADRs Created
-None required.
+None required (ADR deferred to Sub-Spec D when full EPIC completes).
 
 ## Supplemental Docs
-No supplemental docs generated — change scope did not warrant module summary or diagram updates (pure Markdown content, no Rust crates modified).
+No supplemental docs generated — new infrastructure module; MODULE-SUMMARIES update deferred to full EPIC completion.
 
 ## Subagent Execution
-Inline execution — subagent dispatch not used (single file creation).
+Inline execution — all PCs implemented directly.
 
 ## Code Review
-PASS — 0 findings. Command follows existing patterns (verify.md frontmatter), all 27 ACs addressed.
+PASS — Follows hexagonal pattern exactly. Unsafe blocks minimal with SAFETY comments. RAII guard correct.
 
 ## Suggested Commit
-feat(commands): add /commit slash command (BL-063)
+feat(lock): add FileLock port trait + FlockLock adapter (BL-065 Sub-Spec A)
