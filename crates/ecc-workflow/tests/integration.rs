@@ -631,3 +631,86 @@ fn dual_invocation() {
         "Both modes must produce the same feature in state.json"
     );
 }
+
+/// toolchain_persist: verify that `ecc-workflow toolchain-persist` writes toolchain fields to state.json.
+#[test]
+fn toolchain_persist() {
+    let bin = binary_path();
+    assert!(
+        bin.exists(),
+        "ecc-workflow binary not found at {:?}",
+        bin
+    );
+
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    // Step 1: init to create state.json
+    let init_output = Command::new(&bin)
+        .args(["init", "dev", "test feature"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow init");
+
+    assert_eq!(
+        init_output.status.code(),
+        Some(0),
+        "init must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        init_output.status.code(),
+        std::str::from_utf8(&init_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&init_output.stderr).unwrap_or(""),
+    );
+
+    // Step 2: run toolchain-persist with the three commands
+    let persist_output = Command::new(&bin)
+        .args([
+            "toolchain-persist",
+            "cargo test",
+            "cargo clippy -- -D warnings",
+            "cargo build",
+        ])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow toolchain-persist");
+
+    assert_eq!(
+        persist_output.status.code(),
+        Some(0),
+        "toolchain-persist must exit 0, got: {:?}\nstdout: {}\nstderr: {}",
+        persist_output.status.code(),
+        std::str::from_utf8(&persist_output.stdout).unwrap_or(""),
+        std::str::from_utf8(&persist_output.stderr).unwrap_or(""),
+    );
+
+    // Step 3: read state.json and verify toolchain fields
+    let state_path = temp_dir.path().join(".claude/workflow/state.json");
+    let content = std::fs::read_to_string(&state_path)
+        .expect("failed to read state.json after toolchain-persist");
+
+    let value: serde_json::Value = serde_json::from_str(&content)
+        .unwrap_or_else(|e| panic!("state.json is not valid JSON: {e}\ncontent: {content}"));
+
+    let toolchain = value
+        .get("toolchain")
+        .unwrap_or_else(|| panic!("missing 'toolchain' field in state.json"));
+
+    assert_eq!(
+        toolchain.get("test").and_then(|v| v.as_str()),
+        Some("cargo test"),
+        "expected toolchain.test == 'cargo test', got: {:?}",
+        toolchain.get("test")
+    );
+
+    assert_eq!(
+        toolchain.get("lint").and_then(|v| v.as_str()),
+        Some("cargo clippy -- -D warnings"),
+        "expected toolchain.lint == 'cargo clippy -- -D warnings', got: {:?}",
+        toolchain.get("lint")
+    );
+
+    assert_eq!(
+        toolchain.get("build").and_then(|v| v.as_str()),
+        Some("cargo build"),
+        "expected toolchain.build == 'cargo build', got: {:?}",
+        toolchain.get("build")
+    );
+}
