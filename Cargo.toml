@@ -8,6 +8,7 @@ members = [
     "crates/ecc-cli",
     "crates/ecc-test-support",
     "crates/ecc-integration-tests",
+    "crates/ecc-workflow",
 ]
 
 [workspace.package]

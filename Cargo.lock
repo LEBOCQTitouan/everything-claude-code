@@ -332,6 +332,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ecc-workflow"
+version = "4.2.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "ecc-domain",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "endian-type"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
