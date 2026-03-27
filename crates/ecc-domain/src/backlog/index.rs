@@ -23,7 +23,7 @@ pub fn generate_index_table(entries: &[BacklogEntry]) -> String {
         let target = entry.effective_target();
         lines.push(format!(
             "| {} | {} | {} | {} | {} | {} | {} |",
-            entry.id, entry.title, tier, scope, target, entry.status, entry.created
+            entry.id, entry.title, tier, scope, target, entry.status.as_str(), entry.created
         ));
     }
 
@@ -34,7 +34,7 @@ pub fn generate_index_table(entries: &[BacklogEntry]) -> String {
 pub fn generate_stats(entries: &[BacklogEntry]) -> String {
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
     for entry in entries {
-        *counts.entry(entry.status.to_lowercase()).or_insert(0) += 1;
+        *counts.entry(entry.status.as_str().to_string()).or_insert(0) += 1;
     }
 
     let total = entries.len();
@@ -91,11 +91,19 @@ pub fn extract_dependency_graph(content: &str) -> Option<String> {
 mod tests {
     use super::*;
 
+    use super::super::entry::BacklogStatus;
+
     fn entry(id: &str, title: &str, status: &str, created: &str) -> BacklogEntry {
+        let parsed_status = match status {
+            "open" => BacklogStatus::Open,
+            "implemented" => BacklogStatus::Implemented,
+            "archived" => BacklogStatus::Archived,
+            other => BacklogStatus::Unknown(other.to_string()),
+        };
         BacklogEntry {
             id: id.to_string(),
             title: title.to_string(),
-            status: status.to_string(),
+            status: parsed_status,
             created: created.to_string(),
             tier: None,
             scope: Some("MEDIUM".to_string()),

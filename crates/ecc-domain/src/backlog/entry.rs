@@ -1,13 +1,66 @@
-//! Backlog entry parsing — frontmatter extraction and ID parsing.
+//! Backlog entry parsing — frontmatter extraction, ID parsing, error types.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+
+/// Errors that can occur during backlog operations.
+#[derive(Debug, thiserror::Error)]
+pub enum BacklogError {
+    #[error("no frontmatter delimiter found")]
+    NoFrontmatter,
+
+    #[error("YAML parse error: {0}")]
+    MalformedYaml(String),
+
+    #[error("backlog directory not found: {0}")]
+    DirectoryNotFound(PathBuf),
+
+    #[error("query must not be empty")]
+    EmptyQuery,
+
+    #[error("I/O error: {0}")]
+    IoError(String),
+}
+
+/// Backlog entry status with typed variants and Unknown fallback.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum BacklogStatus {
+    Open,
+    #[serde(alias = "in-progress")]
+    InProgress,
+    Implemented,
+    Archived,
+    Promoted,
+    #[serde(untagged)]
+    Unknown(String),
+}
+
+impl BacklogStatus {
+    /// Returns the display string for the status.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Open => "open",
+            Self::InProgress => "in-progress",
+            Self::Implemented => "implemented",
+            Self::Archived => "archived",
+            Self::Promoted => "promoted",
+            Self::Unknown(s) => s,
+        }
+    }
+
+    /// Whether this status represents an active entry (eligible for duplicate checking).
+    pub fn is_active(&self) -> bool {
+        matches!(self, Self::Open | Self::InProgress)
+    }
+}
 
 /// A parsed backlog entry from a BL-*.md file's YAML frontmatter.
 #[derive(Debug, Clone, Deserialize)]
 pub struct BacklogEntry {
     pub id: String,
     pub title: String,
-    pub status: String,
+    pub status: BacklogStatus,
     pub created: String,
     #[serde(default)]
     pub tier: Option<String>,
@@ -36,7 +89,8 @@ impl BacklogEntry {
 /// Returns `None` if the filename doesn't match the BL-NNN pattern.
 pub fn extract_id_from_filename(filename: &str) -> Option<u32> {
     let stripped = filename.strip_prefix("BL-")?;
-    let digits: String = stripped.chars().take_while(|c| c.is_ascii_digit()).collect();
+    let end = stripped.find(|c: char| !c.is_ascii_digit()).unwrap_or(stripped.len());
+    let digits = &stripped[..end];
     if digits.is_empty() {
         return None;
     }
@@ -45,28 +99,18 @@ pub fn extract_id_from_filename(filename: &str) -> Option<u32> {
 
 /// Parse YAML frontmatter from markdown content.
 ///
-/// Expects content with `---` delimiters:
-/// ```text
-/// ---
-/// id: BL-001
-/// title: Example
-/// status: open
-/// created: 2026-03-20
-/// ---
-/// ```
-///
-/// Returns `Err` if no frontmatter found or YAML is malformed.
-pub fn parse_frontmatter(content: &str) -> Result<BacklogEntry, String> {
+/// Returns `Err(BacklogError)` if no frontmatter found or YAML is malformed.
+pub fn parse_frontmatter(content: &str) -> Result<BacklogEntry, BacklogError> {
     let trimmed = content.trim_start();
     if !trimmed.starts_with("---") {
-        return Err("no frontmatter delimiter found".to_string());
+        return Err(BacklogError::NoFrontmatter);
     }
-    let after_first = &trimmed[3..];
+    let after_first = &trimmed["---".len()..];
     let end_pos = after_first
         .find("\n---")
-        .ok_or_else(|| "no closing frontmatter delimiter found".to_string())?;
+        .ok_or(BacklogError::NoFrontmatter)?;
     let yaml_str = &after_first[..end_pos];
-    serde_yaml::from_str(yaml_str).map_err(|e| format!("YAML parse error: {e}"))
+    serde_yaml::from_str(yaml_str).map_err(|e| BacklogError::MalformedYaml(e.to_string()))
 }
 
 #[cfg(test)]
@@ -94,7 +138,7 @@ mod tests {
         let entry = parse_frontmatter(content).unwrap();
         assert_eq!(entry.id, "BL-066");
         assert_eq!(entry.title, "Deterministic backlog");
-        assert_eq!(entry.status, "open");
+        assert_eq!(entry.status, BacklogStatus::Open);
         assert_eq!(entry.created, "2026-03-26");
         assert_eq!(entry.scope.as_deref(), Some("MEDIUM"));
         assert_eq!(entry.target_command.as_deref(), Some("/spec dev"));
@@ -104,15 +148,22 @@ mod tests {
     #[test]
     fn parse_frontmatter_malformed() {
         let content = "---\n{{{invalid yaml\n---\n";
-        assert!(parse_frontmatter(content).is_err());
+        assert!(matches!(
+            parse_frontmatter(content),
+            Err(BacklogError::MalformedYaml(_))
+        ));
 
         let content_no_delimiters = "just some text";
-        assert!(parse_frontmatter(content_no_delimiters).is_err());
+        assert!(matches!(
+            parse_frontmatter(content_no_delimiters),
+            Err(BacklogError::NoFrontmatter)
+        ));
     }
 
     #[test]
     fn parse_frontmatter_optional_fields_missing() {
-        let content = "---\nid: BL-001\ntitle: Minimal entry\nstatus: open\ncreated: 2026-03-20\n---\n";
+        let content =
+            "---\nid: BL-001\ntitle: Minimal entry\nstatus: open\ncreated: 2026-03-20\n---\n";
         let entry = parse_frontmatter(content).unwrap();
         assert_eq!(entry.id, "BL-001");
         assert!(entry.tier.is_none());
@@ -120,5 +171,45 @@ mod tests {
         assert!(entry.target.is_none());
         assert!(entry.target_command.is_none());
         assert!(entry.tags.is_empty());
+    }
+
+    #[test]
+    fn backlog_error_variants() {
+        // Verify all 5 variants exist and have Display
+        let errors: Vec<BacklogError> = vec![
+            BacklogError::NoFrontmatter,
+            BacklogError::MalformedYaml("test".into()),
+            BacklogError::DirectoryNotFound(PathBuf::from("/tmp")),
+            BacklogError::EmptyQuery,
+            BacklogError::IoError("test".into()),
+        ];
+        assert_eq!(errors.len(), 5);
+        for err in &errors {
+            assert!(!format!("{err}").is_empty());
+        }
+    }
+
+    #[test]
+    fn backlog_status_serde() {
+        let yaml = "open";
+        let status: BacklogStatus = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(status, BacklogStatus::Open);
+
+        let yaml = "implemented";
+        let status: BacklogStatus = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(status, BacklogStatus::Implemented);
+
+        let yaml = "in-progress";
+        let status: BacklogStatus = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(status, BacklogStatus::InProgress);
+    }
+
+    #[test]
+    fn backlog_status_unknown_fallback() {
+        let yaml = "custom-status";
+        let status: BacklogStatus = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(status, BacklogStatus::Unknown("custom-status".into()));
+        assert_eq!(status.as_str(), "custom-status");
+        assert!(!status.is_active());
     }
 }
