@@ -1,3 +1,4 @@
+pub mod grill_me_gate;
 pub mod init;
 pub mod memory_write;
 pub mod phase_gate;

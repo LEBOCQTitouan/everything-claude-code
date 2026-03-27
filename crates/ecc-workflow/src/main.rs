@@ -43,6 +43,9 @@ enum Commands {
     /// Called by the Stop hook at the end of a Claude session.
     /// Always exits 0 — informational only.
     StopGate,
+    /// Warn when the spec/campaign file lacks a grill-me interview section.
+    /// Always exits 0 — informational only.
+    GrillMeGate,
 }
 
 fn main() {
@@ -87,6 +90,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         }
         Commands::PhaseGate => commands::phase_gate::run(&project_dir()),
         Commands::StopGate => commands::stop_gate::run(&project_dir()),
+        Commands::GrillMeGate => commands::grill_me_gate::run(&project_dir()),
     }
 }
 
