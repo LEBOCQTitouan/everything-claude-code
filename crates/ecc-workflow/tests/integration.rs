@@ -2516,3 +2516,128 @@ fn doc_level_check() {
         "doc-level-check must warn about oversized CLAUDE.md, got stderr: {stderr4}"
     );
 }
+
+// ── pass-condition-check tests ─────────────────────────────────────────────────────────────────
+
+fn run_pass_condition_check(
+    project_dir: &std::path::Path,
+    bin: &std::path::Path,
+) -> std::process::Output {
+    Command::new(bin)
+        .arg("pass-condition-check")
+        .env("CLAUDE_PROJECT_DIR", project_dir)
+        .env_remove("ECC_WORKFLOW_BYPASS")
+        .output()
+        .expect("failed to execute ecc-workflow pass-condition-check")
+}
+
+#[test]
+fn pass_condition_check() {
+    let bin = binary_path();
+    assert!(bin.exists(), "ecc-workflow binary not found at {bin:?}");
+
+    // ── Scenario 1: done phase, implement-done.md with "## Pass Condition Results"
+    // and all ✅ → exit 0, no warning ───────────────────────────────────────────────────────
+    let dir1 = tempfile::tempdir().unwrap();
+    init_workflow_state(dir1.path(), "done", &bin);
+    let workflow_dir1 = dir1.path().join(".claude/workflow");
+    std::fs::create_dir_all(&workflow_dir1).unwrap();
+    let implement_done1 = workflow_dir1.join("implement-done.md");
+    std::fs::write(
+        &implement_done1,
+        "# Implement Done\n\n## Pass Condition Results\n\n- PC-001 ✅ passed\n- PC-002 ✅ passed\n\nAll pass conditions: 2/2 ✅\n",
+    )
+    .unwrap();
+    let out1 = run_pass_condition_check(dir1.path(), &bin);
+    assert_eq!(
+        out1.status.code(),
+        Some(0),
+        "scenario 1: must exit 0 for all-pass results\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out1.stdout).unwrap_or(""),
+        std::str::from_utf8(&out1.stderr).unwrap_or(""),
+    );
+    assert!(
+        out1.stdout.trim_ascii().is_empty() && out1.stderr.trim_ascii().is_empty(),
+        "scenario 1: must be silent for all-pass results\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out1.stdout).unwrap_or(""),
+        std::str::from_utf8(&out1.stderr).unwrap_or(""),
+    );
+
+    // ── Scenario 2: done phase, implement-done.md missing the section
+    // → exit 0, stderr has warning ─────────────────────────────────────────────────────────
+    let dir2 = tempfile::tempdir().unwrap();
+    init_workflow_state(dir2.path(), "done", &bin);
+    let workflow_dir2 = dir2.path().join(".claude/workflow");
+    std::fs::create_dir_all(&workflow_dir2).unwrap();
+    let implement_done2 = workflow_dir2.join("implement-done.md");
+    std::fs::write(
+        &implement_done2,
+        "# Implement Done\n\n## Docs Updated\n\n- doc.md updated\n\n## Supplemental Docs\n\n_none_\n",
+    )
+    .unwrap();
+    let out2 = run_pass_condition_check(dir2.path(), &bin);
+    assert_eq!(
+        out2.status.code(),
+        Some(0),
+        "scenario 2: must exit 0 when section missing\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out2.stdout).unwrap_or(""),
+        std::str::from_utf8(&out2.stderr).unwrap_or(""),
+    );
+    let stderr2 = std::str::from_utf8(&out2.stderr).unwrap_or("");
+    assert!(
+        !stderr2.trim().is_empty(),
+        "scenario 2: must warn when '## Pass Condition Results' section is missing"
+    );
+    assert!(
+        stderr2.to_lowercase().contains("pass condition"),
+        "scenario 2: warning must mention 'pass condition', got stderr: {stderr2}"
+    );
+
+    // ── Scenario 3: done phase, implement-done.md with ❌ in results
+    // → exit 0, stderr has warning ─────────────────────────────────────────────────────────
+    let dir3 = tempfile::tempdir().unwrap();
+    init_workflow_state(dir3.path(), "done", &bin);
+    let workflow_dir3 = dir3.path().join(".claude/workflow");
+    std::fs::create_dir_all(&workflow_dir3).unwrap();
+    let implement_done3 = workflow_dir3.join("implement-done.md");
+    std::fs::write(
+        &implement_done3,
+        "# Implement Done\n\n## Pass Condition Results\n\n- PC-001 ✅ passed\n- PC-002 ❌ failed\n\nAll pass conditions: 1/2\n",
+    )
+    .unwrap();
+    let out3 = run_pass_condition_check(dir3.path(), &bin);
+    assert_eq!(
+        out3.status.code(),
+        Some(0),
+        "scenario 3: must exit 0 even with failures\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out3.stdout).unwrap_or(""),
+        std::str::from_utf8(&out3.stderr).unwrap_or(""),
+    );
+    let stderr3 = std::str::from_utf8(&out3.stderr).unwrap_or("");
+    assert!(
+        !stderr3.trim().is_empty(),
+        "scenario 3: must warn when ❌ failures found"
+    );
+    assert!(
+        stderr3.contains("❌") || stderr3.to_lowercase().contains("fail"),
+        "scenario 3: warning must mention failures, got stderr: {stderr3}"
+    );
+
+    // ── Scenario 4: plan phase → exit 0, silent ───────────────────────────────────────────
+    let dir4 = tempfile::tempdir().unwrap();
+    init_workflow_state(dir4.path(), "plan", &bin);
+    let out4 = run_pass_condition_check(dir4.path(), &bin);
+    assert_eq!(
+        out4.status.code(),
+        Some(0),
+        "scenario 4: must exit 0 in plan phase\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out4.stdout).unwrap_or(""),
+        std::str::from_utf8(&out4.stderr).unwrap_or(""),
+    );
+    assert!(
+        out4.stdout.trim_ascii().is_empty() && out4.stderr.trim_ascii().is_empty(),
+        "scenario 4: must be silent in plan phase\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out4.stdout).unwrap_or(""),
+        std::str::from_utf8(&out4.stderr).unwrap_or(""),
+    );
+}
