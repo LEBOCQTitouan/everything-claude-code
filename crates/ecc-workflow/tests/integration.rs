@@ -2253,3 +2253,174 @@ fn scope_check() {
     // (The actual git diff comparison would require a real git repo, so we just verify exit 0)
     // The warning behavior is tested indirectly through the design path scenario above.
 }
+
+/// doc_enforcement: verify that `ecc-workflow doc-enforcement` checks for required sections
+/// in implement-done.md.
+///
+/// AC-004.5 — warning when sections missing, silent when present.
+///
+/// Scenarios:
+///   1. State at "done", implement-done.md with both sections → exit 0, no warning
+///   2. State at "done", implement-done.md missing "## Docs Updated" → exit 0, stderr has warning
+///   3. State at "done", implement-done.md missing "## Supplemental Docs" → exit 0, stderr has warning
+///   4. State at "plan" → exit 0, no warning (skipped)
+///   5. No state.json → exit 0, silent
+#[test]
+fn doc_enforcement() {
+    let bin = binary_path();
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
+
+    fn write_state(dir: &std::path::Path, phase: &str) {
+        let workflow_dir = dir.join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        let state = serde_json::json!({
+            "phase": phase,
+            "concern": "dev",
+            "feature": "test-feature"
+        });
+        std::fs::write(
+            workflow_dir.join("state.json"),
+            serde_json::to_string(&state).unwrap(),
+        )
+        .unwrap();
+    }
+
+    fn write_implement_done(dir: &std::path::Path, content: &str) {
+        let workflow_dir = dir.join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        std::fs::write(workflow_dir.join("implement-done.md"), content).unwrap();
+    }
+
+    fn run_doc_enforcement(dir: &std::path::Path, bin: &std::path::Path) -> std::process::Output {
+        Command::new(bin)
+            .args(["doc-enforcement"])
+            .env("CLAUDE_PROJECT_DIR", dir)
+            .env_remove("ECC_WORKFLOW_BYPASS")
+            .output()
+            .expect("failed to execute ecc-workflow doc-enforcement")
+    }
+
+    let full_content = "\
+## Docs Updated\n\
+- Updated CLAUDE.md with new feature docs\n\
+\n\
+## Supplemental Docs\n\
+- docs/specs/2026-03-23-my-feature/design.md\n\
+";
+
+    // ── Scenario 1: both sections present → exit 0, no warning ──────────────────────────────
+    let dir1 = tempfile::tempdir().unwrap();
+    write_state(dir1.path(), "done");
+    write_implement_done(dir1.path(), full_content);
+
+    let out1 = run_doc_enforcement(dir1.path(), &bin);
+    assert_eq!(
+        out1.status.code(),
+        Some(0),
+        "scenario 1: must exit 0\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out1.stdout).unwrap_or(""),
+        std::str::from_utf8(&out1.stderr).unwrap_or(""),
+    );
+    let stderr1 = std::str::from_utf8(&out1.stderr).unwrap_or("").trim().to_string();
+    assert!(
+        stderr1.is_empty(),
+        "scenario 1: expected no stderr warning when both sections present, got: '{stderr1}'"
+    );
+
+    // ── Scenario 2: missing "## Docs Updated" → exit 0, warning on stderr ───────────────────
+    let dir2 = tempfile::tempdir().unwrap();
+    write_state(dir2.path(), "done");
+    write_implement_done(
+        dir2.path(),
+        "## Supplemental Docs\n- docs/specs/my-feature/design.md\n",
+    );
+
+    let out2 = run_doc_enforcement(dir2.path(), &bin);
+    assert_eq!(
+        out2.status.code(),
+        Some(0),
+        "scenario 2: must exit 0\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out2.stdout).unwrap_or(""),
+        std::str::from_utf8(&out2.stderr).unwrap_or(""),
+    );
+    let stderr2 = std::str::from_utf8(&out2.stderr).unwrap_or("").trim().to_string();
+    assert!(
+        !stderr2.is_empty(),
+        "scenario 2: expected warning on stderr when '## Docs Updated' missing"
+    );
+    let json2: serde_json::Value = serde_json::from_str(&stderr2)
+        .unwrap_or_else(|e| panic!("scenario 2: stderr is not valid JSON: {e}\nstderr: {stderr2}"));
+    assert_eq!(
+        json2.get("status").and_then(|v| v.as_str()),
+        Some("warn"),
+        "scenario 2: expected status 'warn', got: {:?}",
+        json2.get("status")
+    );
+
+    // ── Scenario 3: missing "## Supplemental Docs" → exit 0, warning on stderr ───────────────
+    let dir3 = tempfile::tempdir().unwrap();
+    write_state(dir3.path(), "done");
+    write_implement_done(
+        dir3.path(),
+        "## Docs Updated\n- Updated CLAUDE.md\n",
+    );
+
+    let out3 = run_doc_enforcement(dir3.path(), &bin);
+    assert_eq!(
+        out3.status.code(),
+        Some(0),
+        "scenario 3: must exit 0\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out3.stdout).unwrap_or(""),
+        std::str::from_utf8(&out3.stderr).unwrap_or(""),
+    );
+    let stderr3 = std::str::from_utf8(&out3.stderr).unwrap_or("").trim().to_string();
+    assert!(
+        !stderr3.is_empty(),
+        "scenario 3: expected warning on stderr when '## Supplemental Docs' missing"
+    );
+    let json3: serde_json::Value = serde_json::from_str(&stderr3)
+        .unwrap_or_else(|e| panic!("scenario 3: stderr is not valid JSON: {e}\nstderr: {stderr3}"));
+    assert_eq!(
+        json3.get("status").and_then(|v| v.as_str()),
+        Some("warn"),
+        "scenario 3: expected status 'warn', got: {:?}",
+        json3.get("status")
+    );
+
+    // ── Scenario 4: state at "plan" → exit 0, no warning (skipped) ──────────────────────────
+    let dir4 = tempfile::tempdir().unwrap();
+    write_state(dir4.path(), "plan");
+    // No implement-done.md written (it wouldn't matter for non-done phase)
+
+    let out4 = run_doc_enforcement(dir4.path(), &bin);
+    assert_eq!(
+        out4.status.code(),
+        Some(0),
+        "scenario 4: must exit 0 for non-done phase\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out4.stdout).unwrap_or(""),
+        std::str::from_utf8(&out4.stderr).unwrap_or(""),
+    );
+    let stderr4 = std::str::from_utf8(&out4.stderr).unwrap_or("").trim().to_string();
+    assert!(
+        stderr4.is_empty(),
+        "scenario 4: expected no stderr for non-done phase, got: '{stderr4}'"
+    );
+
+    // ── Scenario 5: no state.json → exit 0, silent ───────────────────────────────────────────
+    let dir5 = tempfile::tempdir().unwrap();
+    // No state.json written
+
+    let out5 = run_doc_enforcement(dir5.path(), &bin);
+    assert_eq!(
+        out5.status.code(),
+        Some(0),
+        "scenario 5: must exit 0 when no state.json\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out5.stdout).unwrap_or(""),
+        std::str::from_utf8(&out5.stderr).unwrap_or(""),
+    );
+    let stderr5 = std::str::from_utf8(&out5.stderr).unwrap_or("").trim().to_string();
+    assert!(
+        stderr5.is_empty(),
+        "scenario 5: expected silent output when no state.json, got: '{stderr5}'"
+    );
+}
