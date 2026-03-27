@@ -35,10 +35,32 @@ pub trait FileLock: Send + Sync {
 pub struct LockGuard {
     /// Path to the lock file (for diagnostics).
     pub lock_path: PathBuf,
-    /// Raw file descriptor (production) or sentinel (test double).
-    pub(crate) fd: i64,
-    /// Callback to release the lock. Set by the adapter.
-    pub(crate) release_fn: Option<Box<dyn FnOnce(i64) + Send>>,
+    fd: i64,
+    release_fn: Option<Box<dyn FnOnce(i64) + Send>>,
+}
+
+impl LockGuard {
+    /// Create a new `LockGuard`. Called by `FileLock` implementations.
+    pub fn new(
+        lock_path: PathBuf,
+        fd: i64,
+        release_fn: impl FnOnce(i64) + Send + 'static,
+    ) -> Self {
+        Self {
+            lock_path,
+            fd,
+            release_fn: Some(Box::new(release_fn)),
+        }
+    }
+
+    /// Create a `LockGuard` with no release action (for test doubles).
+    pub fn sentinel(lock_path: PathBuf) -> Self {
+        Self {
+            lock_path,
+            fd: -1,
+            release_fn: None,
+        }
+    }
 }
 
 impl std::fmt::Debug for LockGuard {
@@ -106,11 +128,7 @@ mod tests {
 
     #[test]
     fn lock_guard_debug_format() {
-        let guard = LockGuard {
-            lock_path: PathBuf::from("/tmp/test.lock"),
-            fd: -1,
-            release_fn: None,
-        };
+        let guard = LockGuard::sentinel(PathBuf::from("/tmp/test.lock"));
         let debug = format!("{guard:?}");
         assert!(debug.contains("test.lock"));
     }
@@ -124,14 +142,14 @@ mod tests {
         let released_clone = released.clone();
 
         {
-            let _guard = LockGuard {
-                lock_path: PathBuf::from("/tmp/test.lock"),
-                fd: 42,
-                release_fn: Some(Box::new(move |fd| {
+            let _guard = LockGuard::new(
+                PathBuf::from("/tmp/test.lock"),
+                42,
+                move |fd| {
                     assert_eq!(fd, 42);
                     released_clone.store(true, Ordering::SeqCst);
-                })),
-            };
+                },
+            );
             assert!(!released.load(Ordering::SeqCst));
         } // guard dropped here
 

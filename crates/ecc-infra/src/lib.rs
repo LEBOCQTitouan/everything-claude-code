@@ -9,3 +9,6 @@ pub mod os_fs;
 pub mod process_executor;
 pub mod rustyline_input;
 pub mod std_terminal;
+
+#[cfg(unix)]
+pub mod flock_lock;

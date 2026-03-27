@@ -31,6 +31,9 @@ walkdir = "2"
 clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
 
+# System
+libc = "0.2"
+
 # Interactive
 rustyline = "15"
 crossterm = "0.28"
