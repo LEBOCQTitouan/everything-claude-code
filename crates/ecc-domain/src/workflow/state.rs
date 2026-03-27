@@ -45,6 +45,106 @@ pub struct WorkflowState {
 }
 
 #[cfg(test)]
+mod corrupted_json {
+    use super::*;
+    use crate::workflow::error::WorkflowError;
+
+    #[test]
+    fn invalid_json_syntax_returns_invalid_state() {
+        let result = WorkflowState::from_json("not valid json {{{");
+        assert!(
+            matches!(result, Err(WorkflowError::InvalidState(_))),
+            "expected InvalidState, got {result:?}"
+        );
+        let Err(WorkflowError::InvalidState(msg)) = result else {
+            panic!("unreachable");
+        };
+        assert!(!msg.is_empty(), "error message must not be empty");
+    }
+
+    #[test]
+    fn missing_required_field_returns_invalid_state() {
+        // Valid JSON but missing the required "phase" field
+        let json = r#"{
+            "concern": "dev",
+            "feature": "test",
+            "started_at": "2026-01-01T00:00:00Z",
+            "toolchain": {"test": null, "lint": null, "build": null},
+            "artifacts": {"plan": null, "solution": null, "implement": null, "campaign_path": null, "spec_path": null, "design_path": null, "tasks_path": null},
+            "completed": []
+        }"#;
+        let result = WorkflowState::from_json(json);
+        assert!(
+            matches!(result, Err(WorkflowError::InvalidState(_))),
+            "expected InvalidState for missing 'phase' field, got {result:?}"
+        );
+        let Err(WorkflowError::InvalidState(msg)) = result else {
+            panic!("unreachable");
+        };
+        assert!(!msg.is_empty(), "error message must not be empty");
+    }
+
+    #[test]
+    fn wrong_type_for_phase_returns_invalid_state() {
+        // Valid JSON but "phase" is a number instead of a string
+        let json = r#"{
+            "phase": 123,
+            "concern": "dev",
+            "feature": "test",
+            "started_at": "2026-01-01T00:00:00Z",
+            "toolchain": {"test": null, "lint": null, "build": null},
+            "artifacts": {"plan": null, "solution": null, "implement": null, "campaign_path": null, "spec_path": null, "design_path": null, "tasks_path": null},
+            "completed": []
+        }"#;
+        let result = WorkflowState::from_json(json);
+        assert!(
+            matches!(result, Err(WorkflowError::InvalidState(_))),
+            "expected InvalidState for wrong type, got {result:?}"
+        );
+        let Err(WorkflowError::InvalidState(msg)) = result else {
+            panic!("unreachable");
+        };
+        assert!(!msg.is_empty(), "error message must not be empty");
+    }
+
+    #[test]
+    fn unknown_phase_value_returns_invalid_state() {
+        // Valid JSON but "phase" has an unknown value
+        let json = r#"{
+            "phase": "banana",
+            "concern": "dev",
+            "feature": "test",
+            "started_at": "2026-01-01T00:00:00Z",
+            "toolchain": {"test": null, "lint": null, "build": null},
+            "artifacts": {"plan": null, "solution": null, "implement": null, "campaign_path": null, "spec_path": null, "design_path": null, "tasks_path": null},
+            "completed": []
+        }"#;
+        let result = WorkflowState::from_json(json);
+        assert!(
+            matches!(result, Err(WorkflowError::InvalidState(_))),
+            "expected InvalidState for unknown phase 'banana', got {result:?}"
+        );
+        let Err(WorkflowError::InvalidState(msg)) = result else {
+            panic!("unreachable");
+        };
+        assert!(!msg.is_empty(), "error message must not be empty");
+    }
+
+    #[test]
+    fn empty_string_returns_invalid_state() {
+        let result = WorkflowState::from_json("");
+        assert!(
+            matches!(result, Err(WorkflowError::InvalidState(_))),
+            "expected InvalidState for empty string, got {result:?}"
+        );
+        let Err(WorkflowError::InvalidState(msg)) = result else {
+            panic!("unreachable");
+        };
+        assert!(!msg.is_empty(), "error message must not be empty");
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::workflow::phase::Phase;
