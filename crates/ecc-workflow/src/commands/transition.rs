@@ -1,6 +1,8 @@
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use ecc_domain::workflow::phase::Phase;
+use ecc_domain::workflow::state::Completion;
 use ecc_domain::workflow::transition::resolve_transition_by_name;
 
 use crate::io::{read_state, write_state_atomic};
@@ -62,6 +64,16 @@ pub fn run(
                 "implement" => state.artifacts.tasks_path = Some(p.to_owned()),
                 _ => {}
             }
+        }
+
+        // On done transition, append to completed array
+        if to == Phase::Done {
+            let completion = Completion {
+                phase: artifact_name.to_owned(),
+                file: "implement-done.md".to_owned(),
+                at: utc_now_iso8601(),
+            };
+            state.completed.push(completion);
         }
     }
 
