@@ -18,6 +18,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Refactoring
 
+- **Display full artifacts inline in terminal (BL-062)**: `/spec-*`, `/design`, and `/implement` final phases now read persisted artifacts from disk and display the full document body inline in conversation before summary tables. Eliminates need to open files to review specs, designs, or tasks. Consistent "Full Artifact Display" pattern across all 5 commands with fallback for missing paths. "Artifact File Path" reference shown after tables for future access.
 - **Auto-commit backlog edits (BL-059)**: `/backlog add`, `promote`, and `archive` now auto-commit changes with conventional commit messages (`docs(backlog): <action> BL-NNN`). Read-only subcommands (`list`, `match`) unaffected.
 - **Offload web research to Task subagents (BL-049)**: Phase 3 in /spec-dev, /spec-fix, /spec-refactor now delegates WebSearch to a Task subagent with isolated context. Raw search tokens stay in subagent; main session receives only the condensed Research Summary.
 - **Simplify context management (BL-060)**: Removed graceful exit infrastructure (BL-054/BL-055), context checkpoints from /implement and /audit-full, Resumption Pointer from campaign manifest, strategic compact skill. Superseded ADR-0014. Rely on native plan-accept context clear.
