@@ -2,11 +2,21 @@
 set -uo pipefail
 
 # ECC Statusline — receives JSON from Claude Code via stdin.
-# Outputs: Model [########--------] 42% | cost | tokens | lines | RL | branch | ecc vX.Y.Z
+# Output: ◆ Model │ ctx: [████░░░░] 42% │ 5h: [██░░] 23% 7d: [█░░░] 12% │ ↑15k ↓4k │ +50 -10 │ 2m 0s │ ⎇ main │ ecc 4.2.0
 
 ECC_VERSION="__ECC_VERSION__"
 MIN_WIDTH=40
 BAR_WIDTH=8
+
+# --- ANSI color codes ---
+RST='\033[0m'
+DIM='\033[2m'
+BOLD='\033[1m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+RED='\033[31m'
+GREEN_ADD='\033[32m'
+RED_DEL='\033[31m'
 
 # --- jq check ---
 command -v jq >/dev/null 2>&1 || { echo "ECC"; exit 0; }
@@ -18,53 +28,107 @@ if [ -z "$INPUT" ] || ! echo "$INPUT" | jq empty 2>/dev/null; then
   exit 0
 fi
 
-# --- JSON extraction ---
-DISPLAY_NAME=$(echo "$INPUT" | jq -r '.model.display_name // ""')
-USED_PCT=$(echo "$INPUT"     | jq -r '.context_window.used_percentage // 0')
-TOTAL_INPUT=$(echo "$INPUT"  | jq -r '.context_window.total_input_tokens // 0')
-TOTAL_OUTPUT=$(echo "$INPUT" | jq -r '.context_window.total_output_tokens // 0')
-COST_USD=$(echo "$INPUT"     | jq -r '.cost.total_cost_usd // 0')
-DURATION_MS=$(echo "$INPUT"  | jq -r '.cost.total_duration_ms // 0')
-LINES_ADDED=$(echo "$INPUT"  | jq -r '.cost.total_lines_added // 0')
-LINES_REMOVED=$(echo "$INPUT"| jq -r '.cost.total_lines_removed // 0')
-RATE_LIMIT=$(echo "$INPUT"   | jq -r '.rate_limits.five_hour.used_percentage // ""')
+# --- Single jq extraction (1 fork instead of 10+) ---
+eval "$(echo "$INPUT" | jq -r '
+  @sh "DISPLAY_NAME=\(.model.display_name // "")",
+  @sh "USED_PCT=\(.context_window.used_percentage // 0)",
+  @sh "TOTAL_INPUT=\(.context_window.total_input_tokens // 0)",
+  @sh "TOTAL_OUTPUT=\(.context_window.total_output_tokens // 0)",
+  @sh "COST_USD=\(.cost.total_cost_usd // 0)",
+  @sh "DURATION_MS=\(.cost.total_duration_ms // 0)",
+  @sh "LINES_ADDED=\(.cost.total_lines_added // 0)",
+  @sh "LINES_REMOVED=\(.cost.total_lines_removed // 0)",
+  @sh "RL_5H=\(.rate_limits.five_hour.used_percentage // "")",
+  @sh "RL_7D=\(.rate_limits.seven_day.used_percentage // "")",
+  @sh "HAS_RATE_LIMITS=\(if .rate_limits then "1" else "" end)"
+' 2>/dev/null)" || {
+  echo "ECC"
+  exit 0
+}
 
-# --- Context bar with ANSI colors ---
+# --- Progress bar helper ---
+# Usage: make_bar <pct_int> <width>
+make_bar() {
+  local pct="${1:-0}" width="${2:-$BAR_WIDTH}"
+  local filled=$(( (pct * width + 50) / 100 ))
+  [ "$filled" -gt "$width" ] && filled=$width
+  local empty=$(( width - filled ))
+  local bar=""
+  local i
+  for (( i=0; i<filled; i++ )); do bar+="█"; done
+  for (( i=0; i<empty; i++ )); do bar+="░"; done
+  printf '%s' "$bar"
+}
+
+# --- Color for threshold ---
+# Usage: threshold_color <pct_int> <yellow_at> <red_at>
+threshold_color() {
+  local pct="${1:-0}" yellow="${2:-60}" red="${3:-80}"
+  if [ "$pct" -ge "$red" ] 2>/dev/null; then
+    printf '%s' "$RED"
+  elif [ "$pct" -ge "$yellow" ] 2>/dev/null; then
+    printf '%s' "$YELLOW"
+  else
+    printf '%s' "$GREEN"
+  fi
+}
+
+# --- Context bar ---
 USED_INT=${USED_PCT%.*}
-FILLED=$(( (USED_INT * BAR_WIDTH + 50) / 100 ))
-[ "$FILLED" -gt "$BAR_WIDTH" ] && FILLED=$BAR_WIDTH
-EMPTY=$(( BAR_WIDTH - FILLED ))
-BAR_INNER=$(printf '%0.s#' $(seq 1 "$FILLED" 2>/dev/null); printf '%0.s-' $(seq 1 "$EMPTY" 2>/dev/null))
+CTX_COLOR=$(threshold_color "$USED_INT" 60 80)
+CTX_BAR_INNER=$(make_bar "$USED_INT" "$BAR_WIDTH")
+SEG_CTX="${DIM}ctx:${RST} ${CTX_COLOR}[${CTX_BAR_INNER}]${RST} ${USED_INT}%"
+SEG_CTX_NARROW="${DIM}ctx:${RST} ${CTX_COLOR}${USED_INT}%${RST}"
 
-if [ "$USED_INT" -ge 80 ] 2>/dev/null; then
-  COLOR='\033[31m'
-elif [ "$USED_INT" -ge 60 ] 2>/dev/null; then
-  COLOR='\033[33m'
-else
-  COLOR='\033[32m'
+# --- Rate limit bars (only for subscribers) ---
+SEG_RL=""
+SEG_RL_NARROW=""
+if [ -n "$HAS_RATE_LIMITS" ]; then
+  rl_parts=""
+  rl_narrow_parts=""
+  if [ -n "$RL_5H" ]; then
+    RL_5H_INT=${RL_5H%.*}
+    RL_5H_COLOR=$(threshold_color "$RL_5H_INT" 60 80)
+    RL_5H_BAR=$(make_bar "$RL_5H_INT" "$BAR_WIDTH")
+    rl_parts="${DIM}5h:${RST} ${RL_5H_COLOR}[${RL_5H_BAR}]${RST} ${RL_5H_INT}%"
+    rl_narrow_parts="${DIM}5h:${RST} ${RL_5H_COLOR}${RL_5H_INT}%${RST}"
+  fi
+  if [ -n "$RL_7D" ]; then
+    RL_7D_INT=${RL_7D%.*}
+    RL_7D_COLOR=$(threshold_color "$RL_7D_INT" 60 80)
+    RL_7D_BAR=$(make_bar "$RL_7D_INT" "$BAR_WIDTH")
+    if [ -n "$rl_parts" ]; then
+      rl_parts+=" ${DIM}7d:${RST} ${RL_7D_COLOR}[${RL_7D_BAR}]${RST} ${RL_7D_INT}%"
+      rl_narrow_parts+=" ${DIM}7d:${RST} ${RL_7D_COLOR}${RL_7D_INT}%${RST}"
+    else
+      rl_parts="${DIM}7d:${RST} ${RL_7D_COLOR}[${RL_7D_BAR}]${RST} ${RL_7D_INT}%"
+      rl_narrow_parts="${DIM}7d:${RST} ${RL_7D_COLOR}${RL_7D_INT}%${RST}"
+    fi
+  fi
+  SEG_RL="$rl_parts"
+  SEG_RL_NARROW="$rl_narrow_parts"
 fi
-CTX_BAR="${COLOR}[${BAR_INNER}]\033[0m ${USED_INT}%"
 
-# --- Cost formatting ---
-COST_FMT=$(printf '$%.2f' "$COST_USD" 2>/dev/null || echo '$0.00')
+# --- Cost (hidden for subscribers, shown for API billing) ---
+SEG_COST=""
+if [ -z "$HAS_RATE_LIMITS" ]; then
+  COST_FMT=$(printf '$%.2f' "$COST_USD" 2>/dev/null || echo '$0.00')
+  SEG_COST="${DIM}cost:${RST} ${COST_FMT}"
+fi
 
-# --- Duration formatting ---
+# --- Token counts ---
+IN_K=$(awk "BEGIN{printf \"%.1f\", ${TOTAL_INPUT}/1000}" 2>/dev/null || echo "0.0")
+OUT_K=$(awk "BEGIN{printf \"%.1f\", ${TOTAL_OUTPUT}/1000}" 2>/dev/null || echo "0.0")
+SEG_TOKENS="${GREEN}↑${RST}${IN_K}k ${RED}↓${RST}${OUT_K}k"
+
+# --- Lines diff ---
+SEG_LINES="${GREEN_ADD}+${LINES_ADDED}${RST} ${RED_DEL}-${LINES_REMOVED}${RST}"
+
+# --- Duration ---
 DUR_S=$(( DURATION_MS / 1000 ))
 DUR_M=$(( DUR_S / 60 ))
 DUR_REMAIN=$(( DUR_S % 60 ))
-DURATION_FMT="${DUR_M}m ${DUR_REMAIN}s"
-
-# --- Token counts ---
-IN_K=$(printf '%.1f' "$(echo "$TOTAL_INPUT"  | awk '{printf "%.1f", $1/1000}')" 2>/dev/null || echo "0.0")
-OUT_K=$(printf '%.1f' "$(echo "$TOTAL_OUTPUT" | awk '{printf "%.1f", $1/1000}')" 2>/dev/null || echo "0.0")
-TOKENS_FMT="In:${IN_K}k Out:${OUT_K}k"
-
-# --- Lines diff ---
-LINES_FMT="+${LINES_ADDED}/-${LINES_REMOVED}"
-
-# --- Rate limit ---
-RL_FMT=""
-[ -n "$RATE_LIMIT" ] && RL_FMT="RL:${RATE_LIMIT%.*}%"
+SEG_DURATION="${DUR_M}m ${DUR_REMAIN}s"
 
 # --- Git branch with caching ---
 CACHE_DIR="/tmp"
@@ -72,7 +136,6 @@ PWD_HASH=$(echo "$PWD" | md5sum 2>/dev/null | cut -c1-8 || md5 -q -s "$PWD" 2>/d
 CACHE_FILE="${CACHE_DIR}/ecc-sl-cache-${PWD_HASH}"
 
 BRANCH=""
-# TTL: cache age check — cache is valid if file mtime is within 5s
 TTL_REF=$(mktemp "${CACHE_DIR}/ecc-sl-ttl-XXXXXX")
 touch -d '-5 seconds' "$TTL_REF" 2>/dev/null || touch -A -000005 "$TTL_REF" 2>/dev/null || true
 if [ -f "$CACHE_FILE" ] && find "$CACHE_FILE" -newer "$TTL_REF" 2>/dev/null | grep -q .; then
@@ -89,69 +152,83 @@ if [ -z "$BRANCH" ]; then
   fi
 fi
 
+SEG_BRANCH=""
+[ -n "$BRANCH" ] && SEG_BRANCH="${DIM}⎇${RST} ${BRANCH}"
+
+# --- Model + ECC version ---
+SEG_MODEL="${BOLD}◆${RST} ${BOLD}${DISPLAY_NAME}${RST}"
+SEG_ECC="${DIM}ecc ${ECC_VERSION}${RST}"
+
 # --- Terminal width ---
 TERM_WIDTH=${COLUMNS:-$(tput cols 2>/dev/null || echo 120)}
 
-# --- Build output with priority-based truncation ---
-# Model is NEVER dropped. Priority (lowest = first dropped):
-# 8=ECC_VERSION 7=RL 6=DURATION 5=TOKENS 4=LINES 3=COST 2=BRANCH 1=CTX_BAR 0=MODEL(never)
-
-SEG_MODEL="\033[1m${DISPLAY_NAME}\033[0m"
-SEG_CTX="${CTX_BAR}"
-SEG_BRANCH="${BRANCH}"
-SEG_COST="${COST_FMT}"
-SEG_LINES="${LINES_FMT}"
-SEG_TOKENS="${TOKENS_FMT}"
-SEG_DURATION="${DURATION_FMT}"
-SEG_RL="${RL_FMT}"
-SEG_ECC="ecc ${ECC_VERSION}"
-
-# Build progressively, checking width (strip ANSI for length calc)
+# --- Strip ANSI for length calculation ---
 strip_ansi() { printf '%s' "$1" | sed 's/\x1b\[[0-9;]*m//g'; }
+
+# --- Build output with priority-based truncation ---
+# Separator: │ (Unicode box-drawing U+2502)
+SEP=" │ "
 
 if [ "$TERM_WIDTH" -lt "$MIN_WIDTH" ] 2>/dev/null; then
   printf '%b' "${SEG_MODEL}"
   exit 0
 fi
 
-# Assemble full line with all segments
-build_line() {
-  local parts=()
-  [ -n "${1:-}" ] && parts+=("$1")
-  [ -n "${2:-}" ] && parts+=("$2")
-  [ -n "${3:-}" ] && parts+=("$3")
-  [ -n "${4:-}" ] && parts+=("$4")
-  [ -n "${5:-}" ] && parts+=("$5")
-  [ -n "${6:-}" ] && parts+=("$6")
-  [ -n "${7:-}" ] && parts+=("$7")
-  [ -n "${8:-}" ] && parts+=("$8")
-  local IFS=' | '
-  printf '%b' "${parts[*]}"
+# Segments in priority order (highest = kept longest, lowest = first dropped)
+# Model and context bar are always included if they fit
+build_output() {
+  local segments=()
+  segments+=("$SEG_MODEL")
+  segments+=("$SEG_CTX")
+  [ -n "$SEG_BRANCH" ]   && segments+=("$SEG_BRANCH")
+  [ -n "$SEG_RL" ]        && segments+=("$SEG_RL")
+  segments+=("$SEG_TOKENS")
+  segments+=("$SEG_LINES")
+  segments+=("$SEG_DURATION")
+  [ -n "$SEG_COST" ]      && segments+=("$SEG_COST")
+  segments+=("$SEG_ECC")
+
+  # Build progressively, checking width
+  local active=("${segments[0]}")
+  local seg candidate stripped
+  for seg in "${segments[@]:1}"; do
+    [ -z "$seg" ] && continue
+    candidate=$(IFS=; printf '%b' "$(join_segments "${active[@]}" "$seg")")
+    stripped=$(strip_ansi "$candidate")
+    if [ "${#stripped}" -le "$TERM_WIDTH" ] 2>/dev/null; then
+      active+=("$seg")
+    fi
+  done
+
+  IFS=; printf '%b' "$(join_segments "${active[@]}")"
 }
 
-# Try adding segments one at a time (drop from end if too wide)
-CANDIDATES=(
-  "$SEG_MODEL"
-  "$SEG_CTX"
-  "$SEG_BRANCH"
-  "$SEG_COST"
-  "$SEG_LINES"
-  "$SEG_TOKENS"
-  "$SEG_DURATION"
-  "$SEG_RL"
-  "$SEG_ECC"
-)
+join_segments() {
+  local result=""
+  local first=1
+  local s
+  for s in "$@"; do
+    if [ "$first" -eq 1 ]; then
+      result="$s"
+      first=0
+    else
+      result+="${SEP}${s}"
+    fi
+  done
+  printf '%s' "$result"
+}
 
-ACTIVE=("${CANDIDATES[0]}")
-for seg in "${CANDIDATES[@]:1}"; do
-  [ -z "$seg" ] && continue
-  CANDIDATE_LINE=$(build_line "${ACTIVE[@]}" "$seg")
-  STRIPPED=$(strip_ansi "$CANDIDATE_LINE")
-  VISIBLE_LEN=${#STRIPPED}
-  if [ "$VISIBLE_LEN" -le "$TERM_WIDTH" ] 2>/dev/null; then
-    ACTIVE+=("$seg")
-  fi
-done
+# Try full-width first, then narrow rate limits if too wide
+OUTPUT=$(build_output)
+STRIPPED=$(strip_ansi "$OUTPUT")
+if [ "${#STRIPPED}" -gt "$TERM_WIDTH" ] 2>/dev/null && [ -n "$SEG_RL_NARROW" ]; then
+  SEG_RL="$SEG_RL_NARROW"
+  OUTPUT=$(build_output)
+  STRIPPED=$(strip_ansi "$OUTPUT")
+fi
+if [ "${#STRIPPED}" -gt "$TERM_WIDTH" ] 2>/dev/null; then
+  SEG_CTX="$SEG_CTX_NARROW"
+  OUTPUT=$(build_output)
+fi
 
-OUTPUT=$(build_line "${ACTIVE[@]}")
 printf '%b' "$OUTPUT"
