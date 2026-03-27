@@ -50,6 +50,107 @@ mod tests {
     use crate::workflow::phase::Phase;
 
     #[test]
+    fn json_round_trip() {
+        let toolchain = Toolchain {
+            test: Some("cargo test".to_owned()),
+            lint: Some("cargo clippy -- -D warnings".to_owned()),
+            build: Some("cargo build".to_owned()),
+        };
+
+        let artifacts = Artifacts {
+            plan: Some("2026-03-26T22:09:19Z".to_owned()),
+            solution: Some("2026-03-26T22:21:47Z".to_owned()),
+            implement: Some("2026-03-26T22:28:30Z".to_owned()),
+            campaign_path: None,
+            spec_path: Some(
+                "docs/specs/2026-03-26-replace-hooks-with-rust/spec.md".to_owned(),
+            ),
+            design_path: Some(
+                "docs/specs/2026-03-26-replace-hooks-with-rust/design.md".to_owned(),
+            ),
+            tasks_path: Some(
+                "docs/specs/2026-03-26-replace-hooks-with-rust/tasks.md".to_owned(),
+            ),
+        };
+
+        let original = WorkflowState {
+            phase: Phase::Implement,
+            concern: "dev".to_owned(),
+            feature: "BL-052: Replace shell hooks with compiled Rust binaries".to_owned(),
+            started_at: "2026-03-26T21:45:00Z".to_owned(),
+            toolchain,
+            artifacts,
+            completed: vec![],
+        };
+
+        // Serialize to JSON
+        let json = serde_json::to_string_pretty(&original).expect("serialization must succeed");
+
+        // Verify required keys are present
+        assert!(json.contains(r#""concern""#), "JSON must contain 'concern' key");
+        assert!(json.contains(r#""phase""#), "JSON must contain 'phase' key");
+        assert!(json.contains(r#""feature""#), "JSON must contain 'feature' key");
+        assert!(json.contains(r#""started_at""#), "JSON must contain 'started_at' key");
+        assert!(json.contains(r#""toolchain""#), "JSON must contain 'toolchain' key");
+        assert!(json.contains(r#""artifacts""#), "JSON must contain 'artifacts' key");
+        assert!(json.contains(r#""completed""#), "JSON must contain 'completed' key");
+
+        // Verify phase serializes as lowercase string
+        assert!(
+            json.contains(r#""phase": "implement""#),
+            "phase must serialize as lowercase 'implement', got: {json}"
+        );
+
+        // Deserialize back and assert equality
+        let restored: WorkflowState =
+            serde_json::from_str(&json).expect("deserialization must succeed");
+        assert_eq!(original, restored);
+    }
+
+    #[test]
+    fn deserializes_from_fixture() {
+        let fixture = r#"{
+  "concern": "dev",
+  "phase": "implement",
+  "feature": "BL-052: Replace shell hooks with compiled Rust binaries",
+  "started_at": "2026-03-26T21:45:00Z",
+  "toolchain": {
+    "test": "cargo test",
+    "lint": "cargo clippy -- -D warnings",
+    "build": "cargo build"
+  },
+  "artifacts": {
+    "plan": "2026-03-26T22:09:19Z",
+    "solution": "2026-03-26T22:21:47Z",
+    "implement": "2026-03-26T22:28:30Z",
+    "campaign_path": null,
+    "spec_path": "docs/specs/2026-03-26-replace-hooks-with-rust/spec.md",
+    "design_path": "docs/specs/2026-03-26-replace-hooks-with-rust/design.md",
+    "tasks_path": "docs/specs/2026-03-26-replace-hooks-with-rust/tasks.md"
+  },
+  "completed": []
+}"#;
+
+        let state: WorkflowState =
+            serde_json::from_str(fixture).expect("fixture deserialization must succeed");
+
+        assert_eq!(state.phase, Phase::Implement);
+        assert_eq!(state.concern, "dev");
+        assert_eq!(
+            state.feature,
+            "BL-052: Replace shell hooks with compiled Rust binaries"
+        );
+        assert_eq!(state.started_at, "2026-03-26T21:45:00Z");
+        assert_eq!(state.toolchain.test, Some("cargo test".to_owned()));
+        assert_eq!(state.artifacts.campaign_path, None);
+        assert_eq!(
+            state.artifacts.spec_path,
+            Some("docs/specs/2026-03-26-replace-hooks-with-rust/spec.md".to_owned())
+        );
+        assert!(state.completed.is_empty());
+    }
+
+    #[test]
     fn creates_workflow_state_with_all_fields() {
         let toolchain = Toolchain {
             test: Some("cargo test".to_owned()),
