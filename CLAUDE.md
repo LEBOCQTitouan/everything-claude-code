@@ -31,6 +31,9 @@ ecc validate <target>     Validate content files (agents|commands|hooks|skills|r
 ecc dev on|off|status     Toggle ECC config on/off
 ecc dev switch dev|default [--dry-run]  Instant config switching via symlinks
 ecc validate statusline   Verify statusline installation
+ecc backlog next-id       Next sequential BL-NNN ID
+ecc backlog check-duplicates <title> [--tags t1,t2]  Check for duplicate entries
+ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ```
