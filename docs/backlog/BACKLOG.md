@@ -78,6 +78,9 @@
 | BL-075 | Deterministic task synchronization — single source of truth for tasks | — | HIGH | /spec dev | open | 2026-03-26 |
 | BL-076 | Statusline Unicode byte-counting bug hides rate limit segments | — | LOW | /spec-fix | open | 2026-03-27 |
 | BL-077 | Full documentation pass — coverage, drift validation, and gap analysis | — | EPIC | /spec-dev | open | 2026-03-27 |
+| BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | open | 2026-03-27 |
+| BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | open | 2026-03-27 |
+| BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | open | 2026-03-27 |
 
 ## Dependency Graph
 
@@ -112,13 +115,15 @@ BL-072 → BL-029 (scaffolding generates the artifact files that persistence man
 BL-072 → BL-030 (scaffolding generates tasks.md from solution PCs)
 BL-075 → BL-030 (task sync manages the persisted tasks.md)
 BL-075 → BL-041 (task sync complements task list ID persistence)
+BL-078 → BL-052 (Rust hook binaries make pre-hydration faster)
 ```
 
 ## Stats
 
-- **Total:** 73
-- **Open:** 29
+- **Total:** 76
+- **Open:** 32
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
+- **Stripe-inspired:** 3 (BL-078 through BL-080)
