@@ -26,16 +26,20 @@ fn main() {
     emit_and_exit(result);
 }
 
+/// Resolve the project root from `CLAUDE_PROJECT_DIR` env var, falling back to `.`.
+fn project_dir() -> std::path::PathBuf {
+    std::env::var("CLAUDE_PROJECT_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::path::PathBuf::from("."))
+}
+
 fn dispatch(cli: Cli) -> WorkflowOutput {
     match cli.command {
         Commands::Init { concern, feature } => {
             commands::init::run(&concern, &feature)
         }
         Commands::Transition { target } => {
-            let project_dir = std::env::var("CLAUDE_PROJECT_DIR")
-                .map(std::path::PathBuf::from)
-                .unwrap_or_else(|_| std::path::PathBuf::from("."));
-            match io::read_state(&project_dir) {
+            match io::read_state(&project_dir()) {
                 Ok(None) => WorkflowOutput::warn(
                     "No state.json found — workflow not initialized",
                 ),
