@@ -1659,3 +1659,129 @@ fn phase_gate() {
         std::str::from_utf8(&out_done.stderr).unwrap_or(""),
     );
 }
+
+// ── stop_gate tests ──────────────────────────────────────────────────────────
+
+/// Helper: run `ecc-workflow stop-gate` in a project directory.
+fn run_stop_gate(project_dir: &std::path::Path) -> std::process::Output {
+    let bin = binary_path();
+    Command::new(&bin)
+        .args(["stop-gate"])
+        .env("CLAUDE_PROJECT_DIR", project_dir)
+        .output()
+        .expect("failed to execute ecc-workflow stop-gate")
+}
+
+/// Helper: create a minimal state.json with a given phase inside a temp dir.
+fn write_state_with_phase(
+    project_dir: &std::path::Path,
+    phase: &str,
+    feature: &str,
+) {
+    let workflow_dir = project_dir.join(".claude/workflow");
+    std::fs::create_dir_all(&workflow_dir).unwrap();
+    let state = serde_json::json!({
+        "phase": phase,
+        "concern": "dev",
+        "feature": feature,
+        "slug": "test-feature",
+        "started_at": "2026-01-01T00:00:00Z",
+        "toolchain": { "test": null, "lint": null, "build": null },
+        "artifacts": {
+            "plan": null, "solution": null, "implement": null,
+            "campaign_path": null, "spec_path": null,
+            "design_path": null, "tasks_path": null
+        },
+        "completed": []
+    });
+    std::fs::write(
+        workflow_dir.join("state.json"),
+        serde_json::to_string_pretty(&state).unwrap(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn stop_gate_plan_phase_warns_on_stderr() {
+    let bin = binary_path();
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
+
+    let temp_dir = tempfile::tempdir().unwrap();
+    write_state_with_phase(temp_dir.path(), "plan", "my-feature");
+
+    let output = run_stop_gate(temp_dir.path());
+
+    // Must always exit 0 — stop-gate is informational only
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stop-gate must exit 0 even when phase is 'plan'\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&output.stdout).unwrap_or(""),
+        std::str::from_utf8(&output.stderr).unwrap_or(""),
+    );
+
+    // stderr must contain a WARNING
+    let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
+    assert!(
+        stderr.contains("WARNING"),
+        "expected WARNING in stderr for phase 'plan', got: '{stderr}'"
+    );
+
+    // stderr must mention the phase name
+    assert!(
+        stderr.contains("plan"),
+        "expected 'plan' in stderr warning, got: '{stderr}'"
+    );
+}
+
+#[test]
+fn stop_gate_done_phase_is_silent() {
+    let bin = binary_path();
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
+
+    let temp_dir = tempfile::tempdir().unwrap();
+    write_state_with_phase(temp_dir.path(), "done", "my-feature");
+
+    let output = run_stop_gate(temp_dir.path());
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stop-gate must exit 0 when phase is 'done'\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&output.stdout).unwrap_or(""),
+        std::str::from_utf8(&output.stderr).unwrap_or(""),
+    );
+
+    // stderr must be empty (silent) when phase is done
+    let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
+    assert!(
+        stderr.trim().is_empty(),
+        "expected silent stderr when phase is 'done', got: '{stderr}'"
+    );
+}
+
+#[test]
+fn stop_gate_no_state_is_silent() {
+    let bin = binary_path();
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
+
+    // Temp dir with NO state.json
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    let output = run_stop_gate(temp_dir.path());
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stop-gate must exit 0 when no state.json\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&output.stdout).unwrap_or(""),
+        std::str::from_utf8(&output.stderr).unwrap_or(""),
+    );
+
+    // No state.json → silent (no WARNING)
+    let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
+    assert!(
+        !stderr.contains("WARNING"),
+        "expected no WARNING in stderr when no state.json, got: '{stderr}'"
+    );
+}
