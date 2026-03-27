@@ -46,6 +46,10 @@ enum Commands {
     /// Warn when the spec/campaign file lacks a grill-me interview section.
     /// Always exits 0 — informational only.
     GrillMeGate,
+    /// Track TDD RED/GREEN/REFACTOR state during implement phase.
+    /// Reads hook protocol JSON from stdin.
+    /// Always exits 0 — informational only.
+    TddEnforcement,
 }
 
 fn main() {
@@ -91,6 +95,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::PhaseGate => commands::phase_gate::run(&project_dir()),
         Commands::StopGate => commands::stop_gate::run(&project_dir()),
         Commands::GrillMeGate => commands::grill_me_gate::run(&project_dir()),
+        Commands::TddEnforcement => commands::tdd_enforcement::run(&project_dir()),
     }
 }
 
