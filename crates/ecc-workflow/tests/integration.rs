@@ -2517,6 +2517,113 @@ fn doc_level_check() {
     );
 }
 
+/// e2e_boundary_check: verify that `ecc-workflow e2e-boundary-check` checks for "## E2E Tests"
+/// section in implement-done.md at the "done" phase.
+///
+/// AC-004.5 — warn when section missing, silent when present.
+#[test]
+fn e2e_boundary_check() {
+    let bin = binary_path();
+    assert!(bin.exists(), "ecc-workflow binary not found at {bin:?}");
+
+    fn run_e2e_boundary_check(
+        project_dir: &std::path::Path,
+        bin: &std::path::Path,
+    ) -> std::process::Output {
+        Command::new(bin)
+            .args(["e2e-boundary-check"])
+            .env("CLAUDE_PROJECT_DIR", project_dir)
+            .env_remove("ECC_WORKFLOW_BYPASS")
+            .output()
+            .expect("failed to execute ecc-workflow e2e-boundary-check")
+    }
+
+    // ── Scenario 1: no state.json → exits 0, silent ─────────────────────────────────────────
+    let dir_no_state = tempfile::tempdir().unwrap();
+    let out1 = run_e2e_boundary_check(dir_no_state.path(), &bin);
+    assert_eq!(
+        out1.status.code(),
+        Some(0),
+        "e2e-boundary-check must exit 0 with no state.json\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out1.stdout).unwrap_or(""),
+        std::str::from_utf8(&out1.stderr).unwrap_or(""),
+    );
+    assert!(
+        out1.stdout.trim_ascii().is_empty() && out1.stderr.trim_ascii().is_empty(),
+        "e2e-boundary-check must be silent when no state.json exists\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out1.stdout).unwrap_or(""),
+        std::str::from_utf8(&out1.stderr).unwrap_or(""),
+    );
+
+    // ── Scenario 2: plan phase → exits 0, silent ─────────────────────────────────────────────
+    let dir_plan = tempfile::tempdir().unwrap();
+    init_workflow_state(dir_plan.path(), "plan", &bin);
+    let out2 = run_e2e_boundary_check(dir_plan.path(), &bin);
+    assert_eq!(
+        out2.status.code(),
+        Some(0),
+        "e2e-boundary-check must exit 0 in plan phase\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out2.stdout).unwrap_or(""),
+        std::str::from_utf8(&out2.stderr).unwrap_or(""),
+    );
+    assert!(
+        out2.stdout.trim_ascii().is_empty() && out2.stderr.trim_ascii().is_empty(),
+        "e2e-boundary-check must be silent in plan phase\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out2.stdout).unwrap_or(""),
+        std::str::from_utf8(&out2.stderr).unwrap_or(""),
+    );
+
+    // ── Scenario 3: done phase, implement-done.md with "## E2E Tests" → exit 0, no warning ───
+    let dir_done_with_section = tempfile::tempdir().unwrap();
+    init_workflow_state(dir_done_with_section.path(), "done", &bin);
+    let workflow_dir3 = dir_done_with_section.path().join(".claude/workflow");
+    std::fs::write(
+        workflow_dir3.join("implement-done.md"),
+        "# Done\n\n## E2E Tests\n\n- Covered by existing suite\n",
+    )
+    .unwrap();
+    let out3 = run_e2e_boundary_check(dir_done_with_section.path(), &bin);
+    assert_eq!(
+        out3.status.code(),
+        Some(0),
+        "e2e-boundary-check must exit 0 when E2E Tests section present\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out3.stdout).unwrap_or(""),
+        std::str::from_utf8(&out3.stderr).unwrap_or(""),
+    );
+    let stderr3 = std::str::from_utf8(&out3.stderr).unwrap_or("");
+    assert!(
+        stderr3.trim().is_empty(),
+        "e2e-boundary-check must be silent when E2E Tests section present, got stderr: {stderr3}"
+    );
+
+    // ── Scenario 4: done phase, implement-done.md missing "## E2E Tests" → exit 0, warns ─────
+    let dir_done_missing = tempfile::tempdir().unwrap();
+    init_workflow_state(dir_done_missing.path(), "done", &bin);
+    let workflow_dir4 = dir_done_missing.path().join(".claude/workflow");
+    std::fs::write(
+        workflow_dir4.join("implement-done.md"),
+        "# Done\n\n## Docs Updated\n\n- Some doc\n",
+    )
+    .unwrap();
+    let out4 = run_e2e_boundary_check(dir_done_missing.path(), &bin);
+    assert_eq!(
+        out4.status.code(),
+        Some(0),
+        "e2e-boundary-check must always exit 0\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&out4.stdout).unwrap_or(""),
+        std::str::from_utf8(&out4.stderr).unwrap_or(""),
+    );
+    let stderr4 = std::str::from_utf8(&out4.stderr).unwrap_or("");
+    assert!(
+        !stderr4.trim().is_empty(),
+        "e2e-boundary-check must warn when E2E Tests section is missing, got empty stderr"
+    );
+    assert!(
+        stderr4.to_lowercase().contains("e2e"),
+        "warning must mention E2E, got stderr: {stderr4}"
+    );
+}
+
 // ── pass-condition-check tests ─────────────────────────────────────────────────────────────────
 
 fn run_pass_condition_check(
