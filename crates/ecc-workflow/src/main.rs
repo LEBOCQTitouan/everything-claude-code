@@ -36,6 +36,9 @@ enum Commands {
         /// Remaining arguments for the subcommand
         args: Vec<String>,
     },
+    /// Gate Write/Edit/MultiEdit and destructive Bash commands during plan/solution phases.
+    /// Reads hook protocol JSON from stdin.
+    PhaseGate,
 }
 
 fn main() {
@@ -78,6 +81,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::MemoryWrite { kind, args } => {
             commands::memory_write::run(&kind, &args, &project_dir())
         }
+        Commands::PhaseGate => commands::phase_gate::run(&project_dir()),
     }
 }
 
