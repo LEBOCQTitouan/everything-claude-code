@@ -6,6 +6,7 @@ mod commands;
 mod io;
 mod output;
 mod slug;
+mod time;
 
 #[derive(Parser)]
 #[command(name = "ecc-workflow", about = "ECC workflow state machine")]

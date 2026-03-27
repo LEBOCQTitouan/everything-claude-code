@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::output::WorkflowOutput;
 use crate::slug::make_slug;
+use crate::time::{utc_hhmm, utc_now_iso8601, utc_today};
 
 /// Dispatch `memory-write` subcommands.
 ///
@@ -57,49 +57,6 @@ pub fn run(kind: &str, args: &[String], project_dir: &Path) -> WorkflowOutput {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-fn utc_now_iso8601() -> String {
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let (year, month, day, hour, min, sec) = unix_secs_to_calendar(secs);
-    format!("{year:04}-{month:02}-{day:02}T{hour:02}:{min:02}:{sec:02}Z")
-}
-
-fn utc_today() -> String {
-    let ts = utc_now_iso8601();
-    // "YYYY-MM-DDTHH:MM:SSZ" — first 10 chars are the date
-    ts[..10].to_string()
-}
-
-fn utc_hhmm() -> String {
-    let ts = utc_now_iso8601();
-    // "YYYY-MM-DDTHH:MM:SSZ" — chars 11..16 are HH:MM
-    ts[11..16].to_string()
-}
-
-fn unix_secs_to_calendar(secs: u64) -> (u64, u64, u64, u64, u64, u64) {
-    let sec = secs % 60;
-    let mins = secs / 60;
-    let min = mins % 60;
-    let hours = mins / 60;
-    let hour = hours % 24;
-    let days = hours / 24;
-
-    let z = days + 719_468;
-    let era = z / 146_097;
-    let doe = z % 146_097;
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
-    let y = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = doy - (153 * mp + 2) / 5 + 1;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    let y = if m <= 2 { y + 1 } else { y };
-
-    (y, m, d, hour, min, sec)
-}
 
 /// Resolve `~/.claude/projects/<project-hash>/memory/` for a given project dir.
 ///
@@ -394,14 +351,11 @@ fn insert_after_activity(content: &str, entry: &str) -> String {
 
         if !inserted && line.trim() == "## Activity" {
             // Skip one blank line if present, then insert entry
-            if let Some(next) = lines.peek() {
-                if next.trim().is_empty() {
-                    // consume the blank line
-                    if let Some(blank) = lines.next() {
-                        result.push_str(blank);
-                        result.push('\n');
-                    }
-                }
+            if lines.peek().is_some_and(|next| next.trim().is_empty())
+                && let Some(blank) = lines.next()
+            {
+                result.push_str(blank);
+                result.push('\n');
             }
             result.push_str(entry);
             result.push('\n');
@@ -473,13 +427,11 @@ fn insert_after_daily_heading(content: &str, link: &str) -> String {
 
         if !inserted && line.trim() == "## Daily" {
             // Skip one blank line if present
-            if let Some(next) = lines.peek() {
-                if next.trim().is_empty() {
-                    if let Some(blank) = lines.next() {
-                        result.push_str(blank);
-                        result.push('\n');
-                    }
-                }
+            if lines.peek().is_some_and(|next| next.trim().is_empty())
+                && let Some(blank) = lines.next()
+            {
+                result.push_str(blank);
+                result.push('\n');
             }
             result.push_str(link);
             result.push('\n');
