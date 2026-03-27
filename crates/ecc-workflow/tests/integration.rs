@@ -413,6 +413,82 @@ fn transition_illegal_exits_nonzero() {
     );
 }
 
+/// bypass_env_var: when ECC_WORKFLOW_BYPASS=1, all subcommands exit 0 immediately with no output
+/// and without creating or modifying state.json.
+#[test]
+fn bypass_env_var() {
+    let bin = binary_path();
+    assert!(
+        bin.exists(),
+        "ecc-workflow binary not found at {:?}",
+        bin
+    );
+
+    // --- Test 1: init with bypass ---
+    let temp_dir = tempfile::tempdir().unwrap();
+
+    let output = Command::new(&bin)
+        .args(["init", "dev", "test"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .env("ECC_WORKFLOW_BYPASS", "1")
+        .output()
+        .expect("failed to execute ecc-workflow init with bypass");
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "expected exit 0 with ECC_WORKFLOW_BYPASS=1, got: {:?}",
+        output.status.code()
+    );
+
+    let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
+    assert!(
+        stdout.trim().is_empty(),
+        "expected empty stdout with ECC_WORKFLOW_BYPASS=1, got: '{stdout}'"
+    );
+
+    let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
+    assert!(
+        stderr.trim().is_empty(),
+        "expected empty stderr with ECC_WORKFLOW_BYPASS=1, got: '{stderr}'"
+    );
+
+    let state_path = temp_dir.path().join(".claude/workflow/state.json");
+    assert!(
+        !state_path.exists(),
+        "state.json must NOT be created when ECC_WORKFLOW_BYPASS=1"
+    );
+
+    // --- Test 2: transition with bypass ---
+    let temp_dir2 = tempfile::tempdir().unwrap();
+
+    let output2 = Command::new(&bin)
+        .args(["transition", "solution"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir2.path())
+        .env("ECC_WORKFLOW_BYPASS", "1")
+        .output()
+        .expect("failed to execute ecc-workflow transition with bypass");
+
+    assert_eq!(
+        output2.status.code(),
+        Some(0),
+        "expected exit 0 for transition with ECC_WORKFLOW_BYPASS=1, got: {:?}",
+        output2.status.code()
+    );
+
+    let stdout2 = std::str::from_utf8(&output2.stdout).unwrap_or("");
+    assert!(
+        stdout2.trim().is_empty(),
+        "expected empty stdout for transition with ECC_WORKFLOW_BYPASS=1, got: '{stdout2}'"
+    );
+
+    let stderr2 = std::str::from_utf8(&output2.stderr).unwrap_or("");
+    assert!(
+        stderr2.trim().is_empty(),
+        "expected empty stderr for transition with ECC_WORKFLOW_BYPASS=1, got: '{stderr2}'"
+    );
+}
+
 /// dual_invocation: verify both CLI args mode and stdin JSON mode produce equivalent results.
 ///
 /// Test 1 — CLI mode: `ecc-workflow init dev "test feature"` with no stdin piped.
