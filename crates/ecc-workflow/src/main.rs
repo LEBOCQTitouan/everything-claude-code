@@ -72,6 +72,9 @@ enum Commands {
     /// Warn when CLAUDE.md, README.md, or ARCHITECTURE.md exceed recommended size limits.
     /// Only runs at "done" phase. Always exits 0 — informational only.
     DocLevelCheck,
+    /// Check implement-done.md for pass condition results at "done" phase.
+    /// Warns on stderr if the section is missing or failures are found, always exits 0.
+    PassConditionCheck,
 }
 
 fn main() {
@@ -126,6 +129,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::ScopeCheck => commands::scope_check::run(&project_dir()),
         Commands::DocEnforcement => commands::doc_enforcement::run(&project_dir()),
         Commands::DocLevelCheck => commands::doc_level_check::run(&project_dir()),
+        Commands::PassConditionCheck => commands::pass_condition_check::run(&project_dir()),
     }
 }
 

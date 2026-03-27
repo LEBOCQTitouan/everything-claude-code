@@ -4,6 +4,7 @@ pub mod doc_level_check;
 pub mod grill_me_gate;
 pub mod init;
 pub mod memory_write;
+pub mod pass_condition_check;
 pub mod phase_gate;
 pub mod reset;
 pub mod scope_check;
