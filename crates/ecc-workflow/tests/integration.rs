@@ -632,6 +632,146 @@ fn dual_invocation() {
     );
 }
 
+/// init_matches_shell: verify that `ecc-workflow init` produces semantically equivalent
+/// state.json to the shell version, including stale workflow archiving and artifact cleanup.
+///
+/// AC-004.1 — same keys, same value types, same default values; stale archiving preserved.
+#[test]
+fn init_matches_shell() {
+    let bin = binary_path();
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
+
+    // ── Part 1: fixture JSON comparison ──────────────────────────────────────────────────────
+    // Run init and verify every field matches the shell version's schema.
+    let temp_dir = tempfile::tempdir().unwrap();
+    let output = Command::new(&bin)
+        .args(["init", "dev", "my feature"])
+        .env("CLAUDE_PROJECT_DIR", temp_dir.path())
+        .output()
+        .expect("failed to execute ecc-workflow init");
+
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "init must exit 0\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&output.stdout).unwrap_or(""),
+        std::str::from_utf8(&output.stderr).unwrap_or(""),
+    );
+
+    let state_path = temp_dir.path().join(".claude/workflow/state.json");
+    assert!(state_path.exists(), "state.json must exist after init");
+
+    let content = std::fs::read_to_string(&state_path).expect("failed to read state.json");
+    let v: serde_json::Value =
+        serde_json::from_str(&content).expect("state.json must be valid JSON");
+
+    // concern == "dev"
+    assert_eq!(v["concern"].as_str(), Some("dev"), "concern must be 'dev'");
+    // phase == "plan"
+    assert_eq!(v["phase"].as_str(), Some("plan"), "phase must be 'plan'");
+    // feature == "my feature"
+    assert_eq!(v["feature"].as_str(), Some("my feature"), "feature must be 'my feature'");
+    // started_at: ISO 8601 UTC, length 20, ends with Z
+    let started_at = v["started_at"].as_str().expect("started_at must be a string");
+    assert!(
+        started_at.len() == 20 && started_at.ends_with('Z') && started_at.contains('T'),
+        "started_at must be YYYY-MM-DDTHH:MM:SSZ, got: '{started_at}'"
+    );
+    // toolchain: test/lint/build all null
+    assert_eq!(v["toolchain"]["test"], serde_json::Value::Null, "toolchain.test must be null");
+    assert_eq!(v["toolchain"]["lint"], serde_json::Value::Null, "toolchain.lint must be null");
+    assert_eq!(v["toolchain"]["build"], serde_json::Value::Null, "toolchain.build must be null");
+    // artifacts: all expected keys null
+    for key in &["plan", "solution", "implement", "campaign_path", "spec_path", "design_path", "tasks_path"] {
+        assert_eq!(
+            v["artifacts"][key],
+            serde_json::Value::Null,
+            "artifacts.{key} must be null"
+        );
+    }
+    // completed == []
+    assert_eq!(
+        v["completed"],
+        serde_json::Value::Array(vec![]),
+        "completed must be []"
+    );
+
+    // ── Part 2: stale workflow archiving ─────────────────────────────────────────────────────
+    // If state.json exists and phase != "done", it must be archived before writing the new one.
+    let temp2 = tempfile::tempdir().unwrap();
+    let workflow_dir2 = temp2.path().join(".claude/workflow");
+    std::fs::create_dir_all(&workflow_dir2).unwrap();
+
+    // Write a stale state.json at phase "solution"
+    let stale_json = serde_json::json!({
+        "concern": "old-concern",
+        "phase": "solution",
+        "feature": "old feature",
+        "started_at": "2026-01-01T00:00:00Z",
+        "toolchain": { "test": null, "lint": null, "build": null },
+        "artifacts": { "plan": null, "solution": null, "implement": null, "campaign_path": null,
+                       "spec_path": null, "design_path": null, "tasks_path": null },
+        "completed": []
+    });
+    std::fs::write(
+        workflow_dir2.join("state.json"),
+        serde_json::to_string_pretty(&stale_json).unwrap(),
+    )
+    .unwrap();
+
+    // Also create implement-done.md and .tdd-state to test cleanup
+    std::fs::write(workflow_dir2.join("implement-done.md"), "done").unwrap();
+    std::fs::write(workflow_dir2.join(".tdd-state"), "state").unwrap();
+
+    // Run init over the stale state
+    let output2 = Command::new(&bin)
+        .args(["init", "dev", "new feature"])
+        .env("CLAUDE_PROJECT_DIR", temp2.path())
+        .output()
+        .expect("failed to execute ecc-workflow init (stale archiving)");
+
+    assert_eq!(
+        output2.status.code(),
+        Some(0),
+        "init must exit 0 even when overwriting stale state\nstdout: {}\nstderr: {}",
+        std::str::from_utf8(&output2.stdout).unwrap_or(""),
+        std::str::from_utf8(&output2.stderr).unwrap_or(""),
+    );
+
+    // Archive dir must exist
+    let archive_dir = workflow_dir2.join("archive");
+    assert!(archive_dir.exists(), "archive/ dir must be created when archiving stale state");
+
+    // At least one archived state file must exist
+    let archived: Vec<_> = std::fs::read_dir(&archive_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .collect();
+    assert!(
+        !archived.is_empty(),
+        "at least one archived state file must exist in archive/"
+    );
+
+    // implement-done.md must be deleted
+    assert!(
+        !workflow_dir2.join("implement-done.md").exists(),
+        "implement-done.md must be cleaned up during init"
+    );
+
+    // .tdd-state must be deleted
+    assert!(
+        !workflow_dir2.join(".tdd-state").exists(),
+        ".tdd-state must be cleaned up during init"
+    );
+
+    // New state.json has the new feature
+    let new_content =
+        std::fs::read_to_string(workflow_dir2.join("state.json")).expect("new state.json must exist");
+    let new_v: serde_json::Value = serde_json::from_str(&new_content).expect("valid JSON");
+    assert_eq!(new_v["feature"].as_str(), Some("new feature"), "new state must have new feature");
+    assert_eq!(new_v["phase"].as_str(), Some("plan"), "new state must start at plan phase");
+}
+
 /// toolchain_persist: verify that `ecc-workflow toolchain-persist` writes toolchain fields to state.json.
 #[test]
 fn toolchain_persist() {
