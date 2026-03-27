@@ -1,1 +1,1 @@
-// Subcommand modules will be added as scripts are ported
+pub mod init;
