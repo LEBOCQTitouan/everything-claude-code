@@ -1,7 +1,7 @@
 ---
 id: BL-061
 title: Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog
-status: open
+status: implemented
 scope: HIGH
 target: /spec-refactor
 created: 2026-03-23

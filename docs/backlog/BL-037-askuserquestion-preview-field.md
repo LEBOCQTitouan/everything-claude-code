@@ -1,7 +1,7 @@
 ---
 id: BL-037
 title: AskUserQuestion preview field for architecture comparisons
-status: open
+status: implemented
 created: 2026-03-21
 scope: LOW
 target_command: commands/spec-dev.md, commands/design.md

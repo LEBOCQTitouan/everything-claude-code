@@ -1,7 +1,7 @@
 ---
 id: BL-060
 title: Simplify context management — remove graceful exit, keep warnings only
-status: open
+status: implemented
 scope: HIGH
 target: /spec-refactor
 created: 2026-03-23

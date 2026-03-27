@@ -1,7 +1,7 @@
 ---
 id: BL-058
 title: Symlink-based instant config switching for ecc dev
-status: open
+status: implemented
 created: 2026-03-22
 promoted_to: ""
 tags: [ecc-dev, symlink, install, cli, config-switching]

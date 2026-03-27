@@ -1,7 +1,7 @@
 ---
 id: BL-053
 title: Poweruser statusline — explicit labels, usage bars, UX overhaul, and install fix
-status: open
+status: implemented
 created: 2026-03-22
 updated: 2026-03-26
 scope: HIGH

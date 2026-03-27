@@ -36,8 +36,8 @@
 | BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | archived | 2026-03-21 |
 | BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | open | 2026-03-21 |
 | BL-035 | Campaign file manifest for amnesiac agents | 9 | MEDIUM | /spec refactor | implemented | 2026-03-21 |
-| BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | open | 2026-03-21 |
-| BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | open | 2026-03-21 |
+| BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | implemented | 2026-03-21 |
+| BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | implemented | 2026-03-21 |
 | BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | open | 2026-03-21 |
 | BL-039 | CronCreate suggestion for periodic commands | 9 | LOW | audit/review/verify | open | 2026-03-21 |
 | BL-040 | Meta-steering rules for ECC development | 9 | LOW | rules/ecc/ (new) | implemented | 2026-03-21 |
@@ -49,19 +49,19 @@
 | BL-046 | Phase-gate hook blocks spec/plan/design file writes during active workflow phases | — | LOW | direct edit | implemented | 2026-03-21 |
 | BL-047 | Automatic session-to-memory persistence with daily files | — | HIGH | /spec dev | implemented | 2026-03-21 |
 | BL-048 | Comprehensive output summaries for spec → design → implement pipeline | — | MEDIUM | /spec-refactor | implemented | 2026-03-22 |
-| BL-049 | Offload web research phase to Task subagents in /spec-* commands | — | MEDIUM | /spec-refactor | open | 2026-03-22 |
+| BL-049 | Offload web research phase to Task subagents in /spec-* commands | — | MEDIUM | /spec-refactor | implemented | 2026-03-22 |
 | BL-050 | Deferred summary tables: coverage delta, bounded contexts, per-test-name | — | MEDIUM | /spec-dev | open | 2026-03-22 |
 | BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | implemented | 2026-03-22 |
-| BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | open | 2026-03-22 |
-| BL-053 | Poweruser statusline — labels, usage bars, UX overhaul, install fix | — | HIGH | /spec dev | open | 2026-03-22 |
+| BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | in-progress | 2026-03-22 |
+| BL-053 | Poweruser statusline — labels, usage bars, UX overhaul, install fix | — | HIGH | /spec dev | implemented | 2026-03-22 |
 | BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | archived | 2026-03-22 |
 | BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | archived | 2026-03-22 |
-| BL-056 | Context-aware doc generation step at end of /implement | — | HIGH | /spec dev | open | 2026-03-22 |
+| BL-056 | Context-aware doc generation step at end of /implement | — | HIGH | /spec dev | implemented | 2026-03-22 |
 | BL-057 | Create grill-me-adversary companion skill with adaptive loop | — | MEDIUM | /spec | implemented | 2026-03-22 |
-| BL-058 | Symlink-based instant config switching for ecc dev | — | MEDIUM | /spec-dev | open | 2026-03-22 |
+| BL-058 | Symlink-based instant config switching for ecc dev | — | MEDIUM | /spec-dev | implemented | 2026-03-22 |
 | BL-059 | Auto-commit backlog edits at end of /backlog command | — | LOW | /spec-dev | open | 2026-03-22 |
-| BL-060 | Simplify context management — remove graceful exit, keep warnings only | — | HIGH | /spec-refactor | open | 2026-03-23 |
-| BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | open | 2026-03-23 |
+| BL-060 | Simplify context management — remove graceful exit, keep warnings only | — | HIGH | /spec-refactor | implemented | 2026-03-23 |
+| BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | implemented | 2026-03-23 |
 | BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | open | 2026-03-26 |
 | BL-063 | Create /commit slash command | — | MEDIUM | /spec-dev | open | 2026-03-26 |
 | BL-064 | Full app cartography — user journeys, data flows, element registry | — | EPIC | /spec dev | open | 2026-03-26 |
@@ -115,7 +115,8 @@ BL-075 → BL-041 (task sync complements task list ID persistence)
 ## Stats
 
 - **Total:** 71
-- **Open:** 36
-- **Implemented:** 31
+- **Open:** 27
+- **In-progress:** 1
+- **Implemented:** 39
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)

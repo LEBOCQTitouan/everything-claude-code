@@ -1,7 +1,7 @@
 ---
 id: BL-052
 title: Replace .claude/hooks shell scripts with compiled Rust binaries
-status: open
+status: in-progress
 created: 2026-03-22
 promoted_to: ""
 tags: [rust, hooks, cross-platform, portability, workspace]

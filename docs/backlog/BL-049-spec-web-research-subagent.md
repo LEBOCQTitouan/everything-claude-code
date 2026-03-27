@@ -1,7 +1,7 @@
 ---
 id: BL-049
 title: Offload web research phase to Task subagents in /spec-* commands
-status: open
+status: implemented
 created: 2026-03-22
 promoted_to: ""
 tags: [spec, context-management, subagent, web-research, performance]

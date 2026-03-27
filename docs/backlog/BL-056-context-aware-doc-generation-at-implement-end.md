@@ -1,7 +1,7 @@
 ---
 id: BL-056
 title: Context-aware doc generation step at end of /implement
-status: open
+status: implemented
 created: 2026-03-22
 promoted_to: ""
 tags: [implement, doc-generation, MODULE-SUMMARIES, diagrams, mermaid, architecture]

@@ -1,7 +1,7 @@
 ---
 id: BL-036
 title: Add numeric quality scores to adversary agents
-status: open
+status: implemented
 created: 2026-03-21
 scope: MEDIUM
 target_command: agents/spec-adversary.md, agents/solution-adversary.md
