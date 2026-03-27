@@ -5,6 +5,7 @@ use output::WorkflowOutput;
 mod commands;
 mod io;
 mod output;
+mod slug;
 
 #[derive(Parser)]
 #[command(name = "ecc-workflow", about = "ECC workflow state machine")]
@@ -27,6 +28,12 @@ enum Commands {
         test_cmd: String,
         lint_cmd: String,
         build_cmd: String,
+    },
+    MemoryWrite {
+        /// Subcommand kind: action, work-item, daily, memory-index
+        kind: String,
+        /// Remaining arguments for the subcommand
+        args: Vec<String>,
     },
 }
 
@@ -67,6 +74,9 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
             lint_cmd,
             build_cmd,
         } => commands::toolchain_persist::run(&test_cmd, &lint_cmd, &build_cmd, &project_dir()),
+        Commands::MemoryWrite { kind, args } => {
+            commands::memory_write::run(&kind, &args, &project_dir())
+        }
     }
 }
 
