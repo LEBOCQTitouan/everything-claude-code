@@ -260,6 +260,10 @@ After adversarial PASS (or user override), write the spec to a versioned file:
 
 ## Phase 9: Present and STOP
 
+### Full Artifact Display
+
+Read the full artifact from `artifacts.spec_path` in state.json using the Read tool. Display the complete file content inline in conversation as the spec document body — no truncation, no summary. If the path is null or the file does not exist, emit a warning ("Spec artifact not found at the expected path; skipping inline display") and skip to the summary tables.
+
 Display a comprehensive Phase Summary using these tables:
 
 ### Grill-Me Decisions
@@ -299,6 +303,12 @@ Variant: Include a **Root cause** row summarizing the identified root cause vs s
 Append a `## Phase Summary` section containing all 5 tables above to the persisted spec file (`docs/specs/YYYY-MM-DD-<slug>/spec.md`). If `## Phase Summary` already exists in the file, overwrite it (idempotent).
 
 > **Note:** If continuing in a new session, copy the spec recap above or re-run `/spec-fix`.
+
+### Artifact File Path
+
+Display the persisted file path for future access:
+
+> **Spec persisted at:** `docs/specs/YYYY-MM-DD-<slug>/spec.md`
 
 Then STOP. Say:
 
