@@ -36,7 +36,7 @@ fn project_dir() -> std::path::PathBuf {
 fn dispatch(cli: Cli) -> WorkflowOutput {
     match cli.command {
         Commands::Init { concern, feature } => {
-            commands::init::run(&concern, &feature)
+            commands::init::run(&concern, &feature, &project_dir())
         }
         Commands::Transition { target } => {
             match io::read_state(&project_dir()) {
