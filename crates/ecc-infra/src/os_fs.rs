@@ -114,4 +114,31 @@ impl FileSystem for OsFileSystem {
             .map(|m| m.file_type().is_symlink())
             .unwrap_or(false)
     }
+
+    #[cfg(unix)]
+    fn set_permissions(&self, path: &Path, mode: u32) -> Result<(), FsError> {
+        use std::os::unix::fs::PermissionsExt;
+        let perms = std::fs::Permissions::from_mode(mode);
+        std::fs::set_permissions(path, perms).map_err(|e| FsError::io(path, e))
+    }
+
+    #[cfg(not(unix))]
+    fn set_permissions(&self, _path: &Path, _mode: u32) -> Result<(), FsError> {
+        Err(FsError::Unsupported(
+            "set_permissions is not supported on this platform".to_string(),
+        ))
+    }
+
+    #[cfg(unix)]
+    fn is_executable(&self, path: &Path) -> bool {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(path)
+            .map(|m| m.permissions().mode() & 0o111 != 0)
+            .unwrap_or(false)
+    }
+
+    #[cfg(not(unix))]
+    fn is_executable(&self, _path: &Path) -> bool {
+        false
+    }
 }

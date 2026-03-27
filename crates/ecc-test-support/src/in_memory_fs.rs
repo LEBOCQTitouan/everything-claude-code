@@ -9,6 +9,7 @@ pub struct InMemoryFileSystem {
     files: Arc<Mutex<BTreeMap<PathBuf, Vec<u8>>>>,
     dirs: Arc<Mutex<BTreeMap<PathBuf, ()>>>,
     symlinks: Arc<Mutex<BTreeMap<PathBuf, PathBuf>>>,
+    permissions: Arc<Mutex<BTreeMap<PathBuf, u32>>>,
 }
 
 impl InMemoryFileSystem {
@@ -17,7 +18,13 @@ impl InMemoryFileSystem {
             files: Arc::new(Mutex::new(BTreeMap::new())),
             dirs: Arc::new(Mutex::new(BTreeMap::new())),
             symlinks: Arc::new(Mutex::new(BTreeMap::new())),
+            permissions: Arc::new(Mutex::new(BTreeMap::new())),
         }
+    }
+
+    /// Query stored permissions for test assertions.
+    pub fn get_permissions(&self, path: &Path) -> Option<u32> {
+        self.permissions.lock().unwrap().get(path).copied()
     }
 
     /// Pre-populate a file for test setup.
@@ -201,6 +208,25 @@ impl FileSystem for InMemoryFileSystem {
     fn is_symlink(&self, path: &Path) -> bool {
         self.symlinks.lock().unwrap().contains_key(path)
     }
+
+    fn set_permissions(&self, path: &Path, mode: u32) -> Result<(), FsError> {
+        if !self.files.lock().unwrap().contains_key(path) {
+            return Err(FsError::NotFound(path.to_path_buf()));
+        }
+        self.permissions
+            .lock()
+            .unwrap()
+            .insert(path.to_path_buf(), mode);
+        Ok(())
+    }
+
+    fn is_executable(&self, path: &Path) -> bool {
+        self.permissions
+            .lock()
+            .unwrap()
+            .get(path)
+            .map_or(false, |m| m & 0o111 != 0)
+    }
 }
 
 #[cfg(test)]
@@ -305,6 +331,33 @@ mod tests {
         fs.remove_file(Path::new("/link.txt")).unwrap();
         assert!(!fs.is_symlink(Path::new("/link.txt")));
         assert!(!fs.exists(Path::new("/link.txt")));
+    }
+
+    #[test]
+    fn set_permissions_stores_mode() {
+        let fs = InMemoryFileSystem::new().with_file("/script.sh", "#!/bin/bash");
+        fs.set_permissions(Path::new("/script.sh"), 0o755).unwrap();
+        assert_eq!(fs.get_permissions(Path::new("/script.sh")), Some(0o755));
+    }
+
+    #[test]
+    fn is_executable_checks_permission_bits() {
+        let fs = InMemoryFileSystem::new().with_file("/script.sh", "#!/bin/bash");
+        assert!(!fs.is_executable(Path::new("/script.sh")));
+        fs.set_permissions(Path::new("/script.sh"), 0o755).unwrap();
+        assert!(fs.is_executable(Path::new("/script.sh")));
+    }
+
+    #[test]
+    fn set_permissions_fails_for_nonexistent_file() {
+        let fs = InMemoryFileSystem::new();
+        assert!(fs.set_permissions(Path::new("/nope.sh"), 0o755).is_err());
+    }
+
+    #[test]
+    fn is_executable_false_for_nonexistent() {
+        let fs = InMemoryFileSystem::new();
+        assert!(!fs.is_executable(Path::new("/nope")));
     }
 
     #[test]

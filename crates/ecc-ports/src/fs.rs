@@ -19,6 +19,8 @@ pub trait FileSystem: Send + Sync {
     fn create_symlink(&self, target: &Path, link: &Path) -> Result<(), FsError>;
     fn read_symlink(&self, link: &Path) -> Result<PathBuf, FsError>;
     fn is_symlink(&self, path: &Path) -> bool;
+    fn set_permissions(&self, path: &Path, mode: u32) -> Result<(), FsError>;
+    fn is_executable(&self, path: &Path) -> bool;
 }
 
 /// Errors that can occur during filesystem operations.
