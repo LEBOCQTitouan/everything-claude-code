@@ -19,3 +19,4 @@ pub mod session;
 pub mod smart_merge;
 pub mod validate;
 pub mod version;
+pub mod worktree;
