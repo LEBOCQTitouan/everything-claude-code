@@ -324,7 +324,12 @@ After writing:
 2. Commit tasks.md final state: `docs: finalize tasks.md for <feature>`
 3. Run: `!ecc-workflow transition done --artifact implement`
 4. Commit: `chore: write implement-done.md`
-5. **Worktree cleanup**: If running in a worktree, call `ExitWorktree` to return to the main repo. The worktree and branch are cleaned up automatically on success. If the implementation failed or was aborted, the worktree is preserved — run `ecc worktree gc` to clean up stale worktrees.
+5. **Serialized merge**: If running in a worktree, run: `!ecc-workflow merge`
+   - On **pass**: The branch was rebased, verified (build+test+clippy), merged ff-only to main, and the worktree+branch cleaned up. Call `ExitWorktree` to return to main repo. Proceed to Phase 8.
+   - On **warn** (rebase conflict): Worktree preserved with rebase aborted. Tell the user: "Rebase conflicts detected. Resolve conflicts in the worktree, then re-run `/implement` to re-trigger merge."
+   - On **warn** (verify failure): Worktree preserved. Tell the user: "Fast verify failed. Fix the issue in the worktree, then re-run `/implement` to re-trigger merge."
+   - On **block** (timeout): Tell the user: "Another session is merging. Wait and retry."
+   - If NOT in a worktree: skip merge (direct main development).
 
 ## Phase 8: Final Verification and STOP
 
