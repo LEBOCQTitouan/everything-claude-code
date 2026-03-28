@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all tests (1235 tests)
+cargo test              # Run all tests (1404 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo build --release   # Build release binary
 npm run lint            # Lint all Markdown files
@@ -17,7 +17,7 @@ npm run lint            # Lint all Markdown files
 
 ## Architecture
 
-Hexagonal architecture: domain → ports → app → infra → CLI (7 crates). See `docs/ARCHITECTURE.md` for full structure.
+Hexagonal architecture: domain → ports → app → infra → CLI (8 crates). `ecc-workflow` is a standalone binary for workflow state management. See `docs/ARCHITECTURE.md` for full structure.
 
 ## CLI Commands
 
@@ -51,7 +51,7 @@ Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention
 - `/design` produces the technical design, enters **Plan Mode** for architecture preview (arch docs, diagrams, bounded contexts), then adversarial review
 - `/implement` enters **Plan Mode** for implementation steps, then executes TDD loops with TaskCreate tracking and mandatory doc updates
 - All three phases use Plan Mode so the user reviews artifacts before execution
-- State machine in `.claude/workflow/` enforces phase ordering via hooks
+- State machine in `.claude/workflow/` enforces phase ordering via `ecc-workflow` binary
 
 ## Command Workflows
 
@@ -74,12 +74,12 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
 - `hooks.json` lives in `hooks/`, not the project root
 - Skill directory name must match the `name` field in its frontmatter
-- Test count in CLAUDE.md (currently 1185) must be updated after adding or removing tests
+- Test count in CLAUDE.md (currently 1404) must be updated after adding or removing tests
 - ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
 
 ## Development Notes
 
-- Source is Rust, organized as a Cargo workspace with 7 crates
+- Source is Rust, organized as a Cargo workspace with 8 crates
 - Hexagonal architecture: domain → ports → infra → app → CLI
 - All I/O is abstracted behind port traits, enabling full in-memory testing
 - Agent/skill/hook format: Markdown with YAML frontmatter (see `agents/`, `skills/`, `hooks/`)
