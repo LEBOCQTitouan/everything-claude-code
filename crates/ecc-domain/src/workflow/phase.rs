@@ -186,4 +186,55 @@ mod tests {
         let b = a; // copy
         assert_eq!(a, b);
     }
+
+    // --- Idle Display ---
+
+    #[test]
+    fn idle_displays_as_idle() {
+        assert_eq!(Phase::Idle.to_string(), "idle");
+    }
+
+    // --- Idle FromStr ---
+
+    #[test]
+    fn from_str_idle() {
+        assert_eq!(Phase::from_str("idle").unwrap(), Phase::Idle);
+    }
+
+    // --- Idle Serde ---
+
+    #[test]
+    fn round_trips_idle() {
+        let original = Phase::Idle;
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: Phase = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
+    }
+
+    // --- is_gated ---
+
+    #[test]
+    fn plan_is_gated() {
+        assert!(Phase::Plan.is_gated());
+    }
+
+    #[test]
+    fn solution_is_gated() {
+        assert!(Phase::Solution.is_gated());
+    }
+
+    #[test]
+    fn idle_is_not_gated() {
+        assert!(!Phase::Idle.is_gated());
+    }
+
+    #[test]
+    fn implement_is_not_gated() {
+        assert!(!Phase::Implement.is_gated());
+    }
+
+    #[test]
+    fn done_is_not_gated() {
+        assert!(!Phase::Done.is_gated());
+    }
 }

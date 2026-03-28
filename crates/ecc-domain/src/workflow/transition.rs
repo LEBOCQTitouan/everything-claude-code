@@ -60,6 +60,18 @@ mod tests {
         use super::*;
 
         #[test]
+        fn done_to_idle_returns_ok() {
+            let result = resolve_transition(Phase::Done, Phase::Idle);
+            assert_eq!(result, Ok(Phase::Idle));
+        }
+
+        #[test]
+        fn idle_to_plan_returns_ok() {
+            let result = resolve_transition(Phase::Idle, Phase::Plan);
+            assert_eq!(result, Ok(Phase::Plan));
+        }
+
+        #[test]
         fn plan_to_solution_returns_ok() {
             let result = resolve_transition(Phase::Plan, Phase::Solution);
             assert_eq!(result, Ok(Phase::Solution));
@@ -80,6 +92,24 @@ mod tests {
 
     mod illegal_transitions {
         use super::*;
+
+        #[test]
+        fn idle_to_solution_returns_err() {
+            let result = resolve_transition(Phase::Idle, Phase::Solution);
+            assert!(result.is_err(), "idle->solution should be illegal");
+        }
+
+        #[test]
+        fn idle_to_implement_returns_err() {
+            let result = resolve_transition(Phase::Idle, Phase::Implement);
+            assert!(result.is_err(), "idle->implement should be illegal");
+        }
+
+        #[test]
+        fn idle_to_done_returns_err() {
+            let result = resolve_transition(Phase::Idle, Phase::Done);
+            assert!(result.is_err(), "idle->done should be illegal");
+        }
 
         #[test]
         fn plan_to_implement_returns_err() {
@@ -192,6 +222,12 @@ mod tests {
 
     mod reentry_transitions {
         use super::*;
+
+        #[test]
+        fn idle_to_idle_returns_ok() {
+            let result = resolve_transition(Phase::Idle, Phase::Idle);
+            assert_eq!(result, Ok(Phase::Idle));
+        }
 
         #[test]
         fn plan_to_plan_returns_ok() {
