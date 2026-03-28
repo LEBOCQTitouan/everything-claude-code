@@ -84,6 +84,7 @@
 | BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | open | 2026-03-27 |
 | BL-082 | Add worktree display segment to statusline | — | LOW | direct edit | open | 2026-03-27 |
 | BL-083 | Adversarial challenge phase for all /audit-* commands | — | HIGH | /spec-dev | open | 2026-03-27 |
+| BL-084 | Backlog conformance audit — verify implementations match original intent | — | MEDIUM | /spec dev | open | 2026-03-28 |
 
 ## Dependency Graph
 
@@ -120,12 +121,14 @@ BL-075 → BL-030 (task sync manages the persisted tasks.md)
 BL-075 → BL-041 (task sync complements task list ID persistence)
 BL-078 → BL-052 (Rust hook binaries make pre-hydration faster)
 BL-081 → BL-078 (web audit benefits from context pre-hydration for inventory phase)
+BL-084 → BL-029 (conformance audit cross-references persisted spec artifacts)
+BL-084 → BL-066 (deterministic backlog IDs improve traceability)
 ```
 
 ## Stats
 
-- **Total:** 79
-- **Open:** 35
+- **Total:** 80
+- **Open:** 36
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
