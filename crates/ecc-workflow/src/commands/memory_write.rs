@@ -4,6 +4,54 @@ use crate::output::WorkflowOutput;
 use crate::slug::make_slug;
 use crate::time::{utc_hhmm, utc_now_iso8601, utc_today};
 
+#[cfg(test)]
+mod uses_correct_lock_tests {
+    use tempfile::TempDir;
+
+    /// PC-012: Each memory type creates its dedicated lock file.
+    #[test]
+    fn uses_correct_lock() {
+        let tmp = TempDir::new().unwrap();
+        let project_dir = tmp.path();
+
+        // write_action → action-log.lock
+        let _ = super::write_action("plan", "test", "success", "[]", project_dir);
+        let action_lock = ecc_flock::lock_dir(project_dir).join("action-log.lock");
+        assert!(
+            action_lock.exists(),
+            "action-log.lock not created at {:?}",
+            action_lock
+        );
+
+        // write_work_item → work-item.lock
+        let _ = super::write_work_item("plan", "test feature", "dev", project_dir);
+        let work_item_lock = ecc_flock::lock_dir(project_dir).join("work-item.lock");
+        assert!(
+            work_item_lock.exists(),
+            "work-item.lock not created at {:?}",
+            work_item_lock
+        );
+
+        // write_daily → daily.lock
+        let _ = super::write_daily("plan", "feature", "dev", project_dir);
+        let daily_lock = ecc_flock::lock_dir(project_dir).join("daily.lock");
+        assert!(
+            daily_lock.exists(),
+            "daily.lock not created at {:?}",
+            daily_lock
+        );
+
+        // write_memory_index → memory-index.lock
+        let _ = super::write_memory_index(project_dir);
+        let memory_index_lock = ecc_flock::lock_dir(project_dir).join("memory-index.lock");
+        assert!(
+            memory_index_lock.exists(),
+            "memory-index.lock not created at {:?}",
+            memory_index_lock
+        );
+    }
+}
+
 /// Dispatch `memory-write` subcommands.
 ///
 /// Supported kinds:
@@ -63,8 +111,7 @@ pub fn run(kind: &str, args: &[String], project_dir: &Path) -> WorkflowOutput {
 /// The project hash is the absolute path with the leading `/` stripped and
 /// remaining `/` replaced with `-`.
 fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Error> {
-    let home = std::env::var("HOME")
-        .map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
+    let home = std::env::var("HOME").map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
 
     // Canonicalize to get absolute path; fall back to as-is if that fails.
     let abs = std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
@@ -103,8 +150,8 @@ pub fn write_action(
     let session_id = std::env::var("CLAUDE_SESSION_ID").unwrap_or_else(|_| "unknown".to_string());
 
     // Parse artifacts_json to ensure it's valid JSON
-    let artifacts: serde_json::Value = serde_json::from_str(artifacts_json)
-        .unwrap_or(serde_json::Value::Array(vec![]));
+    let artifacts: serde_json::Value =
+        serde_json::from_str(artifacts_json).unwrap_or(serde_json::Value::Array(vec![]));
 
     let entry = serde_json::json!({
         "timestamp": timestamp,
@@ -119,8 +166,8 @@ pub fn write_action(
     // Atomic append: read current array, push entry, write atomically
     let current_content = std::fs::read_to_string(&action_log)
         .map_err(|e| anyhow::anyhow!("Failed to read action-log.json: {e}"))?;
-    let mut log: serde_json::Value = serde_json::from_str(&current_content)
-        .unwrap_or(serde_json::Value::Array(vec![]));
+    let mut log: serde_json::Value =
+        serde_json::from_str(&current_content).unwrap_or(serde_json::Value::Array(vec![]));
 
     if let Some(arr) = log.as_array_mut() {
         arr.push(entry);
@@ -262,8 +309,7 @@ pub fn write_daily(
     concern: &str,
     project_dir: &Path,
 ) -> Result<(), anyhow::Error> {
-    let memory_dir =
-        resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let memory_dir = resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     let daily_dir = memory_dir.join("daily");
     std::fs::create_dir_all(&daily_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create daily dir: {e}"))?;
@@ -375,8 +421,7 @@ fn insert_after_activity(content: &str, entry: &str) -> String {
 // ── memory-index ──────────────────────────────────────────────────────────────
 
 pub fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
-    let memory_dir =
-        resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let memory_dir = resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     std::fs::create_dir_all(&memory_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;
 
