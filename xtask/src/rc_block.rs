@@ -10,12 +10,12 @@ pub struct RcBlockResult {
     pub changed: bool,
 }
 
-#[allow(dead_code)]
 /// Update RC file content with a managed block.
 /// - If no markers exist: append block with markers at end
 /// - If markers exist: replace content between them
 /// - If content identical: return changed=false
 /// - If only start marker (no end): treat as no block, insert fresh
+#[allow(dead_code)]
 pub fn update_rc_content(existing: &str, block_lines: &[&str]) -> RcBlockResult {
     let new_block = build_block(block_lines);
 
