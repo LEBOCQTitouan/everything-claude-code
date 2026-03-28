@@ -134,13 +134,13 @@ fn subagent_stop_log_exits_zero() {
         .success();
 }
 
-/// stop:worktree-cleanup-reminder dispatches and exits zero.
+/// post:enter-worktree:session-log dispatches and exits zero.
 #[test]
-fn worktree_cleanup_reminder_exits_zero() {
+fn enter_worktree_session_log_exits_zero() {
     let env = EccTestEnv::new();
     env.cmd()
-        .args(["hook", "stop:worktree-cleanup-reminder"])
-        .write_stdin(r#"{"worktree_path":"/tmp/wt-test"}"#)
+        .args(["hook", "post:enter-worktree:session-log", "standard,strict"])
+        .write_stdin(r#"{"tool_name":"EnterWorktree","tool_input":{"worktree_path":"/tmp/wt"}}"#)
         .assert()
         .success();
 }
@@ -167,27 +167,15 @@ fn config_change_log_exits_zero() {
         .success();
 }
 
-/// worktree:create:init dispatches and exits zero.
+/// post:exit-worktree:cleanup-reminder dispatches and exits zero.
 #[test]
-fn worktree_create_init_exits_zero() {
+fn exit_worktree_cleanup_reminder_exits_zero() {
     let env = EccTestEnv::new();
     env.cmd()
-        .args(["hook", "worktree:create:init", "standard,strict"])
-        .write_stdin(r#"{"worktree_path":"/tmp/wt-test"}"#)
+        .args(["hook", "post:exit-worktree:cleanup-reminder", "standard,strict"])
+        .write_stdin(r#"{"tool_name":"ExitWorktree","tool_input":{"worktree_path":"/tmp/wt"}}"#)
         .assert()
         .success();
-}
-
-/// WorktreeRemove event dispatches stop:worktree-cleanup-reminder and exits zero.
-#[test]
-fn worktree_remove_dispatches_exits_zero() {
-    let env = EccTestEnv::new();
-    env.cmd()
-        .args(["hook", "stop:worktree-cleanup-reminder", "standard,strict"])
-        .write_stdin(r#"{"worktree_path":"/tmp/wt-removed"}"#)
-        .assert()
-        .success()
-        .stderr(predicate::str::contains("unmerged"));
 }
 
 /// 3-arg legacy format actually dispatches (not just parses).
