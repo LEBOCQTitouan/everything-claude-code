@@ -7,8 +7,7 @@ use std::collections::BTreeMap;
 pub fn generate_index_table(entries: &[BacklogEntry]) -> String {
     let mut sorted: Vec<&BacklogEntry> = entries.iter().collect();
     sorted.sort_by_key(|e| {
-        e.id
-            .strip_prefix("BL-")
+        e.id.strip_prefix("BL-")
             .and_then(|s| s.parse::<u32>().ok())
             .unwrap_or(0)
     });
@@ -23,7 +22,13 @@ pub fn generate_index_table(entries: &[BacklogEntry]) -> String {
         let target = entry.effective_target();
         lines.push(format!(
             "| {} | {} | {} | {} | {} | {} | {} |",
-            entry.id, entry.title, tier, scope, target, entry.status.as_str(), entry.created
+            entry.id,
+            entry.title,
+            tier,
+            scope,
+            target,
+            entry.status.as_str(),
+            entry.created
         ));
     }
 

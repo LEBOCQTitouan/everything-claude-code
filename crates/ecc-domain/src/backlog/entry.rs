@@ -89,7 +89,9 @@ impl BacklogEntry {
 /// Returns `None` if the filename doesn't match the BL-NNN pattern.
 pub fn extract_id_from_filename(filename: &str) -> Option<u32> {
     let stripped = filename.strip_prefix("BL-")?;
-    let end = stripped.find(|c: char| !c.is_ascii_digit()).unwrap_or(stripped.len());
+    let end = stripped
+        .find(|c: char| !c.is_ascii_digit())
+        .unwrap_or(stripped.len());
     let digits = &stripped[..end];
     if digits.is_empty() {
         return None;

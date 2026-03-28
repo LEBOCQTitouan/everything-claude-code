@@ -99,7 +99,9 @@ mod tests {
         assert_eq!(op.target, PathBuf::from("/ecc/agents"));
         assert_eq!(op.link, PathBuf::from("/home/.claude/agents"));
 
-        let plan = SymlinkPlan { ops: vec![op.clone()] };
+        let plan = SymlinkPlan {
+            ops: vec![op.clone()],
+        };
         assert_eq!(plan.ops().len(), 1);
         assert_eq!(plan.ops()[0], op);
     }

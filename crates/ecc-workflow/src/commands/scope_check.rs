@@ -62,10 +62,7 @@ fn extract_expected_files(design_content: &str) -> Vec<String> {
         if let Some(first) = cols.first() {
             let path = first.trim();
             // Skip header rows (case-insensitive check for column headers)
-            if path.to_lowercase() == "file"
-                || path.to_lowercase() == "path"
-                || path.is_empty()
-            {
+            if path.to_lowercase() == "file" || path.to_lowercase() == "path" || path.is_empty() {
                 continue;
             }
             files.push(path.to_string());
@@ -102,7 +99,9 @@ fn git_changed_files(project_dir: &Path) -> Vec<String> {
         .current_dir(project_dir)
         .output();
 
-    if let Ok(o) = untracked && o.status.success() {
+    if let Ok(o) = untracked
+        && o.status.success()
+    {
         files.extend(
             std::str::from_utf8(&o.stdout)
                 .unwrap_or("")
@@ -182,8 +181,9 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
     };
 
     // Extract expected paths from the File Changes table.
-    let expected: std::collections::HashSet<String> =
-        extract_expected_files(&design_content).into_iter().collect();
+    let expected: std::collections::HashSet<String> = extract_expected_files(&design_content)
+        .into_iter()
+        .collect();
 
     // Get actually changed files.
     let changed = git_changed_files(project_dir);

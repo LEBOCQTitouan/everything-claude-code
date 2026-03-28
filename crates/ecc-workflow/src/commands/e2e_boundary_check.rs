@@ -37,4 +37,3 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
     WorkflowOutput::pass("")
 }
-

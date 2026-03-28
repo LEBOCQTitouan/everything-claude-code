@@ -50,9 +50,7 @@ pub fn levenshtein_distance(a: &str, b: &str) -> usize {
             } else {
                 1
             };
-            curr[j] = (prev[j] + 1)
-                .min(curr[j - 1] + 1)
-                .min(prev[j - 1] + cost);
+            curr[j] = (prev[j] + 1).min(curr[j - 1] + 1).min(prev[j - 1] + cost);
         }
         std::mem::swap(&mut prev, &mut curr);
     }
@@ -106,10 +104,8 @@ pub fn composite_score(
     query_tags: &[String],
     entry_tags: &[String],
 ) -> f64 {
-    let lev = normalized_levenshtein_similarity(
-        &query_title.to_lowercase(),
-        &entry_title.to_lowercase(),
-    );
+    let lev =
+        normalized_levenshtein_similarity(&query_title.to_lowercase(), &entry_title.to_lowercase());
     let jac = keyword_jaccard(query_title, entry_title);
 
     let query_tag_set: HashSet<&str> = query_tags.iter().map(|s| s.as_str()).collect();

@@ -98,7 +98,10 @@ mod tests {
         .unwrap();
 
         // Flag file must exist after with_state_lock returns
-        assert!(flag_path.exists(), "closure did not run inside with_state_lock");
+        assert!(
+            flag_path.exists(),
+            "closure did not run inside with_state_lock"
+        );
 
         // Lock file must exist (was created during acquire)
         let lock_file = ecc_flock::lock_dir(project_dir).join("state.lock");

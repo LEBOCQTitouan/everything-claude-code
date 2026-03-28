@@ -235,10 +235,7 @@ impl FileSystem for InMemoryFileSystem {
                 .remove(from)
                 .ok_or_else(|| FsError::NotFound(from.to_path_buf()))?
         };
-        self.files
-            .lock()
-            .unwrap()
-            .insert(to.to_path_buf(), content);
+        self.files.lock().unwrap().insert(to.to_path_buf(), content);
         if let Some(parent) = to.parent() {
             self.dirs.lock().unwrap().insert(parent.to_path_buf(), ());
         }

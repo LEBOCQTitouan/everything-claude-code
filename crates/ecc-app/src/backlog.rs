@@ -3,10 +3,10 @@
 //! Orchestrates domain logic through the FileSystem port.
 
 use ecc_domain::backlog::entry::{
-    extract_id_from_filename, parse_frontmatter, BacklogEntry, BacklogError,
+    BacklogEntry, BacklogError, extract_id_from_filename, parse_frontmatter,
 };
 use ecc_domain::backlog::index::{extract_dependency_graph, generate_index_table, generate_stats};
-use ecc_domain::backlog::similarity::{composite_score, DuplicateCandidate, DUPLICATE_THRESHOLD};
+use ecc_domain::backlog::similarity::{DUPLICATE_THRESHOLD, DuplicateCandidate, composite_score};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
@@ -99,7 +99,11 @@ pub fn check_duplicates(
         }
     }
 
-    candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    candidates.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     Ok(candidates)
 }
 
@@ -302,8 +306,7 @@ mod tests {
                 "/backlog/BL-002-implemented.md",
                 &bl_file(2, "Same title here", "implemented"),
             );
-        let result =
-            check_duplicates(&fs, Path::new("/backlog"), "Same title here", &[]).unwrap();
+        let result = check_duplicates(&fs, Path::new("/backlog"), "Same title here", &[]).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].id, "BL-001");
     }
@@ -329,13 +332,12 @@ mod tests {
     #[test]
     fn check_duplicates_skips_malformed() {
         let fs = InMemoryFileSystem::new()
-            .with_file("/backlog/BL-001-valid.md", &bl_file(1, "Valid entry", "open"))
             .with_file(
-                "/backlog/BL-002-malformed.md",
-                "not valid yaml frontmatter",
-            );
-        let result =
-            check_duplicates(&fs, Path::new("/backlog"), "Valid entry", &[]).unwrap();
+                "/backlog/BL-001-valid.md",
+                &bl_file(1, "Valid entry", "open"),
+            )
+            .with_file("/backlog/BL-002-malformed.md", "not valid yaml frontmatter");
+        let result = check_duplicates(&fs, Path::new("/backlog"), "Valid entry", &[]).unwrap();
         assert!(!result.is_empty());
     }
 
@@ -366,9 +368,7 @@ mod tests {
         let result = reindex(&fs, Path::new("/backlog"), false).unwrap();
         assert!(result.is_none(), "non-dry-run should return None");
 
-        let content = fs
-            .read_to_string(Path::new("/backlog/BACKLOG.md"))
-            .unwrap();
+        let content = fs.read_to_string(Path::new("/backlog/BACKLOG.md")).unwrap();
         assert!(content.contains("BL-001"));
         assert!(content.contains("BL-002"));
         assert!(content.contains("BL-003"));
@@ -411,9 +411,7 @@ mod tests {
 
         reindex(&fs, Path::new("/backlog"), false).unwrap();
 
-        let content = fs
-            .read_to_string(Path::new("/backlog/BACKLOG.md"))
-            .unwrap();
+        let content = fs.read_to_string(Path::new("/backlog/BACKLOG.md")).unwrap();
         assert!(content.contains("BL-001"));
         assert!(!content.contains("BL-002"));
         assert!(content.contains("**Total:** 1"));
@@ -426,9 +424,7 @@ mod tests {
 
         reindex(&fs, Path::new("/backlog"), false).unwrap();
 
-        let content = fs
-            .read_to_string(Path::new("/backlog/BACKLOG.md"))
-            .unwrap();
+        let content = fs.read_to_string(Path::new("/backlog/BACKLOG.md")).unwrap();
         assert!(content.contains("# Backlog Index"));
         assert!(content.contains("BL-001"));
         assert!(!content.contains("Dependency Graph"));

@@ -116,16 +116,23 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
             terminal.stdout_write(&output);
         }
         DevAction::Switch { profile, dry_run } => {
-            let ecc_root =
-                install::resolve_ecc_root(&fs, &env).map_err(|e| anyhow::anyhow!(e))?;
+            let ecc_root = install::resolve_ecc_root(&fs, &env).map_err(|e| anyhow::anyhow!(e))?;
             let domain_profile: ecc_domain::config::dev_profile::DevProfile = profile.into();
             dev::dev_switch(
-                &fs, &terminal, &ecc_root, &claude_dir, domain_profile.clone(), dry_run,
+                &fs,
+                &terminal,
+                &ecc_root,
+                &claude_dir,
+                domain_profile.clone(),
+                dry_run,
             )
             .map_err(|e| anyhow::anyhow!("{e}"))?;
 
             // After switching to Default, reinstall copied files
-            if matches!(domain_profile, ecc_domain::config::dev_profile::DevProfile::Default) {
+            if matches!(
+                domain_profile,
+                ecc_domain::config::dev_profile::DevProfile::Default
+            ) {
                 let ctx = InstallContext {
                     fs: &fs,
                     shell: &shell,
@@ -134,7 +141,12 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
                 };
                 let now = format_now();
                 let summary = dev::dev_on(
-                    &ctx, &ecc_root, &claude_dir, version::version(), &now, dry_run,
+                    &ctx,
+                    &ecc_root,
+                    &claude_dir,
+                    version::version(),
+                    &now,
+                    dry_run,
                 );
                 if !summary.success {
                     std::process::exit(1);

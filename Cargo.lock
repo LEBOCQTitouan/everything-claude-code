@@ -308,6 +308,7 @@ version = "4.2.0"
 dependencies = [
  "anyhow",
  "crossterm",
+ "ecc-flock",
  "ecc-ports",
  "libc",
  "log",
@@ -350,6 +351,7 @@ dependencies = [
  "anyhow",
  "clap",
  "ecc-domain",
+ "ecc-flock",
  "serde",
  "serde_json",
  "tempfile",

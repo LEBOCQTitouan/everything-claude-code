@@ -77,4 +77,3 @@ fn has_section_with_content(content: &str, heading: &str) -> bool {
         .lines()
         .any(|line| line.trim_start().starts_with("- ") || line.trim_start().starts_with('|'))
 }
-

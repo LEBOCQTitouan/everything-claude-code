@@ -171,15 +171,9 @@ mod tests {
             solution: Some("2026-03-26T22:21:47Z".to_owned()),
             implement: Some("2026-03-26T22:28:30Z".to_owned()),
             campaign_path: None,
-            spec_path: Some(
-                "docs/specs/2026-03-26-replace-hooks-with-rust/spec.md".to_owned(),
-            ),
-            design_path: Some(
-                "docs/specs/2026-03-26-replace-hooks-with-rust/design.md".to_owned(),
-            ),
-            tasks_path: Some(
-                "docs/specs/2026-03-26-replace-hooks-with-rust/tasks.md".to_owned(),
-            ),
+            spec_path: Some("docs/specs/2026-03-26-replace-hooks-with-rust/spec.md".to_owned()),
+            design_path: Some("docs/specs/2026-03-26-replace-hooks-with-rust/design.md".to_owned()),
+            tasks_path: Some("docs/specs/2026-03-26-replace-hooks-with-rust/tasks.md".to_owned()),
         };
 
         let original = WorkflowState {
@@ -196,13 +190,31 @@ mod tests {
         let json = serde_json::to_string_pretty(&original).expect("serialization must succeed");
 
         // Verify required keys are present
-        assert!(json.contains(r#""concern""#), "JSON must contain 'concern' key");
+        assert!(
+            json.contains(r#""concern""#),
+            "JSON must contain 'concern' key"
+        );
         assert!(json.contains(r#""phase""#), "JSON must contain 'phase' key");
-        assert!(json.contains(r#""feature""#), "JSON must contain 'feature' key");
-        assert!(json.contains(r#""started_at""#), "JSON must contain 'started_at' key");
-        assert!(json.contains(r#""toolchain""#), "JSON must contain 'toolchain' key");
-        assert!(json.contains(r#""artifacts""#), "JSON must contain 'artifacts' key");
-        assert!(json.contains(r#""completed""#), "JSON must contain 'completed' key");
+        assert!(
+            json.contains(r#""feature""#),
+            "JSON must contain 'feature' key"
+        );
+        assert!(
+            json.contains(r#""started_at""#),
+            "JSON must contain 'started_at' key"
+        );
+        assert!(
+            json.contains(r#""toolchain""#),
+            "JSON must contain 'toolchain' key"
+        );
+        assert!(
+            json.contains(r#""artifacts""#),
+            "JSON must contain 'artifacts' key"
+        );
+        assert!(
+            json.contains(r#""completed""#),
+            "JSON must contain 'completed' key"
+        );
 
         // Verify phase serializes as lowercase string
         assert!(
@@ -272,15 +284,9 @@ mod tests {
             solution: Some("2026-03-26T22:21:47Z".to_owned()),
             implement: Some("2026-03-26T22:28:30Z".to_owned()),
             campaign_path: None,
-            spec_path: Some(
-                "docs/specs/2026-03-26-replace-hooks-with-rust/spec.md".to_owned(),
-            ),
-            design_path: Some(
-                "docs/specs/2026-03-26-replace-hooks-with-rust/design.md".to_owned(),
-            ),
-            tasks_path: Some(
-                "docs/specs/2026-03-26-replace-hooks-with-rust/tasks.md".to_owned(),
-            ),
+            spec_path: Some("docs/specs/2026-03-26-replace-hooks-with-rust/spec.md".to_owned()),
+            design_path: Some("docs/specs/2026-03-26-replace-hooks-with-rust/design.md".to_owned()),
+            tasks_path: Some("docs/specs/2026-03-26-replace-hooks-with-rust/tasks.md".to_owned()),
         };
 
         let completion = Completion {

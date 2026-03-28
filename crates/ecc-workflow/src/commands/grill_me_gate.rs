@@ -57,9 +57,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
     }
 
     // Check each path for grill-me markers.
-    let has_marker = paths_to_check
-        .iter()
-        .any(|p| file_has_grill_me_marker(p));
+    let has_marker = paths_to_check.iter().any(|p| file_has_grill_me_marker(p));
 
     if has_marker {
         WorkflowOutput::pass("")

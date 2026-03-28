@@ -43,8 +43,7 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
 
     match args.action {
         BacklogAction::NextId => {
-            let id = ecc_app::backlog::next_id(&fs, dir)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let id = ecc_app::backlog::next_id(&fs, dir).map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("{id}");
         }
         BacklogAction::CheckDuplicates { query, tags } => {
@@ -57,8 +56,8 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
             println!("{json}");
         }
         BacklogAction::Reindex { dry_run } => {
-            let output = ecc_app::backlog::reindex(&fs, dir, dry_run)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let output =
+                ecc_app::backlog::reindex(&fs, dir, dry_run).map_err(|e| anyhow::anyhow!("{e}"))?;
             if let Some(content) = output {
                 print!("{content}");
             }

@@ -18,7 +18,12 @@ impl std::fmt::Display for FlockError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::DirCreation { path, message } => {
-                write!(f, "failed to create lock dir {}: {}", path.display(), message)
+                write!(
+                    f,
+                    "failed to create lock dir {}: {}",
+                    path.display(),
+                    message
+                )
             }
             Self::AcquireFailed { path, message } => {
                 write!(f, "failed to acquire lock {}: {}", path.display(), message)
@@ -227,8 +232,8 @@ mod tests {
     #[test]
     fn acquire_with_timeout_succeeds_when_free() {
         let tmp = TempDir::new().unwrap();
-        let guard = acquire_with_timeout(tmp.path(), "timeout-free", Duration::from_secs(1))
-            .unwrap();
+        let guard =
+            acquire_with_timeout(tmp.path(), "timeout-free", Duration::from_secs(1)).unwrap();
         drop(guard);
     }
 

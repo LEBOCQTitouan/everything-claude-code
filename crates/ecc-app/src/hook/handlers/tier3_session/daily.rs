@@ -151,7 +151,8 @@ mod tests {
         assert_eq!(result.exit_code, 0);
 
         // Verify a daily file was created
-        let dir = std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
+        let dir =
+            std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
         let entries = fs.read_dir(dir).expect("daily dir should exist");
         assert_eq!(entries.len(), 1);
 
@@ -173,7 +174,8 @@ mod tests {
         // Pre-create daily dir and file
         let now = datetime_from_epoch(epoch_secs());
         let today = format_date(&now);
-        let dir_path = std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
+        let dir_path =
+            std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
         fs.create_dir_all(dir_path).unwrap();
         let file_path = dir_path.join(format!("{}.md", today));
         let existing = format!(

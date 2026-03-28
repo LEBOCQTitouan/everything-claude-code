@@ -41,11 +41,7 @@ pub struct LockGuard {
 
 impl LockGuard {
     /// Create a new `LockGuard`. Called by `FileLock` implementations.
-    pub fn new(
-        lock_path: PathBuf,
-        fd: i64,
-        release_fn: impl FnOnce(i64) + Send + 'static,
-    ) -> Self {
+    pub fn new(lock_path: PathBuf, fd: i64, release_fn: impl FnOnce(i64) + Send + 'static) -> Self {
         Self {
             lock_path,
             fd,
@@ -135,21 +131,17 @@ mod tests {
 
     #[test]
     fn lock_guard_drop_calls_release_fn() {
-        use std::sync::atomic::{AtomicBool, Ordering};
         use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
 
         let released = Arc::new(AtomicBool::new(false));
         let released_clone = released.clone();
 
         {
-            let _guard = LockGuard::new(
-                PathBuf::from("/tmp/test.lock"),
-                42,
-                move |fd| {
-                    assert_eq!(fd, 42);
-                    released_clone.store(true, Ordering::SeqCst);
-                },
-            );
+            let _guard = LockGuard::new(PathBuf::from("/tmp/test.lock"), 42, move |fd| {
+                assert_eq!(fd, 42);
+                released_clone.store(true, Ordering::SeqCst);
+            });
             assert!(!released.load(Ordering::SeqCst));
         } // guard dropped here
 

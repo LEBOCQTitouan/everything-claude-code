@@ -281,11 +281,7 @@ fn validate_hook_matcher(
     valid
 }
 
-fn validate_skill_file(
-    name: &str,
-    content: &str,
-    terminal: &dyn TerminalIO,
-) -> bool {
+fn validate_skill_file(name: &str, content: &str, terminal: &dyn TerminalIO) -> bool {
     let fm = extract_frontmatter(content);
     let required_fields = ["name", "description", "origin"];
     let mut has_errors = false;
@@ -462,7 +458,8 @@ fn validate_statusline(root: &Path, fs: &dyn FileSystem, terminal: &dyn Terminal
             if ok {
                 terminal.stdout_write("✓ No unresolved placeholder\n");
             } else {
-                terminal.stdout_write("✗ No unresolved placeholder: __ECC_VERSION__ found in script\n");
+                terminal
+                    .stdout_write("✗ No unresolved placeholder: __ECC_VERSION__ found in script\n");
             }
             ok
         }
@@ -478,7 +475,9 @@ fn validate_statusline(root: &Path, fs: &dyn FileSystem, terminal: &dyn Terminal
             if ok {
                 terminal.stdout_write("✓ Valid shebang\n");
             } else {
-                terminal.stdout_write("✗ Valid shebang: must start with #!/usr/bin/env bash or #!/bin/bash\n");
+                terminal.stdout_write(
+                    "✗ Valid shebang: must start with #!/usr/bin/env bash or #!/bin/bash\n",
+                );
             }
             ok
         }
@@ -530,7 +529,8 @@ fn validate_statusline(root: &Path, fs: &dyn FileSystem, terminal: &dyn Terminal
         if ok {
             terminal.stdout_write("✓ Script is executable\n");
         } else {
-            terminal.stdout_write("✗ Script is executable: missing execute permission (chmod +x)\n");
+            terminal
+                .stdout_write("✗ Script is executable: missing execute permission (chmod +x)\n");
         }
         ok
     } else {
@@ -816,7 +816,10 @@ mod tests {
     fn skills_valid_dir() {
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/skills")
-            .with_file("/root/skills/tdd/SKILL.md", "---\nname: tdd\ndescription: TDD skill\norigin: ECC\n---\n# TDD Skill")
+            .with_file(
+                "/root/skills/tdd/SKILL.md",
+                "---\nname: tdd\ndescription: TDD skill\norigin: ECC\n---\n# TDD Skill",
+            )
             .with_dir("/root/skills/tdd");
         let t = term();
         assert!(run_validate(
@@ -862,10 +865,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("Missing required frontmatter field 'name'")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required frontmatter field 'name'"))
+        );
     }
 
     #[test]
@@ -884,10 +888,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("Missing required frontmatter field 'description'")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required frontmatter field 'description'"))
+        );
     }
 
     #[test]
@@ -906,10 +911,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("Missing required frontmatter field 'origin'")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required frontmatter field 'origin'"))
+        );
     }
 
     #[test]
@@ -946,14 +952,16 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stdout_output()
-            .iter()
-            .any(|s| s.contains("WARNING") && s.contains("model")));
-        assert!(t
-            .stdout_output()
-            .iter()
-            .any(|s| s.contains("WARNING") && s.contains("tools")));
+        assert!(
+            t.stdout_output()
+                .iter()
+                .any(|s| s.contains("WARNING") && s.contains("model"))
+        );
+        assert!(
+            t.stdout_output()
+                .iter()
+                .any(|s| s.contains("WARNING") && s.contains("tools"))
+        );
     }
 
     #[test]
@@ -972,10 +980,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("No frontmatter found")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("No frontmatter found"))
+        );
     }
 
     #[test]
@@ -999,10 +1008,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("Missing required frontmatter field 'name'")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required frontmatter field 'name'"))
+        );
     }
 
     // --- validate_rules ---
@@ -1139,8 +1149,7 @@ mod tests {
 
     #[test]
     fn validate_statusline_fail_missing_script() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/settings.json", valid_settings());
+        let fs = InMemoryFileSystem::new().with_file("/root/settings.json", valid_settings());
         let t = term();
         assert!(!run_validate(
             &fs,
@@ -1149,7 +1158,11 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("Script exists")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✗') && s.contains("Script exists"))
+        );
     }
 
     #[test]
@@ -1166,7 +1179,11 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("placeholder")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✗') && s.contains("placeholder"))
+        );
     }
 
     #[test]
@@ -1184,7 +1201,11 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✓') && s.contains("settings")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✓') && s.contains("settings"))
+        );
     }
 
     #[test]
@@ -1201,7 +1222,11 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("shebang")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✗') && s.contains("shebang"))
+        );
     }
 
     #[test]
@@ -1235,6 +1260,10 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("executable")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✗') && s.contains("executable"))
+        );
     }
 }

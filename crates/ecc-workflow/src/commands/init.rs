@@ -82,18 +82,16 @@ fn archive_stale_state(workflow_dir: &Path) -> Result<(), anyhow::Error> {
 
     if !phase_is_done {
         let archive_dir = workflow_dir.join("archive");
-        std::fs::create_dir_all(&archive_dir).map_err(|e| {
-            anyhow::anyhow!("Failed to create archive directory: {e}")
-        })?;
+        std::fs::create_dir_all(&archive_dir)
+            .map_err(|e| anyhow::anyhow!("Failed to create archive directory: {e}"))?;
 
         let ts = utc_now_iso8601().replace(['T', ':', 'Z'], "");
         // ts is now "YYYYMMDDHHMMSS"
         let archive_name = format!("state-{ts}.json");
         let archive_path = archive_dir.join(&archive_name);
 
-        std::fs::rename(&state_path, &archive_path).map_err(|e| {
-            anyhow::anyhow!("Failed to archive state.json to {archive_name}: {e}")
-        })?;
+        std::fs::rename(&state_path, &archive_path)
+            .map_err(|e| anyhow::anyhow!("Failed to archive state.json to {archive_name}: {e}"))?;
     }
 
     Ok(())
@@ -143,4 +141,3 @@ mod tests {
         );
     }
 }
-

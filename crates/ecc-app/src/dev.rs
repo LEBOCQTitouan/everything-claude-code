@@ -524,8 +524,14 @@ mod tests {
 
         let output = format_status(&status, false);
 
-        assert!(output.contains("Profile:"), "output must contain 'Profile:' line");
-        assert!(output.contains("Dev"), "output must display the Dev profile name");
+        assert!(
+            output.contains("Profile:"),
+            "output must contain 'Profile:' line"
+        );
+        assert!(
+            output.contains("Dev"),
+            "output must display the Dev profile name"
+        );
     }
 
     fn sample_manifest() -> EccManifest {
@@ -811,11 +817,17 @@ mod tests {
         // No symlinks should be created in dry_run mode
         for dir in MANAGED_DIRS {
             let link = Path::new("/claude").join(dir);
-            assert!(!fs.is_symlink(&link), "dry_run must not create symlinks: {link:?}");
+            assert!(
+                !fs.is_symlink(&link),
+                "dry_run must not create symlinks: {link:?}"
+            );
         }
         // Terminal output must mention the planned operations
         let output = terminal.stdout_output().join("");
-        assert!(!output.is_empty(), "dry_run should print planned operations");
+        assert!(
+            !output.is_empty(),
+            "dry_run should print planned operations"
+        );
     }
 
     /// PC-027: rollback removes successfully-created symlinks when a later operation fails.
@@ -856,7 +868,7 @@ mod tests {
         let result = dev_switch(
             &fs,
             &terminal,
-            Path::new("relative/path"),  // NOT absolute
+            Path::new("relative/path"), // NOT absolute
             Path::new("/claude"),
             ecc_domain::config::dev_profile::DevProfile::Dev,
             false,
@@ -902,7 +914,10 @@ mod tests {
             .with_symlink("/claude/rules", "/ecc/rules")
             // Some real files inside the ECC repo (must survive)
             .with_file("/ecc/agents/planner.md", "# Planner")
-            .with_file("/claude/.ecc-manifest.json", &manifest_json(&sample_manifest()));
+            .with_file(
+                "/claude/.ecc-manifest.json",
+                &manifest_json(&sample_manifest()),
+            );
         let terminal = BufferedTerminal::new();
 
         let _result = dev_off(&fs, &terminal, Path::new("/claude"), false);
@@ -993,7 +1008,7 @@ mod tests {
     fn dev_switch_handles_dangling_symlinks() {
         // /claude/agents is a dangling symlink (target doesn't exist in the test FS)
         let fs = InMemoryFileSystem::new()
-            .with_symlink("/claude/agents", "/old/agents")  // dangling
+            .with_symlink("/claude/agents", "/old/agents") // dangling
             .with_dir("/ecc/agents")
             .with_dir("/ecc/commands")
             .with_dir("/ecc/skills")
@@ -1009,7 +1024,10 @@ mod tests {
             false,
         );
 
-        assert!(result.is_ok(), "should handle dangling symlinks: {result:?}");
+        assert!(
+            result.is_ok(),
+            "should handle dangling symlinks: {result:?}"
+        );
         // The dangling symlink must be replaced with the new one
         let target = fs.read_symlink(Path::new("/claude/agents")).unwrap();
         assert_eq!(target, Path::new("/ecc/agents"));
@@ -1060,6 +1078,9 @@ mod tests {
             false,
         );
 
-        assert!(result.is_err(), "should return Err when targets are missing");
+        assert!(
+            result.is_err(),
+            "should return Err when targets are missing"
+        );
     }
 }

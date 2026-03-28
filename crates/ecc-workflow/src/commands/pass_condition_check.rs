@@ -65,4 +65,3 @@ fn check_pass_conditions(content: &str) -> Option<String> {
 
     None
 }
-

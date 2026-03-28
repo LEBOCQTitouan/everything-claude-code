@@ -375,10 +375,7 @@ mod tests {
             deployed.contains("total_cost_usd"),
             "deployed script must contain power-user marker 'total_cost_usd'"
         );
-        assert!(
-            deployed.contains("jq"),
-            "deployed script must depend on jq"
-        );
+        assert!(deployed.contains("jq"), "deployed script must depend on jq");
         assert!(
             deployed.starts_with("#!/usr/bin/env bash"),
             "deployed script must have a valid shebang"

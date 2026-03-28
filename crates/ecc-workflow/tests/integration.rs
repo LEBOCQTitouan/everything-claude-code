@@ -56,11 +56,7 @@ fn assert_structured_json_output(output: &std::process::Output) {
 #[test]
 fn missing_state_exits_zero_with_warning() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     // Create a temp dir with NO state.json inside
     let temp_dir = tempfile::tempdir().unwrap();
@@ -119,11 +115,7 @@ fn missing_state_exits_zero_with_warning() {
 #[test]
 fn output_is_structured_json() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -140,11 +132,7 @@ fn output_is_structured_json() {
 #[test]
 fn init_creates_state_json() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -172,8 +160,7 @@ fn init_creates_state_json() {
         state_path
     );
 
-    let content = std::fs::read_to_string(&state_path)
-        .expect("failed to read state.json");
+    let content = std::fs::read_to_string(&state_path).expect("failed to read state.json");
 
     let value: serde_json::Value = serde_json::from_str(&content)
         .unwrap_or_else(|e| panic!("state.json is not valid JSON: {e}\ncontent: {content}"));
@@ -236,7 +223,15 @@ fn init_creates_state_json() {
     let artifacts = value
         .get("artifacts")
         .unwrap_or_else(|| panic!("missing 'artifacts' field in state.json"));
-    for key in &["plan", "solution", "implement", "campaign_path", "spec_path", "design_path", "tasks_path"] {
+    for key in &[
+        "plan",
+        "solution",
+        "implement",
+        "campaign_path",
+        "spec_path",
+        "design_path",
+        "tasks_path",
+    ] {
         assert_eq!(
             artifacts.get(*key),
             Some(&serde_json::Value::Null),
@@ -258,11 +253,7 @@ fn init_creates_state_json() {
 #[test]
 fn transition_updates_state() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -300,8 +291,8 @@ fn transition_updates_state() {
 
     // Step 3: read state.json and verify
     let state_path = temp_dir.path().join(".claude/workflow/state.json");
-    let content = std::fs::read_to_string(&state_path)
-        .expect("failed to read state.json after transition");
+    let content =
+        std::fs::read_to_string(&state_path).expect("failed to read state.json after transition");
 
     let value: serde_json::Value = serde_json::from_str(&content)
         .unwrap_or_else(|e| panic!("state.json is not valid JSON: {e}\ncontent: {content}"));
@@ -342,11 +333,7 @@ fn transition_updates_state() {
 #[test]
 fn transition_illegal_exits_nonzero() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -418,11 +405,7 @@ fn transition_illegal_exits_nonzero() {
 #[test]
 fn bypass_env_var() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     // --- Test 1: init with bypass ---
     let temp_dir = tempfile::tempdir().unwrap();
@@ -501,11 +484,7 @@ fn bypass_env_var() {
 #[test]
 fn transition_writes_memory() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
     let home_dir = tempfile::tempdir().unwrap();
@@ -552,11 +531,14 @@ fn transition_writes_memory() {
         action_log_path
     );
 
-    let action_log_content = std::fs::read_to_string(&action_log_path)
-        .expect("failed to read action-log.json");
-    let action_log: serde_json::Value = serde_json::from_str(&action_log_content)
-        .unwrap_or_else(|e| panic!("action-log.json is not valid JSON: {e}\ncontent: {action_log_content}"));
-    let entries = action_log.as_array()
+    let action_log_content =
+        std::fs::read_to_string(&action_log_path).expect("failed to read action-log.json");
+    let action_log: serde_json::Value =
+        serde_json::from_str(&action_log_content).unwrap_or_else(|e| {
+            panic!("action-log.json is not valid JSON: {e}\ncontent: {action_log_content}")
+        });
+    let entries = action_log
+        .as_array()
         .unwrap_or_else(|| panic!("action-log.json must be an array, got: {action_log}"));
     assert!(
         !entries.is_empty(),
@@ -585,7 +567,9 @@ fn transition_writes_memory() {
         format!("{y:04}-{m:02}-{d:02}")
     };
 
-    let plan_md_path = work_items_dir.join(format!("{today}-test-feature")).join("plan.md");
+    let plan_md_path = work_items_dir
+        .join(format!("{today}-test-feature"))
+        .join("plan.md");
     assert!(
         plan_md_path.exists(),
         "work-items/{today}-test-feature/plan.md must exist after transition, checked at {:?}",
@@ -593,11 +577,12 @@ fn transition_writes_memory() {
     );
 
     // Step 5: daily/<today>.md must exist in the project memory dir under HOME
-    let abs_project = std::fs::canonicalize(temp_dir.path())
-        .unwrap_or_else(|_| temp_dir.path().to_path_buf());
+    let abs_project =
+        std::fs::canonicalize(temp_dir.path()).unwrap_or_else(|_| temp_dir.path().to_path_buf());
     let abs_str = abs_project.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
-    let daily_dir = home_dir.path()
+    let daily_dir = home_dir
+        .path()
         .join(".claude/projects")
         .join(&project_hash)
         .join("memory/daily");
@@ -618,11 +603,7 @@ fn transition_writes_memory() {
 #[test]
 fn dual_invocation() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     // --- Test 1: CLI mode (no stdin) ---
     let temp_dir_cli = tempfile::tempdir().unwrap();
@@ -646,7 +627,10 @@ fn dual_invocation() {
 
     assert_structured_json_output(&cli_output);
 
-    let cli_stdout = std::str::from_utf8(&cli_output.stdout).unwrap_or("").trim().to_string();
+    let cli_stdout = std::str::from_utf8(&cli_output.stdout)
+        .unwrap_or("")
+        .trim()
+        .to_string();
     let cli_value: serde_json::Value = serde_json::from_str(&cli_stdout)
         .unwrap_or_else(|e| panic!("CLI mode stdout is not valid JSON: {e}\nstdout: {cli_stdout}"));
 
@@ -699,9 +683,13 @@ fn dual_invocation() {
 
     assert_structured_json_output(&stdin_output);
 
-    let stdin_stdout = std::str::from_utf8(&stdin_output.stdout).unwrap_or("").trim().to_string();
-    let stdin_value: serde_json::Value = serde_json::from_str(&stdin_stdout)
-        .unwrap_or_else(|e| panic!("Stdin JSON mode stdout is not valid JSON: {e}\nstdout: {stdin_stdout}"));
+    let stdin_stdout = std::str::from_utf8(&stdin_output.stdout)
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let stdin_value: serde_json::Value = serde_json::from_str(&stdin_stdout).unwrap_or_else(|e| {
+        panic!("Stdin JSON mode stdout is not valid JSON: {e}\nstdout: {stdin_stdout}")
+    });
 
     assert_eq!(
         stdin_value.get("status").and_then(|v| v.as_str()),
@@ -728,8 +716,12 @@ fn dual_invocation() {
     .expect("CLI mode state.json is not valid JSON");
 
     let stdin_state: serde_json::Value = serde_json::from_str(
-        &std::fs::read_to_string(&stdin_state_path)
-            .unwrap_or_else(|_| panic!("Stdin JSON mode state.json not found at {:?}", stdin_state_path)),
+        &std::fs::read_to_string(&stdin_state_path).unwrap_or_else(|_| {
+            panic!(
+                "Stdin JSON mode state.json not found at {:?}",
+                stdin_state_path
+            )
+        }),
     )
     .expect("Stdin JSON mode state.json is not valid JSON");
 
@@ -790,19 +782,45 @@ fn init_matches_shell() {
     // phase == "plan"
     assert_eq!(v["phase"].as_str(), Some("plan"), "phase must be 'plan'");
     // feature == "my feature"
-    assert_eq!(v["feature"].as_str(), Some("my feature"), "feature must be 'my feature'");
+    assert_eq!(
+        v["feature"].as_str(),
+        Some("my feature"),
+        "feature must be 'my feature'"
+    );
     // started_at: ISO 8601 UTC, length 20, ends with Z
-    let started_at = v["started_at"].as_str().expect("started_at must be a string");
+    let started_at = v["started_at"]
+        .as_str()
+        .expect("started_at must be a string");
     assert!(
         started_at.len() == 20 && started_at.ends_with('Z') && started_at.contains('T'),
         "started_at must be YYYY-MM-DDTHH:MM:SSZ, got: '{started_at}'"
     );
     // toolchain: test/lint/build all null
-    assert_eq!(v["toolchain"]["test"], serde_json::Value::Null, "toolchain.test must be null");
-    assert_eq!(v["toolchain"]["lint"], serde_json::Value::Null, "toolchain.lint must be null");
-    assert_eq!(v["toolchain"]["build"], serde_json::Value::Null, "toolchain.build must be null");
+    assert_eq!(
+        v["toolchain"]["test"],
+        serde_json::Value::Null,
+        "toolchain.test must be null"
+    );
+    assert_eq!(
+        v["toolchain"]["lint"],
+        serde_json::Value::Null,
+        "toolchain.lint must be null"
+    );
+    assert_eq!(
+        v["toolchain"]["build"],
+        serde_json::Value::Null,
+        "toolchain.build must be null"
+    );
     // artifacts: all expected keys null
-    for key in &["plan", "solution", "implement", "campaign_path", "spec_path", "design_path", "tasks_path"] {
+    for key in &[
+        "plan",
+        "solution",
+        "implement",
+        "campaign_path",
+        "spec_path",
+        "design_path",
+        "tasks_path",
+    ] {
         assert_eq!(
             v["artifacts"][key],
             serde_json::Value::Null,
@@ -860,7 +878,10 @@ fn init_matches_shell() {
 
     // Archive dir must exist
     let archive_dir = workflow_dir2.join("archive");
-    assert!(archive_dir.exists(), "archive/ dir must be created when archiving stale state");
+    assert!(
+        archive_dir.exists(),
+        "archive/ dir must be created when archiving stale state"
+    );
 
     // At least one archived state file must exist
     let archived: Vec<_> = std::fs::read_dir(&archive_dir)
@@ -885,22 +906,26 @@ fn init_matches_shell() {
     );
 
     // New state.json has the new feature
-    let new_content =
-        std::fs::read_to_string(workflow_dir2.join("state.json")).expect("new state.json must exist");
+    let new_content = std::fs::read_to_string(workflow_dir2.join("state.json"))
+        .expect("new state.json must exist");
     let new_v: serde_json::Value = serde_json::from_str(&new_content).expect("valid JSON");
-    assert_eq!(new_v["feature"].as_str(), Some("new feature"), "new state must have new feature");
-    assert_eq!(new_v["phase"].as_str(), Some("plan"), "new state must start at plan phase");
+    assert_eq!(
+        new_v["feature"].as_str(),
+        Some("new feature"),
+        "new state must have new feature"
+    );
+    assert_eq!(
+        new_v["phase"].as_str(),
+        Some("plan"),
+        "new state must start at plan phase"
+    );
 }
 
 /// toolchain_persist: verify that `ecc-workflow toolchain-persist` writes toolchain fields to state.json.
 #[test]
 fn toolchain_persist() {
     let bin = binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -1256,21 +1281,29 @@ fn memory_write_subcommands() {
         "docs/memory/action-log.json must exist after memory-write action"
     );
 
-    let action_log_content = std::fs::read_to_string(&action_log_path)
-        .expect("failed to read action-log.json");
-    let action_log: serde_json::Value = serde_json::from_str(&action_log_content)
-        .unwrap_or_else(|e| panic!("action-log.json is not valid JSON: {e}\ncontent: {action_log_content}"));
+    let action_log_content =
+        std::fs::read_to_string(&action_log_path).expect("failed to read action-log.json");
+    let action_log: serde_json::Value =
+        serde_json::from_str(&action_log_content).unwrap_or_else(|e| {
+            panic!("action-log.json is not valid JSON: {e}\ncontent: {action_log_content}")
+        });
 
     let entries = action_log
         .as_array()
         .unwrap_or_else(|| panic!("action-log.json must be a JSON array, got: {action_log}"));
 
-    assert_eq!(entries.len(), 1, "action-log.json must have exactly 1 entry after one write");
+    assert_eq!(
+        entries.len(),
+        1,
+        "action-log.json must have exactly 1 entry after one write"
+    );
 
     let entry = &entries[0];
 
     // Verify required fields exist with correct schema
-    let timestamp = entry.get("timestamp").and_then(|v| v.as_str())
+    let timestamp = entry
+        .get("timestamp")
+        .and_then(|v| v.as_str())
         .unwrap_or_else(|| panic!("entry missing 'timestamp' string field: {entry}"));
     assert!(
         timestamp.len() == 20 && timestamp.ends_with('Z') && timestamp.contains('T'),
@@ -1285,19 +1318,22 @@ fn memory_write_subcommands() {
     assert_eq!(
         entry.get("action_type").and_then(|v| v.as_str()),
         Some("plan"),
-        "entry.action_type must be 'plan', got: {:?}", entry.get("action_type")
+        "entry.action_type must be 'plan', got: {:?}",
+        entry.get("action_type")
     );
 
     assert_eq!(
         entry.get("description").and_then(|v| v.as_str()),
         Some("test feature"),
-        "entry.description must be 'test feature', got: {:?}", entry.get("description")
+        "entry.description must be 'test feature', got: {:?}",
+        entry.get("description")
     );
 
     assert_eq!(
         entry.get("outcome").and_then(|v| v.as_str()),
         Some("success"),
-        "entry.outcome must be 'success', got: {:?}", entry.get("outcome")
+        "entry.outcome must be 'success', got: {:?}",
+        entry.get("outcome")
     );
 
     assert!(
@@ -1305,20 +1341,18 @@ fn memory_write_subcommands() {
         "entry missing 'artifacts' field: {entry}"
     );
 
-    let tags = entry.get("tags")
+    let tags = entry
+        .get("tags")
         .and_then(|v| v.as_array())
         .unwrap_or_else(|| panic!("entry missing 'tags' array field: {entry}"));
-    assert!(tags.is_empty(), "entry.tags must be empty array [], got: {tags:?}");
+    assert!(
+        tags.is_empty(),
+        "entry.tags must be empty array [], got: {tags:?}"
+    );
 
     // ── Step 2: work-item subcommand ─────────────────────────────────────────────────────────
     let work_item_output = Command::new(&bin)
-        .args([
-            "memory-write",
-            "work-item",
-            "plan",
-            "test feature",
-            "dev",
-        ])
+        .args(["memory-write", "work-item", "plan", "test feature", "dev"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
         .env("HOME", home_path)
         .output()
@@ -1345,7 +1379,11 @@ fn memory_write_subcommands() {
         .filter_map(|e| e.ok())
         .collect();
 
-    assert_eq!(entries.len(), 1, "must have exactly one work-item subdirectory");
+    assert_eq!(
+        entries.len(),
+        1,
+        "must have exactly one work-item subdirectory"
+    );
 
     let item_dir = entries[0].path();
     let dir_name = item_dir.file_name().unwrap().to_string_lossy();
@@ -1357,11 +1395,11 @@ fn memory_write_subcommands() {
     let plan_file = item_dir.join("plan.md");
     assert!(
         plan_file.exists(),
-        "plan.md must exist in work-item directory {:?}", item_dir
+        "plan.md must exist in work-item directory {:?}",
+        item_dir
     );
 
-    let plan_content = std::fs::read_to_string(&plan_file)
-        .expect("failed to read plan.md");
+    let plan_content = std::fs::read_to_string(&plan_file).expect("failed to read plan.md");
 
     // Must have # Plan: heading
     assert!(
@@ -1386,13 +1424,7 @@ fn memory_write_subcommands() {
 
     // ── Step 3: daily subcommand ─────────────────────────────────────────────────────────────
     let daily_output = Command::new(&bin)
-        .args([
-            "memory-write",
-            "daily",
-            "plan",
-            "test feature",
-            "dev",
-        ])
+        .args(["memory-write", "daily", "plan", "test feature", "dev"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
         .env("HOME", home_path)
         .output()
@@ -1407,8 +1439,7 @@ fn memory_write_subcommands() {
     );
 
     // Resolve project hash: remove leading / and replace / with -
-    let abs_proj = std::fs::canonicalize(project_dir)
-        .unwrap_or_else(|_| project_dir.to_path_buf());
+    let abs_proj = std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
     let abs_str = abs_proj.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
     let daily_dir = home_path
@@ -1418,7 +1449,8 @@ fn memory_write_subcommands() {
 
     assert!(
         daily_dir.exists(),
-        "daily memory directory must exist at {:?}", daily_dir
+        "daily memory directory must exist at {:?}",
+        daily_dir
     );
 
     // Find the daily file (YYYY-MM-DD.md)
@@ -1431,8 +1463,8 @@ fn memory_write_subcommands() {
     assert_eq!(daily_files.len(), 1, "must have exactly one daily .md file");
 
     let daily_file_path = daily_files[0].path();
-    let daily_content = std::fs::read_to_string(&daily_file_path)
-        .expect("failed to read daily file");
+    let daily_content =
+        std::fs::read_to_string(&daily_file_path).expect("failed to read daily file");
 
     // Must have ## Activity section
     assert!(
@@ -1474,11 +1506,11 @@ fn memory_write_subcommands() {
 
     assert!(
         memory_file.exists(),
-        "MEMORY.md must exist at {:?}", memory_file
+        "MEMORY.md must exist at {:?}",
+        memory_file
     );
 
-    let memory_content = std::fs::read_to_string(&memory_file)
-        .expect("failed to read MEMORY.md");
+    let memory_content = std::fs::read_to_string(&memory_file).expect("failed to read MEMORY.md");
 
     // Must have ## Daily section
     assert!(
@@ -1510,21 +1542,24 @@ fn phase_gate() {
     assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     // Helper: pipe stdin JSON to `ecc-workflow phase-gate` and return the Output.
-    let run_phase_gate = |project_dir: &std::path::Path, stdin_json: &str| -> std::process::Output {
-        let mut child = Command::new(&bin)
-            .args(["phase-gate"])
-            .env("CLAUDE_PROJECT_DIR", project_dir)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .expect("failed to spawn ecc-workflow phase-gate");
+    let run_phase_gate =
+        |project_dir: &std::path::Path, stdin_json: &str| -> std::process::Output {
+            let mut child = Command::new(&bin)
+                .args(["phase-gate"])
+                .env("CLAUDE_PROJECT_DIR", project_dir)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .expect("failed to spawn ecc-workflow phase-gate");
 
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(stdin_json.as_bytes()).ok();
-        }
-        child.wait_with_output().expect("failed to wait for ecc-workflow phase-gate")
-    };
+            if let Some(mut stdin) = child.stdin.take() {
+                stdin.write_all(stdin_json.as_bytes()).ok();
+            }
+            child
+                .wait_with_output()
+                .expect("failed to wait for ecc-workflow phase-gate")
+        };
 
     // ── Scenario 1: no state.json → exit 0 regardless of tool ───────────────────────────────
     let dir_no_state = tempfile::tempdir().unwrap();
@@ -1673,11 +1708,7 @@ fn run_stop_gate(project_dir: &std::path::Path) -> std::process::Output {
 }
 
 /// Helper: create a minimal state.json with a given phase inside a temp dir.
-fn write_state_with_phase(
-    project_dir: &std::path::Path,
-    phase: &str,
-    feature: &str,
-) {
+fn write_state_with_phase(project_dir: &std::path::Path, phase: &str, feature: &str) {
     let workflow_dir = project_dir.join(".claude/workflow");
     std::fs::create_dir_all(&workflow_dir).unwrap();
     let state = serde_json::json!({
@@ -1866,7 +1897,11 @@ fn grill_me_gate_plan_phase_without_marker_warns() {
 
     // Create a spec file WITHOUT grill-me markers
     let spec_file = temp_dir.path().join("spec.md");
-    std::fs::write(&spec_file, "# Spec\n\nSome content without grill-me section.\n").unwrap();
+    std::fs::write(
+        &spec_file,
+        "# Spec\n\nSome content without grill-me section.\n",
+    )
+    .unwrap();
 
     let spec_path_str = spec_file.to_str().unwrap();
     write_state_with_phase_and_spec(temp_dir.path(), "plan", Some(spec_path_str));
@@ -2099,9 +2134,7 @@ fn tdd_enforcement() {
         std::str::from_utf8(&out4.stderr).unwrap_or(""),
     );
 
-    let tdd_state_no_state = dir_no_state
-        .path()
-        .join(".claude/workflow/.tdd-state");
+    let tdd_state_no_state = dir_no_state.path().join(".claude/workflow/.tdd-state");
     assert!(
         !tdd_state_no_state.exists(),
         ".tdd-state must NOT be created when no state.json exists"
@@ -2321,7 +2354,10 @@ fn doc_enforcement() {
         std::str::from_utf8(&out1.stdout).unwrap_or(""),
         std::str::from_utf8(&out1.stderr).unwrap_or(""),
     );
-    let stderr1 = std::str::from_utf8(&out1.stderr).unwrap_or("").trim().to_string();
+    let stderr1 = std::str::from_utf8(&out1.stderr)
+        .unwrap_or("")
+        .trim()
+        .to_string();
     assert!(
         stderr1.is_empty(),
         "scenario 1: expected no stderr warning when both sections present, got: '{stderr1}'"
@@ -2343,7 +2379,10 @@ fn doc_enforcement() {
         std::str::from_utf8(&out2.stdout).unwrap_or(""),
         std::str::from_utf8(&out2.stderr).unwrap_or(""),
     );
-    let stderr2 = std::str::from_utf8(&out2.stderr).unwrap_or("").trim().to_string();
+    let stderr2 = std::str::from_utf8(&out2.stderr)
+        .unwrap_or("")
+        .trim()
+        .to_string();
     assert!(
         !stderr2.is_empty(),
         "scenario 2: expected warning on stderr when '## Docs Updated' missing"
@@ -2360,10 +2399,7 @@ fn doc_enforcement() {
     // ── Scenario 3: missing "## Supplemental Docs" → exit 0, warning on stderr ───────────────
     let dir3 = tempfile::tempdir().unwrap();
     write_state(dir3.path(), "done");
-    write_implement_done(
-        dir3.path(),
-        "## Docs Updated\n- Updated CLAUDE.md\n",
-    );
+    write_implement_done(dir3.path(), "## Docs Updated\n- Updated CLAUDE.md\n");
 
     let out3 = run_doc_enforcement(dir3.path(), &bin);
     assert_eq!(
@@ -2373,7 +2409,10 @@ fn doc_enforcement() {
         std::str::from_utf8(&out3.stdout).unwrap_or(""),
         std::str::from_utf8(&out3.stderr).unwrap_or(""),
     );
-    let stderr3 = std::str::from_utf8(&out3.stderr).unwrap_or("").trim().to_string();
+    let stderr3 = std::str::from_utf8(&out3.stderr)
+        .unwrap_or("")
+        .trim()
+        .to_string();
     assert!(
         !stderr3.is_empty(),
         "scenario 3: expected warning on stderr when '## Supplemental Docs' missing"
@@ -2400,7 +2439,10 @@ fn doc_enforcement() {
         std::str::from_utf8(&out4.stdout).unwrap_or(""),
         std::str::from_utf8(&out4.stderr).unwrap_or(""),
     );
-    let stderr4 = std::str::from_utf8(&out4.stderr).unwrap_or("").trim().to_string();
+    let stderr4 = std::str::from_utf8(&out4.stderr)
+        .unwrap_or("")
+        .trim()
+        .to_string();
     assert!(
         stderr4.is_empty(),
         "scenario 4: expected no stderr for non-done phase, got: '{stderr4}'"
@@ -2418,14 +2460,20 @@ fn doc_enforcement() {
         std::str::from_utf8(&out5.stdout).unwrap_or(""),
         std::str::from_utf8(&out5.stderr).unwrap_or(""),
     );
-    let stderr5 = std::str::from_utf8(&out5.stderr).unwrap_or("").trim().to_string();
+    let stderr5 = std::str::from_utf8(&out5.stderr)
+        .unwrap_or("")
+        .trim()
+        .to_string();
     assert!(
         stderr5.is_empty(),
         "scenario 5: expected silent output when no state.json, got: '{stderr5}'"
     );
 }
 
-fn run_doc_level_check(project_dir: &std::path::Path, bin: &std::path::Path) -> std::process::Output {
+fn run_doc_level_check(
+    project_dir: &std::path::Path,
+    bin: &std::path::Path,
+) -> std::process::Output {
     Command::new(bin)
         .args(["doc-level-check"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
