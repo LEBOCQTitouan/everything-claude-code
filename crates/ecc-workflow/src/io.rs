@@ -1,37 +1,21 @@
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-#[cfg(test)]
-mod tests {
-    use super::with_state_lock;
-    use tempfile::TempDir;
-
-    #[test]
-    fn with_state_lock_raii() {
-        let tmp = TempDir::new().unwrap();
-        let project_dir = tmp.path();
-        let flag_path = project_dir.join("inside_closure.flag");
-        let flag_path_clone = flag_path.clone();
-
-        with_state_lock(project_dir, || {
-            std::fs::write(&flag_path_clone, b"ran").unwrap();
-        })
-        .unwrap();
-
-        // Flag file must exist after with_state_lock returns
-        assert!(flag_path.exists(), "closure did not run inside with_state_lock");
-
-        // Lock file must exist (was created during acquire)
-        let lock_file = ecc_flock::lock_dir(project_dir).join("state.lock");
-        assert!(lock_file.exists(), "state.lock file was not created");
-
-        // Re-acquiring the lock must succeed (lock was released on drop)
-        ecc_flock::acquire(project_dir, "state")
-            .expect("lock should be free after with_state_lock returns");
-    }
-}
-
 use ecc_domain::workflow::state::WorkflowState;
+
+/// Acquire an exclusive state lock, run `f`, then release the lock.
+///
+/// The lock file is `<project_dir>/.claude/workflow/.locks/state.lock`.
+/// The lock is released when the `FlockGuard` is dropped at the end of this
+/// function.
+pub fn with_state_lock<F, R>(project_dir: &Path, f: F) -> Result<R, anyhow::Error>
+where
+    F: FnOnce() -> R,
+{
+    let _guard = ecc_flock::acquire(project_dir, "state")
+        .map_err(|e| anyhow::anyhow!("Failed to acquire state lock: {e}"))?;
+    Ok(f())
+}
 
 /// Read the current workflow phase from state.json.
 ///
@@ -94,4 +78,34 @@ pub fn write_state_atomic(project_dir: &Path, state: &WorkflowState) -> Result<(
     std::fs::rename(&tmp_path, &state_path)
         .map_err(|e| anyhow::anyhow!("Failed to rename state file: {e}"))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::with_state_lock;
+    use tempfile::TempDir;
+
+    #[test]
+    fn with_state_lock_raii() {
+        let tmp = TempDir::new().unwrap();
+        let project_dir = tmp.path();
+        let flag_path = project_dir.join("inside_closure.flag");
+        let flag_path_clone = flag_path.clone();
+
+        with_state_lock(project_dir, || {
+            std::fs::write(&flag_path_clone, b"ran").unwrap();
+        })
+        .unwrap();
+
+        // Flag file must exist after with_state_lock returns
+        assert!(flag_path.exists(), "closure did not run inside with_state_lock");
+
+        // Lock file must exist (was created during acquire)
+        let lock_file = ecc_flock::lock_dir(project_dir).join("state.lock");
+        assert!(lock_file.exists(), "state.lock file was not created");
+
+        // Re-acquiring the lock must succeed (lock was released on drop)
+        ecc_flock::acquire(project_dir, "state")
+            .expect("lock should be free after with_state_lock returns");
+    }
 }

@@ -3,7 +3,7 @@ use std::path::Path;
 use ecc_domain::workflow::phase::Phase;
 use ecc_domain::workflow::state::{Artifacts, Toolchain, WorkflowState};
 
-use crate::io::write_state_atomic;
+use crate::io::{with_state_lock, write_state_atomic};
 use crate::output::WorkflowOutput;
 use crate::time::utc_now_iso8601;
 
@@ -18,43 +18,50 @@ use crate::time::utc_now_iso8601;
 pub fn run(concern: &str, feature: &str, project_dir: &Path) -> WorkflowOutput {
     let workflow_dir = project_dir.join(".claude/workflow");
 
-    // Archive stale state if present and not done
-    if let Err(e) = archive_stale_state(&workflow_dir) {
-        return WorkflowOutput::block(format!("Failed to archive stale state: {e}"));
-    }
+    let result = with_state_lock(project_dir, || {
+        // Archive stale state if present and not done
+        if let Err(e) = archive_stale_state(&workflow_dir) {
+            return WorkflowOutput::block(format!("Failed to archive stale state: {e}"));
+        }
 
-    // Clean previous artifact files
-    cleanup_artifacts(&workflow_dir);
+        // Clean previous artifact files
+        cleanup_artifacts(&workflow_dir);
 
-    let started_at = utc_now_iso8601();
+        let started_at = utc_now_iso8601();
 
-    let state = WorkflowState {
-        phase: Phase::Plan,
-        concern: concern.to_owned(),
-        feature: feature.to_owned(),
-        started_at,
-        toolchain: Toolchain {
-            test: None,
-            lint: None,
-            build: None,
-        },
-        artifacts: Artifacts {
-            plan: None,
-            solution: None,
-            implement: None,
-            campaign_path: None,
-            spec_path: None,
-            design_path: None,
-            tasks_path: None,
-        },
-        completed: vec![],
-    };
+        let state = WorkflowState {
+            phase: Phase::Plan,
+            concern: concern.to_owned(),
+            feature: feature.to_owned(),
+            started_at,
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: Artifacts {
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
+            completed: vec![],
+        };
 
-    match write_state_atomic(project_dir, &state) {
-        Ok(()) => WorkflowOutput::pass(format!(
-            "Workflow initialized: concern={concern}, feature=\"{feature}\""
-        )),
-        Err(e) => WorkflowOutput::block(format!("Failed to write state.json: {e}")),
+        match write_state_atomic(project_dir, &state) {
+            Ok(()) => WorkflowOutput::pass(format!(
+                "Workflow initialized: concern={concern}, feature=\"{feature}\""
+            )),
+            Err(e) => WorkflowOutput::block(format!("Failed to write state.json: {e}")),
+        }
+    });
+
+    match result {
+        Ok(output) => output,
+        Err(e) => WorkflowOutput::block(format!("Failed to acquire state lock: {e}")),
     }
 }
 
