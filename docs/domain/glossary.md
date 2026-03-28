@@ -152,6 +152,11 @@ A structured subsection in each phase of a [planner](#agent) output that specifi
 - **Related:** [Agent](#agent), [Command](#command)
 - **Files:** [`planner.md`](../agents/planner.md), [`spec.md`](../commands/spec.md), [`validate-plan-tdd.test.js`](../tests/ci/validate-plan-tdd.test.js)
 
+### Phase
+A value object representing a stage in the ECC workflow state machine: Plan, Solution, Implement, Done. Supports Display (lowercase), FromStr (with aliases: "spec" → Plan, "design" → Solution), and serde serialization. Defined in `ecc-domain::workflow::phase`.
+- **Related:** [WorkflowState](#workflowstate)
+- **Files:** [`crates/ecc-domain/src/workflow/phase.rs`](../../crates/ecc-domain/src/workflow/phase.rs)
+
 ### Wave
 A group of independent [Pass Conditions](#pass-condition) that can be executed in parallel during `/implement`. PCs within a wave touch different files and have no data dependencies. Waves are dispatched concurrently using worktree-isolated subagents, with regression verification at wave boundaries.
 - **Related:** [Wave Plan](#wave-plan), [Pass Condition](#pass-condition)
@@ -159,6 +164,11 @@ A group of independent [Pass Conditions](#pass-condition) that can be executed i
 ### Wave Plan
 The ordered list of [Waves](#wave) computed from the dependency graph of [Pass Conditions](#pass-condition). Produced by left-to-right scan of the Test Strategy with adjacent + no file overlap grouping. Displayed to the user before TDD execution begins.
 - **Related:** [Wave](#wave), [Test Strategy](#test-strategy)
+
+### WorkflowState
+Aggregate root for the ECC pipeline state machine. Contains phase (Phase), concern, feature, started_at, toolchain (test/lint/build commands), artifacts (timestamps and file paths for spec/design/tasks), and completed (array of completion records). Serializes to/from `.claude/workflow/state.json`. Defined in `ecc-domain::workflow::state`.
+- **Related:** [Phase](#phase)
+- **Files:** [`crates/ecc-domain/src/workflow/state.rs`](../../crates/ecc-domain/src/workflow/state.rs)
 
 ## Infrastructure Terms
 
