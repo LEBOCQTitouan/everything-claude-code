@@ -88,6 +88,7 @@
 | BL-085 | WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool | — | HIGH | /spec fix | promoted | 2026-03-28 |
 | BL-086 | Knowledge sources registry — curated reference list with quadrant organization and command integration | — | HIGH | /spec | open | 2026-03-28 |
 | BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | open | 2026-03-28 |
+| BL-088 | ecc update — self-update from GitHub Releases + cargo xtask deploy for dev | — | HIGH | /spec dev | open | 2026-03-28 |
 
 ## Dependency Graph
 
@@ -127,12 +128,13 @@ BL-081 → BL-078 (web audit benefits from context pre-hydration for inventory p
 BL-084 → BL-029 (conformance audit cross-references persisted spec artifacts)
 BL-084 → BL-066 (deterministic backlog IDs improve traceability)
 BL-085 → BL-065 (worktree hook fix unblocks BL-065 Sub-Spec C worktree isolation)
+BL-088 → BL-087 (ecc update leverages xtask deploy infrastructure for dev mode)
 ```
 
 ## Stats
 
-- **Total:** 81
-- **Open:** 37
+- **Total:** 82
+- **Open:** 38
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
