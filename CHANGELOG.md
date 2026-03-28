@@ -22,6 +22,10 @@ Generated from git conventional commits. Grouped by type and version.
 - **Deploy poweruser statusline via ecc install (BL-053)**: Upgraded statusline script with full power-user fields (cost, duration, lines, rate limits, tokens), ANSI color-coded context bar, git branch caching (5s TTL with cross-platform support), terminal-width-aware truncation. Added `StatuslineConfig` domain type, `ecc validate statusline` subcommand, and install integration tests
 - **Symlink-based instant config switching (BL-058)**: `ecc dev switch dev|default [--dry-run]` with directory-level symlinks for zero-copy config switching between release-installed and local ECC checkout. FileSystem trait extension (`create_symlink`, `read_symlink`, `is_symlink`), InMemoryFileSystem symlink stub, dev_off symlink safety guard, best-effort rollback, path canonicalization, ADR 0016
 
+### Bug Fixes
+
+- **Fix WorktreeCreate/WorktreeRemove hooks blocking EnterWorktree tool (BL-085)**: Removed `WorktreeCreate` and `WorktreeRemove` delegation hooks from `hooks.json` that caused Claude Code's `EnterWorktree` tool to fail with "no successful output". These were logging-only hooks incorrectly registered as creation delegates. Replaced with `PostToolUse` notification hooks matching `EnterWorktree`/`ExitWorktree` tool names for session logging. Extended `is_legacy_ecc_hook()` to auto-clean stale entries from users' `settings.json` on next `ecc install`. Unblocks BL-065 Sub-Spec C worktree isolation.
+
 ### Refactoring
 
 - **Display full artifacts inline in terminal (BL-062)**: `/spec-*`, `/design`, and `/implement` final phases now read persisted artifacts from disk and display the full document body inline in conversation before summary tables. Eliminates need to open files to review specs, designs, or tasks. Consistent "Full Artifact Display" pattern across all 5 commands with fallback for missing paths. "Artifact File Path" reference shown after tables for future access.
