@@ -131,29 +131,53 @@ DUR_REMAIN=$(( DUR_S % 60 ))
 SEG_DURATION="${DUR_M}m ${DUR_REMAIN}s"
 
 # --- Git branch with caching ---
-CACHE_DIR="/tmp"
+CACHE_DIR="${CACHE_DIR:-/tmp}"
 PWD_HASH=$(echo "$PWD" | md5sum 2>/dev/null | cut -c1-8 || md5 -q -s "$PWD" 2>/dev/null | cut -c1-8 || echo "nohash")
 CACHE_FILE="${CACHE_DIR}/ecc-sl-cache-${PWD_HASH}"
 
 BRANCH=""
+WORKTREE_NAME=""
 TTL_REF=$(mktemp "${CACHE_DIR}/ecc-sl-ttl-XXXXXX")
 touch -d '-5 seconds' "$TTL_REF" 2>/dev/null || touch -A -000005 "$TTL_REF" 2>/dev/null || true
 if [ -f "$CACHE_FILE" ] && find "$CACHE_FILE" -newer "$TTL_REF" 2>/dev/null | grep -q .; then
-  BRANCH=$(cat "$CACHE_FILE" 2>/dev/null || true)
+  BRANCH=$(head -n1 "$CACHE_FILE" 2>/dev/null || true)
+  WORKTREE_NAME=$(sed -n '2p' "$CACHE_FILE" 2>/dev/null || true)
 fi
 rm -f "$TTL_REF" 2>/dev/null || true
 
 if [ -z "$BRANCH" ]; then
   BRANCH=$(git --no-optional-locks rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+
+  # --- Worktree detection ---
+  GIT_DIR=$(git --no-optional-locks rev-parse --git-dir 2>/dev/null || echo "")
+  GIT_COMMON_DIR=$(git --no-optional-locks rev-parse --git-common-dir 2>/dev/null || echo "")
+  if [ -n "$GIT_DIR" ] && [ -n "$GIT_COMMON_DIR" ] && [ "$GIT_DIR" != "$GIT_COMMON_DIR" ]; then
+    wt_toplevel=$(git --no-optional-locks rev-parse --show-toplevel 2>/dev/null || echo "")
+    if [ -n "$wt_toplevel" ] && [ -d "$wt_toplevel" ]; then
+      WORKTREE_NAME=$(basename "$wt_toplevel")
+    fi
+  fi
+
   if [ -n "$BRANCH" ]; then
     TMPFILE=$(mktemp "${CACHE_DIR}/ecc-sl-XXXXXX")
-    printf '%s' "$BRANCH" > "$TMPFILE"
+    printf '%s\n%s\n' "$BRANCH" "$WORKTREE_NAME" > "$TMPFILE"
     mv "$TMPFILE" "$CACHE_FILE"
   fi
 fi
 
 SEG_BRANCH=""
 [ -n "$BRANCH" ] && SEG_BRANCH="${DIM}⎇${RST} ${BRANCH}"
+
+# --- Worktree segment (replaces branch when in worktree) ---
+SEG_WORKTREE=""
+SEG_WORKTREE_NARROW=""
+if [ -n "$WORKTREE_NAME" ]; then
+  wt_branch="${BRANCH:-detached}"
+  [ "$wt_branch" = "HEAD" ] && wt_branch="detached"
+  SEG_WORKTREE="🌳 ${WORKTREE_NAME} (${wt_branch})"
+  SEG_WORKTREE_NARROW="🌳 ${WORKTREE_NAME}"
+  SEG_BRANCH=""
+fi
 
 # --- Model + ECC version ---
 SEG_MODEL="${BOLD}◆${RST} ${BOLD}${DISPLAY_NAME}${RST}"
@@ -184,6 +208,7 @@ build_output() {
   segments+=("$SEG_CTX")
   [ -n "$SEG_RL" ]        && segments+=("$SEG_RL")
   [ -n "$SEG_BRANCH" ]   && segments+=("$SEG_BRANCH")
+  [ -n "$SEG_WORKTREE" ] && segments+=("$SEG_WORKTREE")
   segments+=("$SEG_TOKENS")
   segments+=("$SEG_LINES")
   segments+=("$SEG_DURATION")
@@ -234,6 +259,11 @@ fi
 
 if [ "${#STRIPPED}" -gt "$TERM_WIDTH" ] 2>/dev/null && [ -n "$SEG_RL_NARROW" ]; then
   SEG_RL="$SEG_RL_NARROW"
+  OUTPUT=$(build_output)
+  STRIPPED=$(strip_ansi "$OUTPUT")
+fi
+if [ "${#STRIPPED}" -gt "$TERM_WIDTH" ] 2>/dev/null && [ -n "$SEG_WORKTREE_NARROW" ]; then
+  SEG_WORKTREE="$SEG_WORKTREE_NARROW"
   OUTPUT=$(build_output)
   STRIPPED=$(strip_ansi "$OUTPUT")
 fi

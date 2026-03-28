@@ -68,9 +68,10 @@ load test_helper
 @test "cache hit within TTL" {
   # First run populates cache
   run_statusline "$TEST_REPO" > /dev/null
-  # Verify cache file exists
-  cache_file=$(find "$BATS_TEST_TMPDIR" -name "ecc-sl-cache-*" -newer "$BATS_TEST_TMPDIR" 2>/dev/null | head -1)
-  [ -n "$cache_file" ]
+  # Verify cache file exists in CACHE_DIR
+  PWD_HASH=$(echo "$TEST_REPO" | md5sum 2>/dev/null | cut -c1-8 || md5 -q -s "$TEST_REPO" 2>/dev/null | cut -c1-8)
+  cache_file="$BATS_TEST_TMPDIR/ecc-sl-cache-${PWD_HASH}"
+  [ -f "$cache_file" ]
 }
 
 @test "cache miss refreshes" {
