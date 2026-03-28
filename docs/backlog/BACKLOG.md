@@ -87,6 +87,7 @@
 | BL-084 | Backlog conformance audit — verify implementations match original intent | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-085 | WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool | — | HIGH | /spec fix | promoted | 2026-03-28 |
 | BL-086 | Knowledge sources registry — curated reference list with quadrant organization and command integration | — | HIGH | /spec | open | 2026-03-28 |
+| BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | open | 2026-03-28 |
 
 ## Dependency Graph
 
