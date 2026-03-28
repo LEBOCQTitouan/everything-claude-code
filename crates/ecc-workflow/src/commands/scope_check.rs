@@ -156,7 +156,9 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
     // Only run during implement/done phases.
     match state.phase {
-        Phase::Plan | Phase::Solution | Phase::Idle => return WorkflowOutput::pass(""),
+        Phase::Plan | Phase::Solution | Phase::Idle | Phase::Unknown => {
+            return WorkflowOutput::pass("")
+        }
         Phase::Implement | Phase::Done => {}
     }
 

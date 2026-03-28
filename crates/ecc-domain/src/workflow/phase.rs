@@ -14,6 +14,9 @@ pub enum Phase {
     Solution,
     Implement,
     Done,
+    /// Placeholder for unrecognized phase strings encountered during deserialization.
+    /// Used by `Completion.phase` to preserve forward-compatibility.
+    Unknown,
 }
 
 impl Phase {
@@ -31,6 +34,7 @@ impl fmt::Display for Phase {
             Self::Solution => write!(f, "solution"),
             Self::Implement => write!(f, "implement"),
             Self::Done => write!(f, "done"),
+            Self::Unknown => write!(f, "unknown"),
         }
     }
 }
@@ -57,6 +61,7 @@ impl FromStr for Phase {
             "solution" | "design" => Ok(Self::Solution),
             "implement" => Ok(Self::Implement),
             "done" => Ok(Self::Done),
+            "unknown" => Ok(Self::Unknown),
             other => Err(UnknownPhase(other.to_owned())),
         }
     }

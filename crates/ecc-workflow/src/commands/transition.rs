@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::str::FromStr;
 
 use ecc_domain::workflow::phase::Phase;
 use ecc_domain::workflow::state::Completion;
@@ -220,7 +221,7 @@ pub fn run(
             // On done transition, append a completion record to the completed array.
             if to == Phase::Done {
                 state.completed.push(Completion {
-                    phase: artifact_name.clone(),
+                    phase: Phase::from_str(artifact_name).unwrap_or(Phase::Unknown),
                     file: "implement-done.md".to_owned(),
                     at: utc_now_iso8601(),
                 });

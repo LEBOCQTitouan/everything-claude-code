@@ -1,9 +1,20 @@
 //! WorkflowState aggregate for the ECC workflow state machine.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::str::FromStr;
 
 use super::error::WorkflowError;
 use super::phase::Phase;
+
+/// Deserializer for `Completion.phase` that falls back to [`Phase::Unknown`]
+/// for any string that is not a recognized phase value.
+fn deserialize_phase_with_fallback<'de, D>(deserializer: D) -> Result<Phase, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(Phase::from_str(&s).unwrap_or(Phase::Unknown))
+}
 
 /// Toolchain commands used during this workflow run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,8 +39,12 @@ pub struct Artifacts {
 /// A single completed phase record.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Completion {
-    pub phase: String,
+    /// The phase that was completed. Unrecognized strings deserialize as [`Phase::Unknown`].
+    #[serde(deserialize_with = "deserialize_phase_with_fallback")]
+    pub phase: Phase,
+    /// Path to the artifact produced in this phase.
     pub file: String,
+    /// ISO 8601 timestamp when this phase completed.
     pub at: String,
 }
 
@@ -290,7 +305,7 @@ mod tests {
         };
 
         let completion = Completion {
-            phase: "solution".to_owned(),
+            phase: Phase::Solution,
             file: "docs/specs/foo/design.md".to_owned(),
             at: "2026-03-26T22:00:00Z".to_owned(),
         };

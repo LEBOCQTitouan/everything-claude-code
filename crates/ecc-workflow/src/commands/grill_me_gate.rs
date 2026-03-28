@@ -39,7 +39,9 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
     // Only check during plan/solution phases.
     match state.phase {
         Phase::Plan | Phase::Solution => {}
-        Phase::Implement | Phase::Done | Phase::Idle => return WorkflowOutput::pass(""),
+        Phase::Implement | Phase::Done | Phase::Idle | Phase::Unknown => {
+            return WorkflowOutput::pass("")
+        }
     }
 
     // Collect the paths to check.
