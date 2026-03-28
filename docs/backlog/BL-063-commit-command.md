@@ -1,7 +1,7 @@
 ---
 id: BL-063
 title: Create /commit slash command
-status: open
+status: implemented
 created: 2026-03-26
 tags: [git, workflow, commit, conventional-commits, slash-command]
 scope: MEDIUM

@@ -35,7 +35,7 @@ Run `git status --porcelain` to analyze the working tree:
 
 3. **Staging analysis**: Determine what to stage:
    - If files are already staged (`git diff --cached --name-only` is non-empty): respect existing staging — do not re-stage or unstage anything
-   - If no files are staged: propose staging using `git status` as the primary mechanism. Use session context (which files were edited/created in the current conversation) as an enrichment signal to prioritize session-relevant files. If session action history is unavailable (e.g., after context compaction), use `git status` analysis alone and propose a staging hypothesis
+   - If no files are staged: propose staging using session action history (files edited/created in the current conversation) as the primary signal. Fall back to `git status` analysis when session context is unavailable (e.g., after context compaction). Use `git status` as enrichment to catch untracked files the session may have missed
    - Use `AskUserQuestion` to present the proposed staging for user confirmation. The user can accept, adjust, or cancel
 
 4. After staging is confirmed, run `git add` for the confirmed files
