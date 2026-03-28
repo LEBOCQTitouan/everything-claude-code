@@ -45,11 +45,38 @@ pub fn ensure_workflow_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Error>
     Ok(dir)
 }
 
-/// Read all of stdin into a string (used by hook subcommands).
-pub fn read_stdin() -> String {
+pub(crate) const MAX_STDIN_BYTES: u64 = 1_048_576; // 1 MB
+
+/// Read from `reader` up to `limit` bytes. Returns `(content, Some(bytes_read))` when the
+/// input exceeded the limit (indicating truncation), or `(content, None)` when within bounds.
+pub(crate) fn read_bounded(reader: impl Read, limit: u64) -> (String, Option<usize>) {
     let mut buf = String::new();
-    std::io::stdin().read_to_string(&mut buf).unwrap_or(0);
-    buf
+    let bytes_read = reader
+        .take(limit + 1)
+        .read_to_string(&mut buf)
+        .unwrap_or(0);
+    if bytes_read > limit as usize {
+        buf.truncate(limit as usize);
+        (buf, Some(bytes_read))
+    } else {
+        (buf, None)
+    }
+}
+
+/// Read all of stdin into a string (used by hook subcommands).
+///
+/// Input is bounded at 1 MB. If the input exceeds this limit it is truncated
+/// and a warning is logged via `log::warn!`.
+pub fn read_stdin() -> String {
+    let (content, truncated_at) = read_bounded(std::io::stdin(), MAX_STDIN_BYTES);
+    if let Some(original) = truncated_at {
+        log::warn!(
+            "read_stdin: input truncated from {} bytes to {} bytes",
+            original,
+            MAX_STDIN_BYTES
+        );
+    }
+    content
 }
 
 /// Write the workflow state to state.json atomically (temp file + rename).
@@ -70,8 +97,6 @@ pub fn write_state_atomic(project_dir: &Path, state: &WorkflowState) -> Result<(
 mod tests {
     use super::*;
     use std::io::Cursor;
-
-    const MAX_STDIN_BYTES: u64 = 1_048_576; // 1 MB
 
     #[test]
     fn read_stdin_bounded_truncates() {
