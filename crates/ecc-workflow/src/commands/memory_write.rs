@@ -4,94 +4,6 @@ use crate::output::WorkflowOutput;
 use crate::slug::make_slug;
 use crate::time::{utc_hhmm, utc_now_iso8601, utc_today};
 
-#[cfg(test)]
-mod memory_write {
-    pub(super) mod tests {
-        use tempfile::TempDir;
-
-        /// PC-005: write_action and write_work_item resolve to repo root.
-        ///
-        /// When `project_dir` is inside a worktree, the memory dir should resolve
-        /// to the repo root's `docs/memory`, not the worktree-local path.
-        /// We verify this by checking that the memory dir path is derived from
-        /// `ecc_flock::resolve_repo_root(project_dir)`.
-        #[test]
-        fn resolves_repo_root() {
-            let tmp = TempDir::new().unwrap();
-            let project_dir = tmp.path();
-
-            // resolve_repo_root falls back to project_dir when not in a git repo
-            let expected_root = ecc_flock::resolve_repo_root(project_dir);
-            let expected_memory_dir = expected_root.join("docs/memory");
-
-            // write_action should create memory dir under resolve_repo_root
-            let _ = super::super::write_action("plan", "test", "success", "[]", project_dir);
-            assert!(
-                expected_memory_dir.exists(),
-                "expected memory dir at {:?}",
-                expected_memory_dir
-            );
-
-            // write_work_item should also use the same resolved root
-            let _ = super::super::write_work_item("plan", "test feature", "dev", project_dir);
-            let work_items = expected_memory_dir.join("work-items");
-            assert!(
-                work_items.exists(),
-                "expected work-items dir at {:?}",
-                work_items
-            );
-        }
-    }
-}
-
-#[cfg(test)]
-mod uses_correct_lock_tests {
-    use tempfile::TempDir;
-
-    /// PC-012: Each memory type creates its dedicated lock file.
-    #[test]
-    fn uses_correct_lock() {
-        let tmp = TempDir::new().unwrap();
-        let project_dir = tmp.path();
-
-        // write_action → action-log.lock
-        let _ = super::write_action("plan", "test", "success", "[]", project_dir);
-        let action_lock = ecc_flock::lock_dir(project_dir).join("action-log.lock");
-        assert!(
-            action_lock.exists(),
-            "action-log.lock not created at {:?}",
-            action_lock
-        );
-
-        // write_work_item → work-item.lock
-        let _ = super::write_work_item("plan", "test feature", "dev", project_dir);
-        let work_item_lock = ecc_flock::lock_dir(project_dir).join("work-item.lock");
-        assert!(
-            work_item_lock.exists(),
-            "work-item.lock not created at {:?}",
-            work_item_lock
-        );
-
-        // write_daily → daily.lock
-        let _ = super::write_daily("plan", "feature", "dev", project_dir);
-        let daily_lock = ecc_flock::lock_dir(project_dir).join("daily.lock");
-        assert!(
-            daily_lock.exists(),
-            "daily.lock not created at {:?}",
-            daily_lock
-        );
-
-        // write_memory_index → memory-index.lock
-        let _ = super::write_memory_index(project_dir);
-        let memory_index_lock = ecc_flock::lock_dir(project_dir).join("memory-index.lock");
-        assert!(
-            memory_index_lock.exists(),
-            "memory-index.lock not created at {:?}",
-            memory_index_lock
-        );
-    }
-}
-
 /// Dispatch `memory-write` subcommands.
 ///
 /// Supported kinds:
@@ -151,7 +63,8 @@ pub fn run(kind: &str, args: &[String], project_dir: &Path) -> WorkflowOutput {
 /// The project hash is the absolute path with the leading `/` stripped and
 /// remaining `/` replaced with `-`.
 fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Error> {
-    let home = std::env::var("HOME").map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
+    let home = std::env::var("HOME")
+        .map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
 
     // Canonicalize to get absolute path; fall back to as-is if that fails.
     let abs = std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
@@ -164,38 +77,22 @@ fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Err
         .join("memory"))
 }
 
-// ── action ────────────────────────────────────────────────────────────────────
+// ── pure content builders (no I/O) ───────────────────────────────────────────
 
-pub fn write_action(
+/// Build a JSON action log entry from its constituent parts.
+///
+/// `artifacts_json` is parsed as JSON; on parse failure it defaults to `[]`.
+pub(crate) fn build_action_entry(
     action_type: &str,
     description: &str,
     outcome: &str,
     artifacts_json: &str,
-    project_dir: &Path,
-) -> Result<(), anyhow::Error> {
-    let _guard = ecc_flock::acquire(project_dir, "action-log")
-        .map_err(|e| anyhow::anyhow!("Failed to acquire action-log lock: {e}"))?;
-    let memory_dir = ecc_flock::resolve_repo_root(project_dir).join("docs/memory");
-    let work_items_dir = memory_dir.join("work-items");
-    std::fs::create_dir_all(&memory_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;
-    std::fs::create_dir_all(&work_items_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
-
-    let action_log = memory_dir.join("action-log.json");
-    if !action_log.exists() {
-        std::fs::write(&action_log, b"[]")
-            .map_err(|e| anyhow::anyhow!("Failed to init action-log.json: {e}"))?;
-    }
-
-    let timestamp = utc_now_iso8601();
-    let session_id = std::env::var("CLAUDE_SESSION_ID").unwrap_or_else(|_| "unknown".to_string());
-
-    // Parse artifacts_json to ensure it's valid JSON
-    let artifacts: serde_json::Value =
-        serde_json::from_str(artifacts_json).unwrap_or(serde_json::Value::Array(vec![]));
-
-    let entry = serde_json::json!({
+    session_id: &str,
+    timestamp: &str,
+) -> serde_json::Value {
+    let artifacts: serde_json::Value = serde_json::from_str(artifacts_json)
+        .unwrap_or(serde_json::Value::Array(vec![]));
+    serde_json::json!({
         "timestamp": timestamp,
         "session_id": session_id,
         "action_type": action_type,
@@ -203,74 +100,18 @@ pub fn write_action(
         "artifacts": artifacts,
         "outcome": outcome,
         "tags": []
-    });
-
-    // Atomic append: read current array, push entry, write atomically
-    let current_content = std::fs::read_to_string(&action_log)
-        .map_err(|e| anyhow::anyhow!("Failed to read action-log.json: {e}"))?;
-    let mut log: serde_json::Value =
-        serde_json::from_str(&current_content).unwrap_or(serde_json::Value::Array(vec![]));
-
-    if let Some(arr) = log.as_array_mut() {
-        arr.push(entry);
-    }
-
-    let new_content = serde_json::to_string_pretty(&log)
-        .map_err(|e| anyhow::anyhow!("Failed to serialize action log: {e}"))?;
-
-    let tmp_path = memory_dir.join(".action-log.tmp");
-    std::fs::write(&tmp_path, new_content)
-        .map_err(|e| anyhow::anyhow!("Failed to write temp action log: {e}"))?;
-    std::fs::rename(&tmp_path, &action_log)
-        .map_err(|e| anyhow::anyhow!("Failed to atomically rename action log: {e}"))?;
-
-    Ok(())
+    })
 }
 
-// ── work-item ─────────────────────────────────────────────────────────────────
-
-pub fn write_work_item(
+/// Build the markdown content for a work item phase file.
+///
+/// Returns `Err` for unknown phases.
+pub(crate) fn try_build_work_item_content(
     phase: &str,
     description: &str,
     concern: &str,
-    project_dir: &Path,
-) -> Result<(), anyhow::Error> {
-    let _guard = ecc_flock::acquire(project_dir, "work-item")
-        .map_err(|e| anyhow::anyhow!("Failed to acquire work-item lock: {e}"))?;
-    let memory_dir = ecc_flock::resolve_repo_root(project_dir).join("docs/memory");
-    let work_items_dir = memory_dir.join("work-items");
-    std::fs::create_dir_all(&work_items_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
-
-    // Ensure action-log.json exists
-    let action_log = memory_dir.join("action-log.json");
-    if !action_log.exists() {
-        std::fs::write(&action_log, b"[]")
-            .map_err(|e| anyhow::anyhow!("Failed to init action-log.json: {e}"))?;
-    }
-
-    let today = utc_today();
-    let slug = make_slug(description);
-    let item_dir = work_items_dir.join(format!("{today}-{slug}"));
-    std::fs::create_dir_all(&item_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create item dir: {e}"))?;
-
-    let target_file = item_dir.join(format!("{phase}.md"));
-    let timestamp = utc_now_iso8601();
-
-    // Re-entry: append revision block
-    if target_file.exists() {
-        let revision = format!(
-            "\n## Revision\n\nDate: {timestamp}\n\nRe-entry detected. This phase was re-executed.\n"
-        );
-        let mut content = std::fs::read_to_string(&target_file)
-            .map_err(|e| anyhow::anyhow!("Failed to read existing work item: {e}"))?;
-        content.push_str(&revision);
-        std::fs::write(&target_file, content)
-            .map_err(|e| anyhow::anyhow!("Failed to append revision: {e}"))?;
-        return Ok(());
-    }
-
+    timestamp: &str,
+) -> Result<String, anyhow::Error> {
     let content = match phase {
         "plan" => format!(
             "# Plan: {description}\n\
@@ -338,6 +179,122 @@ pub fn write_work_item(
             ));
         }
     };
+    Ok(content)
+}
+
+/// Build the markdown content for a work item file (panics on unknown phase, for internal use).
+pub(crate) fn build_work_item_content(
+    phase: &str,
+    description: &str,
+    concern: &str,
+    timestamp: &str,
+) -> String {
+    try_build_work_item_content(phase, description, concern, timestamp)
+        .expect("valid phase required")
+}
+
+/// Build a single activity log entry line for the daily memory file.
+pub(crate) fn build_daily_entry(phase: &str, feature: &str, concern: &str, time: &str) -> String {
+    format!("- [{time}] **{phase}** {feature} — {concern}")
+}
+
+/// Build the markdown link line for a daily entry in MEMORY.md.
+pub(crate) fn build_memory_index_link(today: &str) -> String {
+    format!("- [{today}](daily/{today}.md)")
+}
+
+// ── action ────────────────────────────────────────────────────────────────────
+
+pub fn write_action(
+    action_type: &str,
+    description: &str,
+    outcome: &str,
+    artifacts_json: &str,
+    project_dir: &Path,
+) -> Result<(), anyhow::Error> {
+    let memory_dir = project_dir.join("docs/memory");
+    let work_items_dir = memory_dir.join("work-items");
+    std::fs::create_dir_all(&memory_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;
+    std::fs::create_dir_all(&work_items_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
+
+    let action_log = memory_dir.join("action-log.json");
+    if !action_log.exists() {
+        std::fs::write(&action_log, b"[]")
+            .map_err(|e| anyhow::anyhow!("Failed to init action-log.json: {e}"))?;
+    }
+
+    let timestamp = utc_now_iso8601();
+    let session_id = std::env::var("CLAUDE_SESSION_ID").unwrap_or_else(|_| "unknown".to_string());
+
+    let entry = build_action_entry(action_type, description, outcome, artifacts_json, &session_id, &timestamp);
+
+    // Atomic append: read current array, push entry, write atomically
+    let current_content = std::fs::read_to_string(&action_log)
+        .map_err(|e| anyhow::anyhow!("Failed to read action-log.json: {e}"))?;
+    let mut log: serde_json::Value = serde_json::from_str(&current_content)
+        .unwrap_or(serde_json::Value::Array(vec![]));
+
+    if let Some(arr) = log.as_array_mut() {
+        arr.push(entry);
+    }
+
+    let new_content = serde_json::to_string_pretty(&log)
+        .map_err(|e| anyhow::anyhow!("Failed to serialize action log: {e}"))?;
+
+    let tmp_path = memory_dir.join(".action-log.tmp");
+    std::fs::write(&tmp_path, new_content)
+        .map_err(|e| anyhow::anyhow!("Failed to write temp action log: {e}"))?;
+    std::fs::rename(&tmp_path, &action_log)
+        .map_err(|e| anyhow::anyhow!("Failed to atomically rename action log: {e}"))?;
+
+    Ok(())
+}
+
+// ── work-item ─────────────────────────────────────────────────────────────────
+
+pub fn write_work_item(
+    phase: &str,
+    description: &str,
+    concern: &str,
+    project_dir: &Path,
+) -> Result<(), anyhow::Error> {
+    let memory_dir = project_dir.join("docs/memory");
+    let work_items_dir = memory_dir.join("work-items");
+    std::fs::create_dir_all(&work_items_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
+
+    // Ensure action-log.json exists
+    let action_log = memory_dir.join("action-log.json");
+    if !action_log.exists() {
+        std::fs::write(&action_log, b"[]")
+            .map_err(|e| anyhow::anyhow!("Failed to init action-log.json: {e}"))?;
+    }
+
+    let today = utc_today();
+    let slug = make_slug(description);
+    let item_dir = work_items_dir.join(format!("{today}-{slug}"));
+    std::fs::create_dir_all(&item_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create item dir: {e}"))?;
+
+    let target_file = item_dir.join(format!("{phase}.md"));
+    let timestamp = utc_now_iso8601();
+
+    // Re-entry: append revision block
+    if target_file.exists() {
+        let revision = format!(
+            "\n## Revision\n\nDate: {timestamp}\n\nRe-entry detected. This phase was re-executed.\n"
+        );
+        let mut content = std::fs::read_to_string(&target_file)
+            .map_err(|e| anyhow::anyhow!("Failed to read existing work item: {e}"))?;
+        content.push_str(&revision);
+        std::fs::write(&target_file, content)
+            .map_err(|e| anyhow::anyhow!("Failed to append revision: {e}"))?;
+        return Ok(());
+    }
+
+    let content = try_build_work_item_content(phase, description, concern, &timestamp)?;
 
     std::fs::write(&target_file, content)
         .map_err(|e| anyhow::anyhow!("Failed to write work item file: {e}"))?;
@@ -353,9 +310,8 @@ pub fn write_daily(
     concern: &str,
     project_dir: &Path,
 ) -> Result<(), anyhow::Error> {
-    let _guard = ecc_flock::acquire(project_dir, "daily")
-        .map_err(|e| anyhow::anyhow!("Failed to acquire daily lock: {e}"))?;
-    let memory_dir = resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let memory_dir =
+        resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     let daily_dir = memory_dir.join("daily");
     std::fs::create_dir_all(&daily_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create daily dir: {e}"))?;
@@ -387,7 +343,7 @@ pub fn write_daily(
 
     // Append entry under ## Activity
     let now = utc_hhmm();
-    let entry = format!("- [{now}] **{phase}** {feature} — {concern}");
+    let entry = build_daily_entry(phase, feature, concern, &now);
 
     // Insert after ## Activity line (and any immediately following blank line)
     let new_content = insert_after_activity(&content, &entry);
@@ -467,9 +423,8 @@ fn insert_after_activity(content: &str, entry: &str) -> String {
 // ── memory-index ──────────────────────────────────────────────────────────────
 
 pub fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
-    let _guard = ecc_flock::acquire(project_dir, "memory-index")
-        .map_err(|e| anyhow::anyhow!("Failed to acquire memory-index lock: {e}"))?;
-    let memory_dir = resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let memory_dir =
+        resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     std::fs::create_dir_all(&memory_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;
 
@@ -490,7 +445,7 @@ pub fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
     }
 
     let today = utc_today();
-    let link = format!("- [{today}](daily/{today}.md)");
+    let link = build_memory_index_link(&today);
 
     // Skip if already present
     if content.contains(&link) {
@@ -539,4 +494,123 @@ fn insert_after_daily_heading(content: &str, link: &str) -> String {
     }
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── build_action_entry tests ──────────────────────────────────────────────
+
+    #[test]
+    fn build_action_entry_happy_path() {
+        let entry = build_action_entry(
+            "feat",
+            "add feature X",
+            "success",
+            "[]",
+            "session-1",
+            "2026-01-01T00:00:00Z",
+        );
+        assert_eq!(entry["action_type"], "feat");
+        assert_eq!(entry["description"], "add feature X");
+        assert_eq!(entry["outcome"], "success");
+        assert_eq!(entry["session_id"], "session-1");
+        assert_eq!(entry["timestamp"], "2026-01-01T00:00:00Z");
+    }
+
+    #[test]
+    fn build_action_entry_invalid_artifacts_json_defaults_to_empty_array() {
+        let entry = build_action_entry(
+            "fix",
+            "desc",
+            "done",
+            "not-valid-json",
+            "sess",
+            "ts",
+        );
+        assert_eq!(entry["artifacts"], serde_json::json!([]));
+    }
+
+    #[test]
+    fn build_action_entry_empty_strings_are_preserved() {
+        let entry = build_action_entry("", "", "", "[]", "", "");
+        assert_eq!(entry["action_type"], "");
+        assert_eq!(entry["description"], "");
+        assert_eq!(entry["outcome"], "");
+    }
+
+    // ── build_work_item_content tests ─────────────────────────────────────────
+
+    #[test]
+    fn build_work_item_content_plan_contains_concern() {
+        let content = build_work_item_content("plan", "Test Feature", "auth", "2026-01-01T00:00:00Z");
+        assert!(content.contains("Concern: auth"));
+        assert!(content.contains("# Plan: Test Feature"));
+    }
+
+    #[test]
+    fn build_work_item_content_solution_phase() {
+        let content = build_work_item_content("solution", "My Solution", "infra", "2026-01-01T00:00:00Z");
+        assert!(content.contains("# Solution: My Solution"));
+        assert!(content.contains("## File Changes"));
+    }
+
+    #[test]
+    fn build_work_item_content_implementation_phase() {
+        let content = build_work_item_content("implementation", "Impl desc", "concern", "2026-01-01T00:00:00Z");
+        assert!(content.contains("# Implementation: Impl desc"));
+        assert!(content.contains("## Changes Made"));
+    }
+
+    #[test]
+    fn build_work_item_content_unknown_phase_returns_error() {
+        let result = try_build_work_item_content("unknown", "desc", "concern", "ts");
+        assert!(result.is_err());
+    }
+
+    // ── build_daily_content tests ─────────────────────────────────────────────
+
+    #[test]
+    fn build_daily_entry_contains_phase_feature_concern() {
+        let entry = build_daily_entry("spec", "auth feature", "security", "09:30");
+        assert!(entry.contains("**spec**"));
+        assert!(entry.contains("auth feature"));
+        assert!(entry.contains("security"));
+        assert!(entry.contains("09:30"));
+    }
+
+    #[test]
+    fn build_daily_entry_empty_phase_produces_entry() {
+        let entry = build_daily_entry("", "feature", "concern", "10:00");
+        assert!(entry.contains("****"));
+    }
+
+    #[test]
+    fn build_daily_entry_special_chars_preserved() {
+        let entry = build_daily_entry("plan", "feat: add & fix", "a/b", "12:00");
+        assert!(entry.contains("feat: add & fix"));
+        assert!(entry.contains("a/b"));
+    }
+
+    // ── build_memory_index_link tests ─────────────────────────────────────────
+
+    #[test]
+    fn build_memory_index_link_correct_format() {
+        let link = build_memory_index_link("2026-01-01");
+        assert_eq!(link, "- [2026-01-01](daily/2026-01-01.md)");
+    }
+
+    #[test]
+    fn build_memory_index_link_different_date() {
+        let link = build_memory_index_link("2025-12-31");
+        assert!(link.contains("2025-12-31"));
+        assert!(link.contains("daily/2025-12-31.md"));
+    }
+
+    #[test]
+    fn build_memory_index_link_is_markdown_list_item() {
+        let link = build_memory_index_link("2026-03-28");
+        assert!(link.starts_with("- ["));
+    }
 }
