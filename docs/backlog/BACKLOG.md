@@ -82,7 +82,7 @@
 | BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | open | 2026-03-27 |
 | BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | open | 2026-03-27 |
 | BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | open | 2026-03-27 |
-| BL-082 | Add worktree display segment to statusline | — | LOW | direct edit | open | 2026-03-27 |
+| BL-082 | Add worktree display segment to statusline | — | LOW | direct edit | promoted | 2026-03-27 |
 | BL-083 | Adversarial challenge phase for all /audit-* commands | — | HIGH | /spec-dev | open | 2026-03-27 |
 | BL-084 | Backlog conformance audit — verify implementations match original intent | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-085 | WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool | — | HIGH | /spec fix | open | 2026-03-28 |
