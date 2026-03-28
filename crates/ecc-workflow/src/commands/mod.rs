@@ -6,6 +6,7 @@ pub mod e2e_boundary_check;
 pub mod grill_me_gate;
 pub mod init;
 pub mod memory_write;
+pub mod merge;
 pub mod pass_condition_check;
 pub mod phase_gate;
 pub mod reset;

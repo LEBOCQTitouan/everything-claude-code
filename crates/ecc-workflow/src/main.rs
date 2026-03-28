@@ -87,6 +87,8 @@ enum Commands {
         concern: String,
         feature: String,
     },
+    /// Merge a session worktree branch into main after verify + rebase.
+    Merge,
     /// Atomically add an entry to docs/backlog/ with flock-based locking.
     Backlog {
         #[command(subcommand)]
@@ -166,6 +168,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::WorktreeName { concern, feature } => {
             commands::worktree_name::run(&concern, &feature)
         }
+        Commands::Merge => commands::merge::run(&project_dir()),
         Commands::Backlog { subcmd } => match subcmd {
             BacklogCmd::AddEntry {
                 title,
