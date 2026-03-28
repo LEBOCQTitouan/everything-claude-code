@@ -28,17 +28,23 @@ pub(super) fn validate_statusline(
         None
     };
 
-    let placeholder_ok = match &script_content {
+    // Check the INSTALLED script for unresolved placeholders, not the source template.
+    // The source template intentionally has __ECC_VERSION__ — it's substituted during install.
+    let home_script = std::env::var("HOME")
+        .map(|h| std::path::PathBuf::from(h).join(".claude").join("statusline-command.sh"))
+        .unwrap_or_default();
+    let installed_content = fs.read_to_string(&home_script).ok();
+    let check_content = installed_content.as_deref().or(script_content.as_deref());
+
+    let placeholder_ok = match check_content {
         Some(c) => {
             let has_placeholder = c.contains("__ECC_VERSION__");
             if !has_placeholder {
                 terminal.stdout_write("✓ No unresolved placeholder\n");
-                true
             } else {
-                // Dev-mode installs keep the placeholder — treat as warning, not failure
-                terminal.stdout_write("⚠ Unresolved placeholder: __ECC_VERSION__ found (expected in dev-mode installs)\n");
-                true // non-blocking warning
+                terminal.stdout_write("✗ Unresolved placeholder: __ECC_VERSION__ found in installed script\n");
             }
+            !has_placeholder
         }
         None => {
             terminal.stdout_write("✗ No unresolved placeholder: script unavailable\n");
@@ -188,7 +194,9 @@ mod tests {
     }
 
     #[test]
-    fn validate_statusline_warns_unresolved_placeholder() {
+    fn validate_statusline_fails_unresolved_placeholder_in_installed() {
+        // Source template has placeholder (expected), but if the installed copy
+        // also has it, that's a real failure
         let script = "#!/usr/bin/env bash\njq '.x'\nECC_VERSION=\"__ECC_VERSION__\"\n";
         let fs = InMemoryFileSystem::new()
             .with_file("/root/statusline/statusline-command.sh", script)
@@ -196,8 +204,9 @@ mod tests {
         fs.set_permissions(Path::new("/root/statusline/statusline-command.sh"), 0o755)
             .unwrap();
         let t = term();
-        // Placeholder is now a warning, not a failure — validation still passes
-        assert!(run_validate(
+        // When no installed script exists and source has placeholder, it falls
+        // back to source content and reports failure
+        assert!(!run_validate(
             &fs,
             &t,
             &ValidateTarget::Statusline,
@@ -207,7 +216,7 @@ mod tests {
         assert!(
             stdout
                 .iter()
-                .any(|s| s.contains('⚠') && s.contains("placeholder"))
+                .any(|s| s.contains('✗') && s.contains("placeholder"))
         );
     }
 
