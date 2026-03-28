@@ -1,3 +1,78 @@
+use std::path::{Path, PathBuf};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub enum ShellKind {
+    Zsh,
+    Bash,
+    Fish,
+}
+
+/// Detect shell from $SHELL env value (e.g., "/bin/zsh" -> Zsh)
+#[allow(dead_code)]
+pub fn detect(shell_env: &str) -> Option<ShellKind> {
+    let name = Path::new(shell_env).file_name()?.to_str()?;
+    match name {
+        "zsh" => Some(ShellKind::Zsh),
+        "bash" => Some(ShellKind::Bash),
+        "fish" => Some(ShellKind::Fish),
+        _ => None,
+    }
+}
+
+/// Return the shell RC file path
+#[allow(dead_code)]
+pub fn rc_file_path(shell: ShellKind, home: &Path) -> PathBuf {
+    match shell {
+        ShellKind::Zsh => home.join(".zshrc"),
+        ShellKind::Bash => home.join(".bashrc"),
+        ShellKind::Fish => home.join(".config/fish/config.fish"),
+    }
+}
+
+/// Return the completion file install path
+#[allow(dead_code)]
+pub fn completion_file_path(shell: ShellKind, home: &Path) -> PathBuf {
+    match shell {
+        ShellKind::Zsh => home.join(".zfunc/_ecc"),
+        ShellKind::Bash => home.join(".local/share/bash-completion/completions/ecc"),
+        ShellKind::Fish => home.join(".config/fish/completions/ecc.fish"),
+    }
+}
+
+/// Return the completion source line for the RC file (None for fish)
+#[allow(dead_code)]
+pub fn completion_source_line(shell: ShellKind) -> Option<String> {
+    match shell {
+        ShellKind::Zsh => Some(
+            "fpath=(~/.zfunc $fpath); autoload -Uz compinit && compinit".to_owned(),
+        ),
+        ShellKind::Bash => Some(
+            "source ~/.local/share/bash-completion/completions/ecc".to_owned(),
+        ),
+        ShellKind::Fish => None,
+    }
+}
+
+/// Return the PATH export line
+#[allow(dead_code)]
+pub fn path_export_line(shell: ShellKind) -> String {
+    match shell {
+        ShellKind::Fish => "fish_add_path ~/.cargo/bin".to_owned(),
+        _ => "export PATH=\"$HOME/.cargo/bin:$PATH\"".to_owned(),
+    }
+}
+
+/// Build the complete managed RC block content
+#[allow(dead_code)]
+pub fn build_rc_block(shell: ShellKind) -> Vec<String> {
+    let mut lines = vec![path_export_line(shell)];
+    if let Some(source) = completion_source_line(shell) {
+        lines.push(source);
+    }
+    lines
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
