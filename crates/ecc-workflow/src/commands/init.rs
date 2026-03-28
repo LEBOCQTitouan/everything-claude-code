@@ -110,3 +110,30 @@ fn cleanup_artifacts(workflow_dir: &Path) {
     let _ = std::fs::remove_file(workflow_dir.join(".tdd-state"));
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::output::Status;
+    use tempfile::TempDir;
+
+    #[test]
+    fn init_acquires_state_lock() {
+        let tmp = TempDir::new().unwrap();
+        let project_dir = tmp.path();
+
+        let result = super::run("test-concern", "test-feature", project_dir);
+        assert!(
+            matches!(result.status, Status::Pass),
+            "init should succeed: {:?}",
+            result.message
+        );
+
+        // The lock file must exist (proves acquire was called during init)
+        let lock_file = ecc_flock::lock_dir(project_dir).join("state.lock");
+        assert!(
+            lock_file.exists(),
+            "state.lock file not found at {:?} — init did not acquire the state lock",
+            lock_file
+        );
+    }
+}
+
