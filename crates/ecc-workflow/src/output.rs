@@ -10,8 +10,6 @@ pub struct WorkflowOutput {
 #[serde(rename_all = "lowercase")]
 pub enum Status {
     Pass,
-    // Block is used by later subcommands (e.g., phase-gate); allow until then
-    #[allow(dead_code)]
     Block,
     Warn,
 }
@@ -24,8 +22,6 @@ impl WorkflowOutput {
         }
     }
 
-    // Used by later subcommands (e.g., phase-gate); allow until then
-    #[allow(dead_code)]
     pub fn block(message: impl Into<String>) -> Self {
         Self {
             status: Status::Block,

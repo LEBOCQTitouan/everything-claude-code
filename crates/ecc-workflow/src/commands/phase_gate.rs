@@ -1,6 +1,6 @@
-use std::io::Read;
 use std::path::Path;
 
+use crate::io::read_stdin;
 use crate::output::WorkflowOutput;
 
 /// Allowed path prefixes during plan/solution phases.
@@ -110,12 +110,6 @@ fn read_phase(project_dir: &Path) -> PhaseResult {
         .unwrap_or("done")
         .to_owned();
     PhaseResult::Phase(phase)
-}
-
-fn read_stdin() -> String {
-    let mut buf = String::new();
-    std::io::stdin().read_to_string(&mut buf).unwrap_or(0);
-    buf
 }
 
 fn parse_hook_input(input: &str) -> (Option<String>, Option<String>, Option<String>) {

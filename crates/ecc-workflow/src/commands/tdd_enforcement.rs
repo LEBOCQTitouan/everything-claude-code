@@ -1,6 +1,6 @@
-use std::io::Read;
 use std::path::Path;
 
+use crate::io::{read_phase, read_stdin};
 use crate::output::WorkflowOutput;
 
 /// Test file path patterns that indicate a file is a test file.
@@ -54,24 +54,6 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
         }
         _ => WorkflowOutput::pass(""),
     }
-}
-
-fn read_phase(project_dir: &Path) -> Option<String> {
-    let state_path = project_dir.join(".claude/workflow/state.json");
-    if !state_path.exists() {
-        return None;
-    }
-    let content = std::fs::read_to_string(&state_path).ok()?;
-    let v: serde_json::Value = serde_json::from_str(&content).ok()?;
-    v.get("phase")
-        .and_then(|p| p.as_str())
-        .map(|s| s.to_owned())
-}
-
-fn read_stdin() -> String {
-    let mut buf = String::new();
-    std::io::stdin().read_to_string(&mut buf).unwrap_or(0);
-    buf
 }
 
 fn parse_hook_input(input: &str) -> (Option<String>, Option<String>) {

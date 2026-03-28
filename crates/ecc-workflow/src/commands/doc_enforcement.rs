@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use crate::io::read_phase;
 use crate::output::WorkflowOutput;
 
 /// Run the `doc-enforcement` subcommand.
@@ -77,14 +78,3 @@ fn has_section_with_content(content: &str, heading: &str) -> bool {
         .any(|line| line.trim_start().starts_with("- ") || line.trim_start().starts_with('|'))
 }
 
-fn read_phase(project_dir: &Path) -> Option<String> {
-    let state_path = project_dir.join(".claude/workflow/state.json");
-    if !state_path.exists() {
-        return None;
-    }
-    let content = std::fs::read_to_string(&state_path).ok()?;
-    let v: serde_json::Value = serde_json::from_str(&content).ok()?;
-    v.get("phase")
-        .and_then(|p| p.as_str())
-        .map(|s| s.to_owned())
-}

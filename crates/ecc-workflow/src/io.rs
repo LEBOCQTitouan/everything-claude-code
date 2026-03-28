@@ -1,6 +1,23 @@
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use ecc_domain::workflow::state::WorkflowState;
+
+/// Read the current workflow phase from state.json.
+///
+/// Returns `None` when state.json does not exist or cannot be parsed.
+/// Returns `Some(phase_string)` when the phase field is present.
+pub fn read_phase(project_dir: &Path) -> Option<String> {
+    let state_path = project_dir.join(".claude/workflow/state.json");
+    if !state_path.exists() {
+        return None;
+    }
+    let content = std::fs::read_to_string(&state_path).ok()?;
+    let v: serde_json::Value = serde_json::from_str(&content).ok()?;
+    v.get("phase")
+        .and_then(|p| p.as_str())
+        .map(|s| s.to_owned())
+}
 
 /// Read the workflow state from the project directory.
 ///
@@ -26,6 +43,13 @@ pub fn ensure_workflow_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Error>
     std::fs::create_dir_all(&dir)
         .map_err(|e| anyhow::anyhow!("Failed to create workflow directory: {e}"))?;
     Ok(dir)
+}
+
+/// Read all of stdin into a string (used by hook subcommands).
+pub fn read_stdin() -> String {
+    let mut buf = String::new();
+    std::io::stdin().read_to_string(&mut buf).unwrap_or(0);
+    buf
 }
 
 /// Write the workflow state to state.json atomically (temp file + rename).
