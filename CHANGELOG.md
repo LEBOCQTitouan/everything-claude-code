@@ -6,6 +6,25 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.3.0
+
+### Audit Remediation (24 smells, 8 user stories)
+
+- **Observable CLI operations (US-001)**: Default log level set to `warn` via `env_logger`. 6+ error-discard sites now emit `log::warn!`. `--verbose` flag produces debug output. Failure banners (`Error: <desc>`) on stderr before `exit(1)`. ecc-workflow binary gains `log`+`env_logger` dependencies.
+- **Testable workflow commands (US-002)**: Pure logic extracted from `memory_write.rs` (4 format builder functions). Bounded stdin reading (1MB cap with truncation warning). Integration test monolith (2750 lines) split into 10 per-command test files (<400 lines each).
+- **Secure notification hooks (US-003)**: `sanitize_osascript` and `sanitize_powershell` functions escape backslashes, quotes, and cap input at 256 chars. 16 adversarial tests including injection, Unicode, and length attacks.
+- **Typed error handling (US-004)**: `ClawError`, `MergeError`, `ConfigAppError`, `InstallError`, `PathValidationError` enums replace `Result<T, String>` across ecc-app. CLI maps error variants to operation names + remediation hints.
+- **File size compliance (US-007)**: `validate.rs` (1240 lines) split into 8 submodules. `dev.rs` (1065 lines) split into 5 submodules. `install/global.rs` split into 2 submodules. `merge/helpers.rs` tests extracted.
+- **Convention consistency (US-006)**: `Completion.phase` typed as `Phase` enum (was `String`). `Concern` enum and `Timestamp` newtype for `WorkflowState`. `Phase::Unknown` variant for forward-compatible deserialization. `is_claude_available` deduplicated. Port trait methods get `///` doc comments.
+- **Domain model improvement (US-008)**: `Validatable<E>` and `Transitionable` behavioral traits added to ecc-domain. D score improved from 0.99 to ~0.79. Corrupt `aliases.json` now emits `log::warn!`. Dev switch rollback logs errors.
+- **Documentation (US-005)**: `DEPENDENCY-GRAPH.md` rewritten for 9 Rust crates. `glossary.md` updated (27 `.ts` refs replaced). `ARCHITECTURE.md` counts corrected (51 agents, 24 commands, 110 skills). `bounded-contexts.md` adds backlog+workflow. `MODULE-SUMMARIES.md` adds 3 missing crates. `commands-reference.md` adds spec pipeline. Module dependency diagram corrected to 9 nodes.
+
+### ADRs
+
+- **ADR 0027**: ecc-workflow keeps direct I/O (Functional Core, Imperative Shell)
+- **ADR 0028**: Domain abstractness via behavioral traits (Validatable, Transitionable)
+- **ADR 0029**: thiserror enums per module, anyhow only in binaries
+
 ## v4.2.0
 
 ### Features
