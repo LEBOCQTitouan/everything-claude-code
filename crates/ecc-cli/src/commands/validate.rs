@@ -33,17 +33,53 @@ pub enum CliValidateTarget {
     Paths,
     /// Validate statusline installation
     Statusline,
+    /// Validate spec AC format and numbering
+    Spec {
+        /// Path to spec.md
+        path: PathBuf,
+    },
+    /// Validate design PC table and optionally cross-reference spec
+    Design {
+        /// Path to design.md
+        path: PathBuf,
+        /// Optional path to spec.md for coverage analysis
+        #[arg(long)]
+        spec: Option<PathBuf>,
+    },
 }
 
 pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
     let fs = OsFileSystem;
     let terminal = StdTerminal;
-    let target = map_target(&args.target);
 
-    if ecc_app::validate::run_validate(&fs, &terminal, &target, &args.ecc_root) {
-        Ok(())
-    } else {
-        std::process::exit(1);
+    match &args.target {
+        CliValidateTarget::Spec { path } => {
+            let path_str = path.to_string_lossy();
+            match ecc_app::validate_spec::run_validate_spec(&fs, &terminal, &path_str) {
+                Ok(true) => Ok(()),
+                Ok(false) => std::process::exit(1),
+                Err(e) => Err(anyhow::anyhow!("{e}")),
+            }
+        }
+        CliValidateTarget::Design { path, spec } => {
+            let path_str = path.to_string_lossy();
+            let spec_str = spec.as_ref().map(|p| p.to_string_lossy().into_owned());
+            let spec_ref = spec_str.as_deref();
+            match ecc_app::validate_design::run_validate_design(&fs, &terminal, &path_str, spec_ref)
+            {
+                Ok(true) => Ok(()),
+                Ok(false) => std::process::exit(1),
+                Err(e) => Err(anyhow::anyhow!("{e}")),
+            }
+        }
+        other => {
+            let target = map_target(other);
+            if ecc_app::validate::run_validate(&fs, &terminal, &target, &args.ecc_root) {
+                Ok(())
+            } else {
+                std::process::exit(1);
+            }
+        }
     }
 }
 
@@ -56,5 +92,9 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Rules => ecc_app::validate::ValidateTarget::Rules,
         CliValidateTarget::Paths => ecc_app::validate::ValidateTarget::Paths,
         CliValidateTarget::Statusline => ecc_app::validate::ValidateTarget::Statusline,
+        // Spec and Design are handled directly in run() — unreachable here
+        CliValidateTarget::Spec { .. } | CliValidateTarget::Design { .. } => {
+            unreachable!("Spec and Design are handled before map_target is called")
+        }
     }
 }
