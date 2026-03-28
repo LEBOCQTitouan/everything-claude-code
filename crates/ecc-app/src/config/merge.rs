@@ -1,3 +1,4 @@
+use super::error::ConfigAppError;
 use ecc_domain::config::merge::{FileToReview, contents_differ};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
@@ -71,18 +72,24 @@ pub fn apply_accept(
     src_path: &Path,
     dest_path: &Path,
     dry_run: bool,
-) -> Result<(), String> {
+) -> Result<(), ConfigAppError> {
     if dry_run {
         return Ok(());
     }
 
     if let Some(parent) = dest_path.parent() {
         fs.create_dir_all(parent)
-            .map_err(|e| format!("Failed to create directory: {e}"))?;
+            .map_err(|e| ConfigAppError::CreateDir {
+                path: parent.display().to_string(),
+                reason: e.to_string(),
+            })?;
     }
 
-    fs.copy(src_path, dest_path)
-        .map_err(|e| format!("Failed to copy file: {e}"))
+    fs.copy(src_path, dest_path).map_err(|e| ConfigAppError::CopyFile {
+        src: src_path.display().to_string(),
+        dest: dest_path.display().to_string(),
+        reason: e.to_string(),
+    })
 }
 
 #[cfg(test)]

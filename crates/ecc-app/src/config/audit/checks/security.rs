@@ -31,7 +31,7 @@ pub fn check_deny_rules(fs: &dyn FileSystem, settings_path: &Path) -> AuditCheck
                 id: "DENY-002".into(),
                 severity: Severity::High,
                 title: "Corrupt settings.json".into(),
-                detail: msg,
+                detail: msg.to_string(),
                 fix: "Fix or recreate settings.json.".into(),
             });
             return AuditCheckResult {
