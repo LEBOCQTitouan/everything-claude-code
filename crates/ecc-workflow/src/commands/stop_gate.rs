@@ -21,7 +21,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
         Err(_) => return WorkflowOutput::pass(""),
     };
 
-    if state.phase == Phase::Done {
+    if matches!(state.phase, Phase::Done | Phase::Idle) {
         return WorkflowOutput::pass("");
     }
 

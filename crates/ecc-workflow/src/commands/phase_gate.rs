@@ -1,5 +1,8 @@
 use std::path::Path;
 
+use ecc_domain::workflow::phase::Phase;
+use ecc_domain::workflow::state::WorkflowState;
+
 use crate::io::{read_stdin, with_state_lock};
 use crate::output::WorkflowOutput;
 
@@ -34,7 +37,8 @@ const BLOCKED_BASH_PATTERNS: &[&str] = &[
 ///
 /// Exit behavior (mirrors phase-gate.sh):
 /// - No state.json → exit 0 (pass)
-/// - phase is implement or done → exit 0 (pass)
+/// - Corrupt/unparseable state.json → exit 0 (warn) — does NOT block
+/// - phase.is_gated() == false (Idle, Implement, Done) → exit 0 (pass)
 /// - Write/Edit/MultiEdit to allowed path → exit 0 (pass)
 /// - Write/Edit/MultiEdit to blocked path → exit 2 (block)
 /// - Bash with destructive command → exit 2 (block)
@@ -45,23 +49,32 @@ const BLOCKED_BASH_PATTERNS: &[&str] = &[
 pub fn run(project_dir: &Path) -> WorkflowOutput {
     // Read stdin before acquiring the lock — stdin is not state-dependent.
     let input = read_stdin();
+    run_with_input(project_dir, &input)
+}
 
+/// Testable entry point: same as `run` but accepts hook input directly.
+pub fn run_with_input(project_dir: &Path, input: &str) -> WorkflowOutput {
     // Acquire state lock to read the phase atomically with respect to transitions.
-    let phase = match with_state_lock(project_dir, || read_phase(project_dir)) {
-        Ok(PhaseResult::Missing) => return WorkflowOutput::pass("No workflow active"),
-        Ok(PhaseResult::ReadError(e)) => {
-            return WorkflowOutput::pass(format!("Could not read state.json: {e}"));
-        }
-        Ok(PhaseResult::Phase(p)) => p,
+    let phase_result = match with_state_lock(project_dir, || read_phase_typed(project_dir)) {
+        Ok(r) => r,
         Err(e) => return WorkflowOutput::pass(format!("Could not acquire state lock: {e}")),
     };
 
-    // implement and done phases — no gating
-    if phase == "implement" || phase == "done" {
+    let phase = match phase_result {
+        PhaseResult::Missing => return WorkflowOutput::pass("No workflow active"),
+        PhaseResult::Corrupt(msg) => {
+            return WorkflowOutput::warn(format!("Corrupt state.json: {msg}"));
+        }
+        PhaseResult::Parsed(p) => p,
+    };
+
+    // Non-gated phases (Idle, Implement, Done) — no restrictions
+    if !phase.is_gated() {
         return WorkflowOutput::pass(format!("Phase {phase}: no gating"));
     }
 
-    let (tool_name, file_path, command) = parse_hook_input(&input);
+    let phase_str = phase.to_string();
+    let (tool_name, file_path, command) = parse_hook_input(input);
 
     match tool_name.as_deref() {
         Some("Write") | Some("Edit") | Some("MultiEdit") => {
@@ -70,7 +83,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
                 WorkflowOutput::pass(format!("Write to allowed path '{fp}' permitted"))
             } else {
                 WorkflowOutput::block(format!(
-                    "BLOCKED: Cannot write to '{fp}' during {phase} phase. \
+                    "BLOCKED: Cannot write to '{fp}' during {phase_str} phase. \
                      Only workflow and docs paths are allowed."
                 ))
             }
@@ -79,7 +92,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
             let cmd = command.as_deref().unwrap_or("");
             if is_destructive_bash(cmd) {
                 WorkflowOutput::block(format!(
-                    "BLOCKED: Destructive command not allowed during {phase} phase. \
+                    "BLOCKED: Destructive command not allowed during {phase_str} phase. \
                      Command: {cmd}"
                 ))
             } else {
@@ -92,29 +105,23 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
 enum PhaseResult {
     Missing,
-    ReadError(String),
-    Phase(String),
+    Corrupt(String),
+    Parsed(Phase),
 }
 
-fn read_phase(project_dir: &Path) -> PhaseResult {
+fn read_phase_typed(project_dir: &Path) -> PhaseResult {
     let state_path = project_dir.join(".claude/workflow/state.json");
     if !state_path.exists() {
         return PhaseResult::Missing;
     }
     let content = match std::fs::read_to_string(&state_path) {
         Ok(c) => c,
-        Err(e) => return PhaseResult::ReadError(e.to_string()),
+        Err(e) => return PhaseResult::Corrupt(e.to_string()),
     };
-    let v: serde_json::Value = match serde_json::from_str(&content) {
-        Ok(v) => v,
-        Err(e) => return PhaseResult::ReadError(e.to_string()),
-    };
-    let phase = v
-        .get("phase")
-        .and_then(|p| p.as_str())
-        .unwrap_or("done")
-        .to_owned();
-    PhaseResult::Phase(phase)
+    match WorkflowState::from_json(&content) {
+        Ok(state) => PhaseResult::Parsed(state.phase),
+        Err(e) => PhaseResult::Corrupt(e.to_string()),
+    }
 }
 
 fn parse_hook_input(input: &str) -> (Option<String>, Option<String>, Option<String>) {
