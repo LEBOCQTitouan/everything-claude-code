@@ -12,9 +12,9 @@
 | **Language** | Rust (Cargo workspace) |
 | **Runtime** | Native binary (no runtime dependency) |
 | **Architecture** | Hexagonal (domain → ports → infra → app → CLI) |
-| **Crates** | 6 (`ecc-domain`, `ecc-ports`, `ecc-app`, `ecc-infra`, `ecc-cli`, `ecc-test-support`) |
-| **Entry point** | `crates/ecc-cli/` → `ecc` binary |
-| **Test count** | 999 (`cargo test`) |
+| **Crates** | 8 (`ecc-domain`, `ecc-ports`, `ecc-app`, `ecc-infra`, `ecc-cli`, `ecc-test-support`, `ecc-integration-tests`, `ecc-workflow`) |
+| **Entry points** | `crates/ecc-cli/` → `ecc` binary, `crates/ecc-workflow/` → `ecc-workflow` binary |
+| **Test count** | 1404 (`cargo test`) |
 | **Build** | `cargo build --release` → single binary |
 
 ## System Diagram
@@ -50,11 +50,13 @@ crates/
     v  cargo build --release
     |
 target/release/ecc  (native binary)
+target/release/ecc-workflow  (workflow state machine binary)
     |
     +-- ecc version / install / init / audit / hook / validate / completion
+    +-- ecc-workflow init / transition / toolchain-persist / phase-gate / ...
 
 Test pipeline:
-    cargo test  (999 tests across 6 crates)
+    cargo test  (1404 tests across 8 crates)
     cargo clippy -- -D warnings  (zero-warning lint)
 ```
 
