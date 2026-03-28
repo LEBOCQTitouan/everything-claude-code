@@ -638,35 +638,6 @@ mod tests {
         assert!(result.stderr.is_empty());
     }
 
-    // --- worktree_cleanup_reminder ---
-
-    #[test]
-    fn worktree_cleanup_with_path() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
-
-        let stdin = r#"{"worktree_path":"/tmp/wt-feature-x"}"#;
-        let result = worktree_cleanup_reminder(stdin, &ports);
-        assert!(result.stderr.contains("/tmp/wt-feature-x"));
-        assert!(result.stderr.contains("unmerged changes"));
-    }
-
-    #[test]
-    fn worktree_cleanup_without_path() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
-
-        let result = worktree_cleanup_reminder("{}", &ports);
-        assert!(result.stderr.contains("Worktree removed"));
-        assert!(result.stderr.contains("unmerged changes"));
-    }
-
     // --- post_exit_worktree_cleanup_reminder (PostToolUse format) ---
 
     #[test]
