@@ -251,27 +251,46 @@ pub fn run(
                 "implement" => "implementation",
                 _ => artifact_name.as_str(),
             };
-            let _ = crate::commands::memory_write::write_action(
+            let mut warnings: Vec<String> = Vec::new();
+
+            if let Err(e) = crate::commands::memory_write::write_action(
                 &artifact_name,
                 &feature,
                 "success",
                 "[]",
                 project_dir,
-            );
-            let _ = crate::commands::memory_write::write_work_item(
+            ) {
+                warnings.push(format!("write_action failed: {e}"));
+            }
+            if let Err(e) = crate::commands::memory_write::write_work_item(
                 wi_phase,
                 &feature,
                 &concern,
                 project_dir,
-            );
-            let _ = crate::commands::memory_write::write_daily(
+            ) {
+                warnings.push(format!("write_work_item failed: {e}"));
+            }
+            if let Err(e) = crate::commands::memory_write::write_daily(
                 wi_phase,
                 &feature,
                 &concern,
                 project_dir,
-            );
-            let _ = crate::commands::memory_write::write_memory_index(project_dir);
-            output
+            ) {
+                warnings.push(format!("write_daily failed: {e}"));
+            }
+            if let Err(e) = crate::commands::memory_write::write_memory_index(project_dir) {
+                warnings.push(format!("write_memory_index failed: {e}"));
+            }
+
+            if warnings.is_empty() {
+                output
+            } else {
+                let warn_text = warnings.join("; ");
+                WorkflowOutput::warn(format!(
+                    "{} [warnings: {warn_text}]",
+                    output.message
+                ))
+            }
         }
         Ok((output, None)) => output,
         Err(e) => WorkflowOutput::block(format!("Lock error: {e}")),
