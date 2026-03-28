@@ -61,6 +61,8 @@ marketing/
 docs/CODEMAPS/
 # Autonomous loop plans (ephemeral)
 .claude/plans/
+# Agent worktrees (ephemeral, per-session)
+.claude/worktrees/
 # Workflow state (ephemeral, per-session)
 .claude/workflow/
 !.claude/workflow/README.md
