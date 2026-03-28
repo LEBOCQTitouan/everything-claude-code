@@ -34,6 +34,7 @@ ecc validate statusline   Verify statusline installation
 ecc backlog next-id       Next sequential BL-NNN ID
 ecc backlog check-duplicates <title> [--tags t1,t2]  Check for duplicate entries
 ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
+ecc worktree gc [--force]  Clean up stale session worktrees
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ```
