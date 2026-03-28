@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (1404 tests)
+cargo test              # Run all Rust tests (1421 tests)
 bats tests/statusline/  # Run statusline Bats tests (16 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo build --release   # Build release binary
@@ -74,7 +74,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
 - `hooks.json` lives in `hooks/`, not the project root
 - Skill directory name must match the `name` field in its frontmatter
-- Test count in CLAUDE.md (currently 1404) must be updated after adding or removing tests
+- Test count in CLAUDE.md (currently 1421) must be updated after adding or removing tests
 - ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
 
 ## Development Notes
