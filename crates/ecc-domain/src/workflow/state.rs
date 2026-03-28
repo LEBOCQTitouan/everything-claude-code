@@ -357,8 +357,47 @@ mod tests {
 
         // Verify completed field
         assert_eq!(state.completed.len(), 1);
-        assert_eq!(state.completed[0].phase, "solution");
+        assert_eq!(state.completed[0].phase, Phase::Solution);
         assert_eq!(state.completed[0].file, "docs/specs/foo/design.md");
         assert_eq!(state.completed[0].at, "2026-03-26T22:00:00Z");
+    }
+
+    #[test]
+    fn completion_phase_is_typed() {
+        // Completion.phase must be a Phase enum, not a String
+        let completion = Completion {
+            phase: Phase::Plan,
+            file: "docs/specs/foo/spec.md".to_owned(),
+            at: "2026-01-01T00:00:00Z".to_owned(),
+        };
+        assert_eq!(completion.phase, Phase::Plan);
+    }
+
+    #[test]
+    fn unknown_phase_fallback() {
+        // Deserializing a completion with an unrecognized phase string falls back to Phase::Unknown
+        let json = r#"{
+            "phase": "banana",
+            "file": "docs/specs/foo/spec.md",
+            "at": "2026-01-01T00:00:00Z"
+        }"#;
+        let completion: Completion = serde_json::from_str(json)
+            .expect("should not fail — unknown phase maps to Phase::Unknown");
+        assert_eq!(completion.phase, Phase::Unknown);
+    }
+
+    #[test]
+    fn phase_backward_compat() {
+        // Phase::Unknown serializes as the string "unknown"
+        let completion = Completion {
+            phase: Phase::Unknown,
+            file: "docs/specs/foo/spec.md".to_owned(),
+            at: "2026-01-01T00:00:00Z".to_owned(),
+        };
+        let json = serde_json::to_string(&completion).expect("serialization must succeed");
+        assert!(json.contains(r#""phase":"unknown""#) || json.contains(r#""phase": "unknown""#));
+        // Round-trip: deserialize back
+        let restored: Completion = serde_json::from_str(&json).expect("deserialization must succeed");
+        assert_eq!(restored.phase, Phase::Unknown);
     }
 }
