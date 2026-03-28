@@ -21,7 +21,9 @@ pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, Workfl
     }
     let legal = matches!(
         (current, target),
-        (Phase::Plan, Phase::Solution)
+        (Phase::Done, Phase::Idle)
+            | (Phase::Idle, Phase::Plan)
+            | (Phase::Plan, Phase::Solution)
             | (Phase::Solution, Phase::Implement)
             | (Phase::Implement, Phase::Done)
     );

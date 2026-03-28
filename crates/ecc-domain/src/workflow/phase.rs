@@ -9,15 +9,24 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
+    Idle,
     Plan,
     Solution,
     Implement,
     Done,
 }
 
+impl Phase {
+    /// Returns `true` for phases where file writes are restricted (gated phases).
+    pub fn is_gated(&self) -> bool {
+        matches!(self, Self::Plan | Self::Solution)
+    }
+}
+
 impl fmt::Display for Phase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Idle => write!(f, "idle"),
             Self::Plan => write!(f, "plan"),
             Self::Solution => write!(f, "solution"),
             Self::Implement => write!(f, "implement"),
@@ -43,6 +52,7 @@ impl FromStr for Phase {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "idle" => Ok(Self::Idle),
             "plan" | "spec" => Ok(Self::Plan),
             "solution" | "design" => Ok(Self::Solution),
             "implement" => Ok(Self::Implement),
