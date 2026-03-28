@@ -39,6 +39,30 @@ pub const ECC_GITIGNORE_ENTRIES: &[GitignoreEntry] = &[
         pattern: "CLAUDE.local.md",
         comment: "Personal Claude Code instructions (never commit)",
     },
+    GitignoreEntry {
+        pattern: ".claude/worktrees/",
+        comment: "Agent worktrees (ephemeral, per-session)",
+    },
+    GitignoreEntry {
+        pattern: ".claude/workflow/",
+        comment: "Workflow state (ephemeral, per-session)",
+    },
+    GitignoreEntry {
+        pattern: "docs/memory/action-log.json",
+        comment: "Cross-session action log (session-specific data)",
+    },
+    GitignoreEntry {
+        pattern: "docs/memory/work-items/",
+        comment: "Cross-session work-item records (session-specific data)",
+    },
+    GitignoreEntry {
+        pattern: "docs/interviews/",
+        comment: "Interview transcripts (session-specific, may contain sensitive info)",
+    },
+    GitignoreEntry {
+        pattern: ".claude/workflow/.locks/",
+        comment: "Workflow lock files (ephemeral, flock-managed)",
+    },
 ];
 
 /// Result of ensuring gitignore entries.
@@ -123,7 +147,7 @@ mod tests {
 
     #[test]
     fn entries_count() {
-        assert_eq!(ECC_GITIGNORE_ENTRIES.len(), 6);
+        assert_eq!(ECC_GITIGNORE_ENTRIES.len(), 12);
     }
 
     #[test]
