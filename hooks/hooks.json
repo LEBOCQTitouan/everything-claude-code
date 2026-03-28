@@ -210,6 +210,28 @@
           }
         ],
         "description": "Remind about undocumented exports after source file edits"
+      },
+      {
+        "matcher": "EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"post:enter-worktree:session-log\" \"standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Log worktree creation to active session file"
+      },
+      {
+        "matcher": "ExitWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"post:exit-worktree:cleanup-reminder\" \"standard,strict\""
+          }
+        ],
+        "description": "Remind about unmerged changes after worktree removal"
       }
     ],
     "Stop": [
@@ -408,32 +430,6 @@
           }
         ],
         "description": "Validate that instructions file exists and has content"
-      }
-    ],
-    "WorktreeCreate": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ecc-hook \"worktree:create:init\" \"standard,strict\"",
-            "async": true,
-            "timeout": 5
-          }
-        ],
-        "description": "Log worktree creation to active session file"
-      }
-    ],
-    "WorktreeRemove": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\""
-          }
-        ],
-        "description": "Remind about unmerged changes after worktree removal"
       }
     ],
     "SessionEnd": [
