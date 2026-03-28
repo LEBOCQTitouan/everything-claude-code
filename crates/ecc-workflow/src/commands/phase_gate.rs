@@ -44,7 +44,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
     let phase = match read_phase(project_dir) {
         PhaseResult::Missing => return WorkflowOutput::pass("No workflow active"),
         PhaseResult::ReadError(e) => {
-            return WorkflowOutput::pass(format!("Could not read state.json: {e}"))
+            return WorkflowOutput::pass(format!("Could not read state.json: {e}"));
         }
         PhaseResult::Phase(p) => p,
     };
@@ -150,4 +150,94 @@ fn is_destructive_bash(command: &str) -> bool {
     BLOCKED_BASH_PATTERNS
         .iter()
         .any(|pattern| command.contains(pattern))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Barrier};
+    use std::time::Duration;
+    use tempfile::TempDir;
+
+    /// PC-017: phase_gate reads the workflow phase under the state lock.
+    ///
+    /// Verifies that `run()` waits for the state lock to be available before
+    /// reading state.json. A background thread holds the lock; run() must block
+    /// until it is released and then complete successfully.
+    #[test]
+    fn phase_gate_reads_under_lock() {
+        let tmp = TempDir::new().unwrap();
+        let project_dir = tmp.path().to_path_buf();
+
+        // Create state.json with phase=plan so phase_gate reads it
+        let workflow_dir = project_dir.join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        let state_json = serde_json::json!({
+            "phase": "plan",
+            "concern": "test",
+            "feature": "test-feature",
+            "started_at": "2026-01-01T00:00:00Z",
+            "toolchain": {"test": null, "lint": null, "build": null},
+            "artifacts": {
+                "plan": null,
+                "solution": null,
+                "implement": null,
+                "campaign_path": null,
+                "spec_path": null,
+                "design_path": null,
+                "tasks_path": null
+            },
+            "completed": []
+        });
+        std::fs::write(
+            workflow_dir.join("state.json"),
+            serde_json::to_string_pretty(&state_json).unwrap(),
+        )
+        .unwrap();
+
+        // Barrier: main thread and lock-holder thread synchronize on lock acquisition
+        let barrier = Arc::new(Barrier::new(2));
+        let barrier_clone = Arc::clone(&barrier);
+        let project_dir_clone = project_dir.clone();
+
+        // Background thread: acquire the state lock, signal barrier, hold for 200ms, then release
+        let lock_thread = std::thread::spawn(move || {
+            let guard = ecc_flock::acquire(&project_dir_clone, "state")
+                .expect("background thread failed to acquire state lock");
+            // Signal main thread that lock is held
+            barrier_clone.wait();
+            // Hold the lock for long enough for run() to be blocked
+            std::thread::sleep(Duration::from_millis(200));
+            // Release by dropping
+            drop(guard);
+        });
+
+        // Wait until the background thread holds the lock
+        barrier.wait();
+
+        // Now call run() — it must acquire the lock itself, so it must wait ~200ms
+        let start = std::time::Instant::now();
+        let output = super::run(&project_dir);
+        let elapsed = start.elapsed();
+
+        lock_thread.join().expect("lock thread panicked");
+
+        // run() must have waited for the lock (at least 100ms, accounting for scheduling jitter)
+        assert!(
+            elapsed >= Duration::from_millis(100),
+            "phase_gate::run() did not wait for the state lock — elapsed {:?} < 100ms. \
+             phase_gate must call with_state_lock before reading state.",
+            elapsed
+        );
+
+        // run() must have completed successfully (tool_name = None → "Tool permitted")
+        assert!(
+            output.message.contains("permitted") || output.message.contains("gating"),
+            "unexpected phase_gate output: {}",
+            output.message
+        );
+
+        // Lock must be free after run() returns
+        ecc_flock::acquire(&project_dir, "state")
+            .expect("state lock was not released after phase_gate::run returned");
+    }
 }
