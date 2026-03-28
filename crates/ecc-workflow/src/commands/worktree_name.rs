@@ -25,8 +25,14 @@ mod worktree_name {
             output.status
         );
         let msg = &output.message;
-        assert!(msg.starts_with("ecc-session-"), "expected ecc-session- prefix, got: {msg}");
-        assert!(msg.contains("my-feature"), "expected slug in name, got: {msg}");
+        assert!(
+            msg.starts_with("ecc-session-"),
+            "expected ecc-session- prefix, got: {msg}"
+        );
+        assert!(
+            msg.contains("my-feature"),
+            "expected slug in name, got: {msg}"
+        );
     }
 
     #[test]

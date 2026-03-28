@@ -1,8 +1,8 @@
 use std::path::Path;
 
 use crate::output::WorkflowOutput;
-use crate::time::utc_today;
 use crate::slug::make_slug;
+use crate::time::utc_today;
 
 /// Run the `backlog add-entry` subcommand.
 ///
@@ -112,7 +112,10 @@ fn compute_next_id(backlog_dir: &Path) -> Result<u32, anyhow::Error> {
             let name_str = name.to_string_lossy().into_owned();
             if name_str.starts_with("BL-") && name_str.ends_with(".md") {
                 let after_bl = name_str.strip_prefix("BL-")?;
-                let id_str: String = after_bl.chars().take_while(|c| c.is_ascii_digit()).collect();
+                let id_str: String = after_bl
+                    .chars()
+                    .take_while(|c| c.is_ascii_digit())
+                    .collect();
                 id_str.parse::<u32>().ok()
             } else {
                 None
@@ -144,9 +147,7 @@ fn update_backlog_index(
         "# Backlog\n\n| ID | Title | Body | Scope | Target | Status | Created |\n|---|---|---|---|---|---|---|\n".to_string()
     };
 
-    let new_row = format!(
-        "| BL-{id:03} | {title} | — | {scope} | {target} | open | {today} |\n"
-    );
+    let new_row = format!("| BL-{id:03} | {title} | — | {scope} | {target} | open | {today} |\n");
 
     // Append the new row after the last table line (or at end of file)
     let output_str = if existing.trim_end().ends_with('|') {
@@ -241,8 +242,7 @@ mod tests {
         run("Alpha", "LOW", "/spec-dev", "", tmp.path());
         run("Beta", "MEDIUM", "/spec-dev", "", tmp.path());
 
-        let content =
-            std::fs::read_to_string(tmp.path().join("docs/backlog/BACKLOG.md")).unwrap();
+        let content = std::fs::read_to_string(tmp.path().join("docs/backlog/BACKLOG.md")).unwrap();
         assert!(content.contains("Alpha"), "missing Alpha");
         assert!(content.contains("Beta"), "missing Beta");
     }

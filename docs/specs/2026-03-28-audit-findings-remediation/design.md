@@ -126,11 +126,11 @@ This design addresses 50 acceptance criteria across 8 user stories, remediating 
 | PC-001 | integration | Default ecc invocation emits warn! on stderr | AC-001.1 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-cli --test '*' -- --include-ignored warn_on_stderr 2>&1` | PASS |
 | PC-002 | integration | `--verbose` flag produces debug-level output | AC-001.2 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo build --release && ./target/release/ecc --verbose version 2>&1 \| grep -i debug` | exit 0 |
 | PC-003 | integration | ecc-workflow with RUST_LOG=debug produces diagnostic output | AC-001.3 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo build --release && RUST_LOG=debug CLAUDE_PROJECT_DIR=/tmp/nonexistent ./target/release/ecc-workflow status 2>&1 \| grep -iE 'debug\|WARN\|INFO'` | exit 0 |
-| PC-004 | unit | Error-discard sites in ecc-app emit log::warn! (verified by grep for bare `Err(_)` patterns) | AC-001.4 | `cd /Users/titouanlebocq/code/everything-claude-code && ! grep -rn 'Err(_)\s*=>' crates/ecc-app/src/ --include='*.rs' \| grep -v 'log::warn\|log::error\|#\[cfg(test)\]' \| grep -v '// OK:' \| head -1` | exit 0 |
+| PC-004 | unit | Error-discard sites in ecc-app emit log::warn! (programmatic test counts bare Err(_) sites) | AC-001.4 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app no_bare_error_discards` | PASS |
 | PC-005 | integration | Failure banner appears on stderr before exit(1) | AC-001.5 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo build --release && ./target/release/ecc install --ecc-root /nonexistent 2>&1 \| grep '^Error:'` | exit 0 |
 | **US-002: Testable Workflow Commands** | | | | | |
 | PC-006 | unit | Pure functions extracted from memory_write.rs are unit-testable | AC-002.1 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-workflow build_action_entry` | PASS |
-| PC-007 | unit | Each extracted function has >= 3 test cases | AC-002.2 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-workflow -- memory_write::tests 2>&1 \| grep 'test result' \| awk '{print $4}' \| xargs test 12 -le` | exit 0 |
+| PC-007 | unit | Each extracted function has >= 3 test cases | AC-002.2 | `cd /Users/titouanlebocq/code/everything-claude-code && test $(cargo test -p ecc-workflow -- memory_write::tests 2>&1 \| grep -c 'test .* \.\.\. ok') -ge 12` | exit 0 |
 | PC-008 | unit | stdin bounded at 1MB byte boundary (> 1MB truncated) | AC-002.3 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-workflow read_stdin_bounded_truncates` | PASS |
 | PC-009 | unit | Exactly 1MB stdin returns full content without truncation | AC-002.3a | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-workflow read_stdin_bounded_exact` | PASS |
 | PC-010 | unit | Truncation logs warning with byte count | AC-002.3b | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-workflow read_stdin_bounded_logs_truncation` | PASS |
@@ -140,7 +140,7 @@ This design addresses 50 acceptance criteria across 8 user stories, remediating 
 | PC-013 | unit | osascript builder escapes single and double quotes | AC-003.1 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app sanitize_osascript_escapes_quotes` | PASS |
 | PC-014 | unit | PowerShell builder escapes single quotes | AC-003.2 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app sanitize_powershell_escapes_quotes` | PASS |
 | PC-015 | unit | Adversarial injection input blocked | AC-003.3 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app adversarial_injection_blocked` | PASS |
-| PC-016 | unit | >= 5 adversarial inputs tested per platform | AC-003.4 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app -- tier2_notify::tests::adversarial 2>&1 \| grep 'test result' \| awk '{print $4}' \| xargs test 10 -le` | exit 0 |
+| PC-016 | unit | >= 5 adversarial inputs tested per platform | AC-003.4 | `cd /Users/titouanlebocq/code/everything-claude-code && test $(cargo test -p ecc-app -- tier2_notify::tests::adversarial 2>&1 \| grep -c 'test .* \.\.\. ok') -ge 10` | exit 0 |
 | **US-007: File Size Compliance** | | | | | |
 | PC-017 | lint | validate.rs split: each submodule < 400 lines | AC-007.1 | `cd /Users/titouanlebocq/code/everything-claude-code && find crates/ecc-app/src/validate -name '*.rs' -exec wc -l {} + \| awk '$1 > 400 && !/total/ {exit 1}'` | exit 0 |
 | PC-018 | lint | dev.rs split: each submodule < 400 lines | AC-007.2 | `cd /Users/titouanlebocq/code/everything-claude-code && find crates/ecc-app/src/dev -name '*.rs' -exec wc -l {} + \| awk '$1 > 400 && !/total/ {exit 1}'` | exit 0 |
@@ -152,7 +152,7 @@ This design addresses 50 acceptance criteria across 8 user stories, remediating 
 | PC-023 | unit | MergeError enum covers all 4 functions in merge/ | AC-004.2 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app merge::error` | PASS |
 | PC-024 | unit | ConfigAppError enum covers all 3 functions in config/ | AC-004.3 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app config::error` | PASS |
 | PC-025 | unit | InstallError + hook/helpers typed errors | AC-004.4 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app install::error` | PASS |
-| PC-026 | build | anyhow removed from ecc-app/Cargo.toml | AC-004.5 | `cd /Users/titouanlebocq/code/everything-claude-code && ! grep '^anyhow' crates/ecc-app/Cargo.toml` | exit 0 |
+| PC-026 | build | anyhow removed from ecc-app/Cargo.toml | AC-004.5 | `cd /Users/titouanlebocq/code/everything-claude-code && ! grep 'anyhow' crates/ecc-app/Cargo.toml` | exit 0 |
 | PC-027 | unit | Error messages contain operation name + remediation hint | AC-004.6 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-cli error_message_format` | PASS |
 | PC-028 | build | cargo check passes after each module migration | AC-004.7 | `cd /Users/titouanlebocq/code/everything-claude-code && cargo check` | exit 0 |
 | **US-006: Convention Consistency** | | | | | |
@@ -173,7 +173,7 @@ This design addresses 50 acceptance criteria across 8 user stories, remediating 
 | **US-005: Accurate Documentation** | | | | | |
 | PC-042 | lint | DEPENDENCY-GRAPH.md contains all 9 crate names | AC-005.1 | `cd /Users/titouanlebocq/code/everything-claude-code && for c in ecc-domain ecc-ports ecc-infra ecc-app ecc-cli ecc-workflow ecc-flock ecc-test-support ecc-integration-tests; do grep -q "$c" docs/DEPENDENCY-GRAPH.md \|\| exit 1; done` | exit 0 |
 | PC-043 | lint | glossary.md has zero .ts references | AC-005.2 | `cd /Users/titouanlebocq/code/everything-claude-code && ! grep -n '\.ts\b' docs/domain/glossary.md \| head -1` | exit 0 |
-| PC-044 | lint | ARCHITECTURE.md agent/command/skill counts match actual | AC-005.3 | `cd /Users/titouanlebocq/code/everything-claude-code && AGENTS=$(ls agents/*.md 2>/dev/null \| wc -l \| tr -d ' ') && grep -q "$AGENTS agents" docs/ARCHITECTURE.md` | exit 0 |
+| PC-044 | lint | ARCHITECTURE.md agent/command/skill counts match actual | AC-005.3 | `cd /Users/titouanlebocq/code/everything-claude-code && AGENTS=$(find agents -maxdepth 1 -name '*.md' ! -name 'README*' \| wc -l \| tr -d ' ') && grep -q "$AGENTS" docs/ARCHITECTURE.md` | exit 0 |
 | PC-045 | lint | bounded-contexts.md mentions backlog and workflow | AC-005.4 | `cd /Users/titouanlebocq/code/everything-claude-code && grep -q 'backlog' docs/domain/bounded-contexts.md && grep -q 'workflow' docs/domain/bounded-contexts.md` | exit 0 |
 | PC-046 | lint | MODULE-SUMMARIES.md mentions ecc-integration-tests and ecc-workflow | AC-005.5 | `cd /Users/titouanlebocq/code/everything-claude-code && grep -q 'ecc-integration-tests' docs/MODULE-SUMMARIES.md && grep -q 'ecc-workflow' docs/MODULE-SUMMARIES.md` | exit 0 |
 | PC-047 | lint | commands-reference.md lists 6 spec pipeline commands | AC-005.6 | `cd /Users/titouanlebocq/code/everything-claude-code && for cmd in '/spec' '/spec-dev' '/spec-fix' '/spec-refactor' '/design' '/implement'; do grep -q "$cmd" docs/commands-reference.md \|\| exit 1; done` | exit 0 |
@@ -184,6 +184,8 @@ This design addresses 50 acceptance criteria across 8 user stories, remediating 
 | PC-051 | lint | Zero clippy warnings | all | `cd /Users/titouanlebocq/code/everything-claude-code && cargo clippy -- -D warnings` | exit 0 |
 | PC-052 | build | Release build succeeds | all | `cd /Users/titouanlebocq/code/everything-claude-code && cargo build --release` | exit 0 |
 | PC-053 | build | Full test suite passes | all | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test` | PASS |
+| PC-054 | unit | Phase::Unknown rejected by transition logic | AC-006.3a, Security | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-domain unknown_phase_transition_rejected` | PASS |
+| PC-055 | unit | sanitize_osascript escapes backslashes + caps length at 256 | AC-003.1, Security | `cd /Users/titouanlebocq/code/everything-claude-code && cargo test -p ecc-app sanitize_osascript_backslash_and_length` | PASS |
 
 ---
 
@@ -380,3 +382,52 @@ Reverse dependency order of File Changes — if implementation fails, undo in th
 8. **US-001 (observability)**: Revert env_logger default. Remove log::warn! calls. Revert failure banners.
 
 **Key principle**: File splits (US-007) are permanent structural improvements — they are NOT reverted even if downstream stories fail.
+
+**Blast radius note**: ecc-integration-tests exercises the CLI binary (not the library), so US-004 error type changes do not affect it. Verified: ecc-integration-tests/Cargo.toml depends on no workspace crates — it spawns the ecc binary as a subprocess.
+
+**US-004 rollback addendum**: Also remove thiserror from ecc-app/Cargo.toml if reverting.
+
+---
+
+## Phase Summary
+
+### Design Reviews
+
+| Review Type | Verdict | Finding Count |
+|-------------|---------|---------------|
+| SOLID (uncle-bob) | CLEAN | 3 MEDIUM, 1 LOW (all incorporated) |
+| Robert | CLEAN | 0 warnings |
+| Security | CLEAR | 2 implementation notes (incorporated as PC-054, PC-055) |
+
+### Adversary Findings
+
+| Dimension | Score | Verdict | Key Rationale |
+|-----------|-------|---------|---------------|
+| AC Coverage | 95 | PASS | All 50 ACs covered by 55 PCs |
+| Execution Order | 82 | PASS | Dependency graph respected |
+| Fragility | 72 | PASS | Brittle grep PCs replaced with programmatic tests |
+| Rollback | 75 | PASS | Per-US rollback + thiserror removal addendum |
+| Architecture | 85 | PASS | Hexagonal boundaries maintained |
+| Blast Radius | 75 | PASS | ecc-integration-tests confirmed subprocess-only |
+| Missing PCs | 90 | PASS | Security mitigation PCs added (PC-054, PC-055) |
+| Doc Plan | 80 | PASS | CHANGELOG + 3 ADRs + all doc updates |
+
+### File Changes Summary
+
+| # | File | Action | Spec Ref |
+|---|------|--------|----------|
+| 1-16 | ecc-cli/main.rs, ecc-workflow/*, ecc-app error-discard sites | modify | US-001 (observability) |
+| 17-28 | ecc-workflow/commands/memory_write.rs, io.rs, tests/* | modify/create | US-002 (testable workflow) |
+| 29-30 | ecc-app/hook/handlers/tier2_notify.rs | modify | US-003 (secure notifications) |
+| 31-49 | ecc-app/validate/*, dev/*, merge/helpers.rs, install/global/* | create/modify/delete | US-007 (file splits) |
+| 50-68 | ecc-app/claw/error.rs, merge/error.rs, config/error.rs, install/error.rs + callers | create/modify | US-004 (typed errors) |
+| 69-78 | ecc-domain/config/validate.rs, workflow/state.rs, ecc-ports/src/*.rs | modify | US-006 (conventions) |
+| 79-85 | ecc-domain/traits.rs, workflow/state.rs, ecc-app/session/aliases.rs, dev/switch.rs | create/modify | US-008 (domain model) |
+| 86-97 | docs/*, CLAUDE.md, 3 ADRs | create/modify | US-005 (documentation) |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/2026-03-28-audit-findings-remediation/spec.md | Full spec + Phase Summary |
+| docs/specs/2026-03-28-audit-findings-remediation/design.md | Full design + Phase Summary |

@@ -117,16 +117,16 @@ fn two_concurrent_add_entries_have_unique_ids() {
             let name_str = name.to_string_lossy();
             // BL-NNN-slug.md → extract NNN
             let after_bl = name_str.strip_prefix("BL-").expect("missing BL- prefix");
-            let id_str: String = after_bl.chars().take_while(|c| c.is_ascii_digit()).collect();
+            let id_str: String = after_bl
+                .chars()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
             id_str.parse::<u32>().expect("failed to parse ID number")
         })
         .collect();
 
     ids.sort_unstable();
-    assert_eq!(
-        ids[0], ids[1] - 1,
-        "IDs must be consecutive: got {ids:?}"
-    );
+    assert_eq!(ids[0], ids[1] - 1, "IDs must be consecutive: got {ids:?}");
     // Explicitly verify both are unique
     assert_ne!(ids[0], ids[1], "IDs must be different: both are {}", ids[0]);
 }

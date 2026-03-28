@@ -183,6 +183,7 @@ pub(crate) fn try_build_work_item_content(
 }
 
 /// Build the markdown content for a work item file (panics on unknown phase, for internal use).
+#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn build_work_item_content(
     phase: &str,
     description: &str,
