@@ -99,7 +99,7 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
         &ctx,
         &ecc_root,
         &claude_dir,
-        version::version(),
+        &version::version(),
         &now,
         &options,
     );

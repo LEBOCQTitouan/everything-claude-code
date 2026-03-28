@@ -96,7 +96,10 @@ pub fn run(dry_run: bool) -> anyhow::Result<()> {
             status: ActionStatus::DryRun("Would run: ecc install".into()),
         });
     } else {
-        let status = Command::new("ecc").arg("install").status();
+        let status = Command::new("ecc")
+            .arg("install")
+            .env("ECC_DEV_MODE", "1")
+            .status();
         match status {
             Ok(s) if s.success() => results.push(ActionResult {
                 name: "Config".into(),
