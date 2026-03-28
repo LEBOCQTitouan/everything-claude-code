@@ -68,7 +68,7 @@
 | BL-065 | Concurrent session safety — worktree isolation, serialized merge, audit fixes | — | EPIC | /spec dev | open | 2026-03-26 |
 | BL-066 | Deterministic backlog management — ID generation, duplicate detection, index auto-gen | — | MEDIUM | /spec dev | open | 2026-03-26 |
 | BL-067 | Deterministic spec/design artifact validation — AC format, PC table, coverage mapping | — | HIGH | /spec dev | open | 2026-03-26 |
-| BL-068 | Deterministic workflow state machine — typed state.json, phase transitions | — | HIGH | /spec dev | open | 2026-03-26 |
+| BL-068 | Deterministic workflow state machine — typed state.json, phase transitions | — | HIGH | /spec dev | promoted | 2026-03-26 |
 | BL-069 | Deterministic convention linting — naming, placement, frontmatter values | — | MEDIUM | /spec dev | open | 2026-03-26 |
 | BL-070 | Deterministic wave grouping algorithm — PC parallelization from file-overlap | — | MEDIUM | /spec dev | open | 2026-03-26 |
 | BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | open | 2026-03-26 |
