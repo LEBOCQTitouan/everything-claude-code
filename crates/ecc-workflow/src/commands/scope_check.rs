@@ -156,7 +156,9 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
     // Only run during implement/done phases.
     match state.phase {
-        Phase::Plan | Phase::Solution | Phase::Idle => return WorkflowOutput::pass(""),
+        Phase::Plan | Phase::Solution | Phase::Idle | Phase::Unknown => {
+            return WorkflowOutput::pass("");
+        }
         Phase::Implement | Phase::Done => {}
     }
 
@@ -270,8 +272,8 @@ mod tests {
     /// PC-037: scope_check passes through ungated for Idle phase (AC-001.1)
     #[test]
     fn scope_check_idle_passes() {
-        use tempfile::TempDir;
         use crate::output::Status;
+        use tempfile::TempDir;
 
         let tmp = TempDir::new().unwrap();
         let workflow_dir = tmp.path().join(".claude/workflow");

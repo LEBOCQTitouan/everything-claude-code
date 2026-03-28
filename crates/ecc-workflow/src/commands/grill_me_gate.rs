@@ -39,7 +39,9 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
     // Only check during plan/solution phases.
     match state.phase {
         Phase::Plan | Phase::Solution => {}
-        Phase::Implement | Phase::Done | Phase::Idle => return WorkflowOutput::pass(""),
+        Phase::Implement | Phase::Done | Phase::Idle | Phase::Unknown => {
+            return WorkflowOutput::pass("");
+        }
     }
 
     // Collect the paths to check.
@@ -71,8 +73,8 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::TempDir;
     use crate::output::Status;
+    use tempfile::TempDir;
 
     /// PC-038: grill_me_gate passes through for Idle phase (AC-001.1)
     #[test]

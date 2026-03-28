@@ -10,6 +10,7 @@ members = [
     "crates/ecc-integration-tests",
     "crates/ecc-workflow",
     "crates/ecc-flock",
+    "xtask",
 ]
 
 [workspace.package]
