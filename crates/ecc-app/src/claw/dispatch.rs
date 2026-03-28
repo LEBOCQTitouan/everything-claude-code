@@ -1,5 +1,6 @@
 //! Command dispatch — routes ClawCommand to the appropriate handler.
 
+use super::error::ClawError;
 use super::handlers;
 use super::{ClawPorts, ClawState};
 use ecc_domain::claw::command::ClawCommand;
@@ -10,7 +11,7 @@ pub fn dispatch_command(
     cmd: &ClawCommand,
     state: &mut ClawState,
     ports: &ClawPorts<'_>,
-) -> anyhow::Result<()> {
+) -> Result<(), ClawError> {
     match cmd {
         ClawCommand::Help => handlers::handle_help(state, ports),
         ClawCommand::Clear => handlers::handle_clear(state, ports),

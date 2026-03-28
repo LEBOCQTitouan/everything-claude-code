@@ -56,5 +56,5 @@ pub fn run(args: ClawArgs) -> anyhow::Result<()> {
         repl_input: &repl_input,
     };
 
-    run_repl(&config, &ports)
+    run_repl(&config, &ports).map_err(|e| anyhow::anyhow!("{e}"))
 }

@@ -1,13 +1,14 @@
 //! Skill hot-loading — read skill files from the skills directory.
 
 use super::ClawPorts;
+use super::error::ClawError;
 
 /// Load a skill by name. Searches for `skills/<name>/SKILL.md` relative to home.
-pub fn load_skill(name: &str, ports: &ClawPorts<'_>) -> Result<String, String> {
+pub fn load_skill(name: &str, ports: &ClawPorts<'_>) -> Result<String, ClawError> {
     let home = ports
         .env
         .home_dir()
-        .ok_or_else(|| "No home directory".to_string())?;
+        .ok_or(ClawError::NoHomeDir)?;
 
     // Try multiple locations
     let candidates = [
@@ -26,7 +27,7 @@ pub fn load_skill(name: &str, ports: &ClawPorts<'_>) -> Result<String, String> {
         }
     }
 
-    Err(format!("Skill '{name}' not found"))
+    Err(ClawError::SkillNotFound { name: name.to_string() })
 }
 
 /// List available skills by scanning the skills directory.
@@ -112,7 +113,8 @@ mod tests {
 
         let result = load_skill("nonexistent", &ports);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("not found"));
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("not found"), "got: {msg}");
     }
 
     #[test]

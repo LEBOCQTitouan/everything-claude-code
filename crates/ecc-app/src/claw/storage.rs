@@ -1,5 +1,6 @@
 //! Session storage — load, save, list, branch, clear sessions via FileSystem port.
 
+use super::error::ClawError;
 use ecc_domain::claw::session_name::{is_valid_session_name, session_name_from_path};
 use ecc_domain::claw::turn::{Turn, format_turns, parse_turns};
 use ecc_domain::paths::{claw_dir, claw_session_path};
@@ -7,9 +8,11 @@ use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
 /// Validate session name at the storage boundary.
-fn validate_name(session_name: &str) -> Result<(), String> {
+fn validate_name(session_name: &str) -> Result<(), ClawError> {
     if !is_valid_session_name(session_name) {
-        return Err(format!("Invalid session name: '{session_name}'"));
+        return Err(ClawError::InvalidSessionName {
+            name: session_name.to_string(),
+        });
     }
     Ok(())
 }
@@ -32,15 +35,18 @@ pub fn save_session(
     session_name: &str,
     turns: &[Turn],
     fs: &dyn FileSystem,
-) -> Result<(), String> {
+) -> Result<(), ClawError> {
     validate_name(session_name)?;
     let path = claw_session_path(home, session_name);
     let sessions_dir = claw_dir(home).join("sessions");
-    fs.create_dir_all(&sessions_dir)
-        .map_err(|e| format!("Failed to create sessions dir: {e}"))?;
+    fs.create_dir_all(&sessions_dir).map_err(|e| ClawError::CreateSessionDir {
+        reason: e.to_string(),
+    })?;
     let content = format_turns(turns);
-    fs.write(&path, &content)
-        .map_err(|e| format!("Failed to save session: {e}"))
+    fs.write(&path, &content).map_err(|e| ClawError::SaveSession {
+        name: session_name.to_string(),
+        reason: e.to_string(),
+    })
 }
 
 /// List all session names.
@@ -67,19 +73,24 @@ pub fn branch_session(
     target_name: &str,
     turns: &[Turn],
     fs: &dyn FileSystem,
-) -> Result<(), String> {
+) -> Result<(), ClawError> {
     validate_name(target_name)?;
-    save_session(home, target_name, turns, fs)
-        .map_err(|e| format!("Failed to branch from '{source_name}' to '{target_name}': {e}"))
+    save_session(home, target_name, turns, fs).map_err(|e| ClawError::BranchSession {
+        source_name: source_name.to_string(),
+        target_name: target_name.to_string(),
+        reason: e.to_string(),
+    })
 }
 
 /// Clear a session by removing its file.
-pub fn clear_session(home: &Path, session_name: &str, fs: &dyn FileSystem) -> Result<(), String> {
+pub fn clear_session(home: &Path, session_name: &str, fs: &dyn FileSystem) -> Result<(), ClawError> {
     validate_name(session_name)?;
     let path = claw_session_path(home, session_name);
     if fs.exists(&path) {
-        fs.remove_file(&path)
-            .map_err(|e| format!("Failed to clear session: {e}"))
+        fs.remove_file(&path).map_err(|e| ClawError::ClearSession {
+            name: session_name.to_string(),
+            reason: e.to_string(),
+        })
     } else {
         Ok(())
     }
@@ -225,7 +236,8 @@ mod tests {
         let fs = InMemoryFileSystem::new();
         let result = save_session(home(), "../etc/passwd", &[], &fs);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Invalid session name"));
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("invalid session name") || err_msg.contains("Invalid session name"), "got: {err_msg}");
     }
 
     #[test]

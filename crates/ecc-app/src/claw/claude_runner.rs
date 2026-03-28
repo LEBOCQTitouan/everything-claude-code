@@ -1,21 +1,24 @@
 //! Claude subprocess runner — spawn `claude -p` via ShellExecutor port.
 
 use super::ClawPorts;
+use super::error::ClawError;
 use ecc_domain::claw::model::ClawModel;
 use ecc_ports::shell::CommandOutput;
 
 /// Run a prompt through `claude -p` and return the response.
-pub fn run_claude(prompt: &str, model: ClawModel, ports: &ClawPorts<'_>) -> Result<String, String> {
+pub fn run_claude(prompt: &str, model: ClawModel, ports: &ClawPorts<'_>) -> Result<String, ClawError> {
     let model_flag = model.to_flag();
     let args: &[&str] = &["-p", "--model", model_flag];
 
     let output: CommandOutput = ports
         .shell
         .spawn_with_stdin("claude", args, prompt)
-        .map_err(|e| format!("Failed to run claude: {e}"))?;
+        .map_err(|e| ClawError::ClaudeSubprocess {
+            message: format!("Failed to run claude: {e}"),
+        })?;
 
     if output.exit_code != 0 {
-        let err_msg = if output.stderr.is_empty() {
+        let message = if output.stderr.is_empty() {
             format!("claude exited with code {}", output.exit_code)
         } else {
             format!(
@@ -24,7 +27,7 @@ pub fn run_claude(prompt: &str, model: ClawModel, ports: &ClawPorts<'_>) -> Resu
                 output.stderr.trim()
             )
         };
-        return Err(err_msg);
+        return Err(ClawError::ClaudeSubprocess { message });
     }
 
     Ok(output.stdout)
@@ -97,7 +100,7 @@ mod tests {
 
         let result = run_claude("hi", ClawModel::Sonnet, &ports);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("rate limited"));
+        assert!(result.unwrap_err().to_string().contains("rate limited"));
     }
 
     #[test]
@@ -118,7 +121,7 @@ mod tests {
 
         let result = run_claude("hi", ClawModel::Sonnet, &ports);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("exited with code 1"));
+        assert!(result.unwrap_err().to_string().contains("exited with code 1"));
     }
 
     #[test]
