@@ -90,6 +90,10 @@ pub fn is_legacy_ecc_hook(entry: &serde_json::Value) -> bool {
             if cmd.contains("dist/hooks/") {
                 return true;
             }
+            // Deprecated worktree delegation hook IDs (BL-085)
+            if cmd.contains("worktree:create:init") || cmd.contains("stop:worktree-cleanup-reminder") {
+                return true;
+            }
             continue;
         }
 
@@ -263,6 +267,10 @@ pub fn is_legacy_ecc_hook_typed(entry: &super::hook_types::HookEntry) -> bool {
 
         if cmd.starts_with("ecc-hook ") || cmd.starts_with("ecc-shell-hook ") {
             if cmd.contains("dist/hooks/") {
+                return true;
+            }
+            // Deprecated worktree delegation hook IDs (BL-085)
+            if cmd.contains("worktree:create:init") || cmd.contains("stop:worktree-cleanup-reminder") {
                 return true;
             }
             continue;
