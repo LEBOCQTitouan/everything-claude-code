@@ -242,7 +242,7 @@ pub fn run(
                 let output = WorkflowOutput::pass(format!("Phase transition: {from} -> {to}"));
                 let memory_info = artifact
                     .as_ref()
-                    .map(|a| (a.clone(), state.feature.clone(), state.concern.clone()));
+                    .map(|a| (a.clone(), state.feature.clone(), state.concern));
                 (output, memory_info)
             }
             Err(e) => (
