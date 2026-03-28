@@ -145,18 +145,23 @@ if [ -f "$CACHE_FILE" ] && find "$CACHE_FILE" -newer "$TTL_REF" 2>/dev/null | gr
 fi
 rm -f "$TTL_REF" 2>/dev/null || true
 
-if [ -z "$BRANCH" ]; then
-  BRANCH=$(git --no-optional-locks rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
-
-  # --- Worktree detection ---
-  GIT_DIR=$(git --no-optional-locks rev-parse --git-dir 2>/dev/null || echo "")
-  GIT_COMMON_DIR=$(git --no-optional-locks rev-parse --git-common-dir 2>/dev/null || echo "")
-  if [ -n "$GIT_DIR" ] && [ -n "$GIT_COMMON_DIR" ] && [ "$GIT_DIR" != "$GIT_COMMON_DIR" ]; then
+# --- Worktree detection function ---
+# Sets WORKTREE_NAME to the basename of the worktree root, or empty string if not in a worktree.
+detect_worktree() {
+  local git_dir git_common_dir wt_toplevel
+  git_dir=$(git --no-optional-locks rev-parse --git-dir 2>/dev/null || echo "")
+  git_common_dir=$(git --no-optional-locks rev-parse --git-common-dir 2>/dev/null || echo "")
+  if [ -n "$git_dir" ] && [ -n "$git_common_dir" ] && [ "$git_dir" != "$git_common_dir" ]; then
     wt_toplevel=$(git --no-optional-locks rev-parse --show-toplevel 2>/dev/null || echo "")
     if [ -n "$wt_toplevel" ] && [ -d "$wt_toplevel" ]; then
-      WORKTREE_NAME=$(basename "$wt_toplevel")
+      printf '%s' "$(basename "$wt_toplevel")"
     fi
   fi
+}
+
+if [ -z "$BRANCH" ]; then
+  BRANCH=$(git --no-optional-locks rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  WORKTREE_NAME=$(detect_worktree)
 
   if [ -n "$BRANCH" ]; then
     TMPFILE=$(mktemp "${CACHE_DIR}/ecc-sl-XXXXXX")
