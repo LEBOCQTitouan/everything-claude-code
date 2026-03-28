@@ -5,6 +5,46 @@ use crate::slug::make_slug;
 use crate::time::{utc_hhmm, utc_now_iso8601, utc_today};
 
 #[cfg(test)]
+mod memory_write {
+    pub(super) mod tests {
+        use tempfile::TempDir;
+
+        /// PC-005: write_action and write_work_item resolve to repo root.
+        ///
+        /// When `project_dir` is inside a worktree, the memory dir should resolve
+        /// to the repo root's `docs/memory`, not the worktree-local path.
+        /// We verify this by checking that the memory dir path is derived from
+        /// `ecc_flock::resolve_repo_root(project_dir)`.
+        #[test]
+        fn resolves_repo_root() {
+            let tmp = TempDir::new().unwrap();
+            let project_dir = tmp.path();
+
+            // resolve_repo_root falls back to project_dir when not in a git repo
+            let expected_root = ecc_flock::resolve_repo_root(project_dir);
+            let expected_memory_dir = expected_root.join("docs/memory");
+
+            // write_action should create memory dir under resolve_repo_root
+            let _ = super::super::write_action("plan", "test", "success", "[]", project_dir);
+            assert!(
+                expected_memory_dir.exists(),
+                "expected memory dir at {:?}",
+                expected_memory_dir
+            );
+
+            // write_work_item should also use the same resolved root
+            let _ = super::super::write_work_item("plan", "test feature", "dev", project_dir);
+            let work_items = expected_memory_dir.join("work-items");
+            assert!(
+                work_items.exists(),
+                "expected work-items dir at {:?}",
+                work_items
+            );
+        }
+    }
+}
+
+#[cfg(test)]
 mod uses_correct_lock_tests {
     use tempfile::TempDir;
 

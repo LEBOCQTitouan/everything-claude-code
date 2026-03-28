@@ -15,3 +15,4 @@ pub mod stop_gate;
 pub mod tdd_enforcement;
 pub mod toolchain_persist;
 pub mod transition;
+pub mod worktree_name;
