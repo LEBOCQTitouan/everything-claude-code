@@ -16,6 +16,17 @@
 | `/audit-test` | Coverage, classification, fixture ratios, E2E matrix |
 | `/audit-web` | Web-based upgrade scan with Technology Radar output |
 
+## Spec-Driven Pipeline
+
+| Command | Purpose |
+|---------|---------|
+| `/spec` | Auto-classify intent (dev/fix/refactor) and delegate to matching `/spec-*` |
+| `/spec-dev` | Spec a new feature — research, grill-me interview, adversarial review |
+| `/spec-fix` | Spec a bug fix — investigation, blast radius, adversarial review |
+| `/spec-refactor` | Spec a refactoring — smell catalog, current state analysis, adversarial review |
+| `/design` | Technical design from spec — file changes, pass conditions, TDD order |
+| `/implement` | Execute the design — TDD loop, code review, doc updates |
+
 ## Side Commands
 
 | Command | Purpose |
