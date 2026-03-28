@@ -3,7 +3,7 @@ use std::path::Path;
 use ecc_domain::workflow::phase::Phase;
 use ecc_domain::workflow::state::{Artifacts, Toolchain, WorkflowState};
 
-use crate::io::{with_state_lock, write_state_atomic};
+use crate::io::{archive_state, with_state_lock, write_state_atomic};
 use crate::output::WorkflowOutput;
 use crate::time::utc_now_iso8601;
 
@@ -20,7 +20,7 @@ pub fn run(concern: &str, feature: &str, project_dir: &Path) -> WorkflowOutput {
 
     let result = with_state_lock(project_dir, || {
         // Archive stale state if present and not done
-        if let Err(e) = archive_stale_state(&workflow_dir) {
+        if let Err(e) = archive_state(&workflow_dir, false) {
             return WorkflowOutput::block(format!("Failed to archive stale state: {e}"));
         }
 
@@ -63,50 +63,6 @@ pub fn run(concern: &str, feature: &str, project_dir: &Path) -> WorkflowOutput {
         Ok(output) => output,
         Err(e) => WorkflowOutput::block(format!("Failed to acquire state lock: {e}")),
     }
-}
-
-/// Archive `state.json` to `archive/state-YYYYMMDD-HHMMSS.json` when the current phase
-/// is not "done". This mirrors the shell script's stale-workflow-archiving behavior.
-fn archive_stale_state(workflow_dir: &Path) -> Result<(), anyhow::Error> {
-    let state_path = workflow_dir.join("state.json");
-    if !state_path.exists() {
-        return Ok(());
-    }
-
-    // Read the existing state to determine its phase
-    let phase_is_done = match read_state_phase(&state_path) {
-        Ok(phase_str) => phase_str == "done",
-        // Unreadable / corrupt state — archive it anyway
-        Err(_) => false,
-    };
-
-    if !phase_is_done {
-        let archive_dir = workflow_dir.join("archive");
-        std::fs::create_dir_all(&archive_dir)
-            .map_err(|e| anyhow::anyhow!("Failed to create archive directory: {e}"))?;
-
-        let ts = utc_now_iso8601().replace(['T', ':', 'Z'], "");
-        // ts is now "YYYYMMDDHHMMSS"
-        let archive_name = format!("state-{ts}.json");
-        let archive_path = archive_dir.join(&archive_name);
-
-        std::fs::rename(&state_path, &archive_path)
-            .map_err(|e| anyhow::anyhow!("Failed to archive state.json to {archive_name}: {e}"))?;
-    }
-
-    Ok(())
-}
-
-/// Read only the `phase` field from a state.json file without full deserialization.
-fn read_state_phase(state_path: &Path) -> Result<String, anyhow::Error> {
-    let content = std::fs::read_to_string(state_path)
-        .map_err(|e| anyhow::anyhow!("Failed to read state.json: {e}"))?;
-    let v: serde_json::Value = serde_json::from_str(&content)
-        .map_err(|e| anyhow::anyhow!("Failed to parse state.json: {e}"))?;
-    Ok(v.get("phase")
-        .and_then(|p| p.as_str())
-        .unwrap_or("unknown")
-        .to_owned())
 }
 
 /// Delete `implement-done.md` and `.tdd-state` from the workflow directory if they exist.
