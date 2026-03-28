@@ -9,13 +9,40 @@ const DEFAULT_TITLE: &str = "Claude Code";
 /// Default notification message.
 const DEFAULT_MESSAGE: &str = "Claude needs your attention";
 
+/// Maximum length for sanitized notification strings.
+const MAX_NOTIFY_LEN: usize = 256;
+
+/// Sanitize a string for safe interpolation into an AppleScript string delimited by double quotes.
+/// Escapes backslashes first, then double quotes. Caps length at 256 chars.
+fn sanitize_osascript(s: &str) -> String {
+    let truncated = if s.len() > MAX_NOTIFY_LEN {
+        &s[..MAX_NOTIFY_LEN]
+    } else {
+        s
+    };
+    truncated.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+/// Sanitize a string for safe interpolation into a PowerShell string delimited by single quotes.
+/// Escapes single quotes by doubling them. Caps length at 256 chars.
+fn sanitize_powershell(s: &str) -> String {
+    let truncated = if s.len() > MAX_NOTIFY_LEN {
+        &s[..MAX_NOTIFY_LEN]
+    } else {
+        s
+    };
+    truncated.replace('\'', "''")
+}
+
 /// Send a cross-platform system notification. Fire-and-forget: failures are logged.
 fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
     match ports.env.platform() {
         Platform::MacOS => {
+            let safe_message = sanitize_osascript(message);
+            let safe_title = sanitize_osascript(title);
             let script = format!(
                 "display notification \"{}\" with title \"{}\" sound name \"Glass\"",
-                message, title
+                safe_message, safe_title
             );
             if let Err(err) = ports.shell.run_command("osascript", &["-e", &script]) {
                 log::warn!("osascript notification failed: {err}");
@@ -29,7 +56,12 @@ fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
             }
         }
         Platform::Windows => {
-            let ps_cmd = format!("New-BurntToastNotification -Text '{}','{}'", title, message);
+            let safe_title = sanitize_powershell(title);
+            let safe_message = sanitize_powershell(message);
+            let ps_cmd = format!(
+                "New-BurntToastNotification -Text '{}','{}'",
+                safe_title, safe_message
+            );
             let result = ports
                 .shell
                 .run_command("powershell", &["-Command", &ps_cmd]);
@@ -106,17 +138,33 @@ mod tier2_notify {
         // PC-015: Adversarial injection input blocked
         #[test]
         fn adversarial_injection_blocked() {
-            // Classic shell injection via single quote
-            let injected = sanitize_osascript("'; rm -rf /; echo '");
-            assert!(!injected.contains("'; rm"), "osascript injection should be escaped");
-
-            // AppleScript injection via double quote
+            // AppleScript injection via double quote (osascript uses double-quoted strings).
+            // Every `"` in the input must be escaped to `\"` in the output so it cannot
+            // break out of the surrounding AppleScript `display notification "..."` string.
             let injected = sanitize_osascript(r#"" with title "x" do shell script "echo pwned""#);
-            assert!(!injected.contains(r#"" with title"#), "osascript AppleScript injection should be escaped");
+            // No `"` should appear in the output unless preceded by `\`
+            let has_bare_quote = injected
+                .char_indices()
+                .filter(|&(_, c)| c == '"')
+                .any(|(i, _)| i == 0 || injected.as_bytes()[i - 1] != b'\\');
+            assert!(
+                !has_bare_quote,
+                "osascript output must have no bare double-quotes: {injected}"
+            );
+
+            // Backslash + double quote combo is also blocked (backslash escaped first)
+            let injected2 = sanitize_osascript(r#"\"; system(\"rm -rf /\"); \""#);
+            assert!(
+                injected2.contains("\\\\"),
+                "backslashes must be doubled: {injected2}"
+            );
 
             // PowerShell injection via single quote
-            let injected = sanitize_powershell("'; Start-Process cmd");
-            assert!(injected.starts_with("''; Start-Process"), "powershell injection should be escaped");
+            let injected3 = sanitize_powershell("'; Start-Process cmd");
+            assert!(
+                injected3.starts_with("''; Start-Process"),
+                "powershell injection should be escaped: {injected3}"
+            );
         }
 
         // PC-055: osascript escapes backslashes + caps input length at 256
@@ -144,14 +192,20 @@ mod tier2_notify {
         #[test]
         fn adversarial_osascript_applescript_injection() {
             let result = sanitize_osascript(r#"" with title "x" \n do shell script "echo pwned""#);
-            assert!(result.contains(r#"\""#), "double quotes must be escaped: {result}");
+            assert!(
+                result.contains(r#"\""#),
+                "double quotes must be escaped: {result}"
+            );
         }
 
         #[test]
         fn adversarial_osascript_backslash_quote_combo() {
             let result = sanitize_osascript(r#"\"; system(\"rm -rf /\"); \""#);
             // Backslashes must be escaped before quotes
-            assert!(result.contains("\\\\"), "backslashes must be doubled: {result}");
+            assert!(
+                result.contains("\\\\"),
+                "backslashes must be doubled: {result}"
+            );
             assert!(result.contains(r#"\""#), "quotes must be escaped: {result}");
         }
 
@@ -164,7 +218,11 @@ mod tier2_notify {
         fn adversarial_osascript_long_input_truncation() {
             let long_input = "x".repeat(300);
             let result = sanitize_osascript(&long_input);
-            assert!(result.len() <= 256, "must be capped at 256: len={}", result.len());
+            assert!(
+                result.len() <= 256,
+                "must be capped at 256: len={}",
+                result.len()
+            );
         }
 
         // PowerShell adversarial inputs (5)
@@ -183,35 +241,51 @@ mod tier2_notify {
         fn adversarial_powershell_long_input_truncation() {
             let long_input = "y".repeat(300);
             let result = sanitize_powershell(&long_input);
-            assert!(result.len() <= 256, "must be capped at 256: len={}", result.len());
+            assert!(
+                result.len() <= 256,
+                "must be capped at 256: len={}",
+                result.len()
+            );
         }
 
         #[test]
         fn adversarial_powershell_unicode() {
             let result = sanitize_powershell("hello 🔥 world");
             // Unicode passes through; no single quotes to escape
-            assert!(result.contains("🔥"), "unicode should pass through: {result}");
+            assert!(
+                result.contains("🔥"),
+                "unicode should pass through: {result}"
+            );
         }
 
         #[test]
         fn adversarial_powershell_mixed_injection() {
             let result = sanitize_powershell("Hello \"World\" it's a \\'test\\\\");
             // Single quotes are doubled
-            assert!(result.contains("''"), "single quotes must be doubled: {result}");
+            assert!(
+                result.contains("''"),
+                "single quotes must be doubled: {result}"
+            );
         }
 
         // Additional osascript adversarial inputs to exceed 5 per platform
         #[test]
         fn adversarial_osascript_unicode_passthrough() {
             let result = sanitize_osascript("hello 🔥 world");
-            assert!(result.contains("🔥"), "unicode should pass through: {result}");
+            assert!(
+                result.contains("🔥"),
+                "unicode should pass through: {result}"
+            );
         }
 
         #[test]
         fn adversarial_osascript_newlines() {
             let result = sanitize_osascript("line1\nline2");
             // Newlines pass through (osascript handles them)
-            assert!(result.contains('\n'), "newlines should pass through: {result}");
+            assert!(
+                result.contains('\n'),
+                "newlines should pass through: {result}"
+            );
         }
     }
 }
