@@ -295,6 +295,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ecc-flock"
+version = "4.2.0"
+dependencies = [
+ "libc",
+ "tempfile",
+]
+
+[[package]]
 name = "ecc-infra"
 version = "4.2.0"
 dependencies = [

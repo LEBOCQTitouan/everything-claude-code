@@ -9,6 +9,7 @@ members = [
     "crates/ecc-test-support",
     "crates/ecc-integration-tests",
     "crates/ecc-workflow",
+    "crates/ecc-flock",
 ]
 
 [workspace.package]
@@ -44,6 +45,7 @@ ecc-ports = { path = "crates/ecc-ports" }
 ecc-app = { path = "crates/ecc-app" }
 ecc-infra = { path = "crates/ecc-infra" }
 ecc-test-support = { path = "crates/ecc-test-support" }
+ecc-flock = { path = "crates/ecc-flock" }
 
 [profile.release]
 strip = true
