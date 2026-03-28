@@ -16,21 +16,24 @@ fn phase_gate() {
     assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     // Helper: pipe stdin JSON to `ecc-workflow phase-gate` and return the Output.
-    let run_phase_gate = |project_dir: &std::path::Path, stdin_json: &str| -> std::process::Output {
-        let mut child = Command::new(&bin)
-            .args(["phase-gate"])
-            .env("CLAUDE_PROJECT_DIR", project_dir)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .expect("failed to spawn ecc-workflow phase-gate");
+    let run_phase_gate =
+        |project_dir: &std::path::Path, stdin_json: &str| -> std::process::Output {
+            let mut child = Command::new(&bin)
+                .args(["phase-gate"])
+                .env("CLAUDE_PROJECT_DIR", project_dir)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .expect("failed to spawn ecc-workflow phase-gate");
 
-        if let Some(mut stdin) = child.stdin.take() {
-            stdin.write_all(stdin_json.as_bytes()).ok();
-        }
-        child.wait_with_output().expect("failed to wait for ecc-workflow phase-gate")
-    };
+            if let Some(mut stdin) = child.stdin.take() {
+                stdin.write_all(stdin_json.as_bytes()).ok();
+            }
+            child
+                .wait_with_output()
+                .expect("failed to wait for ecc-workflow phase-gate")
+        };
 
     // ── Scenario 1: no state.json → exit 0 regardless of tool ────────────────
     let dir_no_state = tempfile::tempdir().unwrap();

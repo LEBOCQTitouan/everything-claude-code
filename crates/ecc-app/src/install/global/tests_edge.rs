@@ -1,6 +1,6 @@
 use super::install_global;
 use super::tests::{ecc_source_fs, no_color_env};
-use crate::install::{default_install_options, InstallContext, InstallOptions};
+use crate::install::{InstallContext, InstallOptions, default_install_options};
 use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
 use std::path::Path;
 

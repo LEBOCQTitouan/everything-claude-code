@@ -58,8 +58,14 @@ fn stop_gate_plan_phase_warns_on_stderr() {
     );
 
     let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-    assert!(stderr.contains("WARNING"), "expected WARNING in stderr for phase 'plan', got: '{stderr}'");
-    assert!(stderr.contains("plan"), "expected 'plan' in stderr warning, got: '{stderr}'");
+    assert!(
+        stderr.contains("WARNING"),
+        "expected WARNING in stderr for phase 'plan', got: '{stderr}'"
+    );
+    assert!(
+        stderr.contains("plan"),
+        "expected 'plan' in stderr warning, got: '{stderr}'"
+    );
 }
 
 #[test]
@@ -72,9 +78,16 @@ fn stop_gate_done_phase_is_silent() {
 
     let output = run_stop_gate(temp_dir.path());
 
-    assert_eq!(output.status.code(), Some(0), "stop-gate must exit 0 in done phase");
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stop-gate must exit 0 in done phase"
+    );
     let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-    assert!(!stderr.contains("WARNING"), "expected no WARNING in done phase, got: '{stderr}'");
+    assert!(
+        !stderr.contains("WARNING"),
+        "expected no WARNING in done phase, got: '{stderr}'"
+    );
 }
 
 #[test]
@@ -87,9 +100,16 @@ fn stop_gate_no_state_is_silent() {
 
     let output = run_stop_gate(temp_dir.path());
 
-    assert_eq!(output.status.code(), Some(0), "stop-gate must exit 0 with no state.json");
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "stop-gate must exit 0 with no state.json"
+    );
     let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-    assert!(!stderr.contains("WARNING"), "expected no WARNING with no state.json, got: '{stderr}'");
+    assert!(
+        !stderr.contains("WARNING"),
+        "expected no WARNING with no state.json, got: '{stderr}'"
+    );
 }
 
 // ── grill_me_gate helpers ─────────────────────────────────────────────────────
@@ -138,7 +158,11 @@ fn grill_me_gate_plan_phase_with_marker_is_silent() {
     let temp_dir = tempfile::tempdir().unwrap();
 
     let spec_file = temp_dir.path().join("spec.md");
-    std::fs::write(&spec_file, "# Spec\n\n### Grill-Me Decisions\n\nSome grill-me content here.\n").unwrap();
+    std::fs::write(
+        &spec_file,
+        "# Spec\n\n### Grill-Me Decisions\n\nSome grill-me content here.\n",
+    )
+    .unwrap();
 
     write_state_with_phase_and_spec(temp_dir.path(), "plan", Some(spec_file.to_str().unwrap()));
 
@@ -153,7 +177,10 @@ fn grill_me_gate_plan_phase_with_marker_is_silent() {
     );
 
     let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-    assert!(!stderr.contains("WARNING"), "expected no WARNING when grill-me marker present, got: '{stderr}'");
+    assert!(
+        !stderr.contains("WARNING"),
+        "expected no WARNING when grill-me marker present, got: '{stderr}'"
+    );
 }
 
 #[test]
@@ -161,7 +188,11 @@ fn grill_me_gate_plan_phase_without_marker_warns() {
     let temp_dir = tempfile::tempdir().unwrap();
 
     let spec_file = temp_dir.path().join("spec.md");
-    std::fs::write(&spec_file, "# Spec\n\nSome content without grill-me section.\n").unwrap();
+    std::fs::write(
+        &spec_file,
+        "# Spec\n\nSome content without grill-me section.\n",
+    )
+    .unwrap();
 
     write_state_with_phase_and_spec(temp_dir.path(), "plan", Some(spec_file.to_str().unwrap()));
 
@@ -176,8 +207,14 @@ fn grill_me_gate_plan_phase_without_marker_warns() {
     );
 
     let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-    assert!(stderr.contains("WARNING"), "expected WARNING when grill-me marker absent, got: '{stderr}'");
-    assert!(stderr.to_lowercase().contains("grill"), "warning should mention grill-me, got: '{stderr}'");
+    assert!(
+        stderr.contains("WARNING"),
+        "expected WARNING when grill-me marker absent, got: '{stderr}'"
+    );
+    assert!(
+        stderr.to_lowercase().contains("grill"),
+        "warning should mention grill-me, got: '{stderr}'"
+    );
 }
 
 #[test]
@@ -187,7 +224,11 @@ fn grill_me_gate_implement_phase_is_silent() {
     let spec_file = temp_dir.path().join("spec.md");
     std::fs::write(&spec_file, "# Spec\n\nNo grill-me here.\n").unwrap();
 
-    write_state_with_phase_and_spec(temp_dir.path(), "implement", Some(spec_file.to_str().unwrap()));
+    write_state_with_phase_and_spec(
+        temp_dir.path(),
+        "implement",
+        Some(spec_file.to_str().unwrap()),
+    );
 
     let output = run_grill_me_gate(temp_dir.path());
 
@@ -200,7 +241,10 @@ fn grill_me_gate_implement_phase_is_silent() {
     );
 
     let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-    assert!(!stderr.contains("WARNING"), "expected no WARNING in implement phase, got: '{stderr}'");
+    assert!(
+        !stderr.contains("WARNING"),
+        "expected no WARNING in implement phase, got: '{stderr}'"
+    );
 }
 
 #[test]
@@ -219,5 +263,8 @@ fn grill_me_gate_no_state_is_silent() {
     );
 
     let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-    assert!(!stderr.contains("WARNING"), "expected no WARNING when no state.json, got: '{stderr}'");
+    assert!(
+        !stderr.contains("WARNING"),
+        "expected no WARNING when no state.json, got: '{stderr}'"
+    );
 }

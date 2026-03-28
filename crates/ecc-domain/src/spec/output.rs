@@ -1,6 +1,6 @@
 //! JSON output types for `ecc validate spec` and `ecc validate design`.
 
-use crate::spec::ac::{AcceptanceCriterion, AcId};
+use crate::spec::ac::{AcId, AcceptanceCriterion};
 use crate::spec::ordering::OrderingViolation;
 use crate::spec::pc::PassCondition;
 use serde::Serialize;
@@ -42,7 +42,10 @@ mod tests {
             valid: true,
             ac_count: 1,
             acs: vec![AcceptanceCriterion {
-                id: AcId { us_number: 1, sub_number: 1 },
+                id: AcId {
+                    us_number: 1,
+                    sub_number: 1,
+                },
                 description: "test".into(),
             }],
             errors: Vec::new(),

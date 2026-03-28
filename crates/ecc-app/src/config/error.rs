@@ -4,7 +4,9 @@
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigAppError {
     /// Could not read a config file.
-    #[error("read_json_safe: cannot read '{path}' — check the file exists and is readable: {reason}")]
+    #[error(
+        "read_json_safe: cannot read '{path}' — check the file exists and is readable: {reason}"
+    )]
     ReadFile { path: String, reason: String },
 
     /// A config file contained invalid JSON.
@@ -12,31 +14,45 @@ pub enum ConfigAppError {
     InvalidJson { path: String, reason: String },
 
     /// Could not create a parent directory during file copy.
-    #[error("apply_accept: failed to create directory for '{path}' — check filesystem permissions: {reason}")]
+    #[error(
+        "apply_accept: failed to create directory for '{path}' — check filesystem permissions: {reason}"
+    )]
     CreateDir { path: String, reason: String },
 
     /// Could not copy a file.
-    #[error("apply_accept: failed to copy '{src}' to '{dest}' — check filesystem permissions: {reason}")]
-    CopyFile { src: String, dest: String, reason: String },
+    #[error(
+        "apply_accept: failed to copy '{src}' to '{dest}' — check filesystem permissions: {reason}"
+    )]
+    CopyFile {
+        src: String,
+        dest: String,
+        reason: String,
+    },
 
     /// Settings JSON parse failed.
-    #[error("remove_ecc_hooks: failed to parse settings.json content — ensure the file is valid JSON: {reason}")]
+    #[error(
+        "remove_ecc_hooks: failed to parse settings.json content — ensure the file is valid JSON: {reason}"
+    )]
     ParseSettings { reason: String },
 
     /// Settings JSON serialization failed.
-    #[error("remove_ecc_hooks: failed to serialize settings.json — this is a bug, please report it: {reason}")]
+    #[error(
+        "remove_ecc_hooks: failed to serialize settings.json — this is a bug, please report it: {reason}"
+    )]
     SerializeSettings { reason: String },
 
     /// Failed to write settings.json.
-    #[error("remove_ecc_hooks: failed to write settings.json — check filesystem permissions: {reason}")]
+    #[error(
+        "remove_ecc_hooks: failed to write settings.json — check filesystem permissions: {reason}"
+    )]
     WriteSettings { reason: String },
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
     use ecc_ports::fs::FileSystem;
+    use std::path::Path;
 
     // --- Display format tests ---
 

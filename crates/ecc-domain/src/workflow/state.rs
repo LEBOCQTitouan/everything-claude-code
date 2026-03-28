@@ -386,13 +386,15 @@ mod tests {
         // Concern serializes as lowercase, deserializes from lowercase
         let json_dev = serde_json::to_string(&Concern::Dev).expect("serialization must succeed");
         assert_eq!(json_dev, r#""dev""#);
-        let restored: Concern = serde_json::from_str(&json_dev).expect("deserialization must succeed");
+        let restored: Concern =
+            serde_json::from_str(&json_dev).expect("deserialization must succeed");
         assert_eq!(restored, Concern::Dev);
 
         let json_fix = serde_json::to_string(&Concern::Fix).expect("serialization must succeed");
         assert_eq!(json_fix, r#""fix""#);
 
-        let json_refactor = serde_json::to_string(&Concern::Refactor).expect("serialization must succeed");
+        let json_refactor =
+            serde_json::to_string(&Concern::Refactor).expect("serialization must succeed");
         assert_eq!(json_refactor, r#""refactor""#);
     }
 
@@ -431,7 +433,8 @@ mod tests {
         let json = serde_json::to_string(&completion).expect("serialization must succeed");
         assert!(json.contains(r#""phase":"unknown""#) || json.contains(r#""phase": "unknown""#));
         // Round-trip: deserialize back
-        let restored: Completion = serde_json::from_str(&json).expect("deserialization must succeed");
+        let restored: Completion =
+            serde_json::from_str(&json).expect("deserialization must succeed");
         assert_eq!(restored.phase, Phase::Unknown);
     }
 }

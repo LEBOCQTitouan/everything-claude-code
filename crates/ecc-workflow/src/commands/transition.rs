@@ -28,7 +28,11 @@ mod tests {
             concern: Concern::Dev,
             feature: "BL-068".to_owned(),
             started_at: Timestamp::new("2026-01-01T00:00:00Z"),
-            toolchain: Toolchain { test: None, lint: None, build: None },
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
             artifacts: Artifacts {
                 plan: None,
                 solution: None,
@@ -130,7 +134,10 @@ mod tests {
         super::run("solution", Some("plan"), None, dir.path());
 
         let state_path = dir.path().join(".claude/workflow/state.json");
-        assert!(state_path.exists(), "state.json must exist after transition");
+        assert!(
+            state_path.exists(),
+            "state.json must exist after transition"
+        );
         let content = std::fs::read_to_string(&state_path).unwrap();
         let state = WorkflowState::from_json(&content).unwrap();
         assert_eq!(
@@ -289,10 +296,7 @@ pub fn run(
                 output
             } else {
                 let warn_text = warnings.join("; ");
-                WorkflowOutput::warn(format!(
-                    "{} [warnings: {warn_text}]",
-                    output.message
-                ))
+                WorkflowOutput::warn(format!("{} [warnings: {warn_text}]", output.message))
             }
         }
         Ok((output, None)) => output,

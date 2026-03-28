@@ -56,9 +56,7 @@ pub fn run(force: bool, project_dir: &Path) -> WorkflowOutput {
         };
 
         match write_state_atomic(project_dir, &idle_state) {
-            Ok(()) => {
-                WorkflowOutput::pass("Workflow reset - state archived, phase set to idle")
-            }
+            Ok(()) => WorkflowOutput::pass("Workflow reset - state archived, phase set to idle"),
             Err(e) => WorkflowOutput::block(format!("Failed to write idle state: {e}")),
         }
     });
@@ -85,10 +83,19 @@ pub mod tests {
             concern: Concern::Dev,
             feature: "test-feature".to_owned(),
             started_at: Timestamp::new("2026-01-01T00:00:00Z"),
-            toolchain: Toolchain { test: None, lint: None, build: None },
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
             artifacts: Artifacts {
-                plan: None, solution: None, implement: None,
-                campaign_path: None, spec_path: None, design_path: None, tasks_path: None,
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
             },
             completed: vec![],
         };
@@ -106,7 +113,10 @@ pub mod tests {
         let output = run(true, dir.path());
         assert!(output.message.contains("reset"));
         // After rewrite: state.json should contain idle state, not be deleted
-        assert!(wf_dir.join("state.json").exists(), "state.json should be replaced with idle state, not deleted");
+        assert!(
+            wf_dir.join("state.json").exists(),
+            "state.json should be replaced with idle state, not deleted"
+        );
     }
 
     #[test]
@@ -140,7 +150,10 @@ pub mod tests {
             output.message
         );
         // state.json must now contain idle state
-        assert!(wf_dir.join("state.json").exists(), "state.json must exist with idle state");
+        assert!(
+            wf_dir.join("state.json").exists(),
+            "state.json must exist with idle state"
+        );
         let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
         let state = WorkflowState::from_json(&content).unwrap();
         assert_eq!(state.phase, Phase::Idle, "phase should be idle after reset");
@@ -185,11 +198,17 @@ pub mod tests {
 
         // Ensure archive dir does not exist before reset
         let archive_dir = wf_dir.join("archive");
-        assert!(!archive_dir.exists(), "archive dir should not exist before reset");
+        assert!(
+            !archive_dir.exists(),
+            "archive dir should not exist before reset"
+        );
 
         run(true, dir.path());
 
-        assert!(archive_dir.exists(), "reset should create the archive directory");
+        assert!(
+            archive_dir.exists(),
+            "reset should create the archive directory"
+        );
     }
 
     // PC-023: Reset with no state.json returns pass
@@ -247,9 +266,16 @@ pub mod tests {
             output.message
         );
         // state.json must be unchanged (fail-safe: not modified on archive failure)
-        assert!(wf_dir.join("state.json").exists(), "state.json must not be modified when archive fails");
+        assert!(
+            wf_dir.join("state.json").exists(),
+            "state.json must not be modified when archive fails"
+        );
         let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
         let state = WorkflowState::from_json(&content).unwrap();
-        assert_eq!(state.phase, Phase::Implement, "state.json phase must be unchanged");
+        assert_eq!(
+            state.phase,
+            Phase::Implement,
+            "state.json phase must be unchanged"
+        );
     }
 }

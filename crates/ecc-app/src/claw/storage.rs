@@ -39,14 +39,16 @@ pub fn save_session(
     validate_name(session_name)?;
     let path = claw_session_path(home, session_name);
     let sessions_dir = claw_dir(home).join("sessions");
-    fs.create_dir_all(&sessions_dir).map_err(|e| ClawError::CreateSessionDir {
-        reason: e.to_string(),
-    })?;
+    fs.create_dir_all(&sessions_dir)
+        .map_err(|e| ClawError::CreateSessionDir {
+            reason: e.to_string(),
+        })?;
     let content = format_turns(turns);
-    fs.write(&path, &content).map_err(|e| ClawError::SaveSession {
-        name: session_name.to_string(),
-        reason: e.to_string(),
-    })
+    fs.write(&path, &content)
+        .map_err(|e| ClawError::SaveSession {
+            name: session_name.to_string(),
+            reason: e.to_string(),
+        })
 }
 
 /// List all session names.
@@ -83,7 +85,11 @@ pub fn branch_session(
 }
 
 /// Clear a session by removing its file.
-pub fn clear_session(home: &Path, session_name: &str, fs: &dyn FileSystem) -> Result<(), ClawError> {
+pub fn clear_session(
+    home: &Path,
+    session_name: &str,
+    fs: &dyn FileSystem,
+) -> Result<(), ClawError> {
     validate_name(session_name)?;
     let path = claw_session_path(home, session_name);
     if fs.exists(&path) {
@@ -237,7 +243,10 @@ mod tests {
         let result = save_session(home(), "../etc/passwd", &[], &fs);
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("invalid session name") || err_msg.contains("Invalid session name"), "got: {err_msg}");
+        assert!(
+            err_msg.contains("invalid session name") || err_msg.contains("Invalid session name"),
+            "got: {err_msg}"
+        );
     }
 
     #[test]

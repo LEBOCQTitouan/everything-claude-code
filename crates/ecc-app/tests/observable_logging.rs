@@ -72,7 +72,8 @@ fn check_file(path: &std::path::Path, display: &str, violations: &mut Vec<String
                 || l.contains(".errors.push(")
                 || l.contains("error: Some(format!")
                 || l.contains("error: Some(e.to_string")
-                || (l.contains("Err(") && (l.contains("format!") || l.contains("return Err") || l.contains("Error")))
+                || (l.contains("Err(")
+                    && (l.contains("format!") || l.contains("return Err") || l.contains("Error")))
         });
 
         if !has_warn && !is_recording_or_reraise {

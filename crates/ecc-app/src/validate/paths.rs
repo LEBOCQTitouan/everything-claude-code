@@ -2,11 +2,7 @@ use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
-pub(super) fn validate_paths(
-    root: &Path,
-    fs: &dyn FileSystem,
-    terminal: &dyn TerminalIO,
-) -> bool {
+pub(super) fn validate_paths(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let targets = ["README.md", "skills", "commands", "agents", "docs"];
 
     let block_patterns = ["/Users/affoon", "C:\\Users\\affoon"];
@@ -71,7 +67,7 @@ pub(super) fn validate_paths(
 
 #[cfg(test)]
 mod tests {
-    use super::super::{run_validate, ValidateTarget};
+    use super::super::{ValidateTarget, run_validate};
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
     use std::path::Path;
 

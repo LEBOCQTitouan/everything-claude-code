@@ -76,10 +76,16 @@ fn dev_switch_dry_run() {
     assert!(result.is_ok());
     for dir in MANAGED_DIRS {
         let link = Path::new("/claude").join(dir);
-        assert!(!fs.is_symlink(&link), "dry_run must not create symlinks: {link:?}");
+        assert!(
+            !fs.is_symlink(&link),
+            "dry_run must not create symlinks: {link:?}"
+        );
     }
     let output = terminal.stdout_output().join("");
-    assert!(!output.is_empty(), "dry_run should print planned operations");
+    assert!(
+        !output.is_empty(),
+        "dry_run should print planned operations"
+    );
 }
 
 #[test]
@@ -246,7 +252,10 @@ fn dev_switch_handles_dangling_symlinks() {
         false,
     );
 
-    assert!(result.is_ok(), "should handle dangling symlinks: {result:?}");
+    assert!(
+        result.is_ok(),
+        "should handle dangling symlinks: {result:?}"
+    );
     let target = fs.read_symlink(Path::new("/claude/agents")).unwrap();
     assert_eq!(target, Path::new("/ecc/agents"));
 }
@@ -292,5 +301,8 @@ fn dev_switch_error_returns_failure() {
         false,
     );
 
-    assert!(result.is_err(), "should return Err when targets are missing");
+    assert!(
+        result.is_err(),
+        "should return Err when targets are missing"
+    );
 }

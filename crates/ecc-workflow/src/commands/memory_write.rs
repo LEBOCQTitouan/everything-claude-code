@@ -63,8 +63,7 @@ pub fn run(kind: &str, args: &[String], project_dir: &Path) -> WorkflowOutput {
 /// The project hash is the absolute path with the leading `/` stripped and
 /// remaining `/` replaced with `-`.
 fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Error> {
-    let home = std::env::var("HOME")
-        .map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
+    let home = std::env::var("HOME").map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
 
     // Canonicalize to get absolute path; fall back to as-is if that fails.
     let abs = std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
@@ -90,8 +89,8 @@ pub(crate) fn build_action_entry(
     session_id: &str,
     timestamp: &str,
 ) -> serde_json::Value {
-    let artifacts: serde_json::Value = serde_json::from_str(artifacts_json)
-        .unwrap_or(serde_json::Value::Array(vec![]));
+    let artifacts: serde_json::Value =
+        serde_json::from_str(artifacts_json).unwrap_or(serde_json::Value::Array(vec![]));
     serde_json::json!({
         "timestamp": timestamp,
         "session_id": session_id,
@@ -229,13 +228,20 @@ pub fn write_action(
     let timestamp = utc_now_iso8601();
     let session_id = std::env::var("CLAUDE_SESSION_ID").unwrap_or_else(|_| "unknown".to_string());
 
-    let entry = build_action_entry(action_type, description, outcome, artifacts_json, &session_id, &timestamp);
+    let entry = build_action_entry(
+        action_type,
+        description,
+        outcome,
+        artifacts_json,
+        &session_id,
+        &timestamp,
+    );
 
     // Atomic append: read current array, push entry, write atomically
     let current_content = std::fs::read_to_string(&action_log)
         .map_err(|e| anyhow::anyhow!("Failed to read action-log.json: {e}"))?;
-    let mut log: serde_json::Value = serde_json::from_str(&current_content)
-        .unwrap_or(serde_json::Value::Array(vec![]));
+    let mut log: serde_json::Value =
+        serde_json::from_str(&current_content).unwrap_or(serde_json::Value::Array(vec![]));
 
     if let Some(arr) = log.as_array_mut() {
         arr.push(entry);
@@ -311,8 +317,7 @@ pub fn write_daily(
     concern: &str,
     project_dir: &Path,
 ) -> Result<(), anyhow::Error> {
-    let memory_dir =
-        resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let memory_dir = resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     let daily_dir = memory_dir.join("daily");
     std::fs::create_dir_all(&daily_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create daily dir: {e}"))?;
@@ -424,8 +429,7 @@ fn insert_after_activity(content: &str, entry: &str) -> String {
 // ── memory-index ──────────────────────────────────────────────────────────────
 
 pub fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
-    let memory_dir =
-        resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let memory_dir = resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     std::fs::create_dir_all(&memory_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;
 
@@ -522,14 +526,7 @@ mod tests {
 
     #[test]
     fn build_action_entry_invalid_artifacts_json_defaults_to_empty_array() {
-        let entry = build_action_entry(
-            "fix",
-            "desc",
-            "done",
-            "not-valid-json",
-            "sess",
-            "ts",
-        );
+        let entry = build_action_entry("fix", "desc", "done", "not-valid-json", "sess", "ts");
         assert_eq!(entry["artifacts"], serde_json::json!([]));
     }
 
@@ -545,21 +542,28 @@ mod tests {
 
     #[test]
     fn build_work_item_content_plan_contains_concern() {
-        let content = build_work_item_content("plan", "Test Feature", "auth", "2026-01-01T00:00:00Z");
+        let content =
+            build_work_item_content("plan", "Test Feature", "auth", "2026-01-01T00:00:00Z");
         assert!(content.contains("Concern: auth"));
         assert!(content.contains("# Plan: Test Feature"));
     }
 
     #[test]
     fn build_work_item_content_solution_phase() {
-        let content = build_work_item_content("solution", "My Solution", "infra", "2026-01-01T00:00:00Z");
+        let content =
+            build_work_item_content("solution", "My Solution", "infra", "2026-01-01T00:00:00Z");
         assert!(content.contains("# Solution: My Solution"));
         assert!(content.contains("## File Changes"));
     }
 
     #[test]
     fn build_work_item_content_implementation_phase() {
-        let content = build_work_item_content("implementation", "Impl desc", "concern", "2026-01-01T00:00:00Z");
+        let content = build_work_item_content(
+            "implementation",
+            "Impl desc",
+            "concern",
+            "2026-01-01T00:00:00Z",
+        );
         assert!(content.contains("# Implementation: Impl desc"));
         assert!(content.contains("## Changes Made"));
     }

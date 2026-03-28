@@ -13,7 +13,10 @@ use std::path::PathBuf;
 /// 4. `$HOME/.ecc/`
 /// 5. Legacy npm global install paths (backward compat)
 /// 6. Error with instructions
-pub fn resolve_ecc_root(fs: &dyn FileSystem, env: &dyn Environment) -> Result<PathBuf, super::error::InstallError> {
+pub fn resolve_ecc_root(
+    fs: &dyn FileSystem,
+    env: &dyn Environment,
+) -> Result<PathBuf, super::error::InstallError> {
     // 1. ECC_ROOT env var (explicit override)
     if let Some(ecc_root) = env.var("ECC_ROOT") {
         let root = PathBuf::from(&ecc_root);

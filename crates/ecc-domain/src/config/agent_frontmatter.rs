@@ -34,7 +34,12 @@ impl Validatable<String> for AgentFrontmatter {
             errors.push("agent 'name' field is missing or empty".to_string());
         }
 
-        if self.description.as_deref().map(str::is_empty).unwrap_or(true) {
+        if self
+            .description
+            .as_deref()
+            .map(str::is_empty)
+            .unwrap_or(true)
+        {
             errors.push("agent 'description' field is missing or empty".to_string());
         }
 
@@ -47,7 +52,11 @@ impl Validatable<String> for AgentFrontmatter {
             None => errors.push("agent 'model' field is missing".to_string()),
         }
 
-        if errors.is_empty() { Ok(()) } else { Err(errors) }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 }
 
@@ -65,7 +74,11 @@ impl Validatable<String> for HookFrontmatter {
             _ => errors.push("hook 'command' field is missing or empty".to_string()),
         }
 
-        if errors.is_empty() { Ok(()) } else { Err(errors) }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
     }
 }
 

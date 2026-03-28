@@ -3,12 +3,10 @@ use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
 pub(super) fn read_json(fs: &dyn FileSystem, path: &Path) -> Result<serde_json::Value, MergeError> {
-    let content = fs
-        .read_to_string(path)
-        .map_err(|e| MergeError::ReadFile {
-            path: path.display().to_string(),
-            reason: e.to_string(),
-        })?;
+    let content = fs.read_to_string(path).map_err(|e| MergeError::ReadFile {
+        path: path.display().to_string(),
+        reason: e.to_string(),
+    })?;
     serde_json::from_str(&content).map_err(|e| MergeError::InvalidJson {
         path: path.display().to_string(),
         reason: e.to_string(),
@@ -252,16 +250,14 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/src/agent.md", "new content")
             .with_file("/dest/agent.md", "old content");
-        let shell = MockExecutor::new()
-            .with_command("claude")
-            .on(
-                "claude",
-                CommandOutput {
-                    stdout: "merged content".to_string(),
-                    stderr: String::new(),
-                    exit_code: 0,
-                },
-            );
+        let shell = MockExecutor::new().with_command("claude").on(
+            "claude",
+            CommandOutput {
+                stdout: "merged content".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
         let file = FileToReview {
             filename: "agent.md".into(),
             src_path: "/src/agent.md".into(),
@@ -270,7 +266,14 @@ mod tests {
         };
         let mut report = merge::empty_report();
 
-        apply_review_choice(&fs, &shell, ReviewChoice::SmartMerge, &file, false, &mut report);
+        apply_review_choice(
+            &fs,
+            &shell,
+            ReviewChoice::SmartMerge,
+            &file,
+            false,
+            &mut report,
+        );
 
         assert!(report.errors.is_empty(), "errors: {:?}", report.errors);
         assert!(report.smart_merged.contains(&"agent.md".to_string()));
@@ -316,7 +319,14 @@ mod tests {
             ..Default::default()
         };
 
-        let report = merge_directory(&ctx, Path::new("/src"), Path::new("/dest"), "Agents", ".md", &mut options);
+        let report = merge_directory(
+            &ctx,
+            Path::new("/src"),
+            Path::new("/dest"),
+            "Agents",
+            ".md",
+            &mut options,
+        );
         assert!(report.errors.is_empty());
         assert!(!report.updated.is_empty() || !report.added.is_empty());
     }
@@ -374,8 +384,7 @@ mod tests {
                 ]
             }
         }"#;
-        let fs = InMemoryFileSystem::new()
-            .with_file("/ecc/hooks.json", hooks_json);
+        let fs = InMemoryFileSystem::new().with_file("/ecc/hooks.json", hooks_json);
 
         let result = merge_hooks(
             &fs,

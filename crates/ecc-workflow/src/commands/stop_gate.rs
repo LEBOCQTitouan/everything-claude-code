@@ -34,8 +34,8 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::TempDir;
     use crate::output::Status;
+    use tempfile::TempDir;
 
     /// PC-039: stop_gate treats Idle like Done — no warning (AC-001.1)
     #[test]

@@ -2,11 +2,7 @@ use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
-pub(super) fn validate_rules(
-    root: &Path,
-    fs: &dyn FileSystem,
-    terminal: &dyn TerminalIO,
-) -> bool {
+pub(super) fn validate_rules(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let rules_dir = root.join("rules");
     if !fs.exists(&rules_dir) {
         terminal.stdout_write("No rules directory found, skipping validation\n");
@@ -56,7 +52,7 @@ pub(super) fn validate_rules(
 
 #[cfg(test)]
 mod tests {
-    use super::super::{run_validate, ValidateTarget};
+    use super::super::{ValidateTarget, run_validate};
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
     use std::path::Path;
 

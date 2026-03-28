@@ -30,8 +30,8 @@ pub trait Transitionable: Sized {
 
 #[cfg(test)]
 mod validatable_impl {
-    use crate::traits::Validatable;
     use crate::config::agent_frontmatter::{AgentFrontmatter, HookFrontmatter};
+    use crate::traits::Validatable;
 
     /// PC-036: Validatable trait added, config types implement it.
     #[test]
@@ -43,7 +43,10 @@ mod validatable_impl {
             tools: Some(vec!["Bash".to_string()]),
         };
         let result: Result<(), Vec<String>> = v.validate();
-        assert!(result.is_ok(), "valid agent should pass validation: {result:?}");
+        assert!(
+            result.is_ok(),
+            "valid agent should pass validation: {result:?}"
+        );
     }
 
     #[test]
@@ -67,7 +70,10 @@ mod validatable_impl {
             command: Some("echo hello".to_string()),
         };
         let result: Result<(), Vec<String>> = v.validate();
-        assert!(result.is_ok(), "valid hook should pass validation: {result:?}");
+        assert!(
+            result.is_ok(),
+            "valid hook should pass validation: {result:?}"
+        );
     }
 }
 
@@ -83,10 +89,19 @@ mod transitionable_impl {
             concern: "dev".to_string(),
             feature: "test".to_string(),
             started_at: "2026-01-01T00:00:00Z".to_string(),
-            toolchain: Toolchain { test: None, lint: None, build: None },
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
             artifacts: Artifacts {
-                plan: None, solution: None, implement: None,
-                campaign_path: None, spec_path: None, design_path: None, tasks_path: None,
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
             },
             completed: vec![],
         }
@@ -111,7 +126,11 @@ mod transitionable_impl {
     #[test]
     fn workflow_state_transition_returns_new_state_immutably() {
         let state = make_state(Phase::Plan);
-        let state = WorkflowState { concern: "fix".to_string(), feature: "some-fix".to_string(), ..state };
+        let state = WorkflowState {
+            concern: "fix".to_string(),
+            feature: "some-fix".to_string(),
+            ..state
+        };
         let new_state = state.transition_to(Phase::Solution).unwrap();
         assert_eq!(new_state.phase, Phase::Solution);
         assert_eq!(new_state.concern, "fix");

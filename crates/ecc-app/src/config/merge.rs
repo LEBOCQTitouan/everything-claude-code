@@ -85,11 +85,12 @@ pub fn apply_accept(
             })?;
     }
 
-    fs.copy(src_path, dest_path).map_err(|e| ConfigAppError::CopyFile {
-        src: src_path.display().to_string(),
-        dest: dest_path.display().to_string(),
-        reason: e.to_string(),
-    })
+    fs.copy(src_path, dest_path)
+        .map_err(|e| ConfigAppError::CopyFile {
+            src: src_path.display().to_string(),
+            dest: dest_path.display().to_string(),
+            reason: e.to_string(),
+        })
 }
 
 #[cfg(test)]

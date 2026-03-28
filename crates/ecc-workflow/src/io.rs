@@ -66,10 +66,7 @@ pub(crate) const MAX_STDIN_BYTES: u64 = 1_048_576; // 1 MB
 /// input exceeded the limit (indicating truncation), or `(content, None)` when within bounds.
 pub(crate) fn read_bounded(reader: impl Read, limit: u64) -> (String, Option<usize>) {
     let mut buf = String::new();
-    let bytes_read = reader
-        .take(limit + 1)
-        .read_to_string(&mut buf)
-        .unwrap_or(0);
+    let bytes_read = reader.take(limit + 1).read_to_string(&mut buf).unwrap_or(0);
     if bytes_read > limit as usize {
         buf.truncate(limit as usize);
         (buf, Some(bytes_read))
@@ -207,10 +204,19 @@ mod tests {
             concern: Concern::Dev,
             feature: "test-feature".to_owned(),
             started_at: Timestamp::new("2026-01-01T00:00:00Z"),
-            toolchain: Toolchain { test: None, lint: None, build: None },
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
             artifacts: Artifacts {
-                plan: None, solution: None, implement: None,
-                campaign_path: None, spec_path: None, design_path: None, tasks_path: None,
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
             },
             completed: vec![],
         };
@@ -223,7 +229,11 @@ mod tests {
         let workflow_dir = tmp.path().join(".claude/workflow");
         std::fs::create_dir_all(&workflow_dir).unwrap();
         let state_path = workflow_dir.join("state.json");
-        std::fs::write(&state_path, make_state_json(ecc_domain::workflow::phase::Phase::Done)).unwrap();
+        std::fs::write(
+            &state_path,
+            make_state_json(ecc_domain::workflow::phase::Phase::Done),
+        )
+        .unwrap();
 
         // include_done=true: done state MUST be archived
         archive_state(&workflow_dir, true).unwrap();
@@ -233,7 +243,10 @@ mod tests {
         // archive dir must contain a file
         let archive_dir = workflow_dir.join("archive");
         let entries: Vec<_> = std::fs::read_dir(&archive_dir).unwrap().collect();
-        assert!(!entries.is_empty(), "archive dir must contain the archived state");
+        assert!(
+            !entries.is_empty(),
+            "archive dir must contain the archived state"
+        );
     }
 
     #[test]
@@ -242,18 +255,28 @@ mod tests {
         let workflow_dir = tmp.path().join(".claude/workflow");
         std::fs::create_dir_all(&workflow_dir).unwrap();
         let state_path = workflow_dir.join("state.json");
-        std::fs::write(&state_path, make_state_json(ecc_domain::workflow::phase::Phase::Done)).unwrap();
+        std::fs::write(
+            &state_path,
+            make_state_json(ecc_domain::workflow::phase::Phase::Done),
+        )
+        .unwrap();
 
         // include_done=false: done state must NOT be archived
         archive_state(&workflow_dir, false).unwrap();
 
         // state.json must still exist (not moved)
-        assert!(state_path.exists(), "state.json should NOT have been archived when include_done=false and phase=done");
+        assert!(
+            state_path.exists(),
+            "state.json should NOT have been archived when include_done=false and phase=done"
+        );
         // archive dir must NOT have been created (or be empty)
         let archive_dir = workflow_dir.join("archive");
         if archive_dir.exists() {
             let entries: Vec<_> = std::fs::read_dir(&archive_dir).unwrap().collect();
-            assert!(entries.is_empty(), "no files should be archived when include_done=false");
+            assert!(
+                entries.is_empty(),
+                "no files should be archived when include_done=false"
+            );
         }
     }
 }

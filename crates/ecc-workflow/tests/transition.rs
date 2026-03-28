@@ -5,11 +5,7 @@ use std::process::Command;
 #[test]
 fn transition_updates_state() {
     let bin = common::binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -47,8 +43,8 @@ fn transition_updates_state() {
 
     // Step 3: read state.json and verify
     let state_path = temp_dir.path().join(".claude/workflow/state.json");
-    let content = std::fs::read_to_string(&state_path)
-        .expect("failed to read state.json after transition");
+    let content =
+        std::fs::read_to_string(&state_path).expect("failed to read state.json after transition");
 
     let value: serde_json::Value = serde_json::from_str(&content)
         .unwrap_or_else(|e| panic!("state.json is not valid JSON: {e}\ncontent: {content}"));
@@ -89,11 +85,7 @@ fn transition_updates_state() {
 #[test]
 fn transition_illegal_exits_nonzero() {
     let bin = common::binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -165,11 +157,7 @@ fn transition_illegal_exits_nonzero() {
 #[test]
 fn bypass_env_var() {
     let bin = common::binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     // --- Test 1: init with bypass ---
     let temp_dir = tempfile::tempdir().unwrap();
@@ -241,11 +229,7 @@ fn bypass_env_var() {
 #[test]
 fn transition_writes_memory() {
     let bin = common::binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
     let home_dir = tempfile::tempdir().unwrap();
@@ -292,11 +276,14 @@ fn transition_writes_memory() {
         action_log_path
     );
 
-    let action_log_content = std::fs::read_to_string(&action_log_path)
-        .expect("failed to read action-log.json");
-    let action_log: serde_json::Value = serde_json::from_str(&action_log_content)
-        .unwrap_or_else(|e| panic!("action-log.json is not valid JSON: {e}\ncontent: {action_log_content}"));
-    let entries = action_log.as_array()
+    let action_log_content =
+        std::fs::read_to_string(&action_log_path).expect("failed to read action-log.json");
+    let action_log: serde_json::Value =
+        serde_json::from_str(&action_log_content).unwrap_or_else(|e| {
+            panic!("action-log.json is not valid JSON: {e}\ncontent: {action_log_content}")
+        });
+    let entries = action_log
+        .as_array()
         .unwrap_or_else(|| panic!("action-log.json must be an array, got: {action_log}"));
     assert!(
         !entries.is_empty(),
@@ -325,7 +312,9 @@ fn transition_writes_memory() {
         format!("{y:04}-{m:02}-{d:02}")
     };
 
-    let plan_md_path = work_items_dir.join(format!("{today}-test-feature")).join("plan.md");
+    let plan_md_path = work_items_dir
+        .join(format!("{today}-test-feature"))
+        .join("plan.md");
     assert!(
         plan_md_path.exists(),
         "work-items/{today}-test-feature/plan.md must exist after transition, checked at {:?}",
@@ -333,11 +322,12 @@ fn transition_writes_memory() {
     );
 
     // Step 5: daily/<today>.md must exist in the project memory dir under HOME
-    let abs_project = std::fs::canonicalize(temp_dir.path())
-        .unwrap_or_else(|_| temp_dir.path().to_path_buf());
+    let abs_project =
+        std::fs::canonicalize(temp_dir.path()).unwrap_or_else(|_| temp_dir.path().to_path_buf());
     let abs_str = abs_project.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
-    let daily_dir = home_dir.path()
+    let daily_dir = home_dir
+        .path()
         .join(".claude/projects")
         .join(&project_hash)
         .join("memory/daily");

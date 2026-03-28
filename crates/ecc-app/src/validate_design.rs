@@ -1,7 +1,8 @@
 //! `validate_design` use case — reads a design file and validates PC structure via domain.
 
 use ecc_domain::spec::{
-    check_coverage, check_ordering, parse_acs, parse_file_changes, parse_pcs, DesignValidationOutput,
+    DesignValidationOutput, check_coverage, check_ordering, parse_acs, parse_file_changes,
+    parse_pcs,
 };
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
@@ -211,7 +212,9 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&json_str).expect("valid JSON");
         assert_eq!(parsed["valid"], true);
         // uncovered_acs should be present and empty
-        let uncovered = parsed["uncovered_acs"].as_array().expect("uncovered_acs array");
+        let uncovered = parsed["uncovered_acs"]
+            .as_array()
+            .expect("uncovered_acs array");
         assert!(uncovered.is_empty(), "all ACs should be covered");
     }
 
@@ -275,8 +278,7 @@ mod tests {
             .with_file("/spec.md", spec_only_001);
         let terminal = BufferedTerminal::new();
 
-        let result =
-            run_validate_design(&fs, &terminal, "/design.md", Some("/spec.md")).unwrap();
+        let result = run_validate_design(&fs, &terminal, "/design.md", Some("/spec.md")).unwrap();
 
         // Phantom ACs are warnings only — should not fail validation
         assert!(result, "phantom ACs should not cause validation failure");

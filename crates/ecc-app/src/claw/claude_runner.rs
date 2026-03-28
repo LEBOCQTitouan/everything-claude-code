@@ -6,7 +6,11 @@ use ecc_domain::claw::model::ClawModel;
 use ecc_ports::shell::{CommandOutput, ShellExecutor};
 
 /// Run a prompt through `claude -p` and return the response.
-pub fn run_claude(prompt: &str, model: ClawModel, ports: &ClawPorts<'_>) -> Result<String, ClawError> {
+pub fn run_claude(
+    prompt: &str,
+    model: ClawModel,
+    ports: &ClawPorts<'_>,
+) -> Result<String, ClawError> {
     let model_flag = model.to_flag();
     let args: &[&str] = &["-p", "--model", model_flag];
 
@@ -121,7 +125,12 @@ mod tests {
 
         let result = run_claude("hi", ClawModel::Sonnet, &ports);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("exited with code 1"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("exited with code 1")
+        );
     }
 
     #[test]

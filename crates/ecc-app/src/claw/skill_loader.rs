@@ -5,10 +5,7 @@ use super::error::ClawError;
 
 /// Load a skill by name. Searches for `skills/<name>/SKILL.md` relative to home.
 pub fn load_skill(name: &str, ports: &ClawPorts<'_>) -> Result<String, ClawError> {
-    let home = ports
-        .env
-        .home_dir()
-        .ok_or(ClawError::NoHomeDir)?;
+    let home = ports.env.home_dir().ok_or(ClawError::NoHomeDir)?;
 
     // Try multiple locations
     let candidates = [
@@ -27,7 +24,9 @@ pub fn load_skill(name: &str, ports: &ClawPorts<'_>) -> Result<String, ClawError
         }
     }
 
-    Err(ClawError::SkillNotFound { name: name.to_string() })
+    Err(ClawError::SkillNotFound {
+        name: name.to_string(),
+    })
 }
 
 /// List available skills by scanning the skills directory.

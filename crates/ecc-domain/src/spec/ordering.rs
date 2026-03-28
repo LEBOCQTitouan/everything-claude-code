@@ -55,9 +55,8 @@ pub fn parse_file_changes(content: &str) -> (Vec<FileChange>, Vec<String>) {
             match table_header {
                 Some(i) => i,
                 None => {
-                    warnings.push(
-                        "no File Changes table found — ordering check skipped".to_owned(),
-                    );
+                    warnings
+                        .push("no File Changes table found — ordering check skipped".to_owned());
                     return (Vec::new(), warnings);
                 }
             }
@@ -150,10 +149,7 @@ pub fn parse_file_changes(content: &str) -> (Vec<FileChange>, Vec<String>) {
 ///
 /// For PCs that both reference the same file, verify they appear in ascending PC-ID order
 /// within the PC table.
-pub fn check_ordering(
-    pcs: &[PassCondition],
-    file_changes: &[FileChange],
-) -> OrderingResult {
+pub fn check_ordering(pcs: &[PassCondition], file_changes: &[FileChange]) -> OrderingResult {
     if file_changes.is_empty() {
         return OrderingResult {
             violations: Vec::new(),
@@ -196,10 +192,7 @@ pub fn check_ordering(
                 violations.push(OrderingViolation {
                     pc: b.clone(),
                     depends_on: a.clone(),
-                    reason: format!(
-                        "{} must come before {} (both modify file {})",
-                        b, a, file
-                    ),
+                    reason: format!("{} must come before {} (both modify file {})", b, a, file),
                 });
             }
         }

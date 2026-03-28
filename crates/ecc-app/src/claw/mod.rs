@@ -117,10 +117,7 @@ pub fn history_path(home: &std::path::Path) -> std::path::PathBuf {
 
 /// Run the Claw REPL. Returns Ok(()) when the user exits.
 pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> Result<(), error::ClawError> {
-    let home = ports
-        .env
-        .home_dir()
-        .ok_or(error::ClawError::NoHomeDir)?;
+    let home = ports.env.home_dir().ok_or(error::ClawError::NoHomeDir)?;
 
     let claw_dir = ecc_domain::paths::claw_dir(&home);
     if let Err(e) = ports.fs.create_dir_all(&claw_dir.join("sessions")) {

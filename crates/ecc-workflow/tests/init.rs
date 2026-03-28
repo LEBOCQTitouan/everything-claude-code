@@ -5,11 +5,7 @@ use std::process::Command;
 #[test]
 fn missing_state_exits_zero_with_warning() {
     let bin = common::binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     // Create a temp dir with NO state.json inside
     let temp_dir = tempfile::tempdir().unwrap();
@@ -68,11 +64,7 @@ fn missing_state_exits_zero_with_warning() {
 #[test]
 fn output_is_structured_json() {
     let bin = common::binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -89,11 +81,7 @@ fn output_is_structured_json() {
 #[test]
 fn init_creates_state_json() {
     let bin = common::binary_path();
-    assert!(
-        bin.exists(),
-        "ecc-workflow binary not found at {:?}",
-        bin
-    );
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
     let temp_dir = tempfile::tempdir().unwrap();
 
@@ -121,8 +109,7 @@ fn init_creates_state_json() {
         state_path
     );
 
-    let content = std::fs::read_to_string(&state_path)
-        .expect("failed to read state.json");
+    let content = std::fs::read_to_string(&state_path).expect("failed to read state.json");
 
     let value: serde_json::Value = serde_json::from_str(&content)
         .unwrap_or_else(|e| panic!("state.json is not valid JSON: {e}\ncontent: {content}"));
@@ -185,7 +172,15 @@ fn init_creates_state_json() {
     let artifacts = value
         .get("artifacts")
         .unwrap_or_else(|| panic!("missing 'artifacts' field in state.json"));
-    for key in &["plan", "solution", "implement", "campaign_path", "spec_path", "design_path", "tasks_path"] {
+    for key in &[
+        "plan",
+        "solution",
+        "implement",
+        "campaign_path",
+        "spec_path",
+        "design_path",
+        "tasks_path",
+    ] {
         assert_eq!(
             artifacts.get(*key),
             Some(&serde_json::Value::Null),

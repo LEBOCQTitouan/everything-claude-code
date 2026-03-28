@@ -1,13 +1,9 @@
-use ecc_domain::config::validate::{check_hook_entry, VALID_HOOK_EVENTS};
+use ecc_domain::config::validate::{VALID_HOOK_EVENTS, check_hook_entry};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
-pub(super) fn validate_hooks(
-    root: &Path,
-    fs: &dyn FileSystem,
-    terminal: &dyn TerminalIO,
-) -> bool {
+pub(super) fn validate_hooks(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let hooks_file = root.join("hooks").join("hooks.json");
     if !fs.exists(&hooks_file) {
         terminal.stdout_write("No hooks.json found, skipping validation\n");
@@ -121,7 +117,7 @@ fn validate_hook_matcher(
 
 #[cfg(test)]
 mod tests {
-    use super::super::{run_validate, ValidateTarget};
+    use super::super::{ValidateTarget, run_validate};
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
     use std::path::Path;
 

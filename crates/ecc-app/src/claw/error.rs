@@ -8,7 +8,9 @@ pub enum ClawError {
     NoHomeDir,
 
     /// A session storage operation failed.
-    #[error("save_session: failed to save session '{name}' — check filesystem permissions: {reason}")]
+    #[error(
+        "save_session: failed to save session '{name}' — check filesystem permissions: {reason}"
+    )]
     SaveSession { name: String, reason: String },
 
     /// An invalid session name was provided.
@@ -40,11 +42,15 @@ pub enum ClawError {
     ClearSession { name: String, reason: String },
 
     /// Skill not found in skills directory.
-    #[error("load_skill: skill '{name}' not found — run `ecc install` to install skills, or create ~/.claude/skills/{name}/SKILL.md")]
+    #[error(
+        "load_skill: skill '{name}' not found — run `ecc install` to install skills, or create ~/.claude/skills/{name}/SKILL.md"
+    )]
     SkillNotFound { name: String },
 
     /// Claude subprocess failed to start or returned non-zero.
-    #[error("run_claude: claude subprocess failed — ensure `claude` is on PATH and you are authenticated: {message}")]
+    #[error(
+        "run_claude: claude subprocess failed — ensure `claude` is on PATH and you are authenticated: {message}"
+    )]
     ClaudeSubprocess { message: String },
 }
 

@@ -3,11 +3,7 @@ use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
-pub(super) fn validate_skills(
-    root: &Path,
-    fs: &dyn FileSystem,
-    terminal: &dyn TerminalIO,
-) -> bool {
+pub(super) fn validate_skills(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let skills_dir = root.join("skills");
     if !fs.exists(&skills_dir) {
         terminal.stdout_write("No skills directory found, skipping validation\n");
@@ -110,7 +106,7 @@ fn validate_skill_file(name: &str, content: &str, terminal: &dyn TerminalIO) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::super::{run_validate, ValidateTarget};
+    use super::super::{ValidateTarget, run_validate};
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
     use std::path::Path;
 
@@ -134,7 +130,10 @@ mod tests {
     fn skills_valid_dir() {
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/skills")
-            .with_file("/root/skills/tdd/SKILL.md", "---\nname: tdd\ndescription: TDD skill\norigin: ECC\n---\n# TDD Skill")
+            .with_file(
+                "/root/skills/tdd/SKILL.md",
+                "---\nname: tdd\ndescription: TDD skill\norigin: ECC\n---\n# TDD Skill",
+            )
             .with_dir("/root/skills/tdd");
         let t = term();
         assert!(run_validate(
@@ -180,10 +179,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("Missing required frontmatter field 'name'")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required frontmatter field 'name'"))
+        );
     }
 
     #[test]
@@ -202,10 +202,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("Missing required frontmatter field 'description'")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required frontmatter field 'description'"))
+        );
     }
 
     #[test]
@@ -224,10 +225,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("Missing required frontmatter field 'origin'")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required frontmatter field 'origin'"))
+        );
     }
 
     #[test]
@@ -264,14 +266,16 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stdout_output()
-            .iter()
-            .any(|s| s.contains("WARNING") && s.contains("model")));
-        assert!(t
-            .stdout_output()
-            .iter()
-            .any(|s| s.contains("WARNING") && s.contains("tools")));
+        assert!(
+            t.stdout_output()
+                .iter()
+                .any(|s| s.contains("WARNING") && s.contains("model"))
+        );
+        assert!(
+            t.stdout_output()
+                .iter()
+                .any(|s| s.contains("WARNING") && s.contains("tools"))
+        );
     }
 
     #[test]
@@ -290,10 +294,11 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("No frontmatter found")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("No frontmatter found"))
+        );
     }
 
     #[test]
@@ -317,9 +322,10 @@ mod tests {
             &ValidateTarget::Skills,
             Path::new("/root")
         ));
-        assert!(t
-            .stderr_output()
-            .iter()
-            .any(|s| s.contains("Missing required frontmatter field 'name'")));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("Missing required frontmatter field 'name'"))
+        );
     }
 }

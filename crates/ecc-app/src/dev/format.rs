@@ -126,8 +126,14 @@ mod tests {
 
         let output = format_status(&status, false);
 
-        assert!(output.contains("Profile:"), "output must contain 'Profile:' line");
-        assert!(output.contains("Dev"), "output must display the Dev profile name");
+        assert!(
+            output.contains("Profile:"),
+            "output must contain 'Profile:' line"
+        );
+        assert!(
+            output.contains("Dev"),
+            "output must display the Dev profile name"
+        );
     }
 
     #[test]

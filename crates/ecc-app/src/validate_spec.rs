@@ -1,6 +1,6 @@
 //! `validate_spec` use case — reads a spec file and validates AC structure via domain.
 
-use ecc_domain::spec::{parse_acs, SpecValidationOutput};
+use ecc_domain::spec::{SpecValidationOutput, parse_acs};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;

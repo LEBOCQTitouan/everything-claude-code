@@ -84,11 +84,7 @@ pub fn run(dry_run: bool) -> anyhow::Result<()> {
             std::fs::copy(&src, &dst)?;
             results.push(ActionResult {
                 name: format!("Install {name}"),
-                status: ActionStatus::Installed(format!(
-                    "{} -> {}",
-                    src.display(),
-                    dst.display()
-                )),
+                status: ActionStatus::Installed(format!("{} -> {}", src.display(), dst.display())),
             });
         }
     }
@@ -133,16 +129,15 @@ pub fn run(dry_run: bool) -> anyhow::Result<()> {
                 std::fs::create_dir_all(parent)?;
             }
             let shell_name = format!("{shell_kind:?}").to_lowercase();
-            let output = Command::new("ecc").args(["completion", &shell_name]).output();
+            let output = Command::new("ecc")
+                .args(["completion", &shell_name])
+                .output();
             match output {
                 Ok(o) if o.status.success() => {
                     std::fs::write(&comp_path, &o.stdout)?;
                     results.push(ActionResult {
                         name: "Completions".into(),
-                        status: ActionStatus::Installed(format!(
-                            "Wrote {}",
-                            comp_path.display()
-                        )),
+                        status: ActionStatus::Installed(format!("Wrote {}", comp_path.display())),
                     });
                 }
                 _ => results.push(ActionResult {
@@ -204,7 +199,9 @@ pub fn run(dry_run: bool) -> anyhow::Result<()> {
             status: ActionStatus::DryRun("Would run: ecc validate statusline".into()),
         });
     } else {
-        let status = Command::new("ecc").args(["validate", "statusline"]).status();
+        let status = Command::new("ecc")
+            .args(["validate", "statusline"])
+            .status();
         match status {
             Ok(s) if s.success() => results.push(ActionResult {
                 name: "Statusline".into(),

@@ -52,7 +52,9 @@ pub(super) fn validate_statusline(
             if ok {
                 terminal.stdout_write("✓ Valid shebang\n");
             } else {
-                terminal.stdout_write("✗ Valid shebang: must start with #!/usr/bin/env bash or #!/bin/bash\n");
+                terminal.stdout_write(
+                    "✗ Valid shebang: must start with #!/usr/bin/env bash or #!/bin/bash\n",
+                );
             }
             ok
         }
@@ -82,7 +84,11 @@ pub(super) fn validate_statusline(
     // then fall back to ~/.claude/settings.json (user global settings)
     let local_settings = root.join("settings.json");
     let home_settings = std::env::var("HOME")
-        .map(|h| std::path::PathBuf::from(h).join(".claude").join("settings.json"))
+        .map(|h| {
+            std::path::PathBuf::from(h)
+                .join(".claude")
+                .join("settings.json")
+        })
         .unwrap_or_default();
     let settings_path = if fs.exists(&local_settings) {
         local_settings
@@ -114,7 +120,8 @@ pub(super) fn validate_statusline(
         if ok {
             terminal.stdout_write("✓ Script is executable\n");
         } else {
-            terminal.stdout_write("✗ Script is executable: missing execute permission (chmod +x)\n");
+            terminal
+                .stdout_write("✗ Script is executable: missing execute permission (chmod +x)\n");
         }
         ok
     } else {
@@ -127,7 +134,7 @@ pub(super) fn validate_statusline(
 
 #[cfg(test)]
 mod tests {
-    use super::super::{run_validate, ValidateTarget};
+    use super::super::{ValidateTarget, run_validate};
     use ecc_ports::fs::FileSystem;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
     use std::path::Path;
@@ -164,8 +171,7 @@ mod tests {
 
     #[test]
     fn validate_statusline_fail_missing_script() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/root/settings.json", valid_settings());
+        let fs = InMemoryFileSystem::new().with_file("/root/settings.json", valid_settings());
         let t = term();
         assert!(!run_validate(
             &fs,
@@ -174,7 +180,11 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("Script exists")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✗') && s.contains("Script exists"))
+        );
     }
 
     #[test]
@@ -194,7 +204,11 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('⚠') && s.contains("placeholder")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('⚠') && s.contains("placeholder"))
+        );
     }
 
     #[test]
@@ -212,7 +226,11 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✓') && s.contains("settings")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✓') && s.contains("settings"))
+        );
     }
 
     #[test]
@@ -229,7 +247,11 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("shebang")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✗') && s.contains("shebang"))
+        );
     }
 
     #[test]
@@ -263,6 +285,10 @@ mod tests {
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("executable")));
+        assert!(
+            stdout
+                .iter()
+                .any(|s| s.contains('✗') && s.contains("executable"))
+        );
     }
 }

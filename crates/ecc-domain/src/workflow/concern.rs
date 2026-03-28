@@ -32,7 +32,11 @@ pub struct UnknownConcern(pub String);
 
 impl fmt::Display for UnknownConcern {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "unknown concern: {} (expected dev, fix, or refactor)", self.0)
+        write!(
+            f,
+            "unknown concern: {} (expected dev, fix, or refactor)",
+            self.0
+        )
     }
 }
 

@@ -172,7 +172,11 @@ fn config_change_log_exits_zero() {
 fn exit_worktree_cleanup_reminder_exits_zero() {
     let env = EccTestEnv::new();
     env.cmd()
-        .args(["hook", "post:exit-worktree:cleanup-reminder", "standard,strict"])
+        .args([
+            "hook",
+            "post:exit-worktree:cleanup-reminder",
+            "standard,strict",
+        ])
         .write_stdin(r#"{"tool_name":"ExitWorktree","tool_input":{"worktree_path":"/tmp/wt"}}"#)
         .assert()
         .success();

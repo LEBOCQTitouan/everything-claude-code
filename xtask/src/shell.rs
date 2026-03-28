@@ -44,12 +44,10 @@ pub fn completion_file_path(shell: ShellKind, home: &Path) -> PathBuf {
 #[allow(dead_code)]
 pub fn completion_source_line(shell: ShellKind) -> Option<String> {
     match shell {
-        ShellKind::Zsh => Some(
-            "fpath=(~/.zfunc $fpath); autoload -Uz compinit && compinit".to_owned(),
-        ),
-        ShellKind::Bash => Some(
-            "source ~/.local/share/bash-completion/completions/ecc".to_owned(),
-        ),
+        ShellKind::Zsh => {
+            Some("fpath=(~/.zfunc $fpath); autoload -Uz compinit && compinit".to_owned())
+        }
+        ShellKind::Bash => Some("source ~/.local/share/bash-completion/completions/ecc".to_owned()),
         ShellKind::Fish => None,
     }
 }

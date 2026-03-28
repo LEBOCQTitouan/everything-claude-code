@@ -150,16 +150,13 @@ fn validate_ac_sequence(acs: &[AcceptanceCriterion], errors: &mut Vec<String>) {
     if let (Some(&first), Some(&last)) = (us_numbers.first(), us_numbers.last()) {
         for expected in first..=last {
             if !us_numbers.contains(&expected) {
-                errors.push(format!(
-                    "gap in US numbering: US-{expected:03} is missing"
-                ));
+                errors.push(format!("gap in US numbering: US-{expected:03} is missing"));
             }
         }
     }
 
     // Check sub-number gaps per US
-    let mut us_to_subs: std::collections::HashMap<u16, Vec<u16>> =
-        std::collections::HashMap::new();
+    let mut us_to_subs: std::collections::HashMap<u16, Vec<u16>> = std::collections::HashMap::new();
     for ac in acs {
         us_to_subs
             .entry(ac.id.us_number)

@@ -7,7 +7,9 @@ use std::path::Path;
 #[derive(Debug, thiserror::Error)]
 pub enum PathValidationError {
     /// File path starts with a dash, which could be interpreted as a flag.
-    #[error("validate_file_path: rejected path starting with dash: {path}. Remove the leading dash.")]
+    #[error(
+        "validate_file_path: rejected path starting with dash: {path}. Remove the leading dash."
+    )]
     DashPrefix { path: String },
 }
 

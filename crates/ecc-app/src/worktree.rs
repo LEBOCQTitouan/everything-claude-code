@@ -103,11 +103,8 @@ pub fn gc(
     project_dir: &Path,
     _force: bool,
 ) -> Result<WorktreeGcResult, anyhow::Error> {
-    let list_output = executor.run_command_in_dir(
-        "git",
-        &["worktree", "list", "--porcelain"],
-        project_dir,
-    )?;
+    let list_output =
+        executor.run_command_in_dir("git", &["worktree", "list", "--porcelain"], project_dir)?;
 
     let entries = parse_worktree_list(&list_output.stdout);
     let mut result = WorktreeGcResult::default();

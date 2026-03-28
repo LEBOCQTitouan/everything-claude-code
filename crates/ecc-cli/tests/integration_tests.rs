@@ -89,7 +89,13 @@ fn verbose_debug_output() {
 fn failure_banner_error_on_stderr() {
     let bin = ecc_release_bin();
     let output = Command::new(&bin)
-        .args(["install", "--ecc-root", "/nonexistent", "--no-interactive", "--force"])
+        .args([
+            "install",
+            "--ecc-root",
+            "/nonexistent",
+            "--no-interactive",
+            "--force",
+        ])
         .output()
         .expect("failed to execute ecc binary — run `cargo build --release` first");
 

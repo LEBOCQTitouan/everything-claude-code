@@ -35,7 +35,10 @@ pub fn update_rc_content(existing: &str, block_lines: &[&str]) -> RcBlockResult 
             };
             let replaced = format!("{}{}{}", &existing[..s], new_block, after);
             let changed = replaced != existing;
-            RcBlockResult { content: replaced, changed }
+            RcBlockResult {
+                content: replaced,
+                changed,
+            }
         }
         _ => {
             // No valid block — append fresh block at end
@@ -45,7 +48,10 @@ pub fn update_rc_content(existing: &str, block_lines: &[&str]) -> RcBlockResult 
                 "\n".to_string()
             };
             let content = format!("{}{}{}", existing, separator, new_block);
-            RcBlockResult { content, changed: true }
+            RcBlockResult {
+                content,
+                changed: true,
+            }
         }
     }
 }
@@ -80,7 +86,9 @@ mod tests {
             "content should contain end marker"
         );
         assert!(
-            result.content.contains("export PATH=\"$HOME/.ecc/bin:$PATH\""),
+            result
+                .content
+                .contains("export PATH=\"$HOME/.ecc/bin:$PATH\""),
             "content should contain the block line"
         );
     }
@@ -103,7 +111,9 @@ mod tests {
             "content should contain end marker"
         );
         assert!(
-            result.content.contains("export PATH=\"$HOME/.ecc/bin:$PATH\""),
+            result
+                .content
+                .contains("export PATH=\"$HOME/.ecc/bin:$PATH\""),
             "content should contain the block line"
         );
     }
@@ -115,7 +125,10 @@ mod tests {
             START_MARKER, END_MARKER
         );
         let result = update_rc_content(&existing, &["new line"]);
-        assert!(result.changed, "changed should be true when replacing content");
+        assert!(
+            result.changed,
+            "changed should be true when replacing content"
+        );
         assert!(
             result.content.contains("new line"),
             "content should contain new line"
@@ -137,12 +150,12 @@ mod tests {
     #[test]
     fn unchanged() {
         let block_line = "export PATH=\"$HOME/.ecc/bin:$PATH\"";
-        let existing = format!(
-            "{}\n{}\n{}\n",
-            START_MARKER, block_line, END_MARKER
-        );
+        let existing = format!("{}\n{}\n{}\n", START_MARKER, block_line, END_MARKER);
         let result = update_rc_content(&existing, &[block_line]);
-        assert!(!result.changed, "changed should be false when content is identical");
+        assert!(
+            !result.changed,
+            "changed should be false when content is identical"
+        );
     }
 
     #[test]
@@ -161,7 +174,9 @@ mod tests {
             "content should contain end marker"
         );
         assert!(
-            result.content.contains("export PATH=\"$HOME/.ecc/bin:$PATH\""),
+            result
+                .content
+                .contains("export PATH=\"$HOME/.ecc/bin:$PATH\""),
             "content should contain the block line"
         );
     }
@@ -169,7 +184,10 @@ mod tests {
     #[test]
     fn empty_lines() {
         let result = update_rc_content("", &[]);
-        assert!(result.changed, "changed should be true even for empty block");
+        assert!(
+            result.changed,
+            "changed should be true even for empty block"
+        );
         assert!(
             result.content.contains(START_MARKER),
             "content should contain start marker"

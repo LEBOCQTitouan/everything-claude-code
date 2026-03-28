@@ -36,15 +36,17 @@ pub enum MergeError {
     WriteSettings { reason: String },
 
     /// settings.json is not a JSON object.
-    #[error("merge_hooks: settings.json is not a JSON object — manually inspect and repair the file")]
+    #[error(
+        "merge_hooks: settings.json is not a JSON object — manually inspect and repair the file"
+    )]
     SettingsNotObject,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::Path;
     use ecc_ports::fs::FileSystem;
+    use std::path::Path;
 
     // --- Display format tests ---
 
@@ -55,8 +57,14 @@ mod tests {
             reason: "not found".to_string(),
         };
         let msg = err.to_string();
-        assert!(msg.contains("merge_hooks"), "Display must contain operation name, got: {msg}");
-        assert!(msg.contains("readable"), "Display must contain remediation hint, got: {msg}");
+        assert!(
+            msg.contains("merge_hooks"),
+            "Display must contain operation name, got: {msg}"
+        );
+        assert!(
+            msg.contains("readable"),
+            "Display must contain remediation hint, got: {msg}"
+        );
     }
 
     #[test]
@@ -66,16 +74,28 @@ mod tests {
             reason: "unexpected eof".to_string(),
         };
         let msg = err.to_string();
-        assert!(msg.contains("merge_hooks"), "Display must contain operation name, got: {msg}");
-        assert!(msg.contains("valid JSON"), "Display must contain remediation hint, got: {msg}");
+        assert!(
+            msg.contains("merge_hooks"),
+            "Display must contain operation name, got: {msg}"
+        );
+        assert!(
+            msg.contains("valid JSON"),
+            "Display must contain remediation hint, got: {msg}"
+        );
     }
 
     #[test]
     fn prompt_cancelled_display_contains_operation_name() {
         let err = MergeError::PromptCancelled;
         let msg = err.to_string();
-        assert!(msg.contains("prompt_file_review"), "Display must contain operation name, got: {msg}");
-        assert!(msg.contains("re-run"), "Display must contain remediation hint, got: {msg}");
+        assert!(
+            msg.contains("prompt_file_review"),
+            "Display must contain operation name, got: {msg}"
+        );
+        assert!(
+            msg.contains("re-run"),
+            "Display must contain remediation hint, got: {msg}"
+        );
     }
 
     #[test]
@@ -85,16 +105,28 @@ mod tests {
             reason: "permission denied".to_string(),
         };
         let msg = err.to_string();
-        assert!(msg.contains("copy_dir"), "Display must contain operation name, got: {msg}");
-        assert!(msg.contains("permissions"), "Display must contain remediation hint, got: {msg}");
+        assert!(
+            msg.contains("copy_dir"),
+            "Display must contain operation name, got: {msg}"
+        );
+        assert!(
+            msg.contains("permissions"),
+            "Display must contain remediation hint, got: {msg}"
+        );
     }
 
     #[test]
     fn settings_not_object_display_contains_operation_name() {
         let err = MergeError::SettingsNotObject;
         let msg = err.to_string();
-        assert!(msg.contains("merge_hooks"), "Display must contain operation name, got: {msg}");
-        assert!(msg.contains("repair"), "Display must contain remediation hint, got: {msg}");
+        assert!(
+            msg.contains("merge_hooks"),
+            "Display must contain operation name, got: {msg}"
+        );
+        assert!(
+            msg.contains("repair"),
+            "Display must contain remediation hint, got: {msg}"
+        );
     }
 
     // --- Compile-time signature test: merge_hooks must return Result<_, MergeError> ---

@@ -214,7 +214,10 @@ mod tests {
             .with_symlink("/claude/skills", "/ecc/skills")
             .with_symlink("/claude/rules", "/ecc/rules")
             .with_file("/ecc/agents/planner.md", "# Planner")
-            .with_file("/claude/.ecc-manifest.json", &manifest_json(&sample_manifest()));
+            .with_file(
+                "/claude/.ecc-manifest.json",
+                &manifest_json(&sample_manifest()),
+            );
         let terminal = BufferedTerminal::new();
 
         let _result = dev_off(&fs, &terminal, Path::new("/claude"), false);

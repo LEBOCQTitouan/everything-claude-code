@@ -9,9 +9,9 @@ mod switch;
 mod toggle;
 
 pub use format::{count_ecc_hooks_in_settings, format_status};
-pub use status::{detect_profile, dev_status, DevProfileStatus, DevStatus};
+pub use status::{DevProfileStatus, DevStatus, detect_profile, dev_status};
 pub use switch::dev_switch;
-pub use toggle::{dev_off, dev_on, DevOffResult};
+pub use toggle::{DevOffResult, dev_off, dev_on};
 
 /// Errors returned by `dev_switch`.
 #[derive(Debug, thiserror::Error)]

@@ -35,10 +35,7 @@ pub fn load_aliases(fs: &dyn FileSystem, path: &Path, now: &str) -> AliasesData 
             data
         }
         Err(e) => {
-            log::warn!(
-                "load_aliases: corrupt JSON at {}: {e}",
-                path.display()
-            );
+            log::warn!("load_aliases: corrupt JSON at {}: {e}", path.display());
             default_aliases(now)
         }
     }
@@ -790,8 +787,10 @@ mod tests {
 
         testing_logger::setup();
 
-        let fs = InMemoryFileSystem::new()
-            .with_file("/home/user/.claude/session-aliases.json", "{not valid json {{{{");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/user/.claude/session-aliases.json",
+            "{not valid json {{{{",
+        );
 
         let _data = load_aliases(&fs, &aliases_path(), NOW);
 

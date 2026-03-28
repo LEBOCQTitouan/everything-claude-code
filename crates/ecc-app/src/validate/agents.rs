@@ -1,13 +1,9 @@
-use ecc_domain::config::validate::{extract_frontmatter, VALID_MODELS};
+use ecc_domain::config::validate::{VALID_MODELS, extract_frontmatter};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
-pub(super) fn validate_agents(
-    root: &Path,
-    fs: &dyn FileSystem,
-    terminal: &dyn TerminalIO,
-) -> bool {
+pub(super) fn validate_agents(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let agents_dir = root.join("agents");
     if !fs.exists(&agents_dir) {
         terminal.stdout_write("No agents directory found, skipping validation\n");
@@ -94,7 +90,7 @@ fn validate_agent_file(file: &Path, fs: &dyn FileSystem, terminal: &dyn Terminal
 
 #[cfg(test)]
 mod tests {
-    use super::super::{run_validate, ValidateTarget};
+    use super::super::{ValidateTarget, run_validate};
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
     use std::path::Path;
 

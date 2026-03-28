@@ -10,9 +10,11 @@ pub mod ordering;
 pub mod output;
 pub mod pc;
 
-pub use ac::{parse_acs, AcceptanceCriterion, AcId, AcReport};
-pub use coverage::{check_coverage, CoverageReport};
+pub use ac::{AcId, AcReport, AcceptanceCriterion, parse_acs};
+pub use coverage::{CoverageReport, check_coverage};
 pub use error::SpecError;
-pub use ordering::{check_ordering, parse_file_changes, FileChange, OrderingResult, OrderingViolation};
+pub use ordering::{
+    FileChange, OrderingResult, OrderingViolation, check_ordering, parse_file_changes,
+};
 pub use output::{DesignValidationOutput, SpecValidationOutput};
-pub use pc::{parse_pcs, PassCondition, PcId, PcReport};
+pub use pc::{PassCondition, PcId, PcReport, parse_pcs};

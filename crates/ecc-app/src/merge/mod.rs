@@ -142,7 +142,6 @@ fn resolve_choice(
             log::warn!("resolve_choice: prompt failed, defaulting to Accept: {e}");
             ReviewChoice::Accept
         }
-
     }
 }
 
@@ -337,11 +336,10 @@ pub fn merge_hooks(
 
     if (added > 0 || legacy_removed > 0) && !dry_run {
         // Serialize back at boundary
-        let merged_value = serde_json::to_value(&merged_hooks).map_err(|e| {
-            error::MergeError::Serialization {
+        let merged_value =
+            serde_json::to_value(&merged_hooks).map_err(|e| error::MergeError::Serialization {
                 reason: e.to_string(),
-            }
-        })?;
+            })?;
 
         let mut settings = existing_settings;
         settings

@@ -166,10 +166,10 @@ fn is_destructive_bash(command: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use crate::output::Status;
     use std::sync::{Arc, Barrier};
     use std::time::Duration;
     use tempfile::TempDir;
-    use crate::output::Status;
 
     fn write_state(dir: &std::path::Path, phase: &str) {
         let workflow_dir = dir.join(".claude/workflow");
@@ -204,7 +204,10 @@ mod tests {
     #[test]
     fn phase_gate_corrupt_type_warns() {
         let tmp = TempDir::new().unwrap();
-        write_raw_state(tmp.path(), r#"{"phase":123,"concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        write_raw_state(
+            tmp.path(),
+            r#"{"phase":123,"concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#,
+        );
         let output = super::run_with_input(tmp.path(), "");
         assert!(
             matches!(output.status, Status::Warn),
@@ -223,7 +226,10 @@ mod tests {
     #[test]
     fn phase_gate_missing_phase_warns() {
         let tmp = TempDir::new().unwrap();
-        write_raw_state(tmp.path(), r#"{"concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        write_raw_state(
+            tmp.path(),
+            r#"{"concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#,
+        );
         let output = super::run_with_input(tmp.path(), "");
         assert!(
             matches!(output.status, Status::Warn),
@@ -252,7 +258,10 @@ mod tests {
     #[test]
     fn phase_gate_unknown_variant_warns() {
         let tmp = TempDir::new().unwrap();
-        write_raw_state(tmp.path(), r#"{"phase":"banana","concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        write_raw_state(
+            tmp.path(),
+            r#"{"phase":"banana","concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#,
+        );
         let output = super::run_with_input(tmp.path(), "");
         assert!(
             matches!(output.status, Status::Warn),

@@ -46,10 +46,7 @@ fn workflow_lifecycle_forward() {
     assert_eq!(read_state(dir)["phase"].as_str(), Some("implement"));
 
     // transition to done
-    wf_cmd(dir)
-        .args(["transition", "done"])
-        .assert()
-        .success();
+    wf_cmd(dir).args(["transition", "done"]).assert().success();
     assert_eq!(read_state(dir)["phase"].as_str(), Some("done"));
 }
 
@@ -60,9 +57,18 @@ fn workflow_lifecycle_reset() {
     let dir = tmp.path();
 
     // Advance to done
-    wf_cmd(dir).args(["init", "dev", "reset-test"]).assert().success();
-    wf_cmd(dir).args(["transition", "solution"]).assert().success();
-    wf_cmd(dir).args(["transition", "implement"]).assert().success();
+    wf_cmd(dir)
+        .args(["init", "dev", "reset-test"])
+        .assert()
+        .success();
+    wf_cmd(dir)
+        .args(["transition", "solution"])
+        .assert()
+        .success();
+    wf_cmd(dir)
+        .args(["transition", "implement"])
+        .assert()
+        .success();
     wf_cmd(dir).args(["transition", "done"]).assert().success();
 
     // Reset
@@ -73,11 +79,17 @@ fn workflow_lifecycle_reset() {
 
     // Archive directory must contain the old state
     let archive_dir = dir.join(".claude/workflow/archive");
-    assert!(archive_dir.exists(), "archive directory must be created by reset");
+    assert!(
+        archive_dir.exists(),
+        "archive directory must be created by reset"
+    );
     let entries: Vec<_> = std::fs::read_dir(&archive_dir)
         .expect("failed to read archive dir")
         .collect();
-    assert!(!entries.is_empty(), "old done state must be archived on reset");
+    assert!(
+        !entries.is_empty(),
+        "old done state must be archived on reset"
+    );
 }
 
 /// AC-003.3: Re-init after reset succeeds and phase is "plan".
@@ -87,9 +99,18 @@ fn workflow_lifecycle_reinit() {
     let dir = tmp.path();
 
     // Advance to done and reset
-    wf_cmd(dir).args(["init", "dev", "first-feature"]).assert().success();
-    wf_cmd(dir).args(["transition", "solution"]).assert().success();
-    wf_cmd(dir).args(["transition", "implement"]).assert().success();
+    wf_cmd(dir)
+        .args(["init", "dev", "first-feature"])
+        .assert()
+        .success();
+    wf_cmd(dir)
+        .args(["transition", "solution"])
+        .assert()
+        .success();
+    wf_cmd(dir)
+        .args(["transition", "implement"])
+        .assert()
+        .success();
     wf_cmd(dir).args(["transition", "done"]).assert().success();
     wf_cmd(dir).args(["reset", "--force"]).assert().success();
 
@@ -100,7 +121,11 @@ fn workflow_lifecycle_reinit() {
         .success();
 
     let state = read_state(dir);
-    assert_eq!(state["phase"].as_str(), Some("plan"), "re-init must start at plan");
+    assert_eq!(
+        state["phase"].as_str(),
+        Some("plan"),
+        "re-init must start at plan"
+    );
     assert_eq!(
         state["feature"].as_str(),
         Some("second-feature"),
@@ -115,7 +140,10 @@ fn workflow_lifecycle_illegal() {
     let dir = tmp.path();
 
     // Init → phase = plan
-    wf_cmd(dir).args(["init", "dev", "illegal-test"]).assert().success();
+    wf_cmd(dir)
+        .args(["init", "dev", "illegal-test"])
+        .assert()
+        .success();
 
     // Attempt plan → implement (skips solution — illegal)
     wf_cmd(dir)
@@ -138,7 +166,10 @@ fn workflow_lifecycle_artifacts() {
     let dir = tmp.path();
 
     // Init → plan
-    wf_cmd(dir).args(["init", "dev", "artifact-test"]).assert().success();
+    wf_cmd(dir)
+        .args(["init", "dev", "artifact-test"])
+        .assert()
+        .success();
 
     // Transition to solution with --artifact plan
     wf_cmd(dir)

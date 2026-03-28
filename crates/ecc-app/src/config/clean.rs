@@ -68,10 +68,12 @@ fn remove_ecc_hooks(
     is_legacy_hook: &dyn Fn(&serde_json::Value) -> bool,
     dry_run: bool,
 ) -> Result<Option<usize>, ConfigAppError> {
-    let content = fs.read_to_string(settings_path).map_err(|e| ConfigAppError::ReadFile {
-        path: settings_path.display().to_string(),
-        reason: e.to_string(),
-    })?;
+    let content = fs
+        .read_to_string(settings_path)
+        .map_err(|e| ConfigAppError::ReadFile {
+            path: settings_path.display().to_string(),
+            reason: e.to_string(),
+        })?;
     let mut settings: serde_json::Value =
         serde_json::from_str(&content).map_err(|e| ConfigAppError::ParseSettings {
             reason: e.to_string(),
@@ -106,13 +108,16 @@ fn remove_ecc_hooks(
     }
 
     if !dry_run {
-        let json = serde_json::to_string_pretty(&settings).map_err(|e| ConfigAppError::SerializeSettings {
-            reason: e.to_string(),
-        })?;
-        fs.write(settings_path, &format!("{json}\n"))
-            .map_err(|e| ConfigAppError::WriteSettings {
+        let json = serde_json::to_string_pretty(&settings).map_err(|e| {
+            ConfigAppError::SerializeSettings {
                 reason: e.to_string(),
-            })?;
+            }
+        })?;
+        fs.write(settings_path, &format!("{json}\n")).map_err(|e| {
+            ConfigAppError::WriteSettings {
+                reason: e.to_string(),
+            }
+        })?;
     }
 
     Ok(Some(removed_count))
