@@ -146,7 +146,6 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "post:compact:state-save" => handlers::post_compact(stdin, ports),
         "subagent:start:log" => handlers::subagent_start_log(stdin, ports),
         "subagent:stop:log" => handlers::subagent_stop_log(stdin, ports),
-        "stop:worktree-cleanup-reminder" => handlers::worktree_cleanup_reminder(stdin, ports),
         "instructions:loaded:validate" => handlers::instructions_loaded_validate(stdin, ports),
         "config:change:log" => handlers::config_change_log(stdin, ports),
         "post:enter-worktree:session-log" => {

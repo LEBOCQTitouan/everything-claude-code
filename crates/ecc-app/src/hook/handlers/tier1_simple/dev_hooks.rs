@@ -266,29 +266,6 @@ pub fn instructions_loaded_validate(stdin: &str, ports: &HookPorts<'_>) -> HookR
     }
 }
 
-/// stop:worktree-cleanup-reminder — Remind about unmerged changes after worktree removal.
-///
-/// Parses `worktree_path` from stdin JSON.
-pub fn worktree_cleanup_reminder(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
-    let path = serde_json::from_str::<serde_json::Value>(stdin)
-        .ok()
-        .and_then(|v| v.get("worktree_path")?.as_str().map(|s| s.to_string()));
-
-    match path {
-        Some(p) => {
-            let msg = format!(
-                "[Hook] Worktree removed: {}. Check for unmerged changes.\n",
-                p
-            );
-            HookResult::warn(stdin, &msg)
-        }
-        None => HookResult::warn(
-            stdin,
-            "[Hook] Worktree removed. Check for unmerged changes.\n",
-        ),
-    }
-}
-
 /// post:exit-worktree:cleanup-reminder — Remind about unmerged changes after worktree removal.
 ///
 /// Parses `tool_input.worktree_path` (fallback: `tool_input.name`, then `"unknown"`) from
