@@ -86,6 +86,7 @@
 | BL-083 | Adversarial challenge phase for all /audit-* commands | — | HIGH | /spec-dev | open | 2026-03-27 |
 | BL-084 | Backlog conformance audit — verify implementations match original intent | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-085 | WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool | — | HIGH | /spec fix | open | 2026-03-28 |
+| BL-086 | Knowledge sources registry — curated reference list with quadrant organization and command integration | — | HIGH | /spec | open | 2026-03-28 |
 
 ## Dependency Graph
 
