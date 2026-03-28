@@ -107,7 +107,7 @@ everything-claude-code/
 │   ├── security-review/
 │   ├── backend-patterns/
 │   ├── frontend-patterns/
-│   └── ...                          # 30+ domain skills
+│   └── ...                          # 110+ domain skills
 │
 ├── rules/                           # Always-follow guidelines (copy to ~/.claude/rules/)
 │   ├── common/                      # Language-agnostic — always install
@@ -127,7 +127,10 @@ everything-claude-code/
 │   ├── ecc-app/                     #   Application use cases
 │   ├── ecc-infra/                   #   Production adapters
 │   ├── ecc-cli/                     #   CLI binary entry point
-│   └── ecc-test-support/            #   Test doubles (InMemoryFileSystem, MockExecutor)
+│   ├── ecc-workflow/                #   Standalone binary — workflow state management
+│   ├── ecc-flock/                   #   Shared POSIX flock utility
+│   ├── ecc-test-support/            #   Test doubles (InMemoryFileSystem, MockExecutor)
+│   └── ecc-integration-tests/       #   Binary-spawning integration tests
 │
 └── scripts/                         # Install/uninstall scripts
     └── get-ecc.sh                   #   curl installer
