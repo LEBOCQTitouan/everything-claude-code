@@ -103,13 +103,14 @@ impl Default for StatuslineConfig {
             field_order: vec![
                 StatuslineField::Model,
                 StatuslineField::ContextBar,
+                StatuslineField::GitBranch,
+                StatuslineField::Worktree,
                 StatuslineField::RateLimitFiveHour,
                 StatuslineField::RateLimitSevenDay,
                 StatuslineField::TokenCounts,
                 StatuslineField::LinesChanged,
                 StatuslineField::Duration,
                 StatuslineField::Cost,
-                StatuslineField::GitBranch,
                 StatuslineField::EccVersion,
             ],
         }
