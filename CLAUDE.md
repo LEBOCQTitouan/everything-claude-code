@@ -17,7 +17,7 @@ cargo build --release   # Build release binary
 
 ## Architecture
 
-Hexagonal architecture: domain → ports → app → infra → CLI (8 crates). `ecc-workflow` is a standalone binary for workflow state management. See `docs/ARCHITECTURE.md` for full structure.
+Hexagonal architecture: domain → ports → app → infra → CLI (9 crates). `ecc-workflow` is a standalone binary for workflow state management. `ecc-flock` is a shared POSIX flock utility. See `docs/ARCHITECTURE.md` for full structure.
 
 ## CLI Commands
 
