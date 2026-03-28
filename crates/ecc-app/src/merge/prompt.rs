@@ -8,6 +8,7 @@ use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
 
 use super::ReviewChoice;
+use super::error::MergeError;
 
 /// Display a diff and prompt the user for a review choice.
 ///
@@ -19,7 +20,7 @@ pub fn prompt_file_review(
     env: &dyn Environment,
     file: &FileToReview,
     progress: &str,
-) -> Result<(ReviewChoice, bool), String> {
+) -> Result<(ReviewChoice, bool), MergeError> {
     let colored = env.var("NO_COLOR").is_none();
 
     if file.is_new {
@@ -51,7 +52,7 @@ pub fn prompt_file_review(
 
     let input = terminal
         .prompt("")
-        .map_err(|_| "Prompt cancelled".to_string())?;
+        .map_err(|_| MergeError::PromptCancelled)?;
 
     match input.trim() {
         "a" => Ok((ReviewChoice::Accept, false)),
