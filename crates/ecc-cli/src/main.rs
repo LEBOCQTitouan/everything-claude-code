@@ -46,8 +46,11 @@ enum Command {
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    // Initialize logging: --verbose sets debug level unless RUST_LOG is already set.
-    let mut log_builder = env_logger::Builder::from_default_env();
+    // Initialize logging:
+    // - Default filter is "warn" (RUST_LOG overrides this).
+    // - --verbose flag elevates to "debug" when RUST_LOG is not set.
+    let env = env_logger::Env::default().default_filter_or("warn");
+    let mut log_builder = env_logger::Builder::from_env(env);
     if cli.verbose && std::env::var_os("RUST_LOG").is_none() {
         log_builder.filter_level(log::LevelFilter::Debug);
     }

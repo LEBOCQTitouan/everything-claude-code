@@ -18,7 +18,10 @@ pub(super) fn find_files_by_suffix(
             files.reverse(); // Most recent first (assuming date-prefixed names)
             files
         }
-        Err(_) => Vec::new(),
+        Err(e) => {
+            log::warn!("find_files_by_suffix: cannot read {}: {e}", dir.display());
+            Vec::new()
+        }
     }
 }
 
@@ -29,7 +32,10 @@ pub(super) fn count_files_with_ext(dir: &Path, ext: &str, ports: &HookPorts<'_>)
             .iter()
             .filter(|p| p.to_string_lossy().ends_with(ext))
             .count(),
-        Err(_) => 0,
+        Err(e) => {
+            log::warn!("count_files_with_ext: cannot read {}: {e}", dir.display());
+            0
+        }
     }
 }
 
@@ -104,7 +110,10 @@ pub(super) fn extract_session_summary(content: &str) -> Option<SessionSummary> {
     for line in content.lines() {
         let entry: serde_json::Value = match serde_json::from_str(line) {
             Ok(v) => v,
-            Err(_) => continue,
+            Err(e) => {
+                log::warn!("extract_session_summary: skipping malformed JSON line: {e}");
+                continue;
+            }
         };
 
         // Check for user messages

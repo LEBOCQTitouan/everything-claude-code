@@ -2796,3 +2796,37 @@ fn pass_condition_check() {
         std::str::from_utf8(&out4.stderr).unwrap_or(""),
     );
 }
+
+/// PC-003 — ecc-workflow RUST_LOG=debug produces diagnostic output.
+///
+/// Simulates:
+///   RUST_LOG=debug CLAUDE_PROJECT_DIR=/tmp/nonexistent ./target/release/ecc-workflow status \
+///       2>&1 | grep -iE 'debug|WARN|INFO'
+///
+/// Asserts that the combined output contains at least one line matching
+/// debug, WARN, or INFO when RUST_LOG=debug is set.
+#[test]
+fn rust_log_debug_produces_diagnostic_output() {
+    let bin = binary_path();
+    assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
+
+    let output = std::process::Command::new(&bin)
+        .args(["status"])
+        .env("RUST_LOG", "debug")
+        .env("CLAUDE_PROJECT_DIR", "/tmp/nonexistent_workflow_dir")
+        .output()
+        .expect("failed to execute ecc-workflow status");
+
+    let combined = String::from_utf8_lossy(&output.stdout).to_string()
+        + &String::from_utf8_lossy(&output.stderr);
+
+    let has_diagnostic = combined
+        .lines()
+        .any(|l| l.to_lowercase().contains("debug") || l.contains("WARN") || l.contains("INFO"));
+
+    assert!(
+        has_diagnostic,
+        "Expected diagnostic log output (debug/WARN/INFO) when RUST_LOG=debug is set.\n\
+         Combined output: {combined}"
+    );
+}
