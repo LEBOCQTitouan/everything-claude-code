@@ -6,6 +6,10 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 /// Legal workflow phases.
+///
+/// `Unknown` is a fallback for unrecognized phase strings in persisted state files.
+/// It deserializes from any unrecognized string and serializes as `"unknown"`.
+/// Transitions from or to `Unknown` are always rejected by the transition logic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
@@ -14,6 +18,9 @@ pub enum Phase {
     Solution,
     Implement,
     Done,
+    /// Fallback for unrecognized phase strings (e.g., manually edited state.json).
+    #[serde(other)]
+    Unknown,
 }
 
 impl Phase {
@@ -31,6 +38,7 @@ impl fmt::Display for Phase {
             Self::Solution => write!(f, "solution"),
             Self::Implement => write!(f, "implement"),
             Self::Done => write!(f, "done"),
+            Self::Unknown => write!(f, "unknown"),
         }
     }
 }

@@ -34,7 +34,13 @@ pub fn load_aliases(fs: &dyn FileSystem, path: &Path, now: &str) -> AliasesData 
             }
             data
         }
-        Err(_) => default_aliases(now),
+        Err(e) => {
+            log::warn!(
+                "load_aliases: corrupt JSON at {}: {e}",
+                path.display()
+            );
+            default_aliases(now)
+        }
     }
 }
 
@@ -775,5 +781,35 @@ mod tests {
         let fs = InMemoryFileSystem::new();
         let result = set_alias(&fs, &aliases_path(), "has space", "/s/1", None, NOW);
         assert!(!result.success);
+    }
+
+    /// PC-040: Corrupt aliases.json emits log::warn!
+    #[test]
+    fn corrupt_aliases_warns() {
+        use testing_logger;
+
+        testing_logger::setup();
+
+        let fs = InMemoryFileSystem::new()
+            .with_file("/home/user/.claude/session-aliases.json", "{not valid json {{{{");
+
+        let _data = load_aliases(&fs, &aliases_path(), NOW);
+
+        testing_logger::validate(|captured_logs| {
+            let found = captured_logs.iter().any(|log| {
+                log.level == log::Level::Warn
+                    && log.body.contains("load_aliases")
+                    && log.body.contains("corrupt")
+            });
+            if !found {
+                let messages: Vec<String> = captured_logs
+                    .iter()
+                    .map(|l| format!("[{}] {}", l.level, l.body))
+                    .collect();
+                panic!(
+                    "expected log::warn! with 'load_aliases' and 'corrupt' in message.\nCaptured logs: {messages:?}"
+                );
+            }
+        });
     }
 }

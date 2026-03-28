@@ -16,6 +16,13 @@ use super::phase::Phase;
 ///
 /// Everything else is illegal (including Done -> anything and backward transitions).
 pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, WorkflowError> {
+    // Phase::Unknown is never a valid source or target — always reject.
+    if matches!(current, Phase::Unknown) || matches!(target, Phase::Unknown) {
+        return Err(WorkflowError::IllegalTransition {
+            from: current,
+            to: target,
+        });
+    }
     if current == target {
         return Ok(target);
     }
@@ -293,6 +300,39 @@ mod tests {
             let current = Phase::Plan;
             let result = resolve_transition_by_name(current, "unknown-alias");
             assert!(result.is_err(), "unknown alias should return an error");
+        }
+    }
+
+    mod unknown_phase_transition_rejected {
+        use super::*;
+
+        /// PC-054: Phase::Unknown rejected by transition logic.
+        #[test]
+        fn unknown_phase_as_source_is_rejected() {
+            let result = resolve_transition(Phase::Unknown, Phase::Plan);
+            assert!(
+                result.is_err(),
+                "transition FROM Unknown should be rejected, got: {result:?}"
+            );
+        }
+
+        #[test]
+        fn unknown_phase_as_target_is_rejected() {
+            let result = resolve_transition(Phase::Idle, Phase::Unknown);
+            assert!(
+                result.is_err(),
+                "transition TO Unknown should be rejected, got: {result:?}"
+            );
+        }
+
+        #[test]
+        fn unknown_to_unknown_is_rejected() {
+            // Even re-entry for Unknown should be rejected (it is not a valid state)
+            let result = resolve_transition(Phase::Unknown, Phase::Unknown);
+            assert!(
+                result.is_err(),
+                "Unknown->Unknown should be rejected, got: {result:?}"
+            );
         }
     }
 }
