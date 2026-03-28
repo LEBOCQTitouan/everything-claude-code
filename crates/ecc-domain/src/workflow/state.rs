@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use super::error::WorkflowError;
 use super::phase::Phase;
+use super::transition::resolve_transition;
+use crate::traits::Transitionable;
 
 /// Toolchain commands used during this workflow run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -50,6 +52,17 @@ impl WorkflowState {
     /// [`WorkflowError::InvalidState`] with a descriptive message.
     pub fn from_json(json: &str) -> Result<Self, WorkflowError> {
         serde_json::from_str(json).map_err(|e| WorkflowError::InvalidState(e.to_string()))
+    }
+}
+
+impl Transitionable for WorkflowState {
+    /// Transition this workflow state to a new phase.
+    ///
+    /// Delegates to [`resolve_transition`] for legality checks.
+    /// Returns a new `WorkflowState` with the updated phase on success.
+    fn transition_to(self, target: Phase) -> Result<Self, WorkflowError> {
+        let new_phase = resolve_transition(self.phase, target)?;
+        Ok(Self { phase: new_phase, ..self })
     }
 }
 
@@ -117,8 +130,9 @@ mod corrupted_json {
     }
 
     #[test]
-    fn unknown_phase_value_returns_invalid_state() {
-        // Valid JSON but "phase" has an unknown value
+    fn unknown_phase_value_deserializes_to_unknown_variant() {
+        // Valid JSON but "phase" has an unrecognized value — should deserialize
+        // to Phase::Unknown (not fail) per AC-006.3a. Transition logic rejects it.
         let json = r#"{
             "phase": "banana",
             "concern": "dev",
@@ -130,13 +144,14 @@ mod corrupted_json {
         }"#;
         let result = WorkflowState::from_json(json);
         assert!(
-            matches!(result, Err(WorkflowError::InvalidState(_))),
-            "expected InvalidState for unknown phase 'banana', got {result:?}"
+            result.is_ok(),
+            "unrecognized phase 'banana' should deserialize as Phase::Unknown, got: {result:?}"
         );
-        let Err(WorkflowError::InvalidState(msg)) = result else {
-            panic!("unreachable");
-        };
-        assert!(!msg.is_empty(), "error message must not be empty");
+        assert_eq!(
+            result.unwrap().phase,
+            crate::workflow::phase::Phase::Unknown,
+            "phase should be Unknown for unrecognized string"
+        );
     }
 
     #[test]

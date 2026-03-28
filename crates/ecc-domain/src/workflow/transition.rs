@@ -16,6 +16,13 @@ use super::phase::Phase;
 ///
 /// Everything else is illegal (including Done -> anything and backward transitions).
 pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, WorkflowError> {
+    // Phase::Unknown is never a valid source or target — always reject.
+    if matches!(current, Phase::Unknown) || matches!(target, Phase::Unknown) {
+        return Err(WorkflowError::IllegalTransition {
+            from: current,
+            to: target,
+        });
+    }
     if current == target {
         return Ok(target);
     }
