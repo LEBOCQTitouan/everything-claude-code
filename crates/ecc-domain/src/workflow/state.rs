@@ -3,8 +3,10 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
+use super::concern::Concern;
 use super::error::WorkflowError;
 use super::phase::Phase;
+use super::timestamp::Timestamp;
 
 /// Deserializer for `Completion.phase` that falls back to [`Phase::Unknown`]
 /// for any string that is not a recognized phase value.
@@ -52,9 +54,9 @@ pub struct Completion {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkflowState {
     pub phase: Phase,
-    pub concern: String,
+    pub concern: Concern,
     pub feature: String,
-    pub started_at: String,
+    pub started_at: Timestamp,
     pub toolchain: Toolchain,
     pub artifacts: Artifacts,
     pub completed: Vec<Completion>,
@@ -375,6 +377,21 @@ mod tests {
         assert_eq!(state.completed[0].phase, Phase::Solution);
         assert_eq!(state.completed[0].file, "docs/specs/foo/design.md");
         assert_eq!(state.completed[0].at, "2026-03-26T22:00:00Z");
+    }
+
+    #[test]
+    fn concern_enum_roundtrip() {
+        // Concern serializes as lowercase, deserializes from lowercase
+        let json_dev = serde_json::to_string(&Concern::Dev).expect("serialization must succeed");
+        assert_eq!(json_dev, r#""dev""#);
+        let restored: Concern = serde_json::from_str(&json_dev).expect("deserialization must succeed");
+        assert_eq!(restored, Concern::Dev);
+
+        let json_fix = serde_json::to_string(&Concern::Fix).expect("serialization must succeed");
+        assert_eq!(json_fix, r#""fix""#);
+
+        let json_refactor = serde_json::to_string(&Concern::Refactor).expect("serialization must succeed");
+        assert_eq!(json_refactor, r#""refactor""#);
     }
 
     #[test]
