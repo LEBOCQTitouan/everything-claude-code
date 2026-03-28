@@ -175,7 +175,7 @@ pub fn write_action(
 ) -> Result<(), anyhow::Error> {
     let _guard = ecc_flock::acquire(project_dir, "action-log")
         .map_err(|e| anyhow::anyhow!("Failed to acquire action-log lock: {e}"))?;
-    let memory_dir = project_dir.join("docs/memory");
+    let memory_dir = ecc_flock::resolve_repo_root(project_dir).join("docs/memory");
     let work_items_dir = memory_dir.join("work-items");
     std::fs::create_dir_all(&memory_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;
@@ -237,7 +237,7 @@ pub fn write_work_item(
 ) -> Result<(), anyhow::Error> {
     let _guard = ecc_flock::acquire(project_dir, "work-item")
         .map_err(|e| anyhow::anyhow!("Failed to acquire work-item lock: {e}"))?;
-    let memory_dir = project_dir.join("docs/memory");
+    let memory_dir = ecc_flock::resolve_repo_root(project_dir).join("docs/memory");
     let work_items_dir = memory_dir.join("work-items");
     std::fs::create_dir_all(&work_items_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
