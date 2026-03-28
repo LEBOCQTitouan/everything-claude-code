@@ -1,5 +1,6 @@
 //! AI-assisted merge via Claude CLI invocation.
 
+use crate::claw::claude_runner::is_claude_available;
 use ecc_ports::shell::ShellExecutor;
 
 /// Result of a smart merge attempt.
@@ -8,11 +9,6 @@ pub struct SmartMergeResult {
     pub success: bool,
     pub merged: Option<String>,
     pub error: Option<String>,
-}
-
-/// Check if the `claude` CLI is available on the system.
-pub fn is_claude_available(shell: &dyn ShellExecutor) -> bool {
-    shell.command_exists("claude")
 }
 
 /// Build the prompt sent to Claude for merging two file versions.

@@ -3,7 +3,7 @@
 use super::ClawPorts;
 use super::error::ClawError;
 use ecc_domain::claw::model::ClawModel;
-use ecc_ports::shell::CommandOutput;
+use ecc_ports::shell::{CommandOutput, ShellExecutor};
 
 /// Run a prompt through `claude -p` and return the response.
 pub fn run_claude(prompt: &str, model: ClawModel, ports: &ClawPorts<'_>) -> Result<String, ClawError> {
@@ -34,8 +34,8 @@ pub fn run_claude(prompt: &str, model: ClawModel, ports: &ClawPorts<'_>) -> Resu
 }
 
 /// Check if the `claude` CLI is available on PATH.
-pub fn is_claude_available(ports: &ClawPorts<'_>) -> bool {
-    ports.shell.command_exists("claude")
+pub fn is_claude_available(shell: &dyn ShellExecutor) -> bool {
+    shell.command_exists("claude")
 }
 
 #[cfg(test)]
@@ -139,25 +139,13 @@ mod tests {
 
     #[test]
     fn is_claude_available_true() {
-        let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new().with_command("claude");
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-
-        assert!(is_claude_available(&ports));
+        assert!(is_claude_available(&shell));
     }
 
     #[test]
     fn is_claude_available_false() {
-        let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let input = ScriptedInput::new();
-        let ports = make_ports(&fs, &shell, &env, &term, &input);
-
-        assert!(!is_claude_available(&ports));
+        assert!(!is_claude_available(&shell));
     }
 }

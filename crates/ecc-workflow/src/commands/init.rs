@@ -1,7 +1,10 @@
 use std::path::Path;
+use std::str::FromStr;
 
+use ecc_domain::workflow::concern::Concern;
 use ecc_domain::workflow::phase::Phase;
 use ecc_domain::workflow::state::{Artifacts, Toolchain, WorkflowState};
+use ecc_domain::workflow::timestamp::Timestamp;
 
 use crate::io::{archive_state, with_state_lock, write_state_atomic};
 use crate::output::WorkflowOutput;
@@ -27,11 +30,16 @@ pub fn run(concern: &str, feature: &str, project_dir: &Path) -> WorkflowOutput {
         // Clean previous artifact files
         cleanup_artifacts(&workflow_dir);
 
-        let started_at = utc_now_iso8601();
+        let concern_enum = match Concern::from_str(concern) {
+            Ok(c) => c,
+            Err(e) => return WorkflowOutput::block(format!("Invalid concern: {e}")),
+        };
+
+        let started_at = Timestamp::new(utc_now_iso8601());
 
         let state = WorkflowState {
             phase: Phase::Plan,
-            concern: concern.to_owned(),
+            concern: concern_enum,
             feature: feature.to_owned(),
             started_at,
             toolchain: Toolchain {
@@ -81,7 +89,7 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let project_dir = tmp.path();
 
-        let result = super::run("test-concern", "test-feature", project_dir);
+        let result = super::run("dev", "test-feature", project_dir);
         assert!(
             matches!(result.status, Status::Pass),
             "init should succeed: {:?}",

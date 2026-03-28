@@ -40,7 +40,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
     match state.phase {
         Phase::Plan | Phase::Solution => {}
         Phase::Implement | Phase::Done | Phase::Idle | Phase::Unknown => {
-            return WorkflowOutput::pass("");
+            return WorkflowOutput::pass("")
         }
     }
 
@@ -73,8 +73,8 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
 #[cfg(test)]
 mod tests {
-    use crate::output::Status;
     use tempfile::TempDir;
+    use crate::output::Status;
 
     /// PC-038: grill_me_gate passes through for Idle phase (AC-001.1)
     #[test]
@@ -82,7 +82,7 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let workflow_dir = tmp.path().join(".claude/workflow");
         std::fs::create_dir_all(&workflow_dir).unwrap();
-        let json = r#"{"phase":"idle","concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        let json = r#"{"phase":"idle","concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
         std::fs::write(workflow_dir.join("state.json"), json).unwrap();
 
         let output = super::run(tmp.path());

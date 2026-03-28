@@ -1,11 +1,22 @@
 //! WorkflowState aggregate for the ECC workflow state machine.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::str::FromStr;
 
+use super::concern::Concern;
 use super::error::WorkflowError;
 use super::phase::Phase;
-use super::transition::resolve_transition;
-use crate::traits::Transitionable;
+use super::timestamp::Timestamp;
+
+/// Deserializer for `Completion.phase` that falls back to [`Phase::Unknown`]
+/// for any string that is not a recognized phase value.
+fn deserialize_phase_with_fallback<'de, D>(deserializer: D) -> Result<Phase, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(Phase::from_str(&s).unwrap_or(Phase::Unknown))
+}
 
 /// Toolchain commands used during this workflow run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -30,8 +41,12 @@ pub struct Artifacts {
 /// A single completed phase record.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Completion {
-    pub phase: String,
+    /// The phase that was completed. Unrecognized strings deserialize as [`Phase::Unknown`].
+    #[serde(deserialize_with = "deserialize_phase_with_fallback")]
+    pub phase: Phase,
+    /// Path to the artifact produced in this phase.
     pub file: String,
+    /// ISO 8601 timestamp when this phase completed.
     pub at: String,
 }
 
@@ -39,9 +54,9 @@ pub struct Completion {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkflowState {
     pub phase: Phase,
-    pub concern: String,
+    pub concern: Concern,
     pub feature: String,
-    pub started_at: String,
+    pub started_at: Timestamp,
     pub toolchain: Toolchain,
     pub artifacts: Artifacts,
     pub completed: Vec<Completion>,
@@ -52,17 +67,6 @@ impl WorkflowState {
     /// [`WorkflowError::InvalidState`] with a descriptive message.
     pub fn from_json(json: &str) -> Result<Self, WorkflowError> {
         serde_json::from_str(json).map_err(|e| WorkflowError::InvalidState(e.to_string()))
-    }
-}
-
-impl Transitionable for WorkflowState {
-    /// Transition this workflow state to a new phase.
-    ///
-    /// Delegates to [`resolve_transition`] for legality checks.
-    /// Returns a new `WorkflowState` with the updated phase on success.
-    fn transition_to(self, target: Phase) -> Result<Self, WorkflowError> {
-        let new_phase = resolve_transition(self.phase, target)?;
-        Ok(Self { phase: new_phase, ..self })
     }
 }
 
@@ -130,9 +134,8 @@ mod corrupted_json {
     }
 
     #[test]
-    fn unknown_phase_value_deserializes_to_unknown_variant() {
-        // Valid JSON but "phase" has an unrecognized value — should deserialize
-        // to Phase::Unknown (not fail) per AC-006.3a. Transition logic rejects it.
+    fn unknown_phase_value_returns_invalid_state() {
+        // Valid JSON but "phase" has an unknown value
         let json = r#"{
             "phase": "banana",
             "concern": "dev",
@@ -144,14 +147,13 @@ mod corrupted_json {
         }"#;
         let result = WorkflowState::from_json(json);
         assert!(
-            result.is_ok(),
-            "unrecognized phase 'banana' should deserialize as Phase::Unknown, got: {result:?}"
+            matches!(result, Err(WorkflowError::InvalidState(_))),
+            "expected InvalidState for unknown phase 'banana', got {result:?}"
         );
-        assert_eq!(
-            result.unwrap().phase,
-            crate::workflow::phase::Phase::Unknown,
-            "phase should be Unknown for unrecognized string"
-        );
+        let Err(WorkflowError::InvalidState(msg)) = result else {
+            panic!("unreachable");
+        };
+        assert!(!msg.is_empty(), "error message must not be empty");
     }
 
     #[test]
@@ -171,7 +173,9 @@ mod corrupted_json {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::workflow::concern::Concern;
     use crate::workflow::phase::Phase;
+    use crate::workflow::timestamp::Timestamp;
 
     #[test]
     fn json_round_trip() {
@@ -193,9 +197,9 @@ mod tests {
 
         let original = WorkflowState {
             phase: Phase::Implement,
-            concern: "dev".to_owned(),
+            concern: Concern::Dev,
             feature: "BL-052: Replace shell hooks with compiled Rust binaries".to_owned(),
-            started_at: "2026-03-26T21:45:00Z".to_owned(),
+            started_at: Timestamp::new("2026-03-26T21:45:00Z"),
             toolchain,
             artifacts,
             completed: vec![],
@@ -271,12 +275,12 @@ mod tests {
             serde_json::from_str(fixture).expect("fixture deserialization must succeed");
 
         assert_eq!(state.phase, Phase::Implement);
-        assert_eq!(state.concern, "dev");
+        assert_eq!(state.concern, Concern::Dev);
         assert_eq!(
             state.feature,
             "BL-052: Replace shell hooks with compiled Rust binaries"
         );
-        assert_eq!(state.started_at, "2026-03-26T21:45:00Z");
+        assert_eq!(state.started_at, Timestamp::new("2026-03-26T21:45:00Z"));
         assert_eq!(state.toolchain.test, Some("cargo test".to_owned()));
         assert_eq!(state.artifacts.campaign_path, None);
         assert_eq!(
@@ -305,16 +309,16 @@ mod tests {
         };
 
         let completion = Completion {
-            phase: "solution".to_owned(),
+            phase: Phase::Solution,
             file: "docs/specs/foo/design.md".to_owned(),
             at: "2026-03-26T22:00:00Z".to_owned(),
         };
 
         let state = WorkflowState {
             phase: Phase::Implement,
-            concern: "dev".to_owned(),
+            concern: Concern::Dev,
             feature: "BL-052: Replace shell hooks with compiled Rust binaries".to_owned(),
-            started_at: "2026-03-26T21:45:00Z".to_owned(),
+            started_at: Timestamp::new("2026-03-26T21:45:00Z"),
             toolchain: toolchain.clone(),
             artifacts: artifacts.clone(),
             completed: vec![completion.clone()],
@@ -324,7 +328,7 @@ mod tests {
         assert_eq!(state.phase, Phase::Implement);
 
         // Verify concern field
-        assert_eq!(state.concern, "dev");
+        assert_eq!(state.concern, Concern::Dev);
 
         // Verify feature field
         assert_eq!(
@@ -333,7 +337,7 @@ mod tests {
         );
 
         // Verify started_at field
-        assert_eq!(state.started_at, "2026-03-26T21:45:00Z");
+        assert_eq!(state.started_at, Timestamp::new("2026-03-26T21:45:00Z"));
 
         // Verify toolchain fields
         assert_eq!(state.toolchain.test, Some("cargo test".to_owned()));
@@ -372,8 +376,62 @@ mod tests {
 
         // Verify completed field
         assert_eq!(state.completed.len(), 1);
-        assert_eq!(state.completed[0].phase, "solution");
+        assert_eq!(state.completed[0].phase, Phase::Solution);
         assert_eq!(state.completed[0].file, "docs/specs/foo/design.md");
         assert_eq!(state.completed[0].at, "2026-03-26T22:00:00Z");
+    }
+
+    #[test]
+    fn concern_enum_roundtrip() {
+        // Concern serializes as lowercase, deserializes from lowercase
+        let json_dev = serde_json::to_string(&Concern::Dev).expect("serialization must succeed");
+        assert_eq!(json_dev, r#""dev""#);
+        let restored: Concern = serde_json::from_str(&json_dev).expect("deserialization must succeed");
+        assert_eq!(restored, Concern::Dev);
+
+        let json_fix = serde_json::to_string(&Concern::Fix).expect("serialization must succeed");
+        assert_eq!(json_fix, r#""fix""#);
+
+        let json_refactor = serde_json::to_string(&Concern::Refactor).expect("serialization must succeed");
+        assert_eq!(json_refactor, r#""refactor""#);
+    }
+
+    #[test]
+    fn completion_phase_is_typed() {
+        // Completion.phase must be a Phase enum, not a String
+        let completion = Completion {
+            phase: Phase::Plan,
+            file: "docs/specs/foo/spec.md".to_owned(),
+            at: "2026-01-01T00:00:00Z".to_owned(),
+        };
+        assert_eq!(completion.phase, Phase::Plan);
+    }
+
+    #[test]
+    fn unknown_phase_fallback() {
+        // Deserializing a completion with an unrecognized phase string falls back to Phase::Unknown
+        let json = r#"{
+            "phase": "banana",
+            "file": "docs/specs/foo/spec.md",
+            "at": "2026-01-01T00:00:00Z"
+        }"#;
+        let completion: Completion = serde_json::from_str(json)
+            .expect("should not fail — unknown phase maps to Phase::Unknown");
+        assert_eq!(completion.phase, Phase::Unknown);
+    }
+
+    #[test]
+    fn phase_backward_compat() {
+        // Phase::Unknown serializes as the string "unknown"
+        let completion = Completion {
+            phase: Phase::Unknown,
+            file: "docs/specs/foo/spec.md".to_owned(),
+            at: "2026-01-01T00:00:00Z".to_owned(),
+        };
+        let json = serde_json::to_string(&completion).expect("serialization must succeed");
+        assert!(json.contains(r#""phase":"unknown""#) || json.contains(r#""phase": "unknown""#));
+        // Round-trip: deserialize back
+        let restored: Completion = serde_json::from_str(&json).expect("deserialization must succeed");
+        assert_eq!(restored.phase, Phase::Unknown);
     }
 }

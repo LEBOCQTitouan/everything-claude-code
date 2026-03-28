@@ -6,10 +6,6 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 /// Legal workflow phases.
-///
-/// `Unknown` is a fallback for unrecognized phase strings in persisted state files.
-/// It deserializes from any unrecognized string and serializes as `"unknown"`.
-/// Transitions from or to `Unknown` are always rejected by the transition logic.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
@@ -18,8 +14,8 @@ pub enum Phase {
     Solution,
     Implement,
     Done,
-    /// Fallback for unrecognized phase strings (e.g., manually edited state.json).
-    #[serde(other)]
+    /// Placeholder for unrecognized phase strings encountered during deserialization.
+    /// Used by `Completion.phase` to preserve forward-compatibility.
     Unknown,
 }
 
@@ -65,6 +61,7 @@ impl FromStr for Phase {
             "solution" | "design" => Ok(Self::Solution),
             "implement" => Ok(Self::Implement),
             "done" => Ok(Self::Done),
+            "unknown" => Ok(Self::Unknown),
             other => Err(UnknownPhase(other.to_owned())),
         }
     }
@@ -134,8 +131,17 @@ mod tests {
     // --- FromStr unknown ---
 
     #[test]
-    fn from_str_unknown_returns_err() {
-        assert!(Phase::from_str("unknown").is_err());
+    fn from_str_unknown_maps_to_unknown_variant() {
+        // "unknown" is a valid string that maps to Phase::Unknown
+        assert_eq!(Phase::from_str("unknown").unwrap(), Phase::Unknown);
+    }
+
+    #[test]
+    fn from_str_truly_unrecognized_returns_err() {
+        // Strings that don't match any known phase still return Err
+        assert!(Phase::from_str("banana").is_err());
+        assert!(Phase::from_str("").is_err());
+        assert!(Phase::from_str("PLAN").is_err());
     }
 
     // --- Serde ---

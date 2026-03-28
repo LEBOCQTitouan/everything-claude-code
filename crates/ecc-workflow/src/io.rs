@@ -197,12 +197,16 @@ mod tests {
     }
 
     fn make_state_json(phase: ecc_domain::workflow::phase::Phase) -> String {
-        use ecc_domain::workflow::state::{Artifacts, Toolchain, WorkflowState};
+        use ecc_domain::workflow::{
+            concern::Concern,
+            state::{Artifacts, Toolchain, WorkflowState},
+            timestamp::Timestamp,
+        };
         let state = WorkflowState {
             phase,
-            concern: "test".to_owned(),
+            concern: Concern::Dev,
             feature: "test-feature".to_owned(),
-            started_at: "2026-01-01T00:00:00Z".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
             toolchain: Toolchain { test: None, lint: None, build: None },
             artifacts: Artifacts {
                 plan: None, solution: None, implement: None,

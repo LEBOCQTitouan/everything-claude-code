@@ -81,11 +81,21 @@ impl Drop for LockGuard {
 pub enum LockError {
     /// Failed to create the `.locks/` directory.
     #[error("failed to create lock directory {path}: {message}")]
-    DirCreation { path: PathBuf, message: String },
+    DirCreation {
+        /// Path to the locks directory that could not be created.
+        path: PathBuf,
+        /// Human-readable error description.
+        message: String,
+    },
 
     /// Failed to acquire the lock (I/O or permission error).
     #[error("failed to acquire lock on {path}: {message}")]
-    AcquireFailed { path: PathBuf, message: String },
+    AcquireFailed {
+        /// Path to the lock file that could not be acquired.
+        path: PathBuf,
+        /// Human-readable error description.
+        message: String,
+    },
 
     /// Lock acquisition timed out.
     #[error("lock acquisition timed out after {0:?}")]

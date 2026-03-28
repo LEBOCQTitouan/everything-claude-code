@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::str::FromStr;
 
 use ecc_domain::workflow::phase::Phase;
 use ecc_domain::workflow::state::Completion;
@@ -11,8 +12,10 @@ use crate::time::utc_now_iso8601;
 #[cfg(test)]
 mod tests {
     use ecc_domain::workflow::{
+        concern::Concern,
         phase::Phase,
         state::{Artifacts, Toolchain, WorkflowState},
+        timestamp::Timestamp,
     };
     use tempfile::TempDir;
 
@@ -22,9 +25,9 @@ mod tests {
         std::fs::create_dir_all(&wf_dir).unwrap();
         let state = WorkflowState {
             phase: Phase::Plan,
-            concern: "dev".to_owned(),
+            concern: Concern::Dev,
             feature: "BL-068".to_owned(),
-            started_at: "2026-01-01T00:00:00Z".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
             toolchain: Toolchain { test: None, lint: None, build: None },
             artifacts: Artifacts {
                 plan: None,
@@ -220,7 +223,7 @@ pub fn run(
             // On done transition, append a completion record to the completed array.
             if to == Phase::Done {
                 state.completed.push(Completion {
-                    phase: artifact_name.clone(),
+                    phase: Phase::from_str(artifact_name).unwrap_or(Phase::Unknown),
                     file: "implement-done.md".to_owned(),
                     at: utc_now_iso8601(),
                 });
@@ -265,7 +268,7 @@ pub fn run(
             if let Err(e) = crate::commands::memory_write::write_work_item(
                 wi_phase,
                 &feature,
-                &concern,
+                &concern.to_string(),
                 project_dir,
             ) {
                 warnings.push(format!("write_work_item failed: {e}"));
@@ -273,7 +276,7 @@ pub fn run(
             if let Err(e) = crate::commands::memory_write::write_daily(
                 wi_phase,
                 &feature,
-                &concern,
+                &concern.to_string(),
                 project_dir,
             ) {
                 warnings.push(format!("write_daily failed: {e}"));

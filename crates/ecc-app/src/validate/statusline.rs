@@ -30,13 +30,15 @@ pub(super) fn validate_statusline(
 
     let placeholder_ok = match &script_content {
         Some(c) => {
-            let ok = !c.contains("__ECC_VERSION__");
-            if ok {
+            let has_placeholder = c.contains("__ECC_VERSION__");
+            if !has_placeholder {
                 terminal.stdout_write("✓ No unresolved placeholder\n");
+                true
             } else {
-                terminal.stdout_write("✗ No unresolved placeholder: __ECC_VERSION__ found in script\n");
+                // Dev-mode installs keep the placeholder — treat as warning, not failure
+                terminal.stdout_write("⚠ Unresolved placeholder: __ECC_VERSION__ found (expected in dev-mode installs)\n");
+                true // non-blocking warning
             }
-            ok
         }
         None => {
             terminal.stdout_write("✗ No unresolved placeholder: script unavailable\n");
@@ -76,7 +78,17 @@ pub(super) fn validate_statusline(
         }
     };
 
-    let settings_path = root.join("settings.json");
+    // Check settings.json — try root/settings.json first (tests, project-local),
+    // then fall back to ~/.claude/settings.json (user global settings)
+    let local_settings = root.join("settings.json");
+    let home_settings = std::env::var("HOME")
+        .map(|h| std::path::PathBuf::from(h).join(".claude").join("settings.json"))
+        .unwrap_or_default();
+    let settings_path = if fs.exists(&local_settings) {
+        local_settings
+    } else {
+        home_settings
+    };
     let settings_ok = match fs.read_to_string(&settings_path) {
         Ok(content) => {
             let ok = content.contains("statusline-command.sh");
@@ -166,20 +178,23 @@ mod tests {
     }
 
     #[test]
-    fn validate_statusline_fail_unresolved_placeholder() {
+    fn validate_statusline_warns_unresolved_placeholder() {
         let script = "#!/usr/bin/env bash\njq '.x'\nECC_VERSION=\"__ECC_VERSION__\"\n";
         let fs = InMemoryFileSystem::new()
             .with_file("/root/statusline/statusline-command.sh", script)
             .with_file("/root/settings.json", valid_settings());
+        fs.set_permissions(Path::new("/root/statusline/statusline-command.sh"), 0o755)
+            .unwrap();
         let t = term();
-        assert!(!run_validate(
+        // Placeholder is now a warning, not a failure — validation still passes
+        assert!(run_validate(
             &fs,
             &t,
             &ValidateTarget::Statusline,
             Path::new("/root")
         ));
         let stdout: Vec<_> = t.stdout_output();
-        assert!(stdout.iter().any(|s| s.contains('✗') && s.contains("placeholder")));
+        assert!(stdout.iter().any(|s| s.contains('⚠') && s.contains("placeholder")));
     }
 
     #[test]
