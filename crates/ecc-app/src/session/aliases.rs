@@ -34,7 +34,13 @@ pub fn load_aliases(fs: &dyn FileSystem, path: &Path, now: &str) -> AliasesData 
             }
             data
         }
-        Err(_) => default_aliases(now),
+        Err(e) => {
+            log::warn!(
+                "load_aliases: corrupt JSON at {}: {e}",
+                path.display()
+            );
+            default_aliases(now)
+        }
     }
 }
 
