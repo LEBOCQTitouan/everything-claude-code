@@ -157,6 +157,18 @@ A value object representing a stage in the ECC workflow state machine: Plan, Sol
 - **Related:** [WorkflowState](#workflowstate)
 - **Files:** [`crates/ecc-domain/src/workflow/phase.rs`](../../crates/ecc-domain/src/workflow/phase.rs)
 
+### Session Worktree
+A git worktree created automatically when a pipeline session (`/spec-*`, `/design`, `/implement`) starts. Named `ecc-session-{timestamp}-{slug}-{pid}`. Isolates all session writes from the main working tree and other concurrent sessions. Cleaned up on successful merge; preserved on failure for inspection. Managed by `ecc worktree gc`.
+- **Related:** [Merge Lock](#merge-lock), [Fast Verify Gate](#fast-verify-gate), [WorktreeName](#worktreename)
+
+### Merge Lock
+An exclusive advisory file lock (`.claude/workflow/.locks/merge.lock`) acquired by `ecc-workflow merge` to serialize merge-to-main operations. Uses POSIX flock with a 60-second timeout. Only one session can merge at a time — others block until released. Auto-released on process crash (kernel semantics).
+- **Related:** [Session Worktree](#session-worktree), [Fast Verify Gate](#fast-verify-gate)
+
+### Fast Verify Gate
+The quality gate that runs between rebase and merge during `ecc-workflow merge`. Executes `cargo build`, `cargo test`, and `cargo clippy -- -D warnings` sequentially. If any step fails, the merge is aborted and the user is notified. Ensures only passing code reaches main.
+- **Related:** [Merge Lock](#merge-lock), [Session Worktree](#session-worktree)
+
 ### Wave
 A group of independent [Pass Conditions](#pass-condition) that can be executed in parallel during `/implement`. PCs within a wave touch different files and have no data dependencies. Waves are dispatched concurrently using worktree-isolated subagents, with regression verification at wave boundaries.
 - **Related:** [Wave Plan](#wave-plan), [Pass Condition](#pass-condition)
