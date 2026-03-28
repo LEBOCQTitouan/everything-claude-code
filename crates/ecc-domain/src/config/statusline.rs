@@ -271,4 +271,45 @@ mod tests {
         // Debug: must not panic
         let _ = format!("{:?}", a);
     }
+
+    #[test]
+    fn field_order_contains_worktree_after_git_branch() {
+        let config = StatuslineConfig::default();
+        let order = &config.field_order;
+        let git_branch_idx = order
+            .iter()
+            .position(|f| *f == StatuslineField::GitBranch)
+            .expect("GitBranch must be in field_order");
+        let worktree_idx = order
+            .iter()
+            .position(|f| *f == StatuslineField::Worktree)
+            .expect("Worktree must be in field_order");
+        assert_eq!(
+            worktree_idx,
+            git_branch_idx + 1,
+            "Worktree must appear immediately after GitBranch in field_order"
+        );
+    }
+
+    #[test]
+    fn field_order_matches_script_rendering_priority() {
+        let config = StatuslineConfig::default();
+        let expected = vec![
+            StatuslineField::Model,
+            StatuslineField::ContextBar,
+            StatuslineField::GitBranch,
+            StatuslineField::Worktree,
+            StatuslineField::RateLimitFiveHour,
+            StatuslineField::RateLimitSevenDay,
+            StatuslineField::TokenCounts,
+            StatuslineField::LinesChanged,
+            StatuslineField::Duration,
+            StatuslineField::Cost,
+            StatuslineField::EccVersion,
+        ];
+        assert_eq!(
+            config.field_order, expected,
+            "field_order must match script rendering priority (11 entries, VimMode excluded)"
+        );
+    }
 }
