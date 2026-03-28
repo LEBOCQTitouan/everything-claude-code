@@ -156,7 +156,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
     // Only run during implement/done phases.
     match state.phase {
-        Phase::Plan | Phase::Solution => return WorkflowOutput::pass(""),
+        Phase::Plan | Phase::Solution | Phase::Idle => return WorkflowOutput::pass(""),
         Phase::Implement | Phase::Done => {}
     }
 
@@ -265,5 +265,26 @@ mod tests {
     fn non_exception_path_not_excluded() {
         assert!(!is_exception("src/commands/scope_check.rs"));
         assert!(!is_exception("crates/ecc-app/src/lib.rs"));
+    }
+
+    /// PC-037: scope_check passes through ungated for Idle phase (AC-001.1)
+    #[test]
+    fn scope_check_idle_passes() {
+        use tempfile::TempDir;
+        use crate::output::Status;
+
+        let tmp = TempDir::new().unwrap();
+        let workflow_dir = tmp.path().join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        let json = r#"{"phase":"idle","concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(workflow_dir.join("state.json"), json).unwrap();
+
+        let output = super::run(tmp.path());
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for idle phase in scope_check, got {:?}: {}",
+            output.status,
+            output.message
+        );
     }
 }

@@ -162,6 +162,98 @@ mod tests {
     use std::sync::{Arc, Barrier};
     use std::time::Duration;
     use tempfile::TempDir;
+    use crate::output::Status;
+
+    fn write_state(dir: &std::path::Path, phase: &str) {
+        let workflow_dir = dir.join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        let json = format!(
+            r#"{{"phase":"{phase}","concern":"test","feature":"feat","started_at":"2026-01-01T00:00:00Z","toolchain":{{"test":null,"lint":null,"build":null}},"artifacts":{{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null}},"completed":[]}}"#
+        );
+        std::fs::write(workflow_dir.join("state.json"), json).unwrap();
+    }
+
+    fn write_raw_state(dir: &std::path::Path, content: &str) {
+        let workflow_dir = dir.join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        std::fs::write(workflow_dir.join("state.json"), content).unwrap();
+    }
+
+    /// PC-015: phase_gate passes for idle state (AC-001.7, AC-002.1)
+    #[test]
+    fn phase_gate_passes_for_idle() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "idle");
+        let output = super::run_with_input(tmp.path(), "");
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for idle phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-016: phase_gate warns when state.json has invalid type for phase (AC-002.2)
+    #[test]
+    fn phase_gate_corrupt_type_warns() {
+        let tmp = TempDir::new().unwrap();
+        write_raw_state(tmp.path(), r#"{"phase":123,"concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        let output = super::run_with_input(tmp.path(), "");
+        assert!(
+            matches!(output.status, Status::Warn),
+            "Expected Warn for corrupt type, got {:?}: {}",
+            output.status,
+            output.message
+        );
+        assert!(
+            output.message.contains("Corrupt") || output.message.contains("corrupt"),
+            "Expected 'corrupt' in message, got: {}",
+            output.message
+        );
+    }
+
+    /// PC-017: phase_gate warns when state.json is missing the phase key (AC-002.3)
+    #[test]
+    fn phase_gate_missing_phase_warns() {
+        let tmp = TempDir::new().unwrap();
+        write_raw_state(tmp.path(), r#"{"concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        let output = super::run_with_input(tmp.path(), "");
+        assert!(
+            matches!(output.status, Status::Warn),
+            "Expected Warn for missing phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-018: phase_gate blocks Write to non-allowed path when phase is plan (AC-002.4)
+    #[test]
+    fn phase_gate_plan_blocks_write() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"src/main.rs"}}"#;
+        let output = super::run_with_input(tmp.path(), hook_input);
+        assert!(
+            matches!(output.status, Status::Block),
+            "Expected Block for Write to src/main.rs during plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-019: phase_gate warns when state.json has unknown phase variant (AC-002.5)
+    #[test]
+    fn phase_gate_unknown_variant_warns() {
+        let tmp = TempDir::new().unwrap();
+        write_raw_state(tmp.path(), r#"{"phase":"banana","concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        let output = super::run_with_input(tmp.path(), "");
+        assert!(
+            matches!(output.status, Status::Warn),
+            "Expected Warn for unknown variant 'banana', got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
 
     /// PC-017: phase_gate reads the workflow phase under the state lock.
     ///

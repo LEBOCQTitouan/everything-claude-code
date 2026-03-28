@@ -31,3 +31,32 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
         state.phase, state.feature
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use tempfile::TempDir;
+    use crate::output::Status;
+
+    /// PC-039: stop_gate treats Idle like Done — no warning (AC-001.1)
+    #[test]
+    fn stop_gate_idle_no_warning() {
+        let tmp = TempDir::new().unwrap();
+        let workflow_dir = tmp.path().join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        let json = r#"{"phase":"idle","concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(workflow_dir.join("state.json"), json).unwrap();
+
+        let output = super::run(tmp.path());
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass (no warning) for idle phase in stop_gate, got {:?}: {}",
+            output.status,
+            output.message
+        );
+        assert!(
+            !output.message.contains("WARNING"),
+            "Expected no WARNING in stop_gate output for idle phase, got: {}",
+            output.message
+        );
+    }
+}

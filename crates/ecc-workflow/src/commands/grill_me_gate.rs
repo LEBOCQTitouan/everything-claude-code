@@ -39,7 +39,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
     // Only check during plan/solution phases.
     match state.phase {
         Phase::Plan | Phase::Solution => {}
-        Phase::Implement | Phase::Done => return WorkflowOutput::pass(""),
+        Phase::Implement | Phase::Done | Phase::Idle => return WorkflowOutput::pass(""),
     }
 
     // Collect the paths to check.
@@ -66,5 +66,29 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
             "WARNING: No grill-me interview markers found in spec/campaign. \
              Run the grill-me interview and add a '### Grill-Me Decisions' section.",
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::TempDir;
+    use crate::output::Status;
+
+    /// PC-038: grill_me_gate passes through for Idle phase (AC-001.1)
+    #[test]
+    fn grill_me_gate_idle_passes() {
+        let tmp = TempDir::new().unwrap();
+        let workflow_dir = tmp.path().join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        let json = r#"{"phase":"idle","concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(workflow_dir.join("state.json"), json).unwrap();
+
+        let output = super::run(tmp.path());
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for idle phase in grill_me_gate, got {:?}: {}",
+            output.status,
+            output.message
+        );
     }
 }
