@@ -14,3 +14,4 @@ pub mod paths;
 pub mod session;
 pub mod time;
 pub mod workflow;
+pub mod worktree;
