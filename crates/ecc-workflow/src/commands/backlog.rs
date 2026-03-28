@@ -20,71 +20,83 @@ pub fn run(
     tags: &str,
     project_dir: &Path,
 ) -> WorkflowOutput {
-    let backlog_dir = project_dir.join("docs/backlog");
-
-    let result = (|| -> Result<WorkflowOutput, anyhow::Error> {
-        // Acquire exclusive lock for the backlog directory
-        let _guard = ecc_flock::acquire(project_dir, "backlog")
-            .map_err(|e| anyhow::anyhow!("Failed to acquire backlog lock: {e}"))?;
-
-        // Ensure backlog dir exists
-        std::fs::create_dir_all(&backlog_dir)
-            .map_err(|e| anyhow::anyhow!("Failed to create docs/backlog: {e}"))?;
-
-        // Scan for existing BL-NNN-*.md files and find max ID
-        let next_id = compute_next_id(&backlog_dir)?;
-
-        // Build slug and filename
-        let slug = make_slug(title);
-        let filename = format!("BL-{next_id:03}-{slug}.md");
-        let entry_path = backlog_dir.join(&filename);
-
-        // Build frontmatter content
-        let today = utc_today();
-        let tags_list = if tags.is_empty() {
-            "[]".to_string()
-        } else {
-            let tag_items: Vec<String> = tags
-                .split(',')
-                .map(|t| format!("\"{}\"", t.trim()))
-                .collect();
-            format!("[{}]", tag_items.join(", "))
-        };
-
-        let content = format!(
-            "---\n\
-             id: BL-{next_id:03}\n\
-             title: {title}\n\
-             status: open\n\
-             created: {today}\n\
-             tags: {tags_list}\n\
-             scope: {scope}\n\
-             target_command: {target}\n\
-             ---\n\
-             \n\
-             ## Optimized Prompt\n\
-             \n\
-             (To be filled by /backlog add workflow)\n\
-             \n\
-             ## Original Input\n\
-             \n\
-             Created via ecc-workflow backlog add-entry\n"
-        );
-
-        std::fs::write(&entry_path, &content)
-            .map_err(|e| anyhow::anyhow!("Failed to write entry file {filename}: {e}"))?;
-
-        // Update BACKLOG.md — append a new row
-        update_backlog_index(&backlog_dir, next_id, title, scope, target, &today)?;
-
-        Ok(WorkflowOutput::pass(format!(
-            "Created BL-{next_id:03}: {title}"
-        )))
-    })();
-
-    match result {
+    match add_entry(title, scope, target, tags, project_dir) {
         Ok(output) => output,
         Err(e) => WorkflowOutput::block(format!("backlog add-entry failed: {e}")),
+    }
+}
+
+/// Inner implementation — returns `Err` on any I/O or lock failure.
+fn add_entry(
+    title: &str,
+    scope: &str,
+    target: &str,
+    tags: &str,
+    project_dir: &Path,
+) -> Result<WorkflowOutput, anyhow::Error> {
+    let backlog_dir = project_dir.join("docs/backlog");
+
+    // Acquire exclusive lock for the backlog directory
+    let _guard = ecc_flock::acquire(project_dir, "backlog")
+        .map_err(|e| anyhow::anyhow!("Failed to acquire backlog lock: {e}"))?;
+
+    // Ensure backlog dir exists
+    std::fs::create_dir_all(&backlog_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create docs/backlog: {e}"))?;
+
+    // Scan for existing BL-NNN-*.md files and find max ID
+    let next_id = compute_next_id(&backlog_dir)?;
+
+    // Build slug and filename
+    let slug = make_slug(title);
+    let filename = format!("BL-{next_id:03}-{slug}.md");
+    let entry_path = backlog_dir.join(&filename);
+
+    // Build frontmatter content
+    let today = utc_today();
+    let tags_list = format_tags(tags);
+
+    let content = format!(
+        "---\n\
+         id: BL-{next_id:03}\n\
+         title: {title}\n\
+         status: open\n\
+         created: {today}\n\
+         tags: {tags_list}\n\
+         scope: {scope}\n\
+         target_command: {target}\n\
+         ---\n\
+         \n\
+         ## Optimized Prompt\n\
+         \n\
+         (To be filled by /backlog add workflow)\n\
+         \n\
+         ## Original Input\n\
+         \n\
+         Created via ecc-workflow backlog add-entry\n"
+    );
+
+    std::fs::write(&entry_path, &content)
+        .map_err(|e| anyhow::anyhow!("Failed to write entry file {filename}: {e}"))?;
+
+    // Update BACKLOG.md — append a new row
+    update_backlog_index(&backlog_dir, next_id, title, scope, target, &today)?;
+
+    Ok(WorkflowOutput::pass(format!(
+        "Created BL-{next_id:03}: {title}"
+    )))
+}
+
+/// Format a comma-separated tags string as a YAML array literal.
+fn format_tags(tags: &str) -> String {
+    if tags.is_empty() {
+        "[]".to_string()
+    } else {
+        let items: Vec<String> = tags
+            .split(',')
+            .map(|t| format!("\"{}\"", t.trim()))
+            .collect();
+        format!("[{}]", items.join(", "))
     }
 }
 
