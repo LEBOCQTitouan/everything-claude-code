@@ -2,6 +2,7 @@
 //!
 //! Orchestrates file-by-file merge with user prompts for accept/keep/smart-merge.
 
+pub mod error;
 mod helpers;
 mod prompt;
 
