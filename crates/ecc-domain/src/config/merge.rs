@@ -759,4 +759,99 @@ mod tests {
         assert!(output.contains("1 smart-merged"));
         assert!(output.contains("1 errors"));
     }
+
+    // --- BL-085: legacy worktree hook detection ---
+
+    #[test]
+    fn is_legacy_ecc_hook_worktree_create_init() {
+        let entry = serde_json::json!({
+            "hooks": [{"command": "ecc-hook \"worktree:create:init\" \"standard,strict\""}]
+        });
+        assert!(is_legacy_ecc_hook(&entry));
+    }
+
+    #[test]
+    fn is_legacy_ecc_hook_worktree_cleanup_reminder() {
+        let entry = serde_json::json!({
+            "hooks": [{"command": "ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\""}]
+        });
+        assert!(is_legacy_ecc_hook(&entry));
+    }
+
+    #[test]
+    fn remove_legacy_hooks_removes_worktree_delegation() {
+        let hooks = serde_json::json!({
+            "WorktreeCreate": [
+                {"hooks": [{"command": "ecc-hook \"worktree:create:init\" \"standard,strict\""}]}
+            ],
+            "Stop": [
+                {"hooks": [{"command": "ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\""}]}
+            ]
+        });
+        let (result, removed) = remove_legacy_hooks(&hooks);
+        assert_eq!(removed, 2);
+        assert_eq!(result["WorktreeCreate"].as_array().unwrap().len(), 0);
+        assert_eq!(result["Stop"].as_array().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn is_legacy_ecc_hook_typed_worktree_create_init() {
+        use super::super::hook_types::{HookCommand, HookCommandValue, HookEntry};
+        let entry = HookEntry {
+            description: None,
+            matcher: None,
+            hooks: Some(vec![HookCommand {
+                hook_type: Some("command".to_string()),
+                command: Some(HookCommandValue::Single(
+                    "ecc-hook \"worktree:create:init\" \"standard,strict\"".to_string(),
+                )),
+                r#async: None,
+                timeout: None,
+            }]),
+        };
+        assert!(is_legacy_ecc_hook_typed(&entry));
+    }
+
+    #[test]
+    fn is_legacy_ecc_hook_typed_worktree_cleanup_reminder() {
+        use super::super::hook_types::{HookCommand, HookCommandValue, HookEntry};
+        let entry = HookEntry {
+            description: None,
+            matcher: None,
+            hooks: Some(vec![HookCommand {
+                hook_type: Some("command".to_string()),
+                command: Some(HookCommandValue::Single(
+                    "ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\"".to_string(),
+                )),
+                r#async: None,
+                timeout: None,
+            }]),
+        };
+        assert!(is_legacy_ecc_hook_typed(&entry));
+    }
+
+    #[test]
+    fn remove_legacy_hooks_real_world_worktree_command() {
+        let hooks = serde_json::json!({
+            "WorktreeCreate": [
+                {"hooks": [{"command": "ecc-hook \"worktree:create:init\" \"standard,strict\""}]}
+            ]
+        });
+        let (result, removed) = remove_legacy_hooks(&hooks);
+        assert_eq!(removed, 1);
+        let arr = result["WorktreeCreate"].as_array().unwrap();
+        assert_eq!(arr.len(), 0);
+    }
+
+    #[test]
+    fn is_legacy_ecc_hook_new_worktree_hooks_not_legacy() {
+        let entry_enter = serde_json::json!({
+            "hooks": [{"command": "ecc-hook \"post:enter-worktree:session-log\" \"standard,strict\""}]
+        });
+        let entry_exit = serde_json::json!({
+            "hooks": [{"command": "ecc-hook \"post:exit-worktree:cleanup-reminder\" \"standard,strict\""}]
+        });
+        assert!(!is_legacy_ecc_hook(&entry_enter));
+        assert!(!is_legacy_ecc_hook(&entry_exit));
+    }
 }
