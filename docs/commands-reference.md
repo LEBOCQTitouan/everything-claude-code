@@ -14,6 +14,7 @@
 | `/audit-observability` | Logging, metrics, tracing, health endpoints |
 | `/audit-security` | OWASP top 10, secrets, attack surface |
 | `/audit-test` | Coverage, classification, fixture ratios, E2E matrix |
+| `/audit-web` | Web-based upgrade scan with Technology Radar output |
 
 ## Side Commands
 
