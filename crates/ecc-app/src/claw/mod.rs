@@ -13,6 +13,7 @@ use ecc_ports::terminal::TerminalIO;
 
 pub mod claude_runner;
 pub mod dispatch;
+pub mod error;
 pub mod handlers;
 pub mod skill_loader;
 pub mod storage;
