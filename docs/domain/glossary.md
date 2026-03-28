@@ -153,9 +153,17 @@ A structured subsection in each phase of a [planner](#agent) output that specifi
 - **Files:** [`planner.md`](../agents/planner.md), [`spec.md`](../commands/spec.md), [`validate-plan-tdd.test.js`](../tests/ci/validate-plan-tdd.test.js)
 
 ### Phase
-A value object representing a stage in the ECC workflow state machine: Plan, Solution, Implement, Done. Supports Display (lowercase), FromStr (with aliases: "spec" → Plan, "design" → Solution), and serde serialization. Defined in `ecc-domain::workflow::phase`.
-- **Related:** [WorkflowState](#workflowstate)
+A value object representing a stage in the ECC workflow state machine: Idle, Plan, Solution, Implement, Done. Supports Display (lowercase), FromStr (with aliases: "spec" → Plan, "design" → Solution), and serde serialization. The `is_gated()` method returns true for Plan and Solution (gated phases where Write/Edit tools are restricted). Defined in `ecc-domain::workflow::phase`.
+- **Related:** [WorkflowState](#workflowstate), [Idle Phase](#idle-phase), [Gated Phase](#gated-phase)
 - **Files:** [`crates/ecc-domain/src/workflow/phase.rs`](../../crates/ecc-domain/src/workflow/phase.rs)
+
+### Idle Phase
+The resting state of the workflow state machine after a completed cycle. Distinguishes "never initialized" (no state.json) from "completed, ready for next" (phase: idle). Reached via `reset --force`. Transitions: Idle → Plan (via init), Done → Idle (via reset). See ADR 0025.
+- **Related:** [Phase](#phase), [Gated Phase](#gated-phase)
+
+### Gated Phase
+A phase where Write/Edit/MultiEdit tools are restricted to workflow and docs paths only. Plan and Solution are gated; Idle, Implement, and Done are ungated. Determined by `Phase::is_gated()`, used by the phase-gate hook.
+- **Related:** [Phase](#phase)
 
 ### Session Worktree
 A git worktree created automatically when a pipeline session (`/spec-*`, `/design`, `/implement`) starts. Named `ecc-session-{timestamp}-{slug}-{pid}`. Isolates all session writes from the main working tree and other concurrent sessions. Cleaned up on successful merge; preserved on failure for inspection. Managed by `ecc worktree gc`.
