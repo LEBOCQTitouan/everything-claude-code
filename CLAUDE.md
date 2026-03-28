@@ -9,10 +9,10 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all tests (1404 tests)
+cargo test              # Run all Rust tests (1404 tests)
+bats tests/statusline/  # Run statusline Bats tests (16 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo build --release   # Build release binary
-npm run lint            # Lint all Markdown files
 ```
 
 ## Architecture
