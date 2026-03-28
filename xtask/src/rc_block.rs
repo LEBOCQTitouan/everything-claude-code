@@ -1,19 +1,66 @@
+#[allow(dead_code)]
 pub const START_MARKER: &str = "# >>> ecc >>>";
+#[allow(dead_code)]
 pub const END_MARKER: &str = "# <<< ecc <<<";
 
 #[derive(Debug, PartialEq)]
+#[allow(dead_code)]
 pub struct RcBlockResult {
     pub content: String,
     pub changed: bool,
 }
 
+#[allow(dead_code)]
 /// Update RC file content with a managed block.
 /// - If no markers exist: append block with markers at end
 /// - If markers exist: replace content between them
 /// - If content identical: return changed=false
 /// - If only start marker (no end): treat as no block, insert fresh
-pub fn update_rc_content(_existing: &str, _block_lines: &[&str]) -> RcBlockResult {
-    todo!("implement update_rc_content")
+pub fn update_rc_content(existing: &str, block_lines: &[&str]) -> RcBlockResult {
+    let new_block = build_block(block_lines);
+
+    let start_pos = existing.find(START_MARKER);
+    let end_pos = existing.find(END_MARKER);
+
+    match (start_pos, end_pos) {
+        (Some(s), Some(e)) if s < e => {
+            // Both markers present in correct order — replace between them.
+            // Consume one trailing newline after END_MARKER if present so
+            // build_block's own trailing newline is not doubled.
+            let end_of_end_marker = e + END_MARKER.len();
+            let after = if existing[end_of_end_marker..].starts_with('\n') {
+                &existing[end_of_end_marker + 1..]
+            } else {
+                &existing[end_of_end_marker..]
+            };
+            let replaced = format!("{}{}{}", &existing[..s], new_block, after);
+            let changed = replaced != existing;
+            RcBlockResult { content: replaced, changed }
+        }
+        _ => {
+            // No valid block — append fresh block at end
+            let separator = if existing.is_empty() || existing.ends_with('\n') {
+                String::new()
+            } else {
+                "\n".to_string()
+            };
+            let content = format!("{}{}{}", existing, separator, new_block);
+            RcBlockResult { content, changed: true }
+        }
+    }
+}
+
+fn build_block(block_lines: &[&str]) -> String {
+    let mut block = String::new();
+    block.push_str(START_MARKER);
+    block.push('\n');
+    for line in block_lines {
+        block.push_str(line);
+        block.push('\n');
+    }
+    block.push_str(END_MARKER);
+    block.push('\n');
+    block
 }
 
 #[cfg(test)]
