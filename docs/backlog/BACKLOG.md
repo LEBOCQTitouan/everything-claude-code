@@ -90,6 +90,7 @@
 | BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | promoted | 2026-03-28 |
 | BL-088 | ecc update — self-update from GitHub Releases + cargo xtask deploy for dev | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | open | 2026-03-28 |
+| BL-090 | ECC component scaffolding — skill + /create-component command | — | HIGH | /spec dev | open | 2026-03-28 |
 
 ## Dependency Graph
 
@@ -136,8 +137,8 @@ BL-089 → BL-065 (branch isolation relies on worktree isolation for multi-sessi
 
 ## Stats
 
-- **Total:** 83
-- **Open:** 39
+- **Total:** 84
+- **Open:** 40
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
