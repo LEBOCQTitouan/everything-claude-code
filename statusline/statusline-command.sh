@@ -206,8 +206,9 @@ fi
 # Segments in priority order (highest = kept longest, lowest = first dropped)
 # Model and context bar are always included if they fit
 build_output() {
-  # Priority order: model > context > rate limits > branch > tokens > lines > duration > cost > version
+  # Priority order: model > context > rate limits > branch/worktree > tokens > lines > duration > cost > version
   # Rate limits are high priority since they show quota pressure
+  # Worktree replaces branch when inside a worktree (ADR-0018)
   local segments=()
   segments+=("$SEG_MODEL")
   segments+=("$SEG_CTX")
