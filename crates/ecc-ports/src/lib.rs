@@ -5,6 +5,8 @@
 //! from infrastructure. Production adapters live in [`ecc_infra`]; test doubles
 //! live in [`ecc_test_support`].
 
+#![warn(missing_docs)]
+
 pub mod env;
 pub mod fs;
 pub mod lock;
