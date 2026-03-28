@@ -4,25 +4,34 @@ mod hooks_diff;
 pub use checks::*;
 pub use hooks_diff::*;
 
+use crate::config::error::ConfigAppError;
 use ecc_domain::config::audit::{AuditReport, compute_audit_score};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
 /// Read a JSON file.
 /// Returns `Ok(None)` if the file does not exist,
-/// `Ok(Some(value))` on success, `Err(message)` if the file exists but is corrupt.
+/// `Ok(Some(value))` on success, `Err(ConfigAppError)` if the file exists but is corrupt.
 pub(super) fn read_json_safe(
     fs: &dyn FileSystem,
     path: &Path,
-) -> Result<Option<serde_json::Value>, String> {
+) -> Result<Option<serde_json::Value>, ConfigAppError> {
     let content = match fs.read_to_string(path) {
         Ok(c) => c,
         Err(ecc_ports::fs::FsError::NotFound(_)) => return Ok(None),
-        Err(e) => return Err(format!("Cannot read {}: {}", path.display(), e)),
+        Err(e) => {
+            return Err(ConfigAppError::ReadFile {
+                path: path.display().to_string(),
+                reason: e.to_string(),
+            });
+        }
     };
     match serde_json::from_str(&content) {
         Ok(v) => Ok(Some(v)),
-        Err(e) => Err(format!("Corrupt JSON in {}: {}", path.display(), e)),
+        Err(e) => Err(ConfigAppError::InvalidJson {
+            path: path.display().to_string(),
+            reason: e.to_string(),
+        }),
     }
 }
 

@@ -1,3 +1,4 @@
+use super::error::ConfigAppError;
 use ecc_domain::config::clean::{ARTIFACT_DIRS, CleanReport};
 use ecc_domain::config::manifest::{EccManifest, MANIFEST_FILENAME};
 use ecc_ports::fs::FileSystem;
@@ -66,12 +67,15 @@ fn remove_ecc_hooks(
     settings_path: &Path,
     is_legacy_hook: &dyn Fn(&serde_json::Value) -> bool,
     dry_run: bool,
-) -> Result<Option<usize>, String> {
-    let content = fs
-        .read_to_string(settings_path)
-        .map_err(|e| e.to_string())?;
+) -> Result<Option<usize>, ConfigAppError> {
+    let content = fs.read_to_string(settings_path).map_err(|e| ConfigAppError::ReadFile {
+        path: settings_path.display().to_string(),
+        reason: e.to_string(),
+    })?;
     let mut settings: serde_json::Value =
-        serde_json::from_str(&content).map_err(|e| e.to_string())?;
+        serde_json::from_str(&content).map_err(|e| ConfigAppError::ParseSettings {
+            reason: e.to_string(),
+        })?;
 
     let Some(hooks_obj) = settings.get_mut("hooks").and_then(|h| h.as_object_mut()) else {
         return Ok(None);
@@ -102,9 +106,13 @@ fn remove_ecc_hooks(
     }
 
     if !dry_run {
-        let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
+        let json = serde_json::to_string_pretty(&settings).map_err(|e| ConfigAppError::SerializeSettings {
+            reason: e.to_string(),
+        })?;
         fs.write(settings_path, &format!("{json}\n"))
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| ConfigAppError::WriteSettings {
+                reason: e.to_string(),
+            })?;
     }
 
     Ok(Some(removed_count))

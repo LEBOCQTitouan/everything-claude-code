@@ -2,6 +2,7 @@
 //!
 //! Orchestrates file-by-file merge with user prompts for accept/keep/smart-merge.
 
+pub mod error;
 mod helpers;
 mod prompt;
 
@@ -141,6 +142,7 @@ fn resolve_choice(
             log::warn!("resolve_choice: prompt failed, defaulting to Accept: {e}");
             ReviewChoice::Accept
         }
+
     }
 }
 
@@ -311,7 +313,7 @@ pub fn merge_hooks(
     hooks_json_path: &Path,
     settings_json_path: &Path,
     dry_run: bool,
-) -> Result<(usize, usize, usize), String> {
+) -> Result<(usize, usize, usize), error::MergeError> {
     use ecc_domain::config::hook_types::HooksMap;
 
     let source_file = read_json(fs, hooks_json_path)?;
@@ -335,19 +337,27 @@ pub fn merge_hooks(
 
     if (added > 0 || legacy_removed > 0) && !dry_run {
         // Serialize back at boundary
-        let merged_value =
-            serde_json::to_value(&merged_hooks).map_err(|e| format!("Serialization error: {e}"))?;
+        let merged_value = serde_json::to_value(&merged_hooks).map_err(|e| {
+            error::MergeError::Serialization {
+                reason: e.to_string(),
+            }
+        })?;
 
         let mut settings = existing_settings;
         settings
             .as_object_mut()
-            .ok_or_else(|| "settings.json is not an object".to_string())?
+            .ok_or(error::MergeError::SettingsNotObject)?
             .insert("hooks".to_string(), merged_value);
 
-        let json = serde_json::to_string_pretty(&settings)
-            .map_err(|e| format!("JSON serialization error: {e}"))?;
+        let json = serde_json::to_string_pretty(&settings).map_err(|e| {
+            error::MergeError::Serialization {
+                reason: e.to_string(),
+            }
+        })?;
         fs.write(settings_json_path, &format!("{json}\n"))
-            .map_err(|e| format!("Write error: {e}"))?;
+            .map_err(|e| error::MergeError::WriteSettings {
+                reason: e.to_string(),
+            })?;
     }
 
     Ok((added, existing, legacy_removed))
