@@ -208,3 +208,45 @@ if cmd.starts_with("ecc-hook ") || cmd.starts_with("ecc-shell-hook ") {
 - [ ] CLAUDE.md test count updated
 - [ ] `cargo clippy -- -D warnings` clean
 - [ ] `cargo build --workspace` succeeds
+
+## Phase Summary
+
+### Design Reviews
+
+| Review Type | Verdict | Finding Count |
+|-------------|---------|---------------|
+| SOLID | CLEAN | 0 (1 follow-up: DRY in merge.rs) |
+| Robert | CLEAN | 0 |
+| Security | CLEAR | 0 |
+
+### Adversary Findings
+
+| Dimension | Score | Verdict | Key Rationale |
+|-----------|-------|---------|---------------|
+| Completeness | 93 | PASS | All 9 ACs mapped to 20 PCs |
+| Correctness | 90 | PASS | Legacy detection placement verified, PostToolUse format specified |
+| Testability | 92 | PASS | 20 PCs with exact test names and cargo commands |
+| Feasibility | 95 | PASS | Surgical, 7 files, no architectural change |
+| Consistency | 93 | PASS | Hook IDs follow existing convention |
+| Security | 95 | PASS | No new attack surface |
+| Clarity | 92 | PASS | Target state snippets, JSON examples, glob re-export note |
+| Traceability | 94 | PASS | Every PC → AC, every file → spec ref |
+
+### File Changes Summary
+
+| # | File | Action | Spec Ref |
+|---|------|--------|----------|
+| 1 | `crates/ecc-domain/src/config/merge.rs` | Modify | AC-001.2, AC-001.3, AC-001.4 |
+| 2 | `crates/ecc-app/src/hook/handlers/tier3_session/worktree.rs` | Modify | AC-002.1, AC-002.4 |
+| 3 | `crates/ecc-app/src/hook/handlers/tier3_session/mod.rs` | Modify | AC-002.1 |
+| 4 | `crates/ecc-app/src/hook/handlers/tier1_simple/dev_hooks.rs` | Modify | AC-002.2 |
+| 5 | `crates/ecc-app/src/hook/mod.rs` | Modify | AC-002.1, AC-002.2 |
+| 6 | `hooks/hooks.json` | Modify | AC-001.1, AC-002.3 |
+| 7 | `crates/ecc-integration-tests/tests/hook_dispatch.rs` | Modify | AC-002.1, AC-002.2 |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/2026-03-28-fix-worktree-hook-registration/spec.md | Full spec + phase summary |
+| docs/specs/2026-03-28-fix-worktree-hook-registration/design.md | Full design + phase summary |
