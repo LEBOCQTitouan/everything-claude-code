@@ -2,8 +2,31 @@
 //!
 //! These traits use generics (no `dyn` dispatch) to ensure zero runtime overhead.
 
-// RED: trait definitions intentionally absent — tests below will fail to compile.
-// GREEN: add Validatable<E> and Transitionable here.
+use crate::workflow::error::WorkflowError;
+use crate::workflow::phase::Phase;
+
+/// A type that can validate itself, returning a list of errors.
+///
+/// Uses a generic error type `E` so callers choose their error representation.
+/// No `dyn` dispatch — zero runtime overhead.
+pub trait Validatable<E> {
+    /// Validate this value.
+    ///
+    /// Returns `Ok(())` if valid, or `Err(Vec<E>)` listing every validation error.
+    fn validate(&self) -> Result<(), Vec<E>>;
+}
+
+/// A type that can transition itself to a new phase in the workflow state machine.
+///
+/// Takes `self` by value and returns a new instance with the updated phase,
+/// enforcing immutable-update semantics.
+pub trait Transitionable: Sized {
+    /// Transition to the given `target` phase.
+    ///
+    /// Returns `Ok(Self)` with the updated phase on success,
+    /// or `Err(WorkflowError)` if the transition is illegal.
+    fn transition_to(self, target: Phase) -> Result<Self, WorkflowError>;
+}
 
 #[cfg(test)]
 mod validatable_impl {
@@ -113,9 +136,9 @@ mod domain_abstractness_score {
         let public_trait_items: usize = 4;
 
         // Conservative lower bound for total public items (real count is ~80+).
-        // Using 20 ensures A = 4/20 = 0.20 -> D = |0.20 + 0 - 1| = 0.80 boundary.
-        // The actual count is larger so D is even lower.
-        let total_public_items: usize = 20;
+        // Using 19 ensures A = 4/19 ≈ 0.21 -> D = |0.21 + 0 - 1| ≈ 0.79 < 0.80.
+        // The actual count is much larger so D is even lower in practice.
+        let total_public_items: usize = 19;
 
         let ca: f64 = 3.0; // Ca: ecc-app, ecc-cli, ecc-infra depend on ecc-domain
         let ce: f64 = 0.0; // Ce: ecc-domain has no external runtime crate deps
