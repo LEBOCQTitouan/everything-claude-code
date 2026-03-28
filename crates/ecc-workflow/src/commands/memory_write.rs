@@ -133,6 +133,8 @@ pub fn write_action(
     artifacts_json: &str,
     project_dir: &Path,
 ) -> Result<(), anyhow::Error> {
+    let _guard = ecc_flock::acquire(project_dir, "action-log")
+        .map_err(|e| anyhow::anyhow!("Failed to acquire action-log lock: {e}"))?;
     let memory_dir = project_dir.join("docs/memory");
     let work_items_dir = memory_dir.join("work-items");
     std::fs::create_dir_all(&memory_dir)
@@ -193,6 +195,8 @@ pub fn write_work_item(
     concern: &str,
     project_dir: &Path,
 ) -> Result<(), anyhow::Error> {
+    let _guard = ecc_flock::acquire(project_dir, "work-item")
+        .map_err(|e| anyhow::anyhow!("Failed to acquire work-item lock: {e}"))?;
     let memory_dir = project_dir.join("docs/memory");
     let work_items_dir = memory_dir.join("work-items");
     std::fs::create_dir_all(&work_items_dir)
@@ -309,6 +313,8 @@ pub fn write_daily(
     concern: &str,
     project_dir: &Path,
 ) -> Result<(), anyhow::Error> {
+    let _guard = ecc_flock::acquire(project_dir, "daily")
+        .map_err(|e| anyhow::anyhow!("Failed to acquire daily lock: {e}"))?;
     let memory_dir = resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     let daily_dir = memory_dir.join("daily");
     std::fs::create_dir_all(&daily_dir)
@@ -421,6 +427,8 @@ fn insert_after_activity(content: &str, entry: &str) -> String {
 // ── memory-index ──────────────────────────────────────────────────────────────
 
 pub fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
+    let _guard = ecc_flock::acquire(project_dir, "memory-index")
+        .map_err(|e| anyhow::anyhow!("Failed to acquire memory-index lock: {e}"))?;
     let memory_dir = resolve_project_memory_dir(project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
     std::fs::create_dir_all(&memory_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;

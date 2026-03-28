@@ -70,26 +70,25 @@ fn two_concurrent_daily_writes_both_appear() {
     // Find the daily file and verify it has 2 activity entries
     let memory_dir = project_memory_dir(project_dir);
     let daily_dir = memory_dir.join("daily");
-    let today = {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let secs = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        // Approximate UTC date (good enough for test; avoids importing chrono)
-        let days = secs / 86400;
-        let y = 1970 + days / 365;
-        let d_in_y = days % 365;
-        let m = d_in_y / 30 + 1;
-        let d = d_in_y % 30 + 1;
-        format!("{y:04}-{m:02}-{d:02}")
-    };
-    let daily_file = daily_dir.join(format!("{today}.md"));
     assert!(
-        daily_file.exists(),
-        "daily file {:?} missing after concurrent writes",
-        daily_file
+        daily_dir.exists(),
+        "daily dir {:?} missing after concurrent writes",
+        daily_dir
     );
+
+    // Find the first .md file written (today's date file) without computing the date
+    let daily_files: Vec<_> = std::fs::read_dir(&daily_dir)
+        .expect("failed to read daily dir")
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().map(|x| x == "md").unwrap_or(false))
+        .collect();
+    assert_eq!(
+        daily_files.len(),
+        1,
+        "expected exactly 1 daily file, got {}",
+        daily_files.len()
+    );
+    let daily_file = daily_files[0].path();
 
     let content = std::fs::read_to_string(&daily_file).expect("failed to read daily file");
     let entry_count = content.matches("- [").count();
