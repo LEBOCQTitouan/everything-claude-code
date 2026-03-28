@@ -1083,4 +1083,110 @@ mod tests {
             "should return Err when targets are missing"
         );
     }
+
+    /// PC-041: dev_switch rollback emits log::error! on failure.
+    #[test]
+    fn dev_switch_rollback_logs_error() {
+        use testing_logger;
+        use ecc_ports::fs::FsError;
+
+        // A FileSystem wrapper that always fails remove_file.
+        struct FailOnRemoveFs(InMemoryFileSystem);
+
+        impl ecc_ports::fs::FileSystem for FailOnRemoveFs {
+            fn read_to_string(&self, path: &std::path::Path) -> Result<String, FsError> {
+                self.0.read_to_string(path)
+            }
+            fn read_bytes(&self, path: &std::path::Path) -> Result<Vec<u8>, FsError> {
+                self.0.read_bytes(path)
+            }
+            fn write(&self, path: &std::path::Path, content: &str) -> Result<(), FsError> {
+                self.0.write(path, content)
+            }
+            fn write_bytes(&self, path: &std::path::Path, content: &[u8]) -> Result<(), FsError> {
+                self.0.write_bytes(path, content)
+            }
+            fn exists(&self, path: &std::path::Path) -> bool {
+                self.0.exists(path)
+            }
+            fn is_dir(&self, path: &std::path::Path) -> bool {
+                self.0.is_dir(path)
+            }
+            fn is_file(&self, path: &std::path::Path) -> bool {
+                self.0.is_file(path)
+            }
+            fn create_dir_all(&self, path: &std::path::Path) -> Result<(), FsError> {
+                self.0.create_dir_all(path)
+            }
+            fn remove_file(&self, path: &std::path::Path) -> Result<(), FsError> {
+                // Always fail so rollback must log an error
+                Err(FsError::NotFound(path.to_path_buf()))
+            }
+            fn remove_dir_all(&self, path: &std::path::Path) -> Result<(), FsError> {
+                self.0.remove_dir_all(path)
+            }
+            fn copy(&self, from: &std::path::Path, to: &std::path::Path) -> Result<(), FsError> {
+                self.0.copy(from, to)
+            }
+            fn read_dir(&self, path: &std::path::Path) -> Result<Vec<std::path::PathBuf>, FsError> {
+                self.0.read_dir(path)
+            }
+            fn read_dir_recursive(&self, path: &std::path::Path) -> Result<Vec<std::path::PathBuf>, FsError> {
+                self.0.read_dir_recursive(path)
+            }
+            fn create_symlink(&self, target: &std::path::Path, link: &std::path::Path) -> Result<(), FsError> {
+                self.0.create_symlink(target, link)
+            }
+            fn read_symlink(&self, link: &std::path::Path) -> Result<std::path::PathBuf, FsError> {
+                self.0.read_symlink(link)
+            }
+            fn is_symlink(&self, path: &std::path::Path) -> bool {
+                self.0.is_symlink(path)
+            }
+            fn set_permissions(&self, path: &std::path::Path, mode: u32) -> Result<(), FsError> {
+                self.0.set_permissions(path, mode)
+            }
+            fn is_executable(&self, path: &std::path::Path) -> bool {
+                self.0.is_executable(path)
+            }
+            fn rename(&self, from: &std::path::Path, to: &std::path::Path) -> Result<(), FsError> {
+                self.0.rename(from, to)
+            }
+        }
+
+        testing_logger::setup();
+
+        // Set up: create the first MANAGED_DIR target so the first symlink succeeds,
+        // but NOT the second so dev_switch_to_dev fails after the first symlink is created.
+        // The rollback will then try to remove_file on the created symlink, which FailOnRemoveFs
+        // will fail — triggering log::error!
+        let first_dir = MANAGED_DIRS[0];
+        let inner_fs = InMemoryFileSystem::new().with_dir(&format!("/ecc/{first_dir}"));
+        let fs = FailOnRemoveFs(inner_fs);
+        let terminal = BufferedTerminal::new();
+
+        let _result = dev_switch(
+            &fs,
+            &terminal,
+            Path::new("/ecc"),
+            Path::new("/claude"),
+            ecc_domain::config::dev_profile::DevProfile::Dev,
+            false,
+        );
+
+        testing_logger::validate(|captured_logs| {
+            let found = captured_logs.iter().any(|log| {
+                log.level == log::Level::Error && log.body.contains("dev_switch rollback")
+            });
+            if !found {
+                let messages: Vec<String> = captured_logs
+                    .iter()
+                    .map(|l| format!("[{}] {}", l.level, l.body))
+                    .collect();
+                panic!(
+                    "expected log::error! with 'dev_switch rollback' in message.\nCaptured logs: {messages:?}"
+                );
+            }
+        });
+    }
 }
