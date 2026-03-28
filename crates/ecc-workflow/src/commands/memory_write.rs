@@ -447,3 +447,122 @@ fn insert_after_daily_heading(content: &str, link: &str) -> String {
 
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── build_action_entry tests ──────────────────────────────────────────────
+
+    #[test]
+    fn build_action_entry_happy_path() {
+        let entry = build_action_entry(
+            "feat",
+            "add feature X",
+            "success",
+            "[]",
+            "session-1",
+            "2026-01-01T00:00:00Z",
+        );
+        assert_eq!(entry["action_type"], "feat");
+        assert_eq!(entry["description"], "add feature X");
+        assert_eq!(entry["outcome"], "success");
+        assert_eq!(entry["session_id"], "session-1");
+        assert_eq!(entry["timestamp"], "2026-01-01T00:00:00Z");
+    }
+
+    #[test]
+    fn build_action_entry_invalid_artifacts_json_defaults_to_empty_array() {
+        let entry = build_action_entry(
+            "fix",
+            "desc",
+            "done",
+            "not-valid-json",
+            "sess",
+            "ts",
+        );
+        assert_eq!(entry["artifacts"], serde_json::json!([]));
+    }
+
+    #[test]
+    fn build_action_entry_empty_strings_are_preserved() {
+        let entry = build_action_entry("", "", "", "[]", "", "");
+        assert_eq!(entry["action_type"], "");
+        assert_eq!(entry["description"], "");
+        assert_eq!(entry["outcome"], "");
+    }
+
+    // ── build_work_item_content tests ─────────────────────────────────────────
+
+    #[test]
+    fn build_work_item_content_plan_contains_concern() {
+        let content = build_work_item_content("plan", "Test Feature", "auth", "2026-01-01T00:00:00Z");
+        assert!(content.contains("Concern: auth"));
+        assert!(content.contains("# Plan: Test Feature"));
+    }
+
+    #[test]
+    fn build_work_item_content_solution_phase() {
+        let content = build_work_item_content("solution", "My Solution", "infra", "2026-01-01T00:00:00Z");
+        assert!(content.contains("# Solution: My Solution"));
+        assert!(content.contains("## File Changes"));
+    }
+
+    #[test]
+    fn build_work_item_content_implementation_phase() {
+        let content = build_work_item_content("implementation", "Impl desc", "concern", "2026-01-01T00:00:00Z");
+        assert!(content.contains("# Implementation: Impl desc"));
+        assert!(content.contains("## Changes Made"));
+    }
+
+    #[test]
+    fn build_work_item_content_unknown_phase_returns_error() {
+        let result = try_build_work_item_content("unknown", "desc", "concern", "ts");
+        assert!(result.is_err());
+    }
+
+    // ── build_daily_content tests ─────────────────────────────────────────────
+
+    #[test]
+    fn build_daily_entry_contains_phase_feature_concern() {
+        let entry = build_daily_entry("spec", "auth feature", "security", "09:30");
+        assert!(entry.contains("**spec**"));
+        assert!(entry.contains("auth feature"));
+        assert!(entry.contains("security"));
+        assert!(entry.contains("09:30"));
+    }
+
+    #[test]
+    fn build_daily_entry_empty_phase_produces_entry() {
+        let entry = build_daily_entry("", "feature", "concern", "10:00");
+        assert!(entry.contains("****"));
+    }
+
+    #[test]
+    fn build_daily_entry_special_chars_preserved() {
+        let entry = build_daily_entry("plan", "feat: add & fix", "a/b", "12:00");
+        assert!(entry.contains("feat: add & fix"));
+        assert!(entry.contains("a/b"));
+    }
+
+    // ── build_memory_index_link tests ─────────────────────────────────────────
+
+    #[test]
+    fn build_memory_index_link_correct_format() {
+        let link = build_memory_index_link("2026-01-01");
+        assert_eq!(link, "- [2026-01-01](daily/2026-01-01.md)");
+    }
+
+    #[test]
+    fn build_memory_index_link_different_date() {
+        let link = build_memory_index_link("2025-12-31");
+        assert!(link.contains("2025-12-31"));
+        assert!(link.contains("daily/2025-12-31.md"));
+    }
+
+    #[test]
+    fn build_memory_index_link_is_markdown_list_item() {
+        let link = build_memory_index_link("2026-03-28");
+        assert!(link.starts_with("- ["));
+    }
+}
