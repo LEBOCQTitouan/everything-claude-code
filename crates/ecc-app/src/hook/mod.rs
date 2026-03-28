@@ -149,7 +149,12 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "stop:worktree-cleanup-reminder" => handlers::worktree_cleanup_reminder(stdin, ports),
         "instructions:loaded:validate" => handlers::instructions_loaded_validate(stdin, ports),
         "config:change:log" => handlers::config_change_log(stdin, ports),
-        "worktree:create:init" => handlers::worktree_create_init(stdin, ports),
+        "post:enter-worktree:session-log" => {
+            handlers::post_enter_worktree_session_log(stdin, ports)
+        }
+        "post:exit-worktree:cleanup-reminder" => {
+            handlers::post_exit_worktree_cleanup_reminder(stdin, ports)
+        }
 
         // Tier 3: Session/File I/O hooks
         "session:start" => handlers::session_start(stdin, ports),

@@ -289,6 +289,30 @@ pub fn worktree_cleanup_reminder(stdin: &str, _ports: &HookPorts<'_>) -> HookRes
     }
 }
 
+/// post:exit-worktree:cleanup-reminder — Remind about unmerged changes after worktree removal.
+///
+/// Parses `tool_input.worktree_path` (fallback: `tool_input.name`, then `"unknown"`) from
+/// PostToolUse stdin JSON.
+pub fn post_exit_worktree_cleanup_reminder(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    let path = serde_json::from_str::<serde_json::Value>(stdin)
+        .ok()
+        .and_then(|v| {
+            let tool_input = v.get("tool_input")?;
+            tool_input
+                .get("worktree_path")
+                .or_else(|| tool_input.get("name"))
+                .and_then(|p| p.as_str())
+                .map(|s| s.to_string())
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+
+    let msg = format!(
+        "[Hook] Worktree removed: {}. Check for unmerged changes.\n",
+        path
+    );
+    HookResult::warn(stdin, &msg)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

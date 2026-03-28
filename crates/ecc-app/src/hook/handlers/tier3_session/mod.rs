@@ -18,7 +18,7 @@ pub use lifecycle::{session_end, session_start};
 pub use logging::{config_change_log, subagent_start_log, subagent_stop_log};
 pub use reflection::{craft_velocity, oath_reflection};
 pub use tracking::{cost_tracker, evaluate_session};
-pub use worktree::worktree_create_init;
+pub use worktree::post_enter_worktree_session_log;
 
 /// Log a write failure and append the warning to stderr_parts if provided.
 fn log_write_failure(
