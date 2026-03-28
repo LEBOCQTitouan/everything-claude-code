@@ -93,6 +93,14 @@ pub fn read_stdin() -> String {
     content
 }
 
+/// Archive state.json to archive/state-YYYYMMDDHHMMSS.json.
+///
+/// When `include_done` is false, done-phase states are NOT archived (init behavior).
+/// When `include_done` is true, ALL states are archived (reset behavior).
+pub fn archive_state(_workflow_dir: &Path, _include_done: bool) -> Result<(), anyhow::Error> {
+    todo!("archive_state not yet implemented")
+}
+
 /// Write the workflow state to state.json atomically (temp file + rename).
 pub fn write_state_atomic(project_dir: &Path, state: &WorkflowState) -> Result<(), anyhow::Error> {
     let dir = ensure_workflow_dir(project_dir)?;
@@ -164,5 +172,62 @@ mod tests {
             truncated.is_some(),
             "truncation indicator must be Some to trigger log::warn!"
         );
+    }
+
+    fn make_state_json(phase: ecc_domain::workflow::phase::Phase) -> String {
+        use ecc_domain::workflow::state::{Artifacts, Toolchain, WorkflowState};
+        let state = WorkflowState {
+            phase,
+            concern: "test".to_owned(),
+            feature: "test-feature".to_owned(),
+            started_at: "2026-01-01T00:00:00Z".to_owned(),
+            toolchain: Toolchain { test: None, lint: None, build: None },
+            artifacts: Artifacts {
+                plan: None, solution: None, implement: None,
+                campaign_path: None, spec_path: None, design_path: None, tasks_path: None,
+            },
+            completed: vec![],
+        };
+        serde_json::to_string_pretty(&state).unwrap()
+    }
+
+    #[test]
+    fn archive_state_includes_done() {
+        let tmp = TempDir::new().unwrap();
+        let workflow_dir = tmp.path().join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        let state_path = workflow_dir.join("state.json");
+        std::fs::write(&state_path, make_state_json(ecc_domain::workflow::phase::Phase::Done)).unwrap();
+
+        // include_done=true: done state MUST be archived
+        archive_state(&workflow_dir, true).unwrap();
+
+        // state.json must no longer exist (moved to archive)
+        assert!(!state_path.exists(), "state.json should have been archived");
+        // archive dir must contain a file
+        let archive_dir = workflow_dir.join("archive");
+        let entries: Vec<_> = std::fs::read_dir(&archive_dir).unwrap().collect();
+        assert!(!entries.is_empty(), "archive dir must contain the archived state");
+    }
+
+    #[test]
+    fn archive_state_skips_done() {
+        let tmp = TempDir::new().unwrap();
+        let workflow_dir = tmp.path().join(".claude/workflow");
+        std::fs::create_dir_all(&workflow_dir).unwrap();
+        let state_path = workflow_dir.join("state.json");
+        std::fs::write(&state_path, make_state_json(ecc_domain::workflow::phase::Phase::Done)).unwrap();
+
+        // include_done=false: done state must NOT be archived
+        archive_state(&workflow_dir, false).unwrap();
+
+        // state.json must still exist (not moved)
+        assert!(state_path.exists(), "state.json should NOT have been archived when include_done=false and phase=done");
+        // archive dir must NOT have been created (or be empty)
+        let archive_dir = workflow_dir.join("archive");
+        if archive_dir.exists() {
+            let entries: Vec<_> = std::fs::read_dir(&archive_dir).unwrap().collect();
+            assert!(entries.is_empty(), "no files should be archived when include_done=false");
+        }
     }
 }

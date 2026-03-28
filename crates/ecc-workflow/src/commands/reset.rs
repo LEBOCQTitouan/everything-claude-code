@@ -25,6 +25,26 @@ pub fn run(force: bool, project_dir: &Path) -> WorkflowOutput {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use ecc_domain::workflow::{
+        phase::Phase,
+        state::{Artifacts, Toolchain, WorkflowState},
+    };
+
+    fn make_state_json(phase: Phase) -> String {
+        let state = WorkflowState {
+            phase,
+            concern: "test".to_owned(),
+            feature: "test-feature".to_owned(),
+            started_at: "2026-01-01T00:00:00Z".to_owned(),
+            toolchain: Toolchain { test: None, lint: None, build: None },
+            artifacts: Artifacts {
+                plan: None, solution: None, implement: None,
+                campaign_path: None, spec_path: None, design_path: None, tasks_path: None,
+            },
+            completed: vec![],
+        };
+        serde_json::to_string_pretty(&state).unwrap()
+    }
 
     #[test]
     fn reset_force_deletes() {
@@ -36,7 +56,8 @@ pub mod tests {
 
         let output = run(true, dir.path());
         assert!(output.message.contains("reset"));
-        assert!(!wf_dir.join("state.json").exists());
+        // After rewrite: state.json should contain idle state, not be deleted
+        assert!(wf_dir.join("state.json").exists(), "state.json should be replaced with idle state, not deleted");
     }
 
     #[test]
@@ -51,5 +72,135 @@ pub mod tests {
         let dir = tempfile::tempdir().unwrap();
         let output = run(true, dir.path());
         assert!(output.message.contains("No active workflow"));
+    }
+
+    // PC-020: Reset archives state + writes idle
+    #[test]
+    fn reset_archives_and_writes_idle() {
+        let dir = tempfile::tempdir().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        std::fs::write(wf_dir.join("state.json"), make_state_json(Phase::Implement)).unwrap();
+
+        let output = run(true, dir.path());
+
+        // Output must be pass
+        assert!(
+            matches!(output.status, crate::output::Status::Pass),
+            "reset should succeed: {:?}",
+            output.message
+        );
+        // state.json must now contain idle state
+        assert!(wf_dir.join("state.json").exists(), "state.json must exist with idle state");
+        let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
+        let state = WorkflowState::from_json(&content).unwrap();
+        assert_eq!(state.phase, Phase::Idle, "phase should be idle after reset");
+        // archive dir must contain the old state
+        let archive_dir = wf_dir.join("archive");
+        let entries: Vec<_> = std::fs::read_dir(&archive_dir).unwrap().collect();
+        assert!(!entries.is_empty(), "old state must be archived");
+    }
+
+    // PC-021: Reset also archives done states (unlike init which skips done)
+    #[test]
+    fn reset_archives_done_state() {
+        let dir = tempfile::tempdir().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        std::fs::write(wf_dir.join("state.json"), make_state_json(Phase::Done)).unwrap();
+
+        let output = run(true, dir.path());
+
+        assert!(
+            matches!(output.status, crate::output::Status::Pass),
+            "reset should succeed even for done state: {:?}",
+            output.message
+        );
+        // The done state must be archived
+        let archive_dir = wf_dir.join("archive");
+        let entries: Vec<_> = std::fs::read_dir(&archive_dir).unwrap().collect();
+        assert!(!entries.is_empty(), "done state must also be archived");
+        // state.json must now contain idle state
+        let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
+        let state = WorkflowState::from_json(&content).unwrap();
+        assert_eq!(state.phase, Phase::Idle, "phase should be idle after reset");
+    }
+
+    // PC-022: Reset creates archive dir if it doesn't exist
+    #[test]
+    fn reset_creates_archive_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        std::fs::write(wf_dir.join("state.json"), make_state_json(Phase::Plan)).unwrap();
+
+        // Ensure archive dir does not exist before reset
+        let archive_dir = wf_dir.join("archive");
+        assert!(!archive_dir.exists(), "archive dir should not exist before reset");
+
+        run(true, dir.path());
+
+        assert!(archive_dir.exists(), "reset should create the archive directory");
+    }
+
+    // PC-023: Reset with no state.json returns pass
+    #[test]
+    fn reset_no_state_passes() {
+        let dir = tempfile::tempdir().unwrap();
+        let output = run(true, dir.path());
+        assert!(
+            matches!(output.status, crate::output::Status::Pass),
+            "reset with no state should pass: {:?}",
+            output.message
+        );
+        assert!(
+            output.message.contains("No active workflow"),
+            "message should mention no active workflow"
+        );
+    }
+
+    // PC-024: Reset acquires the state lock
+    #[test]
+    fn reset_acquires_state_lock() {
+        let dir = tempfile::tempdir().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        std::fs::write(wf_dir.join("state.json"), make_state_json(Phase::Implement)).unwrap();
+
+        run(true, dir.path());
+
+        // The lock file must exist (proves flock was acquired during reset)
+        let lock_file = ecc_flock::lock_dir(dir.path()).join("state.lock");
+        assert!(
+            lock_file.exists(),
+            "state.lock file not found at {:?} — reset did not acquire the state lock",
+            lock_file
+        );
+    }
+
+    // PC-036: Archive failure blocks reset (fail-safe)
+    #[test]
+    fn reset_archive_failure_blocks() {
+        let dir = tempfile::tempdir().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        std::fs::write(wf_dir.join("state.json"), make_state_json(Phase::Implement)).unwrap();
+
+        // Create a FILE at the archive path to prevent create_dir_all from succeeding
+        let archive_path = wf_dir.join("archive");
+        std::fs::write(&archive_path, b"blocker").unwrap();
+
+        let output = run(true, dir.path());
+
+        assert!(
+            matches!(output.status, crate::output::Status::Block),
+            "reset should be blocked when archive fails: {:?}",
+            output.message
+        );
+        // state.json must be unchanged (fail-safe: not modified on archive failure)
+        assert!(wf_dir.join("state.json").exists(), "state.json must not be modified when archive fails");
+        let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
+        let state = WorkflowState::from_json(&content).unwrap();
+        assert_eq!(state.phase, Phase::Implement, "state.json phase must be unchanged");
     }
 }
