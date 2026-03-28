@@ -30,9 +30,8 @@ mod worktree_name {
     }
 
     #[test]
-    fn blocks_on_invalid_chars() {
-        // A name with shell injection in the concern is still safe because generate() slugifies
-        // the feature and ignores concern for now; test that a valid call always passes.
+    fn passes_for_safe_feature_name() {
+        // generate() slugifies the feature; any safe ASCII input produces a pass result.
         let output = run("dev", "valid-feature");
         assert!(
             matches!(output.status, crate::output::Status::Pass),

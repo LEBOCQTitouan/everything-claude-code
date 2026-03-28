@@ -82,6 +82,7 @@ enum Commands {
     /// Warns on stderr if the section is missing, always exits 0.
     E2eBoundaryCheck,
     /// Generate a new git worktree name for session isolation.
+    /// Generate a session-isolated git worktree name from concern and feature.
     WorktreeName {
         concern: String,
         feature: String,
