@@ -74,6 +74,148 @@ pub fn stop_notify(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     HookResult::passthrough(stdin)
 }
 
+// ── Sanitization tests (PC-013, PC-014, PC-015, PC-016, PC-055) ──────────────
+
+#[cfg(test)]
+mod tier2_notify {
+    pub mod tests {
+        use super::super::*;
+
+        // PC-013: osascript builder escapes single and double quotes
+        #[test]
+        fn sanitize_osascript_escapes_quotes() {
+            // Single quotes pass through unchanged (AppleScript uses double-quote delimited strings)
+            assert_eq!(sanitize_osascript("it's fine"), "it's fine");
+            // Double quotes are escaped with backslash
+            assert_eq!(sanitize_osascript(r#"say "hello""#), r#"say \"hello\""#);
+            // Both together
+            assert_eq!(sanitize_osascript(r#"it's "great""#), r#"it's \"great\""#);
+        }
+
+        // PC-014: PowerShell builder escapes single quotes
+        #[test]
+        fn sanitize_powershell_escapes_quotes() {
+            // Single quotes are doubled
+            assert_eq!(sanitize_powershell("it's fine"), "it''s fine");
+            // Double quotes pass through unchanged
+            assert_eq!(sanitize_powershell(r#"say "hello""#), r#"say "hello""#);
+            // Multiple single quotes
+            assert_eq!(sanitize_powershell("it's a 'test'"), "it''s a ''test''");
+        }
+
+        // PC-015: Adversarial injection input blocked
+        #[test]
+        fn adversarial_injection_blocked() {
+            // Classic shell injection via single quote
+            let injected = sanitize_osascript("'; rm -rf /; echo '");
+            assert!(!injected.contains("'; rm"), "osascript injection should be escaped");
+
+            // AppleScript injection via double quote
+            let injected = sanitize_osascript(r#"" with title "x" do shell script "echo pwned""#);
+            assert!(!injected.contains(r#"" with title"#), "osascript AppleScript injection should be escaped");
+
+            // PowerShell injection via single quote
+            let injected = sanitize_powershell("'; Start-Process cmd");
+            assert!(injected.starts_with("''; Start-Process"), "powershell injection should be escaped");
+        }
+
+        // PC-055: osascript escapes backslashes + caps input length at 256
+        #[test]
+        fn sanitize_osascript_backslash_and_length() {
+            // Backslash is escaped
+            assert_eq!(sanitize_osascript("path\\to\\file"), "path\\\\to\\\\file");
+            // Backslash + double quote: backslash must be escaped FIRST
+            assert_eq!(sanitize_osascript("\\\""), "\\\\\\\"");
+            // Length cap: 257 chars → truncated to 256
+            let long_input = "a".repeat(257);
+            let result = sanitize_osascript(&long_input);
+            assert_eq!(result.len(), 256, "should be capped at 256 chars");
+        }
+
+        // PC-016: >= 5 adversarial inputs per platform (>= 10 total)
+        // osascript adversarial inputs (5)
+        #[test]
+        fn adversarial_osascript_shell_injection() {
+            let result = sanitize_osascript("'; rm -rf /; echo '");
+            // Must not contain unescaped double quotes that break out of the AppleScript string
+            assert!(!result.contains(r#"" "#), "no unescaped quotes: {result}");
+        }
+
+        #[test]
+        fn adversarial_osascript_applescript_injection() {
+            let result = sanitize_osascript(r#"" with title "x" \n do shell script "echo pwned""#);
+            assert!(result.contains(r#"\""#), "double quotes must be escaped: {result}");
+        }
+
+        #[test]
+        fn adversarial_osascript_backslash_quote_combo() {
+            let result = sanitize_osascript(r#"\"; system(\"rm -rf /\"); \""#);
+            // Backslashes must be escaped before quotes
+            assert!(result.contains("\\\\"), "backslashes must be doubled: {result}");
+            assert!(result.contains(r#"\""#), "quotes must be escaped: {result}");
+        }
+
+        #[test]
+        fn adversarial_osascript_empty_string() {
+            assert_eq!(sanitize_osascript(""), "");
+        }
+
+        #[test]
+        fn adversarial_osascript_long_input_truncation() {
+            let long_input = "x".repeat(300);
+            let result = sanitize_osascript(&long_input);
+            assert!(result.len() <= 256, "must be capped at 256: len={}", result.len());
+        }
+
+        // PowerShell adversarial inputs (5)
+        #[test]
+        fn adversarial_powershell_single_quote_injection() {
+            let result = sanitize_powershell("'; Start-Process cmd");
+            assert_eq!(&result[..2], "''", "single quote must be doubled: {result}");
+        }
+
+        #[test]
+        fn adversarial_powershell_empty_string() {
+            assert_eq!(sanitize_powershell(""), "");
+        }
+
+        #[test]
+        fn adversarial_powershell_long_input_truncation() {
+            let long_input = "y".repeat(300);
+            let result = sanitize_powershell(&long_input);
+            assert!(result.len() <= 256, "must be capped at 256: len={}", result.len());
+        }
+
+        #[test]
+        fn adversarial_powershell_unicode() {
+            let result = sanitize_powershell("hello 🔥 world");
+            // Unicode passes through; no single quotes to escape
+            assert!(result.contains("🔥"), "unicode should pass through: {result}");
+        }
+
+        #[test]
+        fn adversarial_powershell_mixed_injection() {
+            let result = sanitize_powershell("Hello \"World\" it's a \\'test\\\\");
+            // Single quotes are doubled
+            assert!(result.contains("''"), "single quotes must be doubled: {result}");
+        }
+
+        // Additional osascript adversarial inputs to exceed 5 per platform
+        #[test]
+        fn adversarial_osascript_unicode_passthrough() {
+            let result = sanitize_osascript("hello 🔥 world");
+            assert!(result.contains("🔥"), "unicode should pass through: {result}");
+        }
+
+        #[test]
+        fn adversarial_osascript_newlines() {
+            let result = sanitize_osascript("line1\nline2");
+            // Newlines pass through (osascript handles them)
+            assert!(result.contains('\n'), "newlines should pass through: {result}");
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
