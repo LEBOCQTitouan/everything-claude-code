@@ -77,36 +77,22 @@ fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Err
         .join("memory"))
 }
 
-// ── action ────────────────────────────────────────────────────────────────────
+// ── pure content builders (no I/O) ───────────────────────────────────────────
 
-pub fn write_action(
+/// Build a JSON action log entry from its constituent parts.
+///
+/// `artifacts_json` is parsed as JSON; on parse failure it defaults to `[]`.
+pub(crate) fn build_action_entry(
     action_type: &str,
     description: &str,
     outcome: &str,
     artifacts_json: &str,
-    project_dir: &Path,
-) -> Result<(), anyhow::Error> {
-    let memory_dir = project_dir.join("docs/memory");
-    let work_items_dir = memory_dir.join("work-items");
-    std::fs::create_dir_all(&memory_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;
-    std::fs::create_dir_all(&work_items_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
-
-    let action_log = memory_dir.join("action-log.json");
-    if !action_log.exists() {
-        std::fs::write(&action_log, b"[]")
-            .map_err(|e| anyhow::anyhow!("Failed to init action-log.json: {e}"))?;
-    }
-
-    let timestamp = utc_now_iso8601();
-    let session_id = std::env::var("CLAUDE_SESSION_ID").unwrap_or_else(|_| "unknown".to_string());
-
-    // Parse artifacts_json to ensure it's valid JSON
+    session_id: &str,
+    timestamp: &str,
+) -> serde_json::Value {
     let artifacts: serde_json::Value = serde_json::from_str(artifacts_json)
         .unwrap_or(serde_json::Value::Array(vec![]));
-
-    let entry = serde_json::json!({
+    serde_json::json!({
         "timestamp": timestamp,
         "session_id": session_id,
         "action_type": action_type,
@@ -114,72 +100,18 @@ pub fn write_action(
         "artifacts": artifacts,
         "outcome": outcome,
         "tags": []
-    });
-
-    // Atomic append: read current array, push entry, write atomically
-    let current_content = std::fs::read_to_string(&action_log)
-        .map_err(|e| anyhow::anyhow!("Failed to read action-log.json: {e}"))?;
-    let mut log: serde_json::Value = serde_json::from_str(&current_content)
-        .unwrap_or(serde_json::Value::Array(vec![]));
-
-    if let Some(arr) = log.as_array_mut() {
-        arr.push(entry);
-    }
-
-    let new_content = serde_json::to_string_pretty(&log)
-        .map_err(|e| anyhow::anyhow!("Failed to serialize action log: {e}"))?;
-
-    let tmp_path = memory_dir.join(".action-log.tmp");
-    std::fs::write(&tmp_path, new_content)
-        .map_err(|e| anyhow::anyhow!("Failed to write temp action log: {e}"))?;
-    std::fs::rename(&tmp_path, &action_log)
-        .map_err(|e| anyhow::anyhow!("Failed to atomically rename action log: {e}"))?;
-
-    Ok(())
+    })
 }
 
-// ── work-item ─────────────────────────────────────────────────────────────────
-
-pub fn write_work_item(
+/// Build the markdown content for a work item phase file.
+///
+/// Returns `Err` for unknown phases.
+pub(crate) fn try_build_work_item_content(
     phase: &str,
     description: &str,
     concern: &str,
-    project_dir: &Path,
-) -> Result<(), anyhow::Error> {
-    let memory_dir = project_dir.join("docs/memory");
-    let work_items_dir = memory_dir.join("work-items");
-    std::fs::create_dir_all(&work_items_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
-
-    // Ensure action-log.json exists
-    let action_log = memory_dir.join("action-log.json");
-    if !action_log.exists() {
-        std::fs::write(&action_log, b"[]")
-            .map_err(|e| anyhow::anyhow!("Failed to init action-log.json: {e}"))?;
-    }
-
-    let today = utc_today();
-    let slug = make_slug(description);
-    let item_dir = work_items_dir.join(format!("{today}-{slug}"));
-    std::fs::create_dir_all(&item_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create item dir: {e}"))?;
-
-    let target_file = item_dir.join(format!("{phase}.md"));
-    let timestamp = utc_now_iso8601();
-
-    // Re-entry: append revision block
-    if target_file.exists() {
-        let revision = format!(
-            "\n## Revision\n\nDate: {timestamp}\n\nRe-entry detected. This phase was re-executed.\n"
-        );
-        let mut content = std::fs::read_to_string(&target_file)
-            .map_err(|e| anyhow::anyhow!("Failed to read existing work item: {e}"))?;
-        content.push_str(&revision);
-        std::fs::write(&target_file, content)
-            .map_err(|e| anyhow::anyhow!("Failed to append revision: {e}"))?;
-        return Ok(());
-    }
-
+    timestamp: &str,
+) -> Result<String, anyhow::Error> {
     let content = match phase {
         "plan" => format!(
             "# Plan: {description}\n\
@@ -247,6 +179,122 @@ pub fn write_work_item(
             ));
         }
     };
+    Ok(content)
+}
+
+/// Build the markdown content for a work item file (panics on unknown phase, for internal use).
+pub(crate) fn build_work_item_content(
+    phase: &str,
+    description: &str,
+    concern: &str,
+    timestamp: &str,
+) -> String {
+    try_build_work_item_content(phase, description, concern, timestamp)
+        .expect("valid phase required")
+}
+
+/// Build a single activity log entry line for the daily memory file.
+pub(crate) fn build_daily_entry(phase: &str, feature: &str, concern: &str, time: &str) -> String {
+    format!("- [{time}] **{phase}** {feature} — {concern}")
+}
+
+/// Build the markdown link line for a daily entry in MEMORY.md.
+pub(crate) fn build_memory_index_link(today: &str) -> String {
+    format!("- [{today}](daily/{today}.md)")
+}
+
+// ── action ────────────────────────────────────────────────────────────────────
+
+pub fn write_action(
+    action_type: &str,
+    description: &str,
+    outcome: &str,
+    artifacts_json: &str,
+    project_dir: &Path,
+) -> Result<(), anyhow::Error> {
+    let memory_dir = project_dir.join("docs/memory");
+    let work_items_dir = memory_dir.join("work-items");
+    std::fs::create_dir_all(&memory_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create memory dir: {e}"))?;
+    std::fs::create_dir_all(&work_items_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
+
+    let action_log = memory_dir.join("action-log.json");
+    if !action_log.exists() {
+        std::fs::write(&action_log, b"[]")
+            .map_err(|e| anyhow::anyhow!("Failed to init action-log.json: {e}"))?;
+    }
+
+    let timestamp = utc_now_iso8601();
+    let session_id = std::env::var("CLAUDE_SESSION_ID").unwrap_or_else(|_| "unknown".to_string());
+
+    let entry = build_action_entry(action_type, description, outcome, artifacts_json, &session_id, &timestamp);
+
+    // Atomic append: read current array, push entry, write atomically
+    let current_content = std::fs::read_to_string(&action_log)
+        .map_err(|e| anyhow::anyhow!("Failed to read action-log.json: {e}"))?;
+    let mut log: serde_json::Value = serde_json::from_str(&current_content)
+        .unwrap_or(serde_json::Value::Array(vec![]));
+
+    if let Some(arr) = log.as_array_mut() {
+        arr.push(entry);
+    }
+
+    let new_content = serde_json::to_string_pretty(&log)
+        .map_err(|e| anyhow::anyhow!("Failed to serialize action log: {e}"))?;
+
+    let tmp_path = memory_dir.join(".action-log.tmp");
+    std::fs::write(&tmp_path, new_content)
+        .map_err(|e| anyhow::anyhow!("Failed to write temp action log: {e}"))?;
+    std::fs::rename(&tmp_path, &action_log)
+        .map_err(|e| anyhow::anyhow!("Failed to atomically rename action log: {e}"))?;
+
+    Ok(())
+}
+
+// ── work-item ─────────────────────────────────────────────────────────────────
+
+pub fn write_work_item(
+    phase: &str,
+    description: &str,
+    concern: &str,
+    project_dir: &Path,
+) -> Result<(), anyhow::Error> {
+    let memory_dir = project_dir.join("docs/memory");
+    let work_items_dir = memory_dir.join("work-items");
+    std::fs::create_dir_all(&work_items_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create work-items dir: {e}"))?;
+
+    // Ensure action-log.json exists
+    let action_log = memory_dir.join("action-log.json");
+    if !action_log.exists() {
+        std::fs::write(&action_log, b"[]")
+            .map_err(|e| anyhow::anyhow!("Failed to init action-log.json: {e}"))?;
+    }
+
+    let today = utc_today();
+    let slug = make_slug(description);
+    let item_dir = work_items_dir.join(format!("{today}-{slug}"));
+    std::fs::create_dir_all(&item_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create item dir: {e}"))?;
+
+    let target_file = item_dir.join(format!("{phase}.md"));
+    let timestamp = utc_now_iso8601();
+
+    // Re-entry: append revision block
+    if target_file.exists() {
+        let revision = format!(
+            "\n## Revision\n\nDate: {timestamp}\n\nRe-entry detected. This phase was re-executed.\n"
+        );
+        let mut content = std::fs::read_to_string(&target_file)
+            .map_err(|e| anyhow::anyhow!("Failed to read existing work item: {e}"))?;
+        content.push_str(&revision);
+        std::fs::write(&target_file, content)
+            .map_err(|e| anyhow::anyhow!("Failed to append revision: {e}"))?;
+        return Ok(());
+    }
+
+    let content = try_build_work_item_content(phase, description, concern, &timestamp)?;
 
     std::fs::write(&target_file, content)
         .map_err(|e| anyhow::anyhow!("Failed to write work item file: {e}"))?;
@@ -295,7 +343,7 @@ pub fn write_daily(
 
     // Append entry under ## Activity
     let now = utc_hhmm();
-    let entry = format!("- [{now}] **{phase}** {feature} — {concern}");
+    let entry = build_daily_entry(phase, feature, concern, &now);
 
     // Insert after ## Activity line (and any immediately following blank line)
     let new_content = insert_after_activity(&content, &entry);
@@ -397,7 +445,7 @@ pub fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
     }
 
     let today = utc_today();
-    let link = format!("- [{today}](daily/{today}.md)");
+    let link = build_memory_index_link(&today);
 
     // Skip if already present
     if content.contains(&link) {
