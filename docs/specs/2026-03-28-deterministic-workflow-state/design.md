@@ -389,3 +389,49 @@ Within each phase, write all tests first (they will fail), then implement to pas
 - [ ] `cargo clippy -- -D warnings` passes with zero warnings
 - [ ] `cargo test` passes (all existing + new tests)
 - [ ] `cargo build --release` succeeds
+
+## Phase Summary
+
+### Design Reviews
+
+| Review Type | Verdict | Finding Count |
+|-------------|---------|---------------|
+| SOLID | CLEAN | 1 MEDIUM (use io::read_state — incorporated) |
+| Robert | CLEAN | 0 |
+| Security | CLEAR | 0 |
+
+### Adversary Findings
+
+| Dimension | Score | Verdict | Key Rationale |
+|-----------|-------|---------|---------------|
+| Completeness | 91 | PASS | 42 PCs covering 27 ACs, all exhaustive match sites addressed |
+| Correctness | 90 | PASS | Code snippets verified, lock + atomic archive confirmed |
+| Consistency | 93 | PASS | TDD order matches dependency graph |
+| Testability | 94 | PASS | All ACs deterministically testable |
+| Feasibility | 93 | PASS | Incremental modifications, no new deps |
+| Clarity | 91 | PASS | Clear phase boundaries, code snippets |
+| Safety | 90 | PASS | Lock, archive fail-safe, corrupt-state tolerance |
+| Blast Radius | 88 | PASS | 11 files (3 added in round 2) |
+
+### File Changes Summary
+
+| # | File | Action | Spec Ref |
+|---|------|--------|----------|
+| 1 | `crates/ecc-domain/src/workflow/phase.rs` | Modify | AC-001.1, AC-001.6 |
+| 2 | `crates/ecc-domain/src/workflow/transition.rs` | Modify | AC-001.2-005 |
+| 3 | `crates/ecc-workflow/src/commands/phase_gate.rs` | Modify | AC-001.7, AC-002.1-5 |
+| 4 | `crates/ecc-workflow/src/io.rs` | Modify | Decision 5 |
+| 5 | `crates/ecc-workflow/src/commands/init.rs` | Modify | Decision 5 |
+| 6 | `crates/ecc-workflow/src/commands/reset.rs` | Rewrite | AC-005.1-6 |
+| 7 | `crates/ecc-workflow/src/commands/transition.rs` | Modify | AC-004.1-4 |
+| 8 | `crates/ecc-workflow/src/commands/scope_check.rs` | Modify | AC-001.1 |
+| 9 | `crates/ecc-workflow/src/commands/grill_me_gate.rs` | Modify | AC-001.1 |
+| 10 | `crates/ecc-workflow/src/commands/stop_gate.rs` | Modify | AC-001.1 |
+| 11 | `crates/ecc-integration-tests/tests/workflow_lifecycle.rs` | Create | AC-003.1-5 |
+
+### Artifacts Persisted
+
+| File Path | Section Written |
+|-----------|-----------------|
+| docs/specs/2026-03-28-deterministic-workflow-state/spec.md | Full spec + phase summary |
+| docs/specs/2026-03-28-deterministic-workflow-state/design.md | Full design + phase summary |
