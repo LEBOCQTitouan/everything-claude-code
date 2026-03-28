@@ -56,6 +56,19 @@ impl FlockGuard {
     pub fn lock_path(&self) -> &Path {
         &self.lock_path
     }
+
+    /// Consumes the guard and returns the raw file descriptor without releasing the lock.
+    ///
+    /// The caller takes responsibility for calling `libc::flock(fd, LOCK_UN)` and
+    /// `libc::close(fd)` when the lock should be released.
+    pub fn into_raw_fd(mut self) -> (PathBuf, i32) {
+        let fd = self.fd;
+        let path = self.lock_path.clone();
+        // Prevent double-close: set fd to -1 before forgetting the guard.
+        self.fd = -1;
+        std::mem::forget(self);
+        (path, fd)
+    }
 }
 
 /// Returns the `.locks` directory path for a given repo root.
