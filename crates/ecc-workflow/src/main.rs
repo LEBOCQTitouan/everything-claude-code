@@ -17,7 +17,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    Init { concern: String, feature: String },
+    Init {
+        concern: String,
+        feature: String,
+    },
     Transition {
         target: String,
         #[arg(long)]
@@ -78,6 +81,26 @@ enum Commands {
     /// Check implement-done.md for an "## E2E Tests" section at "done" phase.
     /// Warns on stderr if the section is missing, always exits 0.
     E2eBoundaryCheck,
+    /// Atomically add an entry to docs/backlog/ with flock-based locking.
+    Backlog {
+        #[command(subcommand)]
+        subcmd: BacklogCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum BacklogCmd {
+    /// Add a new backlog entry atomically with flock locking.
+    AddEntry {
+        /// Entry title
+        title: String,
+        #[arg(long, default_value = "MEDIUM")]
+        scope: String,
+        #[arg(long, default_value = "/spec-dev")]
+        target: String,
+        #[arg(long, default_value = "")]
+        tags: String,
+    },
 }
 
 fn main() {
@@ -134,6 +157,14 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::DocLevelCheck => commands::doc_level_check::run(&project_dir()),
         Commands::PassConditionCheck => commands::pass_condition_check::run(&project_dir()),
         Commands::E2eBoundaryCheck => commands::e2e_boundary_check::run(&project_dir()),
+        Commands::Backlog { subcmd } => match subcmd {
+            BacklogCmd::AddEntry {
+                title,
+                scope,
+                target,
+                tags,
+            } => commands::backlog::run(&title, &scope, &target, &tags, &project_dir()),
+        },
     }
 }
 

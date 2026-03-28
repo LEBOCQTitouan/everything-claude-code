@@ -1,4 +1,5 @@
 pub mod artifact;
+pub mod backlog;
 pub mod doc_enforcement;
 pub mod doc_level_check;
 pub mod e2e_boundary_check;
