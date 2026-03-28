@@ -130,4 +130,89 @@ mod tests {
         assert_eq!(result.exit_code, 0);
         assert!(result.stderr.is_empty());
     }
+
+    // --- post_enter_worktree_session_log (PostToolUse format) ---
+
+    #[test]
+    fn post_enter_worktree_session_log_logs_from_tool_input() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_home("/home/test");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_name":"EnterWorktree","tool_input":{"worktree_path":"/tmp/wt"}}"#;
+        let result = post_enter_worktree_session_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
+        assert!(content.contains("[Worktree] Created: /tmp/wt"));
+    }
+
+    #[test]
+    fn post_enter_worktree_session_log_fallback_name() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_home("/home/test");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_name":"EnterWorktree","tool_input":{"name":"feature-branch"}}"#;
+        let result = post_enter_worktree_session_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
+        assert!(content.contains("[Worktree] Created: feature-branch"));
+    }
+
+    #[test]
+    fn post_enter_worktree_session_log_fallback_unknown() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_home("/home/test");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_name":"EnterWorktree","tool_input":{}}"#;
+        let result = post_enter_worktree_session_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let content = fs
+            .read_to_string(std::path::Path::new(
+                "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            ))
+            .unwrap();
+        assert!(content.contains("[Worktree] Created: unknown"));
+    }
+
+    #[test]
+    fn post_enter_worktree_session_log_no_session_passthrough() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_home("/home/test");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_name":"EnterWorktree","tool_input":{"worktree_path":"/tmp/wt"}}"#;
+        let result = post_enter_worktree_session_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+        assert!(result.stderr.is_empty());
+    }
 }

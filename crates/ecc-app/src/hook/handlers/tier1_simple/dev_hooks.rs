@@ -642,4 +642,36 @@ mod tests {
         assert!(result.stderr.contains("Worktree removed"));
         assert!(result.stderr.contains("unmerged changes"));
     }
+
+    // --- post_exit_worktree_cleanup_reminder (PostToolUse format) ---
+
+    #[test]
+    fn post_exit_worktree_cleanup_with_path() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin =
+            r#"{"tool_name":"ExitWorktree","tool_input":{"worktree_path":"/tmp/wt-feature-x"}}"#;
+        let result = post_exit_worktree_cleanup_reminder(stdin, &ports);
+        assert!(result.stderr.contains("Worktree removed"));
+        assert!(result.stderr.contains("/tmp/wt-feature-x"));
+        assert!(result.stderr.contains("unmerged changes"));
+    }
+
+    #[test]
+    fn post_exit_worktree_cleanup_without_path() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_name":"ExitWorktree","tool_input":{}}"#;
+        let result = post_exit_worktree_cleanup_reminder(stdin, &ports);
+        assert!(result.stderr.contains("Worktree removed"));
+        assert!(result.stderr.contains("unmerged changes"));
+    }
 }
