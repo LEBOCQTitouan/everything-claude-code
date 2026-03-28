@@ -12,23 +12,26 @@ flowchart TD
     PORTS["ecc-ports<br/>(trait definitions)"]
     DOMAIN["ecc-domain<br/>(pure business logic)"]
     TEST["ecc-test-support<br/>(test doubles)"]
+    WF["ecc-workflow<br/>(standalone binary)"]
+    FLOCK["ecc-flock<br/>(POSIX flock utility)"]
+    IT["ecc-integration-tests<br/>(E2E tests)"]
 
     CLI --> APP
     CLI --> INFRA
     CLI --> PORTS
     CLI --> DOMAIN
 
-    INFRA --> APP
-    INFRA --> PORTS
-    INFRA --> DOMAIN
-
     APP --> PORTS
     APP --> DOMAIN
 
-    PORTS --> DOMAIN
+    INFRA --> PORTS
+
+    WF --> DOMAIN
+    WF --> FLOCK
 
     TEST --> PORTS
-    TEST --> DOMAIN
+
+    IT -.->|spawns binary| CLI
 
     style DOMAIN fill:#1a1a2e,color:#fff
     style PORTS fill:#16213e,color:#fff
@@ -36,6 +39,9 @@ flowchart TD
     style INFRA fill:#533483,color:#fff
     style CLI fill:#e94560,color:#fff
     style TEST fill:#2d4059,color:#fff
+    style WF fill:#e94560,color:#fff
+    style FLOCK fill:#2d4059,color:#fff
+    style IT fill:#2d4059,color:#fff
 ```
 
 ## Related
