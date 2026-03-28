@@ -1,6 +1,6 @@
 # Bounded Contexts
 
-The `ecc-domain` crate contains 6 domain modules, each responsible for a distinct bounded context. All modules are pure business logic with zero I/O.
+The `ecc-domain` crate contains 8 domain modules, each responsible for a distinct bounded context. All modules are pure business logic with zero I/O.
 
 ## Module Map
 
@@ -12,6 +12,8 @@ The `ecc-domain` crate contains 6 domain modules, each responsible for a distinc
 | `diff` | Diff computation — LCS algorithm, line-level diffs, merge conflict representation | `LineDiff`, `DiffResult`, `MergeConflict` |
 | `hook_runtime` | Hook execution model — profile gating, flag checking, stdin passthrough protocol | `HookConfig`, `HookFlags`, `ExecutionGate` |
 | `session` | Session lifecycle — metadata parsing, alias management, statistics | `SessionMetadata`, `SessionAlias`, `SessionStats` |
+| `backlog` | Backlog management — entry parsing, ID generation, duplicate detection | `BacklogEntry`, `BacklogError`, `BacklogId` |
+| `workflow` | Workflow state machine — phase transitions, state persistence, toolchain config | `WorkflowState`, `Phase`, `Concern`, `Timestamp`, `Completion` |
 
 ## Cross-Module Dependencies
 
