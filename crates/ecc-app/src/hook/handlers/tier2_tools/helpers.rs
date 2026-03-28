@@ -3,13 +3,20 @@
 use crate::hook::HookPorts;
 use std::path::Path;
 
+/// Error from file path validation.
+#[derive(Debug, thiserror::Error)]
+pub enum PathValidationError {
+    /// File path starts with a dash, which could be interpreted as a flag.
+    #[error("validate_file_path: rejected path starting with dash: {path}. Remove the leading dash.")]
+    DashPrefix { path: String },
+}
+
 /// Reject file paths that start with `-` to prevent flag injection.
-pub(super) fn validate_file_path(path: &str) -> Result<(), String> {
+pub(super) fn validate_file_path(path: &str) -> Result<(), PathValidationError> {
     if path.starts_with('-') {
-        return Err(format!(
-            "[Hook] Rejected file path starting with dash: {}",
-            path
-        ));
+        return Err(PathValidationError::DashPrefix {
+            path: path.to_owned(),
+        });
     }
     Ok(())
 }

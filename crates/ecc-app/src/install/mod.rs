@@ -2,6 +2,7 @@
 //!
 //! Ports `install-orchestrator.ts`.
 
+pub mod error;
 mod global;
 mod helpers;
 mod init;

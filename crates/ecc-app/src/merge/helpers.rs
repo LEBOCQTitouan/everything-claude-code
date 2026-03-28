@@ -252,14 +252,16 @@ mod tests {
         let fs = InMemoryFileSystem::new()
             .with_file("/src/agent.md", "new content")
             .with_file("/dest/agent.md", "old content");
-        let shell = MockExecutor::new().on(
-            "claude",
-            CommandOutput {
-                stdout: "merged content".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            },
-        );
+        let shell = MockExecutor::new()
+            .with_command("claude")
+            .on(
+                "claude",
+                CommandOutput {
+                    stdout: "merged content".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
         let file = FileToReview {
             filename: "agent.md".into(),
             src_path: "/src/agent.md".into(),

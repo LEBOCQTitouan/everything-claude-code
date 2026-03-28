@@ -13,7 +13,7 @@ use std::path::PathBuf;
 /// 4. `$HOME/.ecc/`
 /// 5. Legacy npm global install paths (backward compat)
 /// 6. Error with instructions
-pub fn resolve_ecc_root(fs: &dyn FileSystem, env: &dyn Environment) -> Result<PathBuf, String> {
+pub fn resolve_ecc_root(fs: &dyn FileSystem, env: &dyn Environment) -> Result<PathBuf, super::error::InstallError> {
     // 1. ECC_ROOT env var (explicit override)
     if let Some(ecc_root) = env.var("ECC_ROOT") {
         let root = PathBuf::from(&ecc_root);
@@ -67,12 +67,12 @@ pub fn resolve_ecc_root(fs: &dyn FileSystem, env: &dyn Environment) -> Result<Pa
         }
     }
 
-    Err(
+    Err(super::error::InstallError::ResolveRoot(
         "Cannot find ECC assets directory. Install with: \
          curl -fsSL https://raw.githubusercontent.com/LEBOCQTitouan/everything-claude-code/main/scripts/get-ecc.sh | bash\n\
          Or set ECC_ROOT environment variable / use --ecc-root flag."
             .to_string(),
-    )
+    ))
 }
 
 #[cfg(test)]
@@ -127,6 +127,7 @@ mod tests {
         assert!(
             result
                 .unwrap_err()
+                .to_string()
                 .contains("Cannot find ECC assets directory")
         );
     }
