@@ -342,6 +342,8 @@ dependencies = [
  "anyhow",
  "clap",
  "ecc-domain",
+ "env_logger",
+ "log",
  "serde",
  "serde_json",
  "tempfile",
