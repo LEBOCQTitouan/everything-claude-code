@@ -295,4 +295,37 @@ mod tests {
             assert!(result.is_err(), "unknown alias should return an error");
         }
     }
+
+    mod unknown_phase_transition_rejected {
+        use super::*;
+
+        /// PC-054: Phase::Unknown rejected by transition logic.
+        #[test]
+        fn unknown_phase_as_source_is_rejected() {
+            let result = resolve_transition(Phase::Unknown, Phase::Plan);
+            assert!(
+                result.is_err(),
+                "transition FROM Unknown should be rejected, got: {result:?}"
+            );
+        }
+
+        #[test]
+        fn unknown_phase_as_target_is_rejected() {
+            let result = resolve_transition(Phase::Idle, Phase::Unknown);
+            assert!(
+                result.is_err(),
+                "transition TO Unknown should be rejected, got: {result:?}"
+            );
+        }
+
+        #[test]
+        fn unknown_to_unknown_is_rejected() {
+            // Even re-entry for Unknown should be rejected (it is not a valid state)
+            let result = resolve_transition(Phase::Unknown, Phase::Unknown);
+            assert!(
+                result.is_err(),
+                "Unknown->Unknown should be rejected, got: {result:?}"
+            );
+        }
+    }
 }
