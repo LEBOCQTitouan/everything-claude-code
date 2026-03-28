@@ -13,6 +13,13 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUs
 
 !`ecc-workflow init dev "$ARGUMENTS"`
 
+### Worktree Isolation
+
+Generate a worktree name and isolate this session:
+1. Run: `!ecc-workflow worktree-name dev "$ARGUMENTS"` — capture the output name
+2. Call `EnterWorktree` with the generated name as the branch name. This isolates all session writes to a dedicated worktree.
+3. If `EnterWorktree` fails, proceed without worktree and warn: "Worktree isolation failed. Proceeding on main tree."
+
 ## Phase 0: Project Detection
 
 > **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Project Detection section for auto-detection logic.

@@ -13,6 +13,16 @@ allowed-tools: [Bash, Task, Read, Write, Edit, MultiEdit, Grep, Glob, LS, TodoWr
 
 ## Phase 0: State Validation
 
+### Worktree Isolation
+
+If not already in a worktree (check `git rev-parse --show-toplevel` vs `git rev-parse --git-common-dir`):
+1. Read `concern` and `feature` from `state.json`
+2. Run: `!ecc-workflow worktree-name <concern> "<feature>"` — capture the output name
+3. Call `EnterWorktree` with the generated name as the branch name
+4. If `EnterWorktree` fails, proceed without worktree and warn: "Worktree isolation failed. Proceeding on main tree."
+
+If already in a worktree (from a prior `/spec-*` or `/design` call in this session): skip — already isolated.
+
 1. Read `.claude/workflow/state.json`
 2. Verify `phase` is `"solution"` or `"implement"` (re-entry allowed). If this gate blocks, explain what failed and provide specific remediation steps. If any other phase → error:
    > "Current phase is `<phase>`. `/implement` requires phase `solution`. Run `/design` first."
@@ -314,6 +324,7 @@ After writing:
 2. Commit tasks.md final state: `docs: finalize tasks.md for <feature>`
 3. Run: `!ecc-workflow transition done --artifact implement`
 4. Commit: `chore: write implement-done.md`
+5. **Worktree cleanup**: If running in a worktree, call `ExitWorktree` to return to the main repo. The worktree and branch are cleaned up automatically on success. If the implementation failed or was aborted, the worktree is preserved — run `ecc worktree gc` to clean up stale worktrees.
 
 ## Phase 8: Final Verification and STOP
 

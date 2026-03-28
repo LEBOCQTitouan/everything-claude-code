@@ -13,6 +13,16 @@ allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite, TodoRead, En
 
 ## Phase 0: State Validation
 
+### Worktree Isolation
+
+If not already in a worktree (check `git rev-parse --show-toplevel` vs `git rev-parse --git-common-dir`):
+1. Read `concern` and `feature` from `state.json`
+2. Run: `!ecc-workflow worktree-name <concern> "<feature>"` — capture the output name
+3. Call `EnterWorktree` with the generated name as the branch name
+4. If `EnterWorktree` fails, proceed without worktree and warn: "Worktree isolation failed. Proceeding on main tree."
+
+If already in a worktree (from a prior `/spec-*` call in this session): skip — already isolated.
+
 1. Read `.claude/workflow/state.json`
 2. Verify `phase` is `"plan"` or `"solution"` (re-entry allowed). If this gate blocks, explain what failed and provide specific remediation steps. If any other phase → error:
    > "Current phase is `<phase>`. `/design` requires phase `plan`/`spec` or `solution`/`design`. Run the appropriate `/spec-*` command first."
