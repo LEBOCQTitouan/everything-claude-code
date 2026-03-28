@@ -35,9 +35,9 @@ User CLI (ecc)  — native Rust binary
   |    +-- bin/ecc-shell-hook.sh
   |
   +-- Content (copied to ~/.claude/)
-       +-- agents/    (30 markdown with YAML frontmatter)
-       +-- commands/  (6 active + 41 archived markdown slash commands)
-       +-- skills/    (74 domain knowledge directories)
+       +-- agents/    (51 markdown with YAML frontmatter)
+       +-- commands/  (24 active markdown slash commands)
+       +-- skills/    (110 domain knowledge directories)
        +-- rules/     (grouped by language: common/, typescript/, python/, ...)
        +-- contexts/  (dynamic system prompt injection)
 ```
