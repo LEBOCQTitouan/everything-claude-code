@@ -1,7 +1,7 @@
 ---
 id: BL-067
 title: Deterministic spec/design artifact validation — AC format, PC table, coverage mapping
-status: open
+status: promoted
 scope: HIGH
 target: /spec dev
 created: 2026-03-26
