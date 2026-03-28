@@ -3,6 +3,7 @@
 pub mod audit;
 pub mod clean;
 pub mod detect;
+pub mod error;
 pub mod gitignore;
 pub mod manifest;
 pub mod merge;
