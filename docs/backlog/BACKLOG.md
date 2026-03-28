@@ -94,6 +94,9 @@
 | BL-091 | ECC diagnostics — tiered verbosity with tracing + ecc status | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-092 | Structured log management — JSON rolling files + SQLite index + ecc log CLI | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-093 | Three-tier memory system — semantic/episodic/working + SQLite + consolidation | — | EPIC | /spec dev | open | 2026-03-28 |
+| BL-094 | Agent model routing optimization — downgrade misaligned agents to Sonnet/Haiku | — | HIGH | /spec refactor | open | 2026-03-28 |
+| BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | open | 2026-03-28 |
+| BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
 
 ## Dependency Graph
 
@@ -139,12 +142,15 @@ BL-089 → BL-065 (branch isolation relies on worktree isolation for multi-sessi
 BL-092 → BL-091 (structured logs build on tracing foundation from diagnostics)
 BL-093 → BL-092 (memory system shares SQLite infrastructure with log management)
 BL-093 → BL-065 (memory consolidation uses flock for concurrent writes)
+BL-094 → BL-096 (model routing optimization needs cost tracking for before/after)
+BL-095 → BL-096 (thinking tuning needs cost tracking for before/after)
+BL-096 → BL-092 (cost tracking shares ~/.ecc/logs/ infrastructure with structured logs)
 ```
 
 ## Stats
 
-- **Total:** 87
-- **Open:** 43
+- **Total:** 90
+- **Open:** 46
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
