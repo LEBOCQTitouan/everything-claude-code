@@ -39,6 +39,7 @@ ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
 ecc worktree gc [--force]  Clean up stale session worktrees
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
+cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, completions, RC)
 ```
 
 ## Slash Commands
