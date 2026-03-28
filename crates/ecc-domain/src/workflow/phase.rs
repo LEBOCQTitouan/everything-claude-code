@@ -131,8 +131,17 @@ mod tests {
     // --- FromStr unknown ---
 
     #[test]
-    fn from_str_unknown_returns_err() {
-        assert!(Phase::from_str("unknown").is_err());
+    fn from_str_unknown_maps_to_unknown_variant() {
+        // "unknown" is a valid string that maps to Phase::Unknown
+        assert_eq!(Phase::from_str("unknown").unwrap(), Phase::Unknown);
+    }
+
+    #[test]
+    fn from_str_truly_unrecognized_returns_err() {
+        // Strings that don't match any known phase still return Err
+        assert!(Phase::from_str("banana").is_err());
+        assert!(Phase::from_str("").is_err());
+        assert!(Phase::from_str("PLAN").is_err());
     }
 
     // --- Serde ---

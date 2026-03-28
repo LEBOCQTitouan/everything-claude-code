@@ -1,8 +1,10 @@
 //! `ecc-workflow reset --force` — reset workflow to idle state.
 
 use ecc_domain::workflow::{
+    concern::Concern,
     phase::Phase,
     state::{Artifacts, Toolchain, WorkflowState},
+    timestamp::Timestamp,
 };
 use std::path::Path;
 
@@ -33,9 +35,9 @@ pub fn run(force: bool, project_dir: &Path) -> WorkflowOutput {
         // Write minimal Idle state
         let idle_state = WorkflowState {
             phase: Phase::Idle,
-            concern: String::new(),
+            concern: Concern::Dev,
             feature: String::new(),
-            started_at: utc_now_iso8601(),
+            started_at: Timestamp::new(utc_now_iso8601()),
             toolchain: Toolchain {
                 test: None,
                 lint: None,
@@ -71,16 +73,18 @@ pub fn run(force: bool, project_dir: &Path) -> WorkflowOutput {
 pub mod tests {
     use super::*;
     use ecc_domain::workflow::{
+        concern::Concern,
         phase::Phase,
         state::{Artifacts, Toolchain, WorkflowState},
+        timestamp::Timestamp,
     };
 
     fn make_state_json(phase: Phase) -> String {
         let state = WorkflowState {
             phase,
-            concern: "test".to_owned(),
+            concern: Concern::Dev,
             feature: "test-feature".to_owned(),
-            started_at: "2026-01-01T00:00:00Z".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
             toolchain: Toolchain { test: None, lint: None, build: None },
             artifacts: Artifacts {
                 plan: None, solution: None, implement: None,

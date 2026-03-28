@@ -175,7 +175,7 @@ mod tests {
         let workflow_dir = dir.join(".claude/workflow");
         std::fs::create_dir_all(&workflow_dir).unwrap();
         let json = format!(
-            r#"{{"phase":"{phase}","concern":"test","feature":"feat","started_at":"2026-01-01T00:00:00Z","toolchain":{{"test":null,"lint":null,"build":null}},"artifacts":{{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null}},"completed":[]}}"#
+            r#"{{"phase":"{phase}","concern":"dev","feature":"feat","started_at":"2026-01-01T00:00:00Z","toolchain":{{"test":null,"lint":null,"build":null}},"artifacts":{{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null}},"completed":[]}}"#
         );
         std::fs::write(workflow_dir.join("state.json"), json).unwrap();
     }
@@ -204,7 +204,7 @@ mod tests {
     #[test]
     fn phase_gate_corrupt_type_warns() {
         let tmp = TempDir::new().unwrap();
-        write_raw_state(tmp.path(), r#"{"phase":123,"concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        write_raw_state(tmp.path(), r#"{"phase":123,"concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
         let output = super::run_with_input(tmp.path(), "");
         assert!(
             matches!(output.status, Status::Warn),
@@ -223,7 +223,7 @@ mod tests {
     #[test]
     fn phase_gate_missing_phase_warns() {
         let tmp = TempDir::new().unwrap();
-        write_raw_state(tmp.path(), r#"{"concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        write_raw_state(tmp.path(), r#"{"concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
         let output = super::run_with_input(tmp.path(), "");
         assert!(
             matches!(output.status, Status::Warn),
@@ -252,7 +252,7 @@ mod tests {
     #[test]
     fn phase_gate_unknown_variant_warns() {
         let tmp = TempDir::new().unwrap();
-        write_raw_state(tmp.path(), r#"{"phase":"banana","concern":"","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
+        write_raw_state(tmp.path(), r#"{"phase":"banana","concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#);
         let output = super::run_with_input(tmp.path(), "");
         assert!(
             matches!(output.status, Status::Warn),
@@ -277,7 +277,7 @@ mod tests {
         std::fs::create_dir_all(&workflow_dir).unwrap();
         let state_json = serde_json::json!({
             "phase": "plan",
-            "concern": "test",
+            "concern": "dev",
             "feature": "test-feature",
             "started_at": "2026-01-01T00:00:00Z",
             "toolchain": {"test": null, "lint": null, "build": null},

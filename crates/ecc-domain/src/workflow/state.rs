@@ -173,7 +173,9 @@ mod corrupted_json {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::workflow::concern::Concern;
     use crate::workflow::phase::Phase;
+    use crate::workflow::timestamp::Timestamp;
 
     #[test]
     fn json_round_trip() {
@@ -195,9 +197,9 @@ mod tests {
 
         let original = WorkflowState {
             phase: Phase::Implement,
-            concern: "dev".to_owned(),
+            concern: Concern::Dev,
             feature: "BL-052: Replace shell hooks with compiled Rust binaries".to_owned(),
-            started_at: "2026-03-26T21:45:00Z".to_owned(),
+            started_at: Timestamp::new("2026-03-26T21:45:00Z"),
             toolchain,
             artifacts,
             completed: vec![],
@@ -273,12 +275,12 @@ mod tests {
             serde_json::from_str(fixture).expect("fixture deserialization must succeed");
 
         assert_eq!(state.phase, Phase::Implement);
-        assert_eq!(state.concern, "dev");
+        assert_eq!(state.concern, Concern::Dev);
         assert_eq!(
             state.feature,
             "BL-052: Replace shell hooks with compiled Rust binaries"
         );
-        assert_eq!(state.started_at, "2026-03-26T21:45:00Z");
+        assert_eq!(state.started_at, Timestamp::new("2026-03-26T21:45:00Z"));
         assert_eq!(state.toolchain.test, Some("cargo test".to_owned()));
         assert_eq!(state.artifacts.campaign_path, None);
         assert_eq!(
@@ -314,9 +316,9 @@ mod tests {
 
         let state = WorkflowState {
             phase: Phase::Implement,
-            concern: "dev".to_owned(),
+            concern: Concern::Dev,
             feature: "BL-052: Replace shell hooks with compiled Rust binaries".to_owned(),
-            started_at: "2026-03-26T21:45:00Z".to_owned(),
+            started_at: Timestamp::new("2026-03-26T21:45:00Z"),
             toolchain: toolchain.clone(),
             artifacts: artifacts.clone(),
             completed: vec![completion.clone()],
@@ -326,7 +328,7 @@ mod tests {
         assert_eq!(state.phase, Phase::Implement);
 
         // Verify concern field
-        assert_eq!(state.concern, "dev");
+        assert_eq!(state.concern, Concern::Dev);
 
         // Verify feature field
         assert_eq!(
@@ -335,7 +337,7 @@ mod tests {
         );
 
         // Verify started_at field
-        assert_eq!(state.started_at, "2026-03-26T21:45:00Z");
+        assert_eq!(state.started_at, Timestamp::new("2026-03-26T21:45:00Z"));
 
         // Verify toolchain fields
         assert_eq!(state.toolchain.test, Some("cargo test".to_owned()));
