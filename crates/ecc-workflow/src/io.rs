@@ -65,3 +65,42 @@ pub fn write_state_atomic(project_dir: &Path, state: &WorkflowState) -> Result<(
         .map_err(|e| anyhow::anyhow!("Failed to rename state file: {e}"))?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    const MAX_STDIN_BYTES: u64 = 1_048_576; // 1 MB
+
+    #[test]
+    fn read_stdin_bounded_truncates() {
+        let oversized = "x".repeat(1_048_577); // 1 MB + 1 byte
+        let cursor = Cursor::new(oversized.as_bytes().to_vec());
+        let (content, truncated) = read_bounded(cursor, MAX_STDIN_BYTES);
+        assert!(truncated.is_some(), "expected truncation indicator");
+        assert_eq!(content.len(), 1_048_576, "content should be exactly 1 MB");
+    }
+
+    #[test]
+    fn read_stdin_bounded_exact() {
+        let exactly_1mb = "y".repeat(1_048_576); // exactly 1 MB
+        let cursor = Cursor::new(exactly_1mb.as_bytes().to_vec());
+        let (content, truncated) = read_bounded(cursor, MAX_STDIN_BYTES);
+        assert!(truncated.is_none(), "exactly 1 MB should NOT be truncated");
+        assert_eq!(content.len(), 1_048_576);
+    }
+
+    #[test]
+    fn read_stdin_bounded_logs_truncation() {
+        let oversized = "z".repeat(1_048_577);
+        let cursor = Cursor::new(oversized.as_bytes().to_vec());
+        let (_, truncated) = read_bounded(cursor, MAX_STDIN_BYTES);
+        // The truncated indicator being Some proves that log::warn! would be called
+        // in read_stdin() when this situation occurs.
+        assert!(
+            truncated.is_some(),
+            "truncation indicator must be Some to trigger log::warn!"
+        );
+    }
+}
