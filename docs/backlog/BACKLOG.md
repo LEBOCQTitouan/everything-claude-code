@@ -92,6 +92,8 @@
 | BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-090 | ECC component scaffolding — skill + /create-component command | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-091 | ECC diagnostics — tiered verbosity with tracing + ecc status | — | HIGH | /spec dev | open | 2026-03-28 |
+| BL-092 | Structured log management — JSON rolling files + SQLite index + ecc log CLI | — | HIGH | /spec dev | open | 2026-03-28 |
+| BL-093 | Three-tier memory system — semantic/episodic/working + SQLite + consolidation | — | EPIC | /spec dev | open | 2026-03-28 |
 
 ## Dependency Graph
 
@@ -134,12 +136,15 @@ BL-085 → BL-065 (worktree hook fix unblocks BL-065 Sub-Spec C worktree isolati
 BL-088 → BL-087 (ecc update leverages xtask deploy infrastructure for dev mode)
 BL-088 → BL-089 (ecc update needs release pipeline patterns from GHA skill)
 BL-089 → BL-065 (branch isolation relies on worktree isolation for multi-session)
+BL-092 → BL-091 (structured logs build on tracing foundation from diagnostics)
+BL-093 → BL-092 (memory system shares SQLite infrastructure with log management)
+BL-093 → BL-065 (memory consolidation uses flock for concurrent writes)
 ```
 
 ## Stats
 
-- **Total:** 85
-- **Open:** 41
+- **Total:** 87
+- **Open:** 43
 - **In-progress:** 1
 - **Implemented:** 39
 - **Archived:** 4
