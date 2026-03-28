@@ -84,6 +84,11 @@ fn main() {
     if std::env::var("ECC_WORKFLOW_BYPASS").as_deref() == Ok("1") {
         std::process::exit(0);
     }
+
+    // Initialize logging. RUST_LOG controls the level; default is off to avoid
+    // polluting hook JSON output in normal operation.
+    env_logger::init();
+
     let cli = Cli::parse();
 
     let result = dispatch(cli);
@@ -98,6 +103,10 @@ fn project_dir() -> std::path::PathBuf {
 }
 
 fn dispatch(cli: Cli) -> WorkflowOutput {
+    log::debug!(
+        "dispatching command: {:?}",
+        std::mem::discriminant(&cli.command)
+    );
     match cli.command {
         Commands::Init { concern, feature } => {
             commands::init::run(&concern, &feature, &project_dir())

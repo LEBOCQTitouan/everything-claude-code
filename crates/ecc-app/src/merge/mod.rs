@@ -137,7 +137,10 @@ fn resolve_choice(
             }
             choice
         }
-        Err(_) => ReviewChoice::Accept,
+        Err(e) => {
+            log::warn!("resolve_choice: prompt failed, defaulting to Accept: {e}");
+            ReviewChoice::Accept
+        }
     }
 }
 
@@ -155,7 +158,10 @@ pub fn merge_skills(
 
     let src_entries = match ctx.fs.read_dir(src_dir) {
         Ok(e) => e,
-        Err(_) => return report,
+        Err(e) => {
+            log::warn!("merge_skills: cannot read {}: {e}", src_dir.display());
+            return report;
+        }
     };
 
     let skill_dirs: Vec<String> = src_entries

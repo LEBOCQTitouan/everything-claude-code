@@ -65,7 +65,17 @@ fn check_file(path: &std::path::Path, display: &str, violations: &mut Vec<String
             .iter()
             .any(|l| l.contains("log::warn!") || l.contains("warn!("));
 
-        if !has_warn {
+        // Not a violation if the arm re-raises as Err(...), records to .errors/.push(), or
+        // captures in a structured error field using format!.
+        let is_recording_or_reraise = arm_slice.iter().any(|l| {
+            l.contains("report.errors.push(")
+                || l.contains(".errors.push(")
+                || l.contains("error: Some(format!")
+                || l.contains("error: Some(e.to_string")
+                || (l.contains("Err(") && (l.contains("format!") || l.contains("return Err")))
+        });
+
+        if !has_warn && !is_recording_or_reraise {
             violations.push(format!("  {}:{}: {}", display, i + 1, trimmed));
         }
     }

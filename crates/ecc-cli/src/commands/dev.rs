@@ -101,12 +101,15 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
             );
 
             if !summary.success {
+                let errors = summary.errors.join("; ");
+                eprintln!("Error: dev on failed — {errors}");
                 std::process::exit(1);
             }
         }
         DevAction::Off { dry_run } => {
             let result = dev::dev_off(&fs, &terminal, &claude_dir, dry_run);
             if !result.success {
+                eprintln!("Error: dev off failed");
                 std::process::exit(1);
             }
         }
@@ -137,6 +140,8 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
                     &ctx, &ecc_root, &claude_dir, version::version(), &now, dry_run,
                 );
                 if !summary.success {
+                    let errors = summary.errors.join("; ");
+                    eprintln!("Error: dev switch (reinstall) failed — {errors}");
                     std::process::exit(1);
                 }
             }

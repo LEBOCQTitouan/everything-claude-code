@@ -59,6 +59,13 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
         None => install::resolve_ecc_root(&fs, &env).map_err(|e| anyhow::anyhow!(e))?,
     };
 
+    if !ecc_root.exists() {
+        let msg = format!("ECC assets directory not found: {}", ecc_root.display());
+        log::warn!("{msg}");
+        eprintln!("Error: {msg}");
+        std::process::exit(1);
+    }
+
     let ctx = InstallContext {
         fs: &fs,
         shell: &shell,
@@ -98,6 +105,8 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
     );
 
     if !summary.success {
+        let errors = summary.errors.join("; ");
+        eprintln!("Error: install failed — {errors}");
         std::process::exit(1);
     }
 
