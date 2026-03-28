@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::io::read_stdin;
+use crate::io::{read_stdin, with_state_lock};
 use crate::output::WorkflowOutput;
 
 /// Allowed path prefixes during plan/solution phases.
@@ -39,14 +39,21 @@ const BLOCKED_BASH_PATTERNS: &[&str] = &[
 /// - Write/Edit/MultiEdit to blocked path → exit 2 (block)
 /// - Bash with destructive command → exit 2 (block)
 /// - All other tools → exit 0 (pass)
+///
+/// The workflow phase is read under the state lock so that phase-gate never
+/// observes a partially-written state.json during a concurrent transition.
 pub fn run(project_dir: &Path) -> WorkflowOutput {
-    // Read the workflow state; if missing, allow everything.
-    let phase = match read_phase(project_dir) {
-        PhaseResult::Missing => return WorkflowOutput::pass("No workflow active"),
-        PhaseResult::ReadError(e) => {
+    // Read stdin before acquiring the lock — stdin is not state-dependent.
+    let input = read_stdin();
+
+    // Acquire state lock to read the phase atomically with respect to transitions.
+    let phase = match with_state_lock(project_dir, || read_phase(project_dir)) {
+        Ok(PhaseResult::Missing) => return WorkflowOutput::pass("No workflow active"),
+        Ok(PhaseResult::ReadError(e)) => {
             return WorkflowOutput::pass(format!("Could not read state.json: {e}"));
         }
-        PhaseResult::Phase(p) => p,
+        Ok(PhaseResult::Phase(p)) => p,
+        Err(e) => return WorkflowOutput::pass(format!("Could not acquire state lock: {e}")),
     };
 
     // implement and done phases — no gating
@@ -54,8 +61,6 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
         return WorkflowOutput::pass(format!("Phase {phase}: no gating"));
     }
 
-    // Read stdin JSON from the hooks runtime
-    let input = read_stdin();
     let (tool_name, file_path, command) = parse_hook_input(&input);
 
     match tool_name.as_deref() {
