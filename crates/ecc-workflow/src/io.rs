@@ -1,6 +1,7 @@
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use ecc_domain::workflow::phase::Phase;
 use ecc_domain::workflow::state::WorkflowState;
 
 /// Acquire an exclusive state lock, run `f`, then release the lock.
@@ -97,8 +98,29 @@ pub fn read_stdin() -> String {
 ///
 /// When `include_done` is false, done-phase states are NOT archived (init behavior).
 /// When `include_done` is true, ALL states are archived (reset behavior).
-pub fn archive_state(_workflow_dir: &Path, _include_done: bool) -> Result<(), anyhow::Error> {
-    todo!("archive_state not yet implemented")
+pub fn archive_state(workflow_dir: &Path, include_done: bool) -> Result<(), anyhow::Error> {
+    let state_path = workflow_dir.join("state.json");
+    if !state_path.exists() {
+        return Ok(());
+    }
+    let content = std::fs::read_to_string(&state_path)
+        .map_err(|e| anyhow::anyhow!("Failed to read state.json: {e}"))?;
+    let is_done = WorkflowState::from_json(&content)
+        .map(|s| s.phase == Phase::Done)
+        .unwrap_or(false); // corrupt state -> archive it
+
+    if is_done && !include_done {
+        return Ok(());
+    }
+
+    let archive_dir = workflow_dir.join("archive");
+    std::fs::create_dir_all(&archive_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to create archive directory: {e}"))?;
+    let ts = crate::time::utc_now_iso8601().replace(['T', ':', 'Z'], "");
+    let archive_name = format!("state-{ts}.json");
+    std::fs::rename(&state_path, archive_dir.join(&archive_name))
+        .map_err(|e| anyhow::anyhow!("Failed to archive state.json to {archive_name}: {e}"))?;
+    Ok(())
 }
 
 /// Write the workflow state to state.json atomically (temp file + rename).

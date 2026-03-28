@@ -1,7 +1,14 @@
 //! `ecc-workflow reset --force` — reset workflow to idle state.
 
-use crate::output::WorkflowOutput;
+use ecc_domain::workflow::{
+    phase::Phase,
+    state::{Artifacts, Toolchain, WorkflowState},
+};
 use std::path::Path;
+
+use crate::io::{archive_state, with_state_lock, write_state_atomic};
+use crate::output::WorkflowOutput;
+use crate::time::utc_now_iso8601;
 
 pub fn run(force: bool, project_dir: &Path) -> WorkflowOutput {
     if !force {
@@ -11,14 +18,52 @@ pub fn run(force: bool, project_dir: &Path) -> WorkflowOutput {
         );
     }
 
-    let state_path = project_dir.join(".claude/workflow/state.json");
-    if !state_path.exists() {
-        return WorkflowOutput::pass("No active workflow to reset");
-    }
+    let result = with_state_lock(project_dir, || {
+        let workflow_dir = project_dir.join(".claude/workflow");
+        let state_path = workflow_dir.join("state.json");
+        if !state_path.exists() {
+            return WorkflowOutput::pass("No active workflow to reset");
+        }
 
-    match std::fs::remove_file(&state_path) {
-        Ok(()) => WorkflowOutput::pass("Workflow reset — state.json deleted"),
-        Err(e) => WorkflowOutput::block(format!("Failed to delete state.json: {e}")),
+        // Archive state (include done states, unlike init)
+        if let Err(e) = archive_state(&workflow_dir, true) {
+            return WorkflowOutput::block(format!("Failed to archive state: {e}"));
+        }
+
+        // Write minimal Idle state
+        let idle_state = WorkflowState {
+            phase: Phase::Idle,
+            concern: String::new(),
+            feature: String::new(),
+            started_at: utc_now_iso8601(),
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: Artifacts {
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
+            completed: vec![],
+        };
+
+        match write_state_atomic(project_dir, &idle_state) {
+            Ok(()) => {
+                WorkflowOutput::pass("Workflow reset - state archived, phase set to idle")
+            }
+            Err(e) => WorkflowOutput::block(format!("Failed to write idle state: {e}")),
+        }
+    });
+
+    match result {
+        Ok(output) => output,
+        Err(e) => WorkflowOutput::block(format!("Failed to acquire state lock: {e}")),
     }
 }
 
