@@ -9,14 +9,14 @@ Domain and infrastructure terms used across the codebase. Terms are included if 
 ## Domain Terms
 
 ### Agent
-A markdown file with YAML frontmatter (name, description, model, tools) that defines a specialized Claude Code sub-agent. Agents are validated by [`ci/validate-agents.ts`](../src/ci/validate-agents.ts) and stored in `~/.claude/agents/`.
+A markdown file with YAML frontmatter (name, description, model, tools) that defines a specialized Claude Code sub-agent. Agents are validated by [`crates/ecc-app/src/validate/agents.rs`](../crates/ecc-app/src/validate/agents.rs) and stored in `~/.claude/agents/`.
 - **Related:** [Command](#command), [Skill](#skill), [Artifact](#artifact)
-- **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-agents.ts`](../src/ci/validate-agents.ts), [`validate-commands.ts`](../src/ci/validate-commands.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts)
+- **Files:** `crates/ecc-app/src/detect.rs`, `crates/ecc-app/src/validate/agents.rs`, `crates/ecc-app/src/validate/commands.rs`, `crates/ecc-app/src/install/mod.rs`, `crates/ecc-app/src/merge/mod.rs`
 
 ### Alias
 A user-defined short name for a Claude Code [Session](#session). Stored in `~/.claude/session-aliases.json`. Supports CRUD operations with atomic writes and rollback on failure.
 - **Related:** [Session](#session), [Session Manager](#session-manager)
-- **Files:** [`session-aliases.ts`](../src/lib/session-aliases.ts) (21 exports), [`session-start.ts`](../src/hooks/session-start.ts), [`session-manager.ts`](../src/lib/session-manager.ts)
+- **Files:** `crates/ecc-app/src/session/aliases.rs` (21 exports), `crates/ecc-app/src/hook/handlers/tier3_session/lifecycle.rs`, `crates/ecc-app/src/session/mod.rs`
 
 ### Adversary Mode
 An opt-in enhancement to the grill-me interview skill that adds adaptive adversarial questioning with answer scoring (completeness and specificity 0-3), follow-up probing on weak answers, and question-generation challenge at each stage. Activated when a user says "adversary mode" or "hard mode".
@@ -25,7 +25,7 @@ An opt-in enhancement to the grill-me interview skill that adds adaptive adversa
 ### Artifact
 A file managed by ECC -- [Agents](#agent), [Commands](#command), [Skills](#skill), [Rules](#rule), or hook descriptions. Tracked in the [Manifest](#manifest) for ownership differentiation during updates.
 - **Related:** [Manifest](#manifest), [Merge Report](#merge-report)
-- **Files:** [`manifest.ts`](../src/lib/manifest.ts), [`detect.ts`](../src/lib/detect.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts)
+- **Files:** `crates/ecc-app/src/install/helpers/manifest.rs`, `crates/ecc-app/src/detect.rs`, `crates/ecc-app/src/install/mod.rs`, `crates/ecc-app/src/merge/mod.rs`
 
 ### Audit System
 A 7-domain codebase health assessment system orchestrated by the [audit-orchestrator](#agent) agent. Domains: architecture, evolution (git history mining), testing, security, observability, error handling, and conventions. Produces structured reports. Triggered by the `/audit` [Command](#command).
@@ -45,7 +45,7 @@ A Markdown file (`campaign.md`) per work item that indexes all artifacts, decisi
 ### Clean
 Surgical or full removal of ECC-managed [Artifacts](#artifact). Manifest-based cleanup removes only tracked files; nuclear cleanup (`--clean-all`) removes entire artifact directories and ECC hooks from settings.json.
 - **Related:** [Manifest](#manifest), [Artifact](#artifact)
-- **Files:** [`clean.ts`](../src/lib/clean.ts) (4 exports), [`install-orchestrator.ts`](../src/install-orchestrator.ts)
+- **Files:** `crates/ecc-app/src/config/clean.rs` (4 exports), `crates/ecc-app/src/install/mod.rs`
 
 ### Catchup
 A read-only session resumption command (`/catchup`) that summarizes current workflow state, git status, stale detection, and recent memory activity. Provides structured output across four sections: Workflow State, Tasks Progress, Git Status, and Recent Activity.
@@ -55,12 +55,12 @@ A read-only session resumption command (`/catchup`) that summarizes current work
 ### Command
 A markdown slash command file (e.g., `/tdd`, `/spec`, `/doc-diagrams`). Canonical command names: `/spec`, `/spec-dev`, `/spec-fix`, `/spec-refactor`, `/design`, `/implement`. Commands are validated for non-empty content and valid cross-references to other commands, [Agents](#agent), and [Skills](#skill).
 - **Related:** [Agent](#agent), [Skill](#skill)
-- **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-commands.ts`](../src/ci/validate-commands.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts)
+- **Files:** `crates/ecc-app/src/detect.rs`, `crates/ecc-app/src/validate/commands.rs`, `crates/ecc-app/src/install/mod.rs`, `crates/ecc-app/src/merge/mod.rs`
 
 ### Config Audit
 Source-of-truth comparison of installed ECC artifacts against the package. Detects stale, missing, or outdated agents, commands, and hooks. Replaces fragile legacy-pattern detection.
 - **Related:** [Artifact](#artifact), [Manifest](#manifest), [Hook](#hook)
-- **Files:** [`config-audit.ts`](../src/lib/config-audit.ts) (9 exports)
+- **Files:** `crates/ecc-app/src/config/audit/mod.rs` (9 exports)
 
 ### Daily Memory File
 A date-stamped file at `memory/daily/YYYY-MM-DD.md` capturing session activity (auto-written by hooks) and insights (manually curated). New files auto-link to 1-3 recent predecessors.
@@ -95,37 +95,37 @@ The universal questioning protocol for ECC. A stage-by-stage adversarial intervi
 ### Hook
 A Claude Code lifecycle event handler. Each hook is a Node.js script that reads JSON from stdin, performs an action, and writes to stdout/stderr. Execution is gated by [Hook Profiles](#hook-profile) via [Run With Flags](#run-with-flags).
 - **Related:** [Hook Profile](#hook-profile), [Run With Flags](#run-with-flags), [Stdin Passthrough](#stdin-passthrough)
-- **Files:** 23 hook scripts in [`src/hooks/`](../src/hooks/), [`hooks.json`](../hooks/hooks.json), [`hook-flags.ts`](../src/lib/hook-flags.ts), [`run-with-flags.ts`](../src/hooks/run-with-flags.ts), [`validate-hooks.ts`](../src/ci/validate-hooks.ts), [`detect.ts`](../src/lib/detect.ts)
+- **Files:** 23 hook scripts in [`src/hooks/`](../src/hooks/), [`hooks.json`](../hooks/hooks.json), `crates/ecc-domain/src/hook_runtime/profiles.rs`, `crates/ecc-app/src/hook/mod.rs`, `crates/ecc-app/src/validate/hooks.rs`, `crates/ecc-app/src/detect.rs`
 
 ### Manifest
 JSON file (`.ecc-manifest.json`) tracking which [Artifacts](#artifact) ECC installed, their version, languages, and timestamps. Used to distinguish ECC-managed vs user-custom files during updates. Updated immutably.
 - **Related:** [Artifact](#artifact), [ECC Root](#ecc-root)
-- **Files:** [`manifest.ts`](../src/lib/manifest.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts) (type import)
+- **Files:** `crates/ecc-app/src/install/helpers/manifest.rs`, `crates/ecc-app/src/install/mod.rs`, `crates/ecc-app/src/merge/mod.rs` (type import)
 
 ### NanoClaw
 A session-aware interactive REPL around `claude -p`. Supports conversation branching, keyword search across sessions, session export (md/json/txt), and context compaction.
 - **Related:** [Session](#session), [Alias](#alias)
-- **Files:** [`claw.ts`](../src/claw.ts)
+- **Files:** `crates/ecc-app/src/claw/mod.rs`
 
 ### Rule
 A markdown guideline file organized by language group (common/, typescript/, python/, golang/, etc.). Validated for non-empty content. Merged by group during installation.
 - **Related:** [Artifact](#artifact), [Command](#command)
-- **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-rules.ts`](../src/ci/validate-rules.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts)
+- **Files:** `crates/ecc-app/src/detect.rs`, `crates/ecc-app/src/validate/rules.rs`, `crates/ecc-app/src/install/mod.rs`, `crates/ecc-app/src/merge/mod.rs`
 
 ### Session
 A Claude Code conversation state stored as a markdown `.tmp` file in `~/.claude/sessions/`. Contains metadata (date, tasks, tools used, notes) and can be aliased for easy recall via [Aliases](#alias).
 - **Related:** [Alias](#alias), [Session Manager](#session-manager), [NanoClaw](#nanoclaw)
-- **Files:** [`session-manager.ts`](../src/lib/session-manager.ts) (20 exports), [`session-aliases.ts`](../src/lib/session-aliases.ts), [`session-start.ts`](../src/hooks/session-start.ts), [`session-end.ts`](../src/hooks/session-end.ts), [`evaluate-session.ts`](../src/hooks/evaluate-session.ts), [`pre-compact.ts`](../src/hooks/pre-compact.ts), [`claw.ts`](../src/claw.ts)
+- **Files:** `crates/ecc-app/src/session/mod.rs` (20 exports), `crates/ecc-app/src/session/aliases.rs`, `crates/ecc-app/src/hook/handlers/tier3_session/lifecycle.rs`, `crates/ecc-app/src/hook/handlers/tier3_session/lifecycle.rs`, `crates/ecc-app/src/hook/handlers/tier3_session/reflection.rs`, `crates/ecc-app/src/hook/handlers/tier3_session/compact.rs`, `crates/ecc-app/src/claw/mod.rs`
 
 ### Session Manager
 The library module providing CRUD operations, metadata parsing, pagination, and statistics for [Session](#session) files. Parses markdown content into structured `SessionMetadata` objects.
 - **Related:** [Session](#session), [Alias](#alias)
-- **Files:** [`session-manager.ts`](../src/lib/session-manager.ts)
+- **Files:** `crates/ecc-app/src/session/mod.rs`
 
 ### Skill
 A directory containing `SKILL.md` that provides domain knowledge to Claude Code. Differs from [Agents](#agent) (which have tools and model config) and [Commands](#command) (which are user-invocable).
 - **Related:** [Agent](#agent), [Command](#command), [Artifact](#artifact)
-- **Files:** [`detect.ts`](../src/lib/detect.ts), [`validate-skills.ts`](../src/ci/validate-skills.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts), [`merge.ts`](../src/lib/merge.ts), [`claw.ts`](../src/claw.ts)
+- **Files:** `crates/ecc-app/src/detect.rs`, `crates/ecc-app/src/validate/skills.rs`, `crates/ecc-app/src/install/mod.rs`, `crates/ecc-app/src/merge/mod.rs`, `crates/ecc-app/src/claw/mod.rs`
 
 ### Quality Score
 A numeric 0-100 rating assigned by adversary agents (spec-adversary, solution-adversary) to each review dimension. Scoring scale: 0-30 = major gaps, 31-49 = significant issues, 50-69 = adequate with concerns, 70-89 = good, 90-100 = excellent. Verdict thresholds: >=70 average with no dimension <50 = PASS, 50-69 average or any dimension <50 = CONDITIONAL, <50 average = FAIL. Persisted in spec and design Phase Summary tables for quality trend analysis.
@@ -195,27 +195,27 @@ Aggregate root for the ECC pipeline state machine. Contains phase (Phase), conce
 ### Apply All
 A batch decision during interactive install: when a user presses uppercase `A`, `K`, or `M`, that review choice applies to all remaining files without further prompting. Tracked as `ReviewApplyAll` or `ConflictApplyAll` types.
 - **Related:** [Merge Report](#merge-report), [Smart Merge](#smart-merge)
-- **Files:** [`merge.ts`](../src/lib/merge.ts) (`ReviewApplyAll`, `ConflictApplyAll` types)
+- **Files:** `crates/ecc-app/src/merge/mod.rs` (`ReviewApplyAll`, `ConflictApplyAll` types)
 
 ### Content Differ
 Byte-level file comparison using `Buffer.compare()` to detect if source and destination files are identical, allowing unchanged files to skip interactive review.
 - **Related:** [Smart Merge](#smart-merge), [Merge Report](#merge-report)
-- **Files:** [`smart-merge.ts`](../src/lib/smart-merge.ts) (`contentsDiffer`), [`merge.ts`](../src/lib/merge.ts)
+- **Files:** `crates/ecc-app/src/smart_merge.rs` (`contentsDiffer`), `crates/ecc-app/src/merge/mod.rs`
 
 ### Detection Priority
 The 6-level chain for resolving which [Package Manager](#package-manager) to use: (1) env var, (2) project config, (3) package.json field, (4) lock file, (5) global config, (6) npm default.
 - **Related:** [Package Manager](#package-manager)
-- **Files:** [`package-manager.ts`](../src/lib/package-manager.ts) (`getPackageManager`, `DETECTION_PRIORITY`)
+- **Files:** `crates/ecc-domain/src/detection/package_manager.rs` (`getPackageManager`, `DETECTION_PRIORITY`)
 
 ### ECC Root
 The root directory of the installed ECC package. Resolved from `ECC_ROOT` or `CLAUDE_PLUGIN_ROOT` env vars, or computed from `__dirname`. Used by hooks to locate scripts and by the install orchestrator to find source artifacts.
 - **Related:** [Run With Flags](#run-with-flags), [Manifest](#manifest)
-- **Files:** [`run-with-flags.ts`](../src/hooks/run-with-flags.ts), [`install-orchestrator.ts`](../src/install-orchestrator.ts)
+- **Files:** `crates/ecc-app/src/hook/mod.rs`, `crates/ecc-app/src/install/mod.rs`
 
 ### Hook Profile
 One of three execution modes controlling which [Hooks](#hook) run: **minimal** (lifecycle only), **standard** (most hooks, default), **strict** (all hooks including warnings). Set via `ECC_HOOK_PROFILE` env var.
 - **Related:** [Hook](#hook), [Run With Flags](#run-with-flags)
-- **Files:** [`hook-flags.ts`](../src/lib/hook-flags.ts) (`HookProfile`, `VALID_PROFILES`, `getHookProfile`), [`run-with-flags.ts`](../src/hooks/run-with-flags.ts)
+- **Files:** `crates/ecc-domain/src/hook_runtime/profiles.rs` (`HookProfile`, `VALID_PROFILES`, `getHookProfile`), `crates/ecc-app/src/hook/mod.rs`
 
 ### Interface Designer
 An orchestration [Agent](#agent) that spawns parallel sub-agents to explore radically different interface designs for a module or port. Each sub-agent operates under a unique constraint (minimize methods, maximize flexibility, optimize common case, named paradigm). Designs are compared on 5 dimensions and synthesized via user feedback. Uses the `design-an-interface` [Skill](#skill) for methodology.
@@ -239,32 +239,32 @@ Elevating a significant insight from a [Daily Memory File](#daily-memory-file) i
 ### LCS Diff
 Longest Common Subsequence algorithm used to compute line-level diffs between file versions. Falls back to a simpler line-by-line comparison for files exceeding 1M line-pair products. Powers the colored side-by-side diff display.
 - **Related:** [Smart Merge](#smart-merge), [Content Differ](#content-differ)
-- **Files:** [`smart-merge.ts`](../src/lib/smart-merge.ts) (`computeLineDiff`)
+- **Files:** `crates/ecc-app/src/smart_merge.rs` (`computeLineDiff`)
 
 ### Legacy Hook
 An outdated hook entry using old-style paths (`scripts/hooks/`), unresolved placeholders (`${ECC_ROOT}`), absolute paths, or inline `node -e` one-liners. Automatically detected and removed during hook merging.
 - **Related:** [Hook](#hook), [Merge Report](#merge-report)
-- **Files:** [`merge.ts`](../src/lib/merge.ts) (`isLegacyEccHook`)
+- **Files:** `crates/ecc-app/src/merge/mod.rs` (`isLegacyEccHook`)
 
 ### Merge Report
 A structured record of what happened during a merge operation: files added, updated, unchanged, skipped, smart-merged, and errored. Multiple reports can be combined across artifact categories for a final summary.
 - **Related:** [Apply All](#apply-all), [Artifact](#artifact)
-- **Files:** [`merge.ts`](../src/lib/merge.ts) (`MergeReport`, `combineMergeReports`, `printMergeReport`)
+- **Files:** `crates/ecc-app/src/merge/mod.rs` (`MergeReport`, `combineMergeReports`, `printMergeReport`)
 
 ### Package Manager
 One of npm, yarn, pnpm, or bun. Auto-detected from lock files, `package.json` `packageManager` field, project config, or environment variable. Each has a `PackageManagerConfig` with standard commands (install, run, exec, test, build, dev).
 - **Related:** [Detection Priority](#detection-priority)
-- **Files:** [`package-manager.ts`](../src/lib/package-manager.ts), [`setup-package-manager.ts`](../src/setup-package-manager.ts), [`session-start.ts`](../src/hooks/session-start.ts)
+- **Files:** `crates/ecc-domain/src/detection/package_manager.rs`, `crates/ecc-app/src/detection/package_manager.rs`, `crates/ecc-app/src/hook/handlers/tier3_session/lifecycle.rs`
 
 ### Run With Flags
-Hook execution wrapper ([`run-with-flags.ts`](../src/hooks/run-with-flags.ts)) that reads stdin, checks if the hook is enabled (by [Hook Profile](#hook-profile) and disabled-hooks list), then spawns the actual hook script. All hooks in `hooks.json` are routed through this.
+Hook execution wrapper (`crates/ecc-app/src/hook/mod.rs`) that reads stdin, checks if the hook is enabled (by [Hook Profile](#hook-profile) and disabled-hooks list), then spawns the actual hook script. All hooks in `hooks.json` are routed through this.
 - **Related:** [Hook](#hook), [Hook Profile](#hook-profile), [ECC Root](#ecc-root)
-- **Files:** [`run-with-flags.ts`](../src/hooks/run-with-flags.ts), [`hook-flags.ts`](../src/lib/hook-flags.ts), [`check-hook-enabled.ts`](../src/hooks/check-hook-enabled.ts)
+- **Files:** `crates/ecc-app/src/hook/mod.rs`, `crates/ecc-domain/src/hook_runtime/profiles.rs`, `crates/ecc-app/src/hook/mod.rs`
 
 ### Smart Merge
 AI-assisted file merging using `claude -p` CLI. Sends existing and incoming content to Claude with merge rules (keep customizations, add new sections, mark conflicts). Falls back to manual diff if Claude is unavailable.
 - **Related:** [LCS Diff](#lcs-diff), [Apply All](#apply-all), [Merge Report](#merge-report)
-- **Files:** [`smart-merge.ts`](../src/lib/smart-merge.ts) (`smartMerge`, `isClaudeAvailable`), [`merge.ts`](../src/lib/merge.ts)
+- **Files:** `crates/ecc-app/src/smart_merge.rs` (`smartMerge`, `isClaudeAvailable`), `crates/ecc-app/src/merge/mod.rs`
 
 ### Stdin Passthrough
 The pattern used by all [Hooks](#hook): read JSON from stdin, perform side effects (logging, checking, formatting), then write the original stdin data to stdout unchanged. This allows hooks to be chained without data loss.
@@ -284,7 +284,7 @@ Context-aware documentation generated by `/implement` Phase 7.5 while session co
 ### Turn
 A single conversation exchange in a [NanoClaw](#nanoclaw) session, consisting of a timestamp, role (User/Assistant), and content. Stored in markdown format and parsed by `parseTurns()`.
 - **Related:** [NanoClaw](#nanoclaw), [Session](#session)
-- **Files:** [`claw.ts`](../src/claw.ts) (`Turn` interface, `parseTurns`, `appendTurn`)
+- **Files:** `crates/ecc-app/src/claw/mod.rs` (`Turn` interface, `parseTurns`, `appendTurn`)
 
 See also: [Architecture](../ARCHITECTURE.md) | [API Surface](../API-SURFACE.md) | [Module Summaries](../MODULE-SUMMARIES.md) | [Dependencies](../DEPENDENCY-GRAPH.md)
 
