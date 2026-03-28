@@ -3,6 +3,120 @@
 ///
 /// Slug is sanitized: lowercase, `[a-z0-9-]` only, max 40 chars.
 /// Names validated against allowlist: `[a-zA-Z0-9/_-]` only, max 255 bytes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorktreeName {
+    name: String,
+}
+
+/// Components extracted from a parsed worktree name.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParsedWorktreeName {
+    pub timestamp: String,
+    pub slug: String,
+    pub pid: u32,
+}
+
+/// Errors that can occur when creating or validating a `WorktreeName`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WorktreeNameError {
+    TooLong(usize),
+    InvalidChars(String),
+}
+
+impl std::fmt::Display for WorktreeNameError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WorktreeNameError::TooLong(len) => {
+                write!(f, "worktree name too long: {len} bytes (max 255)")
+            }
+            WorktreeNameError::InvalidChars(name) => {
+                write!(f, "worktree name contains invalid characters: {name}")
+            }
+        }
+    }
+}
+
+impl WorktreeName {
+    /// Generate a new worktree name from concern, feature description, and PID.
+    pub fn generate(concern: &str, feature: &str, pid: u32) -> Result<Self, WorktreeNameError> {
+        let _ = concern; // concern reserved for future use
+        let slug = make_slug(feature);
+        let ts = utc_timestamp_compact();
+        let name = format!("ecc-session-{ts}-{slug}-{pid}");
+        Self::validate(&name)?;
+        Ok(Self { name })
+    }
+
+    /// Validate a name against the allowlist `[a-zA-Z0-9/_-]`, max 255 bytes.
+    pub fn validate(name: &str) -> Result<(), WorktreeNameError> {
+        if name.len() > 255 {
+            return Err(WorktreeNameError::TooLong(name.len()));
+        }
+        if !name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '/' || c == '_' || c == '-')
+        {
+            return Err(WorktreeNameError::InvalidChars(name.to_owned()));
+        }
+        Ok(())
+    }
+
+    /// Parse a worktree name back to its components.
+    pub fn parse(name: &str) -> Option<ParsedWorktreeName> {
+        let rest = name.strip_prefix("ecc-session-")?;
+        // Timestamp is YYYYMMDD-HHMMSS = 15 chars
+        if rest.len() < 16 {
+            return None;
+        }
+        let ts = &rest[..15];
+        let rest = &rest[16..]; // skip the '-' after timestamp
+        // Find last '-' for PID
+        let last_dash = rest.rfind('-')?;
+        let slug = &rest[..last_dash];
+        let pid_str = &rest[last_dash + 1..];
+        let pid = pid_str.parse::<u32>().ok()?;
+        Some(ParsedWorktreeName {
+            timestamp: ts.to_owned(),
+            slug: slug.to_owned(),
+            pid,
+        })
+    }
+
+    /// Return the name as a string slice.
+    pub fn as_str(&self) -> &str {
+        &self.name
+    }
+}
+
+/// Build a slug from a description: lowercase, `[a-z0-9-]` only, max 40 chars.
+fn make_slug(desc: &str) -> String {
+    let raw: String = desc
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect();
+    let joined = raw
+        .split('-')
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+    let truncated: String = joined.chars().take(40).collect();
+    truncated.trim_end_matches('-').to_owned()
+}
+
+/// Return the current UTC time as `YYYYMMDD-HHMMSS`.
+fn utc_timestamp_compact() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let dt = crate::time::datetime_from_epoch(secs);
+    format!(
+        "{:04}{:02}{:02}-{:02}{:02}{:02}",
+        dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
+    )
+}
 
 #[cfg(test)]
 mod tests {
@@ -50,7 +164,11 @@ mod tests {
         assert_eq!(parts[1], "session");
         // timestamp is 8 digits
         assert_eq!(parts[2].len(), 8, "date part len: {}", parts[2].len());
-        assert!(parts[2].chars().all(|c| c.is_ascii_digit()), "date: {}", parts[2]);
+        assert!(
+            parts[2].chars().all(|c: char| c.is_ascii_digit()),
+            "date: {}",
+            parts[2]
+        );
     }
 
     #[test]
