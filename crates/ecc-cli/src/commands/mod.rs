@@ -8,3 +8,4 @@ pub mod init;
 pub mod install;
 pub mod validate;
 pub mod version;
+pub mod worktree;

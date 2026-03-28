@@ -39,6 +39,8 @@ enum Command {
     Dev(commands::dev::DevArgs),
     /// Deterministic backlog management
     Backlog(commands::backlog::BacklogArgs),
+    /// Manage git worktrees for ECC sessions
+    Worktree(commands::worktree::WorktreeArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -62,5 +64,6 @@ fn main() -> anyhow::Result<()> {
         Command::Claw(args) => commands::claw::run(args),
         Command::Dev(args) => commands::dev::run(args),
         Command::Backlog(args) => commands::backlog::run(args),
+        Command::Worktree(args) => commands::worktree::run(args),
     }
 }
