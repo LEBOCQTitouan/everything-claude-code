@@ -121,14 +121,28 @@ fn render_change_row(
     let left_part = if let Some(line) = chunk.removed.get(i) {
         let num = format!("{:>gutter$}", left_num, gutter = gutter);
         *left_num += 1;
-        format!("{} {}", num, ansi::red(&truncate(line, col_width), colors_enabled))
+        format!(
+            "{} {}",
+            num,
+            ansi::red(&truncate(line, col_width), colors_enabled)
+        )
     } else {
-        format!("{:>gutter$} {:col_width$}", "", "", gutter = gutter, col_width = col_width)
+        format!(
+            "{:>gutter$} {:col_width$}",
+            "",
+            "",
+            gutter = gutter,
+            col_width = col_width
+        )
     };
     let right_part = if let Some(line) = chunk.added.get(i) {
         let num = format!("{:>gutter$}", right_num, gutter = gutter);
         *right_num += 1;
-        format!("{} {}", num, ansi::green(&truncate(line, col_width), colors_enabled))
+        format!(
+            "{} {}",
+            num,
+            ansi::green(&truncate(line, col_width), colors_enabled)
+        )
     } else {
         String::new()
     };
@@ -158,11 +172,26 @@ pub fn format_side_by_side_diff(
     for chunk in &chunks {
         if !chunk.same.is_empty() {
             for line in &chunk.same {
-                output.push(render_same_line(line, &mut left_num, &mut right_num, col_width, gutter, colors_enabled));
+                output.push(render_same_line(
+                    line,
+                    &mut left_num,
+                    &mut right_num,
+                    col_width,
+                    gutter,
+                    colors_enabled,
+                ));
             }
         } else {
             for i in 0..chunk.removed.len().max(chunk.added.len()) {
-                output.push(render_change_row(chunk, i, &mut left_num, &mut right_num, col_width, gutter, colors_enabled));
+                output.push(render_change_row(
+                    chunk,
+                    i,
+                    &mut left_num,
+                    &mut right_num,
+                    col_width,
+                    gutter,
+                    colors_enabled,
+                ));
             }
         }
     }
