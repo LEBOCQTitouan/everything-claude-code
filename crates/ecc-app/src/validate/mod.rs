@@ -2,6 +2,7 @@
 
 mod agents;
 mod commands;
+mod conventions;
 mod hooks;
 mod paths;
 mod rules;
@@ -13,6 +14,7 @@ mod statusline;
 pub enum ValidateTarget {
     Agents,
     Commands,
+    Conventions,
     Hooks,
     Skills,
     Rules,
@@ -30,6 +32,7 @@ pub fn run_validate(
     match target {
         ValidateTarget::Agents => agents::validate_agents(root, fs, terminal),
         ValidateTarget::Commands => commands::validate_commands(root, fs, terminal),
+        ValidateTarget::Conventions => conventions::validate_conventions(root, fs, terminal),
         ValidateTarget::Hooks => hooks::validate_hooks(root, fs, terminal),
         ValidateTarget::Skills => skills::validate_skills(root, fs, terminal),
         ValidateTarget::Rules => rules::validate_rules(root, fs, terminal),
