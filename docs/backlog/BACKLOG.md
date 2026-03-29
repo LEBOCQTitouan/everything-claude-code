@@ -90,7 +90,7 @@
 | BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | implemented | 2026-03-28 |
 | BL-088 | ecc update — self-update from GitHub Releases + cargo xtask deploy for dev | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | open | 2026-03-28 |
-| BL-090 | ECC component scaffolding — skill + /create-component command | — | HIGH | /spec dev | open | 2026-03-28 |
+| BL-090 | ECC component scaffolding — skill + /create-component command for agents, commands, skills, hooks | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-091 | ECC diagnostics — tiered verbosity with tracing + ecc status | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-092 | Structured log management — JSON rolling files + SQLite index + ecc log CLI | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-093 | Three-tier memory system — semantic/episodic/working + SQLite + consolidation | — | EPIC | /spec dev | open | 2026-03-28 |
@@ -108,6 +108,7 @@
 | BL-105 | Bump crossterm 0.28 → 0.29.0 | — | LOW | direct edit | open | 2026-03-29 |
 | BL-106 | Harness reliability metrics — benchmark against reference patterns | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-107 | Audit-web guided profile — interactive setup, persisted dimensions, self-improvement | — | HIGH | /spec-dev | open | 2026-03-29 |
+| BL-108 | Smart stop notification — only notify on final stop or user input needed | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 
 ## Dependency Graph
 
@@ -174,8 +175,8 @@ BL-107 → BL-083 (adversarial challenge phase complements self-improvement sugg
 
 ## Stats
 
-- **Total:** 101
-- **Open:** 49
+- **Total:** 102
+- **Open:** 50
 - **In-progress:** 0
 - **Implemented:** 48
 - **Archived:** 4
