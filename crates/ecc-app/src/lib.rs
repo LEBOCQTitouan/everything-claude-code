@@ -6,6 +6,7 @@
 
 pub mod act_ci;
 pub mod ecc_config;
+pub mod ecc_status;
 pub mod sources;
 pub mod audit;
 pub mod backlog;
