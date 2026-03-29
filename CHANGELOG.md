@@ -6,6 +6,15 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.3.2
+
+### Tooling Upgrades (Web Radar Adopt Findings)
+
+- **serde_yaml → serde_yml**: Migrated from deprecated/archived serde_yaml (March 2024) to maintained serde_yml fork. API-compatible, zero code changes beyond `use` rename.
+- **cargo-nextest**: Added `.config/nextest.toml` with default+CI profiles. ~60% faster tests with per-test isolation and flaky detection.
+- **cargo-deny**: Added `deny.toml` for supply chain auditing — license checking (MIT/Apache/BSD allowed, copyleft denied), advisory scanning, source verification.
+- **cargo-llvm-cov**: Documented for macOS-compatible coverage measurement with LLVM instrumentation.
+
 ## v4.3.1
 
 ### Fixed
