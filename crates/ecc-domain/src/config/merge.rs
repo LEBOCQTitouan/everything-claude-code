@@ -62,6 +62,14 @@ pub fn combine_reports(reports: &[MergeReport]) -> MergeReport {
     }
 }
 
+/// Check if a command string matches any known legacy ECC hook pattern.
+///
+/// This is a shared helper used by both `is_legacy_ecc_hook` (untyped) and
+/// `is_legacy_ecc_hook_typed` to avoid duplicating pattern-matching logic.
+pub fn is_legacy_command(_cmd: &str) -> bool {
+    false
+}
+
 /// Check if a hook entry is a legacy ECC hook that should be removed.
 ///
 /// Detects legacy hooks via:
@@ -864,6 +872,78 @@ mod tests {
         });
         assert!(!is_legacy_ecc_hook(&entry_enter));
         assert!(!is_legacy_ecc_hook(&entry_exit));
+    }
+
+    // --- is_legacy_command ---
+
+    #[test]
+    fn is_legacy_command_dist_hooks() {
+        assert!(is_legacy_command("dist/hooks/run.js"));
+    }
+
+    #[test]
+    fn is_legacy_command_worktree_create_init() {
+        assert!(is_legacy_command("ecc-hook \"worktree:create:init\" \"standard,strict\""));
+    }
+
+    #[test]
+    fn is_legacy_command_ecc_package_identifier() {
+        assert!(is_legacy_command("/home/.npm/everything-claude-code/hooks/run.js"));
+    }
+
+    #[test]
+    fn is_legacy_command_scripts_hooks() {
+        assert!(is_legacy_command("node scripts/hooks/check.js"));
+    }
+
+    #[test]
+    fn is_legacy_command_ecc_root_placeholder() {
+        assert!(is_legacy_command("${ECC_ROOT}/hooks/run.js"));
+    }
+
+    #[test]
+    fn is_legacy_command_run_with_flags_js() {
+        assert!(is_legacy_command("node /abs/path/dist/hooks/run-with-flags.js"));
+    }
+
+    #[test]
+    fn is_legacy_command_run_with_flags_shell() {
+        assert!(is_legacy_command("bash /abs/path/scripts/hooks/run-with-flags-shell.sh"));
+    }
+
+    #[test]
+    fn is_legacy_command_node_e_dev_server() {
+        assert!(is_legacy_command("node -e 'require(\"dev-server\")'"));
+    }
+
+    #[test]
+    fn is_legacy_command_node_e_tmux() {
+        assert!(is_legacy_command("node -e 'tmux split'"));
+    }
+
+    #[test]
+    fn is_legacy_command_not_for_ecc_hook_wrapper() {
+        assert!(!is_legacy_command("ecc-hook pre-tool-use format"));
+    }
+
+    #[test]
+    fn is_legacy_command_not_for_ecc_shell_hook_wrapper() {
+        assert!(!is_legacy_command("ecc-shell-hook post-tool-use lint"));
+    }
+
+    #[test]
+    fn is_legacy_command_not_for_user_hook() {
+        assert!(!is_legacy_command("my-custom-hook"));
+    }
+
+    #[test]
+    fn is_legacy_command_stop_worktree_cleanup_reminder() {
+        assert!(is_legacy_command("ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\""));
+    }
+
+    #[test]
+    fn is_legacy_command_bin_ecc_hook_absolute() {
+        assert!(is_legacy_command("/usr/local/bin/ecc-hook"));
     }
 
     // --- typed helpers ---
