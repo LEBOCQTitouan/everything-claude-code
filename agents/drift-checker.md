@@ -2,7 +2,7 @@
 name: drift-checker
 description: Compares final implementation against spec — detects unimplemented ACs and scope creep (files changed that weren't in the solution). Optional, invoked by /verify or manually.
 tools: ["Read", "Bash", "Grep", "Glob"]
-model: opus
+model: haiku
 skills: ["clean-craft"]
 memory: project
 ---

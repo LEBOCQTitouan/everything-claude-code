@@ -2,7 +2,7 @@
 name: doc-validator
 description: Documentation validator. Checks doc accuracy against code, scores quality using rubric, detects contradictions and duplicates, verifies code examples compile.
 tools: ["Read", "Grep", "Glob", "Bash"]
-model: opus
+model: sonnet
 skills: ["doc-quality-scoring", "doc-drift-detector", "doc-gap-analyser"]
 ---
 

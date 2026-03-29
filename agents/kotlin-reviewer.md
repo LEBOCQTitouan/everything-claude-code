@@ -2,7 +2,7 @@
 name: kotlin-reviewer
 description: Expert Kotlin code reviewer specializing in idiomatic Kotlin, coroutines, null safety, and performance. Use for all Kotlin code changes. MUST BE USED for Kotlin projects.
 tools: ["Read", "Grep", "Glob", "Bash"]
-model: opus
+model: sonnet
 skills: ["kotlin-patterns"]
 ---
 

@@ -6,20 +6,11 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
-## v4.3.2
+## v4.4.0
 
-### Tooling Upgrades (Web Radar Adopt Findings)
+### Changed
 
-- **serde_yaml → serde_yml**: Migrated from deprecated/archived serde_yaml (March 2024) to maintained serde_yml fork. API-compatible, zero code changes beyond `use` rename.
-- **cargo-nextest**: Added `.config/nextest.toml` with default+CI profiles. ~60% faster tests with per-test isolation and flaky detection.
-- **cargo-deny**: Added `deny.toml` for supply chain auditing — license checking (MIT/Apache/BSD allowed, copyleft denied), advisory scanning, source verification.
-- **cargo-llvm-cov**: Documented for macOS-compatible coverage measurement with LLVM instrumentation.
-
-## v4.3.1
-
-### Fixed
-
-- Memory writes from worktree sessions (`write_daily`, `write_memory_index`) now resolve to the main repo's `~/.claude/projects/<hash>/memory/` directory instead of creating a worktree-specific hash (fixes daily memory and memory-index fragmentation in concurrent sessions)
+- **Agent model routing optimization (BL-094)**: 14 agents re-tiered per Anthropic guidance — drift-checker to Haiku, 10 language reviewers + doc-validator + web-scout + doc-orchestrator to Sonnet. 18 agents remain on Opus (architecture, security, adversarial, planning). `performance.md` updated with three-tier routing policy. ADR 0030 created. Est. 30-40% cost reduction on review-heavy sessions.
 
 ## v4.3.0
 

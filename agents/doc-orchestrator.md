@@ -2,7 +2,7 @@
 name: doc-orchestrator
 description: Documentation suite orchestrator. Coordinates doc-analyzer, doc-generator, doc-validator, doc-reporter, and diagram-generator agents in a phased pipeline with parallel module-level execution.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuestion"]
-model: opus
+model: sonnet
 skills: ["doc-guidelines"]
 memory: project
 ---

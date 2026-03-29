@@ -2,7 +2,7 @@
 name: shell-reviewer
 description: Expert shell script reviewer specializing in safety, portability, security, and best practices. Use for all shell script changes. MUST BE USED for shell projects.
 tools: ["Read", "Grep", "Glob", "Bash"]
-model: opus
+model: sonnet
 skills: ["shell-patterns", "shell-testing"]
 ---
 

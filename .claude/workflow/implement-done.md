@@ -1,45 +1,53 @@
-# Implementation Complete: Fix worktree-safe memory path resolution
+# Implementation Complete: Agent model routing optimization (BL-094)
 
 ## Spec Reference
-Concern: dev, Feature: Concurrent session safety — worktree isolation, serialized merge, shared state fixes (BL-065)
+Concern: refactor, Feature: Agent model routing optimization — downgrade misaligned agents to Sonnet/Haiku (BL-094)
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
-| 1 | crates/ecc-workflow/src/commands/memory_write.rs | modify | PC-001, PC-002 | resolve_project_memory_dir_errors_on_non_git, resolve_project_memory_dir_succeeds_for_git_repo | done |
-| 2 | crates/ecc-workflow/tests/memory_write.rs | modify | PC-006 | memory_write_subcommands | done |
-| 3 | crates/ecc-workflow/tests/worktree_memory_path.rs | create | PC-003, PC-004, PC-005 | worktree_daily_resolves_to_main_repo_hash, worktree_memory_index_resolves_to_main_repo_hash, non_git_dir_returns_error | done |
-| 4 | crates/ecc-workflow/tests/transition.rs | modify | PC-009 | transition_success_no_warnings | done |
-| 5 | crates/ecc-workflow/tests/memory_lock_contention.rs | modify | PC-009 | project_memory_dir helper | done |
-| 6 | crates/ecc-workflow/src/commands/transition.rs | modify | PC-009 | transition_success_no_warnings | done |
+| 1 | agents/drift-checker.md | modify | PC-001 | grep model: haiku | done |
+| 2 | agents/doc-validator.md | modify | PC-002 | grep model: sonnet | done |
+| 3 | agents/web-scout.md | modify | PC-003 | grep model: sonnet | done |
+| 4 | agents/doc-orchestrator.md | modify | PC-004 | grep model: sonnet | done |
+| 5-14 | agents/{10 language}-reviewer.md | modify | PC-005 | grep loop model: sonnet | done |
+| 15 | rules/common/performance.md | modify | PC-006 | grep three-tier keywords | done |
+| 16 | docs/adr/0030-model-routing-policy.md | create | PC-007 | file exists + Accepted | done |
+| 17 | CHANGELOG.md | modify | — | — | done |
 
 ## TDD Log
 | PC ID | RED | GREEN | REFACTOR | Notes |
 |-------|-----|-------|----------|-------|
-| PC-001 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | — |
-| PC-002 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | — |
-| PC-003 | ✅ fails (macOS symlink mismatch) | ✅ passes after canonicalize fix | ⏭ no refactor needed | Discovered /var vs /private/var issue |
-| PC-004 | ✅ combined with PC-003 | ✅ passes | ⏭ no refactor needed | — |
-| PC-005 | ✅ fails (empty stdout) | ✅ passes after checking combined output | ⏭ no refactor needed | — |
-| PC-006 | ✅ passes after git init added | ✅ passes | ⏭ no refactor needed | — |
-| PC-007 | ✅ zero clippy warnings | — | — | — |
-| PC-008 | ✅ release build succeeds | — | — | — |
-| PC-009 | ✅ all tests pass (excl pre-existing ecc-domain) | — | — | Found transition.rs also needed git init |
+| PC-001 | ⏭ config | ✅ grep passes | ⏭ | drift-checker → haiku |
+| PC-002 | ⏭ config | ✅ grep passes | ⏭ | doc-validator → sonnet |
+| PC-003 | ⏭ config | ✅ grep passes | ⏭ | web-scout → sonnet |
+| PC-004 | ⏭ config | ✅ grep passes | ⏭ | doc-orchestrator → sonnet |
+| PC-005 | ⏭ config | ✅ grep loop passes | ⏭ | 10 language reviewers → sonnet |
+| PC-006 | ⏭ doc | ✅ grep passes | ⏭ | performance.md updated |
+| PC-007 | ⏭ doc | ✅ file exists + grep | ⏭ | ADR 0030 created |
+| PC-008 | — | ✅ ecc validate agents passes | — | 51 agents validated |
+| PC-009 | — | ✅ 14 opus agents verified | — | guard check |
+| PC-010 | — | ✅ 4 deferred agents verified | — | guard check |
+| PC-011 | — | ✅ zero clippy warnings | — | gate |
+| PC-012 | — | ✅ build succeeds | — | gate |
 
 ## Pass Condition Results
 | PC ID | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|
-| PC-001 | `cargo test -p ecc-workflow --bin ecc-workflow resolve_project_memory_dir_errors_on_non_git` | PASS | PASS | ✅ |
-| PC-002 | `cargo test -p ecc-workflow --bin ecc-workflow resolve_project_memory_dir_succeeds_for_git_repo` | PASS | PASS | ✅ |
-| PC-003 | `cargo test -p ecc-workflow --test worktree_memory_path worktree_daily_resolves_to_main_repo_hash` | PASS | PASS | ✅ |
-| PC-004 | `cargo test -p ecc-workflow --test worktree_memory_path worktree_memory_index_resolves_to_main_repo_hash` | PASS | PASS | ✅ |
-| PC-005 | `cargo test -p ecc-workflow --test worktree_memory_path non_git_dir_returns_error` | PASS | PASS | ✅ |
-| PC-006 | `cargo test -p ecc-workflow --test memory_write memory_write_subcommands` | PASS | PASS | ✅ |
-| PC-007 | `cargo clippy -- -D warnings` | exit 0 | exit 0 | ✅ |
-| PC-008 | `cargo build --release` | exit 0 | exit 0 | ✅ |
-| PC-009 | `cargo test --workspace --exclude ecc-domain` | All pass | All pass | ✅ |
+| PC-001 | `grep '^model: haiku' agents/drift-checker.md` | exit 0 | exit 0 | ✅ |
+| PC-002 | `grep '^model: sonnet' agents/doc-validator.md` | exit 0 | exit 0 | ✅ |
+| PC-003 | `grep '^model: sonnet' agents/web-scout.md` | exit 0 | exit 0 | ✅ |
+| PC-004 | `grep '^model: sonnet' agents/doc-orchestrator.md` | exit 0 | exit 0 | ✅ |
+| PC-005 | `for f in agents/{10}-reviewer.md; do grep...` | exit 0 | exit 0 | ✅ |
+| PC-006 | `grep three-tier keywords performance.md` | exit 0 | exit 0 | ✅ |
+| PC-007 | `test -f docs/adr/0030-... && grep Accepted` | exit 0 | exit 0 | ✅ |
+| PC-008 | `ecc validate agents` | exit 0 | exit 0 | ✅ |
+| PC-009 | `grep loop 14 opus agents` | exit 0 | exit 0 | ✅ |
+| PC-010 | `grep loop 4 deferred agents` | exit 0 | exit 0 | ✅ |
+| PC-011 | `cargo clippy -- -D warnings` | exit 0 | exit 0 | ✅ |
+| PC-012 | `cargo build` | exit 0 | exit 0 | ✅ |
 
-All pass conditions: 9/9 ✅
+All pass conditions: 12/12 ✅
 
 ## E2E Tests
 No E2E tests required by solution.
@@ -47,11 +55,14 @@ No E2E tests required by solution.
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | CHANGELOG.md | project | Added v4.3.1 worktree memory path fix entry |
-| 2 | CLAUDE.md | project | Updated test count from 1562 to 1567 |
+| 1 | rules/common/performance.md | rules | Three-tier model routing per Anthropic guidance |
+| 2 | docs/adr/0030-model-routing-policy.md | ADR | New: model routing policy |
+| 3 | CHANGELOG.md | project | v4.4.0 agent model routing optimization |
 
 ## ADRs Created
-None required.
+| # | File | Decision |
+|---|------|----------|
+| 1 | docs/adr/0030-model-routing-policy.md | Three-tier agent model routing per Anthropic guidance |
 
 ## Supplemental Docs
 No supplemental docs generated — change scope did not warrant module summary or diagram updates.
@@ -60,7 +71,7 @@ No supplemental docs generated — change scope did not warrant module summary o
 Inline execution — subagent dispatch not used.
 
 ## Code Review
-PASS — small focused change (3-line production diff + canonicalize), thorough test coverage (5 new tests), adversarial review caught all edge cases during design phase.
+PASS — config-only change (14 frontmatter edits), no code. All PCs verify correctness via grep.
 
 ## Suggested Commit
-fix: worktree-safe memory path resolution via resolve_repo_root
+refactor(agents): optimize model routing — 14 agents re-tiered per Anthropic guidance (BL-094)
