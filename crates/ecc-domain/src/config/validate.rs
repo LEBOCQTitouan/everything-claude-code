@@ -5,6 +5,37 @@ use std::collections::HashMap;
 /// Valid model identifiers for agent frontmatter.
 pub const VALID_MODELS: &[&str] = &["haiku", "sonnet", "opus"];
 
+/// Valid tool identifiers for agent/command frontmatter.
+pub const VALID_TOOLS: &[&str] = &[
+    "Read",
+    "Write",
+    "Edit",
+    "MultiEdit",
+    "Bash",
+    "Glob",
+    "Grep",
+    "Agent",
+    "Task",
+    "WebSearch",
+    "TodoWrite",
+    "TodoRead",
+    "AskUserQuestion",
+    // Command-only tools (used in allowed-tools but not agent tools)
+    "LS",
+    "Skill",
+    "EnterPlanMode",
+    "ExitPlanMode",
+    "TaskCreate",
+    "TaskUpdate",
+    "TaskGet",
+    "TaskList",
+];
+
+/// Check if a string matches kebab-case: `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
+pub fn is_kebab_case(_s: &str) -> bool {
+    todo!("implement is_kebab_case")
+}
+
 /// Valid hook event types (all 21 Claude Code hook events).
 pub const VALID_HOOK_EVENTS: &[&str] = &[
     "PreToolUse",
@@ -325,6 +356,26 @@ mod tests {
     }
 
     // --- Property-based tests ---
+
+    // --- is_kebab_case (PC-001) ---
+
+    #[test]
+    fn is_kebab_case_accepts_simple() {
+        assert!(is_kebab_case("my-agent"));
+        assert!(is_kebab_case("a"));
+        assert!(is_kebab_case("a1"));
+        assert!(is_kebab_case("abc-def-ghi"));
+    }
+
+    #[test]
+    fn is_kebab_case_rejects_invalid() {
+        assert!(!is_kebab_case("MyAgent"));
+        assert!(!is_kebab_case("my_agent"));
+        assert!(!is_kebab_case("-bad"));
+        assert!(!is_kebab_case("bad-"));
+        assert!(!is_kebab_case("BAD"));
+        assert!(!is_kebab_case(""));
+    }
 
     mod proptests {
         use super::*;
