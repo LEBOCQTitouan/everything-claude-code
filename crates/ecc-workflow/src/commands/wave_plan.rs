@@ -42,7 +42,7 @@ pub fn run(design_path: &str, project_dir: &Path) -> WorkflowOutput {
 }
 
 fn run_inner(design_path: &str, project_dir: &Path) -> Result<WorkflowOutput, anyhow::Error> {
-    let path = std::path::Path::new(design_path);
+    let path = Path::new(design_path);
 
     // AC-003.4: Check existence first, then canonicalize.
     if !path.exists() {
@@ -70,7 +70,7 @@ fn run_inner(design_path: &str, project_dir: &Path) -> Result<WorkflowOutput, an
     // Compute wave plan.
     let plan = ecc_domain::spec::wave::compute_wave_plan(&pc_report.pcs, &file_changes, 4);
 
-    // Build waves output.
+    // Build wave outputs with PC IDs serialized as "PC-NNN" strings.
     let waves: Vec<WaveOutput> = plan
         .waves
         .iter()
@@ -81,28 +81,17 @@ fn run_inner(design_path: &str, project_dir: &Path) -> Result<WorkflowOutput, an
         })
         .collect();
 
-    let (status_str, warnings) = if has_file_changes {
-        ("pass", None)
+    // When no File Changes table exists, include warnings and use "warn" status.
+    let warnings = if has_file_changes {
+        None
     } else {
-        (
-            "warn",
-            Some(
-                fc_warnings
-                    .into_iter()
-                    .filter(|w| !w.is_empty())
-                    .chain(std::iter::once(
-                        "no File Changes table found — all PCs treated as independent"
-                            .to_owned(),
-                    ))
-                    .collect::<std::collections::HashSet<_>>()
-                    .into_iter()
-                    .collect(),
-            ),
-        )
+        let mut msgs: Vec<String> = fc_warnings.into_iter().filter(|w| !w.is_empty()).collect();
+        msgs.push("no File Changes table found — all PCs treated as independent".to_owned());
+        Some(msgs)
     };
 
     let output = WavePlanOutput {
-        status: status_str,
+        status: if has_file_changes { "pass" } else { "warn" },
         waves,
         total_pcs: plan.total_pcs,
         max_per_wave: plan.max_per_wave,
