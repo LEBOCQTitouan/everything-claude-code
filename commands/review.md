@@ -60,3 +60,12 @@ Report: docs/audits/robert-notes.md
 
 This command invokes:
 - `robert` agent — professional conscience evaluation
+
+## Sources Reference
+
+If `docs/sources.md` exists:
+1. Read `docs/sources.md` and find entries for the reviewed module (via module mapping table)
+2. List matched sources as reference context for the reviewer
+3. Update `last_checked` date on matched entries
+
+If `docs/sources.md` does not exist, skip this step silently.

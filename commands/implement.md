@@ -39,6 +39,16 @@ If already in a worktree (from a prior `/spec-*` or `/design` call in this sessi
    6. **Campaign re-entry orientation.** If `artifacts.campaign_path` exists in state.json and the file exists, read campaign.md for orientation context: toolchain commands, grill-me decisions, and commit trail.
 7. Run: `!ecc-workflow transition implement`
 
+## Phase 0.5: Sources Consultation
+
+If `docs/sources.md` exists:
+1. Read `docs/sources.md` and find entries matching the module being modified (via module mapping table)
+2. If matches found, surface relevant sources as reference context
+3. Update `last_checked` date on matched entries
+4. Write updated file back (atomic write)
+
+If `docs/sources.md` does not exist, skip this step silently.
+
 ## Phase 1: Enter Plan Mode
 
 > **BLOCKING**: You MUST call `EnterPlanMode` before any implementation work. NEVER skip Plan Mode — not to "save context", not for "simple changes", not for any reason. This is non-negotiable.

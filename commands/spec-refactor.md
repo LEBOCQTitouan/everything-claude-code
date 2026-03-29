@@ -99,6 +99,17 @@ Launch a Task subagent (allowedTools: [WebSearch]) to perform web research in an
 **On success**: Carry the returned Research Summary forward into the spec output.
 **On failure** (subagent failed or timed out): Record "Web research skipped: subagent failed" and proceed to the next phase — do NOT hard-fail.
 
+## Phase 3.5: Sources Consultation
+
+If `docs/sources.md` exists:
+1. Read `docs/sources.md` and parse entries
+2. Find entries matching the refactoring area or affected module (via module mapping table)
+3. If matches found, list them as "Consulted sources:" in the output
+4. Update `last_checked` date on matched entries
+5. Write updated file back (atomic write)
+
+If `docs/sources.md` does not exist, skip this step silently.
+
 ## Phase 4: Smell Catalog
 
 Compile a unified catalog of detected smells from all Phase 1 agent findings and Phase 2 audit reports:

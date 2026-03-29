@@ -89,3 +89,11 @@ Check the project memory directory for daily memory files at `memory/daily/YYYY-
 2. **Fallback to most recent file**: If today's file does not exist but other daily files exist in `memory/daily/`, find the most recent one by filename sort order. Display its Activity section with a label: "(from YYYY-MM-DD)" indicating the date of the file used.
 
 3. **No daily files**: If no daily memory files exist in the `memory/daily/` directory (or the directory does not exist), state: "No session history available."
+
+## Sources Summary
+
+If `docs/sources.md` exists:
+1. Check for entries modified since the last git commit that modified `docs/sources.md` on the current branch
+2. Show entries added, moved between quadrants, or flagged stale since last check
+
+If `docs/sources.md` does not exist, skip this step silently.

@@ -49,6 +49,16 @@ TodoWrite items:
 
 Mark each item complete as the phase finishes.
 
+## Phase 0.5: Sources Consultation
+
+If `docs/sources.md` exists:
+1. Read `docs/sources.md` and find architectural sources matching the design subject or affected modules (via module mapping table)
+2. If matches found, reference them as "Consulted sources:" during design
+3. Update `last_checked` date on matched entries
+4. Write updated file back (atomic write)
+
+If `docs/sources.md` does not exist, skip this step silently.
+
 ## Phase 1: Implementation Design
 
 Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
