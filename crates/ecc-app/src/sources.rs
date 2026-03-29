@@ -173,8 +173,8 @@ pub fn list(
     let filtered = entries
         .into_iter()
         .filter(|e| {
-            quadrant.map_or(true, |q| e.quadrant.eq_ignore_ascii_case(q))
-                && subject.map_or(true, |s| e.subject.eq_ignore_ascii_case(s))
+            quadrant.is_none_or(|q| e.quadrant.eq_ignore_ascii_case(q))
+                && subject.is_none_or(|s| e.subject.eq_ignore_ascii_case(s))
         })
         .collect();
 
