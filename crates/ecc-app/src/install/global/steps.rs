@@ -131,16 +131,14 @@ pub(super) fn step_hooks_and_settings(
     claude_dir: &Path,
     version: &str,
     options: &InstallOptions,
-) {
+) -> Result<(usize, usize, usize), String> {
     let hooks_json = ecc_root.join("hooks").join("hooks.json");
     let settings_json = claude_dir.join("settings.json");
     let (hooks_added, hooks_existing, hooks_legacy) = if ctx.fs.exists(&hooks_json) {
         match merge::merge_hooks(ctx.fs, &hooks_json, &settings_json, options.dry_run) {
             Ok(counts) => counts,
             Err(e) => {
-                ctx.terminal
-                    .stderr_write(&format!("Hook merge error: {e}\n"));
-                (0, 0, 0)
+                return Err(format!("Hook merge error: {e}"));
             }
         }
     } else {
@@ -183,6 +181,8 @@ pub(super) fn step_hooks_and_settings(
         }
         None => {}
     }
+
+    Ok((hooks_added, hooks_existing, hooks_legacy))
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -38,7 +38,9 @@ pub fn install_global(
     steps::step_detect(ctx, claude_dir);
     let existing_manifest = read_manifest(ctx.fs, claude_dir);
     let mut combined = steps::step_merge_artifacts(ctx, ecc_root, claude_dir, options);
-    steps::step_hooks_and_settings(ctx, ecc_root, claude_dir, version, options);
+    if let Err(e) = steps::step_hooks_and_settings(ctx, ecc_root, claude_dir, version, options) {
+        combined.errors.push(e);
+    }
     steps::step_write_manifest(
         ctx,
         claude_dir,

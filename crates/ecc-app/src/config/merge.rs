@@ -4,21 +4,26 @@ use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
 /// Pre-scan a directory to identify files that need review (new or changed).
-/// Returns `(files_to_review, unchanged_filenames)`.
+/// Returns `(files_to_review, unchanged_filenames, errors)`.
+/// Errors are accumulated rather than causing early return — callers should propagate them.
 pub fn pre_scan_directory(
     fs: &dyn FileSystem,
     src_dir: &Path,
     dest_dir: &Path,
     ext: &str,
-) -> (Vec<FileToReview>, Vec<String>) {
+) -> (Vec<FileToReview>, Vec<String>, Vec<String>) {
     let mut files_to_review = Vec::new();
     let mut unchanged = Vec::new();
+    let mut errors = Vec::new();
 
     let entries = match fs.read_dir(src_dir) {
         Ok(e) => e,
         Err(e) => {
-            log::warn!("pre_scan_directory: cannot read {}: {e}", src_dir.display());
-            return (files_to_review, unchanged);
+            errors.push(format!(
+                "pre_scan_directory: cannot read {}: {e}",
+                src_dir.display()
+            ));
+            return (files_to_review, unchanged, errors);
         }
     };
 
@@ -46,7 +51,16 @@ pub fn pre_scan_directory(
                 is_new: true,
             });
         } else {
-            let src_content = fs.read_to_string(&src_path).unwrap_or_default();
+            let src_content = match fs.read_to_string(&src_path) {
+                Ok(c) => c,
+                Err(e) => {
+                    errors.push(format!(
+                        "pre_scan_directory: cannot read {}: {e}",
+                        src_path.display()
+                    ));
+                    continue;
+                }
+            };
             let dest_content = fs.read_to_string(&dest_path).unwrap_or_default();
 
             if contents_differ(&src_content, &dest_content) {
@@ -62,7 +76,7 @@ pub fn pre_scan_directory(
         }
     }
 
-    (files_to_review, unchanged)
+    (files_to_review, unchanged, errors)
 }
 
 /// Copy a file from source to destination.
@@ -220,7 +234,7 @@ mod tests {
             .with_file("/src/a.md", "content a")
             .with_file("/src/b.md", "content b");
 
-        let (to_review, unchanged) =
+        let (to_review, unchanged, _errors) =
             pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
         assert_eq!(to_review.len(), 2);
         assert!(unchanged.is_empty());
@@ -234,7 +248,7 @@ mod tests {
             .with_file("/src/a.md", "new content")
             .with_file("/dest/a.md", "old content");
 
-        let (to_review, unchanged) =
+        let (to_review, unchanged, _errors) =
             pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
         assert_eq!(to_review.len(), 1);
         assert!(unchanged.is_empty());
@@ -247,7 +261,7 @@ mod tests {
             .with_file("/src/a.md", "same content")
             .with_file("/dest/a.md", "same content");
 
-        let (to_review, unchanged) =
+        let (to_review, unchanged, _errors) =
             pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
         assert!(to_review.is_empty());
         assert_eq!(unchanged, vec!["a.md"]);
@@ -259,7 +273,7 @@ mod tests {
             .with_file("/src/a.md", "content")
             .with_file("/src/b.txt", "content");
 
-        let (to_review, _) = pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
+        let (to_review, _, _errors) = pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
         assert_eq!(to_review.len(), 1);
         assert_eq!(to_review[0].filename, "a.md");
     }
@@ -273,7 +287,7 @@ mod tests {
             .with_file("/src/same.md", "same")
             .with_file("/dest/same.md", "same");
 
-        let (to_review, unchanged) =
+        let (to_review, unchanged, _errors) =
             pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
         assert_eq!(to_review.len(), 2);
         assert_eq!(unchanged, vec!["same.md"]);
@@ -282,7 +296,7 @@ mod tests {
     #[test]
     fn pre_scan_directory_empty_src() {
         let fs = InMemoryFileSystem::new();
-        let (to_review, unchanged) =
+        let (to_review, unchanged, _errors) =
             pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
         assert!(to_review.is_empty());
         assert!(unchanged.is_empty());

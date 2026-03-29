@@ -85,9 +85,10 @@ pub fn merge_directory(
 ) -> MergeReport {
     let mut report = merge::empty_report();
 
-    let (files_to_review, unchanged) =
+    let (files_to_review, unchanged, scan_errors) =
         config_merge::pre_scan_directory(ctx.fs, src_dir, dest_dir, ext);
     report.unchanged = unchanged;
+    report.errors.extend(scan_errors);
 
     if files_to_review.is_empty() {
         return report;
