@@ -130,21 +130,84 @@ pub struct LintFinding {
 }
 
 /// Check filename-vs-frontmatter naming consistency for a single file.
+///
+/// Returns findings (may be empty). `file_stem` is the filename without extension.
+/// `frontmatter_name` is the `name` field value from frontmatter (None if missing).
+/// `entity_kind` is "agent", "skill", etc. for error messages.
 pub fn check_naming_consistency(
-    _file_stem: &str,
-    _frontmatter_name: Option<&str>,
-    _entity_kind: &str,
+    file_stem: &str,
+    frontmatter_name: Option<&str>,
+    entity_kind: &str,
 ) -> Vec<LintFinding> {
-    todo!("implement check_naming_consistency")
+    let mut findings = Vec::new();
+    let label = format!("{entity_kind} '{file_stem}'");
+
+    // Kebab-case check on filename
+    if !is_kebab_case(file_stem) {
+        findings.push(LintFinding {
+            severity: LintSeverity::Error,
+            file: file_stem.to_string(),
+            message: format!(
+                "{label}: filename is not kebab-case (expected pattern: ^[a-z][a-z0-9]*(-[a-z0-9]+)*$)"
+            ),
+        });
+    }
+
+    // Name mismatch check
+    match frontmatter_name {
+        Some(name) if name.trim().is_empty() => {
+            findings.push(LintFinding {
+                severity: LintSeverity::Warn,
+                file: file_stem.to_string(),
+                message: format!("{label}: frontmatter 'name' is empty, skipping name match"),
+            });
+        }
+        Some(name) if name != file_stem => {
+            findings.push(LintFinding {
+                severity: LintSeverity::Error,
+                file: file_stem.to_string(),
+                message: format!(
+                    "{label}: filename '{file_stem}' differs from frontmatter name '{name}'"
+                ),
+            });
+        }
+        None => {
+            findings.push(LintFinding {
+                severity: LintSeverity::Warn,
+                file: file_stem.to_string(),
+                message: format!("{label}: missing frontmatter 'name' field, skipping name match"),
+            });
+        }
+        _ => {} // name matches
+    }
+
+    findings
 }
 
 /// Validate tool names against VALID_TOOLS registry.
-pub fn check_tool_values(
-    _file_stem: &str,
-    _raw_tools: &str,
-    _field_name: &str,
-) -> Vec<LintFinding> {
-    todo!("implement check_tool_values")
+///
+/// `raw_tools` is the raw frontmatter value for tools/allowed-tools.
+/// Returns findings. Any invalid tool produces an ERROR for the whole file.
+pub fn check_tool_values(file_stem: &str, raw_tools: &str, field_name: &str) -> Vec<LintFinding> {
+    let tools = parse_tool_list(raw_tools);
+    let invalid: Vec<_> = tools
+        .iter()
+        .filter(|t| !VALID_TOOLS.contains(&t.as_str()))
+        .collect();
+
+    if invalid.is_empty() {
+        return vec![];
+    }
+
+    vec![LintFinding {
+        severity: LintSeverity::Error,
+        file: file_stem.to_string(),
+        message: format!(
+            "'{file_stem}': invalid {field_name} {:?} — valid tools: {}",
+            invalid,
+            VALID_TOOLS.join(", ")
+        ),
+    }]
 }
 
 /// Extract YAML frontmatter from markdown content into a key-value map.
