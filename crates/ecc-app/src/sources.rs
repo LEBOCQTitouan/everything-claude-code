@@ -48,33 +48,235 @@ pub enum SourcesError {
     ParseError(String),
 }
 
+/// Parse the registry Markdown content into a list of entries.
+///
+/// # Registry Format
+///
+/// ```markdown
+/// ## Adopt
+///
+/// - url: https://example.com
+///   title: Example Site
+///   type: blog
+///   subject: CLI
+///   added-date: 2026-01-01
+///   added-by: alice
+/// ```
+fn parse_registry(content: &str) -> Result<Vec<SourceEntry>, SourcesError> {
+    let mut entries = Vec::new();
+    let mut current_quadrant = String::new();
+
+    let lines: Vec<&str> = content.lines().collect();
+    let mut i = 0;
+
+    while i < lines.len() {
+        let line = lines[i].trim();
+
+        // Detect quadrant section headers: "## <QuadrantName>"
+        if let Some(header) = line.strip_prefix("## ") {
+            current_quadrant = header.trim().to_string();
+            i += 1;
+            continue;
+        }
+
+        // Detect entry start: "- url: <url>"
+        if let Some(url_val) = line.strip_prefix("- url: ") {
+            let url = url_val.trim().to_string();
+            let mut title = String::new();
+            let mut source_type = String::new();
+            let mut subject = String::new();
+            let mut added_date = String::new();
+            let mut added_by = String::new();
+
+            i += 1;
+            while i < lines.len() {
+                let field_line = lines[i].trim();
+                if field_line.is_empty()
+                    || field_line.starts_with("- url: ")
+                    || field_line.starts_with("## ")
+                {
+                    break;
+                }
+                if let Some(v) = field_line.strip_prefix("title: ") {
+                    title = v.trim().to_string();
+                } else if let Some(v) = field_line.strip_prefix("type: ") {
+                    source_type = v.trim().to_string();
+                } else if let Some(v) = field_line.strip_prefix("subject: ") {
+                    subject = v.trim().to_string();
+                } else if let Some(v) = field_line.strip_prefix("added-date: ") {
+                    added_date = v.trim().to_string();
+                } else if let Some(v) = field_line.strip_prefix("added-by: ") {
+                    added_by = v.trim().to_string();
+                }
+                i += 1;
+            }
+
+            if !url.is_empty() {
+                entries.push(SourceEntry {
+                    url,
+                    title,
+                    source_type,
+                    subject,
+                    quadrant: current_quadrant.clone(),
+                    added_date,
+                    added_by,
+                });
+            }
+            continue;
+        }
+
+        i += 1;
+    }
+
+    Ok(entries)
+}
+
+/// Render a registry from entries, grouped by quadrant in canonical order.
+fn render_registry(entries: &[SourceEntry]) -> String {
+    let quadrant_order = ["Adopt", "Trial", "Assess", "Hold", "Inbox"];
+    let mut output = String::new();
+
+    for quadrant in &quadrant_order {
+        let section: Vec<&SourceEntry> =
+            entries.iter().filter(|e| e.quadrant == *quadrant).collect();
+        if section.is_empty() {
+            continue;
+        }
+        output.push_str(&format!("## {quadrant}\n\n"));
+        for entry in section {
+            output.push_str(&format!("- url: {}\n", entry.url));
+            output.push_str(&format!("  title: {}\n", entry.title));
+            output.push_str(&format!("  type: {}\n", entry.source_type));
+            output.push_str(&format!("  subject: {}\n", entry.subject));
+            output.push_str(&format!("  added-date: {}\n", entry.added_date));
+            output.push_str(&format!("  added-by: {}\n", entry.added_by));
+            output.push('\n');
+        }
+    }
+
+    output
+}
+
 /// List sources, optionally filtered by quadrant and/or subject.
 pub fn list(
-    _fs: &dyn FileSystem,
-    _path: &Path,
-    _quadrant: Option<&str>,
-    _subject: Option<&str>,
+    fs: &dyn FileSystem,
+    path: &Path,
+    quadrant: Option<&str>,
+    subject: Option<&str>,
 ) -> Result<Vec<SourceEntry>, SourcesError> {
-    todo!("not implemented")
+    let content = fs
+        .read_to_string(path)
+        .map_err(|e| SourcesError::IoError(e.to_string()))?;
+
+    let entries = parse_registry(&content)?;
+
+    let filtered = entries
+        .into_iter()
+        .filter(|e| {
+            quadrant.map_or(true, |q| e.quadrant.eq_ignore_ascii_case(q))
+                && subject.map_or(true, |s| e.subject.eq_ignore_ascii_case(s))
+        })
+        .collect();
+
+    Ok(filtered)
 }
 
 /// Add a new source entry to the registry.
-pub fn add(_fs: &dyn FileSystem, _path: &Path, _entry: SourceEntry) -> Result<(), SourcesError> {
-    todo!("not implemented")
+///
+/// Rejects duplicate URLs. Adds the entry to the section matching its quadrant.
+/// Uses atomic write (temp file + rename).
+pub fn add(fs: &dyn FileSystem, path: &Path, entry: SourceEntry) -> Result<(), SourcesError> {
+    let content = if fs.exists(path) {
+        fs.read_to_string(path)
+            .map_err(|e| SourcesError::IoError(e.to_string()))?
+    } else {
+        String::new()
+    };
+
+    let mut entries = parse_registry(&content)?;
+
+    // Check for duplicate URL
+    if entries.iter().any(|e| e.url == entry.url) {
+        return Err(SourcesError::DuplicateUrl(entry.url));
+    }
+
+    entries.push(entry);
+
+    let rendered = render_registry(&entries);
+
+    // Atomic write: temp file + rename
+    let tmp_path = path.with_extension("md.tmp");
+    fs.write(&tmp_path, &rendered)
+        .map_err(|e| SourcesError::IoError(format!("failed to write temp file: {e}")))?;
+    if let Err(e) = fs.rename(&tmp_path, path) {
+        let _ = fs.remove_file(&tmp_path);
+        return Err(SourcesError::IoError(format!(
+            "failed to rename temp file: {e}"
+        )));
+    }
+
+    Ok(())
 }
 
 /// Check all sources for reachability using curl.
+///
+/// For each URL, runs `curl -sI -o /dev/null -w "%{http_code}" <url>`.
+/// Entries returning non-200 status are flagged as stale.
 pub fn check(
-    _fs: &dyn FileSystem,
-    _shell: &dyn ShellExecutor,
-    _path: &Path,
+    fs: &dyn FileSystem,
+    shell: &dyn ShellExecutor,
+    path: &Path,
 ) -> Result<CheckReport, SourcesError> {
-    todo!("not implemented")
+    let content = fs
+        .read_to_string(path)
+        .map_err(|e| SourcesError::IoError(e.to_string()))?;
+
+    let entries = parse_registry(&content)?;
+    let mut stale = Vec::new();
+    let mut reachable = Vec::new();
+
+    for entry in entries {
+        let result = shell.run_command(
+            "curl",
+            &["-sI", "-o", "/dev/null", "-w", "%{http_code}", &entry.url],
+        );
+        let is_ok = match result {
+            Ok(output) => output.stdout.trim() == "200",
+            Err(_) => false,
+        };
+        if is_ok {
+            reachable.push(entry);
+        } else {
+            stale.push(entry);
+        }
+    }
+
+    Ok(CheckReport { stale, reachable })
 }
 
 /// Reindex the registry: re-render in canonical quadrant order deterministically.
-pub fn reindex(_fs: &dyn FileSystem, _path: &Path) -> Result<(), SourcesError> {
-    todo!("not implemented")
+///
+/// Reads the registry, parses all entries, then rewrites the file with entries
+/// grouped by quadrant in canonical order (Adopt, Trial, Assess, Hold, Inbox).
+pub fn reindex(fs: &dyn FileSystem, path: &Path) -> Result<(), SourcesError> {
+    let content = fs
+        .read_to_string(path)
+        .map_err(|e| SourcesError::IoError(e.to_string()))?;
+
+    let entries = parse_registry(&content)?;
+    let rendered = render_registry(&entries);
+
+    let tmp_path = path.with_extension("md.tmp");
+    fs.write(&tmp_path, &rendered)
+        .map_err(|e| SourcesError::IoError(format!("failed to write temp file: {e}")))?;
+    if let Err(e) = fs.rename(&tmp_path, path) {
+        let _ = fs.remove_file(&tmp_path);
+        return Err(SourcesError::IoError(format!(
+            "failed to rename temp file: {e}"
+        )));
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
