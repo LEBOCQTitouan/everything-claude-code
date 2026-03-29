@@ -1,6 +1,11 @@
 //! Zero-dependency ANSI color utilities.
 //! Respects `NO_COLOR` env var convention (checked at call site).
 
+use std::sync::LazyLock;
+
+static RE_ANSI: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"\x1b\[[0-9;]*m").expect("valid regex"));
+
 /// Wrap text in bold ANSI escape codes.
 pub fn bold(text: &str, enabled: bool) -> String {
     wrap(text, "1", enabled)
@@ -41,8 +46,7 @@ fn wrap(text: &str, code: &str, enabled: bool) -> String {
 
 /// Strip all ANSI escape sequences from a string.
 pub fn strip_ansi(text: &str) -> String {
-    let re = regex::Regex::new(r"\x1b\[[0-9;]*m").expect("valid regex");
-    re.replace_all(text, "").into_owned()
+    RE_ANSI.replace_all(text, "").into_owned()
 }
 
 #[cfg(test)]

@@ -1,6 +1,20 @@
 use ecc_domain::detection::language::LANGUAGE_RULES;
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
+use std::sync::LazyLock;
+
+static RE_PYPROJECT_DEPS: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"dependencies\s*=\s*\[([\s\S]*?)\]").expect("valid regex"));
+static RE_QUOTED: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r#""([^"]+)""#).expect("valid regex"));
+static RE_GO_REQUIRE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"require\s*\(([\s\S]*?)\)").expect("valid regex"));
+static RE_CARGO_HEADER: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^\[(dev-)?dependencies\]\s*$").expect("valid regex"));
+static RE_CARGO_NAME: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^([a-zA-Z0-9_-]+)\s*=").expect("valid regex"));
+static RE_ELIXIR_DEP: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"\{:(\w+)").expect("valid regex"));
 
 /// Check whether any file in `dir` (non-recursive) has one of the given extensions.
 pub fn has_file_with_extension(fs: &dyn FileSystem, dir: &Path, extensions: &[&str]) -> bool {
@@ -86,11 +100,9 @@ pub fn get_python_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
 
     // pyproject.toml
     if let Ok(content) = fs.read_to_string(&dir.join("pyproject.toml")) {
-        let re_block = regex::Regex::new(r"dependencies\s*=\s*\[([\s\S]*?)\]").unwrap();
-        if let Some(captures) = re_block.captures(&content) {
+        if let Some(captures) = RE_PYPROJECT_DEPS.captures(&content) {
             let block = &captures[1];
-            let re_quoted = regex::Regex::new(r#""([^"]+)""#).unwrap();
-            for m in re_quoted.captures_iter(block) {
+            for m in RE_QUOTED.captures_iter(block) {
                 let raw = &m[1];
                 let name = raw
                     .split(['>', '=', '<', '!', '[', ';'])
@@ -115,8 +127,7 @@ pub fn get_go_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     };
 
     let mut deps = Vec::new();
-    let re = regex::Regex::new(r"require\s*\(([\s\S]*?)\)").unwrap();
-    if let Some(captures) = re.captures(&content) {
+    if let Some(captures) = RE_GO_REQUIRE.captures(&content) {
         let block = &captures[1];
         for line in block.lines() {
             let trimmed = line.trim();
@@ -139,12 +150,9 @@ pub fn get_rust_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     };
 
     let mut deps = Vec::new();
-    let re_header = regex::Regex::new(r"^\[(dev-)?dependencies\]\s*$").unwrap();
-    let re_name = regex::Regex::new(r"^([a-zA-Z0-9_-]+)\s*=").unwrap();
-
     let mut in_deps_section = false;
     for line in content.lines() {
-        if re_header.is_match(line) {
+        if RE_CARGO_HEADER.is_match(line) {
             in_deps_section = true;
             continue;
         }
@@ -152,7 +160,7 @@ pub fn get_rust_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
             in_deps_section = false;
             continue;
         }
-        if in_deps_section && let Some(name_match) = re_name.captures(line) {
+        if in_deps_section && let Some(name_match) = RE_CARGO_NAME.captures(line) {
             deps.push(name_match[1].to_string());
         }
     }
@@ -187,8 +195,7 @@ pub fn get_elixir_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     };
 
     let mut deps = Vec::new();
-    let re = regex::Regex::new(r"\{:(\w+)").unwrap();
-    for m in re.captures_iter(&content) {
+    for m in RE_ELIXIR_DEP.captures_iter(&content) {
         deps.push(m[1].to_string());
     }
     deps
