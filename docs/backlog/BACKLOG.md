@@ -99,6 +99,14 @@
 | BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-098 | Socratic grill-me upgrade — OARS, laddering, MECE, reflective rephrasing | — | HIGH | /spec-dev | open | 2026-03-29 |
+| BL-099 | Migrate serde_yml to serde-yaml-ng — maintenance risk mitigation | — | MEDIUM | /spec-refactor | open | 2026-03-29 |
+| BL-100 | sccache + mold build acceleration for dev environment | — | LOW | direct edit | open | 2026-03-29 |
+| BL-101 | Miri unsafe code verification for ecc-flock | — | LOW | direct edit | open | 2026-03-29 |
+| BL-102 | Promptware Engineering practices — prompt testing and monitoring | — | MEDIUM | /spec-dev | open | 2026-03-29 |
+| BL-103 | Autonomous visual testing integration — vision-based UI validation | — | HIGH | /spec-dev | open | 2026-03-29 |
+| BL-104 | Multi-agent team coordination — shared state and task handoff | — | HIGH | /spec-dev | open | 2026-03-29 |
+| BL-105 | Bump crossterm 0.28 → 0.29.0 | — | LOW | direct edit | open | 2026-03-29 |
+| BL-106 | Harness reliability metrics — benchmark against reference patterns | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 
 ## Dependency Graph
 
@@ -152,14 +160,22 @@ BL-097 → BL-066 (extends deterministic backlog management with transient lock 
 BL-098 → BL-011 (upgrades the grill-me skill created in BL-011)
 BL-098 → BL-057 (upgrades grill-me-adversary companion created in BL-057)
 BL-098 → BL-061 (builds on AskUserQuestion integration from BL-061)
+BL-100 → BL-087 (build acceleration complements xtask deploy infrastructure)
+BL-102 → BL-090 (promptware testing extends component scaffolding with eval harness)
+BL-102 → BL-092 (prompt monitoring shares structured log infrastructure)
+BL-104 → BL-065 (team coordination requires session identity from worktree isolation)
+BL-104 → BL-093 (shared state benefits from memory system infrastructure)
+BL-106 → BL-091 (harness metrics build on tracing foundation from diagnostics)
+BL-106 → BL-092 (harness metrics share structured log infrastructure)
 ```
 
 ## Stats
 
-- **Total:** 92
-- **Open:** 40
+- **Total:** 100
+- **Open:** 48
 - **In-progress:** 0
 - **Implemented:** 48
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)
+- **Web radar derived:** 8 (BL-099 through BL-106)
