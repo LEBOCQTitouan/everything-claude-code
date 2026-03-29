@@ -60,14 +60,25 @@ pub fn run(kind: &str, args: &[String], project_dir: &Path) -> WorkflowOutput {
 
 /// Resolve `~/.claude/projects/<project-hash>/memory/` for a given project dir.
 ///
-/// The project hash is the absolute path with the leading `/` stripped and
-/// remaining `/` replaced with `-`.
+/// Uses `ecc_flock::resolve_repo_root` to find the main repo root (even from
+/// a worktree), ensuring all sessions produce the same project hash.
+/// Returns an error if the resolved root is not a git repository.
 fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Error> {
     let home = std::env::var("HOME").map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
 
-    // Canonicalize to get absolute path; fall back to as-is if that fails.
-    let abs = std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
-    let abs_str = abs.to_string_lossy();
+    let repo_root = ecc_flock::resolve_repo_root(project_dir);
+    // Canonicalize to resolve macOS symlinks (/var → /private/var) so the
+    // hash is identical whether called from a worktree or the main repo.
+    let repo_root =
+        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    if !repo_root.join(".git").exists() {
+        return Err(anyhow::anyhow!(
+            "not a git repository: {} (resolved from {})",
+            repo_root.display(),
+            project_dir.display(),
+        ));
+    }
+    let abs_str = repo_root.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
 
     Ok(PathBuf::from(home)
@@ -617,5 +628,38 @@ mod tests {
     fn build_memory_index_link_is_markdown_list_item() {
         let link = build_memory_index_link("2026-03-28");
         assert!(link.starts_with("- ["));
+    }
+
+    // ── resolve_project_memory_dir tests ─────────────────────────────────────
+
+    #[test]
+    fn resolve_project_memory_dir_errors_on_non_git() {
+        let tmp = tempfile::tempdir().unwrap();
+        let result = resolve_project_memory_dir(tmp.path());
+        assert!(result.is_err(), "should error on non-git directory");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("not a git repository"),
+            "error should mention 'not a git repository', got: {err_msg}"
+        );
+    }
+
+    #[test]
+    fn resolve_project_memory_dir_succeeds_for_git_repo() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(tmp.path())
+            .output()
+            .expect("git init failed");
+
+        let result = resolve_project_memory_dir(tmp.path());
+        assert!(result.is_ok(), "should succeed for git-initialized dir");
+        let path = result.unwrap();
+        let path_str = path.to_string_lossy();
+        assert!(
+            path_str.contains(".claude/projects/") && path_str.ends_with("/memory"),
+            "path should contain .claude/projects/<hash>/memory, got: {path_str}"
+        );
     }
 }

@@ -8,12 +8,9 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## v4.3.1
 
-### B-to-A Grade Push (5 remaining HIGHs)
+### Fixed
 
-- **Transitionable impl (US-001)**: WorkflowState now implements Transitionable trait, delegating to resolve_transition(). Test helpers fixed to use Concern/Timestamp types. 686 domain tests pass.
-- **Session aliases split (US-002)**: aliases.rs (814 lines) split into aliases/mod.rs + tests_crud.rs + tests_rename.rs (all < 400 lines).
-- **PackageManagerError (US-003)**: 4 functions migrated from Result<T, String> to typed PackageManagerError enum with thiserror.
-- **Function extractions (US-004)**: Top 10 longest functions extracted to < 50 lines each — run_validate_design (171→47), transition::run (145→44), merge_skills (121→33), run_validate_spec (85→36), worktree::gc (83→32), get_package_manager (81→42), get_all_sessions (80→38), rename_alias (79→27), format_side_by_side_diff (78→32), merge_hooks_pure (72→32).
+- Memory writes from worktree sessions (`write_daily`, `write_memory_index`) now resolve to the main repo's `~/.claude/projects/<hash>/memory/` directory instead of creating a worktree-specific hash (fixes daily memory and memory-index fragmentation in concurrent sessions)
 
 ## v4.3.0
 

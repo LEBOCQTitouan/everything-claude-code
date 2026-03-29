@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (1562 tests)
+cargo test              # Run all Rust tests (1567 tests)
 bats tests/statusline/  # Run statusline Bats tests (16 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo build --release   # Build release binary

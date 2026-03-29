@@ -18,11 +18,13 @@ fn binary_path() -> PathBuf {
 }
 
 /// Derive the project hash the same way resolve_project_memory_dir does:
-/// strip leading '/' and replace '/' with '-'.
+/// use resolve_repo_root, strip leading '/' and replace '/' with '-'.
 fn project_memory_dir(project_dir: &std::path::Path) -> PathBuf {
     let home = std::env::var("HOME").expect("HOME not set");
-    let abs = std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
-    let abs_str = abs.to_string_lossy();
+    let repo_root = ecc_flock::resolve_repo_root(project_dir);
+    let repo_root =
+        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    let abs_str = repo_root.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
     PathBuf::from(home)
         .join(".claude/projects")
@@ -37,6 +39,13 @@ fn two_concurrent_daily_writes_both_appear() {
     let bin = binary_path();
     let temp_dir = tempfile::tempdir().unwrap();
     let project_dir = temp_dir.path();
+
+    // Initialize as git repo so resolve_repo_root succeeds
+    Command::new("git")
+        .args(["init"])
+        .current_dir(project_dir)
+        .output()
+        .expect("git init failed");
 
     let mut child1 = Command::new(&bin)
         .args(["memory-write", "daily", "plan", "feature-a", "dev"])
@@ -110,6 +119,13 @@ fn two_concurrent_memory_index_writes_both_appear() {
     let bin = binary_path();
     let temp_dir = tempfile::tempdir().unwrap();
     let project_dir = temp_dir.path();
+
+    // Initialize as git repo so resolve_repo_root succeeds
+    Command::new("git")
+        .args(["init"])
+        .current_dir(project_dir)
+        .output()
+        .expect("git init failed");
 
     let mut child1 = Command::new(&bin)
         .args(["memory-write", "memory-index"])
