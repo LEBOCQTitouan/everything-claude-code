@@ -143,4 +143,35 @@ mod tests {
             "trail segment should be appended with ' → ' separator, got:\n{updated}"
         );
     }
+
+    #[test]
+    fn done_checkbox() {
+        // Start from a green state so done transition is valid
+        let green_content = r#"# Tasks: Test Feature
+
+## Pass Conditions
+
+- [ ] PC-001: Test description | `cargo test` | pending@2026-03-29T14:00:00Z → red@2026-03-29T14:01:00Z → green@2026-03-29T14:02:00Z
+
+## Post-TDD
+
+- [ ] E2E tests | pending@2026-03-29T14:00:00Z
+"#;
+        let updated = apply_update(
+            green_content,
+            "PC-001",
+            TaskStatus::Done,
+            "2026-03-29T14:03:00Z",
+        )
+        .expect("apply_update should succeed for green -> done");
+
+        assert!(
+            updated.contains("- [x]"),
+            "checkbox should be flipped to [x] on done transition, got:\n{updated}"
+        );
+        assert!(
+            !updated.contains("- [ ] PC-001"),
+            "original [ ] checkbox should be replaced, got:\n{updated}"
+        );
+    }
 }
