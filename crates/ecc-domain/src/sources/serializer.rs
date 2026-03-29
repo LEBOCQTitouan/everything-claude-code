@@ -16,8 +16,105 @@ use super::registry::SourcesRegistry;
 /// Within each quadrant section, subjects are sorted alphabetically.
 /// Within each subject subsection, entries appear in their original order.
 pub fn serialize_sources(registry: &SourcesRegistry) -> String {
-    let _ = registry;
-    unimplemented!("serialize_sources not yet implemented")
+    let mut out = String::new();
+
+    out.push_str("# Knowledge Sources\n\n");
+
+    // Inbox section
+    out.push_str("## Inbox\n\n");
+    for entry in &registry.inbox {
+        out.push_str(&serialize_entry(entry, true));
+        out.push('\n');
+    }
+    out.push('\n');
+
+    // Four quadrant sections in canonical order
+    for quadrant in &[Quadrant::Adopt, Quadrant::Trial, Quadrant::Assess, Quadrant::Hold] {
+        let quadrant_display = quadrant_title(quadrant);
+        out.push_str(&format!("## {quadrant_display}\n\n"));
+
+        let mut quadrant_entries: Vec<&SourceEntry> = registry
+            .entries
+            .iter()
+            .filter(|e| &e.quadrant == quadrant)
+            .collect();
+
+        // Sort by subject alphabetically, then preserve relative order within subject
+        quadrant_entries.sort_by(|a, b| a.subject.cmp(&b.subject));
+
+        // Group by subject
+        let mut subjects: Vec<String> = vec![];
+        for entry in &quadrant_entries {
+            if !subjects.contains(&entry.subject) {
+                subjects.push(entry.subject.clone());
+            }
+        }
+
+        for subject in &subjects {
+            out.push_str(&format!("### {subject}\n\n"));
+            for entry in quadrant_entries.iter().filter(|e| &e.subject == subject) {
+                out.push_str(&serialize_entry(entry, false));
+                out.push('\n');
+            }
+            out.push('\n');
+        }
+    }
+
+    // Module Mapping section
+    out.push_str("## Module Mapping\n\n");
+    if !registry.module_mappings.is_empty() {
+        out.push_str("| Module | Subjects |\n");
+        out.push_str("|--------|----------|\n");
+        for mapping in &registry.module_mappings {
+            let subjects_str = mapping.subjects.join(", ");
+            out.push_str(&format!("| {} | {} |\n", mapping.module_path, subjects_str));
+        }
+    }
+
+    out
+}
+
+/// Format the quadrant name with title case.
+fn quadrant_title(q: &Quadrant) -> &'static str {
+    match q {
+        Quadrant::Adopt => "Adopt",
+        Quadrant::Trial => "Trial",
+        Quadrant::Assess => "Assess",
+        Quadrant::Hold => "Hold",
+    }
+}
+
+/// Serialize a single `SourceEntry` to its markdown list item format.
+///
+/// For Inbox entries (`include_quadrant = true`), the quadrant is included in the metadata.
+/// For quadrant-section entries, the quadrant is implied by the section heading.
+fn serialize_entry(entry: &SourceEntry, include_quadrant: bool) -> String {
+    let mut parts: Vec<String> = vec![];
+
+    parts.push(format!("type: {}", entry.source_type));
+
+    if include_quadrant {
+        parts.push(format!("quadrant: {}", entry.quadrant));
+    }
+
+    parts.push(format!("subject: {}", entry.subject));
+    parts.push(format!("added: {}", entry.added_date));
+    parts.push(format!("by: {}", entry.added_by));
+
+    if let Some(ref checked) = entry.last_checked {
+        parts.push(format!("checked: {checked}"));
+    }
+
+    if entry.stale {
+        parts.push("stale".to_owned());
+    }
+
+    if let Some(ref reason) = entry.deprecation_reason {
+        parts.push(format!("deprecated: {reason}"));
+    }
+
+    let meta = parts.join(" | ");
+    format!("- [{}]({}) \u{2014} {meta}", entry.title, entry.url)
 }
 
 #[cfg(test)]
