@@ -5,6 +5,7 @@
 //! (install, audit, merge, validate, etc.).
 
 pub mod act_ci;
+pub mod sources;
 pub mod audit;
 pub mod backlog;
 pub mod claw;
