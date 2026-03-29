@@ -5,6 +5,23 @@ use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
+/// Emit an error-only `SpecValidationOutput` to stdout and return `Ok(false)`.
+fn emit_spec_error(
+    terminal: &dyn TerminalIO,
+    error_msg: String,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let output = SpecValidationOutput {
+        valid: false,
+        ac_count: 0,
+        acs: Vec::new(),
+        errors: vec![error_msg],
+        warnings: Vec::new(),
+    };
+    let json = serde_json::to_string(&output)?;
+    terminal.stdout_write(&json);
+    Ok(false)
+}
+
 /// Read a spec file, run AC validation, write JSON to stdout, warnings to stderr.
 ///
 /// Returns `Ok(true)` when the spec is valid, `Ok(false)` on validation errors.
@@ -17,39 +34,18 @@ pub fn run_validate_spec(
         Ok(c) => c,
         Err(e) => {
             let msg = e.to_string();
-            let is_not_found = msg.contains("not found");
-            let error_msg = if is_not_found {
+            let error_msg = if msg.contains("not found") {
                 format!("file not found: {path}")
             } else {
                 msg
             };
-            let output = SpecValidationOutput {
-                valid: false,
-                ac_count: 0,
-                acs: Vec::new(),
-                errors: vec![error_msg],
-                warnings: Vec::new(),
-            };
-            let json = serde_json::to_string(&output)?;
-            terminal.stdout_write(&json);
-            return Ok(false);
+            return emit_spec_error(terminal, error_msg);
         }
     };
 
     let report = match parse_acs(&content) {
         Ok(r) => r,
-        Err(e) => {
-            let output = SpecValidationOutput {
-                valid: false,
-                ac_count: 0,
-                acs: Vec::new(),
-                errors: vec![e.to_string()],
-                warnings: Vec::new(),
-            };
-            let json = serde_json::to_string(&output)?;
-            terminal.stdout_write(&json);
-            return Ok(false);
-        }
+        Err(e) => return emit_spec_error(terminal, e.to_string()),
     };
 
     for warning in &report.warnings {

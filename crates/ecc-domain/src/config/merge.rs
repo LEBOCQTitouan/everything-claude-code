@@ -176,6 +176,39 @@ pub fn remove_legacy_hooks(hooks: &serde_json::Value) -> (serde_json::Value, usi
     (serde_json::Value::Object(result), removed)
 }
 
+/// Merge source hook entries into existing entries for one event type.
+///
+/// Returns `(added, already_present)` counts.
+fn merge_event_entries(
+    source_arr: &[serde_json::Value],
+    existing_entries: &mut Vec<serde_json::Value>,
+) -> (usize, usize) {
+    let mut added = 0usize;
+    let mut already_present = 0usize;
+
+    for entry in source_arr {
+        let key = match entry.get("hooks") {
+            Some(h) => serde_json::to_string(h).unwrap_or_default(),
+            None => serde_json::to_string(entry).unwrap_or_default(),
+        };
+        let exists = existing_entries.iter().any(|e| {
+            let existing_key = match e.get("hooks") {
+                Some(h) => serde_json::to_string(h).unwrap_or_default(),
+                None => serde_json::to_string(e).unwrap_or_default(),
+            };
+            existing_key == key
+        });
+        if exists {
+            already_present += 1;
+        } else {
+            existing_entries.push(entry.clone());
+            added += 1;
+        }
+    }
+
+    (added, already_present)
+}
+
 /// Merge hooks from source into existing hooks.
 ///
 /// Returns `(merged_hooks, added_count, existing_count, legacy_removed_count)`.
@@ -196,58 +229,24 @@ pub fn merge_hooks_pure(
 
     let source_obj = match source_hooks.as_object() {
         Some(o) => o,
-        None => {
-            return (serde_json::Value::Object(merged), 0, 0, legacy_removed);
-        }
+        None => return (serde_json::Value::Object(merged), 0, 0, legacy_removed),
     };
 
-    let mut added = 0usize;
-    let mut already_present = 0usize;
+    let mut total_added = 0usize;
+    let mut total_present = 0usize;
 
     for (event, entries) in source_obj {
-        let source_arr = match entries.as_array() {
-            Some(a) => a,
-            None => continue,
-        };
-
+        let Some(source_arr) = entries.as_array() else { continue };
         let existing_arr = merged
             .entry(event.clone())
             .or_insert_with(|| serde_json::Value::Array(Vec::new()));
-
-        let existing_entries = match existing_arr.as_array_mut() {
-            Some(a) => a,
-            None => continue,
-        };
-
-        for entry in source_arr {
-            let key = match entry.get("hooks") {
-                Some(h) => serde_json::to_string(h).unwrap_or_default(),
-                None => serde_json::to_string(entry).unwrap_or_default(),
-            };
-
-            let exists = existing_entries.iter().any(|e| {
-                let existing_key = match e.get("hooks") {
-                    Some(h) => serde_json::to_string(h).unwrap_or_default(),
-                    None => serde_json::to_string(e).unwrap_or_default(),
-                };
-                existing_key == key
-            });
-
-            if exists {
-                already_present += 1;
-            } else {
-                existing_entries.push(entry.clone());
-                added += 1;
-            }
-        }
+        let Some(existing_entries) = existing_arr.as_array_mut() else { continue };
+        let (added, present) = merge_event_entries(source_arr, existing_entries);
+        total_added += added;
+        total_present += present;
     }
 
-    (
-        serde_json::Value::Object(merged),
-        added,
-        already_present,
-        legacy_removed,
-    )
+    (serde_json::Value::Object(merged), total_added, total_present, legacy_removed)
 }
 
 // ---------------------------------------------------------------------------

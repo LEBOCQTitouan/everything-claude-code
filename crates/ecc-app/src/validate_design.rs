@@ -1,12 +1,112 @@
 //! `validate_design` use case — reads a design file and validates PC structure via domain.
 
 use ecc_domain::spec::{
-    DesignValidationOutput, check_coverage, check_ordering, parse_acs, parse_file_changes,
-    parse_pcs,
+    AcId, DesignValidationOutput, OrderingViolation, check_coverage, check_ordering, parse_acs,
+    parse_file_changes, parse_pcs,
 };
+
+/// Result of spec coverage check: `(uncovered_acs, phantom_acs, errors, warnings)`.
+type CoverageCheckResult = (Vec<AcId>, Vec<AcId>, Vec<String>, Vec<String>);
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
+
+/// Emit an error-only `DesignValidationOutput` to stdout and return `Ok(false)`.
+fn emit_design_error(
+    terminal: &dyn TerminalIO,
+    error_msg: String,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let output = DesignValidationOutput {
+        valid: false,
+        pc_count: 0,
+        pcs: Vec::new(),
+        uncovered_acs: None,
+        phantom_acs: None,
+        ordering_violations: Vec::new(),
+        errors: vec![error_msg],
+        warnings: Vec::new(),
+    };
+    let json = serde_json::to_string(&output)?;
+    terminal.stdout_write(&json);
+    Ok(false)
+}
+
+/// Normalize an FS error message, replacing "not found" with a user-friendly prefix.
+fn normalize_fs_error(msg: String, prefix: &str) -> String {
+    if msg.contains("not found") {
+        format!("{prefix} not found")
+    } else {
+        msg
+    }
+}
+
+/// Build and emit the final `DesignValidationOutput`, returning whether the design is valid.
+fn emit_design_output(
+    terminal: &dyn TerminalIO,
+    pc_report: ecc_domain::spec::PcReport,
+    uncovered_acs: Option<Vec<AcId>>,
+    phantom_acs: Option<Vec<AcId>>,
+    ordering_violations: Vec<OrderingViolation>,
+    all_errors: Vec<String>,
+    all_warnings: Vec<String>,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    for warning in &all_warnings {
+        terminal.stderr_write(&format!("WARNING: {warning}\n"));
+    }
+    let has_uncovered = uncovered_acs.as_ref().map(|v| !v.is_empty()).unwrap_or(false);
+    let valid = all_errors.is_empty() && !has_uncovered;
+    let output = DesignValidationOutput {
+        valid,
+        pc_count: pc_report.pcs.len(),
+        pcs: pc_report.pcs,
+        uncovered_acs,
+        phantom_acs,
+        ordering_violations,
+        errors: all_errors,
+        warnings: all_warnings,
+    };
+    let json = serde_json::to_string(&output)?;
+    terminal.stdout_write(&json);
+    Ok(valid)
+}
+
+/// Run coverage check against a spec file: parse ACs and check against parsed PCs.
+///
+/// Returns `(uncovered_acs, phantom_acs, extra_errors, extra_warnings)` on success,
+/// or `Err(...)` to signal that an early-exit error output was already emitted.
+fn check_spec_coverage(
+    fs: &dyn FileSystem,
+    terminal: &dyn TerminalIO,
+    spec_path: &str,
+    pcs: &[ecc_domain::spec::PassCondition],
+) -> Result<CoverageCheckResult, Box<dyn std::error::Error>> {
+    let spec_content = match fs.read_to_string(Path::new(spec_path)) {
+        Ok(c) => c,
+        Err(e) => {
+            let error_msg = normalize_fs_error(e.to_string(), &format!("spec file: {spec_path}"));
+            emit_design_error(terminal, error_msg)?;
+            return Err("early_exit".into());
+        }
+    };
+
+    match parse_acs(&spec_content) {
+        Ok(ac_report) => {
+            let extra_errors = ac_report.errors.clone();
+            let mut extra_warnings = ac_report.warnings.clone();
+            let coverage = check_coverage(&ac_report.acs, pcs);
+            for phantom in &coverage.phantom_acs {
+                extra_warnings.push(format!("phantom AC referenced in PCs: {phantom}"));
+            }
+            Ok((
+                coverage.uncovered_acs,
+                coverage.phantom_acs,
+                extra_errors,
+                extra_warnings,
+            ))
+        }
+        Err(e) => Ok((Vec::new(), Vec::new(), vec![e.to_string()], Vec::new())),
+    }
+}
 
 /// Read a design file, run PC validation, optionally check coverage against a spec file.
 ///
@@ -21,47 +121,15 @@ pub fn run_validate_design(
     let content = match fs.read_to_string(Path::new(path)) {
         Ok(c) => c,
         Err(e) => {
-            let msg = e.to_string();
-            let is_not_found = msg.contains("not found");
-            let error_msg = if is_not_found {
-                format!("file not found: {path}")
-            } else {
-                msg
-            };
-            let output = DesignValidationOutput {
-                valid: false,
-                pc_count: 0,
-                pcs: Vec::new(),
-                uncovered_acs: None,
-                phantom_acs: None,
-                ordering_violations: Vec::new(),
-                errors: vec![error_msg],
-                warnings: Vec::new(),
-            };
-            let json = serde_json::to_string(&output)?;
-            terminal.stdout_write(&json);
-            return Ok(false);
+            let error_msg = normalize_fs_error(e.to_string(), &format!("file: {path}"));
+            return emit_design_error(terminal, error_msg);
         }
     };
 
     // Step 2: Parse PC table
     let pc_report = match parse_pcs(&content) {
         Ok(r) => r,
-        Err(e) => {
-            let output = DesignValidationOutput {
-                valid: false,
-                pc_count: 0,
-                pcs: Vec::new(),
-                uncovered_acs: None,
-                phantom_acs: None,
-                ordering_violations: Vec::new(),
-                errors: vec![e.to_string()],
-                warnings: Vec::new(),
-            };
-            let json = serde_json::to_string(&output)?;
-            terminal.stdout_write(&json);
-            return Ok(false);
-        }
+        Err(e) => return emit_design_error(terminal, e.to_string()),
     };
 
     let mut all_errors = pc_report.errors.clone();
@@ -69,45 +137,13 @@ pub fn run_validate_design(
 
     // Step 3: Optionally run coverage check
     let (uncovered_acs, phantom_acs) = if let Some(sp) = spec_path {
-        match fs.read_to_string(Path::new(sp)) {
-            Ok(spec_content) => match parse_acs(&spec_content) {
-                Ok(ac_report) => {
-                    all_errors.extend(ac_report.errors.clone());
-                    all_warnings.extend(ac_report.warnings.clone());
-                    let coverage = check_coverage(&ac_report.acs, &pc_report.pcs);
-                    // Phantom ACs are warnings only — do not affect validity
-                    for phantom in &coverage.phantom_acs {
-                        all_warnings.push(format!("phantom AC referenced in PCs: {phantom}"));
-                    }
-                    (Some(coverage.uncovered_acs), Some(coverage.phantom_acs))
-                }
-                Err(e) => {
-                    all_errors.push(e.to_string());
-                    (Some(Vec::new()), Some(Vec::new()))
-                }
-            },
-            Err(e) => {
-                let msg = e.to_string();
-                let is_not_found = msg.contains("not found");
-                let error_msg = if is_not_found {
-                    format!("spec file not found: {sp}")
-                } else {
-                    msg
-                };
-                let output = DesignValidationOutput {
-                    valid: false,
-                    pc_count: 0,
-                    pcs: Vec::new(),
-                    uncovered_acs: None,
-                    phantom_acs: None,
-                    ordering_violations: Vec::new(),
-                    errors: vec![error_msg],
-                    warnings: Vec::new(),
-                };
-                let json = serde_json::to_string(&output)?;
-                terminal.stdout_write(&json);
-                return Ok(false);
+        match check_spec_coverage(fs, terminal, sp, &pc_report.pcs) {
+            Ok((uncovered, phantom, extra_errors, extra_warnings)) => {
+                all_errors.extend(extra_errors);
+                all_warnings.extend(extra_warnings);
+                (Some(uncovered), Some(phantom))
             }
+            Err(_) => return Ok(false), // early exit already emitted
         }
     } else {
         (None, None)
@@ -119,31 +155,15 @@ pub fn run_validate_design(
     let ordering_result = check_ordering(&pc_report.pcs, &file_changes);
     all_warnings.extend(ordering_result.warnings);
 
-    // Warnings go to stderr
-    for warning in &all_warnings {
-        terminal.stderr_write(&format!("WARNING: {warning}\n"));
-    }
-
-    // valid = no errors from PC parsing AND no uncovered ACs (if coverage was checked)
-    let has_uncovered = uncovered_acs
-        .as_ref()
-        .map(|v| !v.is_empty())
-        .unwrap_or(false);
-    let valid = all_errors.is_empty() && !has_uncovered;
-
-    let output = DesignValidationOutput {
-        valid,
-        pc_count: pc_report.pcs.len(),
-        pcs: pc_report.pcs,
+    emit_design_output(
+        terminal,
+        pc_report,
         uncovered_acs,
         phantom_acs,
-        ordering_violations: ordering_result.violations,
-        errors: all_errors,
-        warnings: all_warnings,
-    };
-    let json = serde_json::to_string(&output)?;
-    terminal.stdout_write(&json);
-    Ok(valid)
+        ordering_result.violations,
+        all_errors,
+        all_warnings,
+    )
 }
 
 #[cfg(test)]

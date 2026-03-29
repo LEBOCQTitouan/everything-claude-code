@@ -6,8 +6,8 @@
 pub mod aliases;
 
 use ecc_domain::session::manager::{
-    GetAllSessionsOptions, SessionDetail, SessionListItem, SessionListResult, get_session_stats,
-    parse_session_filename, parse_session_metadata,
+    GetAllSessionsOptions, SessionDetail, SessionFilename, SessionListItem, SessionListResult,
+    get_session_stats, parse_session_filename, parse_session_metadata,
 };
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
@@ -15,6 +15,38 @@ use std::path::Path;
 // ---------------------------------------------------------------------------
 // I/O functions (depend on FileSystem port)
 // ---------------------------------------------------------------------------
+
+/// Check whether a session entry matches the given filter options.
+fn entry_matches_filters(
+    fname: &str,
+    options: &GetAllSessionsOptions,
+) -> Option<SessionFilename> {
+    if !fname.ends_with(".tmp") {
+        return None;
+    }
+    let parsed = parse_session_filename(fname)?;
+    if let Some(ref date_filter) = options.date
+        && parsed.date != *date_filter
+    {
+        return None;
+    }
+    if let Some(ref search_filter) = options.search
+        && !parsed.short_id.contains(search_filter.as_str())
+    {
+        return None;
+    }
+    Some(parsed)
+}
+
+/// Paginate a sorted list of sessions, returning a `SessionListResult`.
+fn paginate_sessions(sessions: Vec<SessionListItem>, options: &GetAllSessionsOptions) -> SessionListResult {
+    let total = sessions.len();
+    let offset = options.offset;
+    let limit = options.limit.max(1);
+    let paginated: Vec<SessionListItem> = sessions.into_iter().skip(offset).take(limit).collect();
+    let has_more = offset + limit < total;
+    SessionListResult { sessions: paginated, total, offset, limit, has_more }
+}
 
 /// List sessions in a directory with optional filtering and pagination.
 pub fn get_all_sessions(
@@ -40,34 +72,14 @@ pub fn get_all_sessions(
     };
 
     let mut sessions: Vec<SessionListItem> = Vec::new();
-
     for entry in &entries {
         let Some(fname) = entry.file_name().and_then(|n| n.to_str().map(String::from)) else {
             continue;
         };
-
-        if !fname.ends_with(".tmp") {
-            continue;
-        }
-
-        let Some(parsed) = parse_session_filename(&fname) else {
+        let Some(parsed) = entry_matches_filters(&fname, options) else {
             continue;
         };
-
-        if let Some(ref date_filter) = options.date
-            && parsed.date != *date_filter
-        {
-            continue;
-        }
-
-        if let Some(ref search_filter) = options.search
-            && !parsed.short_id.contains(search_filter.as_str())
-        {
-            continue;
-        }
-
         let size = fs.read_to_string(entry).map(|c| c.len()).unwrap_or(0);
-
         sessions.push(SessionListItem {
             filename: fname,
             short_id: parsed.short_id,
@@ -78,22 +90,8 @@ pub fn get_all_sessions(
         });
     }
 
-    // Sort by filename descending (newer dates first)
     sessions.sort_by(|a, b| b.filename.cmp(&a.filename));
-
-    let total = sessions.len();
-    let offset = options.offset;
-    let limit = options.limit.max(1);
-    let paginated: Vec<SessionListItem> = sessions.into_iter().skip(offset).take(limit).collect();
-    let has_more = offset + limit < total;
-
-    SessionListResult {
-        sessions: paginated,
-        total,
-        offset,
-        limit,
-        has_more,
-    }
+    paginate_sessions(sessions, options)
 }
 
 /// Find a session by ID (short ID prefix, filename, or filename without `.tmp`).

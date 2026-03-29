@@ -2,7 +2,7 @@
 //!
 //! Orchestrates [`ecc_domain::worktree`] through [`ecc_ports::shell::ShellExecutor`].
 
-use ecc_domain::worktree::WorktreeName;
+use ecc_domain::worktree::{ParsedWorktreeName, WorktreeName};
 use ecc_ports::shell::ShellExecutor;
 use std::path::Path;
 
@@ -90,6 +90,48 @@ fn now_secs() -> u64 {
 
 const STALE_SECS: u64 = 24 * 3600;
 
+/// Determine whether a worktree entry is stale (old enough or PID dead).
+fn is_worktree_stale(executor: &dyn ShellExecutor, parsed: &ParsedWorktreeName, now: u64) -> bool {
+    let age_stale = compact_ts_to_secs(&parsed.timestamp)
+        .map(|ts| now.saturating_sub(ts) > STALE_SECS)
+        .unwrap_or(false);
+    let pid_str = parsed.pid.to_string();
+    let pid_alive = executor
+        .run_command("kill", &["-0", &pid_str])
+        .map(|o| o.success())
+        .unwrap_or(false);
+    age_stale || !pid_alive
+}
+
+/// Remove a stale worktree (and its branch) from the result, recording success/errors.
+fn remove_stale_worktree(
+    executor: &dyn ShellExecutor,
+    entry: &WorktreeEntry,
+    worktree_name: &str,
+    project_dir: &Path,
+    result: &mut WorktreeGcResult,
+) {
+    let remove_result = executor.run_command_in_dir(
+        "git",
+        &["worktree", "remove", "--force", "--", &entry.path],
+        project_dir,
+    );
+    match remove_result {
+        Ok(o) if o.success() => {
+            result.removed.push(worktree_name.to_owned());
+            if let Some(branch) = &entry.branch {
+                let _ = executor.run_command_in_dir("git", &["branch", "-D", "--", branch], project_dir);
+            }
+        }
+        Ok(o) => {
+            result.errors.push(format!("{worktree_name}: remove failed: {}", o.stderr));
+        }
+        Err(e) => {
+            result.errors.push(format!("{worktree_name}: {e}"));
+        }
+    }
+}
+
 /// Run worktree GC: remove stale `ecc-session-*` worktrees and their branches.
 ///
 /// A worktree is considered stale when:
@@ -105,70 +147,24 @@ pub fn gc(
 ) -> Result<WorktreeGcResult, anyhow::Error> {
     let list_output =
         executor.run_command_in_dir("git", &["worktree", "list", "--porcelain"], project_dir)?;
-
     let entries = parse_worktree_list(&list_output.stdout);
     let mut result = WorktreeGcResult::default();
     let now = now_secs();
 
     for entry in entries {
-        let worktree_name = match entry.path.split('/').next_back() {
-            Some(n) => n.to_owned(),
-            None => continue,
+        let Some(worktree_name) = entry.path.split('/').next_back().map(str::to_owned) else {
+            continue;
+        };
+        let Some(parsed) = WorktreeName::parse(&worktree_name) else {
+            continue;
         };
 
-        // Only process ecc-session-* worktrees
-        let parsed = match WorktreeName::parse(&worktree_name) {
-            Some(p) => p,
-            None => continue,
-        };
-
-        // Determine if stale by age
-        let age_stale = compact_ts_to_secs(&parsed.timestamp)
-            .map(|ts| now.saturating_sub(ts) > STALE_SECS)
-            .unwrap_or(false);
-
-        // Determine if PID is still alive
-        let pid_str = parsed.pid.to_string();
-        let pid_alive = executor
-            .run_command("kill", &["-0", &pid_str])
-            .map(|o| o.success())
-            .unwrap_or(false);
-
-        let is_stale = age_stale || !pid_alive;
-
-        if !is_stale {
+        if !is_worktree_stale(executor, &parsed, now) {
             result.skipped.push(worktree_name);
             continue;
         }
 
-        // Remove the worktree
-        let remove_result = executor.run_command_in_dir(
-            "git",
-            &["worktree", "remove", "--force", "--", &entry.path],
-            project_dir,
-        );
-
-        match remove_result {
-            Ok(o) if o.success() => {
-                result.removed.push(worktree_name.clone());
-                // Remove the branch if present
-                if let Some(branch) = &entry.branch {
-                    let _ = executor.run_command_in_dir(
-                        "git",
-                        &["branch", "-D", "--", branch],
-                        project_dir,
-                    );
-                }
-            }
-            Ok(o) => {
-                result
-                    .errors
-                    .push(format!("{worktree_name}: remove failed: {}", o.stderr));
-            }
-            Err(e) => {
-                result.errors.push(format!("{worktree_name}: {e}"));
-            }
-        }
+        remove_stale_worktree(executor, &entry, &worktree_name, project_dir, &mut result);
     }
 
     Ok(result)

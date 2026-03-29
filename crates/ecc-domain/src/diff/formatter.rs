@@ -83,6 +83,58 @@ fn group_diff_chunks(diff: &[DiffLine]) -> Vec<DiffChunk> {
     chunks
 }
 
+/// Render a "same" chunk line in side-by-side format.
+fn render_same_line(
+    line: &str,
+    left_num: &mut usize,
+    right_num: &mut usize,
+    col_width: usize,
+    gutter: usize,
+    colors_enabled: bool,
+) -> String {
+    let left = truncate(line, col_width);
+    let right = truncate(line, col_width);
+    let rendered = format!(
+        "{:>gutter$} {:<col_width$} │ {:>gutter$} {:<col_width$}",
+        left_num,
+        ansi::dim(&left, colors_enabled),
+        right_num,
+        ansi::dim(&right, colors_enabled),
+        gutter = gutter,
+        col_width = col_width,
+    );
+    *left_num += 1;
+    *right_num += 1;
+    rendered
+}
+
+/// Render a changed-lines chunk row (one removed vs one added) in side-by-side format.
+fn render_change_row(
+    chunk: &DiffChunk,
+    i: usize,
+    left_num: &mut usize,
+    right_num: &mut usize,
+    col_width: usize,
+    gutter: usize,
+    colors_enabled: bool,
+) -> String {
+    let left_part = if let Some(line) = chunk.removed.get(i) {
+        let num = format!("{:>gutter$}", left_num, gutter = gutter);
+        *left_num += 1;
+        format!("{} {}", num, ansi::red(&truncate(line, col_width), colors_enabled))
+    } else {
+        format!("{:>gutter$} {:col_width$}", "", "", gutter = gutter, col_width = col_width)
+    };
+    let right_part = if let Some(line) = chunk.added.get(i) {
+        let num = format!("{:>gutter$}", right_num, gutter = gutter);
+        *right_num += 1;
+        format!("{} {}", num, ansi::green(&truncate(line, col_width), colors_enabled))
+    } else {
+        String::new()
+    };
+    format!("{left_part} │ {right_part}")
+}
+
 /// Format a side-by-side diff for terminal display.
 /// Falls back to unified format if terminal is too narrow.
 pub fn format_side_by_side_diff(
@@ -91,13 +143,12 @@ pub fn format_side_by_side_diff(
     colors_enabled: bool,
 ) -> String {
     let width = terminal_width.unwrap_or(80);
-
     if width < MIN_SIDE_BY_SIDE_WIDTH {
         return generate_diff(diff, colors_enabled);
     }
 
-    let gutter = 6; // line number gutter width
-    let separator = 3; // " │ "
+    let gutter = 6;
+    let separator = 3;
     let col_width = ((width as usize) - separator - 2 * gutter) / 2;
     let chunks = group_diff_chunks(diff);
     let mut output = Vec::new();
@@ -107,54 +158,11 @@ pub fn format_side_by_side_diff(
     for chunk in &chunks {
         if !chunk.same.is_empty() {
             for line in &chunk.same {
-                let left = truncate(line, col_width);
-                let right = truncate(line, col_width);
-                output.push(format!(
-                    "{:>gutter$} {:<col_width$} │ {:>gutter$} {:<col_width$}",
-                    left_num,
-                    ansi::dim(&left, colors_enabled),
-                    right_num,
-                    ansi::dim(&right, colors_enabled),
-                    gutter = gutter,
-                    col_width = col_width,
-                ));
-                left_num += 1;
-                right_num += 1;
+                output.push(render_same_line(line, &mut left_num, &mut right_num, col_width, gutter, colors_enabled));
             }
         } else {
-            let max_lines = chunk.removed.len().max(chunk.added.len());
-            for i in 0..max_lines {
-                let left_part = if let Some(line) = chunk.removed.get(i) {
-                    let num = format!("{:>gutter$}", left_num, gutter = gutter);
-                    left_num += 1;
-                    format!(
-                        "{} {}",
-                        num,
-                        ansi::red(&truncate(line, col_width), colors_enabled)
-                    )
-                } else {
-                    format!(
-                        "{:>gutter$} {:col_width$}",
-                        "",
-                        "",
-                        gutter = gutter,
-                        col_width = col_width
-                    )
-                };
-
-                let right_part = if let Some(line) = chunk.added.get(i) {
-                    let num = format!("{:>gutter$}", right_num, gutter = gutter);
-                    right_num += 1;
-                    format!(
-                        "{} {}",
-                        num,
-                        ansi::green(&truncate(line, col_width), colors_enabled)
-                    )
-                } else {
-                    String::new()
-                };
-
-                output.push(format!("{left_part} │ {right_part}"));
+            for i in 0..chunk.removed.len().max(chunk.added.len()) {
+                output.push(render_change_row(chunk, i, &mut left_num, &mut right_num, col_width, gutter, colors_enabled));
             }
         }
     }
