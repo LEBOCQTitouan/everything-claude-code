@@ -81,8 +81,10 @@ pub fn apply_update(
         return Ok(result);
     }
 
-    // Entry not found — return content unchanged (PC-012 will add EntryNotFound error)
-    Ok(content.to_owned())
+    // Entry not found (AC-004.4)
+    Err(TaskError::EntryNotFound {
+        id: entry_id.to_owned(),
+    })
 }
 
 /// Extract the last trail segment's status from an entry line's `rest` portion.
