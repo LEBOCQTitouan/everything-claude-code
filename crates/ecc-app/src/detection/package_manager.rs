@@ -35,6 +35,11 @@ fn read_pm_from_json(fs: &dyn FileSystem, path: &Path) -> Option<String> {
         .map(|s| s.to_string())
 }
 
+/// Build a `PackageManagerResult` from a name and source, if the name is recognized.
+fn try_build_result(name: String, source: DetectionSource) -> Option<PackageManagerResult> {
+    find_config(&name).map(|config| PackageManagerResult { name, config, source })
+}
+
 /// Get the package manager to use for a project.
 ///
 /// Detection priority: env var > project config > package.json > lock file > global config > npm.
@@ -47,68 +52,43 @@ pub fn get_package_manager(
 
     // 1. Environment variable
     if let Some(env_pm) = env.var("CLAUDE_PACKAGE_MANAGER")
-        && let Some(config) = find_config(&env_pm)
+        && let Some(r) = try_build_result(env_pm, DetectionSource::Environment)
     {
-        return PackageManagerResult {
-            name: env_pm,
-            config,
-            source: DetectionSource::Environment,
-        };
+        return r;
     }
 
     // 2. Project-specific config
     let project_config_path = dir.join(".claude").join("package-manager.json");
     if let Some(pm_name) = read_pm_from_json(fs, &project_config_path)
-        && let Some(config) = find_config(&pm_name)
+        && let Some(r) = try_build_result(pm_name, DetectionSource::ProjectConfig)
     {
-        return PackageManagerResult {
-            name: pm_name,
-            config,
-            source: DetectionSource::ProjectConfig,
-        };
+        return r;
     }
 
     // 3. package.json packageManager field
     if let Some(pm_name) = detect_from_package_json(fs, dir)
-        && let Some(config) = find_config(pm_name)
+        && let Some(r) = try_build_result(pm_name.to_string(), DetectionSource::PackageJson)
     {
-        return PackageManagerResult {
-            name: pm_name.to_string(),
-            config,
-            source: DetectionSource::PackageJson,
-        };
+        return r;
     }
 
     // 4. Lock file detection
     if let Some(pm_name) = detect_from_lock_file(fs, dir)
-        && let Some(config) = find_config(pm_name)
+        && let Some(r) = try_build_result(pm_name.to_string(), DetectionSource::LockFile)
     {
-        return PackageManagerResult {
-            name: pm_name.to_string(),
-            config,
-            source: DetectionSource::LockFile,
-        };
+        return r;
     }
 
     // 5. Global user preference
     if let Some(home) = env.home_dir()
-        && let Some(pm_name) =
-            read_pm_from_json(fs, &home.join(".claude").join("package-manager.json"))
-        && let Some(config) = find_config(&pm_name)
+        && let Some(pm_name) = read_pm_from_json(fs, &home.join(".claude").join("package-manager.json"))
+        && let Some(r) = try_build_result(pm_name, DetectionSource::GlobalConfig)
     {
-        return PackageManagerResult {
-            name: pm_name,
-            config,
-            source: DetectionSource::GlobalConfig,
-        };
+        return r;
     }
 
     // 6. Default to npm
-    PackageManagerResult {
-        name: "npm".to_string(),
-        config: &NPM,
-        source: DetectionSource::Default,
-    }
+    PackageManagerResult { name: "npm".to_string(), config: &NPM, source: DetectionSource::Default }
 }
 
 #[cfg(test)]
