@@ -1,45 +1,47 @@
-# Implementation Complete: Fix worktree-safe memory path resolution
+# Implementation Complete: Audit adversarial challenge (BL-083)
 
 ## Spec Reference
-Concern: dev, Feature: Concurrent session safety — worktree isolation, serialized merge, shared state fixes (BL-065)
+Concern: dev, Feature: Adversarial challenge phase for all audit commands (BL-083)
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
-| 1 | crates/ecc-workflow/src/commands/memory_write.rs | modify | PC-001, PC-002 | resolve_project_memory_dir_errors_on_non_git, resolve_project_memory_dir_succeeds_for_git_repo | done |
-| 2 | crates/ecc-workflow/tests/memory_write.rs | modify | PC-006 | memory_write_subcommands | done |
-| 3 | crates/ecc-workflow/tests/worktree_memory_path.rs | create | PC-003, PC-004, PC-005 | worktree_daily_resolves_to_main_repo_hash, worktree_memory_index_resolves_to_main_repo_hash, non_git_dir_returns_error | done |
-| 4 | crates/ecc-workflow/tests/transition.rs | modify | PC-009 | transition_success_no_warnings | done |
-| 5 | crates/ecc-workflow/tests/memory_lock_contention.rs | modify | PC-009 | project_memory_dir helper | done |
-| 6 | crates/ecc-workflow/src/commands/transition.rs | modify | PC-009 | transition_success_no_warnings | done |
+| 1 | agents/audit-challenger.md | create | PC-001-005 | grep content checks | done |
+| 2-11 | commands/audit-{10 domains}.md | modify | PC-006 | grep audit-challenger | done |
+| 12 | agents/audit-orchestrator.md | modify | PC-007 | grep audit-challenger | done |
+| 13 | CHANGELOG.md | modify | doc | — | done |
 
 ## TDD Log
 | PC ID | RED | GREEN | REFACTOR | Notes |
 |-------|-----|-------|----------|-------|
-| PC-001 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | — |
-| PC-002 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | — |
-| PC-003 | ✅ fails (macOS symlink mismatch) | ✅ passes after canonicalize fix | ⏭ no refactor needed | Discovered /var vs /private/var issue |
-| PC-004 | ✅ combined with PC-003 | ✅ passes | ⏭ no refactor needed | — |
-| PC-005 | ✅ fails (empty stdout) | ✅ passes after checking combined output | ⏭ no refactor needed | — |
-| PC-006 | ✅ passes after git init added | ✅ passes | ⏭ no refactor needed | — |
-| PC-007 | ✅ zero clippy warnings | — | — | — |
-| PC-008 | ✅ release build succeeds | — | — | — |
-| PC-009 | ✅ all tests pass (excl pre-existing ecc-domain) | — | — | Found transition.rs also needed git init |
+| PC-001 | ⏭ config | ✅ frontmatter verified | ⏭ | Agent created |
+| PC-002 | ⏭ config | ✅ clean bill of health text | ⏭ | — |
+| PC-003 | ⏭ config | ✅ retry logic present | ⏭ | — |
+| PC-004 | ⏭ config | ✅ disagreement display | ⏭ | Fixed case-sensitivity |
+| PC-005 | ⏭ config | ✅ graceful degradation | ⏭ | — |
+| PC-006 | ⏭ config | ✅ all 10 commands have adversary | ⏭ | Python insertion script |
+| PC-007 | ⏭ config | ✅ orchestrator has adversary | ⏭ | Phase 2.5 added |
+| PC-008 | — | ✅ 52 agents validated | — | +1 new agent |
+| PC-009 | — | ✅ 24 commands validated | — | — |
+| PC-010 | — | ✅ zero clippy warnings | — | — |
+| PC-011 | — | ✅ build succeeds | — | — |
 
 ## Pass Condition Results
 | PC ID | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|
-| PC-001 | `cargo test -p ecc-workflow --bin ecc-workflow resolve_project_memory_dir_errors_on_non_git` | PASS | PASS | ✅ |
-| PC-002 | `cargo test -p ecc-workflow --bin ecc-workflow resolve_project_memory_dir_succeeds_for_git_repo` | PASS | PASS | ✅ |
-| PC-003 | `cargo test -p ecc-workflow --test worktree_memory_path worktree_daily_resolves_to_main_repo_hash` | PASS | PASS | ✅ |
-| PC-004 | `cargo test -p ecc-workflow --test worktree_memory_path worktree_memory_index_resolves_to_main_repo_hash` | PASS | PASS | ✅ |
-| PC-005 | `cargo test -p ecc-workflow --test worktree_memory_path non_git_dir_returns_error` | PASS | PASS | ✅ |
-| PC-006 | `cargo test -p ecc-workflow --test memory_write memory_write_subcommands` | PASS | PASS | ✅ |
-| PC-007 | `cargo clippy -- -D warnings` | exit 0 | exit 0 | ✅ |
-| PC-008 | `cargo build --release` | exit 0 | exit 0 | ✅ |
-| PC-009 | `cargo test --workspace --exclude ecc-domain` | All pass | All pass | ✅ |
+| PC-001 | frontmatter grep checks | exit 0 | exit 0 | ✅ |
+| PC-002 | grep clean bill of health | exit 0 | exit 0 | ✅ |
+| PC-003 | grep retry + structured output | exit 0 | exit 0 | ✅ |
+| PC-004 | grep both perspectives + user decision | exit 0 | exit 0 | ✅ |
+| PC-005 | grep Adversary challenge skipped | exit 0 | exit 0 | ✅ |
+| PC-006 | grep loop 10 audit commands | exit 0 | exit 0 | ✅ |
+| PC-007 | grep audit-orchestrator | exit 0 | exit 0 | ✅ |
+| PC-008 | ecc validate agents | exit 0 | exit 0 (52 agents) | ✅ |
+| PC-009 | ecc validate commands | exit 0 | exit 0 (24 commands) | ✅ |
+| PC-010 | cargo clippy -- -D warnings | exit 0 | exit 0 | ✅ |
+| PC-011 | cargo build | exit 0 | exit 0 | ✅ |
 
-All pass conditions: 9/9 ✅
+All pass conditions: 11/11 ✅
 
 ## E2E Tests
 No E2E tests required by solution.
@@ -47,20 +49,19 @@ No E2E tests required by solution.
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | CHANGELOG.md | project | Added v4.3.1 worktree memory path fix entry |
-| 2 | CLAUDE.md | project | Updated test count from 1562 to 1567 |
+| 1 | CHANGELOG.md | project | v4.6.0 audit adversarial challenge entry |
 
 ## ADRs Created
 None required.
 
 ## Supplemental Docs
-No supplemental docs generated — change scope did not warrant module summary or diagram updates.
+No supplemental docs generated — markdown-only change, no Rust crate modifications.
 
 ## Subagent Execution
-Inline execution — subagent dispatch not used.
+Inline execution — subagent dispatch not used (markdown-only changes).
 
 ## Code Review
-PASS — small focused change (3-line production diff + canonicalize), thorough test coverage (5 new tests), adversarial review caught all edge cases during design phase.
+PASS — markdown config changes only. Agent follows adversary conventions (read-only, clean-craft, memory: project). All 10 domain audit commands + orchestrator consistently updated.
 
 ## Suggested Commit
-fix: worktree-safe memory path resolution via resolve_repo_root
+feat(audit): add adversarial challenge phase to all audit commands (BL-083)
