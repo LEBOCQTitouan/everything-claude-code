@@ -29,14 +29,106 @@ fn validate_path(path: &Path, project_dir: &Path) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+/// A single item in the sync output arrays.
+#[derive(serde::Serialize)]
+struct SyncItem {
+    id: String,
+    description: String,
+    current_status: String,
+}
+
+/// The sync JSON output schema.
+#[derive(serde::Serialize)]
+struct SyncOutput {
+    pending: Vec<SyncItem>,
+    completed: Vec<SyncItem>,
+    in_progress: Vec<SyncItem>,
+    failed: Vec<SyncItem>,
+    total: usize,
+    progress_pct: f64,
+}
+
+/// Build the sync JSON output from a parsed `TaskReport`.
+fn build_sync_output(report: &ecc_domain::task::TaskReport) -> SyncOutput {
+    use ecc_domain::task::entry::EntryKind;
+
+    let mut pending = Vec::new();
+    let mut completed = Vec::new();
+    let mut in_progress = Vec::new();
+    let mut failed = Vec::new();
+
+    for entry in &report.entries {
+        let id = match &entry.kind {
+            EntryKind::Pc(pc_id) => pc_id.to_string(),
+            EntryKind::PostTdd(label) => label.clone(),
+        };
+        let current_status = entry
+            .trail
+            .last()
+            .map(|s| s.status.to_string())
+            .unwrap_or_else(|| "pending".to_owned());
+
+        let item = SyncItem {
+            id,
+            description: entry.description.clone(),
+            current_status: current_status.clone(),
+        };
+
+        match current_status.as_str() {
+            "done" => completed.push(item),
+            "red" | "green" => in_progress.push(item),
+            "failed" => failed.push(item),
+            _ => pending.push(item),
+        }
+    }
+
+    SyncOutput {
+        total: report.total,
+        progress_pct: report.progress_pct,
+        pending,
+        completed,
+        in_progress,
+        failed,
+    }
+}
+
 /// Run the `tasks sync <path>` subcommand.
+///
+/// - File I/O errors (missing file, permission denied) → `block`
+/// - Parse errors (malformed tasks.md) → `warn`
+/// - Success → `pass` with JSON message
 pub fn run_sync(path: &str, project_dir: &Path) -> WorkflowOutput {
-    // stub — RED phase
-    WorkflowOutput::block("not implemented")
+    let tasks_path = Path::new(path);
+
+    // Validate path before any I/O
+    if let Err(e) = validate_path(tasks_path, project_dir) {
+        return WorkflowOutput::block(format!("tasks sync failed: {e}"));
+    }
+
+    // File I/O error → block
+    let content = match std::fs::read_to_string(tasks_path) {
+        Ok(c) => c,
+        Err(e) => return WorkflowOutput::block(format!("cannot read {path}: {e}")),
+    };
+
+    // Parse error → warn
+    let report = match ecc_domain::task::parser::parse_tasks(&content) {
+        Ok(r) => r,
+        Err(e) => return WorkflowOutput::warn(format!("malformed tasks.md: {e}")),
+    };
+
+    let sync_output = build_sync_output(&report);
+    let json = match serde_json::to_string(&sync_output) {
+        Ok(j) => j,
+        Err(e) => return WorkflowOutput::block(format!("failed to serialize sync output: {e}")),
+    };
+
+    WorkflowOutput::pass(json)
 }
 
 /// Run the `tasks update <path> <id> <status>` subcommand.
 pub fn run_update(path: &str, id: &str, status: &str, project_dir: &Path) -> WorkflowOutput {
+    let _ = (path, id, status, project_dir);
     WorkflowOutput::block("not implemented")
 }
 
@@ -47,6 +139,7 @@ pub fn run_init(
     force: bool,
     project_dir: &Path,
 ) -> WorkflowOutput {
+    let _ = (design_path, output, force, project_dir);
     WorkflowOutput::block("not implemented")
 }
 
