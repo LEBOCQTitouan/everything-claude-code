@@ -3,6 +3,7 @@
 pub mod entry;
 pub mod error;
 pub mod parser;
+pub mod renderer;
 pub mod status;
 pub mod updater;
 
