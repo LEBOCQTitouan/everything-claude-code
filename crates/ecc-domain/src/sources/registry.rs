@@ -4,6 +4,15 @@
 
 use super::entry::{Quadrant, SourceEntry, SourceError};
 
+fn quadrant_order(q: &Quadrant) -> u8 {
+    match q {
+        Quadrant::Adopt => 0,
+        Quadrant::Trial => 1,
+        Quadrant::Assess => 2,
+        Quadrant::Hold => 3,
+    }
+}
+
 /// Maps a module path to a list of subjects relevant to that module.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModuleMapping {
@@ -28,7 +37,16 @@ impl SourcesRegistry {
     /// Checks for duplicate URL across entries and inbox. Returns a new registry
     /// with the entry appended to `entries`. Returns `Err(DuplicateUrl)` on conflict.
     pub fn add(&self, entry: SourceEntry) -> Result<SourcesRegistry, SourceError> {
-        todo!()
+        if self.find_by_url(&entry.url).is_some() {
+            return Err(SourceError::DuplicateUrl(entry.url));
+        }
+        let mut new_entries = self.entries.clone();
+        new_entries.push(entry);
+        Ok(SourcesRegistry {
+            inbox: self.inbox.clone(),
+            entries: new_entries,
+            module_mappings: self.module_mappings.clone(),
+        })
     }
 
     /// Filter entries by optional quadrant and subject.
@@ -39,34 +57,73 @@ impl SourcesRegistry {
         quadrant: Option<&Quadrant>,
         subject: Option<&str>,
     ) -> Vec<&'a SourceEntry> {
-        todo!()
+        self.entries
+            .iter()
+            .filter(|e| quadrant.is_none_or(|q| &e.quadrant == q))
+            .filter(|e| subject.is_none_or(|s| e.subject == s))
+            .collect()
     }
 
     /// Move all inbox entries into `entries`, sorted by quadrant then subject.
     ///
     /// Returns a new registry with an empty inbox.
     pub fn reindex(&self) -> SourcesRegistry {
-        todo!()
+        let mut combined: Vec<SourceEntry> = self
+            .entries
+            .iter()
+            .chain(self.inbox.iter())
+            .cloned()
+            .collect();
+        combined.sort_by(|a, b| {
+            let qa = quadrant_order(&a.quadrant);
+            let qb = quadrant_order(&b.quadrant);
+            qa.cmp(&qb).then_with(|| a.subject.cmp(&b.subject))
+        });
+        SourcesRegistry {
+            inbox: vec![],
+            entries: combined,
+            module_mappings: self.module_mappings.clone(),
+        }
     }
 
     /// Return all entries for a given quadrant.
     pub fn entries_by_quadrant<'a>(&'a self, q: &Quadrant) -> Vec<&'a SourceEntry> {
-        todo!()
+        self.entries.iter().filter(|e| &e.quadrant == q).collect()
     }
 
     /// Return unique subjects across all entries, sorted alphabetically.
     pub fn subjects(&self) -> Vec<&str> {
-        todo!()
+        let mut seen: Vec<&str> = vec![];
+        for entry in &self.entries {
+            let s = entry.subject.as_str();
+            if !seen.contains(&s) {
+                seen.push(s);
+            }
+        }
+        seen.sort_unstable();
+        seen
     }
 
     /// Find an entry by URL across both entries and inbox.
     pub fn find_by_url(&self, url: &str) -> Option<&SourceEntry> {
-        todo!()
+        self.entries
+            .iter()
+            .chain(self.inbox.iter())
+            .find(|e| e.url == url)
     }
 
     /// Find entries whose subject matches any subject mapped to the given module path.
     pub fn find_by_module<'a>(&'a self, module_path: &str) -> Vec<&'a SourceEntry> {
-        todo!()
+        let subjects: Vec<&str> = self
+            .module_mappings
+            .iter()
+            .filter(|m| m.module_path == module_path)
+            .flat_map(|m| m.subjects.iter().map(String::as_str))
+            .collect();
+        self.entries
+            .iter()
+            .filter(|e| subjects.contains(&e.subject.as_str()))
+            .collect()
     }
 }
 
