@@ -115,12 +115,12 @@ static SAFE_ARGS_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
 });
 
 /// Validate a script name contains only safe characters.
-pub fn validate_script_name(name: &str) -> Result<(), String> {
+pub fn validate_script_name(name: &str) -> Result<(), PackageManagerError> {
     if name.is_empty() {
-        return Err("Script name must be a non-empty string".to_string());
+        return Err(PackageManagerError::EmptyScriptName);
     }
     if !SAFE_NAME_RE.is_match(name) {
-        return Err(format!("Script name contains unsafe characters: {name}"));
+        return Err(PackageManagerError::UnsafeScriptName(name.to_string()));
     }
     Ok(())
 }
@@ -466,5 +466,29 @@ mod tests {
         assert_eq!(DetectionSource::Environment.as_str(), "environment");
         assert_eq!(DetectionSource::LockFile.as_str(), "lock-file");
         assert_eq!(DetectionSource::Default.as_str(), "default");
+    }
+
+    // --- PackageManagerError ---
+
+    /// PC-006: PackageManagerError enum variants compile and are accessible.
+    #[test]
+    fn package_manager_error_empty_name_is_debug() {
+        let err = PackageManagerError::EmptyScriptName;
+        let s = format!("{err:?}");
+        assert!(!s.is_empty());
+    }
+
+    #[test]
+    fn package_manager_error_unsafe_name_carries_message() {
+        let err = PackageManagerError::UnsafeScriptName("$(whoami)".to_string());
+        let s = err.to_string();
+        assert!(s.contains("$(whoami)"), "expected name in error, got: {s}");
+    }
+
+    #[test]
+    fn package_manager_error_unsafe_args_carries_message() {
+        let err = PackageManagerError::UnsafeArgs("; rm -rf /".to_string());
+        let s = err.to_string();
+        assert!(s.contains("; rm"), "expected args in error, got: {s}");
     }
 }
