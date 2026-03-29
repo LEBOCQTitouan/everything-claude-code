@@ -108,6 +108,12 @@ mod tests {
         write_plan_state(&dir);
         // Create the docs/memory and work-items dirs so write_action and write_work_item succeed.
         std::fs::create_dir_all(dir.path().join("docs/memory/work-items")).unwrap();
+        // Initialize as git repo so resolve_repo_root succeeds for daily/memory-index.
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(dir.path())
+            .output()
+            .expect("git init failed");
 
         let output = super::run("solution", Some("plan"), None, dir.path());
 
