@@ -164,6 +164,35 @@ pub fn delete_alias(fs: &dyn FileSystem, path: &Path, alias: &str, now: &str) ->
     }
 }
 
+/// Build an error `RenameAliasResult` with the given message.
+fn rename_error(msg: String) -> RenameAliasResult {
+    RenameAliasResult {
+        success: false,
+        error: Some(msg),
+        old_alias: None,
+        new_alias: None,
+        session_path: None,
+    }
+}
+
+/// Validate that a rename operation is allowed: old exists, new name is valid, new doesn't collide.
+fn validate_rename(
+    data: &AliasesData,
+    old_alias: &str,
+    new_alias: &str,
+) -> Result<(), RenameAliasResult> {
+    if !data.aliases.contains_key(old_alias) {
+        return Err(rename_error(format!("Alias '{old_alias}' not found")));
+    }
+    if let Some(err) = validate_alias_name(new_alias) {
+        return Err(rename_error(err));
+    }
+    if data.aliases.contains_key(new_alias) {
+        return Err(rename_error(format!("Alias '{new_alias}' already exists")));
+    }
+    Ok(())
+}
+
 /// Rename an alias from `old_alias` to `new_alias`.
 pub fn rename_alias(
     fs: &dyn FileSystem,
@@ -174,34 +203,8 @@ pub fn rename_alias(
 ) -> RenameAliasResult {
     let mut data = load_aliases(fs, path, now);
 
-    if !data.aliases.contains_key(old_alias) {
-        return RenameAliasResult {
-            success: false,
-            error: Some(format!("Alias '{old_alias}' not found")),
-            old_alias: None,
-            new_alias: None,
-            session_path: None,
-        };
-    }
-
-    if let Some(err) = validate_alias_name(new_alias) {
-        return RenameAliasResult {
-            success: false,
-            error: Some(err),
-            old_alias: None,
-            new_alias: None,
-            session_path: None,
-        };
-    }
-
-    if data.aliases.contains_key(new_alias) {
-        return RenameAliasResult {
-            success: false,
-            error: Some(format!("Alias '{new_alias}' already exists")),
-            old_alias: None,
-            new_alias: None,
-            session_path: None,
-        };
+    if let Err(e) = validate_rename(&data, old_alias, new_alias) {
+        return e;
     }
 
     let mut entry = data.aliases.remove(old_alias).expect("checked above");
@@ -218,13 +221,7 @@ pub fn rename_alias(
             session_path: Some(session_path),
         }
     } else {
-        RenameAliasResult {
-            success: false,
-            error: Some("Failed to save renamed alias".to_string()),
-            old_alias: None,
-            new_alias: None,
-            session_path: None,
-        }
+        rename_error("Failed to save renamed alias".to_string())
     }
 }
 
