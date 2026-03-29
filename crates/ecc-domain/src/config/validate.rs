@@ -114,6 +114,39 @@ pub fn parse_tool_list(raw: &str) -> Vec<String> {
         .collect()
 }
 
+/// Severity for convention lint findings.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LintSeverity {
+    Error,
+    Warn,
+}
+
+/// A single convention lint finding.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LintFinding {
+    pub severity: LintSeverity,
+    pub file: String,
+    pub message: String,
+}
+
+/// Check filename-vs-frontmatter naming consistency for a single file.
+pub fn check_naming_consistency(
+    _file_stem: &str,
+    _frontmatter_name: Option<&str>,
+    _entity_kind: &str,
+) -> Vec<LintFinding> {
+    todo!("implement check_naming_consistency")
+}
+
+/// Validate tool names against VALID_TOOLS registry.
+pub fn check_tool_values(
+    _file_stem: &str,
+    _raw_tools: &str,
+    _field_name: &str,
+) -> Vec<LintFinding> {
+    todo!("implement check_tool_values")
+}
+
 /// Extract YAML frontmatter from markdown content into a key-value map.
 ///
 /// Looks for content between `---` delimiters at the start of the file,
@@ -454,6 +487,53 @@ mod tests {
     fn parse_tool_list_whitespace() {
         let result = parse_tool_list("[ Read , Write ]");
         assert_eq!(result, vec!["Read".to_string(), "Write".to_string()]);
+    }
+
+    // --- check_naming_consistency (PC-003) ---
+
+    #[test]
+    fn check_naming_returns_error_when_stem_differs_from_name() {
+        let findings = check_naming_consistency("my-agent", Some("other-agent"), "agent");
+        assert!(findings.iter().any(|f| f.severity == LintSeverity::Error));
+    }
+
+    #[test]
+    fn check_naming_returns_warn_when_name_is_none() {
+        let findings = check_naming_consistency("my-agent", None, "agent");
+        assert!(findings.iter().any(|f| f.severity == LintSeverity::Warn));
+        assert!(!findings.iter().any(|f| f.severity == LintSeverity::Error));
+    }
+
+    #[test]
+    fn check_naming_returns_empty_when_stem_equals_name() {
+        let findings = check_naming_consistency("my-agent", Some("my-agent"), "agent");
+        assert!(findings.is_empty());
+    }
+
+    #[test]
+    fn check_naming_returns_error_for_non_kebab_stem() {
+        let findings = check_naming_consistency("MyAgent", Some("MyAgent"), "agent");
+        assert!(findings.iter().any(|f| f.severity == LintSeverity::Error));
+    }
+
+    // --- check_tool_values (PC-003) ---
+
+    #[test]
+    fn check_tool_values_returns_error_for_unknown_tool() {
+        let findings = check_tool_values("my-agent", r#"["Read", "UnknownTool"]"#, "tools");
+        assert!(findings.iter().any(|f| f.severity == LintSeverity::Error));
+    }
+
+    #[test]
+    fn check_tool_values_returns_empty_for_all_valid_tools() {
+        let findings = check_tool_values("my-agent", r#"["Read", "Write"]"#, "tools");
+        assert!(findings.is_empty());
+    }
+
+    #[test]
+    fn check_tool_values_returns_empty_for_empty_list() {
+        let findings = check_tool_values("my-agent", "[]", "tools");
+        assert!(findings.is_empty());
     }
 
     mod proptests {
