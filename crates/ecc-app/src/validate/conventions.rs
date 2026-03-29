@@ -15,8 +15,8 @@ pub(super) fn validate_conventions(
 
     // 1. Agents
     let agents_dir = root.join("agents");
-    if fs.exists(&agents_dir) {
-        if let Ok(files) = fs.read_dir(&agents_dir) {
+    if let Ok(files) = fs.read_dir(&agents_dir) {
+        {
             for file in files.iter().filter(|f| f.to_string_lossy().ends_with(".md")) {
                 total_checked += 1;
                 let content = match fs.read_to_string(file) {
@@ -27,10 +27,8 @@ pub(super) fn validate_conventions(
                 let fm = extract_frontmatter(&content);
                 let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
                 findings.extend(check_naming_consistency(&stem, fm_name, "agent"));
-                if let Some(ref map) = fm {
-                    if let Some(tools) = map.get("tools") {
-                        findings.extend(check_tool_values(&stem, tools, "tools"));
-                    }
+                if let Some(tools) = fm.as_ref().and_then(|m| m.get("tools")) {
+                    findings.extend(check_tool_values(&stem, tools, "tools"));
                 }
             }
         }
@@ -38,8 +36,8 @@ pub(super) fn validate_conventions(
 
     // 2. Commands
     let commands_dir = root.join("commands");
-    if fs.exists(&commands_dir) {
-        if let Ok(files) = fs.read_dir(&commands_dir) {
+    if let Ok(files) = fs.read_dir(&commands_dir) {
+        {
             for file in files.iter().filter(|f| f.to_string_lossy().ends_with(".md")) {
                 total_checked += 1;
                 let content = match fs.read_to_string(file) {
@@ -50,10 +48,8 @@ pub(super) fn validate_conventions(
                 let fm = extract_frontmatter(&content);
                 let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
                 findings.extend(check_naming_consistency(&stem, fm_name, "command"));
-                if let Some(ref map) = fm {
-                    if let Some(tools) = map.get("allowed-tools") {
-                        findings.extend(check_tool_values(&stem, tools, "allowed-tools"));
-                    }
+                if let Some(tools) = fm.as_ref().and_then(|m| m.get("allowed-tools")) {
+                    findings.extend(check_tool_values(&stem, tools, "allowed-tools"));
                 }
             }
         }
@@ -61,8 +57,8 @@ pub(super) fn validate_conventions(
 
     // 3. Skills — check directories
     let skills_dir = root.join("skills");
-    if fs.exists(&skills_dir) {
-        if let Ok(entries) = fs.read_dir(&skills_dir) {
+    if let Ok(entries) = fs.read_dir(&skills_dir) {
+        {
             for entry in entries.iter().filter(|e| fs.is_dir(e)) {
                 total_checked += 1;
                 let dir_name = entry
@@ -88,8 +84,8 @@ pub(super) fn validate_conventions(
 
                 // Read SKILL.md for naming check
                 let skill_md = entry.join("SKILL.md");
-                if fs.exists(&skill_md) {
-                    if let Ok(content) = fs.read_to_string(&skill_md) {
+                if let Ok(content) = fs.read_to_string(&skill_md) {
+                    {
                         let fm = extract_frontmatter(&content);
                         let fm_name =
                             fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
