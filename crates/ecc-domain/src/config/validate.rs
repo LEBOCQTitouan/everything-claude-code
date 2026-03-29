@@ -87,8 +87,31 @@ pub const VALID_HOOK_EVENTS: &[&str] = &[
 ///
 /// Handles: `["Read", "Write"]`, `[Read, Write]`, `Read` (bare string),
 /// `[]` (empty list). Returns parsed tool names with whitespace/quotes trimmed.
-pub fn parse_tool_list(_raw: &str) -> Vec<String> {
-    todo!("implement parse_tool_list")
+pub fn parse_tool_list(raw: &str) -> Vec<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return vec![];
+    }
+    // Strip outer brackets if present
+    let inner = if trimmed.starts_with('[') && trimmed.ends_with(']') {
+        &trimmed[1..trimmed.len() - 1]
+    } else {
+        trimmed
+    };
+    if inner.trim().is_empty() {
+        return vec![];
+    }
+    inner
+        .split(',')
+        .map(|s| {
+            s.trim()
+                .trim_matches('"')
+                .trim_matches('\'')
+                .trim()
+                .to_string()
+        })
+        .filter(|s| !s.is_empty())
+        .collect()
 }
 
 /// Extract YAML frontmatter from markdown content into a key-value map.
