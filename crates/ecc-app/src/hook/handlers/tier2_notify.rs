@@ -287,6 +287,7 @@ mod tier2_notify {
                 "newlines should pass through: {result}"
             );
         }
+
     }
 }
 
@@ -463,5 +464,35 @@ mod tests {
         assert_eq!(result.exit_code, 0);
         assert_eq!(result.stdout, "{}");
         assert!(result.stderr.is_empty());
+    }
+
+    // PC-025: sanitize_osascript uses is_char_boundary() walk-back for multi-byte truncation
+    #[test]
+    fn sanitize_osascript_multibyte_truncation() {
+        // Build a string: 254 ASCII bytes + one emoji (4 bytes) = 258 bytes total.
+        // Slicing at byte 256 falls in the middle of the emoji — current code panics.
+        let mut input = "a".repeat(254);
+        input.push('🔥'); // 4-byte UTF-8 character
+        assert_eq!(input.len(), 258, "test string must be 258 bytes");
+        // Must not panic; result must be valid UTF-8 with length <= 256
+        let result = sanitize_osascript(&input);
+        assert!(result.len() <= 256, "result must be capped at 256 bytes: len={}", result.len());
+        // Emoji starts at byte 254, ends at 258 — truncation at 256 is mid-emoji, walk-back drops to 254
+        assert_eq!(result, "a".repeat(254), "ascii prefix must be preserved");
+    }
+
+    // PC-026: sanitize_powershell uses is_char_boundary() walk-back for multi-byte truncation
+    #[test]
+    fn sanitize_powershell_multibyte_truncation() {
+        // Build a string: 254 ASCII bytes + one emoji (4 bytes) = 258 bytes total.
+        // Slicing at byte 256 falls in the middle of the emoji — current code panics.
+        let mut input = "b".repeat(254);
+        input.push('🌊'); // 4-byte UTF-8 character
+        assert_eq!(input.len(), 258, "test string must be 258 bytes");
+        // Must not panic; result must be valid UTF-8 with length <= 256
+        let result = sanitize_powershell(&input);
+        assert!(result.len() <= 256, "result must be capped at 256 bytes: len={}", result.len());
+        // Emoji starts at byte 254, so truncation at 256 is mid-emoji; walk-back drops to 254
+        assert_eq!(result, "b".repeat(254), "ascii prefix must be preserved");
     }
 }
