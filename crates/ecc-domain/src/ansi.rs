@@ -86,4 +86,15 @@ mod tests {
         assert!(cyan("x", true).contains("[36m"));
         assert!(dim("x", true).contains("[2m"));
     }
+
+    #[test]
+    fn color_mode_enum() {
+        // ColorMode::Enabled produces ANSI escape codes
+        assert_eq!(bold("x", ColorMode::Enabled), "\x1b[1mx\x1b[0m");
+        // ColorMode::Disabled produces plain text
+        assert_eq!(bold("x", ColorMode::Disabled), "x");
+        // From<bool>: true maps to Enabled, false maps to Disabled
+        assert_eq!(ColorMode::from(true), ColorMode::Enabled);
+        assert_eq!(ColorMode::from(false), ColorMode::Disabled);
+    }
 }
