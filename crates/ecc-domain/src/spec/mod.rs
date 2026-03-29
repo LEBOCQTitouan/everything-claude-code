@@ -18,3 +18,4 @@ pub use ordering::{
 };
 pub use output::{DesignValidationOutput, SpecValidationOutput};
 pub use pc::{PassCondition, PcId, PcReport, parse_pcs};
+pub mod wave;
