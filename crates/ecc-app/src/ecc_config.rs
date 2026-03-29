@@ -72,7 +72,7 @@ pub fn config_get(
         Err(e) => return Err(e.to_string()),
     };
 
-    let cfg = EccConfig::from_toml(&content).map_err(|e| e)?;
+    let cfg = EccConfig::from_toml(&content)?;
 
     match key {
         "log-level" => Ok(cfg.log_level.map(|l| l.to_string())),

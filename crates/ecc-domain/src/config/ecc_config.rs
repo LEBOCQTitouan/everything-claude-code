@@ -60,16 +60,10 @@ impl fmt::Display for LogLevel {
 }
 
 /// ECC persistent configuration stored in `~/.ecc/config.toml`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EccConfig {
     /// Preferred log verbosity level.
     pub log_level: Option<LogLevel>,
-}
-
-impl Default for EccConfig {
-    fn default() -> Self {
-        Self { log_level: None }
-    }
 }
 
 impl EccConfig {
@@ -110,13 +104,10 @@ impl EccConfig {
                 )
             })?;
 
-            match key {
-                "log-level" => {
-                    log_level = Some(value.parse::<LogLevel>()?);
-                }
-                // Unknown keys are silently ignored (forward compatibility).
-                _ => {}
+            if key == "log-level" {
+                log_level = Some(value.parse::<LogLevel>()?);
             }
+            // Unknown keys are silently ignored (forward compatibility).
         }
 
         Ok(Self { log_level })
