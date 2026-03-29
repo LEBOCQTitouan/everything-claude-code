@@ -32,8 +32,30 @@ pub const VALID_TOOLS: &[&str] = &[
 ];
 
 /// Check if a string matches kebab-case: `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
-pub fn is_kebab_case(_s: &str) -> bool {
-    todo!("implement is_kebab_case")
+pub fn is_kebab_case(s: &str) -> bool {
+    if s.is_empty() {
+        return false;
+    }
+    let bytes = s.as_bytes();
+    if !bytes[0].is_ascii_lowercase() {
+        return false;
+    }
+    let mut prev_hyphen = false;
+    for &b in &bytes[1..] {
+        match b {
+            b'-' => {
+                if prev_hyphen {
+                    return false;
+                }
+                prev_hyphen = true;
+            }
+            b'a'..=b'z' | b'0'..=b'9' => {
+                prev_hyphen = false;
+            }
+            _ => return false,
+        }
+    }
+    !prev_hyphen
 }
 
 /// Valid hook event types (all 21 Claude Code hook events).
