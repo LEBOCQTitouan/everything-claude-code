@@ -4,6 +4,8 @@
 
 use crate::workflow::error::WorkflowError;
 use crate::workflow::phase::Phase;
+use crate::workflow::state::WorkflowState;
+use crate::workflow::transition::resolve_transition;
 
 /// A type that can validate itself, returning a list of errors.
 ///
@@ -26,6 +28,16 @@ pub trait Transitionable: Sized {
     /// Returns `Ok(Self)` with the updated phase on success,
     /// or `Err(WorkflowError)` if the transition is illegal.
     fn transition_to(self, target: Phase) -> Result<Self, WorkflowError>;
+}
+
+impl Transitionable for WorkflowState {
+    fn transition_to(self, target: Phase) -> Result<Self, WorkflowError> {
+        let new_phase = resolve_transition(self.phase, target)?;
+        Ok(Self {
+            phase: new_phase,
+            ..self
+        })
+    }
 }
 
 #[cfg(test)]
@@ -80,15 +92,17 @@ mod validatable_impl {
 #[cfg(test)]
 mod transitionable_impl {
     use crate::traits::Transitionable;
+    use crate::workflow::concern::Concern;
     use crate::workflow::phase::Phase;
     use crate::workflow::state::{Artifacts, Toolchain, WorkflowState};
+    use crate::workflow::timestamp::Timestamp;
 
     fn make_state(phase: Phase) -> WorkflowState {
         WorkflowState {
             phase,
-            concern: "dev".to_string(),
+            concern: Concern::Dev,
             feature: "test".to_string(),
-            started_at: "2026-01-01T00:00:00Z".to_string(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
             toolchain: Toolchain {
                 test: None,
                 lint: None,
@@ -127,13 +141,13 @@ mod transitionable_impl {
     fn workflow_state_transition_returns_new_state_immutably() {
         let state = make_state(Phase::Plan);
         let state = WorkflowState {
-            concern: "fix".to_string(),
+            concern: Concern::Fix,
             feature: "some-fix".to_string(),
             ..state
         };
         let new_state = state.transition_to(Phase::Solution).unwrap();
         assert_eq!(new_state.phase, Phase::Solution);
-        assert_eq!(new_state.concern, "fix");
+        assert_eq!(new_state.concern, Concern::Fix);
         assert_eq!(new_state.feature, "some-fix");
     }
 }
