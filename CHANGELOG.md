@@ -17,6 +17,15 @@ Generated from git conventional commits. Grouped by type and version.
 - **ecc sources CLI**: `list [--quadrant] [--subject]`, `add`, `check` (curl reachability), `reindex`.
 - **ADR 0031**: Knowledge Sources Registry convention.
 
+### Deterministic Task Synchronization (BL-075 + BL-072)
+
+- **`ecc-workflow tasks sync`**: Parse tasks.md and output JSON summary with pending/completed/in_progress/failed arrays and progress percentage
+- **`ecc-workflow tasks update`**: Atomically update a PC's status with FSM validation (pending→red→green→done), flock locking, and tempfile+rename
+- **`ecc-workflow tasks init`**: Generate tasks.md from a design file's PC table with Post-TDD section and `→` separator format
+- **Domain module `ecc-domain::task`**: Pure `&str → Result<T>` functions for parsing, updating, rendering, and FSM validation — zero I/O imports
+- **Backward compatibility**: Parser reads both old `|` and new `→` separator formats
+- **Security**: Path traversal protection via `canonicalize` + `starts_with(project_dir)`
+
 ## v4.4.0
 
 ### Changed
