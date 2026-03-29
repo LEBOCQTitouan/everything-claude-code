@@ -109,6 +109,7 @@
 | BL-106 | Harness reliability metrics — benchmark against reference patterns | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-107 | Audit-web guided profile — interactive setup, persisted dimensions, self-improvement | — | HIGH | /spec-dev | open | 2026-03-29 |
 | BL-108 | Smart stop notification — only notify on final stop or user input needed | — | MEDIUM | /spec-dev | open | 2026-03-29 |
+| BL-109 | Autonomous comms pipeline — multi-channel content generation from code | — | EPIC | /spec | open | 2026-03-30 |
 
 ## Dependency Graph
 
@@ -171,12 +172,14 @@ BL-106 → BL-091 (harness metrics build on tracing foundation from diagnostics)
 BL-106 → BL-092 (harness metrics share structured log infrastructure)
 BL-107 → BL-081 (extends the audit-web command created in BL-081)
 BL-107 → BL-083 (adversarial challenge phase complements self-improvement suggestions)
+BL-109 → BL-091 (comms pipeline benefits from tracing for observability)
+BL-109 → BL-092 (comms pipeline shares structured log infrastructure)
 ```
 
 ## Stats
 
-- **Total:** 107
-- **Open:** 41
+- **Total:** 108
+- **Open:** 42
 - **In-progress:** 0
 - **Implemented:** 62
 - **Archived:** 4
