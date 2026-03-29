@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.3.1
+
+### Fixed
+
+- Memory writes from worktree sessions (`write_daily`, `write_memory_index`) now resolve to the main repo's `~/.claude/projects/<hash>/memory/` directory instead of creating a worktree-specific hash (fixes daily memory and memory-index fragmentation in concurrent sessions)
+
 ## v4.3.0
 
 ### Audit Remediation (24 smells, 8 user stories)
