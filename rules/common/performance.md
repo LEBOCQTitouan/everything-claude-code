@@ -2,22 +2,29 @@
 
 ## Model Selection Strategy
 
-**Haiku 4.5** (90% of Sonnet capability, 3x cost savings):
-- Lightweight agents with frequent invocation
-- Pair programming and code generation
-- Worker agents in multi-agent systems
+> Per Anthropic guidance: "Start with Sonnet, route only the most demanding to Opus."
 
-**Sonnet 4.6** (Best coding model):
-- Main development work
-- Orchestrating multi-agent workflows
-- Complex coding tasks
+**Haiku 4.5** ($1/$5 per MTok — diff-based detection, simple extraction):
+- Diff-based detection and staleness checks (drift-checker)
+- Diagram generation and doc formatting
+- Web research per-category workers (web-radar-analyst)
 
-**Opus 4.6** (Deepest reasoning):
-- Complex architectural decisions
-- Code review, security review, and language-specific review
-- Documentation analysis, validation, and orchestration
-- Maximum reasoning requirements
-- Research and analysis tasks
+**Sonnet 4.6** ($3/$15 per MTok — Code review, audit checks, orchestration, TDD):
+- Language-specific code review (python, go, rust, typescript, java, kotlin, cpp, csharp, shell, database reviewers)
+- Checklist-based audit agents (error-handling, convention, observability, test auditors)
+- Documentation validation and orchestration (doc-validator, doc-orchestrator, web-scout)
+- TDD execution, build resolution, refactoring, E2E testing
+- Backlog curation
+
+**Opus 4.6** ($5/$25 per MTok — Architecture decisions, security, adversarial reasoning):
+- Architecture design and review (architect, architect-module, arch-reviewer, uncle-bob)
+- Security vulnerability analysis (security-reviewer)
+- Adversarial spec/solution review (spec-adversary, solution-adversary)
+- Complex multi-phase planning (planner, requirements-analyst)
+- Code review orchestration (code-reviewer)
+- Professional conscience audit (robert)
+- Design exploration (interviewer, interface-designer)
+- Audit orchestration (audit-orchestrator)
 
 ## Context Window Management
 
