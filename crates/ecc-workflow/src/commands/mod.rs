@@ -16,5 +16,6 @@ pub mod stop_gate;
 pub mod tdd_enforcement;
 pub mod toolchain_persist;
 pub mod transition;
+pub mod wave_plan;
 pub mod worktree_name;
 pub mod tasks;

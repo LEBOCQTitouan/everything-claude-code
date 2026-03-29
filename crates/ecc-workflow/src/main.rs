@@ -87,6 +87,11 @@ enum Commands {
         concern: String,
         feature: String,
     },
+    /// Compute wave plan from design file's PC and File Changes tables.
+    WavePlan {
+        /// Path to the design.md file
+        design_path: String,
+    },
     /// Merge a session worktree branch into main after verify + rebase.
     Merge,
     /// Atomically add an entry to docs/backlog/ with flock-based locking.
@@ -211,6 +216,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::WorktreeName { concern, feature } => {
             commands::worktree_name::run(&concern, &feature)
         }
+        Commands::WavePlan { design_path } => commands::wave_plan::run(&design_path, &project_dir()),
         Commands::Merge => commands::merge::run(&project_dir()),
         Commands::Backlog { subcmd } => match subcmd {
             BacklogCmd::AddEntry {
