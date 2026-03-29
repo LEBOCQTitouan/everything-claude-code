@@ -83,6 +83,14 @@ pub const VALID_HOOK_EVENTS: &[&str] = &[
     "ElicitationResult",
 ];
 
+/// Parse a bracket-delimited tool list from frontmatter value string.
+///
+/// Handles: `["Read", "Write"]`, `[Read, Write]`, `Read` (bare string),
+/// `[]` (empty list). Returns parsed tool names with whitespace/quotes trimmed.
+pub fn parse_tool_list(_raw: &str) -> Vec<String> {
+    todo!("implement parse_tool_list")
+}
+
 /// Extract YAML frontmatter from markdown content into a key-value map.
 ///
 /// Looks for content between `---` delimiters at the start of the file,
@@ -397,6 +405,32 @@ mod tests {
         assert!(!is_kebab_case("bad-"));
         assert!(!is_kebab_case("BAD"));
         assert!(!is_kebab_case(""));
+    }
+
+    // --- parse_tool_list (PC-002) ---
+
+    #[test]
+    fn parse_tool_list_bracket_quoted() {
+        let result = parse_tool_list(r#"["Read", "Write"]"#);
+        assert_eq!(result, vec!["Read".to_string(), "Write".to_string()]);
+    }
+
+    #[test]
+    fn parse_tool_list_bare_string() {
+        let result = parse_tool_list("Read");
+        assert_eq!(result, vec!["Read".to_string()]);
+    }
+
+    #[test]
+    fn parse_tool_list_empty_brackets() {
+        let result = parse_tool_list("[]");
+        assert_eq!(result, Vec::<String>::new());
+    }
+
+    #[test]
+    fn parse_tool_list_whitespace() {
+        let result = parse_tool_list("[ Read , Write ]");
+        assert_eq!(result, vec!["Read".to_string(), "Write".to_string()]);
     }
 
     mod proptests {
