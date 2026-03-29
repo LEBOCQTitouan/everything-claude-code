@@ -618,4 +618,37 @@ mod tests {
         let link = build_memory_index_link("2026-03-28");
         assert!(link.starts_with("- ["));
     }
+
+    // ── resolve_project_memory_dir tests ─────────────────────────────────────
+
+    #[test]
+    fn resolve_project_memory_dir_errors_on_non_git() {
+        let tmp = tempfile::tempdir().unwrap();
+        let result = resolve_project_memory_dir(tmp.path());
+        assert!(result.is_err(), "should error on non-git directory");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("not a git repository"),
+            "error should mention 'not a git repository', got: {err_msg}"
+        );
+    }
+
+    #[test]
+    fn resolve_project_memory_dir_succeeds_for_git_repo() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(tmp.path())
+            .output()
+            .expect("git init failed");
+
+        let result = resolve_project_memory_dir(tmp.path());
+        assert!(result.is_ok(), "should succeed for git-initialized dir");
+        let path = result.unwrap();
+        let path_str = path.to_string_lossy();
+        assert!(
+            path_str.contains(".claude/projects/") && path_str.ends_with("/memory"),
+            "path should contain .claude/projects/<hash>/memory, got: {path_str}"
+        );
+    }
 }
