@@ -1,4 +1,5 @@
 pub mod audit;
+pub mod sources;
 pub mod backlog;
 pub mod claw;
 pub mod completion;
