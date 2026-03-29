@@ -662,4 +662,42 @@ mod tests {
             "path should contain .claude/projects/<hash>/memory, got: {path_str}"
         );
     }
+
+    // ── insert_after_heading generic tests ────────────────────────────────────
+
+    #[test]
+    fn insert_after_heading_works_for_activity() {
+        let content = "# Daily: 2026-01-01\n\n## Activity\n\n## Insights\n\n";
+        let entry = "- [09:00] **spec** auth — security";
+        let result = insert_after_heading(content, "## Activity", entry);
+        let lines: Vec<&str> = result.lines().collect();
+        let activity_pos = lines.iter().position(|l| *l == "## Activity").unwrap();
+        let entry_pos = lines.iter().position(|l| *l == entry).unwrap();
+        assert!(
+            entry_pos > activity_pos,
+            "entry should appear after ## Activity"
+        );
+        assert!(
+            entry_pos <= activity_pos + 2,
+            "entry should be inserted right after ## Activity (with optional blank)"
+        );
+    }
+
+    #[test]
+    fn insert_after_heading_works_for_daily() {
+        let content = "# Memory Index\n\n## Daily\n\n";
+        let entry = "- [2026-01-01](daily/2026-01-01.md)";
+        let result = insert_after_heading(content, "## Daily", entry);
+        let lines: Vec<&str> = result.lines().collect();
+        let daily_pos = lines.iter().position(|l| *l == "## Daily").unwrap();
+        let entry_pos = lines.iter().position(|l| *l == entry).unwrap();
+        assert!(
+            entry_pos > daily_pos,
+            "entry should appear after ## Daily"
+        );
+        assert!(
+            entry_pos <= daily_pos + 2,
+            "entry should be inserted right after ## Daily (with optional blank)"
+        );
+    }
 }
