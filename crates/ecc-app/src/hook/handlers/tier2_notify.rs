@@ -16,7 +16,11 @@ const MAX_NOTIFY_LEN: usize = 256;
 /// Escapes backslashes first, then double quotes. Caps length at 256 chars.
 fn sanitize_osascript(s: &str) -> String {
     let truncated = if s.len() > MAX_NOTIFY_LEN {
-        &s[..MAX_NOTIFY_LEN]
+        let mut end = MAX_NOTIFY_LEN;
+        while end > 0 && !s.is_char_boundary(end) {
+            end -= 1;
+        }
+        &s[..end]
     } else {
         s
     };
@@ -27,7 +31,11 @@ fn sanitize_osascript(s: &str) -> String {
 /// Escapes single quotes by doubling them. Caps length at 256 chars.
 fn sanitize_powershell(s: &str) -> String {
     let truncated = if s.len() > MAX_NOTIFY_LEN {
-        &s[..MAX_NOTIFY_LEN]
+        let mut end = MAX_NOTIFY_LEN;
+        while end > 0 && !s.is_char_boundary(end) {
+            end -= 1;
+        }
+        &s[..end]
     } else {
         s
     };
