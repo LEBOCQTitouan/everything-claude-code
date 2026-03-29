@@ -12,33 +12,29 @@ const DEFAULT_MESSAGE: &str = "Claude needs your attention";
 /// Maximum length for sanitized notification strings.
 const MAX_NOTIFY_LEN: usize = 256;
 
+/// Truncate `s` to at most `max_bytes` bytes, walking back to a UTF-8 char boundary if needed.
+fn truncate_to_char_boundary(s: &str, max_bytes: usize) -> &str {
+    if s.len() <= max_bytes {
+        return s;
+    }
+    let mut end = max_bytes;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
+
 /// Sanitize a string for safe interpolation into an AppleScript string delimited by double quotes.
 /// Escapes backslashes first, then double quotes. Caps length at 256 chars.
 fn sanitize_osascript(s: &str) -> String {
-    let truncated = if s.len() > MAX_NOTIFY_LEN {
-        let mut end = MAX_NOTIFY_LEN;
-        while end > 0 && !s.is_char_boundary(end) {
-            end -= 1;
-        }
-        &s[..end]
-    } else {
-        s
-    };
+    let truncated = truncate_to_char_boundary(s, MAX_NOTIFY_LEN);
     truncated.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 /// Sanitize a string for safe interpolation into a PowerShell string delimited by single quotes.
 /// Escapes single quotes by doubling them. Caps length at 256 chars.
 fn sanitize_powershell(s: &str) -> String {
-    let truncated = if s.len() > MAX_NOTIFY_LEN {
-        let mut end = MAX_NOTIFY_LEN;
-        while end > 0 && !s.is_char_boundary(end) {
-            end -= 1;
-        }
-        &s[..end]
-    } else {
-        s
-    };
+    let truncated = truncate_to_char_boundary(s, MAX_NOTIFY_LEN);
     truncated.replace('\'', "''")
 }
 
