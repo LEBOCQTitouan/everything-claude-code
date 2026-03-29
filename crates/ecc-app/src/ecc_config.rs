@@ -31,10 +31,8 @@ pub fn config_set(
         ));
     }
 
-    // Validate the value via the domain type.
-    let _: ecc_domain::config::ecc_config::LogLevel = value
-        .parse()
-        .map_err(|e: String| e)?;
+    // Validate and parse the value via the domain type.
+    let level: ecc_domain::config::ecc_config::LogLevel = value.parse()?;
 
     let path = config_path(env)?;
 
@@ -42,7 +40,7 @@ pub fn config_set(
     let mut cfg = read_existing_config(fs, env);
 
     // Update field.
-    cfg.log_level = Some(value.parse().unwrap());
+    cfg.log_level = Some(level);
 
     // Ensure the directory exists.
     if let Some(dir) = path.parent() {
@@ -204,14 +202,30 @@ mod tests {
         assert_eq!(cfg.log_level, None);
     }
 
-    // PC-008: read_config returns default on corrupt file
+    // PC-008: read_config returns default on corrupt file and emits warn
     #[test]
     fn read_config_returns_default_on_corrupt_file() {
+        testing_logger::setup();
         let fs = InMemoryFileSystem::new().with_file("/home/test/.ecc/config.toml", "garbage{{{");
         let env = MockEnvironment::new().with_home("/home/test");
 
         let cfg = read_config(&fs, &env);
         assert_eq!(cfg, EccConfig::default());
+
+        testing_logger::validate(|captured_logs| {
+            let found = captured_logs.iter().any(|log| {
+                log.level == log::Level::Warn && log.body.contains("corrupt")
+            });
+            if !found {
+                let messages: Vec<String> = captured_logs
+                    .iter()
+                    .map(|l| format!("[{}] {}", l.level, l.body))
+                    .collect();
+                panic!(
+                    "expected log::warn! with 'corrupt' in body.\nCaptured logs: {messages:?}"
+                );
+            }
+        });
     }
 
     // PC-009: config_set errors when HOME not set
