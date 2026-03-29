@@ -835,6 +835,38 @@ mod tests {
         assert!(!is_legacy_ecc_hook(&entry_exit));
     }
 
+    // --- merge_hooks_result_struct ---
+
+    #[test]
+    fn merge_hooks_result_struct_pure_has_fields() {
+        let source = serde_json::json!({
+            "PreToolUse": [
+                {"hooks": [{"command": "ecc-hook format"}]}
+            ]
+        });
+        let existing = serde_json::json!({});
+
+        let result = merge_hooks_pure(&source, &existing);
+        // Access named fields (not tuple positions)
+        assert_eq!(result.added, 1);
+        assert_eq!(result.existing, 0);
+        assert_eq!(result.legacy_removed, 0);
+        assert_eq!(result.merged["PreToolUse"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn merge_hooks_result_struct_typed_has_fields() {
+        use super::super::hook_types::HooksMap;
+        let source = HooksMap::new();
+        let existing = HooksMap::new();
+
+        let result = merge_hooks_typed(&source, &existing);
+        assert_eq!(result.added, 0);
+        assert_eq!(result.existing, 0);
+        assert_eq!(result.legacy_removed, 0);
+        assert!(result.merged.is_empty());
+    }
+
     // --- is_legacy_command ---
 
     #[test]
