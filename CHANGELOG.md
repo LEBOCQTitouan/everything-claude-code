@@ -6,6 +6,17 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.5.0
+
+### Knowledge Sources Registry (BL-086)
+
+- **docs/sources.md**: Curated knowledge sources registry with Technology Radar quadrants (Adopt/Trial/Assess/Hold), Inbox flow, seed entries from web radar.
+- **7 command integrations**: `/spec-*`, `/implement`, `/design`, `/audit-web`, `/audit-evolution`, `/catchup`, `/review` consult sources for prior art. Auto-propose from web research.
+- **ecc-domain::sources**: SourceEntry, SourcesRegistry, Quadrant/SourceType enums, Markdown table parsing, is_stale() via Julian Day arithmetic, deterministic render.
+- **ecc-app::sources**: list/add/check/reindex via FileSystem + ShellExecutor ports.
+- **ecc sources CLI**: `list [--quadrant] [--subject]`, `add`, `check` (curl reachability), `reindex`.
+- **ADR 0031**: Knowledge Sources Registry convention.
+
 ## v4.4.0
 
 ### Changed
