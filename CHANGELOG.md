@@ -6,6 +6,14 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.5.1
+
+### Added
+
+- `/create-component` slash command for scaffolding and updating ECC components (agents, commands, skills, hooks) with Plan Mode + grill-me interview, name validation, and ecc validate quality gate
+- `ecc-component-authoring` skill with frontmatter schemas, templates, naming conventions, and behavioral requirements per component type
+- ADR-0030: Archetype pattern for component scaffolding (skill-as-pointer-to-rules convention)
+
 ## v4.5.0
 
 ### Added
