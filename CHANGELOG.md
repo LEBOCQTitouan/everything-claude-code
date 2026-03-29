@@ -6,19 +6,11 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
-## v4.5.1
+## v4.6.0
 
 ### Added
 
-- `/create-component` slash command for scaffolding and updating ECC components (agents, commands, skills, hooks) with Plan Mode + grill-me interview, name validation, and ecc validate quality gate
-- `ecc-component-authoring` skill with frontmatter schemas, templates, naming conventions, and behavioral requirements per component type
-- ADR-0030: Archetype pattern for component scaffolding (skill-as-pointer-to-rules convention)
-
-## v4.5.0
-
-### Added
-
-- **Deterministic convention linting (BL-069)**: New `ecc validate conventions` subcommand — naming consistency, value validation (21-entry VALID_TOOLS registry), placement checks, cross-file references. Meta-test validates ECC repo.
+- **Adversarial challenge for audit commands (BL-083)**: New `audit-challenger` agent (Sonnet) independently re-interrogates codebase after each domain audit, searches web for best practices, produces challenged findings (confirmed/refuted/amended). Disagreements shown to user. Graceful degradation on failure. Always-on across all 10 `/audit-*` commands + audit-orchestrator.
 
 ## v4.3.1
 

@@ -94,6 +94,23 @@ Pass each agent:
 - Hotspot data from Phase 1 (so they can prioritize findings on high-risk files)
 - Instructions to use the standardized finding format
 
+
+### Phase 2.5: Adversarial Challenge (Per-Domain)
+
+After each domain agent completes (or after all complete if running in parallel), launch an `audit-challenger` agent (allowedTools: [Read, Grep, Glob, Bash, WebSearch]) for each domain's findings:
+
+- Pass the domain agent's findings as structured input
+- The audit-challenger independently re-interrogates the codebase and searches web for best practices
+- Collect challenged findings: confirmed, refuted, or amended
+
+**Quality check**: If adversary output lacks structured per-finding verdicts (finding ID + verdict + rationale), retry once with stricter prompt. If still low quality, surface warning alongside raw content.
+
+**Disagreement handling**: When audit and adversary disagree, present both perspectives to the user with a recommendation. User makes final decision.
+
+**Graceful degradation**: If audit-challenger fails to spawn, emit "Adversary challenge skipped: <reason>" and proceed with unchallenged findings.
+
+Merge challenged findings into the domain results before passing to Phase 3 correlation.
+
 ### Phase 3: Cross-Domain Correlation (Sequential)
 
 After all domain agents complete, correlate findings across domains:
