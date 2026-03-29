@@ -234,6 +234,13 @@ fn transition_writes_memory() {
     let temp_dir = tempfile::tempdir().unwrap();
     let home_dir = tempfile::tempdir().unwrap();
 
+    // Initialize as git repo so resolve_repo_root succeeds for daily/memory-index
+    std::process::Command::new("git")
+        .args(["init"])
+        .current_dir(temp_dir.path())
+        .output()
+        .expect("git init failed");
+
     // Step 1: init
     let init_output = Command::new(&bin)
         .args(["init", "dev", "test feature"])
@@ -322,9 +329,10 @@ fn transition_writes_memory() {
     );
 
     // Step 5: daily/<today>.md must exist in the project memory dir under HOME
-    let abs_project =
-        std::fs::canonicalize(temp_dir.path()).unwrap_or_else(|_| temp_dir.path().to_path_buf());
-    let abs_str = abs_project.to_string_lossy();
+    let repo_root = ecc_flock::resolve_repo_root(temp_dir.path());
+    let repo_root =
+        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    let abs_str = repo_root.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
     let daily_dir = home_dir
         .path()

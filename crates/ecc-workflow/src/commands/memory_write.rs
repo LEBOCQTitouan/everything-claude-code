@@ -67,6 +67,10 @@ fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Err
     let home = std::env::var("HOME").map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
 
     let repo_root = ecc_flock::resolve_repo_root(project_dir);
+    // Canonicalize to resolve macOS symlinks (/var → /private/var) so the
+    // hash is identical whether called from a worktree or the main repo.
+    let repo_root =
+        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
     if !repo_root.join(".git").exists() {
         return Err(anyhow::anyhow!(
             "not a git repository: {} (resolved from {})",

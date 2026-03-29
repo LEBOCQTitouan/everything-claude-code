@@ -167,6 +167,13 @@ fn memory_write_subcommands() {
         "plan.md must contain '## Outcome' section"
     );
 
+    // Initialize as git repo so resolve_repo_root succeeds for daily/memory-index
+    Command::new("git")
+        .args(["init"])
+        .current_dir(project_dir)
+        .output()
+        .expect("git init failed");
+
     // ── Step 3: daily subcommand ──────────────────────────────────────────────
     let daily_output = Command::new(&bin)
         .args(["memory-write", "daily", "plan", "test feature", "dev"])
@@ -183,8 +190,10 @@ fn memory_write_subcommands() {
         std::str::from_utf8(&daily_output.stderr).unwrap_or(""),
     );
 
-    let abs_proj = std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
-    let abs_str = abs_proj.to_string_lossy();
+    let repo_root = ecc_flock::resolve_repo_root(project_dir);
+    let repo_root =
+        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    let abs_str = repo_root.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
     let daily_dir = home_path
         .join(".claude/projects")
