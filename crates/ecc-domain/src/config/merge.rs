@@ -865,4 +865,107 @@ mod tests {
         assert!(!is_legacy_ecc_hook(&entry_enter));
         assert!(!is_legacy_ecc_hook(&entry_exit));
     }
+
+    // --- typed helpers ---
+
+    fn typed_entry(cmd: &str) -> super::super::hook_types::HookEntry {
+        use super::super::hook_types::{HookCommand, HookCommandValue, HookEntry};
+        HookEntry {
+            description: None,
+            matcher: None,
+            hooks: Some(vec![HookCommand {
+                hook_type: Some("command".to_string()),
+                command: Some(HookCommandValue::Single(cmd.to_string())),
+                r#async: None,
+                timeout: None,
+            }]),
+        }
+    }
+
+    fn typed_map(event: &str, entries: Vec<super::super::hook_types::HookEntry>) -> super::super::hook_types::HooksMap {
+        let mut map = super::super::hook_types::HooksMap::new();
+        map.insert(event.to_string(), entries);
+        map
+    }
+
+    // --- merge_hooks_typed ---
+
+    #[test]
+    fn merge_hooks_typed_empty_both() {
+        let source = super::super::hook_types::HooksMap::new();
+        let existing = super::super::hook_types::HooksMap::new();
+        let (merged, added, existing_count, legacy_removed) = merge_hooks_typed(&source, &existing);
+        assert!(merged.is_empty());
+        assert_eq!(added, 0);
+        assert_eq!(existing_count, 0);
+        assert_eq!(legacy_removed, 0);
+    }
+
+    #[test]
+    fn merge_hooks_typed_adds_new_to_empty() {
+        let source = typed_map("PreToolUse", vec![
+            typed_entry("ecc-hook format"),
+            typed_entry("ecc-hook lint"),
+        ]);
+        let existing = super::super::hook_types::HooksMap::new();
+        let (merged, added, existing_count, legacy_removed) = merge_hooks_typed(&source, &existing);
+        assert_eq!(added, 2);
+        assert_eq!(existing_count, 0);
+        assert_eq!(legacy_removed, 0);
+        assert_eq!(merged["PreToolUse"].len(), 2);
+    }
+
+    #[test]
+    fn merge_hooks_typed_deduplicates() {
+        let entry = typed_entry("ecc-hook format");
+        let source = typed_map("PreToolUse", vec![entry.clone()]);
+        let existing = typed_map("PreToolUse", vec![entry]);
+        let (merged, added, existing_count, _legacy) = merge_hooks_typed(&source, &existing);
+        assert_eq!(added, 0);
+        assert_eq!(existing_count, 1);
+        assert_eq!(merged["PreToolUse"].len(), 1);
+    }
+
+    #[test]
+    fn merge_hooks_typed_removes_legacy() {
+        let source = typed_map("PreToolUse", vec![typed_entry("ecc-hook format")]);
+        let existing = typed_map("PreToolUse", vec![
+            typed_entry("node scripts/hooks/old.js"),
+        ]);
+        let (merged, added, _, legacy) = merge_hooks_typed(&source, &existing);
+        assert_eq!(added, 1);
+        assert_eq!(legacy, 1);
+        assert_eq!(merged["PreToolUse"].len(), 1);
+        assert_eq!(
+            merged["PreToolUse"][0],
+            typed_entry("ecc-hook format")
+        );
+    }
+
+    // --- remove_legacy_hooks_typed ---
+
+    #[test]
+    fn remove_legacy_hooks_typed() {
+        use super::super::hook_types::HooksMap;
+        let mut hooks = HooksMap::new();
+        hooks.insert("PreToolUse".to_string(), vec![
+            // current — keep
+            typed_entry("ecc-hook format"),
+            // legacy: absolute path with ECC package identifier
+            typed_entry("/home/.npm/everything-claude-code/hooks/run.js"),
+            // legacy: scripts/hooks/ path
+            typed_entry("node scripts/hooks/old.js"),
+            // legacy: placeholder
+            typed_entry("${ECC_ROOT}/hooks/run.js"),
+            // legacy: run-with-flags.js
+            typed_entry("node /abs/path/dist/hooks/run-with-flags.js"),
+            // legacy: node -e one-liner
+            typed_entry("node -e 'require(\"dev-server\")'"),
+        ]);
+
+        let (result, removed) = super::remove_legacy_hooks_typed(&hooks);
+        assert_eq!(removed, 5);
+        assert_eq!(result["PreToolUse"].len(), 1);
+        assert_eq!(result["PreToolUse"][0], typed_entry("ecc-hook format"));
+    }
 }
