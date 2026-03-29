@@ -1,0 +1,17 @@
+# cargo-nextest configuration
+# Install: cargo install cargo-nextest
+# Usage: cargo nextest run
+
+[profile.default]
+# Retry flaky tests once before reporting failure
+retries = 1
+# Per-test timeout (seconds)
+slow-timeout = { period = "60s", terminate-after = 2 }
+# Fail fast on first failure
+fail-fast = true
+
+[profile.ci]
+# CI: no retries, stricter timeout
+retries = 0
+slow-timeout = { period = "120s", terminate-after = 1 }
+fail-fast = false

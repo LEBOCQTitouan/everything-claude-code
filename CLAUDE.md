@@ -10,8 +10,11 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 
 ```bash
 cargo test              # Run all Rust tests (1567 tests)
+cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (16 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
+cargo deny check        # Supply chain audit (licenses + advisories)
+cargo llvm-cov --workspace   # Coverage report (works on macOS)
 cargo build --release   # Build release binary
 ```
 
