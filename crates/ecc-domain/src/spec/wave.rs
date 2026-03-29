@@ -26,7 +26,10 @@ pub struct WavePlan {
 
 /// Strips one leading and one trailing backtick from a string, then trims whitespace.
 pub fn strip_backticks(s: &str) -> String {
-    todo!("strip_backticks not yet implemented")
+    let trimmed = s.trim();
+    let stripped = trimmed.strip_prefix('`').unwrap_or(trimmed);
+    let stripped = stripped.strip_suffix('`').unwrap_or(stripped);
+    stripped.trim().to_owned()
 }
 
 /// Build a `PcId -> Vec<String>` mapping from PCs and FileChanges via AC cross-reference.
@@ -55,7 +58,7 @@ pub fn build_pc_file_map(
             // Check if any of the PC's verifies_acs matches any of this FileChange's ACs
             let matches = pc.verifies_acs.iter().any(|pa| acs.contains(pa));
             if matches {
-                let file = fc.file.trim().to_owned();
+                let file = strip_backticks(&fc.file);
                 if !files.contains(&file) {
                     files.push(file);
                 }
