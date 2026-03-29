@@ -8,29 +8,15 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## v4.5.0
 
-### Knowledge Sources Registry (BL-086)
+### Added
 
-- **docs/sources.md**: Curated knowledge sources registry with Technology Radar quadrants (Adopt/Trial/Assess/Hold), Inbox flow, seed entries from web radar.
-- **7 command integrations**: `/spec-*`, `/implement`, `/design`, `/audit-web`, `/audit-evolution`, `/catchup`, `/review` consult sources for prior art. Auto-propose from web research.
-- **ecc-domain::sources**: SourceEntry, SourcesRegistry, Quadrant/SourceType enums, Markdown table parsing, is_stale() via Julian Day arithmetic, deterministic render.
-- **ecc-app::sources**: list/add/check/reindex via FileSystem + ShellExecutor ports.
-- **ecc sources CLI**: `list [--quadrant] [--subject]`, `add`, `check` (curl reachability), `reindex`.
-- **ADR 0031**: Knowledge Sources Registry convention.
+- **Deterministic convention linting (BL-069)**: New `ecc validate conventions` subcommand — naming consistency, value validation (21-entry VALID_TOOLS registry), placement checks, cross-file references. Meta-test validates ECC repo.
 
-### Deterministic Task Synchronization (BL-075 + BL-072)
+## v4.3.1
 
-- **`ecc-workflow tasks sync`**: Parse tasks.md and output JSON summary with pending/completed/in_progress/failed arrays and progress percentage
-- **`ecc-workflow tasks update`**: Atomically update a PC's status with FSM validation (pending→red→green→done), flock locking, and tempfile+rename
-- **`ecc-workflow tasks init`**: Generate tasks.md from a design file's PC table with Post-TDD section and `→` separator format
-- **Domain module `ecc-domain::task`**: Pure `&str → Result<T>` functions for parsing, updating, rendering, and FSM validation — zero I/O imports
-- **Backward compatibility**: Parser reads both old `|` and new `→` separator formats
-- **Security**: Path traversal protection via `canonicalize` + `starts_with(project_dir)`
+### Fixed
 
-## v4.4.0
-
-### Changed
-
-- **Agent model routing optimization (BL-094)**: 14 agents re-tiered per Anthropic guidance — drift-checker to Haiku, 10 language reviewers + doc-validator + web-scout + doc-orchestrator to Sonnet. 18 agents remain on Opus (architecture, security, adversarial, planning). `performance.md` updated with three-tier routing policy. ADR 0030 created. Est. 30-40% cost reduction on review-heavy sessions.
+- Memory writes from worktree sessions (`write_daily`, `write_memory_index`) now resolve to the main repo's `~/.claude/projects/<hash>/memory/` directory instead of creating a worktree-specific hash (fixes daily memory and memory-index fragmentation in concurrent sessions)
 
 ## v4.3.0
 

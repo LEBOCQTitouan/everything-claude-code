@@ -36,6 +36,7 @@ ecc validate design <path> [--spec <spec-path>]  Validate design artifact (PC ta
 ecc dev on|off|status     Toggle ECC config on/off
 ecc dev switch dev|default [--dry-run]  Instant config switching via symlinks
 ecc validate statusline   Verify statusline installation
+ecc validate conventions  Validate naming, values, placement, and cross-references
 ecc backlog next-id       Next sequential BL-NNN ID
 ecc backlog check-duplicates <title> [--tags t1,t2]  Check for duplicate entries
 ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files

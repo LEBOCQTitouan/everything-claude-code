@@ -23,6 +23,8 @@ pub enum CliValidateTarget {
     Agents,
     /// Validate command markdown files
     Commands,
+    /// Validate convention consistency (naming, tools, placement)
+    Conventions,
     /// Validate hooks.json schema
     Hooks,
     /// Validate skill directories
@@ -87,6 +89,7 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
     match cli {
         CliValidateTarget::Agents => ecc_app::validate::ValidateTarget::Agents,
         CliValidateTarget::Commands => ecc_app::validate::ValidateTarget::Commands,
+        CliValidateTarget::Conventions => ecc_app::validate::ValidateTarget::Conventions,
         CliValidateTarget::Hooks => ecc_app::validate::ValidateTarget::Hooks,
         CliValidateTarget::Skills => ecc_app::validate::ValidateTarget::Skills,
         CliValidateTarget::Rules => ecc_app::validate::ValidateTarget::Rules,
