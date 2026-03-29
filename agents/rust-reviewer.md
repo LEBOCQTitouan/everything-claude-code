@@ -2,7 +2,7 @@
 name: rust-reviewer
 description: Expert Rust code reviewer specializing in ownership, error handling, unsafe code, concurrency, and performance. Use for all Rust code changes. MUST BE USED for Rust projects.
 tools: ["Read", "Grep", "Glob", "Bash"]
-model: opus
+model: sonnet
 skills: ["rust-patterns", "rust-testing"]
 ---
 

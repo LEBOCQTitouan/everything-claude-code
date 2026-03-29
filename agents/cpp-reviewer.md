@@ -2,7 +2,7 @@
 name: cpp-reviewer
 description: Expert C/C++ code reviewer specializing in memory safety, modern C++ idioms, performance, and security. Use for all C/C++ code changes. MUST BE USED for C/C++ projects.
 tools: ["Read", "Grep", "Glob", "Bash"]
-model: opus
+model: sonnet
 skills: ["cpp-coding-standards", "cpp-testing"]
 ---
 
