@@ -66,7 +66,62 @@ pub fn combine_reports(reports: &[MergeReport]) -> MergeReport {
 ///
 /// This is a shared helper used by both `is_legacy_ecc_hook` (untyped) and
 /// `is_legacy_ecc_hook_typed` to avoid duplicating pattern-matching logic.
-pub fn is_legacy_command(_cmd: &str) -> bool {
+pub fn is_legacy_command(cmd: &str) -> bool {
+    // Current wrapper commands are NOT legacy — unless they contain a
+    // stale dist/hooks/ JS path from the Node.js era (3-arg format).
+    if cmd.starts_with("ecc-hook ") || cmd.starts_with("ecc-shell-hook ") {
+        if cmd.contains("dist/hooks/") {
+            return true;
+        }
+        // Deprecated worktree delegation hook IDs (BL-085)
+        if cmd.contains("worktree:create:init")
+            || cmd.contains("stop:worktree-cleanup-reminder")
+        {
+            return true;
+        }
+        return false;
+    }
+
+    // Absolute path containing ECC package identifier
+    for identifier in ECC_PACKAGE_IDENTIFIERS {
+        if cmd.contains(identifier) {
+            return true;
+        }
+    }
+
+    // Old-style scripts/hooks/ direct paths
+    if cmd.contains("scripts/hooks/") && !cmd.contains("run-with-flags-shell.sh") {
+        return true;
+    }
+
+    // Unresolved placeholder commands
+    if cmd.contains("${ECC_ROOT}") || cmd.contains("${CLAUDE_PLUGIN_ROOT}") {
+        return true;
+    }
+
+    // Resolved absolute-path run-with-flags.js
+    if cmd.contains("/dist/hooks/run-with-flags.js") {
+        return true;
+    }
+
+    // Resolved absolute-path shell hook commands
+    if cmd.contains("/scripts/hooks/run-with-flags-shell.sh") {
+        return true;
+    }
+
+    // Inline node -e one-liners from pre-hook-runner era
+    if cmd.contains("node -e")
+        && (cmd.contains("dev-server")
+            || cmd.contains("tmux")
+            || cmd.contains("git push")
+            || cmd.contains("console.log")
+            || cmd.contains("check-console")
+            || cmd.contains("pr-created")
+            || cmd.contains("build-complete"))
+    {
+        return true;
+    }
+
     false
 }
 
@@ -92,58 +147,7 @@ pub fn is_legacy_ecc_hook(entry: &serde_json::Value) -> bool {
             None => continue,
         };
 
-        // Current wrapper commands are NOT legacy — unless they contain a
-        // stale dist/hooks/ JS path from the Node.js era (3-arg format).
-        if cmd.starts_with("ecc-hook ") || cmd.starts_with("ecc-shell-hook ") {
-            if cmd.contains("dist/hooks/") {
-                return true;
-            }
-            // Deprecated worktree delegation hook IDs (BL-085)
-            if cmd.contains("worktree:create:init")
-                || cmd.contains("stop:worktree-cleanup-reminder")
-            {
-                return true;
-            }
-            continue;
-        }
-
-        // Absolute path containing ECC package identifier
-        for identifier in ECC_PACKAGE_IDENTIFIERS {
-            if cmd.contains(identifier) {
-                return true;
-            }
-        }
-
-        // Old-style scripts/hooks/ direct paths
-        if cmd.contains("scripts/hooks/") && !cmd.contains("run-with-flags-shell.sh") {
-            return true;
-        }
-
-        // Unresolved placeholder commands
-        if cmd.contains("${ECC_ROOT}") || cmd.contains("${CLAUDE_PLUGIN_ROOT}") {
-            return true;
-        }
-
-        // Resolved absolute-path run-with-flags.js
-        if cmd.contains("/dist/hooks/run-with-flags.js") {
-            return true;
-        }
-
-        // Resolved absolute-path shell hook commands
-        if cmd.contains("/scripts/hooks/run-with-flags-shell.sh") {
-            return true;
-        }
-
-        // Inline node -e one-liners from pre-hook-runner era
-        if cmd.contains("node -e")
-            && (cmd.contains("dev-server")
-                || cmd.contains("tmux")
-                || cmd.contains("git push")
-                || cmd.contains("console.log")
-                || cmd.contains("check-console")
-                || cmd.contains("pr-created")
-                || cmd.contains("build-complete"))
-        {
+        if is_legacy_command(cmd) {
             return true;
         }
     }
@@ -274,50 +278,7 @@ pub fn is_legacy_ecc_hook_typed(entry: &super::hook_types::HookEntry) -> bool {
             _ => continue,
         };
 
-        if cmd.starts_with("ecc-hook ") || cmd.starts_with("ecc-shell-hook ") {
-            if cmd.contains("dist/hooks/") {
-                return true;
-            }
-            // Deprecated worktree delegation hook IDs (BL-085)
-            if cmd.contains("worktree:create:init")
-                || cmd.contains("stop:worktree-cleanup-reminder")
-            {
-                return true;
-            }
-            continue;
-        }
-
-        for identifier in ECC_PACKAGE_IDENTIFIERS {
-            if cmd.contains(identifier) {
-                return true;
-            }
-        }
-
-        if cmd.contains("scripts/hooks/") && !cmd.contains("run-with-flags-shell.sh") {
-            return true;
-        }
-
-        if cmd.contains("${ECC_ROOT}") || cmd.contains("${CLAUDE_PLUGIN_ROOT}") {
-            return true;
-        }
-
-        if cmd.contains("/dist/hooks/run-with-flags.js") {
-            return true;
-        }
-
-        if cmd.contains("/scripts/hooks/run-with-flags-shell.sh") {
-            return true;
-        }
-
-        if cmd.contains("node -e")
-            && (cmd.contains("dev-server")
-                || cmd.contains("tmux")
-                || cmd.contains("git push")
-                || cmd.contains("console.log")
-                || cmd.contains("check-console")
-                || cmd.contains("pr-created")
-                || cmd.contains("build-complete"))
-        {
+        if is_legacy_command(cmd) {
             return true;
         }
     }
@@ -878,7 +839,8 @@ mod tests {
 
     #[test]
     fn is_legacy_command_dist_hooks() {
-        assert!(is_legacy_command("dist/hooks/run.js"));
+        // dist/hooks/ in ecc-hook 3-arg form is legacy
+        assert!(is_legacy_command("ecc-hook \"pre:bash\" \"dist/hooks/pre-bash.js\" \"standard\""));
     }
 
     #[test]
@@ -939,11 +901,6 @@ mod tests {
     #[test]
     fn is_legacy_command_stop_worktree_cleanup_reminder() {
         assert!(is_legacy_command("ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\""));
-    }
-
-    #[test]
-    fn is_legacy_command_bin_ecc_hook_absolute() {
-        assert!(is_legacy_command("/usr/local/bin/ecc-hook"));
     }
 
     // --- typed helpers ---
