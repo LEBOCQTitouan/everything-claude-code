@@ -179,14 +179,88 @@ fn update_inner(
 }
 
 /// Run the `tasks init <design_path> --output <output> [--force]` subcommand.
+///
+/// Reads a design file, extracts the PC table, and generates tasks.md.
 pub fn run_init(
     design_path: &str,
     output: &str,
     force: bool,
     project_dir: &Path,
 ) -> WorkflowOutput {
-    let _ = (design_path, output, force, project_dir);
-    WorkflowOutput::block("not implemented")
+    match init_inner(design_path, output, force, project_dir) {
+        Ok(out) => out,
+        Err(e) => WorkflowOutput::block(format!("tasks init failed: {e}")),
+    }
+}
+
+fn init_inner(
+    design_path: &str,
+    output: &str,
+    force: bool,
+    project_dir: &Path,
+) -> Result<WorkflowOutput, anyhow::Error> {
+    let design_file = Path::new(design_path);
+    let output_path = std::path::PathBuf::from(output);
+
+    validate_path(design_file, project_dir)?;
+    validate_path(&output_path, project_dir)?;
+
+    // Check if output already exists
+    if output_path.exists() && !force {
+        return Ok(WorkflowOutput::block(format!(
+            "output file already exists: {output}. Use --force to overwrite."
+        )));
+    }
+
+    // Read and parse the design file for PCs
+    let design_content = std::fs::read_to_string(design_file)
+        .map_err(|e| anyhow::anyhow!("cannot read {design_path}: {e}"))?;
+
+    let pc_report = ecc_domain::spec::pc::parse_pcs(&design_content)
+        .map_err(|e| anyhow::anyhow!("failed to parse design PCs: {e}"))?;
+
+    if pc_report.pcs.is_empty() {
+        return Ok(WorkflowOutput::block(
+            "no PC table found in design file".to_owned(),
+        ));
+    }
+
+    // Check for duplicate PC IDs
+    let mut seen_ids = std::collections::HashSet::new();
+    for pc in &pc_report.pcs {
+        if !seen_ids.insert(pc.id.number()) {
+            return Ok(WorkflowOutput::block(format!(
+                "duplicate {}", pc.id
+            )));
+        }
+    }
+
+    // Extract feature title from design file (first # heading)
+    let feature_title = design_content
+        .lines()
+        .find(|l| l.starts_with("# "))
+        .map(|l| l.trim_start_matches("# ").trim())
+        .unwrap_or("Untitled");
+
+    let timestamp = crate::time::utc_now_iso8601();
+    let tasks_content =
+        ecc_domain::task::renderer::render_tasks(&pc_report.pcs, feature_title, &timestamp);
+
+    // Write atomically
+    if let Some(parent) = output_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| anyhow::anyhow!("cannot create output directory: {e}"))?;
+    }
+    let tmp_path = output_path.with_extension("tmp");
+    std::fs::write(&tmp_path, &tasks_content)
+        .map_err(|e| anyhow::anyhow!("failed to write temp file: {e}"))?;
+    std::fs::rename(&tmp_path, &output_path)
+        .map_err(|e| anyhow::anyhow!("failed to rename temp file: {e}"))?;
+
+    Ok(WorkflowOutput::pass(format!(
+        "generated tasks.md with {} PCs at {output}",
+        pc_report.pcs.len()
+    )))
 }
 
 #[cfg(test)]
@@ -344,6 +418,152 @@ mod tests {
         assert!(
             matches!(output.status, Status::Block),
             "expected block status for path traversal, got: {:?} — {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// A minimal design.md fixture with a PC table.
+    fn valid_design_md() -> String {
+        "# Design: Test Feature\n\
+         \n\
+         ## Pass Conditions\n\
+         \n\
+         | ID | Type | Description | Verifies AC | Command | Expected |\n\
+         |----|------|-------------|-------------|---------|----------|\n\
+         | PC-001 | unit | Test parser | AC-001.1 | `cargo test parser` | PASS |\n\
+         | PC-002 | unit | Test updater | AC-002.1 | `cargo test updater` | PASS |\n"
+            .to_owned()
+    }
+
+    // PC-023: tasks init generates tasks.md from design file's PC table
+    #[test]
+    fn init_generate() {
+        let tmp = TempDir::new().unwrap();
+        let design_path = tmp.path().join("design.md");
+        let output_path = tmp.path().join("tasks.md");
+        std::fs::write(&design_path, valid_design_md()).unwrap();
+
+        let output = run_init(
+            design_path.to_str().unwrap(),
+            output_path.to_str().unwrap(),
+            false,
+            tmp.path(),
+        );
+
+        assert!(
+            matches!(output.status, Status::Pass),
+            "expected pass, got: {:?} — {}",
+            output.status,
+            output.message
+        );
+
+        let content = std::fs::read_to_string(&output_path).unwrap();
+        assert!(content.contains("PC-001"), "should contain PC-001");
+        assert!(content.contains("PC-002"), "should contain PC-002");
+        assert!(content.contains("## Post-TDD"), "should contain Post-TDD section");
+        assert!(content.contains("E2E tests"), "should contain E2E tests entry");
+        assert!(content.contains("pending@"), "should contain pending timestamp");
+    }
+
+    // PC-024: tasks init blocks when output exists (no --force)
+    #[test]
+    fn init_exists() {
+        let tmp = TempDir::new().unwrap();
+        let design_path = tmp.path().join("design.md");
+        let output_path = tmp.path().join("tasks.md");
+        std::fs::write(&design_path, valid_design_md()).unwrap();
+        std::fs::write(&output_path, "existing content").unwrap();
+
+        let output = run_init(
+            design_path.to_str().unwrap(),
+            output_path.to_str().unwrap(),
+            false,
+            tmp.path(),
+        );
+
+        assert!(
+            matches!(output.status, Status::Block),
+            "expected block when output exists, got: {:?} — {}",
+            output.status,
+            output.message
+        );
+    }
+
+    // PC-025: tasks init overwrites with --force
+    #[test]
+    fn init_force() {
+        let tmp = TempDir::new().unwrap();
+        let design_path = tmp.path().join("design.md");
+        let output_path = tmp.path().join("tasks.md");
+        std::fs::write(&design_path, valid_design_md()).unwrap();
+        std::fs::write(&output_path, "old content").unwrap();
+
+        let output = run_init(
+            design_path.to_str().unwrap(),
+            output_path.to_str().unwrap(),
+            true,
+            tmp.path(),
+        );
+
+        assert!(
+            matches!(output.status, Status::Pass),
+            "expected pass with --force, got: {:?} — {}",
+            output.status,
+            output.message
+        );
+
+        let content = std::fs::read_to_string(&output_path).unwrap();
+        assert!(content.contains("PC-001"), "should contain generated PCs");
+    }
+
+    // PC-026: tasks init blocks when design has no PC table
+    #[test]
+    fn init_no_pcs() {
+        let tmp = TempDir::new().unwrap();
+        let design_path = tmp.path().join("design.md");
+        let output_path = tmp.path().join("tasks.md");
+        std::fs::write(&design_path, "# Design\n\nNo PC table here.\n").unwrap();
+
+        let output = run_init(
+            design_path.to_str().unwrap(),
+            output_path.to_str().unwrap(),
+            false,
+            tmp.path(),
+        );
+
+        assert!(
+            matches!(output.status, Status::Block),
+            "expected block for no PC table, got: {:?} — {}",
+            output.status,
+            output.message
+        );
+    }
+
+    // PC-027: tasks init blocks on duplicate PC IDs
+    #[test]
+    fn init_dup_pcs() {
+        let tmp = TempDir::new().unwrap();
+        let design_path = tmp.path().join("design.md");
+        let output_path = tmp.path().join("tasks.md");
+        let dup_design = "# Design\n\n\
+             ## Pass Conditions\n\n\
+             | ID | Type | Description | Verifies AC | Command | Expected |\n\
+             |----|------|-------------|-------------|---------|----------|\n\
+             | PC-001 | unit | First | AC-001.1 | `cargo test` | PASS |\n\
+             | PC-001 | unit | Duplicate | AC-001.2 | `cargo test` | PASS |\n";
+        std::fs::write(&design_path, dup_design).unwrap();
+
+        let output = run_init(
+            design_path.to_str().unwrap(),
+            output_path.to_str().unwrap(),
+            false,
+            tmp.path(),
+        );
+
+        assert!(
+            matches!(output.status, Status::Block),
+            "expected block for duplicate PCs, got: {:?} — {}",
             output.status,
             output.message
         );
