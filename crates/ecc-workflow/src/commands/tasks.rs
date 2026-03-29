@@ -129,9 +129,53 @@ pub fn run_sync(path: &str, project_dir: &Path) -> WorkflowOutput {
 }
 
 /// Run the `tasks update <path> <id> <status>` subcommand.
+///
+/// Atomically updates a single entry's status in tasks.md:
+/// 1. Validates the path stays within the project directory
+/// 2. Acquires an exclusive flock on "tasks"
+/// 3. Reads the file, applies the domain update (FSM validation + trail append)
+/// 4. Writes atomically via tempfile + rename
 pub fn run_update(path: &str, id: &str, status: &str, project_dir: &Path) -> WorkflowOutput {
-    let _ = (path, id, status, project_dir);
-    WorkflowOutput::block("not implemented")
+    match update_inner(path, id, status, project_dir) {
+        Ok(output) => output,
+        Err(e) => WorkflowOutput::block(format!("tasks update failed: {e}")),
+    }
+}
+
+fn update_inner(
+    path: &str,
+    id: &str,
+    status: &str,
+    project_dir: &Path,
+) -> Result<WorkflowOutput, anyhow::Error> {
+    let tasks_path = std::path::PathBuf::from(path);
+    validate_path(&tasks_path, project_dir)?;
+
+    let new_status = ecc_domain::task::TaskStatus::from_str(status)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    let timestamp = crate::time::utc_now_iso8601();
+
+    // Acquire exclusive lock
+    let _guard = ecc_flock::acquire(project_dir, "tasks")
+        .map_err(|e| anyhow::anyhow!("failed to acquire tasks lock: {e}"))?;
+
+    let content = std::fs::read_to_string(&tasks_path)
+        .map_err(|e| anyhow::anyhow!("cannot read {path}: {e}"))?;
+
+    let updated = ecc_domain::task::updater::apply_update(&content, id, new_status, &timestamp)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+
+    // Atomic write: write to .tmp then rename
+    let tmp_path = tasks_path.with_extension("tmp");
+    std::fs::write(&tmp_path, &updated)
+        .map_err(|e| anyhow::anyhow!("failed to write temp file: {e}"))?;
+    std::fs::rename(&tmp_path, &tasks_path)
+        .map_err(|e| anyhow::anyhow!("failed to rename temp file: {e}"))?;
+
+    Ok(WorkflowOutput::pass(format!(
+        "updated {id} to {status}"
+    )))
 }
 
 /// Run the `tasks init <design_path> --output <output> [--force]` subcommand.
@@ -243,6 +287,63 @@ mod tests {
         assert!(
             matches!(output.status, Status::Warn),
             "expected warn status for malformed tasks.md, got: {:?} — {}",
+            output.status,
+            output.message
+        );
+    }
+
+    // PC-021: tasks update performs atomic write with flock, appends trail
+    #[test]
+    fn update_atomic() {
+        let tmp = TempDir::new().unwrap();
+        let tasks_path = tmp.path().join("tasks.md");
+        std::fs::write(&tasks_path, valid_tasks_md()).unwrap();
+
+        let output = run_update(
+            tasks_path.to_str().unwrap(),
+            "PC-001",
+            "red",
+            tmp.path(),
+        );
+
+        assert!(
+            matches!(output.status, Status::Pass),
+            "expected pass status, got: {:?} — {}",
+            output.status,
+            output.message
+        );
+
+        // Verify the file was actually updated
+        let content = std::fs::read_to_string(&tasks_path).unwrap();
+        assert!(
+            content.contains("red@"),
+            "updated file should contain red@ trail segment"
+        );
+        // Original pending trail should still be there
+        assert!(
+            content.contains("pending@"),
+            "updated file should still contain pending@ trail"
+        );
+    }
+
+    // PC-022: tasks update rejects path traversal
+    #[test]
+    fn update_traversal() {
+        let tmp = TempDir::new().unwrap();
+        let another_tmp = TempDir::new().unwrap();
+        let tasks_path = tmp.path().join("tasks.md");
+        std::fs::write(&tasks_path, valid_tasks_md()).unwrap();
+
+        let output = run_update(
+            tasks_path.to_str().unwrap(),
+            "PC-001",
+            "red",
+            another_tmp.path(),
+        );
+
+        assert!(
+            matches!(output.status, Status::Block),
+            "expected block status for path traversal, got: {:?} — {}",
             output.status,
             output.message
         );
