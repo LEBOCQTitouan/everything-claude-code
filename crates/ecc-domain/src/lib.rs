@@ -12,6 +12,7 @@ pub mod diff;
 pub mod hook_runtime;
 pub mod paths;
 pub mod session;
+pub mod sources;
 pub mod spec;
 pub mod task;
 pub mod time;
