@@ -97,6 +97,7 @@
 | BL-094 | Agent model routing optimization — downgrade misaligned agents to Sonnet/Haiku | — | HIGH | /spec refactor | implemented | 2026-03-28 |
 | BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
+| BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 
 ## Dependency Graph
 
@@ -145,12 +146,14 @@ BL-093 → BL-065 (memory consolidation uses flock for concurrent writes)
 BL-094 → BL-096 (model routing optimization needs cost tracking for before/after)
 BL-095 → BL-096 (thinking tuning needs cost tracking for before/after)
 BL-096 → BL-092 (cost tracking shares ~/.ecc/logs/ infrastructure with structured logs)
+BL-097 → BL-065 (in-work filtering relies on session identity from worktree isolation)
+BL-097 → BL-066 (extends deterministic backlog management with transient lock files)
 ```
 
 ## Stats
 
-- **Total:** 90
-- **Open:** 38
+- **Total:** 91
+- **Open:** 39
 - **In-progress:** 0
 - **Implemented:** 48
 - **Archived:** 4
