@@ -214,4 +214,212 @@ mod tests {
         assert_eq!(map.get(&PcId(1)), Some(&vec!["src/shared.rs".to_owned()]));
         assert_eq!(map.get(&PcId(2)), Some(&vec!["src/shared.rs".to_owned()]));
     }
+
+    // ---------- compute_wave_plan tests ----------
+
+    // PC-011: Empty PC list returns empty wave plan
+    #[test]
+    fn wave_empty_pcs() {
+        let plan = compute_wave_plan(&[], &[], 4);
+        assert_eq!(plan.waves, vec![]);
+        assert_eq!(plan.total_pcs, 0);
+        assert_eq!(plan.max_per_wave, 4);
+    }
+
+    // PC-010: Single PC produces one wave
+    #[test]
+    fn wave_single_pc() {
+        let pcs = vec![make_pc(1, vec![ac(1, 1)])];
+        let fcs = vec![make_file_change(1, "a.rs", "AC-001.1")];
+        let plan = compute_wave_plan(&pcs, &fcs, 4);
+        assert_eq!(plan.waves.len(), 1);
+        assert_eq!(plan.waves[0].pc_ids, vec![PcId(1)]);
+        assert_eq!(plan.total_pcs, 1);
+    }
+
+    // PC-008: No-overlap PCs grouped in waves of max 4 (non-adjacent)
+    #[test]
+    fn wave_no_overlap_max_four() {
+        // 4 independent PCs (each touches a unique file) -> all in one wave
+        let pcs = vec![
+            make_pc(1, vec![ac(1, 1)]),
+            make_pc(2, vec![ac(2, 1)]),
+            make_pc(3, vec![ac(3, 1)]),
+            make_pc(4, vec![ac(4, 1)]),
+        ];
+        let fcs = vec![
+            make_file_change(1, "a.rs", "AC-001.1"),
+            make_file_change(2, "b.rs", "AC-002.1"),
+            make_file_change(3, "c.rs", "AC-003.1"),
+            make_file_change(4, "d.rs", "AC-004.1"),
+        ];
+        let plan = compute_wave_plan(&pcs, &fcs, 4);
+        assert_eq!(plan.waves.len(), 1, "4 independent PCs should fit in one wave");
+        assert_eq!(plan.waves[0].pc_ids, vec![PcId(1), PcId(2), PcId(3), PcId(4)]);
+    }
+
+    // PC-013: >4 independent PCs split into multiple waves
+    #[test]
+    fn wave_split_over_four() {
+        // 5 independent PCs -> wave1 has 4, wave2 has 1
+        let pcs = vec![
+            make_pc(1, vec![ac(1, 1)]),
+            make_pc(2, vec![ac(2, 1)]),
+            make_pc(3, vec![ac(3, 1)]),
+            make_pc(4, vec![ac(4, 1)]),
+            make_pc(5, vec![ac(5, 1)]),
+        ];
+        let fcs = vec![
+            make_file_change(1, "a.rs", "AC-001.1"),
+            make_file_change(2, "b.rs", "AC-002.1"),
+            make_file_change(3, "c.rs", "AC-003.1"),
+            make_file_change(4, "d.rs", "AC-004.1"),
+            make_file_change(5, "e.rs", "AC-005.1"),
+        ];
+        let plan = compute_wave_plan(&pcs, &fcs, 4);
+        assert_eq!(plan.waves.len(), 2);
+        assert_eq!(plan.waves[0].pc_ids.len(), 4);
+        assert_eq!(plan.waves[1].pc_ids.len(), 1);
+    }
+
+    // PC-014: max_per_wave parameter respected
+    #[test]
+    fn wave_custom_max() {
+        // 6 independent PCs with max_per_wave=2 -> 3 waves of 2
+        let pcs: Vec<PassCondition> = (1u16..=6)
+            .map(|i| make_pc(i, vec![ac(i, 1)]))
+            .collect();
+        let fcs: Vec<FileChange> = (1u16..=6)
+            .map(|i| make_file_change(i, &format!("f{i}.rs"), &format!("AC-{i:03}.1")))
+            .collect();
+        let plan = compute_wave_plan(&pcs, &fcs, 2);
+        assert_eq!(plan.waves.len(), 3);
+        assert!(plan.waves.iter().all(|w| w.pc_ids.len() <= 2));
+        assert_eq!(plan.max_per_wave, 2);
+    }
+
+    // PC-015: Input order preserved: 5 independent PCs produce [A,B,C,D] then [E]
+    #[test]
+    fn wave_preserves_input_order() {
+        let pcs = vec![
+            make_pc(1, vec![ac(1, 1)]),
+            make_pc(2, vec![ac(2, 1)]),
+            make_pc(3, vec![ac(3, 1)]),
+            make_pc(4, vec![ac(4, 1)]),
+            make_pc(5, vec![ac(5, 1)]),
+        ];
+        let fcs = vec![
+            make_file_change(1, "a.rs", "AC-001.1"),
+            make_file_change(2, "b.rs", "AC-002.1"),
+            make_file_change(3, "c.rs", "AC-003.1"),
+            make_file_change(4, "d.rs", "AC-004.1"),
+            make_file_change(5, "e.rs", "AC-005.1"),
+        ];
+        let plan = compute_wave_plan(&pcs, &fcs, 4);
+        assert_eq!(plan.waves.len(), 2);
+        assert_eq!(
+            plan.waves[0].pc_ids,
+            vec![PcId(1), PcId(2), PcId(3), PcId(4)]
+        );
+        assert_eq!(plan.waves[1].pc_ids, vec![PcId(5)]);
+    }
+
+    // PC-009: All-overlap PCs fully sequential (one per wave)
+    #[test]
+    fn wave_all_overlap_sequential() {
+        // 3 PCs all touching the same file -> must each be in their own wave
+        let pcs = vec![
+            make_pc(1, vec![ac(1, 1)]),
+            make_pc(2, vec![ac(1, 1)]),
+            make_pc(3, vec![ac(1, 1)]),
+        ];
+        let fcs = vec![make_file_change(1, "shared.rs", "AC-001.1")];
+        let plan = compute_wave_plan(&pcs, &fcs, 4);
+        assert_eq!(plan.waves.len(), 3, "each overlapping PC gets its own wave");
+        for (i, wave) in plan.waves.iter().enumerate() {
+            assert_eq!(wave.pc_ids.len(), 1, "wave {i} should have exactly 1 PC");
+        }
+    }
+
+    // PC-012: Non-adjacent grouping: A(file1) and D(file3) share wave despite B(file1,file2) between
+    #[test]
+    fn wave_non_adjacent_grouping() {
+        // A: file1, B: file1+file2, C: file2, D: file3
+        // A and D share no files -> they can be in the same wave (non-adjacent)
+        let pc_a = make_pc(1, vec![ac(1, 1)]);
+        let pc_b = make_pc(2, vec![ac(1, 1), ac(2, 1)]);
+        let pc_c = make_pc(3, vec![ac(2, 1)]);
+        let pc_d = make_pc(4, vec![ac(3, 1)]);
+        let pcs = vec![pc_a, pc_b, pc_c, pc_d];
+        let fcs = vec![
+            make_file_change(1, "file1.rs", "AC-001.1"),
+            make_file_change(2, "file2.rs", "AC-002.1"),
+            make_file_change(3, "file3.rs", "AC-003.1"),
+        ];
+        let plan = compute_wave_plan(&pcs, &fcs, 4);
+
+        // A is in wave 1. B overlaps A -> wave 2. C overlaps B -> wave 3.
+        // D has no overlap with wave 1 (file1 only), so D joins wave 1.
+        let wave1 = &plan.waves[0];
+        assert!(
+            wave1.pc_ids.contains(&PcId(1)) && wave1.pc_ids.contains(&PcId(4)),
+            "A and D should be in the same wave (non-adjacent grouping)"
+        );
+    }
+
+    // PC-016: Identical file sets assigned to different waves
+    #[test]
+    fn wave_identical_files_different_waves() {
+        // 3 PCs all touching the same unique file -> each in a separate wave
+        // AC-002.9: identical file sets -> different waves, earlier-indexed first
+        let pcs = vec![
+            make_pc(1, vec![ac(1, 1)]),
+            make_pc(2, vec![ac(1, 1)]),
+            make_pc(3, vec![ac(1, 1)]),
+        ];
+        let fcs = vec![make_file_change(1, "same.rs", "AC-001.1")];
+        let plan = compute_wave_plan(&pcs, &fcs, 4);
+        assert_eq!(plan.waves.len(), 3);
+        assert_eq!(plan.waves[0].pc_ids, vec![PcId(1)]);
+        assert_eq!(plan.waves[1].pc_ids, vec![PcId(2)]);
+        assert_eq!(plan.waves[2].pc_ids, vec![PcId(3)]);
+    }
+
+    // PC-022: max_per_wave=1 produces fully sequential waves (one PC per wave)
+    #[test]
+    fn wave_max_one_sequential() {
+        let pcs = vec![
+            make_pc(1, vec![ac(1, 1)]),
+            make_pc(2, vec![ac(2, 1)]),
+            make_pc(3, vec![ac(3, 1)]),
+        ];
+        let fcs = vec![
+            make_file_change(1, "a.rs", "AC-001.1"),
+            make_file_change(2, "b.rs", "AC-002.1"),
+            make_file_change(3, "c.rs", "AC-003.1"),
+        ];
+        let plan = compute_wave_plan(&pcs, &fcs, 1);
+        assert_eq!(plan.waves.len(), 3, "max_per_wave=1 means one PC per wave");
+        for wave in &plan.waves {
+            assert_eq!(wave.pc_ids.len(), 1);
+        }
+        assert_eq!(plan.max_per_wave, 1);
+    }
+
+    // PC-023: max_per_wave=0 treated as max_per_wave=1 (no panic)
+    #[test]
+    fn wave_max_zero_safe() {
+        let pcs = vec![
+            make_pc(1, vec![ac(1, 1)]),
+            make_pc(2, vec![ac(2, 1)]),
+        ];
+        let fcs = vec![
+            make_file_change(1, "a.rs", "AC-001.1"),
+            make_file_change(2, "b.rs", "AC-002.1"),
+        ];
+        // max_per_wave=0 must not panic and must behave like max_per_wave=1
+        let plan = compute_wave_plan(&pcs, &fcs, 0);
+        assert_eq!(plan.waves.len(), 2, "max_per_wave=0 treated as 1 -> one PC per wave");
+        assert_eq!(plan.max_per_wave, 1);
+    }
 }
