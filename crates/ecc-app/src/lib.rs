@@ -18,6 +18,7 @@ pub mod install;
 pub mod merge;
 pub mod session;
 pub mod smart_merge;
+pub mod sources;
 pub mod validate;
 pub mod validate_design;
 pub mod validate_spec;
