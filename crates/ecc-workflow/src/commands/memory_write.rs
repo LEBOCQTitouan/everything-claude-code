@@ -60,14 +60,21 @@ pub fn run(kind: &str, args: &[String], project_dir: &Path) -> WorkflowOutput {
 
 /// Resolve `~/.claude/projects/<project-hash>/memory/` for a given project dir.
 ///
-/// The project hash is the absolute path with the leading `/` stripped and
-/// remaining `/` replaced with `-`.
+/// Uses `ecc_flock::resolve_repo_root` to find the main repo root (even from
+/// a worktree), ensuring all sessions produce the same project hash.
+/// Returns an error if the resolved root is not a git repository.
 fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Error> {
     let home = std::env::var("HOME").map_err(|_| anyhow::anyhow!("HOME env var not set"))?;
 
-    // Canonicalize to get absolute path; fall back to as-is if that fails.
-    let abs = std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
-    let abs_str = abs.to_string_lossy();
+    let repo_root = ecc_flock::resolve_repo_root(project_dir);
+    if !repo_root.join(".git").exists() {
+        return Err(anyhow::anyhow!(
+            "not a git repository: {} (resolved from {})",
+            repo_root.display(),
+            project_dir.display(),
+        ));
+    }
+    let abs_str = repo_root.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
 
     Ok(PathBuf::from(home)
