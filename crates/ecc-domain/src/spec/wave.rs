@@ -61,10 +61,8 @@ pub fn build_pc_file_map(
                 }
             }
         }
-        // Only insert PCs that have matches (no empty vec for non-matching PCs yet)
-        if !files.is_empty() {
-            map.insert(pc.id.clone(), files);
-        }
+        // Always insert — PCs with no matches get empty Vec (AC-001.4)
+        map.insert(pc.id.clone(), files);
     }
 
     map
