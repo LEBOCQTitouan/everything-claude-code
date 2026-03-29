@@ -12,6 +12,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Adversarial challenge for audit commands (BL-083)**: New `audit-challenger` agent (Sonnet) independently re-interrogates codebase after each domain audit, searches web for best practices, produces challenged findings (confirmed/refuted/amended). Disagreements shown to user. Graceful degradation on failure. Always-on across all 10 `/audit-*` commands + audit-orchestrator.
 
+### Deterministic Wave Grouping (BL-070)
+
+- **`ecc-workflow wave-plan <design-path>`**: Parse design file, build PC-to-files mapping via AC cross-reference, compute file overlap, group PCs into parallel execution waves using greedy first-fit bin-packing with non-adjacent grouping (max 4 per wave).
+- **Domain module `ecc-domain::spec::wave`**: Pure `(&[PassCondition], &[FileChange], usize) -> WavePlan` with zero I/O imports. Normalizes backtick-wrapped file paths, deduplicates, handles non-parseable spec_refs gracefully.
+- **ADR-032**: Deterministic wave grouping algorithm decision.
+
 ## v4.3.1
 
 ### Fixed
