@@ -94,6 +94,11 @@ enum Commands {
         #[command(subcommand)]
         subcmd: BacklogCmd,
     },
+    /// Deterministic task synchronization subcommands.
+    Tasks {
+        #[command(subcommand)]
+        subcmd: TasksCmd,
+    },
 }
 
 #[derive(Subcommand)]
@@ -108,6 +113,35 @@ enum BacklogCmd {
         target: String,
         #[arg(long, default_value = "")]
         tags: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum TasksCmd {
+    /// Parse tasks.md and output JSON summary.
+    Sync {
+        /// Path to tasks.md file
+        path: String,
+    },
+    /// Atomically update a PC's status in tasks.md.
+    Update {
+        /// Path to tasks.md file
+        path: String,
+        /// Entry ID (e.g., "PC-001" or "E2E tests")
+        id: String,
+        /// New status (pending, red, green, done, failed)
+        status: String,
+    },
+    /// Generate tasks.md from a design file's PC table.
+    Init {
+        /// Path to design.md file
+        design_path: String,
+        /// Output path for tasks.md
+        #[arg(long)]
+        output: String,
+        /// Overwrite existing output file
+        #[arg(long)]
+        force: bool,
     },
 }
 
@@ -185,6 +219,17 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
                 target,
                 tags,
             } => commands::backlog::run(&title, &scope, &target, &tags, &project_dir()),
+        },
+        Commands::Tasks { subcmd } => match subcmd {
+            TasksCmd::Sync { path } => commands::tasks::run_sync(&path, &project_dir()),
+            TasksCmd::Update { path, id, status } => {
+                commands::tasks::run_update(&path, &id, &status, &project_dir())
+            }
+            TasksCmd::Init {
+                design_path,
+                output,
+                force,
+            } => commands::tasks::run_init(&design_path, &output, force, &project_dir()),
         },
     }
 }
