@@ -34,14 +34,48 @@ pub fn strip_backticks(s: &str) -> String {
 /// Algorithm:
 /// 1. For each FileChange, parse its `spec_ref` into AcId list (skip unparseable silently).
 /// 2. For each PC, check if any `verifies_acs` matches any FileChange's parsed ACs.
-/// 3. If match: add that FileChange's file (stripped + trimmed) to the PC's list.
+/// 3. If match: add that FileChange's file (raw-trimmed) to the PC's list.
 /// 4. Deduplicate files per PC.
 /// 5. PCs with no matches get an empty Vec.
 pub fn build_pc_file_map(
     pcs: &[PassCondition],
     file_changes: &[FileChange],
 ) -> HashMap<PcId, Vec<String>> {
-    todo!("build_pc_file_map not yet implemented")
+    // Parse each FileChange's spec_ref into a list of AcIds (skip unparseable silently)
+    let fc_acs: Vec<Vec<AcId>> = file_changes
+        .iter()
+        .map(|fc| parse_spec_ref(&fc.spec_ref))
+        .collect();
+
+    let mut map: HashMap<PcId, Vec<String>> = HashMap::new();
+
+    for pc in pcs {
+        let mut files: Vec<String> = Vec::new();
+        for (fc, acs) in file_changes.iter().zip(fc_acs.iter()) {
+            // Check if any of the PC's verifies_acs matches any of this FileChange's ACs
+            let matches = pc.verifies_acs.iter().any(|pa| acs.contains(pa));
+            if matches {
+                let file = fc.file.trim().to_owned();
+                if !files.contains(&file) {
+                    files.push(file);
+                }
+            }
+        }
+        // Only insert PCs that have matches (no empty vec for non-matching PCs yet)
+        if !files.is_empty() {
+            map.insert(pc.id.clone(), files);
+        }
+    }
+
+    map
+}
+
+/// Parse a spec_ref string into a Vec<AcId>, silently skipping non-parseable parts.
+fn parse_spec_ref(spec_ref: &str) -> Vec<AcId> {
+    spec_ref
+        .split([',', ' '])
+        .filter_map(|part| AcId::parse(part.trim()).ok())
+        .collect()
 }
 
 #[cfg(test)]
