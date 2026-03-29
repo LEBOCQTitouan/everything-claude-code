@@ -175,10 +175,10 @@ BL-107 → BL-083 (adversarial challenge phase complements self-improvement sugg
 
 ## Stats
 
-- **Total:** 102
-- **Open:** 50
+- **Total:** 107
+- **Open:** 41
 - **In-progress:** 0
-- **Implemented:** 48
+- **Implemented:** 62
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)
