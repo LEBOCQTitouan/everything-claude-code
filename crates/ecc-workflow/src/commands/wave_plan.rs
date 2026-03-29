@@ -10,12 +10,112 @@
 
 use std::path::Path;
 
+use serde::Serialize;
+
 use crate::output::WorkflowOutput;
+
+/// JSON output schema for the wave plan.
+#[derive(Serialize)]
+struct WavePlanOutput {
+    status: &'static str,
+    waves: Vec<WaveOutput>,
+    total_pcs: usize,
+    max_per_wave: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    warnings: Option<Vec<String>>,
+}
+
+/// JSON representation of a single wave.
+#[derive(Serialize)]
+struct WaveOutput {
+    id: u16,
+    pcs: Vec<String>,
+    files: Vec<String>,
+}
 
 /// Run the `wave-plan` subcommand.
 pub fn run(design_path: &str, project_dir: &Path) -> WorkflowOutput {
-    // Stub — not yet implemented.
-    WorkflowOutput::block("not implemented")
+    match run_inner(design_path, project_dir) {
+        Ok(output) => output,
+        Err(e) => WorkflowOutput::block(format!("wave-plan failed: {e}")),
+    }
+}
+
+fn run_inner(design_path: &str, project_dir: &Path) -> Result<WorkflowOutput, anyhow::Error> {
+    let path = std::path::Path::new(design_path);
+
+    // AC-003.4: Check existence first, then canonicalize.
+    if !path.exists() {
+        anyhow::bail!("design file not found: {design_path}");
+    }
+
+    // AC-003.5: Resolve and check for path traversal.
+    let resolved = std::fs::canonicalize(path)?;
+    let project_root = std::fs::canonicalize(project_dir)
+        .unwrap_or_else(|_| project_dir.to_path_buf());
+    if !resolved.starts_with(&project_root) {
+        anyhow::bail!("path escapes project directory: {design_path}");
+    }
+
+    let content = std::fs::read_to_string(&resolved)?;
+
+    // AC-003.3: Parse PC table — block if missing.
+    let pc_report = ecc_domain::spec::pc::parse_pcs(&content)
+        .map_err(|e| anyhow::anyhow!("no PC table: {e}"))?;
+
+    // AC-003.6: Parse File Changes — warn if missing.
+    let (file_changes, fc_warnings) = ecc_domain::spec::ordering::parse_file_changes(&content);
+    let has_file_changes = !file_changes.is_empty();
+
+    // Compute wave plan.
+    let plan = ecc_domain::spec::wave::compute_wave_plan(&pc_report.pcs, &file_changes, 4);
+
+    // Build waves output.
+    let waves: Vec<WaveOutput> = plan
+        .waves
+        .iter()
+        .map(|w| WaveOutput {
+            id: w.id,
+            pcs: w.pc_ids.iter().map(|id| id.to_string()).collect(),
+            files: w.files.clone(),
+        })
+        .collect();
+
+    let (status_str, warnings) = if has_file_changes {
+        ("pass", None)
+    } else {
+        (
+            "warn",
+            Some(
+                fc_warnings
+                    .into_iter()
+                    .filter(|w| !w.is_empty())
+                    .chain(std::iter::once(
+                        "no File Changes table found — all PCs treated as independent"
+                            .to_owned(),
+                    ))
+                    .collect::<std::collections::HashSet<_>>()
+                    .into_iter()
+                    .collect(),
+            ),
+        )
+    };
+
+    let output = WavePlanOutput {
+        status: status_str,
+        waves,
+        total_pcs: plan.total_pcs,
+        max_per_wave: plan.max_per_wave,
+        warnings,
+    };
+
+    let json = serde_json::to_string(&output)?;
+
+    if has_file_changes {
+        Ok(WorkflowOutput::pass(json))
+    } else {
+        Ok(WorkflowOutput::warn(json))
+    }
 }
 
 #[cfg(test)]
