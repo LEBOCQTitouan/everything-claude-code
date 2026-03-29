@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.4.0
+
+### Changed
+
+- **Agent model routing optimization (BL-094)**: 14 agents re-tiered per Anthropic guidance — drift-checker to Haiku, 10 language reviewers + doc-validator + web-scout + doc-orchestrator to Sonnet. 18 agents remain on Opus (architecture, security, adversarial, planning). `performance.md` updated with three-tier routing policy. ADR 0030 created. Est. 30-40% cost reduction on review-heavy sessions.
+
 ## v4.3.0
 
 ### Audit Remediation (24 smells, 8 user stories)
