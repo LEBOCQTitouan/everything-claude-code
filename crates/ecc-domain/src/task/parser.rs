@@ -449,6 +449,92 @@ mod tests {
         }
     }
 
+    pub mod old_format {
+        use super::*;
+
+        fn old_format_input() -> &'static str {
+            r#"# Tasks: Old format test
+
+## Pass Conditions
+
+- [ ] PC-001: Full TDD cycle | `cargo test` | pending@2026-03-29T10:00:00Z | red@2026-03-29T10:05:00Z | done@2026-03-29T10:15:00Z
+"#
+        }
+
+        #[test]
+        fn old_pipe_separator_reads_trail_segments() {
+            let report =
+                parse_tasks(old_format_input()).expect("should parse old-format tasks.md");
+            let pc1 = report
+                .entries
+                .iter()
+                .find(|e| matches!(&e.kind, EntryKind::Pc(id) if id.number() == 1))
+                .expect("PC-001 must be present");
+            assert_eq!(
+                pc1.trail.len(),
+                3,
+                "expected 3 trail segments from old pipe-separated format, got {}",
+                pc1.trail.len()
+            );
+        }
+
+        #[test]
+        fn old_pipe_separator_trail_statuses_in_order() {
+            let report =
+                parse_tasks(old_format_input()).expect("should parse old-format tasks.md");
+            let pc1 = &report.entries[0];
+            let statuses: Vec<TaskStatus> = pc1.trail.iter().map(|s| s.status).collect();
+            assert_eq!(
+                statuses,
+                vec![TaskStatus::Pending, TaskStatus::Red, TaskStatus::Done],
+                "trail segments should be in order: pending, red, done"
+            );
+        }
+
+        #[test]
+        fn old_pipe_separator_post_tdd_trail() {
+            let input = r#"# Tasks: Old format PostTDD
+
+## Post-TDD
+
+- [ ] E2E tests | pending@2026-03-29T10:00:00Z | red@2026-03-29T10:05:00Z
+"#;
+            let report = parse_tasks(input).expect("should parse old-format PostTDD");
+            let e2e = report
+                .entries
+                .iter()
+                .find(|e| matches!(&e.kind, EntryKind::PostTdd(label) if label == "E2E tests"))
+                .expect("E2E tests entry must be present");
+            assert_eq!(
+                e2e.trail.len(),
+                2,
+                "expected 2 trail segments in old PostTDD format, got {}",
+                e2e.trail.len()
+            );
+        }
+    }
+
+    pub mod empty {
+        use super::*;
+
+        #[test]
+        fn header_only_returns_zero_entries() {
+            let input = r#"# Tasks: Some Feature
+
+## Pass Conditions
+
+## Post-TDD
+"#;
+            let report = parse_tasks(input).expect("header-only tasks.md should parse without error");
+            assert_eq!(report.total, 0, "expected zero total entries");
+            assert_eq!(report.completed, 0, "expected zero completed");
+            assert_eq!(report.pending, 0, "expected zero pending");
+            assert_eq!(report.in_progress, 0, "expected zero in_progress");
+            assert_eq!(report.failed, 0, "expected zero failed");
+            assert!(report.entries.is_empty(), "expected empty entries vec");
+        }
+    }
+
     pub mod malformed {
         use super::*;
 
