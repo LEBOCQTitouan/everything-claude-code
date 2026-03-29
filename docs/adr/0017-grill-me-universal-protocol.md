@@ -4,7 +4,7 @@ Date: 2026-03-23
 
 ## Status
 
-Accepted
+Partially superseded by ADR-0033 (2026-03-29). The 25-question cap is removed and depth profiles are introduced. The 5-stage structure and AskUserQuestion enforcement remain in effect.
 
 ## Context
 
