@@ -199,4 +199,23 @@ mod tests {
             "error should be InvalidTransition"
         );
     }
+
+    #[test]
+    fn not_found() {
+        let result = apply_update(
+            fixture_pending(),
+            "PC-999",
+            TaskStatus::Red,
+            "2026-03-29T14:01:00Z",
+        );
+
+        assert!(
+            result.is_err(),
+            "nonexistent entry PC-999 should return an error, got Ok"
+        );
+        assert!(
+            matches!(result.unwrap_err(), TaskError::EntryNotFound { .. }),
+            "error should be EntryNotFound"
+        );
+    }
 }
