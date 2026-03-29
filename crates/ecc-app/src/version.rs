@@ -10,3 +10,19 @@ pub fn version() -> String {
         base.to_owned()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::version;
+    use ecc_test_support::MockEnvironment;
+
+    #[test]
+    fn version_dev_mode_via_trait() {
+        let env = MockEnvironment::new().with_var("ECC_DEV_MODE", "1");
+        let result = version(&env);
+        assert!(
+            result.ends_with("-dev"),
+            "expected version to end with -dev, got: {result}"
+        );
+    }
+}
