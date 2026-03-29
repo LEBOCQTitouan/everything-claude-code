@@ -3,3 +3,4 @@
 //! No I/O: all functions operate on typed structs and `&str`.
 
 pub mod entry;
+pub mod registry;
