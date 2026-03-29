@@ -177,7 +177,16 @@ fn parse_trail_segment(raw: &str, line_no: usize) -> Result<StatusSegment, TaskE
     // Extract optional `[error detail]` from the timestamp remainder
     let (timestamp, error_detail) = if let Some(bracket_pos) = rest.find('[') {
         let ts = rest[..bracket_pos].trim().to_owned();
-        let detail_end = rest.rfind(']').unwrap_or(rest.len() - 1);
+        let detail_end = rest.rfind(']').ok_or_else(|| TaskError::ParseError {
+            line: line_no,
+            message: format!("unclosed '[' in trail segment: {raw}"),
+        })?;
+        if bracket_pos + 1 > detail_end {
+            return Err(TaskError::ParseError {
+                line: line_no,
+                message: format!("malformed error detail brackets in: {raw}"),
+            });
+        }
         let detail = rest[bracket_pos + 1..detail_end].to_owned();
         (ts, Some(detail))
     } else {
