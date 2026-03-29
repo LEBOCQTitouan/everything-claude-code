@@ -57,17 +57,19 @@ mod tests {
     use tempfile::TempDir;
 
     /// A minimal valid tasks.md fixture with one pending PC and one done PC.
-    fn valid_tasks_md() -> &'static str {
+    fn valid_tasks_md() -> String {
+        // Uses the parser's expected format: `PC-NNN: <desc> | \`cmd\` | <trail>`
         "# Tasks\n\
          \n\
          ## Pass Conditions\n\
          \n\
-         - [ ] PC-001 — Implement feature A — `cargo test pc001` — pending@2026-03-29T10:00:00Z\n\
-         - [x] PC-002 — Implement feature B — `cargo test pc002` — pending@2026-03-29T10:00:00Z → done@2026-03-29T11:00:00Z\n\
+         - [ ] PC-001: Implement feature A | `cargo test pc001` | pending@2026-03-29T10:00:00Z\n\
+         - [x] PC-002: Implement feature B | `cargo test pc002` | pending@2026-03-29T10:00:00Z \u{2192} done@2026-03-29T11:00:00Z\n\
          \n\
          ## Post-TDD\n\
          \n\
-         - [ ] E2E tests — pending@2026-03-29T10:00:00Z\n"
+         - [ ] E2E tests | pending@2026-03-29T10:00:00Z\n"
+            .to_owned()
     }
 
     // PC-017: tasks sync outputs JSON with correct arrays and counters for valid tasks.md
@@ -133,11 +135,11 @@ mod tests {
     fn sync_malformed() {
         let tmp = TempDir::new().unwrap();
         let tasks_path = tmp.path().join("tasks.md");
-        // Write garbage that looks like a checklist item but has an unparseable status trail
+        // Write a line that looks like a PC entry but has a malformed trail segment
         std::fs::write(
             &tasks_path,
             "## Pass Conditions\n\
-             - [ ] NOTAPC — description — `cmd` — !!!INVALID_STATUS@timestamp\n",
+             - [ ] PC-001: description | `cmd` | BADTRAIL_NO_AT_SIGN\n",
         )
         .unwrap();
 
