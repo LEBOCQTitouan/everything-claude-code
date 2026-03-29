@@ -4,6 +4,9 @@ use ecc_domain::spec::{
     AcId, DesignValidationOutput, OrderingViolation, check_coverage, check_ordering, parse_acs,
     parse_file_changes, parse_pcs,
 };
+
+/// Result of spec coverage check: `(uncovered_acs, phantom_acs, errors, warnings)`.
+type CoverageCheckResult = (Vec<AcId>, Vec<AcId>, Vec<String>, Vec<String>);
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
@@ -76,7 +79,7 @@ fn check_spec_coverage(
     terminal: &dyn TerminalIO,
     spec_path: &str,
     pcs: &[ecc_domain::spec::PassCondition],
-) -> Result<(Vec<AcId>, Vec<AcId>, Vec<String>, Vec<String>), Box<dyn std::error::Error>> {
+) -> Result<CoverageCheckResult, Box<dyn std::error::Error>> {
     let spec_content = match fs.read_to_string(Path::new(spec_path)) {
         Ok(c) => c,
         Err(e) => {

@@ -145,6 +145,134 @@ fn resolve_choice(
     }
 }
 
+/// Apply an Accept choice for a skill directory.
+fn apply_skill_accept(
+    ctx: &MergeContext,
+    skill_name: &str,
+    src_skill: &Path,
+    dest_skill: &Path,
+    is_new: bool,
+    dry_run: bool,
+    report: &mut ecc_domain::config::merge::MergeReport,
+) -> bool {
+    if !dry_run
+        && let Err(e) = copy_dir_recursive(ctx.fs, src_skill, dest_skill)
+    {
+        report.errors.push(format!("{skill_name}: {e}"));
+        return false;
+    }
+    if is_new {
+        report.added.push(skill_name.to_owned());
+    } else {
+        report.updated.push(skill_name.to_owned());
+    }
+    true
+}
+
+/// Paths for a single skill directory and its SKILL.md files.
+struct SkillPaths<'a> {
+    skill_name: &'a str,
+    src_skill: &'a Path,
+    dest_skill: &'a Path,
+    src_skill_md: &'a Path,
+    dest_skill_md: &'a Path,
+}
+
+/// Apply a SmartMerge choice for a skill directory.
+fn apply_skill_smart_merge(
+    ctx: &MergeContext,
+    paths: &SkillPaths<'_>,
+    dry_run: bool,
+    report: &mut ecc_domain::config::merge::MergeReport,
+) {
+    let (skill_name, src_skill, dest_skill, src_skill_md, dest_skill_md) = (
+        paths.skill_name,
+        paths.src_skill,
+        paths.dest_skill,
+        paths.src_skill_md,
+        paths.dest_skill_md,
+    );
+    let existing = ctx.fs.read_to_string(dest_skill_md).unwrap_or_default();
+    let incoming = ctx.fs.read_to_string(src_skill_md).unwrap_or_default();
+    let result = smart_merge::smart_merge(ctx.shell, &existing, &incoming, &format!("{skill_name}/SKILL.md"));
+    if result.success {
+        if let Some(merged) = &result.merged {
+            if !dry_run {
+                if let Err(e) = copy_dir_recursive(ctx.fs, src_skill, dest_skill) {
+                    report.errors.push(format!("{skill_name}: {e}"));
+                    return;
+                }
+                if let Err(e) = ctx.fs.write(dest_skill_md, merged) {
+                    report.errors.push(format!("{skill_name}/SKILL.md: write error: {e}"));
+                    return;
+                }
+            }
+            report.smart_merged.push(skill_name.to_owned());
+        }
+    } else {
+        let err = result.error.unwrap_or_else(|| "unknown".into());
+        report.errors.push(format!("{skill_name}: smart merge failed: {err}"));
+    }
+}
+
+/// Process a single skill: determine if update is needed, prompt, apply choice.
+fn process_one_skill(
+    ctx: &MergeContext,
+    src_dir: &Path,
+    dest_dir: &Path,
+    skill_name: &str,
+    progress: &str,
+    options: &mut MergeOptions,
+    report: &mut ecc_domain::config::merge::MergeReport,
+) {
+    let src_skill = src_dir.join(skill_name);
+    let dest_skill = dest_dir.join(skill_name);
+    let src_skill_md = src_skill.join("SKILL.md");
+    let dest_skill_md = dest_skill.join("SKILL.md");
+
+    let is_new = !ctx.fs.exists(&dest_skill);
+    let needs_update = is_new || {
+        let src_content = ctx.fs.read_to_string(&src_skill_md).unwrap_or_default();
+        let dest_content = ctx.fs.read_to_string(&dest_skill_md).unwrap_or_default();
+        merge::contents_differ(&src_content, &dest_content)
+    };
+
+    if !needs_update {
+        report.unchanged.push(skill_name.to_owned());
+        return;
+    }
+
+    let file = FileToReview {
+        filename: skill_name.to_owned(),
+        src_path: src_skill_md.clone(),
+        dest_path: dest_skill_md.clone(),
+        is_new,
+    };
+    let choice = resolve_choice(ctx, &file, progress, options);
+    match choice {
+        ReviewChoice::Accept => {
+            apply_skill_accept(ctx, skill_name, &src_skill, &dest_skill, is_new, options.dry_run, report);
+        }
+        ReviewChoice::Keep => {
+            report.skipped.push(skill_name.to_owned());
+        }
+        ReviewChoice::SmartMerge => {
+            apply_skill_smart_merge(
+                ctx,
+                &SkillPaths {
+                    skill_name,
+                    src_skill: &src_skill,
+                    dest_skill: &dest_skill,
+                    src_skill_md: &src_skill_md,
+                    dest_skill_md: &dest_skill_md,
+                },
+                options.dry_run,
+                report,
+            );
+        }
+    }
+}
+
 /// Merge skills directories.
 ///
 /// Skills are directories containing a SKILL.md. The SKILL.md content is used
@@ -177,93 +305,12 @@ pub fn merge_skills(
 
     let total = skill_dirs.len();
     for (i, skill_name) in skill_dirs.iter().enumerate() {
-        let src_skill = src_dir.join(skill_name);
-        let dest_skill = dest_dir.join(skill_name);
-        let src_skill_md = src_skill.join("SKILL.md");
-        let dest_skill_md = dest_skill.join("SKILL.md");
-
-        let is_new = !ctx.fs.exists(&dest_skill);
-        let needs_update = if is_new {
-            true
-        } else {
-            let src_content = ctx.fs.read_to_string(&src_skill_md).unwrap_or_default();
-            let dest_content = ctx.fs.read_to_string(&dest_skill_md).unwrap_or_default();
-            merge::contents_differ(&src_content, &dest_content)
-        };
-
-        if !needs_update {
-            report.unchanged.push(skill_name.clone());
-            continue;
-        }
-
-        let file = FileToReview {
-            filename: skill_name.clone(),
-            src_path: src_skill_md.clone(),
-            dest_path: dest_skill_md.clone(),
-            is_new,
-        };
-
         let progress = format!("[{}/{}]", i + 1, total);
-        let choice = resolve_choice(ctx, &file, &progress, options);
-
-        match choice {
-            ReviewChoice::Accept => {
-                if !options.dry_run
-                    && let Err(e) = copy_dir_recursive(ctx.fs, &src_skill, &dest_skill)
-                {
-                    report.errors.push(format!("{skill_name}: {e}"));
-                    continue;
-                }
-                if is_new {
-                    report.added.push(skill_name.clone());
-                } else {
-                    report.updated.push(skill_name.clone());
-                }
-            }
-            ReviewChoice::Keep => {
-                report.skipped.push(skill_name.clone());
-            }
-            ReviewChoice::SmartMerge => {
-                let existing = ctx.fs.read_to_string(&dest_skill_md).unwrap_or_default();
-                let incoming = ctx.fs.read_to_string(&src_skill_md).unwrap_or_default();
-                let result = smart_merge::smart_merge(
-                    ctx.shell,
-                    &existing,
-                    &incoming,
-                    &format!("{skill_name}/SKILL.md"),
-                );
-
-                if result.success {
-                    if let Some(merged) = &result.merged {
-                        if !options.dry_run {
-                            if let Err(e) = copy_dir_recursive(ctx.fs, &src_skill, &dest_skill) {
-                                report.errors.push(format!("{skill_name}: {e}"));
-                                continue;
-                            }
-                            if let Err(e) = ctx.fs.write(&dest_skill_md, merged) {
-                                report
-                                    .errors
-                                    .push(format!("{skill_name}/SKILL.md: write error: {e}"));
-                                continue;
-                            }
-                        }
-                        report.smart_merged.push(skill_name.clone());
-                    }
-                } else {
-                    let err = result.error.unwrap_or_else(|| "unknown".into());
-                    report
-                        .errors
-                        .push(format!("{skill_name}: smart merge failed: {err}"));
-                }
-            }
-        }
+        process_one_skill(ctx, src_dir, dest_dir, skill_name, &progress, options, &mut report);
     }
 
     if !report.added.is_empty() || !report.updated.is_empty() {
-        ctx.terminal.stdout_write(&format!(
-            "{}\n",
-            merge::format_merge_report("Skills", &report)
-        ));
+        ctx.terminal.stdout_write(&format!("{}\n", merge::format_merge_report("Skills", &report)));
     }
 
     report
