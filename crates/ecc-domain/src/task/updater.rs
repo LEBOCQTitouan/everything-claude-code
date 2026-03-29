@@ -66,7 +66,12 @@ pub fn apply_update(
 
         // Append ` → new_status@timestamp` to the line
         let new_segment = format!(" → {new_status}@{timestamp}");
-        let updated_line = format!("{line}{new_segment}");
+        let mut updated_line = format!("{line}{new_segment}");
+
+        // Flip checkbox to [x] when transitioning to Done (AC-004.2)
+        if new_status == TaskStatus::Done {
+            updated_line = updated_line.replacen("- [ ]", "- [x]", 1);
+        }
         *line = updated_line;
         // Done — reconstruct content (preserve trailing newline)
         let mut result = lines.join("\n");
