@@ -55,7 +55,7 @@ impl TaskStatus {
     ///
     /// - [`TaskError::SameState`] when `from == to`
     /// - [`TaskError::InvalidTransition`] when the transition is not allowed
-    pub fn can_transition(from: Self, to: Self, _is_post_tdd: bool) -> Result<(), TaskError> {
+    pub fn can_transition(from: Self, to: Self, is_post_tdd: bool) -> Result<(), TaskError> {
         // Same-state transitions are always rejected (AC-004.8)
         if from == to {
             return Err(TaskError::SameState {
@@ -63,11 +63,31 @@ impl TaskStatus {
             });
         }
 
-        // Stub: always reject — will be replaced in GREEN phase
-        Err(TaskError::InvalidTransition {
-            from: from.to_string(),
-            to: to.to_string(),
-        })
+        // FSM transition table
+        let allowed = match (from, to) {
+            // TDD cycle (AC-002.1, AC-002.2, AC-002.3)
+            (Self::Pending, Self::Red) => true,
+            (Self::Red, Self::Green) => true,
+            (Self::Green, Self::Done) => true,
+            // Failure paths (AC-002.6)
+            (Self::Red, Self::Failed) => true,
+            (Self::Green, Self::Failed) => true,
+            // Retry after failure (AC-002.7)
+            (Self::Failed, Self::Red) => true,
+            // Post-TDD entries skip TDD cycle (AC-002.8)
+            (Self::Pending, Self::Done) => is_post_tdd,
+            // Done is terminal (AC-002.5); all other combinations reject
+            _ => false,
+        };
+
+        if allowed {
+            Ok(())
+        } else {
+            Err(TaskError::InvalidTransition {
+                from: from.to_string(),
+                to: to.to_string(),
+            })
+        }
     }
 }
 
