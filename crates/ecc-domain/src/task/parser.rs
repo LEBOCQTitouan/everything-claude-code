@@ -144,7 +144,9 @@ fn parse_trail(trail_str: &str, line_no: usize) -> Result<Vec<StatusSegment>, Ta
     }
 
     let mut segments = Vec::new();
-    for raw in trail_str.split(" → ") {
+    // Support both new (`→`) and old (`|`) separator formats (AC-001.6).
+    let separator = if trail_str.contains(" → ") { " → " } else { " | " };
+    for raw in trail_str.split(separator) {
         let raw = raw.trim();
         if raw.is_empty() {
             continue;
