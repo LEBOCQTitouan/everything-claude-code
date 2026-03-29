@@ -70,6 +70,17 @@ impl WorkflowState {
     }
 }
 
+impl crate::traits::Transitionable for WorkflowState {
+    fn transition_to(self, target: Phase) -> Result<Self, WorkflowError> {
+        use super::transition::resolve_transition;
+        let new_phase = resolve_transition(self.phase, target)?;
+        Ok(Self {
+            phase: new_phase,
+            ..self
+        })
+    }
+}
+
 #[cfg(test)]
 mod corrupted_json {
     use super::*;

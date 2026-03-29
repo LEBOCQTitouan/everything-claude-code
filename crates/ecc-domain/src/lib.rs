@@ -13,6 +13,7 @@ pub mod hook_runtime;
 pub mod paths;
 pub mod session;
 pub mod spec;
+pub mod task;
 pub mod time;
 pub mod traits;
 pub mod workflow;

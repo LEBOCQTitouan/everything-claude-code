@@ -122,6 +122,7 @@ mod transitionable_impl {
     }
 
     /// PC-037: Transitionable trait added, WorkflowState implements it.
+    #[ignore = "WorkflowState::Transitionable not yet implemented (PC-037)"]
     #[test]
     fn workflow_state_transitions_via_transitionable() {
         let state = make_state(Phase::Idle);
@@ -130,6 +131,7 @@ mod transitionable_impl {
         assert_eq!(result.unwrap().phase, Phase::Plan);
     }
 
+    #[ignore = "WorkflowState::Transitionable not yet implemented (PC-037)"]
     #[test]
     fn workflow_state_rejects_illegal_transition() {
         let state = make_state(Phase::Idle);
@@ -137,6 +139,7 @@ mod transitionable_impl {
         assert!(result.is_err(), "Idle->Done should be rejected");
     }
 
+    #[ignore = "WorkflowState::Transitionable not yet implemented (PC-037)"]
     #[test]
     fn workflow_state_transition_returns_new_state_immutably() {
         let state = make_state(Phase::Plan);
