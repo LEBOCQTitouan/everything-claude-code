@@ -23,6 +23,8 @@ pub enum CliValidateTarget {
     Agents,
     /// Validate command markdown files
     Commands,
+    /// Validate convention consistency (naming, tools, placement)
+    Conventions,
     /// Validate hooks.json schema
     Hooks,
     /// Validate skill directories
@@ -96,5 +98,6 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Spec { .. } | CliValidateTarget::Design { .. } => {
             unreachable!("Spec and Design are handled before map_target is called")
         }
+        // Conventions is handled via map_target but mapping is intentionally missing here (RED)
     }
 }
