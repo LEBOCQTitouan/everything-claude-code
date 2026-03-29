@@ -61,6 +61,17 @@ pub const ALL_CONFIGS: &[&PackageManagerConfig] = &[&NPM, &PNPM, &YARN, &BUN];
 /// Priority order for lock file detection.
 pub const DETECTION_PRIORITY: &[&PackageManagerConfig] = &[&PNPM, &BUN, &YARN, &NPM];
 
+/// Error type for package manager operations.
+#[derive(Debug, thiserror::Error)]
+pub enum PackageManagerError {
+    #[error("Script name must be a non-empty string")]
+    EmptyScriptName,
+    #[error("Script name contains unsafe characters: {0}")]
+    UnsafeScriptName(String),
+    #[error("Arguments contain unsafe characters: {0}")]
+    UnsafeArgs(String),
+}
+
 /// Regex for safe script/binary names.
 const SAFE_NAME_PATTERN: &str = r"^[@a-zA-Z0-9_./-]+$";
 
@@ -115,29 +126,32 @@ static SAFE_ARGS_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
 });
 
 /// Validate a script name contains only safe characters.
-pub fn validate_script_name(name: &str) -> Result<(), String> {
+pub fn validate_script_name(name: &str) -> Result<(), PackageManagerError> {
     if name.is_empty() {
-        return Err("Script name must be a non-empty string".to_string());
+        return Err(PackageManagerError::EmptyScriptName);
     }
     if !SAFE_NAME_RE.is_match(name) {
-        return Err(format!("Script name contains unsafe characters: {name}"));
+        return Err(PackageManagerError::UnsafeScriptName(name.to_string()));
     }
     Ok(())
 }
 
 /// Validate command arguments contain only safe characters.
-pub fn validate_args(args: &str) -> Result<(), String> {
+pub fn validate_args(args: &str) -> Result<(), PackageManagerError> {
     if args.is_empty() {
         return Ok(());
     }
     if !SAFE_ARGS_RE.is_match(args) {
-        return Err(format!("Arguments contain unsafe characters: {args}"));
+        return Err(PackageManagerError::UnsafeArgs(args.to_string()));
     }
     Ok(())
 }
 
 /// Get the command to run a script with the given package manager config.
-pub fn get_run_command(config: &PackageManagerConfig, script: &str) -> Result<String, String> {
+pub fn get_run_command(
+    config: &PackageManagerConfig,
+    script: &str,
+) -> Result<String, PackageManagerError> {
     validate_script_name(script)?;
 
     Ok(match script {
@@ -154,7 +168,7 @@ pub fn get_exec_command(
     config: &PackageManagerConfig,
     binary: &str,
     args: Option<&str>,
-) -> Result<String, String> {
+) -> Result<String, PackageManagerError> {
     validate_script_name(binary)?;
     if let Some(a) = args {
         validate_args(a)?;
@@ -466,5 +480,29 @@ mod tests {
         assert_eq!(DetectionSource::Environment.as_str(), "environment");
         assert_eq!(DetectionSource::LockFile.as_str(), "lock-file");
         assert_eq!(DetectionSource::Default.as_str(), "default");
+    }
+
+    // --- PackageManagerError ---
+
+    /// PC-006: PackageManagerError enum variants compile and are accessible.
+    #[test]
+    fn package_manager_error_empty_name_is_debug() {
+        let err = PackageManagerError::EmptyScriptName;
+        let s = format!("{err:?}");
+        assert!(!s.is_empty());
+    }
+
+    #[test]
+    fn package_manager_error_unsafe_name_carries_message() {
+        let err = PackageManagerError::UnsafeScriptName("$(whoami)".to_string());
+        let s = err.to_string();
+        assert!(s.contains("$(whoami)"), "expected name in error, got: {s}");
+    }
+
+    #[test]
+    fn package_manager_error_unsafe_args_carries_message() {
+        let err = PackageManagerError::UnsafeArgs("; rm -rf /".to_string());
+        let s = err.to_string();
+        assert!(s.contains("; rm"), "expected args in error, got: {s}");
     }
 }
