@@ -1,14 +1,133 @@
+use ecc_domain::config::validate::{
+    LintFinding, LintSeverity, check_naming_consistency, check_tool_values, extract_frontmatter,
+};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
 pub(super) fn validate_conventions(
-    _root: &Path,
-    _fs: &dyn FileSystem,
-    _terminal: &dyn TerminalIO,
+    root: &Path,
+    fs: &dyn FileSystem,
+    terminal: &dyn TerminalIO,
 ) -> bool {
-    // Stub: always returns true (RED — tests for error cases will fail)
-    true
+    let mut findings: Vec<LintFinding> = Vec::new();
+    let mut total_checked: usize = 0;
+
+    // 1. Agents
+    let agents_dir = root.join("agents");
+    if fs.exists(&agents_dir) {
+        if let Ok(files) = fs.read_dir(&agents_dir) {
+            for file in files.iter().filter(|f| f.to_string_lossy().ends_with(".md")) {
+                total_checked += 1;
+                let content = match fs.read_to_string(file) {
+                    Ok(c) => c,
+                    Err(_) => continue,
+                };
+                let stem = file.file_stem().unwrap_or_default().to_string_lossy();
+                let fm = extract_frontmatter(&content);
+                let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
+                findings.extend(check_naming_consistency(&stem, fm_name, "agent"));
+                if let Some(ref map) = fm {
+                    if let Some(tools) = map.get("tools") {
+                        findings.extend(check_tool_values(&stem, tools, "tools"));
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Commands
+    let commands_dir = root.join("commands");
+    if fs.exists(&commands_dir) {
+        if let Ok(files) = fs.read_dir(&commands_dir) {
+            for file in files.iter().filter(|f| f.to_string_lossy().ends_with(".md")) {
+                total_checked += 1;
+                let content = match fs.read_to_string(file) {
+                    Ok(c) => c,
+                    Err(_) => continue,
+                };
+                let stem = file.file_stem().unwrap_or_default().to_string_lossy();
+                let fm = extract_frontmatter(&content);
+                let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
+                findings.extend(check_naming_consistency(&stem, fm_name, "command"));
+                if let Some(ref map) = fm {
+                    if let Some(tools) = map.get("allowed-tools") {
+                        findings.extend(check_tool_values(&stem, tools, "allowed-tools"));
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Skills — check directories
+    let skills_dir = root.join("skills");
+    if fs.exists(&skills_dir) {
+        if let Ok(entries) = fs.read_dir(&skills_dir) {
+            for entry in entries.iter().filter(|e| fs.is_dir(e)) {
+                total_checked += 1;
+                let dir_name = entry
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+
+                // Check for empty directory (no .md files)
+                if let Ok(children) = fs.read_dir(entry) {
+                    let has_md = children.iter().any(|c| c.to_string_lossy().ends_with(".md"));
+                    if !has_md {
+                        findings.push(LintFinding {
+                            severity: LintSeverity::Warn,
+                            file: dir_name.clone(),
+                            message: format!(
+                                "skill directory '{dir_name}/' contains no .md files"
+                            ),
+                        });
+                        continue;
+                    }
+                }
+
+                // Read SKILL.md for naming check
+                let skill_md = entry.join("SKILL.md");
+                if fs.exists(&skill_md) {
+                    if let Ok(content) = fs.read_to_string(&skill_md) {
+                        let fm = extract_frontmatter(&content);
+                        let fm_name =
+                            fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
+                        findings.extend(check_naming_consistency(&dir_name, fm_name, "skill"));
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Report findings
+    let error_count = findings
+        .iter()
+        .filter(|f| f.severity == LintSeverity::Error)
+        .count();
+    let warn_count = findings
+        .iter()
+        .filter(|f| f.severity == LintSeverity::Warn)
+        .count();
+
+    for f in &findings {
+        match f.severity {
+            LintSeverity::Error => terminal.stderr_write(&format!("ERROR: {}\n", f.message)),
+            LintSeverity::Warn => terminal.stdout_write(&format!("WARN: {}\n", f.message)),
+        }
+    }
+
+    if error_count == 0 {
+        terminal.stdout_write(&format!(
+            "Convention check OK: {total_checked} files checked, {warn_count} warnings\n"
+        ));
+        true
+    } else {
+        terminal.stderr_write(&format!(
+            "Convention check FAILED: {error_count} errors, {warn_count} warnings in {total_checked} files\n"
+        ));
+        false
+    }
 }
 
 #[cfg(test)]
