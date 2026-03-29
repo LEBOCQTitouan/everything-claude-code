@@ -43,10 +43,10 @@ ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
 ecc worktree gc [--force]  Clean up stale session worktrees
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
-ecc-workflow tasks sync <path>   Parse tasks.md, output JSON summary
-ecc-workflow tasks update <path> <id> <status>  Atomically update PC status
-ecc-workflow tasks init <design> --output <path>  Generate tasks.md from design PCs
-ecc-workflow wave-plan <design-path>  Compute wave plan from design file overlap
+ecc sources list [--quadrant <q>] [--subject <s>]  List knowledge sources
+ecc sources add <url> --title <t> --type <type> --quadrant <q> --subject <s>  Add source
+ecc sources check          Check source reachability, flag stale
+ecc sources reindex [--dry-run]  Rebuild sources.md, process inbox
 cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, completions, RC)
 ```
 
@@ -71,7 +71,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 
 ## Doc Hierarchy
 
-`CLAUDE.md` (onboarding) → `docs/getting-started.md` (human setup) → `docs/ARCHITECTURE.md` (system design) → `docs/adr/` (decisions) → `docs/specs/` (persisted spec+design artifacts per work item) → `docs/sources.md` (curated knowledge sources — Technology Radar quadrants) → `docs/domain/bounded-contexts.md` (domain model) → `docs/runbooks/` (ops) → `docs/MODULE-SUMMARIES.md` (per-crate reference). Information lives at the lowest layer that serves its audience; CLAUDE.md stays terse.
+`CLAUDE.md` (onboarding) → `docs/getting-started.md` (human setup) → `docs/ARCHITECTURE.md` (system design) → `docs/adr/` (decisions) → `docs/specs/` (persisted spec+design artifacts per work item) → `docs/domain/bounded-contexts.md` (domain model) → `docs/sources.md` (curated knowledge sources — Technology Radar quadrants) → `docs/runbooks/` (ops) → `docs/MODULE-SUMMARIES.md` (per-crate reference). Information lives at the lowest layer that serves its audience; CLAUDE.md stays terse.
 
 ## Dual-Mode Development
 
