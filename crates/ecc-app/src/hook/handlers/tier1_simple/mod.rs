@@ -7,8 +7,18 @@ mod git_hooks;
 mod helpers;
 mod meta_hooks;
 
-pub use clean_craft_hooks::*;
-pub use dev_hooks::*;
-pub use doc_hooks::*;
-pub use git_hooks::*;
-pub use meta_hooks::*;
+pub use clean_craft_hooks::{
+    post_edit_boy_scout_delta, post_edit_naming_review, post_edit_newspaper_check,
+    pre_edit_boundary_crossing, pre_edit_stepdown_warning,
+};
+pub use dev_hooks::{
+    instructions_loaded_validate, post_bash_build_complete, post_bash_pr_created,
+    post_exit_worktree_cleanup_reminder, post_failure_error_context, pre_bash_tmux_reminder,
+    pre_prompt_context_inject, suggest_compact,
+};
+pub use doc_hooks::{doc_coverage_reminder, doc_file_warning};
+pub use git_hooks::{
+    check_console_log, post_edit_console_warn, pre_bash_git_push_reminder,
+    stop_uncommitted_reminder,
+};
+pub use meta_hooks::{check_hook_enabled, session_end_marker};
