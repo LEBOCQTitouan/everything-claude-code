@@ -57,8 +57,15 @@ pub enum SourceError {
 
 impl fmt::Display for SourceType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Stub: always writes wrong value so Display tests fail
-        write!(f, "STUB_TYPE")
+        let s = match self {
+            Self::Repo => "repo",
+            Self::Doc => "doc",
+            Self::Blog => "blog",
+            Self::Package => "package",
+            Self::Talk => "talk",
+            Self::Paper => "paper",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -66,15 +73,27 @@ impl FromStr for SourceType {
     type Err = SourceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Stub: always returns error so from_str tests fail
-        Err(SourceError::UnknownSourceType(s.to_owned()))
+        match s.to_lowercase().as_str() {
+            "repo" => Ok(Self::Repo),
+            "doc" => Ok(Self::Doc),
+            "blog" => Ok(Self::Blog),
+            "package" => Ok(Self::Package),
+            "talk" => Ok(Self::Talk),
+            "paper" => Ok(Self::Paper),
+            _ => Err(SourceError::UnknownSourceType(s.to_owned())),
+        }
     }
 }
 
 impl fmt::Display for Quadrant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Stub: always writes wrong value so Display tests fail
-        write!(f, "STUB_QUADRANT")
+        let s = match self {
+            Self::Adopt => "adopt",
+            Self::Trial => "trial",
+            Self::Assess => "assess",
+            Self::Hold => "hold",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -82,8 +101,13 @@ impl FromStr for Quadrant {
     type Err = SourceError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Stub: always returns error so from_str tests fail
-        Err(SourceError::UnknownQuadrant(s.to_owned()))
+        match s.to_lowercase().as_str() {
+            "adopt" => Ok(Self::Adopt),
+            "trial" => Ok(Self::Trial),
+            "assess" => Ok(Self::Assess),
+            "hold" => Ok(Self::Hold),
+            _ => Err(SourceError::UnknownQuadrant(s.to_owned())),
+        }
     }
 }
 
@@ -91,21 +115,28 @@ impl FromStr for Quadrant {
 ///
 /// This is a domain rule — no I/O, no network calls.
 pub fn validate_url(url: &str) -> Result<(), SourceError> {
-    // Stub: always returns error
-    Err(SourceError::InvalidUrl(url.to_owned()))
+    let has_valid_scheme = url.starts_with("http://") || url.starts_with("https://");
+    let has_dot = url.contains('.');
+    if has_valid_scheme && has_dot {
+        Ok(())
+    } else {
+        Err(SourceError::InvalidUrl(url.to_owned()))
+    }
 }
 
 /// Validate title is non-empty after trimming whitespace.
 pub fn validate_title(title: &str) -> Result<(), SourceError> {
-    // Stub: always returns error
-    Err(SourceError::EmptyTitle)
+    if title.trim().is_empty() {
+        Err(SourceError::EmptyTitle)
+    } else {
+        Ok(())
+    }
 }
 
 impl SourceEntry {
     /// Returns true when the entry has been deprecated.
     pub fn is_deprecated(&self) -> bool {
-        // Stub: always returns false so deprecated_lifecycle test fails
-        false
+        self.deprecation_reason.is_some()
     }
 }
 
