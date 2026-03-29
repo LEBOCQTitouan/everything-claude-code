@@ -152,6 +152,56 @@ mod transitionable_impl {
     }
 }
 
+/// PC-002: traits.rs test helper uses Concern/Timestamp types.
+#[cfg(test)]
+mod tests {
+    use crate::workflow::concern::Concern;
+    use crate::workflow::phase::Phase;
+    use crate::workflow::state::{Artifacts, Toolchain, WorkflowState};
+    use crate::workflow::timestamp::Timestamp;
+
+    fn make_state(phase: Phase) -> WorkflowState {
+        WorkflowState {
+            phase,
+            concern: Concern::Dev,
+            feature: "test".to_string(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: Artifacts {
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
+            completed: vec![],
+        }
+    }
+
+    #[test]
+    fn make_state_concern_is_concern_type() {
+        // Verify the helper uses Concern enum (not String)
+        let state = make_state(Phase::Idle);
+        // This assertion only compiles if concern is Concern, not String
+        assert_eq!(state.concern, Concern::Dev);
+        assert_ne!(state.concern, Concern::Fix);
+    }
+
+    #[test]
+    fn make_state_started_at_is_timestamp_type() {
+        // Verify the helper uses Timestamp (not String)
+        let state = make_state(Phase::Idle);
+        // This assertion only compiles if started_at is Timestamp, not String
+        assert_eq!(state.started_at, Timestamp::new("2026-01-01T00:00:00Z"));
+    }
+}
+
 #[cfg(test)]
 mod domain_abstractness_score {
     /// PC-039: D < 0.80 computed from public items.
