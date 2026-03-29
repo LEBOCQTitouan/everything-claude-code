@@ -145,6 +145,41 @@ mod tests {
         );
     }
 
+    // PC-028: TaskStatus serde serialization produces lowercase strings
+    mod serde_format {
+        use super::*;
+
+        #[test]
+        fn serializes_pending_as_lowercase() {
+            let json = serde_json::to_string(&TaskStatus::Pending).unwrap();
+            assert_eq!(json, "\"pending\"");
+        }
+
+        #[test]
+        fn serializes_red_as_lowercase() {
+            let json = serde_json::to_string(&TaskStatus::Red).unwrap();
+            assert_eq!(json, "\"red\"");
+        }
+
+        #[test]
+        fn serializes_green_as_lowercase() {
+            let json = serde_json::to_string(&TaskStatus::Green).unwrap();
+            assert_eq!(json, "\"green\"");
+        }
+
+        #[test]
+        fn serializes_done_as_lowercase() {
+            let json = serde_json::to_string(&TaskStatus::Done).unwrap();
+            assert_eq!(json, "\"done\"");
+        }
+
+        #[test]
+        fn serializes_failed_as_lowercase() {
+            let json = serde_json::to_string(&TaskStatus::Failed).unwrap();
+            assert_eq!(json, "\"failed\"");
+        }
+    }
+
     mod rejects {
         use super::*;
 

@@ -220,4 +220,88 @@ mod tests {
             "error should be EntryNotFound"
         );
     }
+
+    /// PC-013: Updater handles PostTdd entry update by string identifier (AC-004.6)
+    #[test]
+    fn post_tdd_update() {
+        let updated = apply_update(
+            fixture_pending(),
+            "E2E tests",
+            TaskStatus::Done,
+            "2026-03-29T15:00:00Z",
+        )
+        .expect("apply_update should succeed for PostTdd pending -> done");
+
+        // The PostTdd entry line should have the trail appended
+        assert!(
+            updated.contains("E2E tests | pending@2026-03-29T14:00:00Z → done@2026-03-29T15:00:00Z"),
+            "PostTdd entry should have trail appended by string identifier, got:\n{updated}"
+        );
+
+        // The PC entry should remain unmodified
+        assert!(
+            updated.contains("- [ ] PC-001:"),
+            "PC-001 entry should remain unchanged, got:\n{updated}"
+        );
+    }
+
+    /// PC-014: Updater allows PostTdd pending->done transition (skip TDD cycle) (AC-002.8, AC-004.6)
+    #[test]
+    fn post_tdd_done() {
+        let ts = "2026-03-29T15:30:00Z";
+        let result = apply_update(fixture_pending(), "E2E tests", TaskStatus::Done, ts);
+
+        assert!(
+            result.is_ok(),
+            "pending -> done should be allowed for PostTdd entry (skip TDD cycle), got: {:?}",
+            result.unwrap_err()
+        );
+
+        let updated = result.unwrap();
+
+        // Checkbox should be flipped to [x] on the PostTdd line
+        assert!(
+            updated.contains("- [x] E2E tests"),
+            "PostTdd checkbox should flip to [x] on done transition, got:\n{updated}"
+        );
+
+        // Trail should have done appended
+        assert!(
+            updated.contains(&format!("→ done@{ts}")),
+            "done segment should be appended with timestamp, got:\n{updated}"
+        );
+
+        // The PC entry checkbox should still be [ ] (not affected)
+        assert!(
+            updated.contains("- [ ] PC-001:"),
+            "PC-001 checkbox should remain unchanged, got:\n{updated}"
+        );
+    }
+
+    /// PC-029: Updater rejects same-state transition at updater level
+    #[test]
+    fn same_state() {
+        // First transition PC-001 to red
+        let after_red = apply_update(
+            fixture_pending(),
+            "PC-001",
+            TaskStatus::Red,
+            "2026-03-29T14:01:00Z",
+        )
+        .expect("pending -> red should succeed");
+
+        // Try to transition to red again — should be rejected
+        let result = apply_update(
+            &after_red,
+            "PC-001",
+            TaskStatus::Red,
+            "2026-03-29T14:02:00Z",
+        );
+
+        assert!(result.is_err(), "same-state red -> red should be rejected");
+        assert!(
+            matches!(result.unwrap_err(), TaskError::SameState { .. }),
+            "error should be SameState"
+        );
+    }
 }
