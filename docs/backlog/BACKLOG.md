@@ -65,7 +65,7 @@
 | BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | implemented | 2026-03-26 |
 | BL-063 | Create /commit slash command | — | MEDIUM | /spec-dev | implemented | 2026-03-26 |
 | BL-064 | Full app cartography — user journeys, data flows, element registry | — | EPIC | /spec dev | open | 2026-03-26 |
-| BL-065 | Concurrent session safety — worktree isolation, serialized merge, audit fixes | — | EPIC | /spec dev | open | 2026-03-26 |
+| BL-065 | Concurrent session safety — worktree isolation, serialized merge, audit fixes | — | EPIC | /spec dev | implemented | 2026-03-26 |
 | BL-066 | Deterministic backlog management — ID generation, duplicate detection, index auto-gen | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-067 | Deterministic spec/design artifact validation — AC format, PC table, coverage mapping | — | HIGH | /spec dev | implemented | 2026-03-26 |
 | BL-068 | Deterministic workflow state machine — typed state.json, phase transitions | — | HIGH | /spec dev | implemented | 2026-03-26 |
@@ -94,7 +94,7 @@
 | BL-091 | ECC diagnostics — tiered verbosity with tracing + ecc status | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-092 | Structured log management — JSON rolling files + SQLite index + ecc log CLI | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-093 | Three-tier memory system — semantic/episodic/working + SQLite + consolidation | — | EPIC | /spec dev | open | 2026-03-28 |
-| BL-094 | Agent model routing optimization — downgrade misaligned agents to Sonnet/Haiku | — | HIGH | /spec refactor | open | 2026-03-28 |
+| BL-094 | Agent model routing optimization — downgrade misaligned agents to Sonnet/Haiku | — | HIGH | /spec refactor | implemented | 2026-03-28 |
 | BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
 
