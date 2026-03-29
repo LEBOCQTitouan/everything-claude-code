@@ -5,6 +5,15 @@
 
 use crate::spec::pc::PassCondition;
 
+/// The fixed Post-TDD checklist entries, in canonical order.
+const POST_TDD_ENTRIES: &[&str] = &[
+    "E2E tests",
+    "Code review",
+    "Doc updates",
+    "Supplemental docs",
+    "Write implement-done.md",
+];
+
 /// Generate tasks.md content from design Pass Conditions.
 ///
 /// # Arguments
@@ -12,9 +21,37 @@ use crate::spec::pc::PassCondition;
 /// * `pcs` — Pass Conditions in dependency order (input order is preserved).
 /// * `feature_title` — Human-readable title used in the `# Tasks:` header.
 /// * `timestamp` — ISO-8601 timestamp used for all initial `pending@<timestamp>` entries.
-pub fn render_tasks(_pcs: &[PassCondition], _feature_title: &str, _timestamp: &str) -> String {
-    // TODO: implement
-    String::new()
+///
+/// # Returns
+///
+/// A `String` containing the full tasks.md content, using the `→` separator
+/// for status trails and a fixed five-entry Post-TDD section.
+pub fn render_tasks(pcs: &[PassCondition], feature_title: &str, timestamp: &str) -> String {
+    let mut out = String::new();
+
+    // Title
+    out.push_str(&format!("# Tasks: {feature_title}\n"));
+    out.push('\n');
+
+    // Pass Conditions section
+    out.push_str("## Pass Conditions\n");
+    out.push('\n');
+    for pc in pcs {
+        out.push_str(&format!(
+            "- [ ] {}: {} | `{}` | pending@{}\n",
+            pc.id, pc.description, pc.command, timestamp
+        ));
+    }
+    out.push('\n');
+
+    // Post-TDD section
+    out.push_str("## Post-TDD\n");
+    out.push('\n');
+    for label in POST_TDD_ENTRIES {
+        out.push_str(&format!("- [ ] {} | pending@{}\n", label, timestamp));
+    }
+
+    out
 }
 
 #[cfg(test)]
@@ -132,6 +169,7 @@ mod tests {
 
         #[test]
         fn order_preserved() {
+            // Give PCs in non-numeric order to verify input order is preserved
             let pcs = vec![
                 make_pc(3, "Third first", "cmd-three"),
                 make_pc(1, "First second", "cmd-one"),
