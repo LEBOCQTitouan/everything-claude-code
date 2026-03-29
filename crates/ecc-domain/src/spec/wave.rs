@@ -79,6 +79,61 @@ fn parse_spec_ref(spec_ref: &str) -> Vec<AcId> {
         .collect()
 }
 
+/// Compute a wave plan from a list of PCs and file changes.
+///
+/// Algorithm: Non-adjacent greedy bin-packing.
+/// For each PC in input order, place it in the first existing wave that:
+/// - has fewer than `max_per_wave` PCs
+/// - shares no files with the PC (empty file set never overlaps)
+///
+/// If no eligible wave exists, create a new wave.
+///
+/// Special case: `max_per_wave == 0` is treated as `max_per_wave == 1`.
+pub fn compute_wave_plan(
+    pcs: &[PassCondition],
+    file_changes: &[FileChange],
+    max_per_wave: usize,
+) -> WavePlan {
+    let effective_max = if max_per_wave == 0 { 1 } else { max_per_wave };
+    let file_map = build_pc_file_map(pcs, file_changes);
+    let mut waves: Vec<Wave> = Vec::new();
+
+    for pc in pcs {
+        let pc_files: Vec<String> = file_map
+            .get(&pc.id)
+            .cloned()
+            .unwrap_or_default();
+
+        // Find the first eligible wave
+        let eligible = waves.iter_mut().find(|wave| {
+            wave.pc_ids.len() < effective_max
+                && !pc_files.iter().any(|f| wave.files.contains(f))
+        });
+
+        if let Some(wave) = eligible {
+            wave.pc_ids.push(pc.id.clone());
+            for f in &pc_files {
+                if !wave.files.contains(f) {
+                    wave.files.push(f.clone());
+                }
+            }
+        } else {
+            let id = u16::try_from(waves.len() + 1).unwrap_or(u16::MAX);
+            waves.push(Wave {
+                id,
+                pc_ids: vec![pc.id.clone()],
+                files: pc_files,
+            });
+        }
+    }
+
+    WavePlan {
+        waves,
+        total_pcs: pcs.len(),
+        max_per_wave: effective_max,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
