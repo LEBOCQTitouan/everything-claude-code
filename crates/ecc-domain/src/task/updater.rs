@@ -21,9 +21,93 @@ pub fn apply_update(
     new_status: TaskStatus,
     timestamp: &str,
 ) -> Result<String, TaskError> {
-    // Stub: always returns unchanged content (RED — tests will fail)
-    let _ = (entry_id, new_status, timestamp);
+    let is_post_tdd = !entry_id.starts_with("PC-");
+    let mut lines: Vec<String> = content.lines().map(str::to_owned).collect();
+    let mut in_post_tdd = false;
+
+    for line in &mut lines {
+        let trimmed = line.trim();
+        if trimmed == "## Post-TDD" {
+            in_post_tdd = true;
+            continue;
+        }
+        if trimmed.starts_with("## ") {
+            in_post_tdd = false;
+            continue;
+        }
+
+        if !trimmed.starts_with("- [ ]") && !trimmed.starts_with("- [x]") {
+            continue;
+        }
+
+        // Check if this line matches entry_id
+        let rest = &trimmed[6..]; // skip "- [ ] " or "- [x] "
+        let matches = if is_post_tdd {
+            // PostTdd: label is the text before " | "
+            rest.starts_with(entry_id)
+                && rest[entry_id.len()..].starts_with(" |")
+        } else {
+            // PC entry: "PC-NNN: ..."
+            rest.starts_with(&format!("{entry_id}: "))
+        };
+
+        if !matches {
+            continue;
+        }
+
+        // Entry found — determine is_post_tdd from actual section context
+        let entry_is_post_tdd = in_post_tdd || is_post_tdd;
+
+        // Extract current status from last trail segment
+        let current_status = extract_last_status(rest)?;
+
+        // Validate transition
+        TaskStatus::can_transition(current_status, new_status, entry_is_post_tdd)?;
+
+        // Append ` → new_status@timestamp` to the line
+        let new_segment = format!(" → {new_status}@{timestamp}");
+        let updated_line = format!("{line}{new_segment}");
+        *line = updated_line;
+        // Done — reconstruct content (preserve trailing newline)
+        let mut result = lines.join("\n");
+        if content.ends_with('\n') {
+            result.push('\n');
+        }
+        return Ok(result);
+    }
+
+    // Entry not found — return content unchanged (PC-012 will add EntryNotFound error)
     Ok(content.to_owned())
+}
+
+/// Extract the last trail segment's status from an entry line's `rest` portion.
+fn extract_last_status(rest: &str) -> Result<TaskStatus, TaskError> {
+    // Find the trail section: after the second ` | ` for PC entries, or after first ` | ` for PostTdd
+    // The trail is the last pipe-delimited field in a PC line or last space-delimited segment.
+    // We split by ` | ` to get parts and take the last one as the trail string.
+    let parts: Vec<&str> = rest.splitn(4, " | ").collect();
+    let trail_str = match parts.len() {
+        1 => return Ok(TaskStatus::Pending), // no trail at all
+        2 => parts[1].trim(),                // PostTdd: [label, trail]
+        3 => parts[2].trim(),                // PC: [desc, cmd, trail]
+        _ => parts[parts.len() - 1].trim(),
+    };
+
+    if trail_str.is_empty() {
+        return Ok(TaskStatus::Pending);
+    }
+
+    // Find the last segment by splitting on ` → ` or ` | `
+    let separator = if trail_str.contains(" → ") { " → " } else { " | " };
+    let last_seg = trail_str.split(separator).last().unwrap_or(trail_str).trim();
+
+    // Parse `status@timestamp`
+    let at_pos = last_seg.find('@').ok_or_else(|| TaskError::ParseError {
+        line: 0,
+        message: format!("trail segment missing '@': {last_seg}"),
+    })?;
+    let status_str = &last_seg[..at_pos];
+    TaskStatus::from_str(status_str)
 }
 
 #[cfg(test)]
