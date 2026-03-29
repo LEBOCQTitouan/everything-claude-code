@@ -1,12 +1,12 @@
 ---
 name: grill-me-adversary
-description: Opt-in companion to grill-me that adds adaptive adversarial questioning with answer scoring, follow-up probing, and question-generation challenge.
+description: Opt-in companion to grill-me that adds adaptive adversarial questioning with answer scoring, follow-up probing, and question-generation challenge, with Socratic type annotations for substituted questions.
 origin: ECC
 ---
 
 # Grill-Me Adversary — Adaptive Interview Enhancement
 
-Opt-in companion skill for the grill-me skill (`skills/grill-me/SKILL.md`). Activates when the user says "adversary mode" or "hard mode". Does not alter grill-me's five-stage structure (Clarity, Assumptions, Edge Cases, Alternatives, Stress Test) — only enhances question selection and adds answer evaluation.
+Opt-in companion skill for the grill-me skill (`skills/grill-me/SKILL.md`). Activates when the user says "adversary mode" or "hard mode". Does not alter grill-me's five-stage structure (Clarity, Assumptions, Edge Cases, Alternatives, Stress Test) — only enhances question selection and adds answer evaluation. Note: OARS Reflect fires before adversary scoring — the ordering contract is Reflect first, then score.
 
 ## Tone
 
@@ -14,11 +14,11 @@ Be firm but curious. Challenge the idea, not the person. Frame probes as "help m
 
 ## Question-Generation Challenge
 
-At the start of each stage, evaluate grill-me's planned question: "Is this the hardest possible question for this stage?" A harder question for the stage targets a less obvious failure mode, requires more specific evidence, or challenges an unstated assumption. If a harder question exists, substitute it. Always show the challenge result to the user — whether the question was kept or replaced, and why.
+At the start of each stage, evaluate grill-me's planned question: "Is this the hardest possible question for this stage?" A harder question for the stage targets a less obvious failure mode, requires more specific evidence, or challenges an unstated assumption. If a harder question exists, substitute it — and the substituted question MUST carry a `[Type]` annotation from the Socratic 6-type rotation: Clarification, Assumption, Evidence, Viewpoint, Implication, or Meta. For example: `[Assumption] Why do you assume that constraint will hold at scale?`. Always show the challenge result to the user — whether the question was kept or replaced, the type tag, and why.
 
 ## Adversarial Question Generation
 
-Between questions within a stage, synthesize a devil's-advocate angle before picking the next question. Target the weakest point in the user's answers so far using these heuristics:
+Between questions within a stage, synthesize a devil's-advocate angle before picking the next question. Use OARS reflective listening, laddering for abstract answers, and Socratic type rotation when synthesizing devil's-advocate angles. Target the weakest point in the user's answers so far using these heuristics:
 
 1. **lowest-scored axis** from prior answers in this stage
 2. **most hedging or vague language** in the user's responses
