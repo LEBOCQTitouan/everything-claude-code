@@ -51,6 +51,7 @@ struct SyncOutput {
 /// Build the sync JSON output from a parsed `TaskReport`.
 fn build_sync_output(report: &ecc_domain::task::TaskReport) -> SyncOutput {
     use ecc_domain::task::entry::EntryKind;
+    use ecc_domain::task::TaskStatus;
 
     let mut pending = Vec::new();
     let mut completed = Vec::new();
@@ -62,23 +63,24 @@ fn build_sync_output(report: &ecc_domain::task::TaskReport) -> SyncOutput {
             EntryKind::Pc(pc_id) => pc_id.to_string(),
             EntryKind::PostTdd(label) => label.clone(),
         };
-        let current_status = entry
+        let last_status = entry
             .trail
             .last()
-            .map(|s| s.status.to_string())
-            .unwrap_or_else(|| "pending".to_owned());
+            .map(|s| s.status)
+            .unwrap_or(TaskStatus::Pending);
+        let current_status = last_status.to_string();
 
         let item = SyncItem {
             id,
             description: entry.description.clone(),
-            current_status: current_status.clone(),
+            current_status,
         };
 
-        match current_status.as_str() {
-            "done" => completed.push(item),
-            "red" | "green" => in_progress.push(item),
-            "failed" => failed.push(item),
-            _ => pending.push(item),
+        match last_status {
+            TaskStatus::Done => completed.push(item),
+            TaskStatus::Red | TaskStatus::Green => in_progress.push(item),
+            TaskStatus::Failed => failed.push(item),
+            TaskStatus::Pending => pending.push(item),
         }
     }
 
