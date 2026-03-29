@@ -30,3 +30,7 @@ All other modules are independent.
 Each domain module defines its business logic in terms of data structures and pure functions. When I/O is needed, the `ecc-ports` crate defines traits (e.g., `FileSystem`, `ShellExecutor`) that the `ecc-app` layer injects.
 
 See also: [Glossary](glossary.md) | [Architecture](../ARCHITECTURE.md)
+
+### Sources
+
+Knowledge reference registry with Technology Radar vocabulary. Owns `docs/sources.md`. Independent bounded context — no dependencies on or from other domain modules. Entries organized by quadrants (Adopt/Trial/Assess/Hold) with subject-to-module mapping for command integrations.
