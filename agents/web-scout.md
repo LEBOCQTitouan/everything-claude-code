@@ -2,7 +2,7 @@
 name: web-scout
 description: Orchestrates parallel web research across 8 scope dimensions for /audit-web. Dispatches web-radar-analyst subagents per category, enforces concurrency cap, applies focus filtering, deduplicates findings, and returns a unified findings list.
 tools: ["Task", "Read", "Grep", "Glob", "WebSearch", "TodoWrite"]
-model: opus
+model: sonnet
 skills: ["web-research-strategy"]
 ---
 
