@@ -107,6 +107,7 @@
 | BL-104 | Multi-agent team coordination — shared state and task handoff | — | HIGH | /spec-dev | open | 2026-03-29 |
 | BL-105 | Bump crossterm 0.28 → 0.29.0 | — | LOW | direct edit | open | 2026-03-29 |
 | BL-106 | Harness reliability metrics — benchmark against reference patterns | — | MEDIUM | /spec-dev | open | 2026-03-29 |
+| BL-107 | Audit-web guided profile — interactive setup, persisted dimensions, self-improvement | — | HIGH | /spec-dev | open | 2026-03-29 |
 
 ## Dependency Graph
 
@@ -167,12 +168,14 @@ BL-104 → BL-065 (team coordination requires session identity from worktree iso
 BL-104 → BL-093 (shared state benefits from memory system infrastructure)
 BL-106 → BL-091 (harness metrics build on tracing foundation from diagnostics)
 BL-106 → BL-092 (harness metrics share structured log infrastructure)
+BL-107 → BL-081 (extends the audit-web command created in BL-081)
+BL-107 → BL-083 (adversarial challenge phase complements self-improvement suggestions)
 ```
 
 ## Stats
 
-- **Total:** 100
-- **Open:** 48
+- **Total:** 101
+- **Open:** 49
 - **In-progress:** 0
 - **Implemented:** 48
 - **Archived:** 4
