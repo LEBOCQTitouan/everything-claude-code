@@ -29,13 +29,10 @@ impl fmt::Display for TaskStatus {
     }
 }
 
-impl TaskStatus {
-    /// Parse a lowercase status string into a `TaskStatus`.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TaskError::InvalidStatus`] if the string is not a known status.
-    pub fn from_str(s: &str) -> Result<Self, TaskError> {
+impl std::str::FromStr for TaskStatus {
+    type Err = TaskError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim() {
             "pending" => Ok(Self::Pending),
             "red" => Ok(Self::Red),
@@ -45,7 +42,9 @@ impl TaskStatus {
             other => Err(TaskError::InvalidStatus(other.to_owned())),
         }
     }
+}
 
+impl TaskStatus {
     /// Validate a status transition according to the FSM rules.
     ///
     /// `is_post_tdd` must be `true` for Post-TDD entries (e.g. "E2E tests"),

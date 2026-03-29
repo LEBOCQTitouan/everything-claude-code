@@ -151,7 +151,7 @@ fn update_inner(
     let tasks_path = std::path::PathBuf::from(path);
     validate_path(&tasks_path, project_dir)?;
 
-    let new_status = ecc_domain::task::TaskStatus::from_str(status)
+    let new_status = status.parse::<ecc_domain::task::TaskStatus>()
         .map_err(|e| anyhow::anyhow!("{e}"))?;
 
     let timestamp = crate::time::utc_now_iso8601();

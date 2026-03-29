@@ -3,6 +3,8 @@
 //! `apply_update` finds the matching entry line, validates the FSM transition,
 //! appends a new trail segment, and optionally flips the checkbox to `[x]`.
 
+use std::str::FromStr;
+
 use crate::task::error::TaskError;
 use crate::task::status::TaskStatus;
 

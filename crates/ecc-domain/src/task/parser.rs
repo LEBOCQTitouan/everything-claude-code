@@ -2,6 +2,8 @@
 //!
 //! `parse_tasks` reads a tasks.md string and returns a structured `TaskReport`.
 
+use std::str::FromStr;
+
 use crate::spec::pc::PcId;
 use crate::task::entry::{EntryKind, StatusSegment, TaskEntry, TaskReport};
 use crate::task::error::TaskError;
