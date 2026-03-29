@@ -179,4 +179,24 @@ mod tests {
             "original [ ] checkbox should be replaced, got:\n{updated}"
         );
     }
+
+    #[test]
+    fn reject_invalid() {
+        // pending -> done is invalid for a TDD (PC) entry
+        let result = apply_update(
+            fixture_pending(),
+            "PC-001",
+            TaskStatus::Done,
+            "2026-03-29T14:01:00Z",
+        );
+
+        assert!(
+            result.is_err(),
+            "pending -> done should be rejected for TDD entry, got Ok"
+        );
+        assert!(
+            matches!(result.unwrap_err(), TaskError::InvalidTransition { .. }),
+            "error should be InvalidTransition"
+        );
+    }
 }
