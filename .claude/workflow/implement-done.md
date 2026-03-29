@@ -1,121 +1,49 @@
-<<<<<<< HEAD
-# Implementation Complete: Audit adversarial challenge (BL-083)
+# Implementation Complete: Socratic Grill-Me Upgrade (BL-098)
 
 ## Spec Reference
-Concern: dev, Feature: Adversarial challenge phase for all audit commands (BL-083)
-=======
-# Implementation Complete: Deterministic Wave Grouping Algorithm (BL-070)
-
-## Spec Reference
-Concern: dev, Feature: BL-070 Deterministic wave grouping algorithm
->>>>>>> 361dd49 (chore: write implement-done.md for BL-070)
+Concern: dev, Feature: BL-098 Socratic grill-me upgrade
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
-<<<<<<< HEAD
-| 1 | agents/audit-challenger.md | create | PC-001-005 | grep content checks | done |
-| 2-11 | commands/audit-{10 domains}.md | modify | PC-006 | grep audit-challenger | done |
-| 12 | agents/audit-orchestrator.md | modify | PC-007 | grep audit-challenger | done |
-| 13 | CHANGELOG.md | modify | doc | — | done |
+| 1 | skills/grill-me/SKILL.md | modify | PC-01-17,22-27 | grep structural checks | done |
+| 2 | skills/grill-me-adversary/SKILL.md | modify | PC-18-19,24 | grep structural checks | done |
+| 3 | docs/adr/0033-socratic-questioning-protocol.md | create | PC-20-21 | file exists + grep | done |
+| 4 | docs/adr/0017-grill-me-universal-protocol.md | modify | PC-32 | grep supersession | done |
+| 5 | CHANGELOG.md | modify | PC-30 | grep BL-098 | done |
 
 ## TDD Log
 | PC ID | RED | GREEN | REFACTOR | Notes |
 |-------|-----|-------|----------|-------|
-| PC-001 | ⏭ config | ✅ frontmatter verified | ⏭ | Agent created |
-| PC-002 | ⏭ config | ✅ clean bill of health text | ⏭ | — |
-| PC-003 | ⏭ config | ✅ retry logic present | ⏭ | — |
-| PC-004 | ⏭ config | ✅ disagreement display | ⏭ | Fixed case-sensitivity |
-| PC-005 | ⏭ config | ✅ graceful degradation | ⏭ | — |
-| PC-006 | ⏭ config | ✅ all 10 commands have adversary | ⏭ | Python insertion script |
-| PC-007 | ⏭ config | ✅ orchestrator has adversary | ⏭ | Phase 2.5 added |
-| PC-008 | — | ✅ 52 agents validated | — | +1 new agent |
-| PC-009 | — | ✅ 24 commands validated | — | — |
-| PC-010 | — | ✅ zero clippy warnings | — | — |
-| PC-011 | — | ✅ build succeeds | — | — |
-=======
-| 1 | crates/ecc-domain/src/spec/wave.rs | create | PC-001-016,022,023 | spec::wave::tests (18 tests) | done |
-| 2 | crates/ecc-domain/src/spec/mod.rs | modify | PC-001 | — | done |
-| 3 | crates/ecc-workflow/src/commands/wave_plan.rs | create | PC-017-021 | commands::wave_plan::tests (5 tests) | done |
-| 4 | crates/ecc-workflow/src/commands/mod.rs | modify | PC-017 | — | done |
-| 5 | crates/ecc-workflow/src/main.rs | modify | PC-017 | — | done |
-
-## TDD Log
-| PC ID | Phase | RED | GREEN | REFACTOR | Notes |
-|-------|-------|-----|-------|----------|-------|
-| PC-001 | 1 | ✅ todo!() panic | ✅ basic mapping implemented | ✅ doc comment fix | — |
-| PC-004 | 1 | ✅ todo!() panic | ✅ always-insert for all PCs | ⏭ | — |
-| PC-007 | 1 | ✅ todo!() panic | ✅ filter_map + AcId::parse().ok() | ⏭ | — |
-| PC-003 | 1 | ✅ todo!() panic | ✅ strip_backticks implemented | ⏭ | — |
-| PC-002 | 1 | RED_ALREADY_PASSES | — | — | Multi-AC covered by PC-001 GREEN |
-| PC-005 | 1 | RED_ALREADY_PASSES | — | — | Dedup covered by PC-001 GREEN |
-| PC-006 | 1 | RED_ALREADY_PASSES | — | — | Dup paths covered by PC-001 GREEN |
-| PC-011 | 2 | ✅ compile error | ✅ empty plan returns empty | ⏭ | — |
-| PC-010 | 2 | ✅ compile error | ✅ single PC in one wave | ⏭ | — |
-| PC-008 | 2 | ✅ compile error | ✅ greedy bin-packing | ⏭ | — |
-| PC-013 | 2 | RED_ALREADY_PASSES | — | — | Split >4 covered by algorithm |
-| PC-014 | 2 | RED_ALREADY_PASSES | — | — | max_per_wave covered by algorithm |
-| PC-015 | 2 | RED_ALREADY_PASSES | — | — | Input order covered by algorithm |
-| PC-009 | 2 | RED_ALREADY_PASSES | — | — | All-overlap covered by algorithm |
-| PC-012 | 2 | RED_ALREADY_PASSES | — | — | Non-adjacent covered by algorithm |
-| PC-016 | 2 | RED_ALREADY_PASSES | — | — | Identical files covered by algorithm |
-| PC-022 | 2 | RED_ALREADY_PASSES | — | — | max=1 covered by algorithm |
-| PC-023 | 2 | RED_ALREADY_PASSES | — | — | max=0 safe handling covered |
-| PC-017 | 3 | ✅ stub returns Block | ✅ full implementation | ✅ simplified warnings | — |
-| PC-019 | 3 | ✅ stub returns Block | ✅ covered by PC-017 GREEN | ⏭ | — |
-| PC-020 | 3 | ✅ stub returns Block | ✅ covered by PC-017 GREEN | ⏭ | — |
-| PC-018 | 3 | ✅ stub returns Block | ✅ covered by PC-017 GREEN | ⏭ | — |
-| PC-021 | 3 | ✅ stub expected Warn | ✅ covered by PC-017 GREEN | ⏭ | — |
-| PC-024 | 4 | — | ✅ clippy zero warnings | — | gate |
-| PC-025 | 4 | — | ✅ workspace build | — | gate |
->>>>>>> 361dd49 (chore: write implement-done.md for BL-070)
+| PC-01-17 | ⏭ markdown | ✅ all grep checks pass | ⏭ | Skill rewrite with 4 techniques |
+| PC-18-19,24 | ⏭ markdown | ✅ adversary updated | ⏭ | Socratic annotations added |
+| PC-20-21 | ⏭ doc | ✅ ADR created | ⏭ | Research mapping included |
+| PC-22-27 | ⏭ integration | ✅ all integration checks pass | ⏭ | OARS ordering, profiles, rotation |
+| PC-28-29 | — | ✅ build + clippy pass | — | No Rust changes |
+| PC-30-33 | ⏭ doc | ✅ changelog, line count, ADR-0017, cross-stage | ⏭ | — |
 
 ## Pass Condition Results
 | PC ID | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|
-<<<<<<< HEAD
-| PC-001 | frontmatter grep checks | exit 0 | exit 0 | ✅ |
-| PC-002 | grep clean bill of health | exit 0 | exit 0 | ✅ |
-| PC-003 | grep retry + structured output | exit 0 | exit 0 | ✅ |
-| PC-004 | grep both perspectives + user decision | exit 0 | exit 0 | ✅ |
-| PC-005 | grep Adversary challenge skipped | exit 0 | exit 0 | ✅ |
-| PC-006 | grep loop 10 audit commands | exit 0 | exit 0 | ✅ |
-| PC-007 | grep audit-orchestrator | exit 0 | exit 0 | ✅ |
-| PC-008 | ecc validate agents | exit 0 | exit 0 (52 agents) | ✅ |
-| PC-009 | ecc validate commands | exit 0 | exit 0 (24 commands) | ✅ |
-| PC-010 | cargo clippy -- -D warnings | exit 0 | exit 0 | ✅ |
-| PC-011 | cargo build | exit 0 | exit 0 | ✅ |
+| PC-01 | grep OARS Protocol section | 1 | 1 | ✅ |
+| PC-06 | grep Laddering section | 1 | 1 | ✅ |
+| PC-08 | grep MECE Decomposition section | 1 | 1 | ✅ |
+| PC-10 | grep Socratic Type Rotation section | 1 | 1 | ✅ |
+| PC-12 | grep Depth Profiles section | 1 | 1 | ✅ |
+| PC-15 | 25-question cap references | 0 | 0 | ✅ |
+| PC-16 | Question Cap section | 0 | 0 | ✅ |
+| PC-17 | Skip and Exit preserved | PRESERVED | PRESERVED | ✅ |
+| PC-18 | Adversary Socratic types | PASS | PASS | ✅ |
+| PC-19 | Adversary OARS reference | PASS | PASS | ✅ |
+| PC-20 | ADR-0033 exists | PASS | PASS | ✅ |
+| PC-21 | Research mapping | PASS | PASS | ✅ |
+| PC-28 | cargo build | exit 0 | exit 0 | ✅ |
+| PC-29 | cargo clippy | exit 0 | exit 0 | ✅ |
+| PC-30 | CHANGELOG BL-098 | PASS | PASS | ✅ |
+| PC-31 | Skill < 800 lines | < 800 | 297 | ✅ |
+| PC-32 | ADR-0017 supersession | PASS | PASS | ✅ |
 
-All pass conditions: 11/11 ✅
-=======
-| PC-001 | `cargo test -p ecc-domain spec::wave::tests::pc_file_map_basic_mapping` | PASS | PASS | ✅ |
-| PC-002 | `cargo test -p ecc-domain spec::wave::tests::pc_file_map_multi_ac_ref` | PASS | PASS | ✅ |
-| PC-003 | `cargo test -p ecc-domain spec::wave::tests::pc_file_map_backtick_stripping` | PASS | PASS | ✅ |
-| PC-004 | `cargo test -p ecc-domain spec::wave::tests::pc_file_map_no_match_empty` | PASS | PASS | ✅ |
-| PC-005 | `cargo test -p ecc-domain spec::wave::tests::pc_file_map_dedup` | PASS | PASS | ✅ |
-| PC-006 | `cargo test -p ecc-domain spec::wave::tests::pc_file_map_duplicate_file_paths` | PASS | PASS | ✅ |
-| PC-007 | `cargo test -p ecc-domain spec::wave::tests::pc_file_map_non_parseable_ref` | PASS | PASS | ✅ |
-| PC-008 | `cargo test -p ecc-domain spec::wave::tests::wave_no_overlap_max_four` | PASS | PASS | ✅ |
-| PC-009 | `cargo test -p ecc-domain spec::wave::tests::wave_all_overlap_sequential` | PASS | PASS | ✅ |
-| PC-010 | `cargo test -p ecc-domain spec::wave::tests::wave_single_pc` | PASS | PASS | ✅ |
-| PC-011 | `cargo test -p ecc-domain spec::wave::tests::wave_empty_pcs` | PASS | PASS | ✅ |
-| PC-012 | `cargo test -p ecc-domain spec::wave::tests::wave_non_adjacent_grouping` | PASS | PASS | ✅ |
-| PC-013 | `cargo test -p ecc-domain spec::wave::tests::wave_split_over_four` | PASS | PASS | ✅ |
-| PC-014 | `cargo test -p ecc-domain spec::wave::tests::wave_custom_max` | PASS | PASS | ✅ |
-| PC-015 | `cargo test -p ecc-domain spec::wave::tests::wave_preserves_input_order` | PASS | PASS | ✅ |
-| PC-016 | `cargo test -p ecc-domain spec::wave::tests::wave_identical_files_different_waves` | PASS | PASS | ✅ |
-| PC-017 | `cargo test -p ecc-workflow commands::wave_plan::tests::valid_design_json_output` | PASS | PASS | ✅ |
-| PC-018 | `cargo test -p ecc-workflow commands::wave_plan::tests::no_pc_table_blocks` | PASS | PASS | ✅ |
-| PC-019 | `cargo test -p ecc-workflow commands::wave_plan::tests::nonexistent_path_blocks` | PASS | PASS | ✅ |
-| PC-020 | `cargo test -p ecc-workflow commands::wave_plan::tests::path_traversal_rejected` | PASS | PASS | ✅ |
-| PC-021 | `cargo test -p ecc-workflow commands::wave_plan::tests::no_file_changes_warns` | PASS | PASS | ✅ |
-| PC-022 | `cargo test -p ecc-domain spec::wave::tests::wave_max_one_sequential` | PASS | PASS | ✅ |
-| PC-023 | `cargo test -p ecc-domain spec::wave::tests::wave_max_zero_safe` | PASS | PASS | ✅ |
-| PC-024 | `cargo clippy -p ecc-domain -p ecc-workflow -- -D warnings` | exit 0 | exit 0 | ✅ |
-| PC-025 | `cargo build --workspace` | exit 0 | exit 0 | ✅ |
-
-All pass conditions: 25/25 ✅
->>>>>>> 361dd49 (chore: write implement-done.md for BL-070)
+All pass conditions: 33/33 ✅
 
 ## E2E Tests
 No E2E tests required by solution.
@@ -123,44 +51,27 @@ No E2E tests required by solution.
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-<<<<<<< HEAD
-| 1 | CHANGELOG.md | project | v4.6.0 audit adversarial challenge entry |
-=======
-| 1 | CLAUDE.md | project | Added `ecc-workflow wave-plan` to CLI Commands |
-| 2 | CHANGELOG.md | project | Added BL-070 v4.6.0 entry |
-| 3 | docs/adr/0032-deterministic-wave-grouping.md | decision | Wave grouping algorithm ADR |
->>>>>>> 361dd49 (chore: write implement-done.md for BL-070)
+| 1 | CHANGELOG.md | project | BL-098 Socratic grill-me upgrade entry |
+| 2 | docs/adr/0033-socratic-questioning-protocol.md | decision | Socratic questioning protocol ADR |
+| 3 | docs/adr/0017-grill-me-universal-protocol.md | decision | Supersession note |
 
 ## ADRs Created
 | # | File | Decision |
 |---|------|----------|
-| 1 | docs/adr/0032-deterministic-wave-grouping.md | Deterministic wave grouping via greedy first-fit bin-packing |
+| 1 | docs/adr/0033-socratic-questioning-protocol.md | Socratic questioning protocol with OARS, laddering, MECE, depth profiles |
 
 ## Supplemental Docs
-<<<<<<< HEAD
 No supplemental docs generated — markdown-only change, no Rust crate modifications.
 
 ## Subagent Execution
-Inline execution — subagent dispatch not used (markdown-only changes).
+| PC ID | Status | Commit Count | Files Changed Count |
+|-------|--------|--------------|---------------------|
+| Phase 1 (skill rewrite) | success | 1 | 1 |
+| Phase 3 (adversary) | success | 1 | 1 |
+| Phase 4 (ADR+docs) | inline | 3 | 3 |
 
 ## Code Review
-PASS — markdown config changes only. Agent follows adversary conventions (read-only, clean-craft, memory: project). All 10 domain audit commands + orchestrator consistently updated.
+PASS — markdown content change only. Structural verification via 33 grep-based PCs. All sections present, cap removed, types annotated, profiles defined.
 
 ## Suggested Commit
-feat(audit): add adversarial challenge phase to all audit commands (BL-083)
-=======
-No supplemental docs generated — deferred to avoid context exhaustion.
-
-## Subagent Execution
-| PC ID | Phase | Status | Commit Count | Files Changed Count |
-|-------|-------|--------|--------------|---------------------|
-| PC-001-007 | 1 | success | 7 | 2 |
-| PC-008-016,022,023 | 2 | success | 2 | 1 |
-| PC-017-021 | 3 | success | 3 | 3 |
-
-## Code Review
-APPROVE — 0 CRITICAL, 0 HIGH, 4 MEDIUM (non-blocking: contained mutation, linear scan perf, public strip_backticks, hardcoded max), 2 LOW.
-
-## Suggested Commit
-feat(wave): deterministic wave grouping via file-overlap bin-packing (BL-070)
->>>>>>> 361dd49 (chore: write implement-done.md for BL-070)
+feat(grill-me): Socratic questioning upgrade with OARS, laddering, MECE, depth profiles (BL-098)
