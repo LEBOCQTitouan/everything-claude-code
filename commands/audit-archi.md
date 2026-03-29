@@ -49,6 +49,36 @@ Evaluates the 6 component principles:
 
 Computes instability (I), abstractness (A), and main sequence distance (D) per component.
 
+
+## Adversarial Challenge
+
+> After the analysis phase completes, launch an independent adversary to challenge the findings.
+
+Launch a Task with the `audit-challenger` agent (allowedTools: [Read, Grep, Glob, Bash, WebSearch]):
+
+- Pass the findings from the analysis phase as structured input (finding ID, severity, description, evidence)
+- The agent independently re-interrogates the codebase and searches web for best practices
+- Collect challenged findings: confirmed, refuted, or amended with per-finding rationale
+
+### Quality Check
+
+If the adversary output lacks structured per-finding verdicts (each with finding ID, verdict {confirmed|refuted|amended}, and rationale):
+1. Retry once with a stricter prompt demanding the exact output format
+2. If second attempt still lacks structure, surface a "Low-quality adversary output" warning alongside the raw content and proceed
+
+### Disagreement Handling
+
+When audit and adversary disagree on a finding:
+- Display both the original finding and the challenger's assessment side by side
+- Include the challenger's recommendation
+- Prompt the user for final decision: accept audit / accept challenger / custom resolution
+
+### Graceful Degradation
+
+If the audit-challenger agent fails to spawn or returns an error:
+- Emit: "Adversary challenge skipped: <reason>"
+- Proceed with unchallenged findings
+
 ## 2. Report
 
 Merge findings from all three agents. Write to `docs/audits/archi-YYYY-MM-DD.md` using today's date.
