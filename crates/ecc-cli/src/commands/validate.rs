@@ -89,6 +89,7 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
     match cli {
         CliValidateTarget::Agents => ecc_app::validate::ValidateTarget::Agents,
         CliValidateTarget::Commands => ecc_app::validate::ValidateTarget::Commands,
+        CliValidateTarget::Conventions => ecc_app::validate::ValidateTarget::Conventions,
         CliValidateTarget::Hooks => ecc_app::validate::ValidateTarget::Hooks,
         CliValidateTarget::Skills => ecc_app::validate::ValidateTarget::Skills,
         CliValidateTarget::Rules => ecc_app::validate::ValidateTarget::Rules,
@@ -98,6 +99,5 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Spec { .. } | CliValidateTarget::Design { .. } => {
             unreachable!("Spec and Design are handled before map_target is called")
         }
-        // Conventions is handled via map_target but mapping is intentionally missing here (RED)
     }
 }
