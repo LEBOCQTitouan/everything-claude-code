@@ -72,10 +72,10 @@
 | BL-069 | Deterministic convention linting — naming, placement, frontmatter values | — | MEDIUM | /spec dev | open | 2026-03-26 |
 | BL-070 | Deterministic wave grouping algorithm — PC parallelization from file-overlap | — | MEDIUM | /spec dev | open | 2026-03-26 |
 | BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | open | 2026-03-26 |
-| BL-072 | Deterministic artifact scaffolding — spec, solution, tasks templates | — | MEDIUM | /spec dev | open | 2026-03-26 |
+| BL-072 | Deterministic artifact scaffolding — spec, solution, tasks templates | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-073 | Deterministic diagram trigger heuristics — auto-detect diagram needs | — | LOW | /spec dev | open | 2026-03-26 |
 | BL-074 | Deterministic doc metrics — staleness, coverage, severity counting | — | LOW | /spec dev | open | 2026-03-26 |
-| BL-075 | Deterministic task synchronization — single source of truth for tasks | — | HIGH | /spec dev | open | 2026-03-26 |
+| BL-075 | Deterministic task synchronization — single source of truth for tasks | — | HIGH | /spec dev | implemented | 2026-03-26 |
 | BL-076 | Statusline Unicode byte-counting bug hides rate limit segments | — | LOW | /spec-fix | open | 2026-03-27 |
 | BL-077 | Full documentation pass — coverage, drift validation, and gap analysis | — | EPIC | /spec-dev | open | 2026-03-27 |
 | BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | open | 2026-03-27 |
@@ -98,6 +98,7 @@
 | BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | open | 2026-03-29 |
+| BL-098 | Socratic grill-me upgrade — OARS, laddering, MECE, reflective rephrasing | — | HIGH | /spec-dev | open | 2026-03-29 |
 
 ## Dependency Graph
 
@@ -148,12 +149,15 @@ BL-095 → BL-096 (thinking tuning needs cost tracking for before/after)
 BL-096 → BL-092 (cost tracking shares ~/.ecc/logs/ infrastructure with structured logs)
 BL-097 → BL-065 (in-work filtering relies on session identity from worktree isolation)
 BL-097 → BL-066 (extends deterministic backlog management with transient lock files)
+BL-098 → BL-011 (upgrades the grill-me skill created in BL-011)
+BL-098 → BL-057 (upgrades grill-me-adversary companion created in BL-057)
+BL-098 → BL-061 (builds on AskUserQuestion integration from BL-061)
 ```
 
 ## Stats
 
-- **Total:** 91
-- **Open:** 39
+- **Total:** 92
+- **Open:** 40
 - **In-progress:** 0
 - **Implemented:** 48
 - **Archived:** 4
