@@ -62,20 +62,155 @@ pub struct ArtifactStatus {
 
 /// Collect the ECC runtime status.
 ///
-/// Stub implementation — returns empty/default values.
-/// Real implementation follows in GREEN phase.
-pub fn ecc_status(
-    _fs: &dyn FileSystem,
-    _env: &dyn Environment,
-    _shell: &dyn ShellExecutor,
-) -> EccStatus {
+/// - `ecc_version`: compile-time `CARGO_PKG_VERSION`
+/// - `workflow_version`: `ecc-workflow --version` stdout; `None` on failure
+/// - `workflow`: parsed from `<cwd>/.claude/workflow/state.json`; `None` if absent
+/// - `components`: counts from `<home>/.claude/.ecc-manifest.json`; zeros if absent
+/// - `artifacts`: spec/design/tasks presence from state.json; all false if absent
+pub fn ecc_status(fs: &dyn FileSystem, env: &dyn Environment, shell: &dyn ShellExecutor) -> EccStatus {
+    let ecc_version = crate::version::version();
+
+    let workflow_version = read_workflow_version(shell);
+
+    let (workflow, artifacts) = read_workflow_state(fs, env);
+
+    let components = read_component_counts(fs, env);
+
     EccStatus {
-        ecc_version: String::new(),
-        workflow_version: None,
-        workflow: None,
-        components: ComponentCounts::default(),
-        artifacts: ArtifactStatus::default(),
+        ecc_version,
+        workflow_version,
+        workflow,
+        components,
+        artifacts,
     }
+}
+
+/// Run `ecc-workflow --version`, return trimmed stdout or `None` on any failure.
+fn read_workflow_version(shell: &dyn ShellExecutor) -> Option<String> {
+    let output = shell.run_command("ecc-workflow", &["--version"]).ok()?;
+    if output.success() {
+        let trimmed = output.stdout.trim().to_owned();
+        if trimmed.is_empty() { None } else { Some(trimmed) }
+    } else {
+        None
+    }
+}
+
+/// Read `.claude/workflow/state.json` from the current working directory.
+///
+/// Returns `(Some(WorkflowInfo), ArtifactStatus)` when the file exists and
+/// parses successfully, `(None, ArtifactStatus::default())` otherwise.
+fn read_workflow_state(
+    fs: &dyn FileSystem,
+    env: &dyn Environment,
+) -> (Option<WorkflowInfo>, ArtifactStatus) {
+    let Some(cwd) = env.current_dir() else {
+        return (None, ArtifactStatus::default());
+    };
+
+    let state_path = cwd.join(".claude/workflow/state.json");
+
+    let content = match fs.read_to_string(&state_path) {
+        Ok(c) => c,
+        Err(_) => return (None, ArtifactStatus::default()),
+    };
+
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&content) else {
+        return (None, ArtifactStatus::default());
+    };
+
+    let phase = value
+        .get("phase")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_owned();
+
+    let feature = value
+        .get("feature")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_owned();
+
+    let started_at = value
+        .get("started_at")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_owned();
+
+    let workflow_info = WorkflowInfo { phase, feature, started_at };
+
+    let artifacts = parse_artifact_status(&value);
+
+    (Some(workflow_info), artifacts)
+}
+
+/// Extract artifact presence from the state.json `artifacts` object.
+fn parse_artifact_status(value: &serde_json::Value) -> ArtifactStatus {
+    let artifacts_obj = match value.get("artifacts") {
+        Some(a) => a,
+        None => return ArtifactStatus::default(),
+    };
+
+    let spec = artifacts_obj
+        .get("spec_path")
+        .map(|v| !v.is_null())
+        .unwrap_or(false);
+
+    let design = artifacts_obj
+        .get("design_path")
+        .map(|v| !v.is_null())
+        .unwrap_or(false);
+
+    let tasks = artifacts_obj
+        .get("tasks_path")
+        .map(|v| !v.is_null())
+        .unwrap_or(false);
+
+    ArtifactStatus { spec, design, tasks }
+}
+
+/// Read component counts from `<home>/.claude/.ecc-manifest.json`.
+fn read_component_counts(fs: &dyn FileSystem, env: &dyn Environment) -> ComponentCounts {
+    let Some(home) = env.home_dir() else {
+        return ComponentCounts::default();
+    };
+
+    let manifest_path = home.join(".claude/.ecc-manifest.json");
+
+    let content = match fs.read_to_string(&manifest_path) {
+        Ok(c) => c,
+        Err(_) => return ComponentCounts::default(),
+    };
+
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&content) else {
+        return ComponentCounts::default();
+    };
+
+    let artifacts = match value.get("artifacts") {
+        Some(a) => a,
+        None => return ComponentCounts::default(),
+    };
+
+    let agents = count_array(artifacts, "agents");
+    let commands = count_array(artifacts, "commands");
+    let skills = count_array(artifacts, "skills");
+    let hooks = count_array(artifacts, "hookDescriptions");
+
+    // rules is a map of group -> [files]; total = sum of all vec lengths
+    let rules = artifacts
+        .get("rules")
+        .and_then(|v| v.as_object())
+        .map(|m| m.values().map(|v| v.as_array().map_or(0, |a| a.len())).sum())
+        .unwrap_or(0);
+
+    ComponentCounts { agents, skills, commands, rules, hooks }
+}
+
+fn count_array(obj: &serde_json::Value, key: &str) -> usize {
+    obj.get(key)
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0)
 }
 
 #[cfg(test)]
