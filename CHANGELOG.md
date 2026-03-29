@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.5.0
+
+### Added
+
+- **Deterministic convention linting (BL-069)**: New `ecc validate conventions` subcommand — naming consistency, value validation (21-entry VALID_TOOLS registry), placement checks, cross-file references. Meta-test validates ECC repo.
+
 ## v4.3.1
 
 ### Fixed
