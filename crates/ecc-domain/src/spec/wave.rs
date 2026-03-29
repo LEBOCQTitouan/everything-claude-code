@@ -37,7 +37,7 @@ pub fn strip_backticks(s: &str) -> String {
 /// Algorithm:
 /// 1. For each FileChange, parse its `spec_ref` into AcId list (skip unparseable silently).
 /// 2. For each PC, check if any `verifies_acs` matches any FileChange's parsed ACs.
-/// 3. If match: add that FileChange's file (raw-trimmed) to the PC's list.
+/// 3. If match: add that FileChange's file (backtick-stripped, trimmed) to the PC's list.
 /// 4. Deduplicate files per PC.
 /// 5. PCs with no matches get an empty Vec.
 pub fn build_pc_file_map(
