@@ -46,6 +46,7 @@ ecc completion <shell>    Generate shell completions
 ecc-workflow tasks sync <path>   Parse tasks.md, output JSON summary
 ecc-workflow tasks update <path> <id> <status>  Atomically update PC status
 ecc-workflow tasks init <design> --output <path>  Generate tasks.md from design PCs
+ecc-workflow wave-plan <design-path>  Compute wave plan from design file overlap
 cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, completions, RC)
 ```
 
