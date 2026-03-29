@@ -37,4 +37,5 @@
 | `/build-fix` | Fix build/type errors reactively |
 | `/commit` | Git commit with intelligent staging, conventional message, atomic enforcement, pre-flight gates |
 | `/catchup` | Session resumption — workflow state, git status, stale detection, memory |
+| `/create-component` | Scaffold or update an ECC component (agent, command, skill, hook) |
 | `/ecc-test-mode` | Isolated worktree for testing ECC config changes |
