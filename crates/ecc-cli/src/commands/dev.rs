@@ -95,7 +95,7 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
                 &ctx,
                 &ecc_root,
                 &claude_dir,
-                &version::version(),
+                &version::version(&env),
                 &now,
                 dry_run,
             );
@@ -147,7 +147,7 @@ pub fn run(args: DevArgs) -> anyhow::Result<()> {
                     &ctx,
                     &ecc_root,
                     &claude_dir,
-                    &version::version(),
+                    &version::version(&env),
                     &now,
                     dry_run,
                 );
