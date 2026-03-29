@@ -52,7 +52,7 @@
 | BL-049 | Offload web research phase to Task subagents in /spec-* commands | — | MEDIUM | /spec-refactor | implemented | 2026-03-22 |
 | BL-050 | Deferred summary tables: coverage delta, bounded contexts, per-test-name | — | MEDIUM | /spec-dev | open | 2026-03-22 |
 | BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | implemented | 2026-03-22 |
-| BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | in-progress | 2026-03-22 |
+| BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | implemented | 2026-03-22 |
 | BL-053 | Poweruser statusline — labels, usage bars, UX overhaul, install fix | — | HIGH | /spec dev | implemented | 2026-03-22 |
 | BL-054 | Full context clear + confirmation gate at /implement start | — | LOW | direct edit | archived | 2026-03-22 |
 | BL-055 | Graceful mid-session exit when context gets heavy | — | MEDIUM | /spec dev | archived | 2026-03-22 |
@@ -66,9 +66,9 @@
 | BL-063 | Create /commit slash command | — | MEDIUM | /spec-dev | implemented | 2026-03-26 |
 | BL-064 | Full app cartography — user journeys, data flows, element registry | — | EPIC | /spec dev | open | 2026-03-26 |
 | BL-065 | Concurrent session safety — worktree isolation, serialized merge, audit fixes | — | EPIC | /spec dev | open | 2026-03-26 |
-| BL-066 | Deterministic backlog management — ID generation, duplicate detection, index auto-gen | — | MEDIUM | /spec dev | open | 2026-03-26 |
-| BL-067 | Deterministic spec/design artifact validation — AC format, PC table, coverage mapping | — | HIGH | /spec dev | open | 2026-03-26 |
-| BL-068 | Deterministic workflow state machine — typed state.json, phase transitions | — | HIGH | /spec dev | promoted | 2026-03-26 |
+| BL-066 | Deterministic backlog management — ID generation, duplicate detection, index auto-gen | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
+| BL-067 | Deterministic spec/design artifact validation — AC format, PC table, coverage mapping | — | HIGH | /spec dev | implemented | 2026-03-26 |
+| BL-068 | Deterministic workflow state machine — typed state.json, phase transitions | — | HIGH | /spec dev | implemented | 2026-03-26 |
 | BL-069 | Deterministic convention linting — naming, placement, frontmatter values | — | MEDIUM | /spec dev | open | 2026-03-26 |
 | BL-070 | Deterministic wave grouping algorithm — PC parallelization from file-overlap | — | MEDIUM | /spec dev | open | 2026-03-26 |
 | BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | open | 2026-03-26 |
@@ -81,13 +81,13 @@
 | BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | open | 2026-03-27 |
 | BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | open | 2026-03-27 |
 | BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | open | 2026-03-27 |
-| BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | open | 2026-03-27 |
-| BL-082 | Add worktree display segment to statusline | — | LOW | direct edit | promoted | 2026-03-27 |
+| BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | implemented | 2026-03-27 |
+| BL-082 | Add worktree display segment to statusline | — | LOW | direct edit | implemented | 2026-03-27 |
 | BL-083 | Adversarial challenge phase for all /audit-* commands | — | HIGH | /spec-dev | open | 2026-03-27 |
 | BL-084 | Backlog conformance audit — verify implementations match original intent | — | MEDIUM | /spec dev | open | 2026-03-28 |
-| BL-085 | WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool | — | HIGH | /spec fix | promoted | 2026-03-28 |
+| BL-085 | WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool | — | HIGH | /spec fix | implemented | 2026-03-28 |
 | BL-086 | Knowledge sources registry — curated reference list with quadrant organization and command integration | — | HIGH | /spec | open | 2026-03-28 |
-| BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | promoted | 2026-03-28 |
+| BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | implemented | 2026-03-28 |
 | BL-088 | ecc update — self-update from GitHub Releases + cargo xtask deploy for dev | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-090 | ECC component scaffolding — skill + /create-component command | — | HIGH | /spec dev | open | 2026-03-28 |
@@ -150,9 +150,9 @@ BL-096 → BL-092 (cost tracking shares ~/.ecc/logs/ infrastructure with structu
 ## Stats
 
 - **Total:** 90
-- **Open:** 46
-- **In-progress:** 1
-- **Implemented:** 39
+- **Open:** 38
+- **In-progress:** 0
+- **Implemented:** 48
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)
