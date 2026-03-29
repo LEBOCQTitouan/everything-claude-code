@@ -15,6 +15,24 @@ pub struct MergeReport {
     pub errors: Vec<String>,
 }
 
+/// Result of a `merge_hooks_pure` operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MergeHooksPureResult {
+    pub merged: serde_json::Value,
+    pub added: usize,
+    pub existing: usize,
+    pub legacy_removed: usize,
+}
+
+/// Result of a `merge_hooks_typed` operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MergeHooksTypedResult {
+    pub merged: super::hook_types::HooksMap,
+    pub added: usize,
+    pub existing: usize,
+    pub legacy_removed: usize,
+}
+
 /// A file that differs between source and destination, pending user review.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileToReview {
@@ -231,7 +249,7 @@ fn merge_event_entries(
 pub fn merge_hooks_pure(
     source_hooks: &serde_json::Value,
     existing_hooks: &serde_json::Value,
-) -> (serde_json::Value, usize, usize, usize) {
+) -> MergeHooksPureResult {
     let (cleaned, legacy_removed) = remove_legacy_hooks(existing_hooks);
 
     let mut merged = match cleaned.as_object() {
@@ -241,7 +259,14 @@ pub fn merge_hooks_pure(
 
     let source_obj = match source_hooks.as_object() {
         Some(o) => o,
-        None => return (serde_json::Value::Object(merged), 0, 0, legacy_removed),
+        None => {
+            return MergeHooksPureResult {
+                merged: serde_json::Value::Object(merged),
+                added: 0,
+                existing: 0,
+                legacy_removed,
+            };
+        }
     };
 
     let mut total_added = 0usize;
@@ -258,7 +283,12 @@ pub fn merge_hooks_pure(
         total_present += present;
     }
 
-    (serde_json::Value::Object(merged), total_added, total_present, legacy_removed)
+    MergeHooksPureResult {
+        merged: serde_json::Value::Object(merged),
+        added: total_added,
+        existing: total_present,
+        legacy_removed,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -314,7 +344,7 @@ pub fn remove_legacy_hooks_typed(
 pub fn merge_hooks_typed(
     source_hooks: &super::hook_types::HooksMap,
     existing_hooks: &super::hook_types::HooksMap,
-) -> (super::hook_types::HooksMap, usize, usize, usize) {
+) -> MergeHooksTypedResult {
     let (cleaned, legacy_removed) = remove_legacy_hooks_typed(existing_hooks);
 
     let mut merged = cleaned;
@@ -334,7 +364,12 @@ pub fn merge_hooks_typed(
         }
     }
 
-    (merged, added, already_present, legacy_removed)
+    MergeHooksTypedResult {
+        merged,
+        added,
+        existing: already_present,
+        legacy_removed,
+    }
 }
 
 /// Check if two strings differ after trimming whitespace.
@@ -612,11 +647,11 @@ mod tests {
         });
         let existing = serde_json::json!({});
 
-        let (merged, added, existing_count, legacy) = merge_hooks_pure(&source, &existing);
-        assert_eq!(added, 1);
-        assert_eq!(existing_count, 0);
-        assert_eq!(legacy, 0);
-        assert_eq!(merged["PreToolUse"].as_array().unwrap().len(), 1);
+        let result = merge_hooks_pure(&source, &existing);
+        assert_eq!(result.added, 1);
+        assert_eq!(result.existing, 0);
+        assert_eq!(result.legacy_removed, 0);
+        assert_eq!(result.merged["PreToolUse"].as_array().unwrap().len(), 1);
     }
 
     #[test]
@@ -632,10 +667,10 @@ mod tests {
             ]
         });
 
-        let (merged, added, existing_count, _) = merge_hooks_pure(&source, &existing);
-        assert_eq!(added, 0);
-        assert_eq!(existing_count, 1);
-        assert_eq!(merged["PreToolUse"].as_array().unwrap().len(), 1);
+        let result = merge_hooks_pure(&source, &existing);
+        assert_eq!(result.added, 0);
+        assert_eq!(result.existing, 1);
+        assert_eq!(result.merged["PreToolUse"].as_array().unwrap().len(), 1);
     }
 
     #[test]
@@ -651,10 +686,10 @@ mod tests {
             ]
         });
 
-        let (merged, added, _, legacy) = merge_hooks_pure(&source, &existing);
-        assert_eq!(added, 1);
-        assert_eq!(legacy, 1);
-        assert_eq!(merged["PreToolUse"].as_array().unwrap().len(), 1);
+        let result = merge_hooks_pure(&source, &existing);
+        assert_eq!(result.added, 1);
+        assert_eq!(result.legacy_removed, 1);
+        assert_eq!(result.merged["PreToolUse"].as_array().unwrap().len(), 1);
     }
 
     #[test]
@@ -670,11 +705,11 @@ mod tests {
             ]
         });
 
-        let (merged, added, _, legacy) = merge_hooks_pure(&source, &existing);
-        assert_eq!(added, 1);
-        assert_eq!(legacy, 0);
+        let result = merge_hooks_pure(&source, &existing);
+        assert_eq!(result.added, 1);
+        assert_eq!(result.legacy_removed, 0);
         // User hook + new hook
-        assert_eq!(merged["PreToolUse"].as_array().unwrap().len(), 2);
+        assert_eq!(result.merged["PreToolUse"].as_array().unwrap().len(), 2);
     }
 
     // --- contents_differ ---
@@ -963,11 +998,11 @@ mod tests {
     fn merge_hooks_typed_empty_both() {
         let source = super::super::hook_types::HooksMap::new();
         let existing = super::super::hook_types::HooksMap::new();
-        let (merged, added, existing_count, legacy_removed) = merge_hooks_typed(&source, &existing);
-        assert!(merged.is_empty());
-        assert_eq!(added, 0);
-        assert_eq!(existing_count, 0);
-        assert_eq!(legacy_removed, 0);
+        let result = merge_hooks_typed(&source, &existing);
+        assert!(result.merged.is_empty());
+        assert_eq!(result.added, 0);
+        assert_eq!(result.existing, 0);
+        assert_eq!(result.legacy_removed, 0);
     }
 
     #[test]
@@ -977,11 +1012,11 @@ mod tests {
             typed_entry("ecc-hook lint"),
         ]);
         let existing = super::super::hook_types::HooksMap::new();
-        let (merged, added, existing_count, legacy_removed) = merge_hooks_typed(&source, &existing);
-        assert_eq!(added, 2);
-        assert_eq!(existing_count, 0);
-        assert_eq!(legacy_removed, 0);
-        assert_eq!(merged["PreToolUse"].len(), 2);
+        let result = merge_hooks_typed(&source, &existing);
+        assert_eq!(result.added, 2);
+        assert_eq!(result.existing, 0);
+        assert_eq!(result.legacy_removed, 0);
+        assert_eq!(result.merged["PreToolUse"].len(), 2);
     }
 
     #[test]
@@ -989,10 +1024,10 @@ mod tests {
         let entry = typed_entry("ecc-hook format");
         let source = typed_map("PreToolUse", vec![entry.clone()]);
         let existing = typed_map("PreToolUse", vec![entry]);
-        let (merged, added, existing_count, _legacy) = merge_hooks_typed(&source, &existing);
-        assert_eq!(added, 0);
-        assert_eq!(existing_count, 1);
-        assert_eq!(merged["PreToolUse"].len(), 1);
+        let result = merge_hooks_typed(&source, &existing);
+        assert_eq!(result.added, 0);
+        assert_eq!(result.existing, 1);
+        assert_eq!(result.merged["PreToolUse"].len(), 1);
     }
 
     #[test]
@@ -1001,12 +1036,12 @@ mod tests {
         let existing = typed_map("PreToolUse", vec![
             typed_entry("node scripts/hooks/old.js"),
         ]);
-        let (merged, added, _, legacy) = merge_hooks_typed(&source, &existing);
-        assert_eq!(added, 1);
-        assert_eq!(legacy, 1);
-        assert_eq!(merged["PreToolUse"].len(), 1);
+        let result = merge_hooks_typed(&source, &existing);
+        assert_eq!(result.added, 1);
+        assert_eq!(result.legacy_removed, 1);
+        assert_eq!(result.merged["PreToolUse"].len(), 1);
         assert_eq!(
-            merged["PreToolUse"][0],
+            result.merged["PreToolUse"][0],
             typed_entry("ecc-hook format")
         );
     }

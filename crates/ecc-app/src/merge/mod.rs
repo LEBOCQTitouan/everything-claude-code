@@ -378,13 +378,15 @@ pub fn merge_hooks(
     let existing_hooks: HooksMap = serde_json::from_value(existing_hooks_value).unwrap_or_default();
 
     // Call typed domain function
-    let (merged_hooks, added, existing, legacy_removed) =
-        merge::merge_hooks_typed(&source_hooks, &existing_hooks);
+    let merge_result = merge::merge_hooks_typed(&source_hooks, &existing_hooks);
+    let added = merge_result.added;
+    let existing = merge_result.existing;
+    let legacy_removed = merge_result.legacy_removed;
 
     if (added > 0 || legacy_removed > 0) && !dry_run {
         // Serialize back at boundary
         let merged_value =
-            serde_json::to_value(&merged_hooks).map_err(|e| error::MergeError::Serialization {
+            serde_json::to_value(&merge_result.merged).map_err(|e| error::MergeError::Serialization {
                 reason: e.to_string(),
             })?;
 
