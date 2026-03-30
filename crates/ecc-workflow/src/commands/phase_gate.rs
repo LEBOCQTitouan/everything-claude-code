@@ -73,6 +73,7 @@ pub fn run_with_input(project_dir: &Path, input: &str) -> WorkflowOutput {
         return WorkflowOutput::pass(format!("Phase {phase}: no gating"));
     }
 
+    tracing::info!(phase = %phase, "phase-gate: evaluating gate for current phase");
     let phase_str = phase.to_string();
     let (tool_name, file_path, command) = parse_hook_input(input);
 

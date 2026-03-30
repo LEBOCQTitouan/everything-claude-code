@@ -12,6 +12,7 @@ use crate::time::{utc_hhmm, utc_now_iso8601, utc_today};
 /// - `daily <phase> <feature> <concern>`
 /// - `memory-index`
 pub fn run(kind: &str, args: &[String], project_dir: &Path) -> WorkflowOutput {
+    tracing::info!(kind = kind, "memory-write: processing {kind} write");
     match kind {
         "action" => {
             if args.len() < 4 {
