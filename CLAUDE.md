@@ -39,6 +39,10 @@ ecc validate statusline   Verify statusline installation
 ecc validate conventions  Validate naming, values, placement, and cross-references
 ecc status               Show workflow state, versions, component counts
 ecc config set <key> <value>  Persist CLI preferences (~/.ecc/config.toml)
+ecc log tail [--session <id>]  Live-tail current session logs
+ecc log search <query> [--session <id>] [--since 2d] [--level warn]  FTS5 search
+ecc log prune [--older-than 30d]  Clean up old logs
+ecc log export --format json|csv [--since 7d]  Export filtered logs
 ecc backlog next-id       Next sequential BL-NNN ID
 ecc backlog check-duplicates <title> [--tags t1,t2]  Check for duplicate entries
 ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
