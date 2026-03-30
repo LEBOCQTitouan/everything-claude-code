@@ -24,5 +24,6 @@ pub mod validate;
 pub mod validate_design;
 pub mod validate_spec;
 pub mod version;
+pub mod log_mgmt;
 pub mod worktree;
 pub mod memory;
