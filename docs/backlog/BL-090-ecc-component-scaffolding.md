@@ -3,7 +3,7 @@ id: BL-090
 title: "ECC component scaffolding — skill + /create-component command for agents, commands, skills, hooks"
 scope: HIGH
 target: "/spec dev"
-status: open
+status: implemented
 tags: [meta-skill, scaffolding, agent, command, skill, hooks, developer-experience]
 created: 2026-03-28
 related: [BL-006, BL-007, BL-009]
