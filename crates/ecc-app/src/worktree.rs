@@ -152,9 +152,10 @@ pub fn gc(
     executor: &dyn ShellExecutor,
     project_dir: &Path,
     _force: bool,
-) -> Result<WorktreeGcResult, anyhow::Error> {
+) -> Result<WorktreeGcResult, WorktreeError> {
     let list_output =
-        executor.run_command_in_dir("git", &["worktree", "list", "--porcelain"], project_dir)?;
+        executor.run_command_in_dir("git", &["worktree", "list", "--porcelain"], project_dir)
+        .map_err(|e| WorktreeError::Shell(e.to_string()))?;
     let entries = parse_worktree_list(&list_output.stdout);
     let mut result = WorktreeGcResult::default();
     let now = now_secs();
@@ -295,10 +296,10 @@ mod tests {
 
         let err = gc(&executor, Path::new("/repo"), false).unwrap_err();
 
-        // The error must downcast to WorktreeError::Shell variant
+        // The error must be a WorktreeError::Shell variant
         assert!(
-            err.downcast_ref::<WorktreeError>().is_some(),
-            "expected WorktreeError but got a different error type"
+            matches!(err, WorktreeError::Shell(_)),
+            "expected WorktreeError::Shell but got: {:?}", err
         );
     }
 
