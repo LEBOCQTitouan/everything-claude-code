@@ -106,7 +106,6 @@ mod tests {
 
         let result = run(args);
 
-        let profile_path = tmp_dir.join("docs/audits/audit-web-profile.yaml");
         let _ = fs::remove_dir_all(&tmp_dir);
 
         assert!(
