@@ -22,17 +22,76 @@ pub enum DimensionError {
     InvalidQueryTemplate,
 }
 
+/// Regex pattern for allowed query template characters.
+const SAFE_TEMPLATE_PATTERN: &str = r"^[a-zA-Z0-9 _./{}\-]+$";
+
 /// Validate that a query template contains only safe characters.
 ///
 /// Allowed: `[a-zA-Z0-9 -_./{}]`
 /// Rejected: shell metacharacters (`;`, `|`, `$`, backtick, `<`, `>`, `&`, `!`, `(`, `)`, `'`, `"`)
 pub fn validate_query_template(template: &str) -> Result<(), DimensionError> {
-    todo!("validate_query_template not implemented")
+    use regex::Regex;
+    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let re = RE.get_or_init(|| Regex::new(SAFE_TEMPLATE_PATTERN).expect("valid regex pattern"));
+    if re.is_match(template) {
+        Ok(())
+    } else {
+        Err(DimensionError::InvalidQueryTemplate)
+    }
 }
 
 /// Return the 8 standard audit dimensions.
 pub fn standard_dimensions() -> Vec<AuditDimension> {
-    todo!("standard_dimensions not implemented")
+    vec![
+        AuditDimension {
+            name: "Techniques".to_owned(),
+            query_template: "{project} software engineering techniques best practices".to_owned(),
+            enabled: true,
+            is_custom: false,
+        },
+        AuditDimension {
+            name: "Tools".to_owned(),
+            query_template: "{project} developer tools CLI utilities".to_owned(),
+            enabled: true,
+            is_custom: false,
+        },
+        AuditDimension {
+            name: "Platforms".to_owned(),
+            query_template: "{project} cloud platform infrastructure".to_owned(),
+            enabled: true,
+            is_custom: false,
+        },
+        AuditDimension {
+            name: "Languages & Frameworks".to_owned(),
+            query_template: "{project} programming languages frameworks libraries".to_owned(),
+            enabled: true,
+            is_custom: false,
+        },
+        AuditDimension {
+            name: "Security".to_owned(),
+            query_template: "{project} security vulnerabilities advisories".to_owned(),
+            enabled: true,
+            is_custom: false,
+        },
+        AuditDimension {
+            name: "Testing".to_owned(),
+            query_template: "{project} testing strategies quality assurance".to_owned(),
+            enabled: true,
+            is_custom: false,
+        },
+        AuditDimension {
+            name: "Observability".to_owned(),
+            query_template: "{project} observability monitoring tracing logging".to_owned(),
+            enabled: true,
+            is_custom: false,
+        },
+        AuditDimension {
+            name: "Feature Opportunities".to_owned(),
+            query_template: "{project} emerging features trends roadmap".to_owned(),
+            enabled: true,
+            is_custom: false,
+        },
+    ]
 }
 
 #[cfg(test)]

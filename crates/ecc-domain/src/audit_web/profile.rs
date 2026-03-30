@@ -51,12 +51,20 @@ pub enum ProfileError {
 ///
 /// Validates the schema version after deserialization.
 pub fn parse_profile(yaml: &str) -> Result<AuditWebProfile, ProfileError> {
-    todo!("parse_profile not implemented")
+    let profile: AuditWebProfile =
+        serde_yml::from_str(yaml).map_err(|e| ProfileError::MalformedYaml(e.to_string()))?;
+    if profile.version != CURRENT_PROFILE_VERSION {
+        return Err(ProfileError::UnsupportedVersion {
+            version: profile.version,
+            current: CURRENT_PROFILE_VERSION,
+        });
+    }
+    Ok(profile)
 }
 
 /// Serialize an `AuditWebProfile` to a YAML string.
 pub fn serialize_profile(profile: &AuditWebProfile) -> String {
-    todo!("serialize_profile not implemented")
+    serde_yml::to_string(profile).expect("AuditWebProfile is always serializable")
 }
 
 #[cfg(test)]

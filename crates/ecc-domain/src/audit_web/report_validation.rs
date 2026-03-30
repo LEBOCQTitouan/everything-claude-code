@@ -27,10 +27,93 @@ impl ReportValidationResult {
     }
 }
 
+/// Required section headings every radar report must contain.
+const REQUIRED_SECTIONS: &[&str] = &[
+    "Techniques",
+    "Tools",
+    "Platforms",
+    "Languages & Frameworks",
+    "Feature Opportunities",
+];
+
 /// Validate a markdown report string for required sections, score ranges,
 /// and citation counts.
 pub fn validate_report(content: &str) -> ReportValidationResult {
-    todo!("validate_report not implemented")
+    use regex::Regex;
+
+    let mut errors = Vec::new();
+    let mut warnings = Vec::new();
+
+    // Check for required sections (## Section Name)
+    let missing: Vec<String> = REQUIRED_SECTIONS
+        .iter()
+        .filter(|&&section| {
+            !content
+                .lines()
+                .any(|line| line.trim_start_matches('#').trim() == section)
+        })
+        .map(|s| (*s).to_owned())
+        .collect();
+
+    if !missing.is_empty() {
+        errors.push(ReportError::MissingSections(missing));
+    }
+
+    // Parse scores: **Strategic Fit**: N/5
+    static SCORE_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let score_re =
+        SCORE_RE.get_or_init(|| Regex::new(r"\*\*Strategic Fit\*\*:\s*(-?\d+)/5").expect("valid regex"));
+
+    // Parse section headers to associate scores with sections
+    static SECTION_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let section_re =
+        SECTION_RE.get_or_init(|| Regex::new(r"^#{1,6}\s+(.+)$").expect("valid regex"));
+
+    // Parse citation links: [text](url)
+    static LINK_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
+    let link_re = LINK_RE.get_or_init(|| Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").expect("valid regex"));
+
+    let mut current_section = String::new();
+    let mut section_score: Option<i32> = None;
+    let mut section_citations: usize = 0;
+
+    let flush_section =
+        |section: &str, score: Option<i32>, citations: usize, errors: &mut Vec<ReportError>, warnings: &mut Vec<ReportWarning>| {
+            if let Some(s) = score
+                && !(0..=5_i32).contains(&s)
+            {
+                errors.push(ReportError::ScoreOutOfRange {
+                    section: section.to_owned(),
+                    score: s,
+                });
+            }
+            let is_required = REQUIRED_SECTIONS.contains(&section);
+            if is_required && citations < 3 {
+                warnings.push(ReportWarning::LowCitations {
+                    section: section.to_owned(),
+                    count: citations,
+                });
+            }
+        };
+
+    for line in content.lines() {
+        if let Some(caps) = section_re.captures(line) {
+            // Flush previous section
+            flush_section(&current_section, section_score, section_citations, &mut errors, &mut warnings);
+            current_section = caps[1].trim().to_owned();
+            section_score = None;
+            section_citations = 0;
+        } else if let Some(caps) = score_re.captures(line) {
+            let score: i32 = caps[1].parse().unwrap_or(-999);
+            section_score = Some(score);
+        } else {
+            section_citations += link_re.find_iter(line).count();
+        }
+    }
+    // Flush final section
+    flush_section(&current_section, section_score, section_citations, &mut errors, &mut warnings);
+
+    ReportValidationResult { errors, warnings }
 }
 
 #[cfg(test)]
