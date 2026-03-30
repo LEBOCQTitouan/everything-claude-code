@@ -8,7 +8,7 @@ use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
 
 /// ECC runtime status snapshot.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EccStatus {
     /// ECC binary version (from `CARGO_PKG_VERSION`).
     pub ecc_version: String,
@@ -23,7 +23,7 @@ pub struct EccStatus {
 }
 
 /// Active workflow summary from state.json.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct WorkflowInfo {
     pub phase: String,
     pub feature: String,
@@ -31,7 +31,7 @@ pub struct WorkflowInfo {
 }
 
 /// Counts of installed ECC components from the manifest.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ComponentCounts {
     pub agents: usize,
     pub skills: usize,
@@ -40,17 +40,6 @@ pub struct ComponentCounts {
     pub hooks: usize,
 }
 
-impl Default for ComponentCounts {
-    fn default() -> Self {
-        Self {
-            agents: 0,
-            skills: 0,
-            commands: 0,
-            rules: 0,
-            hooks: 0,
-        }
-    }
-}
 
 /// Which spec-driven artifacts are present in the active workflow.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
