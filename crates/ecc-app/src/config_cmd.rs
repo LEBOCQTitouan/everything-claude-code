@@ -3,7 +3,7 @@
 use std::str::FromStr;
 
 use ecc_domain::config::log_level::LogLevel;
-use ecc_ports::config_store::{ConfigStore, RawEccConfig};
+use ecc_ports::config_store::ConfigStore;
 
 /// Errors from config command operations.
 #[derive(Debug, thiserror::Error)]
@@ -95,6 +95,7 @@ pub fn resolve_log_level(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ecc_ports::config_store::RawEccConfig;
     use ecc_test_support::InMemoryConfigStore;
 
     #[test]
