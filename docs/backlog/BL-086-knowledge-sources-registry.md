@@ -3,7 +3,7 @@ id: BL-086
 title: "Knowledge sources registry — curated reference list with quadrant organization and command integration"
 scope: HIGH
 target: "/spec"
-status: open
+status: implemented
 tags: [knowledge, sources, research, registry, documentation, spec, audit, implement, design, review, catchup]
 created: 2026-03-28
 promoted_to: ""
