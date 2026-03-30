@@ -279,6 +279,7 @@ pub fn run(
         }
         match write_state_atomic(project_dir, &state) {
             Ok(()) => {
+                tracing::info!(from = %from, to = %to, feature = %state.feature, "workflow transition");
                 let memory_info = artifact.as_ref().map(|a| (a.clone(), state.feature.clone(), state.concern));
                 (WorkflowOutput::pass(format!("Phase transition: {from} -> {to}")), memory_info)
             }

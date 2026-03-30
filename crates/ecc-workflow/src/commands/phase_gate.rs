@@ -77,7 +77,7 @@ pub fn run_with_input(project_dir: &Path, input: &str) -> WorkflowOutput {
     let phase_str = phase.to_string();
     let (tool_name, file_path, command) = parse_hook_input(input);
 
-    match tool_name.as_deref() {
+    let result = match tool_name.as_deref() {
         Some("Write") | Some("Edit") | Some("MultiEdit") => {
             let fp = file_path.as_deref().unwrap_or("");
             if is_allowed_path(fp) {
@@ -101,7 +101,11 @@ pub fn run_with_input(project_dir: &Path, input: &str) -> WorkflowOutput {
             }
         }
         _ => WorkflowOutput::pass("Tool permitted"),
-    }
+    };
+    let tool = tool_name.as_deref().unwrap_or("none");
+    let verdict = format!("{:?}", result.status);
+    tracing::info!(phase = %phase_str, tool = %tool, verdict = %verdict, "phase-gate decision");
+    result
 }
 
 enum PhaseResult {

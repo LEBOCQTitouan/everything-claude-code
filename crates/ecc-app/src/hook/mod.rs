@@ -89,6 +89,7 @@ pub fn truncate_stdin(raw: &str) -> &str {
 /// If the hook ID is unknown, returns a passthrough result with a stderr warning.
 pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     let stdin = truncate_stdin(&ctx.stdin_payload);
+    tracing::trace!(payload_len = stdin.len(), "hook stdin payload");
 
     // Check if hook is enabled
     let profile_env = ports.env.var("ECC_HOOK_PROFILE");
@@ -109,6 +110,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     }
 
     // Dispatch to handler
+    tracing::debug!(hook_id = %ctx.hook_id, "dispatching hook");
     match ctx.hook_id.as_str() {
         // Tier 1: Simple passthrough hooks
         "check:hook:enabled" => handlers::check_hook_enabled(stdin, ports),
