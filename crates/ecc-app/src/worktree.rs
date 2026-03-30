@@ -132,6 +132,14 @@ fn remove_stale_worktree(
     }
 }
 
+/// Errors returned by worktree operations.
+#[derive(Debug, thiserror::Error)]
+pub enum WorktreeError {
+    /// A shell command failed or was not found.
+    #[error("worktree operation failed: {0}")]
+    Shell(String),
+}
+
 /// Run worktree GC: remove stale `ecc-session-*` worktrees and their branches.
 ///
 /// A worktree is considered stale when:
@@ -277,6 +285,20 @@ mod tests {
         assert!(
             !result.removed.contains(&FRESH_SESSION.to_owned()),
             "active worktree must NOT be in removed"
+        );
+    }
+
+    #[test]
+    fn gc_returns_worktree_error_on_shell_failure() {
+        // Executor with no registered commands -> run_command_in_dir returns ShellError::NotFound
+        let executor = MockExecutor::new();
+
+        let err = gc(&executor, Path::new("/repo"), false).unwrap_err();
+
+        // The error must downcast to WorktreeError::Shell variant
+        assert!(
+            err.downcast_ref::<WorktreeError>().is_some(),
+            "expected WorktreeError but got a different error type"
         );
     }
 
