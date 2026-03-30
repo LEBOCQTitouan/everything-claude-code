@@ -74,7 +74,8 @@ pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
         }
         other => {
             let target = map_target(other);
-            if ecc_app::validate::run_validate(&fs, &terminal, &target, &args.ecc_root) {
+            let env = ecc_infra::os_env::OsEnvironment;
+            if ecc_app::validate::run_validate(&fs, &terminal, &env, &target, &args.ecc_root) {
                 Ok(())
             } else {
                 std::process::exit(1);
