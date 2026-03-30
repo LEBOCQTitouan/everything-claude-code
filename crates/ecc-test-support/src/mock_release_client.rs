@@ -85,40 +85,62 @@ impl Default for MockReleaseClient {
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 impl ReleaseClient for MockReleaseClient {
-    fn latest_version(&self, include_prerelease: bool) -> Result<ReleaseInfo, BoxError> {
-        todo!()
+    fn latest_version(&self, _include_prerelease: bool) -> Result<ReleaseInfo, BoxError> {
+        if let Some(ref err) = self.error_mode {
+            return Err(Box::new(err.clone()));
+        }
+        self.latest_version
+            .clone()
+            .ok_or_else(|| Box::new(MockError::NotFound("no latest version configured".to_string())) as BoxError)
     }
 
     fn get_version(&self, version: &str) -> Result<ReleaseInfo, BoxError> {
-        todo!()
+        if let Some(ref err) = self.error_mode {
+            return Err(Box::new(err.clone()));
+        }
+        self.versions
+            .get(version)
+            .cloned()
+            .ok_or_else(|| Box::new(MockError::NotFound(format!("{version} not found"))) as BoxError)
     }
 
     fn download_tarball(
         &self,
-        version: &str,
-        artifact_name: &str,
-        dest: &Path,
+        _version: &str,
+        _artifact_name: &str,
+        _dest: &Path,
         on_progress: &dyn Fn(u64, u64),
     ) -> Result<(), BoxError> {
-        todo!()
+        if let Some(ref err) = self.error_mode {
+            return Err(Box::new(err.clone()));
+        }
+        let total = self.download_bytes.len() as u64;
+        on_progress(total, total);
+        Ok(())
     }
 
     fn verify_checksum(
         &self,
-        version: &str,
-        artifact_name: &str,
-        file_path: &Path,
+        _version: &str,
+        _artifact_name: &str,
+        _file_path: &Path,
     ) -> Result<ChecksumResult, BoxError> {
-        todo!()
+        if let Some(ref err) = self.error_mode {
+            return Err(Box::new(err.clone()));
+        }
+        Ok(self.checksum_result)
     }
 
     fn verify_cosign(
         &self,
-        version: &str,
-        artifact_name: &str,
-        file_path: &Path,
+        _version: &str,
+        _artifact_name: &str,
+        _file_path: &Path,
     ) -> Result<CosignResult, BoxError> {
-        todo!()
+        if let Some(ref err) = self.error_mode {
+            return Err(Box::new(err.clone()));
+        }
+        Ok(self.cosign_result)
     }
 }
 
