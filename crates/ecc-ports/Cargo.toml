@@ -9,3 +9,4 @@ license.workspace = true
 ecc-domain = { workspace = true }
 thiserror = { workspace = true }
 serde_json = { workspace = true }
+serde = { workspace = true }

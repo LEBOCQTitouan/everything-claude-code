@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 /// A single structured log entry.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct LogEntry {
     /// Optional database row id (None before persistence).
     pub id: Option<i64>,

@@ -95,7 +95,7 @@ pub fn run(args: LogArgs) -> anyhow::Result<()> {
             } else {
                 for entry in &entries {
                     println!(
-                        "{} [{}] {} \xe2\x80\x94 {}",
+                        "{} [{}] {} - {}",
                         entry.timestamp, entry.level, entry.target, entry.message
                     );
                 }
@@ -145,7 +145,8 @@ pub fn run(args: LogArgs) -> anyhow::Result<()> {
 
 fn resolve_logs_dir(dir: Option<PathBuf>) -> PathBuf {
     dir.unwrap_or_else(|| {
-        dirs::home_dir()
+        std::env::var("HOME")
+            .map(std::path::PathBuf::from)
             .unwrap_or_default()
             .join(".ecc")
             .join("logs")

@@ -47,11 +47,11 @@ enum Command {
     Worktree(commands::worktree::WorktreeArgs),
     /// Manage knowledge sources registry
     Sources(commands::sources::SourcesArgs),
-    /// Manage the three-tier memory system
-    Memory(commands::memory::MemoryArgs),
-    /// Show ECC diagnostic status
-    Status(commands::status::StatusArgs),
-    /// Manage ECC configuration
+    /// Query and manage structured logs
+    Log(commands::log::LogArgs),
+    /// Show ECC status (workflow, versions, components)
+    Status,
+    /// Manage ECC configuration preferences
     Config(commands::config::ConfigArgs),
 }
 
@@ -78,10 +78,98 @@ fn init_tracing(verbose: u8, quiet: bool) {
         .init();
 }
 
+/// Initialize tracing with layered subscriber: stderr + optional JSON file.
+fn init_tracing(env_filter: tracing_subscriber::EnvFilter) {
+    use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+
+    let stderr_layer = tracing_subscriber::fmt::layer()
+        .with_writer(std::io::stderr)
+        .with_filter(env_filter);
+
+    // JSON rolling file layer (debug+ regardless of user filter)
+    let logs_dir = std::env::var("HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_default()
+        .join(".ecc")
+        .join("logs");
+
+    let json_layer = if logs_dir
+        .parent()
+        .map_or(false, |p| p.exists())
+    {
+        std::fs::create_dir_all(&logs_dir).ok();
+        let file_appender = tracing_appender::rolling::daily(&logs_dir, "ecc");
+        let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+        // Leak the guard so it lives for the process lifetime
+        std::mem::forget(guard);
+        Some(
+            tracing_subscriber::fmt::layer()
+                .json()
+                .with_writer(non_blocking)
+                .with_filter(
+                    tracing_subscriber::EnvFilter::new("debug"),
+                ),
+        )
+    } else {
+        None
+    };
+
+    // Session correlation: log first event with session_id
+    let session_id = std::env::var("CLAUDE_SESSION_ID").unwrap_or_else(|_| {
+        let secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let pid = std::process::id();
+        format!("ecc-{secs}-{pid:04x}")
+    });
+
+    tracing_subscriber::registry()
+        .with(stderr_layer)
+        .with(json_layer)
+        .init();
+
+    tracing::info!(session_id = %session_id, "ECC session started");
+}
+
+/// Auto-prune logs older than 30 days at startup.
+fn auto_prune_logs() -> anyhow::Result<()> {
+    let logs_dir = std::env::var("HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_default()
+        .join(".ecc")
+        .join("logs");
+    let db_path = logs_dir.join("ecc.db");
+    if !db_path.exists() {
+        return Ok(());
+    }
+    let store = ecc_infra::sqlite_log_store::SqliteLogStore::new(&db_path)?;
+    let fs = ecc_infra::os_fs::OsFileSystem;
+    let retention = std::time::Duration::from_secs(30 * 86400);
+    let result = ecc_app::log_mgmt::prune(&store, &fs, &logs_dir, retention)?;
+    tracing::info!(
+        db_rows = result.db_rows,
+        json_files = result.json_files,
+        "auto-prune complete"
+    );
+    Ok(())
+}
+
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    init_tracing(cli.verbose, cli.quiet);
+    // Initialize tracing with resolved log level
+    let filter = resolve_log_filter(cli.verbose, cli.quiet);
+    let env_filter = tracing_subscriber::EnvFilter::try_new(&filter)
+        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"));
+
+    // Compose layered subscriber: stderr + optional JSON rolling file
+    init_tracing(env_filter);
+
+    // Auto-prune old logs (non-fatal)
+    if let Err(e) = auto_prune_logs() {
+        tracing::warn!("auto-prune failed: {e}");
+    }
 
     match cli.command {
         Command::Version => commands::version::run(),
@@ -96,8 +184,8 @@ fn main() -> anyhow::Result<()> {
         Command::Backlog(args) => commands::backlog::run(args),
         Command::Worktree(args) => commands::worktree::run(args),
         Command::Sources(args) => commands::sources::run(args),
-        Command::Memory(args) => commands::memory::run(args),
-        Command::Status(args) => commands::status::run(args),
+        Command::Log(args) => commands::log::run(args),
+        Command::Status => commands::status::run(),
         Command::Config(args) => commands::config::run(args),
     }
 }
