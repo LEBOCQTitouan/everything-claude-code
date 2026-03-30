@@ -51,6 +51,8 @@ enum Command {
     Log(commands::log::LogArgs),
     /// Manage the structured memory store
     Memory(commands::memory::MemoryArgs),
+    /// Manage audit-web profile and validate reports
+    AuditWeb(commands::audit_web::AuditWebArgs),
     /// Show ECC status (workflow, versions, components)
     Status(commands::status::StatusArgs),
     /// Manage ECC configuration preferences
@@ -182,6 +184,7 @@ fn main() -> anyhow::Result<()> {
         Command::Sources(args) => commands::sources::run(args),
         Command::Log(args) => commands::log::run(args),
         Command::Memory(args) => commands::memory::run(args),
+        Command::AuditWeb(args) => commands::audit_web::run(args),
         Command::Status(args) => commands::status::run(args),
         Command::Config(args) => commands::config::run(args),
     }

@@ -5,6 +5,7 @@
 //! (install, audit, merge, validate, etc.).
 
 pub mod act_ci;
+pub mod audit_web;
 pub mod config_cmd;
 pub mod diagnostics;
 pub mod sources;
