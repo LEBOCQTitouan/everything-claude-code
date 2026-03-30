@@ -6,6 +6,13 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v5.0.0
+
+### Added
+
+- **Three-tier memory system (BL-093)**: SQLite FTS5-backed memory store at `~/.ecc/memory/memory.db` with working/episodic/semantic tiers. CLI: `ecc memory add/search/list/delete/promote/migrate/gc/stats`. Session-end consolidation (Jaccard 3-gram dedup, stale marking, relevance scoring). CONTEXT.md auto-generation. Session-start injection. Secret detection. MemoryStore port trait.
+
+
 ## v4.8.0
 
 ### Added
