@@ -1,5 +1,7 @@
 //! Deterministic report structure validation.
 
+use regex::Regex;
+
 /// Error variants from report validation (blocking).
 #[derive(Debug, PartialEq)]
 pub enum ReportError {
@@ -39,8 +41,6 @@ const REQUIRED_SECTIONS: &[&str] = &[
 /// Validate a markdown report string for required sections, score ranges,
 /// and citation counts.
 pub fn validate_report(content: &str) -> ReportValidationResult {
-    use regex::Regex;
-
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
 

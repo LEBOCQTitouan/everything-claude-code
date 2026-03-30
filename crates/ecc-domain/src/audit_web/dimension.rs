@@ -1,5 +1,6 @@
 //! Audit dimension domain types and query template sanitization.
 
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 /// A single audit dimension — standard or custom — used in Phase 2 scanning.
@@ -30,7 +31,6 @@ const SAFE_TEMPLATE_PATTERN: &str = r"^[a-zA-Z0-9 _./{}\-]+$";
 /// Allowed: `[a-zA-Z0-9 -_./{}]`
 /// Rejected: shell metacharacters (`;`, `|`, `$`, backtick, `<`, `>`, `&`, `!`, `(`, `)`, `'`, `"`)
 pub fn validate_query_template(template: &str) -> Result<(), DimensionError> {
-    use regex::Regex;
     static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
     let re = RE.get_or_init(|| Regex::new(SAFE_TEMPLATE_PATTERN).expect("valid regex pattern"));
     if re.is_match(template) {
