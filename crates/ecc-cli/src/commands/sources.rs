@@ -117,7 +117,7 @@ pub fn run(args: SourcesArgs) -> anyhow::Result<()> {
             for entry in &entries {
                 println!(
                     "{} | {} | {} | {}",
-                    entry.title, entry.url, entry.source_type, entry.quadrant
+                    entry.title, entry.url.as_str(), entry.source_type, entry.quadrant
                 );
             }
             if entries.is_empty() {
@@ -132,6 +132,7 @@ pub fn run(args: SourcesArgs) -> anyhow::Result<()> {
             subject,
             added_by,
         } => {
+            let date = today_date();
             ecc_app::sources::add(
                 &fs,
                 path,
@@ -141,6 +142,7 @@ pub fn run(args: SourcesArgs) -> anyhow::Result<()> {
                 &quadrant,
                 &subject,
                 &added_by,
+                &date,
             )
             .map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("Added: {title}");
