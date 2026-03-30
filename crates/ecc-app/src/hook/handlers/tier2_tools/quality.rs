@@ -1,6 +1,6 @@
 //! Quality hooks — typecheck and quality gate.
 
-use log::warn;
+use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
 use ecc_ports::env::Platform;

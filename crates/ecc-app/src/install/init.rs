@@ -99,7 +99,7 @@ fn init_project_apply(ctx: &InstallContext, project_dir: &Path) {
             ctx.shell
                 .run_command_in_dir("git", &["rm", "--cached", file], project_dir)
         {
-            log::warn!("git rm --cached failed: {err}");
+            tracing::warn!("git rm --cached failed: {err}");
         }
         ctx.terminal.stdout_write(&format!("Untracked: {file}\n"));
     }

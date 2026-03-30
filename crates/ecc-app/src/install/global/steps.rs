@@ -210,7 +210,7 @@ pub(super) fn step_write_manifest(
             }
         };
         if let Err(e) = write_manifest(ctx.fs, claude_dir, &new_manifest) {
-            log::warn!("Failed to write manifest: {}", e);
+            tracing::warn!("Failed to write manifest: {}", e);
             combined
                 .errors
                 .push(format!("Failed to write manifest: {e}"));

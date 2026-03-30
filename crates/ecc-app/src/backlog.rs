@@ -33,14 +33,14 @@ fn load_entries(
         let content = match fs.read_to_string(path) {
             Ok(c) => c,
             Err(e) => {
-                log::warn!("skipping {filename}: {e}");
+                tracing::warn!("skipping {filename}: {e}");
                 continue;
             }
         };
         match parse_frontmatter(&content) {
             Ok(entry) => entries.push(entry),
             Err(e) => {
-                log::warn!("skipping {filename}: {e}");
+                tracing::warn!("skipping {filename}: {e}");
             }
         }
     }

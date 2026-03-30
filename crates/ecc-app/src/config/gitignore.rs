@@ -63,7 +63,7 @@ pub fn ensure_gitignore_entries(
     let write_error = match fs.write(&gitignore_path, &new_content) {
         Ok(()) => None,
         Err(e) => {
-            log::warn!("Failed to write .gitignore: {}", e);
+            tracing::warn!("Failed to write .gitignore: {}", e);
             Some(format!("Failed to write .gitignore: {e}"))
         }
     };

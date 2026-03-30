@@ -155,9 +155,16 @@ fn main() {
         std::process::exit(0);
     }
 
-    // Initialize logging. RUST_LOG controls the level; default is off to avoid
-    // polluting hook JSON output in normal operation.
-    env_logger::init();
+    // Initialize tracing. Silent by default — only enable when ECC_LOG is explicitly set
+    // to avoid polluting hook JSON output in normal operation.
+    if let Ok(filter) = std::env::var("ECC_LOG") {
+        let env_filter = tracing_subscriber::EnvFilter::try_new(&filter)
+            .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"));
+        tracing_subscriber::fmt()
+            .with_env_filter(env_filter)
+            .with_writer(std::io::stderr)
+            .init();
+    }
 
     let cli = Cli::parse();
 
@@ -173,7 +180,7 @@ fn project_dir() -> std::path::PathBuf {
 }
 
 fn dispatch(cli: Cli) -> WorkflowOutput {
-    log::debug!(
+    tracing::debug!(
         "dispatching command: {:?}",
         std::mem::discriminant(&cli.command)
     );

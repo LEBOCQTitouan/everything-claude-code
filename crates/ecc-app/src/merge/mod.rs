@@ -139,7 +139,7 @@ fn resolve_choice(
             choice
         }
         Err(e) => {
-            log::warn!("resolve_choice: prompt failed, defaulting to Accept: {e}");
+            tracing::warn!("resolve_choice: prompt failed, defaulting to Accept: {e}");
             ReviewChoice::Accept
         }
     }
@@ -288,7 +288,7 @@ pub fn merge_skills(
     let src_entries = match ctx.fs.read_dir(src_dir) {
         Ok(e) => e,
         Err(e) => {
-            log::warn!("merge_skills: cannot read {}: {e}", src_dir.display());
+            tracing::warn!("merge_skills: cannot read {}: {e}", src_dir.display());
             return report;
         }
     };

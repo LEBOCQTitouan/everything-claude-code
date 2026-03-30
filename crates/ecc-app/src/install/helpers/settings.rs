@@ -19,7 +19,7 @@ pub(in crate::install) fn ensure_deny_rules_in_settings(
     let mut settings: serde_json::Value = match serde_json::from_str(&content) {
         Ok(v) => v,
         Err(e) => {
-            log::warn!(
+            tracing::warn!(
                 "Malformed settings.json at {}: {}",
                 settings_path.display(),
                 e
@@ -54,12 +54,12 @@ pub(in crate::install) fn ensure_deny_rules_in_settings(
         let json = match serde_json::to_string_pretty(&settings) {
             Ok(j) => j,
             Err(e) => {
-                log::warn!("Failed to serialize settings: {}", e);
+                tracing::warn!("Failed to serialize settings: {}", e);
                 return None;
             }
         };
         if let Err(e) = fs.write(settings_path, &format!("{json}\n")) {
-            log::warn!("Failed to write settings.json: {}", e);
+            tracing::warn!("Failed to write settings.json: {}", e);
             return None;
         }
     }
@@ -93,7 +93,7 @@ pub(in crate::install) fn ensure_statusline_in_settings(
     let template = match fs.read_to_string(&source_script) {
         Ok(t) => t,
         Err(e) => {
-            log::warn!(
+            tracing::warn!(
                 "Cannot read statusline script at {}: {}",
                 source_script.display(),
                 e
@@ -115,12 +115,12 @@ pub(in crate::install) fn ensure_statusline_in_settings(
     if !dry_run {
         // Write prepared script
         if let Err(e) = fs.write(&target_script, &prepared) {
-            log::warn!("Failed to write statusline script: {}", e);
+            tracing::warn!("Failed to write statusline script: {}", e);
             return None;
         }
         // Set executable permissions
         if let Err(e) = fs.set_permissions(&target_script, 0o755) {
-            log::warn!("Failed to set statusline script permissions: {}", e);
+            tracing::warn!("Failed to set statusline script permissions: {}", e);
         }
     }
 
@@ -131,7 +131,7 @@ pub(in crate::install) fn ensure_statusline_in_settings(
     let settings: serde_json::Value = match serde_json::from_str(&content) {
         Ok(v) => v,
         Err(e) => {
-            log::warn!(
+            tracing::warn!(
                 "Malformed settings.json at {}: {}",
                 settings_path.display(),
                 e
@@ -152,12 +152,12 @@ pub(in crate::install) fn ensure_statusline_in_settings(
         let json = match serde_json::to_string_pretty(&new_settings) {
             Ok(j) => j,
             Err(e) => {
-                log::warn!("Failed to serialize settings: {}", e);
+                tracing::warn!("Failed to serialize settings: {}", e);
                 return None;
             }
         };
         if let Err(e) = fs.write(settings_path, &format!("{json}\n")) {
-            log::warn!("Failed to write settings.json: {}", e);
+            tracing::warn!("Failed to write settings.json: {}", e);
             return None;
         }
     }

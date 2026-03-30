@@ -61,7 +61,7 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
 
     if !ecc_root.exists() {
         let msg = format!("ECC assets directory not found: {}", ecc_root.display());
-        log::warn!("{msg}");
+        tracing::warn!("{msg}");
         eprintln!("Error: {msg}");
         std::process::exit(1);
     }

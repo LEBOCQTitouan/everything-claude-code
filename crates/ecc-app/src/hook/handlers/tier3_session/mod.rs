@@ -9,7 +9,7 @@ mod reflection;
 mod tracking;
 mod worktree;
 
-use log::warn;
+use tracing::warn;
 use std::path::Path;
 
 pub use compact::{post_compact, pre_compact};

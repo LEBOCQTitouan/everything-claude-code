@@ -10,16 +10,13 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
-- **Knowledge sources registry (BL-086)**: Curated reference sources organized by Technology Radar quadrants (Adopt/Trial/Assess/Hold). Domain model with pure parser/serializer, app use cases for list/add/check/reindex, CLI subcommands (`ecc sources list|add|check|reindex`). Bi-directional command integrations in /spec, /implement, /design, /audit, /review, /catchup. Stale detection via curl with 90/180-day warning thresholds. Explicit module-to-subject mapping table. ADR-0031 documents sources as independent bounded context.
-- **Socratic grill-me upgrade (BL-098)**: Four SOTA questioning techniques integrated into grill-me skill — OARS (Open/Acknowledge/Reflect/Summarize), Laddering (progressive depth drilling, 7-level safety valve), MECE Decomposition (universal exhaustive partitioning), Socratic 6-Type Rotation (visible [Type] annotations). Depth profiles (shallow/standard/deep) control intensity. 25-question cap removed. grill-me-adversary companion updated. ADR-0033 created.
-
 - **Adversarial challenge for audit commands (BL-083)**: New `audit-challenger` agent (Sonnet) independently re-interrogates codebase after each domain audit, searches web for best practices, produces challenged findings (confirmed/refuted/amended). Disagreements shown to user. Graceful degradation on failure. Always-on across all 10 `/audit-*` commands + audit-orchestrator.
 
-### Deterministic Wave Grouping (BL-070)
+## v4.7.0
 
-- **`ecc-workflow wave-plan <design-path>`**: Parse design file, build PC-to-files mapping via AC cross-reference, compute file overlap, group PCs into parallel execution waves using greedy first-fit bin-packing with non-adjacent grouping (max 4 per wave).
-- **Domain module `ecc-domain::spec::wave`**: Pure `(&[PassCondition], &[FileChange], usize) -> WavePlan` with zero I/O imports. Normalizes backtick-wrapped file paths, deduplicates, handles non-parseable spec_refs gracefully.
-- **ADR-032**: Deterministic wave grouping algorithm decision.
+### Added
+
+- **Tiered diagnostics via tracing (BL-091)**: Replaced `log`+`env_logger` with `tracing`+`tracing-subscriber` across all crates. 5-level verbosity: -q (errors), default (warnings), -v (info), -vv (debug), -vvv (trace). `ECC_LOG` env var with `RUST_LOG` deprecated fallback. `ecc status` shows workflow state, versions, and component counts. `ecc config set log-level` persists verbosity preference to `~/.ecc/config.toml`. ADR 0031.
 
 ## v4.3.1
 

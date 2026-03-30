@@ -19,7 +19,7 @@ pub(super) fn find_files_by_suffix(
             files
         }
         Err(e) => {
-            log::warn!("find_files_by_suffix: cannot read {}: {e}", dir.display());
+            tracing::warn!("find_files_by_suffix: cannot read {}: {e}", dir.display());
             Vec::new()
         }
     }
@@ -33,7 +33,7 @@ pub(super) fn count_files_with_ext(dir: &Path, ext: &str, ports: &HookPorts<'_>)
             .filter(|p| p.to_string_lossy().ends_with(ext))
             .count(),
         Err(e) => {
-            log::warn!("count_files_with_ext: cannot read {}: {e}", dir.display());
+            tracing::warn!("count_files_with_ext: cannot read {}: {e}", dir.display());
             0
         }
     }
@@ -111,7 +111,7 @@ pub(super) fn extract_session_summary(content: &str) -> Option<SessionSummary> {
         let entry: serde_json::Value = match serde_json::from_str(line) {
             Ok(v) => v,
             Err(e) => {
-                log::warn!("extract_session_summary: skipping malformed JSON line: {e}");
+                tracing::warn!("extract_session_summary: skipping malformed JSON line: {e}");
                 continue;
             }
         };

@@ -13,8 +13,10 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 regex = { workspace = true }
-log = "0.4"
+tracing = "0.1"
 
 [dev-dependencies]
 ecc-test-support = { workspace = true }
 testing_logger = "0.1"
+log = "0.4"
+tracing-log = "0.2"

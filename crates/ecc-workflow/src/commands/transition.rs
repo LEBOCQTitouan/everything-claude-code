@@ -266,6 +266,7 @@ pub fn run(
             Err(e) => return (WorkflowOutput::warn(format!("Failed to read state: {e}")), None),
         };
         let from = state.phase;
+        tracing::info!(from_phase = %from, target = %target, "transition: attempting phase change");
         let to = match resolve_transition_by_name(from, &target) {
             Ok(t) => t,
             Err(e) => return (WorkflowOutput::block(format!("Illegal transition: {e}")), None),

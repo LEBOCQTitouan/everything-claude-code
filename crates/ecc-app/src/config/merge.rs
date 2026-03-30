@@ -17,7 +17,7 @@ pub fn pre_scan_directory(
     let entries = match fs.read_dir(src_dir) {
         Ok(e) => e,
         Err(e) => {
-            log::warn!("pre_scan_directory: cannot read {}: {e}", src_dir.display());
+            tracing::warn!("pre_scan_directory: cannot read {}: {e}", src_dir.display());
             return (files_to_review, unchanged);
         }
     };
