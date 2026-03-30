@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.7.0
+
+### Added
+
+- **Tiered diagnostics (BL-091)**: Replace log/env_logger with tracing/tracing-subscriber. Five verbosity levels via -v/-vv/-vvv/-q flags and ECC_LOG env var. Structured tracing events on hook dispatch, phase-gate decisions, and workflow transitions. New ecc status and ecc config set commands. ConfigStore port + FileConfigStore adapter. ADR-0032.
+
 ## v4.6.0
 
 ## v4.6.1
