@@ -92,8 +92,8 @@
 | BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-090 | ECC component scaffolding — skill + /create-component command for agents, commands, skills, hooks | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-091 | ECC diagnostics — tiered verbosity with tracing + ecc status | — | HIGH | /spec dev | implemented | 2026-03-28 |
-| BL-092 | Structured log management — JSON rolling files + SQLite index + ecc log CLI | — | HIGH | /spec dev | open | 2026-03-28 |
-| BL-093 | Three-tier memory system — semantic/episodic/working + SQLite + consolidation | — | EPIC | /spec dev | open | 2026-03-28 |
+| BL-092 | Structured log management — JSON rolling files + SQLite index + ecc log CLI | — | HIGH | /spec dev | implemented | 2026-03-28 |
+| BL-093 | Three-tier memory system — semantic/episodic/working + SQLite + consolidation | — | EPIC | /spec dev | implemented | 2026-03-28 |
 | BL-094 | Agent model routing optimization — downgrade misaligned agents to Sonnet/Haiku | — | HIGH | /spec refactor | implemented | 2026-03-28 |
 | BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
@@ -179,9 +179,9 @@ BL-109 → BL-092 (comms pipeline shares structured log infrastructure)
 ## Stats
 
 - **Total:** 108
-- **Open:** 42
+- **Open:** 40
 - **In-progress:** 0
-- **Implemented:** 62
+- **Implemented:** 64
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)
