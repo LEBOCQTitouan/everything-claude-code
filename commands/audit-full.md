@@ -79,6 +79,17 @@ The orchestrator correlates findings across domains and escalates compound risks
 
 Cross-correlated findings are reported as `[CORR-NNN]` with references to the original domain findings.
 
+### Sources Re-interrogation
+
+If `docs/sources.md` exists, consult it during the analysis phase:
+
+1. Read `docs/sources.md` and identify entries whose subjects overlap with the sub-audit domains being run
+2. For each relevant source, check for new releases, deprecation notices, or security advisories since the `last_checked` date
+3. Include actionable findings in the cross-domain correlation output
+4. List matched sources as "Consulted sources:" in the executive summary
+
+If `docs/sources.md` does not exist, skip this step silently.
+
 ## 2. Report
 
 Write to `docs/audits/full-YYYY-MM-DD.md` using today's date.

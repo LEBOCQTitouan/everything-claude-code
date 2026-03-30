@@ -34,6 +34,17 @@ The agent evaluates:
 - **Temporal coupling** — files that co-change without compile-time dependency
 
 
+## Sources Re-interrogation
+
+If `docs/sources.md` exists, consult it for relevant sources:
+
+1. Read `docs/sources.md` and identify entries whose subjects overlap with the evolution audit's focus areas (hotspots, coupling, complexity)
+2. List matched sources as "Consulted sources:" in the analysis output
+3. Check if any matched sources have new releases, deprecation notices, or security advisories since their `last_checked` date
+4. Include actionable findings from source re-interrogation in the analysis output
+
+If `docs/sources.md` does not exist, skip this step silently and proceed to the adversarial challenge.
+
 ## Adversarial Challenge
 
 > After the analysis phase completes, launch an independent adversary to challenge the findings.
