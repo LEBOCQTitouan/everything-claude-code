@@ -38,3 +38,7 @@ Knowledge reference registry with Technology Radar vocabulary. Owns `docs/source
 ### Audit Web
 
 Profile management for `/audit-web` command. Owns `docs/audits/audit-web-profile.yaml`. Independent bounded context. Aggregate: `AuditWebProfile` (versioned YAML with dimensions, thresholds, improvement history). Value objects: `AuditDimension` (with sanitized query templates), `DimensionThreshold`. Report validation: `ReportValidationResult` with section/score/citation checks.
+
+### Memory
+
+Three-tier memory system (working/episodic/semantic) for cross-session knowledge persistence. Owns `~/.ecc/memory/memory.db`. Independent bounded context. Value objects: `MemoryId` (integer newtype), `MemoryTier` (enum). Domain services: `jaccard_3gram_similarity`, `compute_relevance_score`, `contains_likely_secret`.
