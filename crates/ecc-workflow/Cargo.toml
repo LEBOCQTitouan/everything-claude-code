@@ -11,14 +11,16 @@ path = "src/main.rs"
 
 [dependencies]
 ecc-domain = { workspace = true }
+ecc-app = { workspace = true }
+ecc-infra = { workspace = true }
 ecc-flock = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
-log = "0.4"
-env_logger = "0.11"
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter", "ansi"] }
+dirs = "6"
 
 [dev-dependencies]
 tempfile = "3"

@@ -78,7 +78,7 @@ pub(crate) fn read_bounded(reader: impl Read, limit: u64) -> (String, Option<usi
 /// Read all of stdin into a string (used by hook subcommands).
 ///
 /// Input is bounded at 1 MB. If the input exceeds this limit it is truncated
-/// and a warning is logged via `tracing::warn!`.
+/// and a warning is emitted via `tracing::warn!`.
 pub fn read_stdin() -> String {
     let (content, truncated_at) = read_bounded(std::io::stdin(), MAX_STDIN_BYTES);
     if let Some(original) = truncated_at {

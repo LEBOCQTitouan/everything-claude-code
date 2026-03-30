@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand};
 
 use output::WorkflowOutput;
 
@@ -11,6 +11,14 @@ mod time;
 #[derive(Parser)]
 #[command(name = "ecc-workflow", about = "ECC workflow state machine")]
 struct Cli {
+    /// Increase verbosity (-v info, -vv debug, -vvv trace)
+    #[arg(short = 'v', long = "verbose", action = ArgAction::Count, global = true, conflicts_with = "quiet")]
+    verbose: u8,
+
+    /// Quiet mode (errors only)
+    #[arg(short = 'q', long = "quiet", global = true, conflicts_with = "verbose")]
+    quiet: bool,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -150,23 +158,37 @@ enum TasksCmd {
     },
 }
 
+fn init_tracing(verbose: u8, quiet: bool) {
+    let config_store = ecc_infra::file_config_store::FileConfigStore::new(
+        dirs::home_dir()
+            .unwrap_or_default()
+            .join(".ecc"),
+        std::env::current_dir().ok().map(|d| d.join(".ecc")),
+    );
+
+    let level = ecc_app::config_cmd::resolve_log_level(
+        verbose,
+        quiet,
+        std::env::var("ECC_LOG").ok().as_deref(),
+        std::env::var("RUST_LOG").ok().as_deref(),
+        &config_store,
+    );
+
+    let filter = tracing_subscriber::EnvFilter::new(level.to_string());
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_writer(std::io::stderr)
+        .init();
+}
+
 fn main() {
     if std::env::var("ECC_WORKFLOW_BYPASS").as_deref() == Ok("1") {
         std::process::exit(0);
     }
 
-    // Initialize tracing. Silent by default — only enable when ECC_LOG is explicitly set
-    // to avoid polluting hook JSON output in normal operation.
-    if let Ok(filter) = std::env::var("ECC_LOG") {
-        let env_filter = tracing_subscriber::EnvFilter::try_new(&filter)
-            .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"));
-        tracing_subscriber::fmt()
-            .with_env_filter(env_filter)
-            .with_writer(std::io::stderr)
-            .init();
-    }
-
     let cli = Cli::parse();
+
+    init_tracing(cli.verbose, cli.quiet);
 
     let result = dispatch(cli);
     emit_and_exit(result);
