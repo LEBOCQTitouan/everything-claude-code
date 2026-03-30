@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.7.1
+
+### Security
+
+- **Migrate serde_yml to serde-saphyr (BL-099)**: Resolves RUSTSEC-2025-0068 (segfault in serde_yml serializer). Replaced `serde_yml 0.0.12` (archived, AI-generated unsound code) with `serde-saphyr 0.0.22` (pure Rust, panic-free, no unsafe-libyaml). ADR 0034.
+
 ## v4.7.0
 
 ### Added
