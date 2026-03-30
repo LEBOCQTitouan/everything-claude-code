@@ -99,8 +99,9 @@ pub fn get_python_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     }
 
     // pyproject.toml
-    if let Ok(content) = fs.read_to_string(&dir.join("pyproject.toml")) {
-        if let Some(captures) = RE_PYPROJECT_DEPS.captures(&content) {
+    if let Ok(content) = fs.read_to_string(&dir.join("pyproject.toml"))
+        && let Some(captures) = RE_PYPROJECT_DEPS.captures(&content)
+    {
             let block = &captures[1];
             for m in RE_QUOTED.captures_iter(block) {
                 let raw = &m[1];
@@ -114,7 +115,6 @@ pub fn get_python_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
                     deps.push(name);
                 }
             }
-        }
     }
 
     deps

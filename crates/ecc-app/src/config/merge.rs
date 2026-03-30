@@ -19,6 +19,7 @@ pub fn pre_scan_directory(
     let entries = match fs.read_dir(src_dir) {
         Ok(e) => e,
         Err(e) => {
+            log::warn!("pre_scan_directory: cannot read {}: {e}", src_dir.display());
             errors.push(format!(
                 "pre_scan_directory: cannot read {}: {e}",
                 src_dir.display()
@@ -54,6 +55,7 @@ pub fn pre_scan_directory(
             let src_content = match fs.read_to_string(&src_path) {
                 Ok(c) => c,
                 Err(e) => {
+                    log::warn!("pre_scan_directory: cannot read {}: {e}", src_path.display());
                     errors.push(format!(
                         "pre_scan_directory: cannot read {}: {e}",
                         src_path.display()
@@ -395,3 +397,5 @@ mod tests {
         );
     }
 }
+
+
