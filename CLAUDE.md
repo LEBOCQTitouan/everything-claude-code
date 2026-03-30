@@ -51,6 +51,11 @@ ecc sources list          List all configured knowledge sources
 ecc sources add <url>     Add a new knowledge source
 ecc sources check         Check status of configured sources
 ecc sources reindex       Reindex sources for search
+ecc audit-web profile init    Generate suggested audit profile from codebase
+ecc audit-web profile show    Display current audit profile
+ecc audit-web profile validate  Check profile structural correctness
+ecc audit-web profile reset   Delete the audit profile
+ecc audit-web validate-report <path>  Validate radar report structure
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ecc status [--json]      Show diagnostic snapshot (versions, phase, components)

@@ -3,7 +3,7 @@ id: BL-107
 title: "Audit-web guided profile — interactive setup, persisted dimensions, improvement suggestions"
 scope: HIGH
 target: "/spec-dev"
-status: open
+status: implemented
 tags: [audit-web, profile, guided-setup, interactive, self-improvement]
 created: 2026-03-29
 related: [BL-081, BL-083]

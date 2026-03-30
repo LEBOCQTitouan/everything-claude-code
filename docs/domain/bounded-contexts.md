@@ -34,3 +34,7 @@ See also: [Glossary](glossary.md) | [Architecture](../ARCHITECTURE.md)
 ### Sources
 
 Knowledge reference registry with Technology Radar vocabulary. Owns `docs/sources.md`. Independent bounded context — no dependencies on or from other domain modules. Entries organized by quadrants (Adopt/Trial/Assess/Hold) with subject-to-module mapping for command integrations. Value objects: `SourceUrl` (validated HTTP/HTTPS URL newtype), `SourceType`, `Quadrant`. Aggregate root: `SourcesRegistry`.
+
+### Audit Web
+
+Profile management for `/audit-web` command. Owns `docs/audits/audit-web-profile.yaml`. Independent bounded context. Aggregate: `AuditWebProfile` (versioned YAML with dimensions, thresholds, improvement history). Value objects: `AuditDimension` (with sanitized query templates), `DimensionThreshold`. Report validation: `ReportValidationResult` with section/score/citation checks.
