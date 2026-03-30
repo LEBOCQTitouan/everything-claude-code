@@ -6,5 +6,6 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+ecc-domain = { workspace = true }
 thiserror = { workspace = true }
 serde_json = { workspace = true }

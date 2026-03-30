@@ -15,6 +15,8 @@ pub mod env;
 pub mod fs;
 /// File-based locking port.
 pub mod lock;
+/// Three-tier memory store port.
+pub mod memory_store;
 /// REPL line-input port.
 pub mod repl;
 /// Shell command execution port.
