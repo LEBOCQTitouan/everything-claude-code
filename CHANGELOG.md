@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.8.0
+
+### Added
+
+- **Audit-web guided profile and self-improvement (BL-107)**: YAML-based profile system with `ecc audit-web profile init|show|validate|reset` CLI commands, deterministic report validation via `ecc audit-web validate-report`, Phase 0 (guided setup with codebase scanning) and Phase 5 (self-improvement with coverage gap analysis) added to `/audit-web`. Domain types: `AuditWebProfile`, `AuditDimension`, `DimensionThreshold`, `ImprovementSuggestion`. Query template sanitization, schema versioning, non-interactive CI fallback. ADR 0035.
+
 ## v4.7.1
 
 ### Security
