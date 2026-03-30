@@ -59,7 +59,7 @@
 | BL-056 | Context-aware doc generation step at end of /implement | — | HIGH | /spec dev | implemented | 2026-03-22 |
 | BL-057 | Create grill-me-adversary companion skill with adaptive loop | — | MEDIUM | /spec | implemented | 2026-03-22 |
 | BL-058 | Symlink-based instant config switching for ecc dev | — | MEDIUM | /spec-dev | implemented | 2026-03-22 |
-| BL-059 | Auto-commit backlog edits at end of /backlog command | — | LOW | /spec-dev | open | 2026-03-22 |
+| BL-059 | Auto-commit backlog edits at end of /backlog command | — | LOW | /spec-dev | implemented | 2026-03-22 |
 | BL-060 | Simplify context management — remove graceful exit, keep warnings only | — | HIGH | /spec-refactor | implemented | 2026-03-23 |
 | BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | implemented | 2026-03-23 |
 | BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | implemented | 2026-03-26 |
