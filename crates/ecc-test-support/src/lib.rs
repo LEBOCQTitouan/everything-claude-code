@@ -13,6 +13,7 @@ pub mod in_memory_lock;
 pub mod in_memory_memory_store;
 pub mod mock_env;
 pub mod mock_executor;
+pub mod mock_release_client;
 pub mod scripted_input;
 
 pub use buffered_terminal::BufferedTerminal;
@@ -22,5 +23,6 @@ pub use in_memory_lock::InMemoryLock;
 pub use in_memory_memory_store::InMemoryMemoryStore;
 pub use mock_env::MockEnvironment;
 pub use mock_executor::MockExecutor;
+pub use mock_release_client::MockReleaseClient;
 pub use scripted_input::ScriptedInput;
 pub use in_memory_log_store::InMemoryLogStore;

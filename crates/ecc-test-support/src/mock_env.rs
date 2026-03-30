@@ -85,3 +85,14 @@ impl Environment for MockEnvironment {
         self.architecture
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn with_architecture() {
+        let env = MockEnvironment::new().with_architecture(Architecture::Arm64);
+        assert_eq!(env.architecture(), Architecture::Arm64);
+    }
+}
