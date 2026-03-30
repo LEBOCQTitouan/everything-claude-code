@@ -37,8 +37,8 @@ impl SourcesRegistry {
     /// Checks for duplicate URL across entries and inbox. Returns a new registry
     /// with the entry appended to `entries`. Returns `Err(DuplicateUrl)` on conflict.
     pub fn add(&self, entry: SourceEntry) -> Result<SourcesRegistry, SourceError> {
-        if self.find_by_url(&entry.url).is_some() {
-            return Err(SourceError::DuplicateUrl(entry.url));
+        if self.find_by_url(entry.url.as_str()).is_some() {
+            return Err(SourceError::DuplicateUrl(entry.url.as_str().to_owned()));
         }
         let mut new_entries = self.entries.clone();
         new_entries.push(entry);
@@ -109,7 +109,7 @@ impl SourcesRegistry {
         self.entries
             .iter()
             .chain(self.inbox.iter())
-            .find(|e| e.url == url)
+            .find(|e| e.url.as_str() == url)
     }
 
     /// Find entries whose subject matches any subject mapped to the given module path.
@@ -130,11 +130,11 @@ impl SourcesRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sources::entry::{SourceType};
+    use crate::sources::entry::{SourceType, SourceUrl};
 
     fn make_entry(url: &str, quadrant: Quadrant, subject: &str) -> SourceEntry {
         SourceEntry {
-            url: url.to_owned(),
+            url: SourceUrl::parse(url).unwrap(),
             title: format!("Title for {url}"),
             source_type: SourceType::Doc,
             quadrant,
@@ -174,7 +174,7 @@ mod tests {
 
         // New registry contains the entry
         assert_eq!(new_registry.entries.len(), 1);
-        assert_eq!(new_registry.entries[0].url, "https://example.com/doc");
+        assert_eq!(new_registry.entries[0].url.as_str(), "https://example.com/doc");
     }
 
     #[test]
@@ -200,7 +200,7 @@ mod tests {
         // Filter by both quadrant and subject
         let adopt_testing = registry.list(Some(&Quadrant::Adopt), Some("testing"));
         assert_eq!(adopt_testing.len(), 1);
-        assert_eq!(adopt_testing[0].url, "https://example.com/adopt-testing");
+        assert_eq!(adopt_testing[0].url.as_str(), "https://example.com/adopt-testing");
 
         // No filter returns all entries
         let all = registry.list(None, None);
@@ -231,7 +231,7 @@ mod tests {
         // Entries are sorted by quadrant then subject
         // Quadrant order: Adopt < Trial < Assess < Hold (alphabetical by display)
         // Subject alphabetical within quadrant
-        let urls: Vec<&str> = reindexed.entries.iter().map(|e| e.url.as_str()).collect();
+                let urls: Vec<&str> = reindexed.entries.iter().map(|e| e.url.as_str()).collect();
         assert!(
             urls.contains(&"https://example.com/inbox1"),
             "inbox1 should be in entries"

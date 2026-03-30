@@ -23,10 +23,44 @@ pub enum Quadrant {
     Hold,
 }
 
+/// A validated URL value object for knowledge sources.
+///
+/// Enforces that the URL has a valid HTTP/HTTPS scheme and contains a dot.
+/// Invalid URLs cannot be represented — construction fails at parse time.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceUrl(String);
+
+impl SourceUrl {
+    /// Parse and validate a URL string.
+    ///
+    /// Succeeds for `http://` and `https://` URLs containing a dot.
+    /// Rejects empty strings, missing schemes, non-HTTP schemes, and host-only URLs without a dot.
+    pub fn parse(raw: &str) -> Result<Self, SourceError> {
+        let has_valid_scheme = raw.starts_with("http://") || raw.starts_with("https://");
+        let has_dot = raw.contains('.');
+        if has_valid_scheme && has_dot {
+            Ok(Self(raw.to_owned()))
+        } else {
+            Err(SourceError::InvalidUrl(raw.to_owned()))
+        }
+    }
+
+    /// Return the inner URL string.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for SourceUrl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 /// A curated knowledge source entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceEntry {
-    pub url: String,
+    pub url: SourceUrl,
     pub title: String,
     pub source_type: SourceType,
     pub quadrant: Quadrant,
@@ -111,17 +145,11 @@ impl FromStr for Quadrant {
     }
 }
 
-/// Validate URL structure (must start with http:// or https:// and contain a dot).
+/// Validate URL structure (delegates to `SourceUrl::parse`).
 ///
-/// This is a domain rule — no I/O, no network calls.
+/// Kept as a convenience function for callers that don't need the newtype.
 pub fn validate_url(url: &str) -> Result<(), SourceError> {
-    let has_valid_scheme = url.starts_with("http://") || url.starts_with("https://");
-    let has_dot = url.contains('.');
-    if has_valid_scheme && has_dot {
-        Ok(())
-    } else {
-        Err(SourceError::InvalidUrl(url.to_owned()))
-    }
+    SourceUrl::parse(url).map(|_| ())
 }
 
 /// Validate title is non-empty after trimming whitespace.
@@ -147,7 +175,7 @@ mod tests {
     #[test]
     fn entry_construction() {
         let entry = SourceEntry {
-            url: "https://example.com".to_owned(),
+            url: SourceUrl::parse("https://example.com").unwrap(),
             title: "Example Source".to_owned(),
             source_type: SourceType::Doc,
             quadrant: Quadrant::Adopt,
@@ -158,7 +186,7 @@ mod tests {
             deprecation_reason: None,
             stale: false,
         };
-        assert_eq!(entry.url, "https://example.com");
+        assert_eq!(entry.url.as_str(), "https://example.com");
         assert_eq!(entry.title, "Example Source");
         assert_eq!(entry.source_type, SourceType::Doc);
         assert_eq!(entry.quadrant, Quadrant::Adopt);
@@ -168,6 +196,46 @@ mod tests {
         assert_eq!(entry.last_checked, Some("2026-03-29".to_owned()));
         assert!(entry.deprecation_reason.is_none());
         assert!(!entry.stale);
+    }
+
+    // --- PC-001: SourceUrl::parse valid HTTPS ---
+    #[test]
+    fn source_url_parse_valid_https() {
+        let url = SourceUrl::parse("https://example.com").unwrap();
+        assert_eq!(url.as_str(), "https://example.com");
+    }
+
+    // --- PC-002: SourceUrl::parse valid HTTP ---
+    #[test]
+    fn source_url_parse_valid_http() {
+        let url = SourceUrl::parse("http://example.com").unwrap();
+        assert_eq!(url.as_str(), "http://example.com");
+    }
+
+    // --- PC-003: SourceUrl::parse rejects no-scheme ---
+    #[test]
+    fn source_url_parse_rejects_no_scheme() {
+        assert!(SourceUrl::parse("not-a-url").is_err());
+        assert!(SourceUrl::parse("example.com").is_err());
+    }
+
+    // --- PC-004: SourceUrl::parse rejects empty ---
+    #[test]
+    fn source_url_parse_rejects_empty() {
+        assert!(SourceUrl::parse("").is_err());
+    }
+
+    // --- PC-005: SourceUrl::as_str returns inner ---
+    #[test]
+    fn source_url_as_str() {
+        let url = SourceUrl::parse("https://docs.rust-lang.org/std/").unwrap();
+        assert_eq!(url.as_str(), "https://docs.rust-lang.org/std/");
+    }
+
+    // --- PC-006: SourceUrl::parse rejects ftp:// ---
+    #[test]
+    fn source_url_parse_rejects_ftp() {
+        assert!(SourceUrl::parse("ftp://example.com").is_err());
     }
 
     #[test]
@@ -246,7 +314,7 @@ mod tests {
     #[test]
     fn deprecated_lifecycle() {
         let active = SourceEntry {
-            url: "https://example.com".to_owned(),
+            url: SourceUrl::parse("https://example.com").unwrap(),
             title: "Active".to_owned(),
             source_type: SourceType::Repo,
             quadrant: Quadrant::Adopt,

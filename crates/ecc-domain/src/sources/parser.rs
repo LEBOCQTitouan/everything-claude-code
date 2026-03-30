@@ -2,7 +2,7 @@
 //!
 //! No I/O: operates on `&str` and returns domain types.
 
-use super::entry::{Quadrant, SourceEntry, SourceError, SourceType};
+use super::entry::{Quadrant, SourceEntry, SourceError, SourceType, SourceUrl};
 use super::registry::{ModuleMapping, SourcesRegistry};
 use std::str::FromStr;
 
@@ -244,11 +244,11 @@ fn parse_entry_line(
     let stale = flags.contains(&"stale");
 
     // Validate
-    super::entry::validate_url(&url)?;
+    let source_url = SourceUrl::parse(&url)?;
     super::entry::validate_title(&title)?;
 
     Ok(SourceEntry {
-        url,
+        url: source_url,
         title,
         source_type,
         quadrant,
@@ -277,7 +277,7 @@ mod tests {
         assert_eq!(registry.inbox.len(), 1);
         let inbox_entry = &registry.inbox[0];
         assert_eq!(inbox_entry.title, "Inbox Entry");
-        assert_eq!(inbox_entry.url, "https://example.com/inbox");
+        assert_eq!(inbox_entry.url.as_str(), "https://example.com/inbox");
         assert_eq!(inbox_entry.source_type, SourceType::Repo);
         assert_eq!(inbox_entry.quadrant, Quadrant::Assess);
         assert_eq!(inbox_entry.subject, "testing");
@@ -290,7 +290,7 @@ mod tests {
         let adopt_testing = registry
             .entries
             .iter()
-            .find(|e| e.url == "https://example.com/adopt-testing")
+            .find(|e| e.url.as_str() == "https://example.com/adopt-testing")
             .expect("adopt-testing entry must exist");
         assert_eq!(adopt_testing.quadrant, Quadrant::Adopt);
         assert_eq!(adopt_testing.subject, "testing");
@@ -300,7 +300,7 @@ mod tests {
         let adopt_rust = registry
             .entries
             .iter()
-            .find(|e| e.url == "https://example.com/adopt-rust")
+            .find(|e| e.url.as_str() == "https://example.com/adopt-rust")
             .expect("adopt-rust entry must exist");
         assert_eq!(adopt_rust.quadrant, Quadrant::Adopt);
         assert_eq!(adopt_rust.subject, "rust-patterns");

@@ -114,13 +114,13 @@ fn serialize_entry(entry: &SourceEntry, include_quadrant: bool) -> String {
     }
 
     let meta = parts.join(" | ");
-    format!("- [{}]({}) \u{2014} {meta}", entry.title, entry.url)
+    format!("- [{}]({}) \u{2014} {meta}", entry.title, entry.url.as_str())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sources::entry::{Quadrant, SourceEntry, SourceType};
+    use crate::sources::entry::{Quadrant, SourceEntry, SourceType, SourceUrl};
     use crate::sources::parser::parse_sources;
     use crate::sources::registry::ModuleMapping;
 
@@ -135,7 +135,7 @@ mod tests {
         last_checked: Option<&str>,
     ) -> SourceEntry {
         SourceEntry {
-            url: url.to_owned(),
+            url: SourceUrl::parse(url).unwrap(),
             title: title.to_owned(),
             source_type,
             quadrant,
