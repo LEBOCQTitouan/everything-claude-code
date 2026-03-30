@@ -25,3 +25,4 @@ dirs = "5"
 [dev-dependencies]
 serde_json = { workspace = true }
 walkdir = { workspace = true }
+regex = { workspace = true }

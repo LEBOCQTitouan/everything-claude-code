@@ -1,12 +1,14 @@
 pub mod audit;
-pub mod sources;
 pub mod backlog;
 pub mod claw;
 pub mod completion;
+pub mod config;
 pub mod dev;
 pub mod hook;
 pub mod init;
 pub mod install;
+pub mod sources;
+pub mod status;
 pub mod validate;
 pub mod version;
 pub mod worktree;

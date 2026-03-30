@@ -1,6 +1,6 @@
 mod commands;
 
-use clap::Parser;
+use clap::{ArgAction, Parser};
 
 #[derive(Parser)]
 #[command(
@@ -10,11 +10,11 @@ use clap::Parser;
 )]
 struct Cli {
     /// Increase verbosity (-v info, -vv debug, -vvv trace)
-    #[arg(short, long, action = clap::ArgAction::Count, global = true)]
+    #[arg(short = 'v', long = "verbose", action = ArgAction::Count, global = true, conflicts_with = "quiet")]
     verbose: u8,
 
     /// Quiet mode (errors only)
-    #[arg(short, long, global = true)]
+    #[arg(short = 'q', long = "quiet", global = true, conflicts_with = "verbose")]
     quiet: bool,
 
     #[command(subcommand)]
@@ -47,71 +47,39 @@ enum Command {
     Worktree(commands::worktree::WorktreeArgs),
     /// Manage knowledge sources registry
     Sources(commands::sources::SourcesArgs),
-    /// Show ECC status (workflow, versions, components)
-    Status,
-    /// Manage ECC configuration preferences
+    /// Show ECC diagnostic status
+    Status(commands::status::StatusArgs),
+    /// Manage ECC configuration
     Config(commands::config::ConfigArgs),
 }
 
-/// Resolve the effective log level filter string.
-///
-/// Precedence: CLI flag > ECC_LOG > RUST_LOG (deprecated) > config file > default (warn)
-fn resolve_log_filter(verbose: u8, quiet: bool) -> String {
-    // 1. CLI flags (highest priority)
-    if quiet {
-        return "error".to_string();
-    }
-    if verbose >= 3 {
-        return "trace".to_string();
-    }
-    if verbose >= 2 {
-        return "debug".to_string();
-    }
-    if verbose >= 1 {
-        return "info".to_string();
-    }
+fn init_tracing(verbose: u8, quiet: bool) {
+    let config_store = ecc_infra::file_config_store::FileConfigStore::new(
+        dirs::home_dir()
+            .unwrap_or_default()
+            .join(".ecc"),
+        std::env::current_dir().ok().map(|d| d.join(".ecc")),
+    );
 
-    // 2. ECC_LOG env var
-    if let Ok(val) = std::env::var("ECC_LOG") {
-        return val;
-    }
+    let level = ecc_app::config_cmd::resolve_log_level(
+        verbose,
+        quiet,
+        std::env::var("ECC_LOG").ok().as_deref(),
+        std::env::var("RUST_LOG").ok().as_deref(),
+        &config_store,
+    );
 
-    // 3. RUST_LOG env var (deprecated, with warning)
-    if let Ok(val) = std::env::var("RUST_LOG") {
-        eprintln!("warning: RUST_LOG is deprecated for ECC, use ECC_LOG instead");
-        return val;
-    }
-
-    // 4. Config file (~/.ecc/config.toml)
-    if let Some(level) = read_config_log_level() {
-        return level;
-    }
-
-    // 5. Default
-    "warn".to_string()
-}
-
-/// Read log-level from ~/.ecc/config.toml if it exists.
-fn read_config_log_level() -> Option<String> {
-    let home = std::env::var("HOME").ok()?;
-    let config_path = std::path::Path::new(&home).join(".ecc/config.toml");
-    let content = std::fs::read_to_string(config_path).ok()?;
-    let config = ecc_domain::config::ecc_config::EccConfig::from_toml(&content).ok()?;
-    config.log_level.map(|l| l.to_string())
+    let filter = tracing_subscriber::EnvFilter::new(level.to_string());
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_writer(std::io::stderr)
+        .init();
 }
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    // Initialize tracing with resolved log level
-    let filter = resolve_log_filter(cli.verbose, cli.quiet);
-    let env_filter = tracing_subscriber::EnvFilter::try_new(&filter)
-        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"));
-
-    tracing_subscriber::fmt()
-        .with_env_filter(env_filter)
-        .with_writer(std::io::stderr)
-        .init();
+    init_tracing(cli.verbose, cli.quiet);
 
     match cli.command {
         Command::Version => commands::version::run(),
@@ -126,7 +94,7 @@ fn main() -> anyhow::Result<()> {
         Command::Backlog(args) => commands::backlog::run(args),
         Command::Worktree(args) => commands::worktree::run(args),
         Command::Sources(args) => commands::sources::run(args),
-        Command::Status => commands::status::run(),
+        Command::Status(args) => commands::status::run(args),
         Command::Config(args) => commands::config::run(args),
     }
 }

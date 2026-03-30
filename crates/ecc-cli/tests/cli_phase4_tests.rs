@@ -97,12 +97,20 @@ fn verbose_long_flag_not_recognized() {
 
 /// Compile-time assertion: ecc-cli must not contain log:: or env_logger calls.
 ///
-/// This is enforced by the pass condition: `grep -rn "log::|env_logger" crates/ecc-cli/src/`
-/// must return exit code 1 (no matches).
+/// Checks for the `log` crate macro pattern (e.g. `log::warn!`, `log::debug!`)
+/// and `env_logger`. Uses regex to avoid false-positives like `backlog::`.
 #[test]
 fn no_log_crate_calls_in_ecc_cli_src() {
     let src_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src");
     let mut found = Vec::new();
+
+    // Match `log::` only when preceded by whitespace or start-of-line / non-word char,
+    // to avoid matching `backlog::`, `catalog::`, etc.
+    // Patterns to catch:
+    //   - `log::warn!`, `log::debug!`, `log::info!`, `log::error!`, `log::trace!`
+    //   - `env_logger`
+    let log_macro_pattern = regex::Regex::new(r"(?:^|[^a-zA-Z0-9_])log::[a-z]+!").unwrap();
+    let env_logger_pattern = regex::Regex::new(r"env_logger").unwrap();
 
     for entry in walkdir::WalkDir::new(&src_dir)
         .into_iter()
@@ -111,7 +119,7 @@ fn no_log_crate_calls_in_ecc_cli_src() {
     {
         let content = std::fs::read_to_string(entry.path()).unwrap_or_default();
         for (line_no, line) in content.lines().enumerate() {
-            if line.contains("log::") || line.contains("env_logger") {
+            if log_macro_pattern.is_match(line) || env_logger_pattern.is_match(line) {
                 found.push(format!(
                     "{}:{}: {}",
                     entry.path().display(),
