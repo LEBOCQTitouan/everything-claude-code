@@ -2,12 +2,37 @@ use rusqlite::Connection;
 
 /// Ensure the SQLite schema exists, creating tables and triggers if absent.
 pub fn ensure_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
-    todo!("not yet implemented")
+    conn.execute_batch(
+        "
+        PRAGMA journal_mode=WAL;
+        CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL);
+        INSERT OR IGNORE INTO schema_version (version) VALUES (1);
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            level TEXT NOT NULL,
+            target TEXT NOT NULL,
+            message TEXT NOT NULL,
+            fields_json TEXT NOT NULL DEFAULT '{}'
+        );
+        CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(
+            message, fields_json, content=events, content_rowid=id
+        );
+        CREATE TRIGGER IF NOT EXISTS events_ai AFTER INSERT ON events BEGIN
+            INSERT INTO events_fts(rowid, message, fields_json)
+            VALUES (new.id, new.message, new.fields_json);
+        END;
+        ",
+    )?;
+    Ok(())
 }
 
 /// Run `PRAGMA integrity_check` and return true if the database is healthy.
 pub fn check_integrity(conn: &Connection) -> bool {
-    todo!("not yet implemented")
+    conn.query_row("PRAGMA integrity_check", [], |row| row.get::<_, String>(0))
+        .map(|r| r == "ok")
+        .unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -63,6 +88,8 @@ mod tests {
     fn wal_mode_is_set() {
         let conn = open_memory();
         ensure_schema(&conn).unwrap();
+        // In-memory DBs don't support WAL (silently stay in delete mode),
+        // but the PRAGMA must not error.
         let _: String = conn
             .query_row("PRAGMA journal_mode", [], |r| r.get(0))
             .unwrap();
