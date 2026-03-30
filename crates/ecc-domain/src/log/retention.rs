@@ -40,6 +40,7 @@ impl RetentionDuration {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn parses_30d() {
