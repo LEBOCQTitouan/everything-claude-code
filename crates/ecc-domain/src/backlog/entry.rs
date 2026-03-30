@@ -112,7 +112,7 @@ pub fn parse_frontmatter(content: &str) -> Result<BacklogEntry, BacklogError> {
         .find("\n---")
         .ok_or(BacklogError::NoFrontmatter)?;
     let yaml_str = &after_first[..end_pos];
-    serde_yml::from_str(yaml_str).map_err(|e| BacklogError::MalformedYaml(e.to_string()))
+    serde_saphyr::from_str(yaml_str).map_err(|e| BacklogError::MalformedYaml(e.to_string()))
 }
 
 #[cfg(test)]
@@ -194,22 +194,22 @@ mod tests {
     #[test]
     fn backlog_status_serde() {
         let yaml = "open";
-        let status: BacklogStatus = serde_yml::from_str(yaml).unwrap();
+        let status: BacklogStatus = serde_saphyr::from_str(yaml).unwrap();
         assert_eq!(status, BacklogStatus::Open);
 
         let yaml = "implemented";
-        let status: BacklogStatus = serde_yml::from_str(yaml).unwrap();
+        let status: BacklogStatus = serde_saphyr::from_str(yaml).unwrap();
         assert_eq!(status, BacklogStatus::Implemented);
 
         let yaml = "in-progress";
-        let status: BacklogStatus = serde_yml::from_str(yaml).unwrap();
+        let status: BacklogStatus = serde_saphyr::from_str(yaml).unwrap();
         assert_eq!(status, BacklogStatus::InProgress);
     }
 
     #[test]
     fn backlog_status_unknown_fallback() {
         let yaml = "custom-status";
-        let status: BacklogStatus = serde_yml::from_str(yaml).unwrap();
+        let status: BacklogStatus = serde_saphyr::from_str(yaml).unwrap();
         assert_eq!(status, BacklogStatus::Unknown("custom-status".into()));
         assert_eq!(status.as_str(), "custom-status");
         assert!(!status.is_active());
