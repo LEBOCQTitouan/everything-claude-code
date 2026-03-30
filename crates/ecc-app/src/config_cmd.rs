@@ -21,9 +21,19 @@ pub enum ConfigCmdError {
 /// Validates `level_str` via [`LogLevel::from_str`], loads the current global
 /// config, updates the `log_level` field, and saves.
 pub fn set_log_level(store: &dyn ConfigStore, level_str: &str) -> Result<(), ConfigCmdError> {
-    // Stub: always errors — tests must fail
-    let _ = (store, level_str);
-    Err(ConfigCmdError::Store("not implemented".to_owned()))
+    // Validate level
+    LogLevel::from_str(level_str).map_err(ConfigCmdError::InvalidLevel)?;
+
+    // Load current config, update, and save
+    let mut config = store
+        .load_global()
+        .map_err(|e| ConfigCmdError::Store(e.to_string()))?;
+    config.log_level = Some(level_str.to_lowercase());
+    store
+        .save_global(&config)
+        .map_err(|e| ConfigCmdError::Store(e.to_string()))?;
+
+    Ok(())
 }
 
 /// Resolve the effective log level using the full precedence chain.
@@ -32,7 +42,7 @@ pub fn set_log_level(store: &dyn ConfigStore, level_str: &str) -> Result<(), Con
 /// 1. CLI flag (`cli_verbosity` > 0 or `cli_quiet`)
 /// 2. `ECC_LOG` env var
 /// 3. `RUST_LOG` env var
-/// 4. Persisted config (merged global + local)
+/// 4. Persisted config (global)
 /// 5. Default: `Warn`
 pub fn resolve_log_level(
     cli_verbosity: u8,
@@ -41,9 +51,45 @@ pub fn resolve_log_level(
     rust_log: Option<&str>,
     store: &dyn ConfigStore,
 ) -> LogLevel {
-    // Stub: always returns Trace — most tests expecting Warn/Info/etc will fail
-    let _ = (cli_verbosity, cli_quiet, ecc_log, rust_log, store);
-    LogLevel::Trace
+    // 1. CLI flag takes highest precedence
+    if cli_quiet {
+        return LogLevel::Error;
+    }
+    if cli_verbosity >= 3 {
+        return LogLevel::Trace;
+    }
+    if cli_verbosity == 2 {
+        return LogLevel::Debug;
+    }
+    if cli_verbosity == 1 {
+        return LogLevel::Info;
+    }
+
+    // 2. ECC_LOG env var
+    if let Some(level_str) = ecc_log {
+        if let Ok(level) = LogLevel::from_str(level_str) {
+            return level;
+        }
+    }
+
+    // 3. RUST_LOG env var
+    if let Some(level_str) = rust_log {
+        if let Ok(level) = LogLevel::from_str(level_str) {
+            return level;
+        }
+    }
+
+    // 4. Persisted config
+    if let Ok(config) = store.load_global() {
+        if let Some(level_str) = &config.log_level {
+            if let Ok(level) = LogLevel::from_str(level_str) {
+                return level;
+            }
+        }
+    }
+
+    // 5. Default
+    LogLevel::Warn
 }
 
 #[cfg(test)]
