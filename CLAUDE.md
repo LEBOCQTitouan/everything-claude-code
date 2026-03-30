@@ -45,10 +45,11 @@ ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
 ecc worktree gc [--force]  Clean up stale session worktrees
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
-ecc sources list [--quadrant <q>] [--subject <s>]  List knowledge sources
-ecc sources add <url> --title <t> --type <type> --quadrant <q> --subject <s>  Add source
-ecc sources check          Check source reachability, flag stale
-ecc sources reindex [--dry-run]  Rebuild sources.md, process inbox
+ecc status [--json]      Show diagnostic snapshot (versions, phase, components)
+ecc config set <key> <value>  Set persistent config (e.g., log-level info)
+ecc-workflow tasks sync <path>   Parse tasks.md, output JSON summary
+ecc-workflow tasks update <path> <id> <status>  Atomically update PC status
+ecc-workflow tasks init <design> --output <path>  Generate tasks.md from design PCs
 cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, completions, RC)
 ```
 
