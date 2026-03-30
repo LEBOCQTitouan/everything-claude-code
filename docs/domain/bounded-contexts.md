@@ -33,4 +33,4 @@ See also: [Glossary](glossary.md) | [Architecture](../ARCHITECTURE.md)
 
 ### Sources
 
-Knowledge reference registry with Technology Radar vocabulary. Owns `docs/sources.md`. Independent bounded context — no dependencies on or from other domain modules. Entries organized by quadrants (Adopt/Trial/Assess/Hold) with subject-to-module mapping for command integrations.
+Knowledge reference registry with Technology Radar vocabulary. Owns `docs/sources.md`. Independent bounded context — no dependencies on or from other domain modules. Entries organized by quadrants (Adopt/Trial/Assess/Hold) with subject-to-module mapping for command integrations. Value objects: `SourceUrl` (validated HTTP/HTTPS URL newtype), `SourceType`, `Quadrant`. Aggregate root: `SourcesRegistry`.
