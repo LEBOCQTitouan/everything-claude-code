@@ -364,7 +364,8 @@ fn save_and_load_roundtrip() {
     assert_eq!(loaded.metadata.last_updated, EVEN_LATER);
 }
 
-/// PC-040: Corrupt aliases.json does not panic — loads empty
+/// PC-040: Corrupt aliases.json emits tracing::warn!
+#[tracing_test::traced_test]
 #[test]
 fn corrupt_aliases_warns() {
     let fs = InMemoryFileSystem::new().with_file(
@@ -372,9 +373,12 @@ fn corrupt_aliases_warns() {
         "{not valid json {{{{",
     );
 
-    let data = load_aliases(&fs, &aliases_path(), NOW);
-    // Corrupt file should produce empty aliases, not panic
-    assert!(data.aliases.is_empty(), "corrupt aliases should load as empty");
+    let _data = load_aliases(&fs, &aliases_path(), NOW);
+
+    assert!(
+        logs_contain("load_aliases") && logs_contain("corrupt"),
+        "expected tracing::warn! with 'load_aliases' and 'corrupt' in message"
+    );
 }
 
 

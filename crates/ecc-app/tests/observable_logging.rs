@@ -1,8 +1,8 @@
-/// PC-004 — Error-discard sites emit log::warn! (programmatic test).
+/// PC-004 — Error-discard sites emit tracing::warn! (programmatic test).
 ///
 /// Scans specific ecc-app source files listed in US-001 AC-001.4 for bare
 /// `Err(_) =>` patterns that discard errors silently without a corresponding
-/// `log::warn!`.
+/// `tracing::warn!`.
 ///
 /// Only the files listed in the US-001 design's File Changes table are checked.
 /// Other files are out of scope for this pass condition.
@@ -33,7 +33,7 @@ fn no_bare_error_discards() {
 
     assert!(
         violations.is_empty(),
-        "Found bare error-discard sites (Err arm without log::warn!) in US-001 target files:\n{}",
+        "Found bare error-discard sites (Err arm without tracing::warn!) in US-001 target files:\n{}",
         violations.join("\n")
     );
 }
@@ -41,8 +41,8 @@ fn no_bare_error_discards() {
 /// Check a single Rust source file for bare error discards.
 ///
 /// Strategy: find lines containing an `Err(` match arm pattern (`=>`).
-/// Then look ahead in the same arm for `log::warn!`.
-/// If `log::warn!` is absent, report a violation.
+/// Then look ahead in the same arm for `tracing::warn!`.
+/// If `tracing::warn!` is absent, report a violation.
 fn check_file(path: &std::path::Path, display: &str, violations: &mut Vec<String>) {
     let Ok(content) = std::fs::read_to_string(path) else {
         // If the file doesn't exist, skip it (it may have been removed)
@@ -57,13 +57,13 @@ fn check_file(path: &std::path::Path, display: &str, violations: &mut Vec<String
             continue;
         }
 
-        // Look at this line and the next lines until arm end for `log::warn!`
+        // Look at this line and the next lines until arm end for `tracing::warn!`
         let arm_end = find_arm_end(&lines, i);
         let arm_slice = &lines[i..=arm_end];
 
         let has_warn = arm_slice
             .iter()
-            .any(|l| l.contains("log::warn!") || l.contains("warn!("));
+            .any(|l| l.contains("tracing::warn!") || l.contains("warn!("));
 
         // Not a violation if the arm re-raises as Err(...), records to .errors/.push(), or
         // captures in a structured error field using format!.
