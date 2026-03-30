@@ -43,8 +43,8 @@ impl LogStore for InMemoryLogStore {
         let results: Vec<LogEntry> = guard
             .iter()
             .filter(|e| matches_query(e, query))
-            .cloned()
             .take(query.limit)
+            .cloned()
             .collect();
         Ok(results)
     }
@@ -54,7 +54,7 @@ impl LogStore for InMemoryLogStore {
         let filtered: Vec<&LogEntry> = guard
             .iter()
             .filter(|e| {
-                session_id.map_or(true, |sid| e.session_id == sid)
+                session_id.is_none_or(|sid| e.session_id == sid)
             })
             .collect();
         let start = filtered.len().saturating_sub(count);
@@ -71,7 +71,7 @@ impl LogStore for InMemoryLogStore {
         let mut guard = self.entries.lock().expect("lock poisoned");
         let before = guard.len();
         guard.retain(|e| {
-            parse_timestamp_secs(&e.timestamp).map_or(true, |ts| ts >= cutoff_secs)
+            parse_timestamp_secs(&e.timestamp).is_none_or(|ts| ts >= cutoff_secs)
         });
         let removed = before - guard.len();
         Ok(removed as u64)
@@ -128,10 +128,8 @@ fn matches_query(entry: &LogEntry, query: &LogQuery) -> bool {
             return false;
         }
     }
-    if let Some(ref sid) = query.session_id {
-        if entry.session_id != *sid {
-            return false;
-        }
+    if query.session_id.as_deref().is_some_and(|sid| entry.session_id != sid) {
+        return false;
     }
     if let Some(since) = query.since {
         let cutoff = SystemTime::now()
@@ -144,10 +142,8 @@ fn matches_query(entry: &LogEntry, query: &LogQuery) -> bool {
             return false;
         }
     }
-    if let Some(ref level) = query.level {
-        if !entry.level.eq_ignore_ascii_case(level) {
-            return false;
-        }
+    if query.level.as_deref().is_some_and(|lvl| !entry.level.eq_ignore_ascii_case(lvl)) {
+        return false;
     }
     true
 }

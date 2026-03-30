@@ -11,6 +11,7 @@ use super::helpers::{estimate_cost, to_u64};
 
 /// evaluate-session: count messages and log evaluation hint.
 pub fn evaluate_session(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "evaluate_session", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),
@@ -69,6 +70,7 @@ pub fn evaluate_session(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
 /// cost-tracker: estimate cost and append JSONL metrics.
 pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "cost_tracker", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),

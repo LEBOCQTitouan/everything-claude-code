@@ -37,6 +37,7 @@ fn resolve_daily_dir(ports: &HookPorts<'_>) -> Option<PathBuf> {
 
 /// stop:daily-summary — append session summary to daily memory file.
 pub fn daily_summary(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "daily_summary", "executing handler");
     let daily_dir = match resolve_daily_dir(ports) {
         Some(d) => d,
         None => return HookResult::passthrough(stdin),

@@ -4,6 +4,7 @@ use super::helpers::{extract_command, extract_tool_output, regex_find_pr_url};
 
 /// pre-bash-tmux-reminder: suggest tmux for long-running commands.
 pub fn pre_bash_tmux_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "pre_bash_tmux_reminder", "executing handler");
     use ecc_ports::env::Platform;
 
     if ports.env.platform() == Platform::Windows {
@@ -45,6 +46,7 @@ pub fn pre_bash_tmux_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResult 
 
 /// post-bash-pr-created: log PR URL after creation.
 pub fn post_bash_pr_created(stdin: &str) -> HookResult {
+    tracing::debug!(handler = "post_bash_pr_created", "executing handler");
     let cmd = extract_command(stdin);
     if !cmd.contains("gh") || !cmd.contains("pr") || !cmd.contains("create") {
         return HookResult::passthrough(stdin);
@@ -76,6 +78,7 @@ pub fn post_bash_pr_created(stdin: &str) -> HookResult {
 
 /// post-bash-build-complete: log build completion.
 pub fn post_bash_build_complete(stdin: &str) -> HookResult {
+    tracing::debug!(handler = "post_bash_build_complete", "executing handler");
     let cmd = extract_command(stdin);
     let build_patterns = ["npm run build", "pnpm build", "yarn build"];
     if build_patterns.iter().any(|p| cmd.contains(p)) {
@@ -87,6 +90,7 @@ pub fn post_bash_build_complete(stdin: &str) -> HookResult {
 
 /// suggest-compact: suggest compaction at logical intervals.
 pub fn suggest_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "suggest_compact", "executing handler");
     let session_id = ports
         .env
         .var("CLAUDE_SESSION_ID")
@@ -142,6 +146,7 @@ pub fn suggest_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 /// Parses `tool_name` and `error` from stdin JSON. If error contains build/compile
 /// or test failure keywords, emits a stderr hint. Otherwise passthrough.
 pub fn post_failure_error_context(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_failure_error_context", "executing handler");
     let parsed = serde_json::from_str::<serde_json::Value>(stdin).ok();
 
     let error = parsed
@@ -192,6 +197,7 @@ pub fn post_failure_error_context(stdin: &str, _ports: &HookPorts<'_>) -> HookRe
 ///
 /// Checks for uncommitted changes and emits a stderr reminder. Passthrough (never blocks).
 pub fn pre_prompt_context_inject(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "pre_prompt_context_inject", "executing handler");
     let diff_output = ports
         .shell
         .run_command("git", &["diff", "--stat", "--cached"]);
@@ -228,6 +234,7 @@ pub fn pre_prompt_context_inject(stdin: &str, ports: &HookPorts<'_>) -> HookResu
 ///
 /// Parses `instructions_path` from stdin JSON. Warns if file not found or empty.
 pub fn instructions_loaded_validate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "instructions_loaded_validate", "executing handler");
     let path_str = serde_json::from_str::<serde_json::Value>(stdin)
         .ok()
         .and_then(|v| v.get("instructions_path")?.as_str().map(|s| s.to_string()));
@@ -271,6 +278,7 @@ pub fn instructions_loaded_validate(stdin: &str, ports: &HookPorts<'_>) -> HookR
 /// Parses `tool_input.worktree_path` (fallback: `tool_input.name`, then `"unknown"`) from
 /// PostToolUse stdin JSON.
 pub fn post_exit_worktree_cleanup_reminder(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_exit_worktree_cleanup_reminder", "executing handler");
     let path = serde_json::from_str::<serde_json::Value>(stdin)
         .ok()
         .and_then(|v| {

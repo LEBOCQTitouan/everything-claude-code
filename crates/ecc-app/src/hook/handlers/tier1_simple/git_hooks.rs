@@ -5,6 +5,7 @@ use super::helpers::{extract_command, extract_file_path};
 
 /// check-console-log: check modified git files for console.log.
 pub fn check_console_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "check_console_log", "executing handler");
     let is_git = ports.shell.run_command("git", &["rev-parse", "--git-dir"]);
     if is_git.is_err() {
         return HookResult::passthrough(stdin);
@@ -63,6 +64,7 @@ pub fn check_console_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
 /// stop-uncommitted-reminder: warn about uncommitted changes.
 pub fn stop_uncommitted_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "stop_uncommitted_reminder", "executing handler");
     let is_git = ports.shell.run_command("git", &["rev-parse", "--git-dir"]);
     if is_git.is_err() {
         return HookResult::passthrough(stdin);
@@ -106,6 +108,7 @@ pub fn stop_uncommitted_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResu
 
 /// pre-bash-git-push-reminder: warn before git push.
 pub fn pre_bash_git_push_reminder(stdin: &str) -> HookResult {
+    tracing::debug!(handler = "pre_bash_git_push_reminder", "executing handler");
     let cmd = extract_command(stdin);
     if cmd.contains("git") && cmd.contains("push") {
         let msg = "[Hook] Review changes before push...\n\
@@ -117,6 +120,7 @@ pub fn pre_bash_git_push_reminder(stdin: &str) -> HookResult {
 
 /// post-edit-console-warn: warn about console.log after edits.
 pub fn post_edit_console_warn(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_edit_console_warn", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);

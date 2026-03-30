@@ -10,6 +10,7 @@ use super::helpers::{detect_formatter, extract_file_path, find_project_root, val
 
 /// post-edit-format: auto-format JS/TS files after edits.
 pub fn post_edit_format(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_edit_format", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);

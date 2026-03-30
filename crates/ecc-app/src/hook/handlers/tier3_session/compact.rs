@@ -10,6 +10,7 @@ use super::{epoch_secs, log_write_failure};
 
 /// pre-compact: save state before context compaction.
 pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "pre_compact", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),
@@ -52,6 +53,7 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 ///
 /// Parses `compact_summary` from stdin JSON. Appends to compaction-log.txt.
 pub fn post_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_compact", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),

@@ -10,6 +10,7 @@ use super::helpers::{extract_file_path, find_ancestor_with, validate_file_path};
 
 /// post-edit-typecheck: run tsc --noEmit after .ts/.tsx edits.
 pub fn post_edit_typecheck(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_edit_typecheck", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);
@@ -81,6 +82,7 @@ pub fn post_edit_typecheck(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
 /// quality-gate: multi-language quality checks.
 pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "quality_gate", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() || !ports.fs.exists(Path::new(&file_path)) {
         return HookResult::passthrough(stdin);

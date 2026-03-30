@@ -50,6 +50,7 @@ const GENERIC_NAMES: &[&str] = &[
 
 /// pre:edit:boundary-crossing — block edits that introduce outward imports in domain files.
 pub fn pre_edit_boundary_crossing(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "pre_edit_boundary_crossing", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);
@@ -89,6 +90,7 @@ pub fn pre_edit_boundary_crossing(stdin: &str, _ports: &HookPorts<'_>) -> HookRe
 
 /// post:edit:boy-scout-delta — suggest one small improvement near the edit location.
 pub fn post_edit_boy_scout_delta(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_edit_boy_scout_delta", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);
@@ -153,6 +155,7 @@ pub fn post_edit_boy_scout_delta(stdin: &str, ports: &HookPorts<'_>) -> HookResu
 
 /// post:edit:naming-review — warn about generic identifier names in edit content.
 pub fn post_edit_naming_review(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_edit_naming_review", "executing handler");
     let edit_content = extract_edit_content(stdin);
     if edit_content.is_empty() {
         return HookResult::passthrough(stdin);
@@ -203,6 +206,7 @@ pub fn post_edit_naming_review(stdin: &str, _ports: &HookPorts<'_>) -> HookResul
 
 /// post:edit:newspaper-check — warn if private functions appear before public ones.
 pub fn post_edit_newspaper_check(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_edit_newspaper_check", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);
@@ -245,6 +249,7 @@ pub fn post_edit_newspaper_check(stdin: &str, ports: &HookPorts<'_>) -> HookResu
 
 /// pre:edit:stepdown-warning — warn if edited content mixes abstraction levels.
 pub fn pre_edit_stepdown_warning(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "pre_edit_stepdown_warning", "executing handler");
     let edit_content = extract_edit_content(stdin);
     if edit_content.is_empty() {
         return HookResult::passthrough(stdin);

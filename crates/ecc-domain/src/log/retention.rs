@@ -7,13 +7,15 @@ pub struct RetentionDuration {
     pub days: u32,
 }
 
-impl RetentionDuration {
+impl std::str::FromStr for RetentionDuration {
+    type Err = String;
+
     /// Parse a retention duration from a string in `Nd` format.
     ///
     /// # Errors
     ///
     /// Returns `Err` if the string is not a valid `Nd` pattern or if `N` is zero.
-    pub fn from_str(s: &str) -> Result<Self, String> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let stripped = s
             .strip_suffix('d')
             .ok_or_else(|| format!("invalid retention duration '{s}': must end with 'd'"))?;
@@ -26,6 +28,9 @@ impl RetentionDuration {
         Ok(Self { days })
     }
 
+}
+
+impl RetentionDuration {
     /// Returns the default retention of 30 days.
     pub fn default_30_days() -> Self {
         Self { days: 30 }

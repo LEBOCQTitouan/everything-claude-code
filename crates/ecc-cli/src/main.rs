@@ -95,7 +95,7 @@ fn init_tracing(env_filter: tracing_subscriber::EnvFilter) {
 
     let json_layer = if logs_dir
         .parent()
-        .map_or(false, |p| p.exists())
+        .is_some_and(|p| p.exists())
     {
         std::fs::create_dir_all(&logs_dir).ok();
         let file_appender = tracing_appender::rolling::daily(&logs_dir, "ecc");

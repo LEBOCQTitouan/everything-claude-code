@@ -88,8 +88,11 @@ pub fn truncate_stdin(raw: &str) -> &str {
 /// If the hook is disabled by profile/env, returns a passthrough result.
 /// If the hook ID is unknown, returns a passthrough result with a stderr warning.
 pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
+    let span = tracing::debug_span!("hook_dispatch", hook_id = %ctx.hook_id);
+    let _guard = span.enter();
+
     let stdin = truncate_stdin(&ctx.stdin_payload);
-    tracing::trace!(payload_len = stdin.len(), "hook stdin payload");
+    let start = std::time::Instant::now();
 
     // Check if hook is enabled
     let profile_env = ports.env.var("ECC_HOOK_PROFILE");
@@ -106,12 +109,14 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
             &opts,
         )
     {
+        tracing::debug!(hook_id = %ctx.hook_id, "hook skipped: disabled by profile/env");
         return HookResult::passthrough(stdin);
     }
 
-    // Dispatch to handler
     tracing::debug!(hook_id = %ctx.hook_id, "dispatching hook");
-    match ctx.hook_id.as_str() {
+
+    // Dispatch to handler
+    let result = match ctx.hook_id.as_str() {
         // Tier 1: Simple passthrough hooks
         "check:hook:enabled" => handlers::check_hook_enabled(stdin, ports),
         "session:end:marker" => handlers::session_end_marker(stdin, ports),
@@ -176,7 +181,11 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
             let msg = format!("[Hook] Unknown hook ID: {}\n", ctx.hook_id);
             HookResult::warn(stdin, &msg)
         }
-    }
+    };
+
+    let duration_ms = start.elapsed().as_millis() as u64;
+    tracing::debug!(duration_ms, hook_id = %ctx.hook_id, "hook dispatch completed");
+    result
 }
 
 #[cfg(test)]

@@ -3,6 +3,7 @@ use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 
 /// check-hook-enabled: returns "yes" or "no" based on profile.
 pub fn check_hook_enabled(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "check_hook_enabled", "executing handler");
     // This hook checks if a *different* hook is enabled.
     // The hook_id to check comes from stdin (JSON with hook_id field) or is just the raw stdin.
     let check_id = match serde_json::from_str::<serde_json::Value>(stdin) {
@@ -38,6 +39,7 @@ pub fn check_hook_enabled(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
 /// session-end-marker: passthrough stdin (lifecycle marker, non-blocking).
 pub fn session_end_marker(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "session_end_marker", "executing handler");
     HookResult::passthrough(stdin)
 }
 

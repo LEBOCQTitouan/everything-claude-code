@@ -88,6 +88,7 @@ fn send_notification(title: &str, message: &str, ports: &HookPorts<'_>) {
 ///
 /// Fire-and-forget: notification failures are silently ignored.
 pub fn stop_notify(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "stop_notify", "executing handler");
     // Opt-out check
     if let Some(val) = ports.env.var("ECC_NOTIFY_ENABLED") {
         let lower = val.to_lowercase();

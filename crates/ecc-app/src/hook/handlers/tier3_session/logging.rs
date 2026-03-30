@@ -12,6 +12,7 @@ use super::{epoch_secs, log_write_failure};
 ///
 /// Parses `agent_type` from stdin JSON.
 pub fn subagent_start_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "subagent_start_log", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),
@@ -45,6 +46,7 @@ pub fn subagent_start_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 ///
 /// Parses `agent_type` from stdin JSON.
 pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "subagent_stop_log", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),
@@ -78,6 +80,7 @@ pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 ///
 /// Parses `config_key` and `config_value` from stdin JSON.
 pub fn config_change_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "config_change_log", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),

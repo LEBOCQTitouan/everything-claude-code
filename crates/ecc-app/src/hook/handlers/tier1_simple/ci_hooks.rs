@@ -6,6 +6,7 @@ const PROTECTED_BRANCHES: &[&str] = &["main", "master", "production"];
 
 /// pre:edit-write:workflow-branch-guard -- block workflow edits on protected branches.
 pub fn pre_edit_write_workflow_branch_guard(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "pre_edit_write_workflow_branch_guard", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);

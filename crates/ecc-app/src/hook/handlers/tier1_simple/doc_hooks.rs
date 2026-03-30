@@ -5,6 +5,7 @@ use super::helpers::{extract_file_path, scan_exports};
 
 /// doc-file-warning: warn about non-standard documentation files.
 pub fn doc_file_warning(stdin: &str) -> HookResult {
+    tracing::debug!(handler = "doc_file_warning", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);
@@ -61,6 +62,7 @@ pub fn doc_file_warning(stdin: &str) -> HookResult {
 
 /// doc-coverage-reminder: remind about undocumented exports.
 pub fn doc_coverage_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "doc_coverage_reminder", "executing handler");
     let file_path = extract_file_path(stdin);
     if file_path.is_empty() {
         return HookResult::passthrough(stdin);

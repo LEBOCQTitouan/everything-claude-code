@@ -14,6 +14,7 @@ use super::helpers::{
 
 /// session-start: load previous context, detect project type.
 pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "session_start", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),
@@ -99,6 +100,7 @@ pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
 /// session-end: persist session summary from transcript.
 pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "session_end", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),

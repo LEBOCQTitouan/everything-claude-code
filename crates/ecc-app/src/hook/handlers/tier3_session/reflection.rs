@@ -10,6 +10,7 @@ use super::{epoch_secs, log_write_failure};
 
 /// stop:oath-reflection — summarize session against Programmer's Oath.
 pub fn oath_reflection(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "oath_reflection", "executing handler");
     // Parse recent git log to count commit types
     let log_output = ports.shell.run_command("git", &["log", "--oneline", "-50"]);
     let log_lines = match log_output {
@@ -92,6 +93,7 @@ pub fn oath_reflection(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
 /// stop:craft-velocity — calculate rework ratio and append to metrics.
 pub fn craft_velocity(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "craft_velocity", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),

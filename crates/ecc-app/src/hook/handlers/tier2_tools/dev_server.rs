@@ -7,6 +7,7 @@ use super::helpers::{extract_command, split_shell_segments};
 
 /// pre-bash-dev-server-block: block dev servers outside tmux.
 pub fn pre_bash_dev_server_block(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "pre_bash_dev_server_block", "executing handler");
     if ports.env.platform() == Platform::Windows {
         return HookResult::passthrough(stdin);
     }

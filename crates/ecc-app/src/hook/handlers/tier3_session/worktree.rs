@@ -11,6 +11,7 @@ use super::{epoch_secs, log_write_failure};
 /// Parses `tool_input.worktree_path` (fallback: `tool_input.name`, then `"unknown"`) from
 /// PostToolUse stdin JSON.
 pub fn post_enter_worktree_session_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "post_enter_worktree_session_log", "executing handler");
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),
