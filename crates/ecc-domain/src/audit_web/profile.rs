@@ -12,6 +12,7 @@ pub struct AuditWebProfile {
     pub version: u32,
     pub dimensions: Vec<AuditDimension>,
     pub thresholds: DimensionThreshold,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub improvement_history: Vec<ImprovementSuggestion>,
 }
 
@@ -52,7 +53,7 @@ pub enum ProfileError {
 /// Validates the schema version after deserialization.
 pub fn parse_profile(yaml: &str) -> Result<AuditWebProfile, ProfileError> {
     let profile: AuditWebProfile =
-        serde_yml::from_str(yaml).map_err(|e| ProfileError::MalformedYaml(e.to_string()))?;
+        serde_saphyr::from_str(yaml).map_err(|e| ProfileError::MalformedYaml(e.to_string()))?;
     if profile.version != CURRENT_PROFILE_VERSION {
         return Err(ProfileError::UnsupportedVersion {
             version: profile.version,
@@ -64,7 +65,7 @@ pub fn parse_profile(yaml: &str) -> Result<AuditWebProfile, ProfileError> {
 
 /// Serialize an `AuditWebProfile` to a YAML string.
 pub fn serialize_profile(profile: &AuditWebProfile) -> String {
-    serde_yml::to_string(profile).expect("AuditWebProfile is always serializable")
+    serde_saphyr::to_string(profile).expect("AuditWebProfile is always serializable")
 }
 
 #[cfg(test)]
