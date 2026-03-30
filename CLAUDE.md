@@ -89,6 +89,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - `hooks.json` lives in `hooks/`, not the project root
 - Skill directory name must match the `name` field in its frontmatter
 - Test count in CLAUDE.md (currently 1562) must be updated after adding or removing tests
+- `pre:edit-write:workflow-branch-guard` blocks `.github/workflows/` edits on main/master/production — create a feature branch first
 - ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
 
 ## Development Notes

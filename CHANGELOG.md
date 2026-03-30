@@ -8,6 +8,15 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## v4.6.0
 
+## v4.6.1
+
+### Added
+
+- `github-actions` skill: CI/CD patterns, debugging, caching, secrets for GitHub Actions
+- `github-actions-rust` skill: cross-compilation matrix, cargo caching, release patterns for Rust CI
+- `rules/ecc/github-actions.md`: documents all 4 ECC workflows (ci, release, cd, maintenance)
+- `pre:edit-write:workflow-branch-guard` hook: blocks workflow file edits on protected branches (main/master/production)
+
 ### Added
 
 - **Adversarial challenge for audit commands (BL-083)**: New `audit-challenger` agent (Sonnet) independently re-interrogates codebase after each domain audit, searches web for best practices, produces challenged findings (confirmed/refuted/amended). Disagreements shown to user. Graceful degradation on failure. Always-on across all 10 `/audit-*` commands + audit-orchestrator.
