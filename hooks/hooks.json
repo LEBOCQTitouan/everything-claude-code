@@ -72,6 +72,16 @@
           }
         ],
         "description": "Warn when edit content mixes abstraction levels (Stepdown Rule)"
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"pre:edit-write:workflow-branch-guard\" \"standard,strict\""
+          }
+        ],
+        "description": "Block workflow file edits on protected branches (main/master/production)"
       }
     ],
     "PreCompact": [
