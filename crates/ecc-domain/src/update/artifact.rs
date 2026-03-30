@@ -15,7 +15,19 @@ impl ArtifactName {
     ///
     /// Returns [`UpdateError::UnsupportedPlatform`] if the combination is not supported.
     pub fn resolve(platform: &str, arch: &str) -> Result<Self, UpdateError> {
-        todo!("implement ArtifactName::resolve")
+        let name = match (platform, arch) {
+            ("macos", "arm64") => "ecc-darwin-arm64",
+            ("macos", "x86_64") => "ecc-darwin-x64",
+            ("linux", "x86_64") => "ecc-linux-x64",
+            ("linux", "aarch64") => "ecc-linux-arm64",
+            _ => {
+                return Err(UpdateError::UnsupportedPlatform {
+                    platform: platform.to_string(),
+                    arch: arch.to_string(),
+                })
+            }
+        };
+        Ok(Self(name.to_string()))
     }
 
     /// Return the artifact name as a string slice.

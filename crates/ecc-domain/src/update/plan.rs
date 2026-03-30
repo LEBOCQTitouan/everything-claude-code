@@ -14,7 +14,15 @@ impl UpdatePlan {
     /// Create a new update plan, computing `is_downgrade` and `is_already_current`
     /// from the version comparison.
     pub fn new(current: &Version, target: &Version, artifact: &ArtifactName) -> Self {
-        todo!("implement UpdatePlan::new")
+        let is_already_current = current == target;
+        let is_downgrade = !is_already_current && current.is_newer_than(target);
+        Self {
+            current_version: current.clone(),
+            target_version: target.clone(),
+            artifact_name: artifact.clone(),
+            is_downgrade,
+            is_already_current,
+        }
     }
 }
 
