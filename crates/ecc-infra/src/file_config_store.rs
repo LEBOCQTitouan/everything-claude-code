@@ -30,7 +30,7 @@ impl FileConfigStore {
     }
 }
 
-// Internal TOML representation.
+// Internal TOML representation with serde derives.
 #[derive(serde::Serialize, serde::Deserialize, Default)]
 struct ConfigToml {
     #[serde(default)]
@@ -53,6 +53,7 @@ impl From<&RawEccConfig> for ConfigToml {
     }
 }
 
+/// Read a TOML config file, returning `None` when the file does not exist.
 fn read_toml(path: &std::path::Path) -> Result<Option<RawEccConfig>, ConfigError> {
     if !path.exists() {
         return Ok(None);
@@ -66,15 +67,35 @@ fn read_toml(path: &std::path::Path) -> Result<Option<RawEccConfig>, ConfigError
 
 impl ConfigStore for FileConfigStore {
     fn load_global(&self) -> Result<RawEccConfig, ConfigError> {
-        todo!("load_global not implemented")
+        let path = self.global_dir.join("config.toml");
+        match read_toml(&path)? {
+            Some(cfg) => Ok(cfg),
+            None => Ok(RawEccConfig::default()),
+        }
     }
 
     fn load_local(&self) -> Result<Option<RawEccConfig>, ConfigError> {
-        todo!("load_local not implemented")
+        let Some(ref local_dir) = self.local_dir else {
+            return Ok(None);
+        };
+        let path = local_dir.join(".ecc").join("config.toml");
+        read_toml(&path)
     }
 
-    fn save_global(&self, _config: &RawEccConfig) -> Result<(), ConfigError> {
-        todo!("save_global not implemented")
+    fn save_global(&self, config: &RawEccConfig) -> Result<(), ConfigError> {
+        std::fs::create_dir_all(&self.global_dir)
+            .map_err(|e| ConfigError::Io(e.to_string()))?;
+
+        let toml_repr = ConfigToml::from(config);
+        let serialized =
+            toml::to_string(&toml_repr).map_err(|e| ConfigError::Io(e.to_string()))?;
+
+        // Atomic write: write to tempfile then rename.
+        let tmp_path = self.global_dir.join(".config.toml.tmp");
+        std::fs::write(&tmp_path, &serialized).map_err(|e| ConfigError::Io(e.to_string()))?;
+        std::fs::rename(&tmp_path, self.global_dir.join("config.toml"))
+            .map_err(|e| ConfigError::Io(e.to_string()))?;
+        Ok(())
     }
 }
 
