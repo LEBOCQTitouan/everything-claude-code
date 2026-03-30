@@ -3,7 +3,7 @@ id: BL-099
 title: "Migrate serde_yml to serde-yaml-ng — maintenance risk mitigation"
 scope: MEDIUM
 target: "/spec-refactor"
-status: open
+status: implemented
 tags: [dependencies, yaml, serde, security, maintenance]
 created: 2026-03-29
 related: []

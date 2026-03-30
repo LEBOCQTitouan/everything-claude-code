@@ -99,7 +99,7 @@
 | BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-098 | Socratic grill-me upgrade — OARS, laddering, MECE, reflective rephrasing | — | HIGH | /spec-dev | implemented | 2026-03-29 |
-| BL-099 | Migrate serde_yml to serde-yaml-ng — maintenance risk mitigation | — | MEDIUM | /spec-refactor | open | 2026-03-29 |
+| BL-099 | Migrate serde_yml to serde-yaml-ng — maintenance risk mitigation | — | MEDIUM | /spec-refactor | implemented | 2026-03-29 |
 | BL-100 | sccache + mold build acceleration for dev environment | — | LOW | direct edit | open | 2026-03-29 |
 | BL-101 | Miri unsafe code verification for ecc-flock | — | LOW | direct edit | open | 2026-03-29 |
 | BL-102 | Promptware Engineering practices — prompt testing and monitoring | — | MEDIUM | /spec-dev | open | 2026-03-29 |
