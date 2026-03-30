@@ -44,9 +44,9 @@ impl LogStore for InMemoryLogStore {
             .iter()
             .filter(|e| matches_query(e, query))
             .cloned()
+            .take(query.limit)
             .collect();
-        let limit = if query.limit == 0 { 100 } else { query.limit };
-        Ok(results.into_iter().take(limit).collect())
+        Ok(results)
     }
 
     fn tail(&self, count: usize, session_id: Option<&str>) -> Result<Vec<LogEntry>, LogStoreError> {
