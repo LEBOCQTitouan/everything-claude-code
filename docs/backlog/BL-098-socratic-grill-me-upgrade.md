@@ -3,7 +3,7 @@ id: BL-098
 title: "Socratic grill-me upgrade — depth-first questioning with OARS, laddering, MECE, and reflective rephrasing"
 scope: HIGH
 target: "/spec-dev"
-status: open
+status: implemented
 tags: [grill-me, socratic, questioning, OARS, laddering, MECE, depth]
 created: 2026-03-29
 related: [BL-011, BL-057, BL-061]

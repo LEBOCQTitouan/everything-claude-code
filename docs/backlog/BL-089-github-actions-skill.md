@@ -3,7 +3,7 @@ id: BL-089
 title: "GitHub Actions skill + branch isolation hook for CI/CD workflow development"
 scope: HIGH
 target: "/spec dev"
-status: open
+status: implemented
 tags: [skill, github-actions, ci-cd, hooks, branch-isolation]
 created: 2026-03-28
 related: [BL-087, BL-088, BL-065]

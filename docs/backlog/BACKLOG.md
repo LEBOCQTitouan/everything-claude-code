@@ -89,7 +89,7 @@
 | BL-086 | Knowledge sources registry — curated reference list with quadrant organization and command integration | — | HIGH | /spec | implemented | 2026-03-28 |
 | BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | implemented | 2026-03-28 |
 | BL-088 | ecc update — self-update from GitHub Releases + cargo xtask deploy for dev | — | HIGH | /spec dev | open | 2026-03-28 |
-| BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | open | 2026-03-28 |
+| BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-090 | ECC component scaffolding — skill + /create-component command for agents, commands, skills, hooks | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-091 | ECC diagnostics — tiered verbosity with tracing + ecc status | — | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-092 | Structured log management — JSON rolling files + SQLite index + ecc log CLI | — | HIGH | /spec dev | open | 2026-03-28 |
@@ -98,7 +98,7 @@
 | BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | open | 2026-03-29 |
-| BL-098 | Socratic grill-me upgrade — OARS, laddering, MECE, reflective rephrasing | — | HIGH | /spec-dev | open | 2026-03-29 |
+| BL-098 | Socratic grill-me upgrade — OARS, laddering, MECE, reflective rephrasing | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-099 | Migrate serde_yml to serde-yaml-ng — maintenance risk mitigation | — | MEDIUM | /spec-refactor | open | 2026-03-29 |
 | BL-100 | sccache + mold build acceleration for dev environment | — | LOW | direct edit | open | 2026-03-29 |
 | BL-101 | Miri unsafe code verification for ecc-flock | — | LOW | direct edit | open | 2026-03-29 |
