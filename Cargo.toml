@@ -34,7 +34,7 @@ clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
 
 # Database / logging
-rusqlite = { version = "0.33", features = ["bundled"] }
+rusqlite = { version = "0.34", features = ["bundled", "modern_sqlite"] }
 tracing-appender = "0.2"
 notify = "7"
 
@@ -44,9 +44,6 @@ libc = "0.2"
 # Interactive
 rustyline = "15"
 crossterm = "0.28"
-
-# Database
-rusqlite = { version = "0.34", features = ["bundled", "modern_sqlite"] }
 
 # Workspace crates
 ecc-domain = { path = "crates/ecc-domain" }

@@ -49,33 +49,12 @@ enum Command {
     Sources(commands::sources::SourcesArgs),
     /// Query and manage structured logs
     Log(commands::log::LogArgs),
+    /// Manage the structured memory store
+    Memory(commands::memory::MemoryArgs),
     /// Show ECC status (workflow, versions, components)
-    Status,
+    Status(commands::status::StatusArgs),
     /// Manage ECC configuration preferences
     Config(commands::config::ConfigArgs),
-}
-
-fn init_tracing(verbose: u8, quiet: bool) {
-    let config_store = ecc_infra::file_config_store::FileConfigStore::new(
-        dirs::home_dir()
-            .unwrap_or_default()
-            .join(".ecc"),
-        std::env::current_dir().ok().map(|d| d.join(".ecc")),
-    );
-
-    let level = ecc_app::config_cmd::resolve_log_level(
-        verbose,
-        quiet,
-        std::env::var("ECC_LOG").ok().as_deref(),
-        std::env::var("RUST_LOG").ok().as_deref(),
-        &config_store,
-    );
-
-    let filter = tracing_subscriber::EnvFilter::new(level.to_string());
-    tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .with_writer(std::io::stderr)
-        .init();
 }
 
 /// Initialize tracing with layered subscriber: stderr + optional JSON file.
@@ -155,6 +134,23 @@ fn auto_prune_logs() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Resolve the tracing filter string from verbosity flags, env vars, and config.
+fn resolve_log_filter(verbose: u8, quiet: bool) -> String {
+    use ecc_infra::file_config_store::FileConfigStore;
+    let config_store = FileConfigStore::new(
+        dirs::home_dir().unwrap_or_default().join(".ecc"),
+        std::env::current_dir().ok().map(|d| d.join(".ecc")),
+    );
+    let level = ecc_app::config_cmd::resolve_log_level(
+        verbose,
+        quiet,
+        std::env::var("ECC_LOG").ok().as_deref(),
+        std::env::var("RUST_LOG").ok().as_deref(),
+        &config_store,
+    );
+    level.to_string()
+}
+
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
@@ -185,7 +181,8 @@ fn main() -> anyhow::Result<()> {
         Command::Worktree(args) => commands::worktree::run(args),
         Command::Sources(args) => commands::sources::run(args),
         Command::Log(args) => commands::log::run(args),
-        Command::Status => commands::status::run(),
+        Command::Memory(args) => commands::memory::run(args),
+        Command::Status(args) => commands::status::run(args),
         Command::Config(args) => commands::config::run(args),
     }
 }

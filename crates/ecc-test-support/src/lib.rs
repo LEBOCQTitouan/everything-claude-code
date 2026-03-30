@@ -6,6 +6,7 @@
 //! I/O-free testing of application use cases.
 
 pub mod buffered_terminal;
+pub mod in_memory_config_store;
 pub mod in_memory_log_store;
 pub mod in_memory_fs;
 pub mod in_memory_lock;
