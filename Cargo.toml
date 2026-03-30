@@ -33,6 +33,11 @@ walkdir = "2"
 clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
 
+# Database / logging
+rusqlite = { version = "0.33", features = ["bundled"] }
+tracing-appender = "0.2"
+notify = "7"
+
 # System
 libc = "0.2"
 

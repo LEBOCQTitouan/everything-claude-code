@@ -12,5 +12,6 @@ pub mod std_terminal;
 
 #[cfg(unix)]
 pub mod flock_lock;
-pub mod file_config_store;
-pub mod sqlite_memory;
+
+pub mod log_schema;
+pub mod sqlite_log_store;
