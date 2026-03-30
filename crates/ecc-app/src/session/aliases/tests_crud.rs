@@ -364,7 +364,7 @@ fn save_and_load_roundtrip() {
     assert_eq!(loaded.metadata.last_updated, EVEN_LATER);
 }
 
-/// PC-040: Corrupt aliases.json emits log::warn!
+/// PC-040: Corrupt aliases.json emits tracing::warn!
 #[test]
 fn corrupt_aliases_warns() {
     use testing_logger;
@@ -390,7 +390,7 @@ fn corrupt_aliases_warns() {
                 .map(|l| format!("[{}] {}", l.level, l.body))
                 .collect();
             panic!(
-                "expected log::warn! with 'load_aliases' and 'corrupt' in message.\nCaptured logs: {messages:?}"
+                "expected tracing::warn! with 'load_aliases' and 'corrupt' in message.\nCaptured logs: {messages:?}"
             );
         }
     });

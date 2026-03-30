@@ -1,6 +1,6 @@
 //! Formatting hooks — auto-format JS/TS files after edits.
 
-use log::warn;
+use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
 use ecc_ports::env::Platform;

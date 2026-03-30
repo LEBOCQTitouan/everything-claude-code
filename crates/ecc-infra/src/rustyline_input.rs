@@ -24,10 +24,10 @@ impl RustylineInput {
             if let Some(parent) = path.parent()
                 && let Err(err) = std::fs::create_dir_all(parent)
             {
-                log::warn!("create history dir failed: {err}");
+                tracing::warn!("create history dir failed: {err}");
             }
             if let Err(err) = editor.load_history(path) {
-                log::warn!("load history failed: {err}");
+                tracing::warn!("load history failed: {err}");
             }
         }
 
@@ -44,7 +44,7 @@ impl Drop for RustylineInput {
             && let Ok(mut editor) = self.editor.lock()
             && let Err(err) = editor.save_history(path)
         {
-            log::warn!("save history failed: {err}");
+            tracing::warn!("save history failed: {err}");
         }
     }
 }
@@ -59,7 +59,7 @@ impl ReplInput for RustylineInput {
         match editor.readline(prompt) {
             Ok(line) => {
                 if let Err(err) = editor.add_history_entry(&line) {
-                    log::warn!("add history entry failed: {err}");
+                    tracing::warn!("add history entry failed: {err}");
                 }
                 Ok(Some(line))
             }

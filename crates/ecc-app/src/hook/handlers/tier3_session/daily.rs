@@ -1,6 +1,6 @@
 //! Daily memory file handler — appends session summary to daily file (BL-047).
 
-use log::warn;
+use tracing::warn;
 use std::path::PathBuf;
 
 use crate::hook::{HookPorts, HookResult};

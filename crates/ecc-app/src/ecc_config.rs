@@ -82,7 +82,7 @@ pub fn config_get(
 
 /// Read the ECC config, returning a default when the file is missing or corrupt.
 ///
-/// Emits a `log::warn!` when the file exists but cannot be parsed.
+/// Emits a `tracing::warn!` when the file exists but cannot be parsed.
 pub fn read_config(fs: &dyn FileSystem, env: &dyn Environment) -> EccConfig {
     read_existing_config(fs, env)
 }
@@ -97,7 +97,7 @@ fn read_existing_config(fs: &dyn FileSystem, env: &dyn Environment) -> EccConfig
         Ok(c) => c,
         Err(FsError::NotFound(_)) => return EccConfig::default(),
         Err(e) => {
-            log::warn!("failed to read ECC config at {}: {e}", path.display());
+            tracing::warn!("failed to read ECC config at {}: {e}", path.display());
             return EccConfig::default();
         }
     };
@@ -105,7 +105,7 @@ fn read_existing_config(fs: &dyn FileSystem, env: &dyn Environment) -> EccConfig
     match EccConfig::from_toml(&content) {
         Ok(cfg) => cfg,
         Err(e) => {
-            log::warn!(
+            tracing::warn!(
                 "corrupt ECC config at {}; falling back to defaults: {e}",
                 path.display()
             );
@@ -222,7 +222,7 @@ mod tests {
                     .map(|l| format!("[{}] {}", l.level, l.body))
                     .collect();
                 panic!(
-                    "expected log::warn! with 'corrupt' in body.\nCaptured logs: {messages:?}"
+                    "expected tracing::warn! with 'corrupt' in body.\nCaptured logs: {messages:?}"
                 );
             }
         });

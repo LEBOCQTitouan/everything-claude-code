@@ -1,6 +1,6 @@
 //! Logging hooks — subagent lifecycle and config change logging.
 
-use log::warn;
+use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
 use ecc_domain::time::{datetime_from_epoch, format_datetime, format_time};

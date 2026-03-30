@@ -14,7 +14,7 @@ pub(in crate::install) fn collect_rule_groups(
     let entries = match fs.read_dir(&rules_dir) {
         Ok(e) => e,
         Err(e) => {
-            log::warn!("Cannot read rules directory: {}", e);
+            tracing::warn!("Cannot read rules directory: {}", e);
             return vec!["common".to_string()];
         }
     };
@@ -55,7 +55,7 @@ fn list_files_with_ext(fs: &dyn FileSystem, dir: &Path, ext: &str) -> Vec<String
     let entries = match fs.read_dir(dir) {
         Ok(e) => e,
         Err(e) => {
-            log::warn!("Cannot list files in {}: {}", dir.display(), e);
+            tracing::warn!("Cannot list files in {}: {}", dir.display(), e);
             return vec![];
         }
     };
@@ -78,7 +78,7 @@ fn list_dirs(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     let entries = match fs.read_dir(dir) {
         Ok(e) => e,
         Err(e) => {
-            log::warn!("Cannot list dirs in {}: {}", dir.display(), e);
+            tracing::warn!("Cannot list dirs in {}: {}", dir.display(), e);
             return vec![];
         }
     };

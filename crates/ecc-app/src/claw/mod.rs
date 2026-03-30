@@ -155,7 +155,7 @@ pub fn run_repl(config: &ClawConfig, ports: &ClawPorts<'_>) -> Result<(), error:
             Ok(Some(line)) => line,
             Ok(None) => break, // EOF
             Err(e) => {
-                log::warn!("REPL read_line error: {}", e);
+                tracing::warn!("REPL read_line error: {}", e);
                 ports.terminal.stderr_write(&format!("Input error: {e}\n"));
                 break;
             }

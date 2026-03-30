@@ -25,7 +25,7 @@ pub fn handle_clear(state: &mut ClawState, ports: &ClawPorts<'_>) {
         && let Err(err) =
             super::super::storage::clear_session(&home, state.session_name(), ports.fs)
     {
-        log::warn!("clear session failed: {err}");
+        tracing::warn!("clear session failed: {err}");
     }
 
     ports
@@ -80,7 +80,7 @@ pub fn handle_sessions(target: &Option<String>, state: &mut ClawState, ports: &C
                     ports.fs,
                 )
             {
-                log::warn!("save session failed: {err}");
+                tracing::warn!("save session failed: {err}");
             }
             // Switch to new session
             state.set_turns(super::super::storage::load_session(&home, name, ports.fs));

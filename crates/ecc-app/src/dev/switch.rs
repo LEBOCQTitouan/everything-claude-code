@@ -53,7 +53,7 @@ fn validate_dev_targets<F: FileSystem>(fs: &F, ecc_root: &Path) -> Result<(), De
 fn rollback_completed<F: FileSystem>(fs: &F, completed: &[CompletedOp]) {
     for op in completed {
         if let Err(e) = fs.remove_file(&op.link) {
-            log::error!(
+            tracing::error!(
                 "dev_switch rollback: failed to remove {}: {e}",
                 op.link.display()
             );
