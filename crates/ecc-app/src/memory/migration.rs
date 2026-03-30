@@ -2,7 +2,6 @@
 
 use std::path::Path;
 
-use ecc_domain::memory::{MemoryEntry, MemoryId, MemoryTier};
 use ecc_domain::memory::export::format_entry_as_md;
 use ecc_domain::memory::migration::{parse_action_log_entry, parse_work_item_md};
 use ecc_ports::fs::FileSystem;

@@ -36,10 +36,10 @@ pub struct AddParams {
 ///
 /// Rejects content that contains likely secrets (unless `force=true`).
 pub fn add(store: &dyn MemoryStore, params: AddParams) -> MemoryResult<MemoryId> {
-    if !params.force {
-        if let Some(detected) = ecc_domain::memory::secrets::contains_likely_secret(&params.content) {
-            return Err(MemoryAppError::SecretDetected(detected));
-        }
+    if !params.force
+        && let Some(detected) = ecc_domain::memory::secrets::contains_likely_secret(&params.content)
+    {
+        return Err(MemoryAppError::SecretDetected(detected));
     }
 
     let now = current_timestamp();

@@ -103,20 +103,20 @@ impl MemoryStore for InMemoryMemoryStore {
             .entries
             .iter()
             .filter(|e| {
-                if let Some(ref t) = tier {
-                    if &e.tier != t {
-                        return false;
-                    }
+                if let Some(ref t) = tier
+                    && &e.tier != t
+                {
+                    return false;
                 }
-                if let Some(tag_str) = tag {
-                    if !e.tags.iter().any(|t| t == tag_str) {
-                        return false;
-                    }
+                if let Some(tag_str) = tag
+                    && !e.tags.iter().any(|t| t == tag_str)
+                {
+                    return false;
                 }
-                if let Some(pid) = project_id {
-                    if e.project_id.as_deref() != Some(pid) {
-                        return false;
-                    }
+                if let Some(pid) = project_id
+                    && e.project_id.as_deref() != Some(pid)
+                {
+                    return false;
                 }
                 true
             })

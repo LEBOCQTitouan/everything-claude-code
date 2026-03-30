@@ -47,6 +47,8 @@ enum Command {
     Worktree(commands::worktree::WorktreeArgs),
     /// Manage knowledge sources registry
     Sources(commands::sources::SourcesArgs),
+    /// Manage the three-tier memory system
+    Memory(commands::memory::MemoryArgs),
     /// Show ECC diagnostic status
     Status(commands::status::StatusArgs),
     /// Manage ECC configuration
@@ -94,6 +96,7 @@ fn main() -> anyhow::Result<()> {
         Command::Backlog(args) => commands::backlog::run(args),
         Command::Worktree(args) => commands::worktree::run(args),
         Command::Sources(args) => commands::sources::run(args),
+        Command::Memory(args) => commands::memory::run(args),
         Command::Status(args) => commands::status::run(args),
         Command::Config(args) => commands::config::run(args),
     }

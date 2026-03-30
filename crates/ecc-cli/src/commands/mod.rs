@@ -7,6 +7,7 @@ pub mod dev;
 pub mod hook;
 pub mod init;
 pub mod install;
+pub mod memory;
 pub mod sources;
 pub mod status;
 pub mod validate;
