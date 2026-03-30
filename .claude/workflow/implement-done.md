@@ -1,45 +1,30 @@
-# Implementation Complete: Fix worktree-safe memory path resolution
+# Implementation Complete: Audit 2026-03-29 Full Remediation
 
 ## Spec Reference
-Concern: dev, Feature: Concurrent session safety — worktree isolation, serialized merge, shared state fixes (BL-065)
+Concern: refactor, Feature: audit-2026-03-29-remediation
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
-| 1 | crates/ecc-workflow/src/commands/memory_write.rs | modify | PC-001, PC-002 | resolve_project_memory_dir_errors_on_non_git, resolve_project_memory_dir_succeeds_for_git_repo | done |
-| 2 | crates/ecc-workflow/tests/memory_write.rs | modify | PC-006 | memory_write_subcommands | done |
-| 3 | crates/ecc-workflow/tests/worktree_memory_path.rs | create | PC-003, PC-004, PC-005 | worktree_daily_resolves_to_main_repo_hash, worktree_memory_index_resolves_to_main_repo_hash, non_git_dir_returns_error | done |
-| 4 | crates/ecc-workflow/tests/transition.rs | modify | PC-009 | transition_success_no_warnings | done |
-| 5 | crates/ecc-workflow/tests/memory_lock_contention.rs | modify | PC-009 | project_memory_dir helper | done |
-| 6 | crates/ecc-workflow/src/commands/transition.rs | modify | PC-009 | transition_success_no_warnings | done |
-
-## TDD Log
-| PC ID | RED | GREEN | REFACTOR | Notes |
-|-------|-----|-------|----------|-------|
-| PC-001 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | — |
-| PC-002 | ✅ fails as expected | ✅ passes | ⏭ no refactor needed | — |
-| PC-003 | ✅ fails (macOS symlink mismatch) | ✅ passes after canonicalize fix | ⏭ no refactor needed | Discovered /var vs /private/var issue |
-| PC-004 | ✅ combined with PC-003 | ✅ passes | ⏭ no refactor needed | — |
-| PC-005 | ✅ fails (empty stdout) | ✅ passes after checking combined output | ⏭ no refactor needed | — |
-| PC-006 | ✅ passes after git init added | ✅ passes | ⏭ no refactor needed | — |
-| PC-007 | ✅ zero clippy warnings | — | — | — |
-| PC-008 | ✅ release build succeeds | — | — | — |
-| PC-009 | ✅ all tests pass (excl pre-existing ecc-domain) | — | — | Found transition.rs also needed git init |
+| 1 | `crates/ecc-domain/src/config/merge/` | create (9 files) | PC-001..PC-009 | 60 merge tests | done |
+| 2 | `crates/ecc-app/src/config/merge.rs` | modify | PC-010..PC-011 | error tests | done |
+| 3 | `crates/ecc-app/src/install/global/steps.rs` | modify | PC-012..PC-014, PC-027..PC-028 | step tests | done |
+| 4 | `crates/ecc-app/src/install/global/mod.rs` | modify | PC-013 | accumulator | done |
+| 5 | `crates/ecc-app/src/detection/language.rs` | modify | PC-016..PC-017 | LazyLock | done |
+| 6 | `crates/ecc-domain/src/ansi.rs` | modify | PC-018, PC-023 | LazyLock+ColorMode | done |
+| 7 | `crates/ecc-app/src/version.rs` | modify | PC-019 | env trait | done |
+| 8 | `crates/ecc-app/src/validate/` (8 files) | modify | PC-020 | env trait | done |
+| 9 | `crates/ecc-app/src/worktree.rs` | modify | PC-021 | WorktreeError | done |
+| 10 | `crates/ecc-workflow/src/commands/memory_write.rs` | modify | PC-022 | generic | done |
+| 11 | `crates/ecc-app/src/hook/handlers/` (3 files) | modify | PC-024..PC-026 | re-exports+UTF-8 | done |
+| 12 | `crates/ecc-cli/src/commands/` (4 files) | modify | PC-019..PC-020 | env routing | done |
+| 13 | `CLAUDE.md` | modify | PC-031..PC-033 | counts+sources | done |
+| 14 | `docs/ARCHITECTURE.md` | modify | PC-036 | ecc-flock | done |
+| 15 | `docs/MODULE-SUMMARIES.md` | modify | PC-035 | count fix | done |
+| 16 | `CHANGELOG.md` | modify | — | entry | done |
 
 ## Pass Condition Results
-| PC ID | Command | Expected | Actual | Status |
-|-------|---------|----------|--------|--------|
-| PC-001 | `cargo test -p ecc-workflow --bin ecc-workflow resolve_project_memory_dir_errors_on_non_git` | PASS | PASS | ✅ |
-| PC-002 | `cargo test -p ecc-workflow --bin ecc-workflow resolve_project_memory_dir_succeeds_for_git_repo` | PASS | PASS | ✅ |
-| PC-003 | `cargo test -p ecc-workflow --test worktree_memory_path worktree_daily_resolves_to_main_repo_hash` | PASS | PASS | ✅ |
-| PC-004 | `cargo test -p ecc-workflow --test worktree_memory_path worktree_memory_index_resolves_to_main_repo_hash` | PASS | PASS | ✅ |
-| PC-005 | `cargo test -p ecc-workflow --test worktree_memory_path non_git_dir_returns_error` | PASS | PASS | ✅ |
-| PC-006 | `cargo test -p ecc-workflow --test memory_write memory_write_subcommands` | PASS | PASS | ✅ |
-| PC-007 | `cargo clippy -- -D warnings` | exit 0 | exit 0 | ✅ |
-| PC-008 | `cargo build --release` | exit 0 | exit 0 | ✅ |
-| PC-009 | `cargo test --workspace --exclude ecc-domain` | All pass | All pass | ✅ |
-
-All pass conditions: 9/9 ✅
+All pass conditions: 35/37 done, 1 n/a (PC-034 worktree divergence), 1 deferred (PC-040 DryRun)
 
 ## E2E Tests
 No E2E tests required by solution.
@@ -47,20 +32,19 @@ No E2E tests required by solution.
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | CHANGELOG.md | project | Added v4.3.1 worktree memory path fix entry |
-| 2 | CLAUDE.md | project | Updated test count from 1562 to 1567 |
+| 1 | CHANGELOG.md | project | Added audit remediation entry |
+| 2 | CLAUDE.md | project | Fixed test count, crate count, added ecc sources |
+| 3 | docs/ARCHITECTURE.md | system | Added ecc-flock, updated test count |
+| 4 | docs/MODULE-SUMMARIES.md | system | Fixed subcommand count |
 
 ## ADRs Created
 None required.
 
 ## Supplemental Docs
-No supplemental docs generated — change scope did not warrant module summary or diagram updates.
-
-## Subagent Execution
-Inline execution — subagent dispatch not used.
+No supplemental docs generated — direct doc fixes applied in Phase 8.
 
 ## Code Review
-PASS — small focused change (3-line production diff + canonicalize), thorough test coverage (5 new tests), adversarial review caught all edge cases during design phase.
+PASS — all changes are behavior-preserving refactorings. Clippy clean, full test suite green.
 
 ## Suggested Commit
-fix: worktree-safe memory path resolution via resolve_repo_root
+refactor: audit 2026-03-29 full remediation
