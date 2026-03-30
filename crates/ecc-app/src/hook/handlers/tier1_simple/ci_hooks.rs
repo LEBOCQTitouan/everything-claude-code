@@ -1,12 +1,47 @@
-use crate::hook::{HookPorts, HookResult};
 use super::helpers::extract_file_path;
+use crate::hook::{HookPorts, HookResult};
 
 /// Protected branch names (exact match only).
 const PROTECTED_BRANCHES: &[&str] = &["main", "master", "production"];
 
 /// pre:edit-write:workflow-branch-guard -- block workflow edits on protected branches.
 pub fn pre_edit_write_workflow_branch_guard(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
-    todo!("implement workflow branch guard")
+    let file_path = extract_file_path(stdin);
+    if file_path.is_empty() {
+        return HookResult::passthrough(stdin);
+    }
+
+    // Only guard .github/workflows/ files
+    if !file_path.contains(".github/workflows/") {
+        return HookResult::passthrough(stdin);
+    }
+
+    // Get current branch -- passthrough on any shell error
+    let branch = match ports
+        .shell
+        .run_command("git", &["rev-parse", "--abbrev-ref", "HEAD"])
+    {
+        Ok(output) => output.stdout.trim().to_string(),
+        Err(_) => return HookResult::passthrough(stdin),
+    };
+
+    // Detached HEAD returns literal "HEAD"
+    if branch == "HEAD" {
+        return HookResult::passthrough(stdin);
+    }
+
+    // Exact match against protected branches
+    if PROTECTED_BRANCHES.iter().any(|&b| branch == b) {
+        return HookResult::block(
+            stdin,
+            &format!(
+                "[Hook] BLOCKED: Cannot edit GitHub Actions workflows on {}. Create a feature branch first.\n",
+                branch
+            ),
+        );
+    }
+
+    HookResult::passthrough(stdin)
 }
 
 #[cfg(test)]

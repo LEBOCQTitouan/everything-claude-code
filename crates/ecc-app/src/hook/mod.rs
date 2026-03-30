@@ -133,6 +133,10 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "post:edit:typecheck" => handlers::post_edit_typecheck(stdin, ports),
         "post:quality-gate" => handlers::quality_gate(stdin, ports),
 
+        "pre:edit-write:workflow-branch-guard" => {
+            handlers::pre_edit_write_workflow_branch_guard(stdin, ports)
+        }
+
         // Tier 1: Clean Craft hooks
         "pre:edit:boundary-crossing" => handlers::pre_edit_boundary_crossing(stdin, ports),
         "post:edit:boy-scout-delta" => handlers::post_edit_boy_scout_delta(stdin, ports),

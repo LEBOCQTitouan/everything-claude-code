@@ -37,7 +37,11 @@ fn read_pm_from_json(fs: &dyn FileSystem, path: &Path) -> Option<String> {
 
 /// Build a `PackageManagerResult` from a name and source, if the name is recognized.
 fn try_build_result(name: String, source: DetectionSource) -> Option<PackageManagerResult> {
-    find_config(&name).map(|config| PackageManagerResult { name, config, source })
+    find_config(&name).map(|config| PackageManagerResult {
+        name,
+        config,
+        source,
+    })
 }
 
 /// Get the package manager to use for a project.
@@ -81,14 +85,19 @@ pub fn get_package_manager(
 
     // 5. Global user preference
     if let Some(home) = env.home_dir()
-        && let Some(pm_name) = read_pm_from_json(fs, &home.join(".claude").join("package-manager.json"))
+        && let Some(pm_name) =
+            read_pm_from_json(fs, &home.join(".claude").join("package-manager.json"))
         && let Some(r) = try_build_result(pm_name, DetectionSource::GlobalConfig)
     {
         return r;
     }
 
     // 6. Default to npm
-    PackageManagerResult { name: "npm".to_string(), config: &NPM, source: DetectionSource::Default }
+    PackageManagerResult {
+        name: "npm".to_string(),
+        config: &NPM,
+        source: DetectionSource::Default,
+    }
 }
 
 #[cfg(test)]
