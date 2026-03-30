@@ -1,6 +1,6 @@
 /// Log verbosity level for ECC diagnostics.
 ///
-/// Pure value object with no I/O or tracing dependencies.
+/// Pure value object — zero I/O imports, no cross-cutting concerns.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogLevel {
     /// Only error messages.
@@ -17,8 +17,13 @@ pub enum LogLevel {
 
 impl std::fmt::Display for LogLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // RED: placeholder — always writes "todo"
-        write!(f, "todo")
+        match self {
+            Self::Error => write!(f, "error"),
+            Self::Warn => write!(f, "warn"),
+            Self::Info => write!(f, "info"),
+            Self::Debug => write!(f, "debug"),
+            Self::Trace => write!(f, "trace"),
+        }
     }
 }
 
@@ -26,15 +31,22 @@ impl std::str::FromStr for LogLevel {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // RED: placeholder — always fails
-        Err(format!("unknown log level: {s}"))
+        match s.to_lowercase().as_str() {
+            "error" => Ok(Self::Error),
+            "warn" => Ok(Self::Warn),
+            "info" => Ok(Self::Info),
+            "debug" => Ok(Self::Debug),
+            "trace" => Ok(Self::Trace),
+            _ => Err(format!(
+                "unknown log level: {s}. Valid levels: error, warn, info, debug, trace"
+            )),
+        }
     }
 }
 
 impl Default for LogLevel {
     fn default() -> Self {
-        // RED: placeholder — returns Error instead of Warn
-        Self::Error
+        Self::Warn
     }
 }
 

@@ -42,18 +42,19 @@ impl Default for InMemoryConfigStore {
 
 impl ConfigStore for InMemoryConfigStore {
     fn load_global(&self) -> Result<RawEccConfig, ConfigError> {
-        // RED: stub — always returns Io error
-        Err(ConfigError::Io("not implemented".to_owned()))
+        let guard = self.global.lock().unwrap();
+        Ok(guard.clone().unwrap_or_default())
     }
 
     fn load_local(&self) -> Result<Option<RawEccConfig>, ConfigError> {
-        // RED: stub — always returns Io error
-        Err(ConfigError::Io("not implemented".to_owned()))
+        let guard = self.local.lock().unwrap();
+        Ok(guard.clone())
     }
 
-    fn save_global(&self, _config: &RawEccConfig) -> Result<(), ConfigError> {
-        // RED: stub — always returns Io error
-        Err(ConfigError::Io("not implemented".to_owned()))
+    fn save_global(&self, config: &RawEccConfig) -> Result<(), ConfigError> {
+        let mut guard = self.global.lock().unwrap();
+        *guard = Some(config.clone());
+        Ok(())
     }
 }
 
