@@ -145,13 +145,6 @@ impl FromStr for Quadrant {
     }
 }
 
-/// Validate URL structure (delegates to `SourceUrl::parse`).
-///
-/// Kept as a convenience function for callers that don't need the newtype.
-pub fn validate_url(url: &str) -> Result<(), SourceError> {
-    SourceUrl::parse(url).map(|_| ())
-}
-
 /// Validate title is non-empty after trimming whitespace.
 pub fn validate_title(title: &str) -> Result<(), SourceError> {
     if title.trim().is_empty() {
@@ -277,25 +270,6 @@ mod tests {
         assert_eq!(Quadrant::Trial.to_string(), "trial");
         assert_eq!(Quadrant::Assess.to_string(), "assess");
         assert_eq!(Quadrant::Hold.to_string(), "hold");
-    }
-
-    #[test]
-    fn validate_url_accepts_http() {
-        assert!(validate_url("http://example.com").is_ok());
-    }
-
-    #[test]
-    fn validate_url_accepts_https() {
-        assert!(validate_url("https://example.com").is_ok());
-        assert!(validate_url("https://docs.rust-lang.org/std/").is_ok());
-    }
-
-    #[test]
-    fn validate_url_rejects_invalid() {
-        assert!(validate_url("ftp://example.com").is_err());
-        assert!(validate_url("not-a-url").is_err());
-        assert!(validate_url("").is_err());
-        assert!(validate_url("https://nodot").is_err());
     }
 
     #[test]
