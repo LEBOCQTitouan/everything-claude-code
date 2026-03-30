@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (1845 tests)
+cargo test              # Run all Rust tests (2148 tests)
 cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (16 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
@@ -51,6 +51,14 @@ ecc sources list          List all configured knowledge sources
 ecc sources add <url>     Add a new knowledge source
 ecc sources check         Check status of configured sources
 ecc sources reindex       Reindex sources for search
+ecc memory add --type <tier> --title <t> [--tags t1,t2]  Add memory entry
+ecc memory search <query> [--type T] [--tag T]  Search memories (FTS5)
+ecc memory list [--type T] [--tag T]  List memory entries
+ecc memory delete <id>     Delete a memory entry
+ecc memory promote <id>    Promote episodic to semantic
+ecc memory migrate         Migrate legacy docs/memory/ to SQLite
+ecc memory gc [--dry-run]  Garbage-collect stale memories
+ecc memory stats           Show memory store statistics
 ecc audit-web profile init    Generate suggested audit profile from codebase
 ecc audit-web profile show    Display current audit profile
 ecc audit-web profile validate  Check profile structural correctness
