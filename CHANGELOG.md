@@ -6,6 +6,17 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## v4.5.1
+
+### Fixed
+
+- **Audit remediation 2026-03-29**: Corrected documentation inconsistencies surfaced by audit.
+  Added `log::warn!` to two bare error-discard sites in `config/merge.rs` (observable error handling).
+  Fixed clippy `collapsible_if` warning in `detection/language.rs`.
+  Updated CLAUDE.md: test count → 1671, crate count → 9, added `ecc sources` subcommands.
+  Updated `MODULE-SUMMARIES.md`: ecc-workflow subcommand count 17 → 20.
+  Updated `ARCHITECTURE.md`: added `ecc-flock` to crate list, corrected test count to 1671.
+
 ## v4.3.1
 
 ### Fixed
