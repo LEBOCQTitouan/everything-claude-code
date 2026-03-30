@@ -37,7 +37,13 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Adversarial challenge for audit commands (BL-083)**: New `audit-challenger` agent (Sonnet) independently re-interrogates codebase after each domain audit, searches web for best practices, produces challenged findings (confirmed/refuted/amended). Disagreements shown to user. Graceful degradation on failure. Always-on across all 10 `/audit-*` commands + audit-orchestrator.
 
-## v4.5.1
+## v4.8.0
+
+### Added
+
+- **Structured log management (BL-092)**: JSON rolling daily files via tracing-appender to ~/.ecc/logs/. SQLite FTS5 index for full-text log search. Background indexer thread. `ecc log tail|search|prune|export` CLI commands. Session correlation via CLAUDE_SESSION_ID. 30-day auto-prune at startup with configurable retention. Structured tracing fields on all 40 hook handlers. LogStore port + SqliteLogStore adapter. ADR-0034 documents dual read/write path pattern.
+
+## v4.7.0
 
 ### Fixed
 
