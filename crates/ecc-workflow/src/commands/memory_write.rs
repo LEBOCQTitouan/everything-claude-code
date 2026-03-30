@@ -405,8 +405,8 @@ fn build_daily_init_content(today: &str, daily_dir: &Path) -> String {
     content
 }
 
-/// Insert `entry` immediately after the `## Activity` heading line (and its following blank line).
-fn insert_after_activity(content: &str, entry: &str) -> String {
+/// Insert `entry` immediately after the given `heading` line (and its following blank line).
+pub(crate) fn insert_after_heading(content: &str, heading: &str, entry: &str) -> String {
     let mut result = String::with_capacity(content.len() + entry.len() + 2);
     let mut inserted = false;
 
@@ -415,7 +415,7 @@ fn insert_after_activity(content: &str, entry: &str) -> String {
         result.push_str(line);
         result.push('\n');
 
-        if !inserted && line.trim() == "## Activity" {
+        if !inserted && line.trim() == heading {
             // Skip one blank line if present, then insert entry
             if lines.peek().is_some_and(|next| next.trim().is_empty())
                 && let Some(blank) = lines.next()
@@ -430,12 +430,17 @@ fn insert_after_activity(content: &str, entry: &str) -> String {
     }
 
     if !inserted {
-        result.push_str("\n## Activity\n\n");
+        result.push_str(&format!("\n{heading}\n\n"));
         result.push_str(entry);
         result.push('\n');
     }
 
     result
+}
+
+/// Insert `entry` immediately after the `## Activity` heading line (and its following blank line).
+fn insert_after_activity(content: &str, entry: &str) -> String {
+    insert_after_heading(content, "## Activity", entry)
 }
 
 // ── memory-index ──────────────────────────────────────────────────────────────
@@ -482,35 +487,7 @@ pub fn write_memory_index(project_dir: &Path) -> Result<(), anyhow::Error> {
 }
 
 fn insert_after_daily_heading(content: &str, link: &str) -> String {
-    let mut result = String::with_capacity(content.len() + link.len() + 2);
-    let mut inserted = false;
-
-    let mut lines = content.lines().peekable();
-    while let Some(line) = lines.next() {
-        result.push_str(line);
-        result.push('\n');
-
-        if !inserted && line.trim() == "## Daily" {
-            // Skip one blank line if present
-            if lines.peek().is_some_and(|next| next.trim().is_empty())
-                && let Some(blank) = lines.next()
-            {
-                result.push_str(blank);
-                result.push('\n');
-            }
-            result.push_str(link);
-            result.push('\n');
-            inserted = true;
-        }
-    }
-
-    if !inserted {
-        result.push_str("\n## Daily\n\n");
-        result.push_str(link);
-        result.push('\n');
-    }
-
-    result
+    insert_after_heading(content, "## Daily", link)
 }
 
 #[cfg(test)]
@@ -661,6 +638,44 @@ mod tests {
         assert!(
             path_str.contains(".claude/projects/") && path_str.ends_with("/memory"),
             "path should contain .claude/projects/<hash>/memory, got: {path_str}"
+        );
+    }
+
+    // ── insert_after_heading generic tests ────────────────────────────────────
+
+    #[test]
+    fn insert_after_heading_works_for_activity() {
+        let content = "# Daily: 2026-01-01\n\n## Activity\n\n## Insights\n\n";
+        let entry = "- [09:00] **spec** auth — security";
+        let result = insert_after_heading(content, "## Activity", entry);
+        let lines: Vec<&str> = result.lines().collect();
+        let activity_pos = lines.iter().position(|l| *l == "## Activity").unwrap();
+        let entry_pos = lines.iter().position(|l| *l == entry).unwrap();
+        assert!(
+            entry_pos > activity_pos,
+            "entry should appear after ## Activity"
+        );
+        assert!(
+            entry_pos <= activity_pos + 2,
+            "entry should be inserted right after ## Activity (with optional blank)"
+        );
+    }
+
+    #[test]
+    fn insert_after_heading_works_for_daily() {
+        let content = "# Memory Index\n\n## Daily\n\n";
+        let entry = "- [2026-01-01](daily/2026-01-01.md)";
+        let result = insert_after_heading(content, "## Daily", entry);
+        let lines: Vec<&str> = result.lines().collect();
+        let daily_pos = lines.iter().position(|l| *l == "## Daily").unwrap();
+        let entry_pos = lines.iter().position(|l| *l == entry).unwrap();
+        assert!(
+            entry_pos > daily_pos,
+            "entry should appear after ## Daily"
+        );
+        assert!(
+            entry_pos <= daily_pos + 2,
+            "entry should be inserted right after ## Daily (with optional blank)"
         );
     }
 }

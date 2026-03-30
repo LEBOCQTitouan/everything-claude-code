@@ -53,7 +53,7 @@ pub(super) fn validate_rules(root: &Path, fs: &dyn FileSystem, terminal: &dyn Te
 #[cfg(test)]
 mod tests {
     use super::super::{ValidateTarget, run_validate};
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment};
     use std::path::Path;
 
     fn term() -> BufferedTerminal {
@@ -67,6 +67,7 @@ mod tests {
         assert!(run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Rules,
             Path::new("/root")
         ));
@@ -81,6 +82,7 @@ mod tests {
         assert!(run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Rules,
             Path::new("/root")
         ));
@@ -95,6 +97,7 @@ mod tests {
         assert!(!run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Rules,
             Path::new("/root")
         ));

@@ -86,7 +86,7 @@
 | BL-083 | Adversarial challenge phase for all /audit-* commands | — | HIGH | /spec-dev | implemented | 2026-03-27 |
 | BL-084 | Backlog conformance audit — verify implementations match original intent | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-085 | WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool | — | HIGH | /spec fix | implemented | 2026-03-28 |
-| BL-086 | Knowledge sources registry — curated reference list with quadrant organization and command integration | — | HIGH | /spec | open | 2026-03-28 |
+| BL-086 | Knowledge sources registry — curated reference list with quadrant organization and command integration | — | HIGH | /spec | implemented | 2026-03-28 |
 | BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | implemented | 2026-03-28 |
 | BL-088 | ecc update — self-update from GitHub Releases + cargo xtask deploy for dev | — | HIGH | /spec dev | open | 2026-03-28 |
 | BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | open | 2026-03-28 |

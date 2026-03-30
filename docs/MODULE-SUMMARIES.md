@@ -16,7 +16,7 @@ For current module documentation, see the individual crate READMEs and source:
 | `ecc-infra` | Production adapters (OS filesystem, process executor, terminal) |
 | `ecc-cli` | CLI binary entry point (`ecc` command) |
 | `ecc-test-support` | Test doubles (InMemoryFileSystem, MockExecutor, MockEnvironment) |
-| `ecc-workflow` | Standalone binary for workflow state management (17 subcommands). Direct I/O by design (see ADR). |
+| `ecc-workflow` | Standalone binary for workflow state management (20 subcommands). Direct I/O by design (see ADR). |
 | `ecc-flock` | Shared POSIX flock utility for cross-process file locking |
 | `ecc-integration-tests` | Binary-spawning integration tests for the ecc CLI. Per-flow test files. |
 

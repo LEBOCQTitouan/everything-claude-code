@@ -43,6 +43,10 @@ ecc backlog next-id       Next sequential BL-NNN ID
 ecc backlog check-duplicates <title> [--tags t1,t2]  Check for duplicate entries
 ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
 ecc worktree gc [--force]  Clean up stale session worktrees
+ecc sources list          List all configured knowledge sources
+ecc sources add <url>     Add a new knowledge source
+ecc sources check         Check status of configured sources
+ecc sources reindex       Reindex sources for search
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ecc status [--json]      Show diagnostic snapshot (versions, phase, components)
@@ -89,13 +93,13 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
 - `hooks.json` lives in `hooks/`, not the project root
 - Skill directory name must match the `name` field in its frontmatter
-- Test count in CLAUDE.md (currently 1562) must be updated after adding or removing tests
+- Test count in CLAUDE.md must be updated after adding or removing tests
 - `pre:edit-write:workflow-branch-guard` blocks `.github/workflows/` edits on main/master/production — create a feature branch first
 - ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
 
 ## Development Notes
 
-- Source is Rust, organized as a Cargo workspace with 8 crates
+- Source is Rust, organized as a Cargo workspace with 9 crates
 - Hexagonal architecture: domain → ports → infra → app → CLI
 - All I/O is abstracted behind port traits, enabling full in-memory testing
 - Agent/skill/hook format: Markdown with YAML frontmatter (see `agents/`, `skills/`, `hooks/`)

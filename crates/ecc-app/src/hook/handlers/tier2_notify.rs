@@ -12,25 +12,29 @@ const DEFAULT_MESSAGE: &str = "Claude needs your attention";
 /// Maximum length for sanitized notification strings.
 const MAX_NOTIFY_LEN: usize = 256;
 
+/// Truncate `s` to at most `max_bytes` bytes, walking back to a UTF-8 char boundary if needed.
+fn truncate_to_char_boundary(s: &str, max_bytes: usize) -> &str {
+    if s.len() <= max_bytes {
+        return s;
+    }
+    let mut end = max_bytes;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
+
 /// Sanitize a string for safe interpolation into an AppleScript string delimited by double quotes.
 /// Escapes backslashes first, then double quotes. Caps length at 256 chars.
 fn sanitize_osascript(s: &str) -> String {
-    let truncated = if s.len() > MAX_NOTIFY_LEN {
-        &s[..MAX_NOTIFY_LEN]
-    } else {
-        s
-    };
+    let truncated = truncate_to_char_boundary(s, MAX_NOTIFY_LEN);
     truncated.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 /// Sanitize a string for safe interpolation into a PowerShell string delimited by single quotes.
 /// Escapes single quotes by doubling them. Caps length at 256 chars.
 fn sanitize_powershell(s: &str) -> String {
-    let truncated = if s.len() > MAX_NOTIFY_LEN {
-        &s[..MAX_NOTIFY_LEN]
-    } else {
-        s
-    };
+    let truncated = truncate_to_char_boundary(s, MAX_NOTIFY_LEN);
     truncated.replace('\'', "''")
 }
 
@@ -287,6 +291,7 @@ mod tier2_notify {
                 "newlines should pass through: {result}"
             );
         }
+
     }
 }
 
@@ -463,5 +468,35 @@ mod tests {
         assert_eq!(result.exit_code, 0);
         assert_eq!(result.stdout, "{}");
         assert!(result.stderr.is_empty());
+    }
+
+    // PC-025: sanitize_osascript uses is_char_boundary() walk-back for multi-byte truncation
+    #[test]
+    fn sanitize_osascript_multibyte_truncation() {
+        // Build a string: 254 ASCII bytes + one emoji (4 bytes) = 258 bytes total.
+        // Slicing at byte 256 falls in the middle of the emoji — current code panics.
+        let mut input = "a".repeat(254);
+        input.push('🔥'); // 4-byte UTF-8 character
+        assert_eq!(input.len(), 258, "test string must be 258 bytes");
+        // Must not panic; result must be valid UTF-8 with length <= 256
+        let result = sanitize_osascript(&input);
+        assert!(result.len() <= 256, "result must be capped at 256 bytes: len={}", result.len());
+        // Emoji starts at byte 254, ends at 258 — truncation at 256 is mid-emoji, walk-back drops to 254
+        assert_eq!(result, "a".repeat(254), "ascii prefix must be preserved");
+    }
+
+    // PC-026: sanitize_powershell uses is_char_boundary() walk-back for multi-byte truncation
+    #[test]
+    fn sanitize_powershell_multibyte_truncation() {
+        // Build a string: 254 ASCII bytes + one emoji (4 bytes) = 258 bytes total.
+        // Slicing at byte 256 falls in the middle of the emoji — current code panics.
+        let mut input = "b".repeat(254);
+        input.push('🌊'); // 4-byte UTF-8 character
+        assert_eq!(input.len(), 258, "test string must be 258 bytes");
+        // Must not panic; result must be valid UTF-8 with length <= 256
+        let result = sanitize_powershell(&input);
+        assert!(result.len() <= 256, "result must be capped at 256 bytes: len={}", result.len());
+        // Emoji starts at byte 254, so truncation at 256 is mid-emoji; walk-back drops to 254
+        assert_eq!(result, "b".repeat(254), "ascii prefix must be preserved");
     }
 }

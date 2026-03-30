@@ -132,6 +132,14 @@ fn remove_stale_worktree(
     }
 }
 
+/// Errors returned by worktree operations.
+#[derive(Debug, thiserror::Error)]
+pub enum WorktreeError {
+    /// A shell command failed or was not found.
+    #[error("worktree operation failed: {0}")]
+    Shell(String),
+}
+
 /// Run worktree GC: remove stale `ecc-session-*` worktrees and their branches.
 ///
 /// A worktree is considered stale when:
@@ -144,9 +152,10 @@ pub fn gc(
     executor: &dyn ShellExecutor,
     project_dir: &Path,
     _force: bool,
-) -> Result<WorktreeGcResult, anyhow::Error> {
+) -> Result<WorktreeGcResult, WorktreeError> {
     let list_output =
-        executor.run_command_in_dir("git", &["worktree", "list", "--porcelain"], project_dir)?;
+        executor.run_command_in_dir("git", &["worktree", "list", "--porcelain"], project_dir)
+        .map_err(|e| WorktreeError::Shell(e.to_string()))?;
     let entries = parse_worktree_list(&list_output.stdout);
     let mut result = WorktreeGcResult::default();
     let now = now_secs();
@@ -277,6 +286,20 @@ mod tests {
         assert!(
             !result.removed.contains(&FRESH_SESSION.to_owned()),
             "active worktree must NOT be in removed"
+        );
+    }
+
+    #[test]
+    fn gc_returns_worktree_error_on_shell_failure() {
+        // Executor with no registered commands -> run_command_in_dir returns ShellError::NotFound
+        let executor = MockExecutor::new();
+
+        let err = gc(&executor, Path::new("/repo"), false).unwrap_err();
+
+        // The error must be a WorktreeError::Shell variant
+        assert!(
+            matches!(err, WorktreeError::Shell(_)),
+            "expected WorktreeError::Shell but got: {:?}", err
         );
     }
 

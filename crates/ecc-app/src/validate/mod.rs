@@ -26,6 +26,7 @@ pub enum ValidateTarget {
 pub fn run_validate(
     fs: &dyn ecc_ports::fs::FileSystem,
     terminal: &dyn ecc_ports::terminal::TerminalIO,
+    env: &dyn ecc_ports::env::Environment,
     target: &ValidateTarget,
     root: &std::path::Path,
 ) -> bool {
@@ -37,6 +38,6 @@ pub fn run_validate(
         ValidateTarget::Skills => skills::validate_skills(root, fs, terminal),
         ValidateTarget::Rules => rules::validate_rules(root, fs, terminal),
         ValidateTarget::Paths => paths::validate_paths(root, fs, terminal),
-        ValidateTarget::Statusline => statusline::validate_statusline(root, fs, terminal),
+        ValidateTarget::Statusline => statusline::validate_statusline(root, fs, terminal, env),
     }
 }

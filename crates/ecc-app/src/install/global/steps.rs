@@ -13,6 +13,7 @@ use ecc_domain::config::merge as domain_merge;
 use std::path::Path;
 
 pub(super) fn step_clean(ctx: &InstallContext, claude_dir: &Path, options: &InstallOptions) {
+    tracing::info!("install: cleaning previous installation");
     if options.clean_all {
         ctx.terminal.stdout_write("Cleaning all ECC files...\n");
         let report = app_clean::clean_all(
@@ -49,6 +50,7 @@ pub(super) fn step_clean(ctx: &InstallContext, claude_dir: &Path, options: &Inst
 }
 
 pub(super) fn step_detect(ctx: &InstallContext, claude_dir: &Path) {
+    tracing::info!("install: detecting existing configuration");
     let detection = detect::detect_and_report(ctx.fs, ctx.terminal, claude_dir, None);
     let is_update = !detect::is_empty_setup(&detection);
 
@@ -68,6 +70,7 @@ pub(super) fn step_merge_artifacts(
     claude_dir: &Path,
     options: &InstallOptions,
 ) -> domain_merge::MergeReport {
+    tracing::info!("install: merging artifacts");
     let mut merge_options = MergeOptions {
         dry_run: options.dry_run,
         force: options.force,
@@ -131,16 +134,15 @@ pub(super) fn step_hooks_and_settings(
     claude_dir: &Path,
     version: &str,
     options: &InstallOptions,
-) {
+) -> Result<(usize, usize, usize), String> {
+    tracing::info!("install: merging hooks and settings");
     let hooks_json = ecc_root.join("hooks").join("hooks.json");
     let settings_json = claude_dir.join("settings.json");
     let (hooks_added, hooks_existing, hooks_legacy) = if ctx.fs.exists(&hooks_json) {
         match merge::merge_hooks(ctx.fs, &hooks_json, &settings_json, options.dry_run) {
             Ok(counts) => counts,
             Err(e) => {
-                ctx.terminal
-                    .stderr_write(&format!("Hook merge error: {e}\n"));
-                (0, 0, 0)
+                return Err(format!("Hook merge error: {e}"));
             }
         }
     } else {
@@ -183,6 +185,8 @@ pub(super) fn step_hooks_and_settings(
         }
         None => {}
     }
+
+    Ok((hooks_added, hooks_existing, hooks_legacy))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -195,6 +199,7 @@ pub(super) fn step_write_manifest(
     existing_manifest: &Option<ecc_domain::config::manifest::EccManifest>,
     combined: &mut domain_merge::MergeReport,
 ) {
+    tracing::info!("install: writing install manifest");
     let installed_artifacts = collect_installed_artifacts(ctx.fs, claude_dir);
     if !options.dry_run {
         let new_manifest = match existing_manifest {
@@ -210,7 +215,7 @@ pub(super) fn step_write_manifest(
             }
         };
         if let Err(e) = write_manifest(ctx.fs, claude_dir, &new_manifest) {
-            tracing::warn!("Failed to write manifest: {}", e);
+            tracing::error!("Failed to write manifest: {}", e);
             combined
                 .errors
                 .push(format!("Failed to write manifest: {e}"));

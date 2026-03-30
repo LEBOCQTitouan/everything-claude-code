@@ -10,9 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
-- **Tiered diagnostics (BL-091)**: Replace log/env_logger with tracing/tracing-subscriber. Five verbosity levels via -v/-vv/-vvv/-q flags and ECC_LOG env var. Structured tracing events on hook dispatch, phase-gate decisions, and workflow transitions. New ecc status and ecc config set commands. ConfigStore port + FileConfigStore adapter. ADR-0032.
-
-## v4.6.0
+- **Tiered diagnostics via tracing (BL-091)**: Replaced `log`+`env_logger` with `tracing`+`tracing-subscriber` across all crates. 5-level verbosity: -q (errors), default (warnings), -v (info), -vv (debug), -vvv (trace). `ECC_LOG` env var with `RUST_LOG` deprecated fallback. `ecc status` shows workflow state, versions, and component counts. `ecc config set log-level` persists verbosity preference to `~/.ecc/config.toml`. ADR 0031.
 
 ## v4.6.1
 
@@ -23,15 +21,22 @@ Generated from git conventional commits. Grouped by type and version.
 - `rules/ecc/github-actions.md`: documents all 4 ECC workflows (ci, release, cd, maintenance)
 - `pre:edit-write:workflow-branch-guard` hook: blocks workflow file edits on protected branches (main/master/production)
 
+## v4.6.0
+
 ### Added
 
 - **Adversarial challenge for audit commands (BL-083)**: New `audit-challenger` agent (Sonnet) independently re-interrogates codebase after each domain audit, searches web for best practices, produces challenged findings (confirmed/refuted/amended). Disagreements shown to user. Graceful degradation on failure. Always-on across all 10 `/audit-*` commands + audit-orchestrator.
 
-## v4.7.0
+## v4.5.1
 
-### Added
+### Fixed
 
-- **Tiered diagnostics via tracing (BL-091)**: Replaced `log`+`env_logger` with `tracing`+`tracing-subscriber` across all crates. 5-level verbosity: -q (errors), default (warnings), -v (info), -vv (debug), -vvv (trace). `ECC_LOG` env var with `RUST_LOG` deprecated fallback. `ecc status` shows workflow state, versions, and component counts. `ecc config set log-level` persists verbosity preference to `~/.ecc/config.toml`. ADR 0031.
+- **Audit remediation 2026-03-29**: Corrected documentation inconsistencies surfaced by audit.
+  Added `log::warn!` to two bare error-discard sites in `config/merge.rs` (observable error handling).
+  Fixed clippy `collapsible_if` warning in `detection/language.rs`.
+  Updated CLAUDE.md: test count → 1671, crate count → 9, added `ecc sources` subcommands.
+  Updated `MODULE-SUMMARIES.md`: ecc-workflow subcommand count 17 → 20.
+  Updated `ARCHITECTURE.md`: added `ecc-flock` to crate list, corrected test count to 1671.
 
 ## v4.3.1
 

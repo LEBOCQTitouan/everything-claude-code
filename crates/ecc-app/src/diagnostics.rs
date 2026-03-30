@@ -58,7 +58,7 @@ pub struct ComponentCounts {
 /// - Reads `~/.claude/workflow/state.json` for phase/feature/artifacts.
 /// - Counts files in `~/.claude/agents/`, `skills/`, `commands/`, `rules/`.
 pub fn gather_status(fs: &dyn FileSystem, env: &dyn Environment) -> DiagnosticReport {
-    let ecc_version = crate::version::version();
+    let ecc_version = crate::version::version(env);
 
     let home = match env.home_dir() {
         Some(h) => h,
