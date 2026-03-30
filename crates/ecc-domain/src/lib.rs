@@ -6,6 +6,7 @@
 pub mod ansi;
 pub mod audit_web;
 pub mod log;
+pub mod update;
 pub mod backlog;
 pub mod claw;
 pub mod config;
