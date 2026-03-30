@@ -32,8 +32,9 @@ pub(super) fn validate_statusline(
 
     // Check the INSTALLED script for unresolved placeholders, not the source template.
     // The source template intentionally has __ECC_VERSION__ — it's substituted during install.
-    let home_script = std::env::var("HOME")
-        .map(|h| std::path::PathBuf::from(h).join(".claude").join("statusline-command.sh"))
+    let home_script = env
+        .home_dir()
+        .map(|h| h.join(".claude").join("statusline-command.sh"))
         .unwrap_or_default();
     let installed_content = fs.read_to_string(&home_script).ok();
     let check_content = installed_content.as_deref().or(script_content.as_deref());
@@ -91,12 +92,9 @@ pub(super) fn validate_statusline(
     // Check settings.json — try root/settings.json first (tests, project-local),
     // then fall back to ~/.claude/settings.json (user global settings)
     let local_settings = root.join("settings.json");
-    let home_settings = std::env::var("HOME")
-        .map(|h| {
-            std::path::PathBuf::from(h)
-                .join(".claude")
-                .join("settings.json")
-        })
+    let home_settings = env
+        .home_dir()
+        .map(|h| h.join(".claude").join("settings.json"))
         .unwrap_or_default();
     let settings_path = if fs.exists(&local_settings) {
         local_settings
