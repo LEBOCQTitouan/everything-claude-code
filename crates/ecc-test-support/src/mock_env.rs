@@ -1,4 +1,4 @@
-use ecc_ports::env::{Environment, Platform};
+use ecc_ports::env::{Architecture, Environment, Platform};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -8,6 +8,7 @@ pub struct MockEnvironment {
     home: Option<PathBuf>,
     cwd: Option<PathBuf>,
     platform: Platform,
+    architecture: Architecture,
 }
 
 impl MockEnvironment {
@@ -17,6 +18,7 @@ impl MockEnvironment {
             home: Some(PathBuf::from("/home/test")),
             cwd: Some(PathBuf::from("/project")),
             platform: Platform::Linux,
+            architecture: Architecture::Amd64,
         }
     }
 
@@ -42,6 +44,12 @@ impl MockEnvironment {
 
     pub fn with_platform(mut self, platform: Platform) -> Self {
         self.platform = platform;
+        self
+    }
+
+    /// Set the architecture for this mock environment.
+    pub fn with_architecture(mut self, architecture: Architecture) -> Self {
+        self.architecture = architecture;
         self
     }
 }
@@ -71,5 +79,9 @@ impl Environment for MockEnvironment {
 
     fn platform(&self) -> Platform {
         self.platform
+    }
+
+    fn architecture(&self) -> Architecture {
+        self.architecture
     }
 }

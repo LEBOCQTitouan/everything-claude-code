@@ -1,4 +1,4 @@
-use ecc_ports::env::{Environment, Platform};
+use ecc_ports::env::{Architecture, Environment, Platform};
 use std::path::PathBuf;
 
 /// Production environment adapter using `std::env`.
@@ -23,6 +23,10 @@ impl Environment for OsEnvironment {
 
     fn platform(&self) -> Platform {
         Platform::current()
+    }
+
+    fn architecture(&self) -> Architecture {
+        Architecture::current()
     }
 }
 

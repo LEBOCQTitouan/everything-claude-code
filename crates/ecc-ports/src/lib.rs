@@ -21,6 +21,8 @@ pub mod memory_store;
 pub mod repl;
 /// Shell command execution port.
 pub mod shell;
+/// Release artifact discovery and download port.
+pub mod release;
 /// Terminal I/O port.
 pub mod terminal;
 /// Structured log storage port.
