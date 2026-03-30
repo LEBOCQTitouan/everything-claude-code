@@ -12,3 +12,4 @@ pub mod std_terminal;
 
 #[cfg(unix)]
 pub mod flock_lock;
+pub mod file_config_store;
