@@ -9,6 +9,7 @@ pub mod entry;
 pub mod error;
 pub mod export;
 pub mod migration;
+pub mod secrets;
 pub mod stats;
 pub mod tier;
 

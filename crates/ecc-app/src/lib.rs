@@ -25,3 +25,4 @@ pub mod validate_design;
 pub mod validate_spec;
 pub mod version;
 pub mod worktree;
+pub mod memory;
