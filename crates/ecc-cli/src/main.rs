@@ -43,8 +43,6 @@ enum Command {
     Sources(commands::sources::SourcesArgs),
     /// Manage git worktrees for ECC sessions
     Worktree(commands::worktree::WorktreeArgs),
-    /// Manage knowledge sources registry
-    Sources(commands::sources::SourcesArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -73,6 +71,5 @@ fn main() -> anyhow::Result<()> {
         Command::Backlog(args) => commands::backlog::run(args),
         Command::Sources(args) => commands::sources::run(args),
         Command::Worktree(args) => commands::worktree::run(args),
-        Command::Sources(args) => commands::sources::run(args),
     }
 }

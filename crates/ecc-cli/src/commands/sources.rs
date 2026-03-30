@@ -11,65 +11,13 @@ pub struct SourcesArgs {
     #[command(subcommand)]
     pub action: SourcesAction,
 
-<<<<<<< HEAD
-    /// Path to the sources registry file
-=======
     /// Path to sources file
->>>>>>> 3d73fa4 (feat: add ecc sources CLI subcommands (GREEN))
     #[arg(long, default_value = "docs/sources.md")]
     pub file: PathBuf,
 }
 
 #[derive(Subcommand)]
 pub enum SourcesAction {
-<<<<<<< HEAD
-    /// List knowledge sources, optionally filtered
-    List {
-        /// Filter by quadrant (Adopt, Trial, Assess, Hold, Inbox)
-        #[arg(long)]
-        quadrant: Option<String>,
-
-        /// Filter by subject
-        #[arg(long)]
-        subject: Option<String>,
-    },
-
-    /// Add a new knowledge source entry
-    Add {
-        /// URL of the source
-        url: String,
-
-        /// Human-readable title
-        #[arg(long)]
-        title: String,
-
-        /// Type of source (blog, repo, docs, etc.)
-        #[arg(long, id = "type")]
-        source_type: String,
-
-        /// Quadrant (Adopt, Trial, Assess, Hold, Inbox)
-        #[arg(long)]
-        quadrant: String,
-
-        /// Subject/topic category
-        #[arg(long)]
-        subject: String,
-
-        /// Date added (ISO 8601, defaults to today if not provided)
-        #[arg(long, default_value = "")]
-        added_date: String,
-
-        /// Who is adding this entry
-        #[arg(long, default_value = "")]
-        added_by: String,
-    },
-
-    /// Check all source URLs for reachability
-    Check,
-
-    /// Rebuild the registry in canonical quadrant order
-    Reindex,
-=======
     /// List sources, optionally filtered by quadrant or subject
     List {
         #[arg(long)]
@@ -154,37 +102,15 @@ fn days_to_ymd(mut days: u64) -> (u64, u64, u64) {
         remaining -= md;
     }
     (year, month, remaining + 1)
->>>>>>> 3d73fa4 (feat: add ecc sources CLI subcommands (GREEN))
 }
 
 pub fn run(args: SourcesArgs) -> anyhow::Result<()> {
     let fs = OsFileSystem;
-<<<<<<< HEAD
-=======
     let shell = ProcessExecutor;
->>>>>>> 3d73fa4 (feat: add ecc sources CLI subcommands (GREEN))
     let path = &args.file;
 
     match args.action {
         SourcesAction::List { quadrant, subject } => {
-<<<<<<< HEAD
-            let entries = ecc_app::sources::list(
-                &fs,
-                path,
-                quadrant.as_deref(),
-                subject.as_deref(),
-            )
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-
-            for entry in &entries {
-                println!(
-                    "[{}] {} — {} ({})",
-                    entry.quadrant, entry.title, entry.url, entry.subject
-                );
-            }
-        }
-
-=======
             let entries =
                 ecc_app::sources::list(&fs, path, quadrant.as_deref(), subject.as_deref())
                     .map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -198,57 +124,12 @@ pub fn run(args: SourcesArgs) -> anyhow::Result<()> {
                 println!("No sources found matching filters.");
             }
         }
->>>>>>> 3d73fa4 (feat: add ecc sources CLI subcommands (GREEN))
         SourcesAction::Add {
             url,
             title,
             source_type,
             quadrant,
             subject,
-<<<<<<< HEAD
-            added_date,
-            added_by,
-        } => {
-            let entry = ecc_app::sources::SourceEntry {
-                url,
-                title,
-                source_type,
-                subject,
-                quadrant,
-                added_date,
-                added_by,
-            };
-            ecc_app::sources::add(&fs, path, entry)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-            println!("Source added.");
-        }
-
-        SourcesAction::Check => {
-            let shell = ProcessExecutor;
-            let report = ecc_app::sources::check(&fs, &shell, path)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-
-            println!("Reachable: {}", report.reachable.len());
-            println!("Stale:     {}", report.stale.len());
-
-            if !report.stale.is_empty() {
-                println!("\nStale sources:");
-                for entry in &report.stale {
-                    println!("  {} — {}", entry.title, entry.url);
-                }
-            }
-        }
-
-        SourcesAction::Reindex => {
-            ecc_app::sources::reindex(&fs, path)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-            println!("Registry reindexed.");
-        }
-    }
-
-    Ok(())
-}
-=======
             added_by,
         } => {
             ecc_app::sources::add(
@@ -313,4 +194,3 @@ mod tests {
         assert!(result.is_ok(), "sources list should succeed: {result:?}");
     }
 }
->>>>>>> 3d73fa4 (feat: add ecc sources CLI subcommands (GREEN))
