@@ -32,6 +32,10 @@ A 7-domain codebase health assessment system orchestrated by the [audit-orchestr
 - **Related:** [Agent](#agent), [Command](#command)
 - **Files:** [`agents/audit-orchestrator.md`](../agents/audit-orchestrator.md), [`agents/evolution-analyst.md`](../agents/evolution-analyst.md), [`agents/test-auditor.md`](../agents/test-auditor.md), [`agents/observability-auditor.md`](../agents/observability-auditor.md), [`agents/error-handling-auditor.md`](../agents/error-handling-auditor.md), [`agents/convention-auditor.md`](../agents/convention-auditor.md), [`commands/audit.md`](../commands/audit.md)
 
+### Consolidation
+
+Session-end dedup + stale marking + relevance scoring applied to Working Memory entries before promoting keepers to Episodic Memory.
+
 ### Context Brief
 The structured input passed from the `/implement` parent orchestrator to a [TDD Executor](#tdd-executor) subagent for a single Pass Condition. Contains 6 exact headings: PC Spec, File Paths, Files to Modify, Prior PC Results, Commit Rules, TDD Cycle Rules. Max 500 lines. Excludes full spec/design content and prior PC implementation reasoning.
 - **Related:** [TDD Executor](#tdd-executor), [Command](#command)
@@ -87,6 +91,10 @@ A domain value object in `ecc-domain` that models the statusline display configu
 - **Related:** [Artifact](#artifact)
 - **Files:** [`statusline.rs`](../../crates/ecc-domain/src/config/statusline.rs)
 
+### Episodic Memory
+
+Preserved cross-session observations. Tier 2 in the three-tier memory system. Persists beyond session end; eligible for promotion to Semantic Memory.
+
 ### Grill Me
 The universal questioning protocol for ECC. A stage-by-stage adversarial interview that challenges ideas through 5 canonical stages (Clarity, Assumptions, Edge Cases, Alternatives, Stress Test) using `AskUserQuestion` one question at a time with challenge loops and cross-stage mutation. Operates in three modes: standalone (default, all 5 stages), spec-mode (recommended answers, "spec it" shortcut), and backlog-mode (lighter, max 3 stages). Enforced by the `grill-me-gate.sh` Stop hook.
 - **Related:** [Adversary Mode](#adversary-mode), [Skill](#skill)
@@ -102,6 +110,10 @@ JSON file (`.ecc-manifest.json`) tracking which [Artifacts](#artifact) ECC insta
 - **Related:** [Artifact](#artifact), [ECC Root](#ecc-root)
 - **Files:** `crates/ecc-app/src/install/helpers/manifest.rs`, `crates/ecc-app/src/install/mod.rs`, `crates/ecc-app/src/merge/mod.rs` (type import)
 
+### Memory Tier
+
+Classification level (Working/Episodic/Semantic) for entries in the three-tier memory system. Controls retention policy and promotion eligibility.
+
 ### NanoClaw
 A session-aware interactive REPL around `claude -p`. Supports conversation branching, keyword search across sessions, session export (md/json/txt), and context compaction.
 - **Related:** [Session](#session), [Alias](#alias)
@@ -111,6 +123,10 @@ A session-aware interactive REPL around `claude -p`. Supports conversation branc
 A markdown guideline file organized by language group (common/, typescript/, python/, golang/, etc.). Validated for non-empty content. Merged by group during installation.
 - **Related:** [Artifact](#artifact), [Command](#command)
 - **Files:** `crates/ecc-app/src/detect.rs`, `crates/ecc-app/src/validate/rules.rs`, `crates/ecc-app/src/install/mod.rs`, `crates/ecc-app/src/merge/mod.rs`
+
+### Semantic Memory
+
+Distilled, long-lived knowledge. Tier 3 in the three-tier memory system. Set manually (via `ecc memory promote`) from episodic entries. Never auto-expires.
 
 ### Session
 A Claude Code conversation state stored as a markdown `.tmp` file in `~/.claude/sessions/`. Contains metadata (date, tasks, tools used, notes) and can be aliased for easy recall via [Aliases](#alias).
@@ -190,6 +206,10 @@ Aggregate root for the ECC pipeline state machine. Contains phase (Phase), conce
 - **Related:** [Phase](#phase)
 - **Files:** [`crates/ecc-domain/src/workflow/state.rs`](../../crates/ecc-domain/src/workflow/state.rs)
 
+### Working Memory
+
+Ephemeral, session-scoped memories. Tier 1 in the three-tier memory system. Auto-expire after 24h unless promoted. Written by hooks during active sessions.
+
 ## Infrastructure Terms
 
 ### Apply All
@@ -216,6 +236,10 @@ The root directory of the installed ECC package. Resolved from `ECC_ROOT` or `CL
 One of three execution modes controlling which [Hooks](#hook) run: **minimal** (lifecycle only), **standard** (most hooks, default), **strict** (all hooks including warnings). Set via `ECC_HOOK_PROFILE` env var.
 - **Related:** [Hook](#hook), [Run With Flags](#run-with-flags)
 - **Files:** `crates/ecc-domain/src/hook_runtime/profiles.rs` (`HookProfile`, `VALID_PROFILES`, `getHookProfile`), `crates/ecc-app/src/hook/mod.rs`
+
+### Injection
+
+Loading relevant memories into session context at start. Queries the memory store by recency and relevance score to populate the CONTEXT.md file consumed by Claude Code.
 
 ### Interface Designer
 An orchestration [Agent](#agent) that spawns parallel sub-agents to explore radically different interface designs for a module or port. Each sub-agent operates under a unique constraint (minimize methods, maximize flexibility, optimize common case, named paradigm). Designs are compared on 5 dimensions and synthesized via user feedback. Uses the `design-an-interface` [Skill](#skill) for methodology.
