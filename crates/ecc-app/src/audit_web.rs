@@ -2,10 +2,9 @@
 //!
 //! Orchestrates domain logic through the FileSystem port.
 
-use ecc_domain::audit_web::dimension::{self, AuditDimension};
+use ecc_domain::audit_web::dimension;
 use ecc_domain::audit_web::profile::{
-    AuditWebProfile, DimensionThreshold, ImprovementSuggestion, ProfileError,
-    parse_profile, serialize_profile,
+    AuditWebProfile, DimensionThreshold, ProfileError, parse_profile, serialize_profile,
 };
 use ecc_domain::audit_web::report_validation::validate_report;
 use ecc_ports::fs::FileSystem;
@@ -31,22 +30,51 @@ const PROFILE_PATH: &str = "docs/audits/audit-web-profile.yaml";
 /// Scans codebase characteristics and writes a YAML profile at
 /// `docs/audits/audit-web-profile.yaml`. Fails if profile already exists.
 pub fn init(fs: &dyn FileSystem, project_dir: &Path) -> Result<(), AuditWebAppError> {
-    todo!()
+    let profile_path = project_dir.join(PROFILE_PATH);
+    if fs.exists(&profile_path) {
+        return Err(AuditWebAppError::ProfileExists(
+            profile_path.display().to_string(),
+        ));
+    }
+    let dims = dimension::standard_dimensions();
+    let profile = AuditWebProfile {
+        version: 1,
+        dimensions: dims,
+        thresholds: DimensionThreshold {
+            adopt_min_fit: 4,
+            adopt_min_maturity: 4,
+            adopt_max_effort: 2,
+        },
+        improvement_history: vec![],
+    };
+    let yaml = serialize_profile(&profile);
+    fs.write(&profile_path, &yaml)
+        .map_err(|e| AuditWebAppError::Io(e.to_string()))
 }
 
 /// Show the contents of the audit-web profile.
 pub fn show(fs: &dyn FileSystem, profile_path: &Path) -> Result<String, AuditWebAppError> {
-    todo!()
+    fs.read_to_string(profile_path)
+        .map_err(|e| AuditWebAppError::Io(e.to_string()))
 }
 
 /// Validate the audit-web profile against the domain rules.
 pub fn validate(fs: &dyn FileSystem, profile_path: &Path) -> Result<(), AuditWebAppError> {
-    todo!()
+    let content = fs
+        .read_to_string(profile_path)
+        .map_err(|e| AuditWebAppError::Io(e.to_string()))?;
+    let profile = parse_profile(&content)?;
+    for dim in &profile.dimensions {
+        dimension::validate_query_template(&dim.query_template)
+            .map_err(|e| AuditWebAppError::Report(e.to_string()))?;
+    }
+    Ok(())
 }
 
 /// Reset (delete) the audit-web profile.
 pub fn reset(fs: &dyn FileSystem, profile_path: &Path) -> Result<(), AuditWebAppError> {
-    todo!()
+    fs.remove_file(profile_path)
+        .map_err(|e| AuditWebAppError::Io(e.to_string()))
 }
 
 /// Validate a report file against required structure, score ranges, and citation counts.
@@ -54,7 +82,18 @@ pub fn validate_report_file(
     fs: &dyn FileSystem,
     report_path: &Path,
 ) -> Result<(), AuditWebAppError> {
-    todo!()
+    let content = fs
+        .read_to_string(report_path)
+        .map_err(|e| AuditWebAppError::Io(e.to_string()))?;
+    let result = validate_report(&content);
+    if result.errors.is_empty() {
+        Ok(())
+    } else {
+        Err(AuditWebAppError::Report(format!(
+            "{} validation error(s)",
+            result.errors.len()
+        )))
+    }
 }
 
 #[cfg(test)]

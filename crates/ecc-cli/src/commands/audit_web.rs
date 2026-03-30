@@ -43,8 +43,45 @@ pub enum ProfileAction {
     },
 }
 
-pub fn run(_args: AuditWebArgs) -> anyhow::Result<()> {
-    todo!()
+pub fn run(args: AuditWebArgs) -> anyhow::Result<()> {
+    use ecc_infra::os_fs::OsFileSystem;
+
+    let fs = OsFileSystem;
+    let project_dir = args
+        .project_dir
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
+    let profile_path = project_dir.join("docs/audits/audit-web-profile.yaml");
+
+    match args.action {
+        AuditWebAction::Profile { action } => match action {
+            ProfileAction::Init => {
+                ecc_app::audit_web::init(&fs, &project_dir)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                println!("Profile initialized at {}", profile_path.display());
+            }
+            ProfileAction::Show => {
+                let content = ecc_app::audit_web::show(&fs, &profile_path)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                print!("{content}");
+            }
+            ProfileAction::Validate => {
+                ecc_app::audit_web::validate(&fs, &profile_path)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                println!("Profile is valid.");
+            }
+            ProfileAction::Reset { force: _ } => {
+                ecc_app::audit_web::reset(&fs, &profile_path)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                println!("Profile deleted.");
+            }
+        },
+        AuditWebAction::ValidateReport { path } => {
+            ecc_app::audit_web::validate_report_file(&fs, &path)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("Report is valid.");
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
