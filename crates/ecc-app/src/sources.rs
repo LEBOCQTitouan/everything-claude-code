@@ -3,7 +3,7 @@
 //! Orchestrates domain logic through the FileSystem and ShellExecutor ports.
 
 use ecc_domain::sources::entry::{
-    Quadrant, SourceEntry, SourceError, SourceType, validate_title, validate_url,
+    Quadrant, SourceEntry, SourceError, SourceType, SourceUrl, validate_title,
 };
 use ecc_domain::sources::parser::parse_sources;
 use ecc_domain::sources::registry::SourcesRegistry;
@@ -149,8 +149,9 @@ pub fn add(
     quadrant: &str,
     subject: &str,
     added_by: &str,
+    date: &str,
 ) -> Result<(), SourcesAppError> {
-    validate_url(url).map_err(SourcesAppError::Domain)?;
+    let source_url = SourceUrl::parse(url).map_err(SourcesAppError::Domain)?;
     validate_title(title).map_err(SourcesAppError::Domain)?;
 
     let source_type = SourceType::from_str(source_type).map_err(SourcesAppError::Domain)?;
@@ -159,13 +160,13 @@ pub fn add(
     let registry = load_registry(fs, sources_path)?;
 
     let entry = SourceEntry {
-        url: url.to_owned(),
+        url: source_url,
         title: title.to_owned(),
         source_type,
         quadrant,
         subject: subject.to_owned(),
         added_by: added_by.to_owned(),
-        added_date: "2026-03-29".to_owned(),
+        added_date: date.to_owned(),
         last_checked: None,
         deprecation_reason: None,
         stale: false,
@@ -229,7 +230,7 @@ pub fn check(
                 "%{http_code}",
                 "--max-time",
                 "10",
-                &entry.url,
+                entry.url.as_str(),
             ],
         );
 
@@ -283,7 +284,7 @@ pub fn check(
 
         results.push(CheckResult {
             title: entry.title.clone(),
-            url: entry.url.clone(),
+            url: entry.url.as_str().to_owned(),
             status,
         });
     }
@@ -409,13 +410,41 @@ mod tests {
 
         let adopt_entries = list(&fs, Path::new("/sources.md"), Some("adopt"), None).unwrap();
         assert_eq!(adopt_entries.len(), 1);
-        assert_eq!(adopt_entries[0].url, "https://example.com/rust-testing");
+        assert_eq!(adopt_entries[0].url.as_str(), "https://example.com/rust-testing");
 
         let subject_entries = list(&fs, Path::new("/sources.md"), None, Some("testing")).unwrap();
         assert_eq!(subject_entries.len(), 1);
 
         let empty = list(&fs, Path::new("/sources.md"), Some("hold"), None).unwrap();
         assert!(empty.is_empty(), "hold quadrant should be empty");
+    }
+
+    // --- PC-012: add() uses injected date parameter ---
+
+    #[test]
+    fn add_uses_injected_date() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/sources.md", &sample_sources_md());
+
+        add(
+            &fs,
+            Path::new("/sources.md"),
+            "https://example.com/dated-entry",
+            "Dated Entry",
+            "doc",
+            "adopt",
+            "testing",
+            "human",
+            "2026-01-15",
+        )
+        .unwrap();
+
+        let content = fs.read_to_string(Path::new("/sources.md")).unwrap();
+        let registry = parse_sources(&content).unwrap();
+        let entry = registry
+            .find_by_url("https://example.com/dated-entry")
+            .expect("dated entry must exist");
+        assert_eq!(entry.added_date, "2026-01-15", "entry must use the injected date");
     }
 
     // --- PC-019: add use case appends entry, atomic write ---
@@ -434,6 +463,7 @@ mod tests {
             "adopt",
             "testing",
             "human",
+            "2026-03-29",
         )
         .unwrap();
 
@@ -460,6 +490,7 @@ mod tests {
             "assess",
             "testing",
             "human",
+            "2026-03-29",
         )
         .unwrap();
 
@@ -484,6 +515,7 @@ mod tests {
             "adopt",
             "testing",
             "human",
+            "2026-03-29",
         );
 
         assert!(result.is_err());
@@ -625,7 +657,7 @@ mod tests {
 
     #[test]
     fn check_clears_stale() {
-        let sources_md = "# Knowledge Sources\n\n## Inbox\n\n\n## Adopt\n\n### testing\n- [Stale Entry](https://example.com/stale) — type: doc | subject: testing | added: 2026-01-01 | by: human | stale: true\n\n## Trial\n\n## Assess\n\n## Hold\n\n## Module Mapping\n\n| Module | Subjects |\n|--------|----------|\n";
+        let sources_md = "# Knowledge Sources\n\n## Inbox\n\n\n## Adopt\n\n### testing\n- [Stale Entry](https://example.com/stale) \u{2014} type: doc | subject: testing | added: 2026-01-01 | by: human | stale\n\n## Trial\n\n## Assess\n\n## Hold\n\n## Module Mapping\n\n| Module | Subjects |\n|--------|----------|\n";
 
         let fs = InMemoryFileSystem::new().with_file("/sources.md", sources_md);
         let shell = MockShellExecutor::new()
