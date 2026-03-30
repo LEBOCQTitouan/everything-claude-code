@@ -1,11 +1,12 @@
 /// Log verbosity level for ECC diagnostics.
 ///
 /// Pure value object — zero I/O imports, no cross-cutting concerns.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LogLevel {
     /// Only error messages.
     Error,
     /// Warnings and above.
+    #[default]
     Warn,
     /// Informational messages and above.
     Info,
@@ -44,11 +45,7 @@ impl std::str::FromStr for LogLevel {
     }
 }
 
-impl Default for LogLevel {
-    fn default() -> Self {
-        Self::Warn
-    }
-}
+
 
 #[cfg(test)]
 mod tests {

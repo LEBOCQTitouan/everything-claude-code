@@ -66,26 +66,23 @@ pub fn resolve_log_level(
     }
 
     // 2. ECC_LOG env var
-    if let Some(level_str) = ecc_log {
-        if let Ok(level) = LogLevel::from_str(level_str) {
-            return level;
-        }
+    if let Some(Ok(level)) = ecc_log.map(LogLevel::from_str) {
+        return level;
     }
 
     // 3. RUST_LOG env var
-    if let Some(level_str) = rust_log {
-        if let Ok(level) = LogLevel::from_str(level_str) {
-            return level;
-        }
+    if let Some(Ok(level)) = rust_log.map(LogLevel::from_str) {
+        return level;
     }
 
-    // 4. Persisted config
-    if let Ok(config) = store.load_global() {
-        if let Some(level_str) = &config.log_level {
-            if let Ok(level) = LogLevel::from_str(level_str) {
-                return level;
-            }
-        }
+    // 4. Persisted config (global then local override)
+    if let Some(level) = store
+        .load_global()
+        .ok()
+        .and_then(|c| c.log_level)
+        .and_then(|s| LogLevel::from_str(&s).ok())
+    {
+        return level;
     }
 
     // 5. Default

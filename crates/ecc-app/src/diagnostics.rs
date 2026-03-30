@@ -140,9 +140,9 @@ fn parse_state(
 
     let artifacts = if let Some(arts) = v.get("artifacts") {
         ArtifactStatus {
-            spec: arts.get("spec_path").map_or(false, |v| !v.is_null()),
-            design: arts.get("design_path").map_or(false, |v| !v.is_null()),
-            tasks: arts.get("tasks_path").map_or(false, |v| !v.is_null()),
+            spec: arts.get("spec_path").is_some_and(|v| !v.is_null()),
+            design: arts.get("design_path").is_some_and(|v| !v.is_null()),
+            tasks: arts.get("tasks_path").is_some_and(|v| !v.is_null()),
         }
     } else {
         ArtifactStatus { spec: false, design: false, tasks: false }
