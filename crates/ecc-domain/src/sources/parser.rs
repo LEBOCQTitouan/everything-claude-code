@@ -396,4 +396,17 @@ mod tests {
             .expect("app mapping must exist");
         assert_eq!(app.subjects, vec!["app-patterns"]);
     }
+
+    // --- PC-010: Stale bare flag parses correctly ---
+    #[test]
+    fn parse_stale_bare_flag() {
+        let doc = "# Knowledge Sources\n\n## Inbox\n\n\n## Adopt\n\n### testing\n- [Stale Entry](https://example.com/stale) \u{2014} type: doc | subject: testing | added: 2026-01-01 | by: human | stale\n\n## Trial\n\n## Assess\n\n## Hold\n\n## Module Mapping\n\n| Module | Subjects |\n|--------|----------|\n";
+        let registry = parse_sources(doc).expect("should parse stale entry");
+        let entry = registry
+            .entries
+            .iter()
+            .find(|e| e.url.as_str() == "https://example.com/stale")
+            .expect("stale entry must exist");
+        assert!(entry.stale, "bare 'stale' flag must parse as stale=true");
+    }
 }

@@ -305,4 +305,35 @@ mod tests {
             assert_eq!(a.subjects, b.subjects);
         }
     }
+
+    // --- PC-011: Stale flag round-trips through serialize then parse ---
+    #[test]
+    fn stale_flag_round_trip() {
+        let stale_entry = SourceEntry {
+            url: SourceUrl::parse("https://example.com/stale").unwrap(),
+            title: "Stale Source".to_owned(),
+            source_type: SourceType::Doc,
+            quadrant: Quadrant::Adopt,
+            subject: "testing".to_owned(),
+            added_by: "human".to_owned(),
+            added_date: "2026-01-01".to_owned(),
+            last_checked: Some("2026-02-01".to_owned()),
+            deprecation_reason: None,
+            stale: true,
+        };
+        let registry = SourcesRegistry {
+            inbox: vec![],
+            entries: vec![stale_entry],
+            module_mappings: vec![],
+        };
+
+        let serialized = serialize_sources(&registry);
+        let reparsed = parse_sources(&serialized).expect("round-trip must succeed");
+        let entry = reparsed
+            .entries
+            .iter()
+            .find(|e| e.url.as_str() == "https://example.com/stale")
+            .expect("stale entry must exist after round-trip");
+        assert!(entry.stale, "stale flag must survive serialize → parse round-trip");
+    }
 }
