@@ -18,4 +18,5 @@ pub mod repl;
 /// Shell command execution port.
 pub mod shell;
 /// Terminal I/O port.
+pub mod config_store;
 pub mod terminal;

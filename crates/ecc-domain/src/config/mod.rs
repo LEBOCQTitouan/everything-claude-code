@@ -14,6 +14,7 @@ pub mod gitignore;
 pub mod hook_types;
 pub mod manifest;
 pub mod merge;
+pub mod log_level;
 pub mod statusline;
 pub mod validate;
 
