@@ -14,12 +14,21 @@ impl RetentionDuration {
     ///
     /// Returns `Err` if the string is not a valid `Nd` pattern or if `N` is zero.
     pub fn from_str(s: &str) -> Result<Self, String> {
-        todo!("implement RetentionDuration::from_str")
+        let stripped = s
+            .strip_suffix('d')
+            .ok_or_else(|| format!("invalid retention duration '{s}': must end with 'd'"))?;
+        let days: u32 = stripped
+            .parse()
+            .map_err(|_| format!("invalid retention duration '{s}': prefix must be a positive integer"))?;
+        if days == 0 {
+            return Err(format!("invalid retention duration '{s}': days must be greater than zero"));
+        }
+        Ok(Self { days })
     }
 
     /// Returns the default retention of 30 days.
     pub fn default_30_days() -> Self {
-        todo!("implement RetentionDuration::default_30_days")
+        Self { days: 30 }
     }
 }
 

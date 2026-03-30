@@ -23,3 +23,5 @@ pub mod repl;
 pub mod shell;
 /// Terminal I/O port.
 pub mod terminal;
+/// Structured log storage port.
+pub mod log_store;
