@@ -7,6 +7,8 @@
 
 #![warn(missing_docs)]
 
+/// Persistent ECC configuration port.
+pub mod config_store;
 /// Environment variable and platform access port.
 pub mod env;
 /// Filesystem operations port.
@@ -18,5 +20,4 @@ pub mod repl;
 /// Shell command execution port.
 pub mod shell;
 /// Terminal I/O port.
-pub mod config_store;
 pub mod terminal;
