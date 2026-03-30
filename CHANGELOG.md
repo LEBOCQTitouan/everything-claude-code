@@ -12,6 +12,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Tiered diagnostics via tracing (BL-091)**: Replaced `log`+`env_logger` with `tracing`+`tracing-subscriber` across all crates. 5-level verbosity: -q (errors), default (warnings), -v (info), -vv (debug), -vvv (trace). `ECC_LOG` env var with `RUST_LOG` deprecated fallback. `ecc status` shows workflow state, versions, and component counts. `ecc config set log-level` persists verbosity preference to `~/.ecc/config.toml`. ADR 0031.
 
+## v4.6.2
+
+- **Knowledge sources registry hardening (BL-086)**: `SourceUrl` validated newtype replaces raw `String` URLs in domain layer (anti-primitive-obsession), `add()` accepts injected date parameter instead of hardcoded value, stale flag bare-format parsing fixed for correct round-trip, 4 integration tests added for `ecc sources` CLI commands, `audit-evolution` and `audit-full` commands now consult `docs/sources.md` for source re-interrogation
+
 ## v4.6.1
 
 ### Added
