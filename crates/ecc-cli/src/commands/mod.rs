@@ -12,5 +12,3 @@ pub mod status;
 pub mod validate;
 pub mod version;
 pub mod worktree;
-pub mod config;
-pub mod status;
