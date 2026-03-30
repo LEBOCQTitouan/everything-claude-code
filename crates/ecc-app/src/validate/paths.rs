@@ -68,7 +68,7 @@ pub(super) fn validate_paths(root: &Path, fs: &dyn FileSystem, terminal: &dyn Te
 #[cfg(test)]
 mod tests {
     use super::super::{ValidateTarget, run_validate};
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment};
     use std::path::Path;
 
     fn term() -> BufferedTerminal {
@@ -82,6 +82,7 @@ mod tests {
         assert!(run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Paths,
             Path::new("/root")
         ));
@@ -95,6 +96,7 @@ mod tests {
         assert!(run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Paths,
             Path::new("/root")
         ));
@@ -108,6 +110,7 @@ mod tests {
         assert!(!run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Paths,
             Path::new("/root")
         ));
@@ -125,7 +128,7 @@ mod tests {
         let t = term();
         // skills dir exists as a file (not a dir), so read_dir_recursive will fail
         // This verifies the error path is now surfaced
-        let result = run_validate(&fs, &t, &ValidateTarget::Paths, Path::new("/root"));
+        let result = run_validate(&fs, &t, &MockEnvironment::default(), &ValidateTarget::Paths, Path::new("/root"));
         // Should still pass since this path is not a checked extension
         assert!(result);
     }

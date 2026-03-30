@@ -118,7 +118,7 @@ fn validate_hook_matcher(
 #[cfg(test)]
 mod tests {
     use super::super::{ValidateTarget, run_validate};
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem};
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment};
     use std::path::Path;
 
     fn term() -> BufferedTerminal {
@@ -132,6 +132,7 @@ mod tests {
         assert!(run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Hooks,
             Path::new("/root")
         ));
@@ -145,6 +146,7 @@ mod tests {
         assert!(run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Hooks,
             Path::new("/root")
         ));
@@ -157,6 +159,7 @@ mod tests {
         assert!(!run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Hooks,
             Path::new("/root")
         ));
@@ -171,6 +174,7 @@ mod tests {
         assert!(!run_validate(
             &fs,
             &t,
+            &MockEnvironment::default(),
             &ValidateTarget::Hooks,
             Path::new("/root")
         ));
