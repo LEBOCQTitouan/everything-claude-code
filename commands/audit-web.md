@@ -18,11 +18,13 @@ Scope: $ARGUMENTS (or all dimensions if none provided)
 > **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
 
 TodoWrite items:
+- "Phase 0: GUIDED SETUP — load or create audit profile"
 - "Phase 1: INVENTORY — detect manifests and patterns"
 - "Cost consent gate — ask user confirmation"
 - "Phase 2: LANDSCAPE SCAN — parallel web search agents"
 - "Phase 3: EVALUATE — score and classify findings"
 - "Phase 4: SYNTHESIZE — write radar report"
+- "Phase 5: SELF-IMPROVEMENT — analyze gaps, suggest new dimensions"
 - "Present terminal summary"
 
 Mark each item complete as the phase finishes.
@@ -30,6 +32,7 @@ Mark each item complete as the phase finishes.
 ## Arguments
 
 - `--focus=<dims>` — comma-separated list of dimensions to scan (default: all). Values: `deps`, `arch`, `tools`, `ecosystem`, `competitors`, `user-requests`, `blogs`, `research`
+- `--setup` — force Phase 0 guided setup, even if a profile already exists
 
 ### Focus-to-Agent Mapping
 
@@ -46,6 +49,52 @@ Mark each item complete as the phase finishes.
 | `features` | competitor-scout + user-request-miner + blog-miner + research-scout |
 
 When `--focus` is omitted, all 8 agents run. When `--focus=deps` is specified, only the dep-scanner agent is launched. Use the mapping table above to determine which agents to launch for each focus value.
+
+---
+
+## Phase 0: GUIDED SETUP
+
+Tell the user: "Starting Phase 0 — loading or creating your audit profile."
+
+### Profile Loading
+
+Check if `docs/audits/audit-web-profile.yaml` exists:
+
+1. **Profile exists AND `--setup` not passed**: Load the profile silently. Parse with `ecc audit-web profile validate` logic. If stale dimensions are detected (referencing tools/files no longer in the codebase), flag them:
+   > "Profile loaded. ⚠ N stale dimensions detected: [list]. Consider running `--setup` to refresh."
+   Pass custom dimensions from the profile to Phase 2 alongside the standard 8 dimensions.
+
+2. **Profile exists AND `--setup` passed**: Regenerate the profile interactively (see below). The existing profile is overwritten after confirmation.
+
+3. **No profile exists**: Trigger interactive guided setup (see below).
+
+### Interactive Guided Setup
+
+When triggered (no profile or `--setup`):
+
+1. Scan the codebase for project characteristics:
+   - Language(s) detected from manifests (Cargo.toml, package.json, etc.)
+   - Framework/architecture patterns from CLAUDE.md and ARCHITECTURE.md
+   - CI/CD configuration presence (.github/workflows/, .gitlab-ci.yml)
+   - Infrastructure files (Dockerfile, docker-compose, terraform)
+   - Domain indicators from directory structure
+
+2. Generate a suggested profile with:
+   - Standard 8 dimensions (always included)
+   - Suggested custom dimensions based on characteristics (e.g., "docker" if Dockerfile found, "ci-pipeline" if .github/workflows/ exists)
+   - Default thresholds (adopt: fit>=4, maturity>=4, effort<=2)
+
+3. Present the profile via AskUserQuestion:
+   > "Here is your suggested audit profile:
+   > - Standard dimensions: deps, arch, tools, ecosystem, competitors, user-requests, blogs, research
+   > - Suggested custom dimensions: [list based on scan]
+   > - Thresholds: Adopt (fit>=4, maturity>=4, effort<=2)
+   >
+   > Accept this profile, or modify?"
+
+4. Write the profile to `docs/audits/audit-web-profile.yaml`
+
+**Non-interactive fallback**: If AskUserQuestion is unavailable (CI, piped stdin), generate a default profile with standard dimensions only and log: "Non-interactive mode: generated default profile with standard dimensions."
 
 ---
 
@@ -238,6 +287,50 @@ Web Upgrade Radar Complete
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+---
+
+## Phase 5: SELF-IMPROVEMENT
+
+Tell the user: "Starting Phase 5 — analyzing findings for coverage gaps and suggesting profile improvements."
+
+### Coverage Gap Analysis
+
+1. For each of the 5 radar quadrants (Techniques, Tools, Platforms, Languages & Frameworks, Feature Opportunities), check if at least one finding was produced
+2. For each standard dimension, check if it produced any findings
+3. Identify dimensions with zero findings — these may indicate:
+   - The dimension is irrelevant to this project (suggest removing from profile)
+   - The audit didn't search deeply enough (suggest refining query templates)
+
+### Suggest New Dimensions
+
+Based on the Phase 1 inventory and Phase 4 findings:
+1. If the codebase has characteristics not covered by any dimension (e.g., Docker files but no "containers" dimension), suggest adding a custom dimension
+2. If findings cluster heavily in one quadrant, suggest splitting it into sub-dimensions for finer granularity
+
+### Threshold Adjustment
+
+If score distributions are skewed:
+- If most findings score 3-4 on strategic fit, suggest lowering the Adopt threshold
+- If most findings have high effort scores, suggest filtering low-effort-only mode
+
+### Present Suggestions
+
+Use AskUserQuestion to present each suggestion:
+> "Self-improvement suggestions based on this audit:
+> 1. [suggestion 1] — Accept / Reject
+> 2. [suggestion 2] — Accept / Reject
+> ..."
+
+Accepted suggestions are persisted to the audit profile (`docs/audits/audit-web-profile.yaml`) in the `improvement_history` section with today's date and `accepted: true/false`.
+
+If no suggestions are warranted, note: "No profile improvements suggested — coverage is adequate."
+
+### Commit Profile Changes
+
+If the profile was modified (new dimensions accepted, thresholds adjusted):
+1. Write the updated profile
+2. Commit alongside the radar report: profile changes are committed with the report
 
 **STOP. DO NOT modify source code.**
 
