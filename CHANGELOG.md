@@ -11,6 +11,7 @@ Generated from git conventional commits. Grouped by type and version.
 ### Added
 
 - **Autonomous comms pipeline (BL-109)**: Multi-channel content generation from codebases. `comms-generator` agent orchestrates DevRel content across 4 channels (social media, blog, devblog, docs). `comms-strategy`, `comms-adapter`, and `comms-redactor` skills provide per-channel templates, destination patterns, and fail-safe secret scanning. File-based output only with mandatory draft stage. Content calendar tracking via CALENDAR.md.
+- **Comms slash commands**: `/comms` (manage: init, strategy, drafts, calendar) and `/comms-generate` (content generation with channel filtering)
 
 ## v5.0.0
 
