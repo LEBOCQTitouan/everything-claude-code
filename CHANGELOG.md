@@ -16,6 +16,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Self-update command (BL-088)**: `ecc update` — self-update from GitHub Releases with cosign verification. Downloads platform-specific tarball, verifies keyless Sigstore signature, atomic binary swap with rollback. Supports `--version` pinning, `--dry-run` preview, `--pre` for pre-releases. Uses ureq for minimal HTTP footprint. GitHub Actions release workflow produces tarballs with SHA-256 checksums and cosign signatures. ADR-0037 (ureq), ADR-0038 (Sigstore).
 - **Autonomous comms pipeline (BL-109)**: Multi-channel content generation from codebases. `comms-generator` agent orchestrates DevRel content across 4 channels (social media, blog, devblog, docs). `comms-strategy`, `comms-adapter`, and `comms-redactor` skills provide per-channel templates, destination patterns, and fail-safe secret scanning. File-based output only with mandatory draft stage. Content calendar tracking via CALENDAR.md.
 - **Comms slash commands**: `/comms` (manage: init, strategy, drafts, calendar) and `/comms-generate` (content generation with channel filtering)
 - **Content planning command**: `/comms-plan` — structured 4-stage interview (goal, audience, channels, timeline) with web trend research and publication schedule generation
