@@ -226,10 +226,7 @@ jobs:
         run: |
           cd release-assets
           for asset in *.tar.gz *.zip; do
-            cosign sign-blob "$asset" \
-              --yes \
-              --output-signature "${asset}.sig" \
-              --output-certificate "${asset}.bundle" || true
+            cosign sign-blob "$asset" --yes --bundle "${asset}.bundle" || true
           done
 
       - name: Generate changelog

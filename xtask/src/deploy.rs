@@ -31,6 +31,21 @@ impl std::fmt::Display for ActionStatus {
     }
 }
 
+/// Returns the list of packages to build with cargo.
+pub fn packages_to_build() -> Vec<&'static str> {
+    vec!["ecc-cli", "ecc-workflow", "ecc-flock"]
+}
+
+/// Returns the list of binary names to install.
+pub fn binaries_to_install() -> Vec<&'static str> {
+    vec!["ecc", "ecc-workflow", "ecc-flock"]
+}
+
+/// Returns the dry-run message describing which binaries would be installed.
+pub fn dry_run_install_message() -> String {
+    "Would copy ecc, ecc-workflow, ecc-flock to <cargo_bin>".to_string()
+}
+
 /// Detect cargo bin directory
 fn cargo_bin_dir() -> PathBuf {
     if let Ok(home) = std::env::var("CARGO_HOME") {
@@ -52,20 +67,26 @@ pub fn run(dry_run: bool, debug: bool) -> anyhow::Result<()> {
     };
 
     // Step 1: Build
+    let pkgs = packages_to_build();
     if dry_run {
+        let pkg_flags: String = pkgs.iter().map(|p| format!("-p {p}")).collect::<Vec<_>>().join(" ");
         let cmd = if debug {
-            "Would run: cargo build -p ecc-cli -p ecc-workflow"
+            format!("Would run: cargo build {pkg_flags}")
         } else {
-            "Would run: cargo build --release -p ecc-cli -p ecc-workflow"
+            format!("Would run: cargo build --release {pkg_flags}")
         };
         results.push(ActionResult {
             name: "Build".into(),
-            status: ActionStatus::DryRun(cmd.into()),
+            status: ActionStatus::DryRun(cmd),
         });
     } else {
-        let mut args = vec!["build", "-p", "ecc-cli", "-p", "ecc-workflow"];
+        let mut args = vec!["build"];
         if !debug {
-            args.insert(1, "--release");
+            args.push("--release");
+        }
+        for pkg in &pkgs {
+            args.push("-p");
+            args.push(pkg);
         }
         let output = Command::new("cargo").args(&args).status()?;
         if !output.success() {
@@ -73,23 +94,28 @@ pub fn run(dry_run: bool, debug: bool) -> anyhow::Result<()> {
         }
         results.push(ActionResult {
             name: "Build".into(),
-            status: ActionStatus::Installed(format!("Built ecc + ecc-workflow ({profile})")),
+            status: ActionStatus::Installed(format!(
+                "Built ecc + ecc-workflow + ecc-flock ({profile})"
+            )),
         });
     }
 
     // Step 2: Install binaries
     let bin_dir = cargo_bin_dir();
+    let bins = binaries_to_install();
     if dry_run {
+        let base_msg = dry_run_install_message();
         results.push(ActionResult {
             name: "Install".into(),
             status: ActionStatus::DryRun(format!(
-                "Would copy ecc, ecc-workflow to {}",
+                "{} (-> {})",
+                base_msg,
                 bin_dir.display()
             )),
         });
     } else {
         std::fs::create_dir_all(&bin_dir)?;
-        for name in ["ecc", "ecc-workflow"] {
+        for name in &bins {
             let src = PathBuf::from(target_dir).join(name);
             let dst = bin_dir.join(name);
             std::fs::copy(&src, &dst)?;
