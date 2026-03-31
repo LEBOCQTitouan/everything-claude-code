@@ -75,3 +75,6 @@ docs/memory/action-log.json
 docs/memory/work-items/
 !docs/memory/README.md
 # End ECC generated files
+
+# Mutation testing output
+mutants.out/

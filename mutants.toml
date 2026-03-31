@@ -1,0 +1,14 @@
+# cargo-mutants configuration
+# Docs: https://mutants.rs/
+
+# Use nextest for faster mutation testing (30-40% speedup via early exit)
+test_tool = "nextest"
+
+# Per-mutant timeout to catch infinite loops
+timeout = 120
+
+# Scope mutation testing to high-value crates only
+# ecc-domain: pure business logic, highest ROI
+# ecc-app: orchestration logic, second priority
+[examine]
+package = ["ecc-domain", "ecc-app"]
