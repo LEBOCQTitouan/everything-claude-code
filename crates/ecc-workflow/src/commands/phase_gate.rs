@@ -54,6 +54,12 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
 
 /// Testable entry point: same as `run` but accepts hook input directly.
 pub fn run_with_input(project_dir: &Path, input: &str) -> WorkflowOutput {
+    // Fast path: if state.json does not exist, skip locking entirely.
+    let state_path = project_dir.join(".claude/workflow/state.json");
+    if !state_path.exists() {
+        return WorkflowOutput::pass("No workflow active");
+    }
+
     // Acquire state lock to read the phase atomically with respect to transitions.
     let phase_result = match with_state_lock(project_dir, || read_phase_typed(project_dir)) {
         Ok(r) => r,
