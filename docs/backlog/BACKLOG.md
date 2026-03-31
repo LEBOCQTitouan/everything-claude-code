@@ -189,9 +189,9 @@ BL-109 → BL-092 (comms pipeline shares structured log infrastructure)
 ## Stats
 
 - **Total:** 108
-- **Open:** 40
+- **Open:** 39
 - **In-progress:** 0
-- **Implemented:** 64
+- **Implemented:** 65
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)
