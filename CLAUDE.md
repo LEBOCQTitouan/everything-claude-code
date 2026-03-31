@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (2225 tests)
+cargo test              # Run all Rust tests (2250 tests)
 cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (16 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
@@ -70,6 +70,7 @@ ecc audit-web validate-report <path>  Validate radar report structure
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ecc status [--json]      Show diagnostic snapshot (versions, phase, components)
+ecc update [--version <ver>] [--dry-run] [--pre]  Self-update from GitHub Releases
 ecc config set <key> <value>  Set persistent config (e.g., log-level info)
 ecc-workflow tasks sync <path>   Parse tasks.md, output JSON summary
 ecc-workflow tasks update <path> <id> <status>  Atomically update PC status
