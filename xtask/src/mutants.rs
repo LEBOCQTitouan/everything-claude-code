@@ -2,44 +2,7 @@ use std::process::Command;
 
 use anyhow::{bail, Context, Result};
 
-/// Run cargo-mutants with structured flags.
-///
-/// Wraps the external `cargo mutants` binary. Does NOT import any ECC
-/// domain/port/infra crates — this is pure developer tooling.
-pub fn run(packages: &[String], timeout: Option<u64>, in_diff: bool, nextest: bool) -> Result<()> {
-    // Check cargo-mutants is installed
-    which::which("cargo-mutants")
-        .context("cargo-mutants not installed. Run: cargo install cargo-mutants")?;
-
-    let mut cmd = Command::new("cargo");
-    cmd.arg("mutants");
-
-    for pkg in packages {
-        cmd.arg("--package").arg(pkg);
-    }
-
-    if let Some(t) = timeout {
-        cmd.arg("--timeout").arg(t.to_string());
-    }
-
-    if in_diff {
-        cmd.arg("--in-diff").arg("origin/main");
-    }
-
-    if nextest {
-        cmd.arg("--test-tool").arg("nextest");
-    }
-
-    let status = cmd.status().context("failed to execute cargo mutants")?;
-
-    if !status.success() {
-        bail!("cargo mutants exited with status {}", status);
-    }
-
-    Ok(())
-}
-
-#[cfg(test)]
+/// Build cargo-mutants command arguments.
 fn build_args(packages: &[String], timeout: Option<u64>, in_diff: bool, nextest: bool) -> Vec<String> {
     let mut args = vec!["mutants".to_string()];
 
@@ -64,6 +27,29 @@ fn build_args(packages: &[String], timeout: Option<u64>, in_diff: bool, nextest:
     }
 
     args
+}
+
+/// Run cargo-mutants with structured flags.
+///
+/// Wraps the external `cargo mutants` binary. Does NOT import any ECC
+/// domain/port/infra crates — this is pure developer tooling.
+pub fn run(packages: &[String], timeout: Option<u64>, in_diff: bool, nextest: bool) -> Result<()> {
+    which::which("cargo-mutants")
+        .context("cargo-mutants not installed. Run: cargo install cargo-mutants")?;
+
+    let args = build_args(packages, timeout, in_diff, nextest);
+    let mut cmd = Command::new("cargo");
+    for arg in &args {
+        cmd.arg(arg);
+    }
+
+    let status = cmd.status().context("failed to execute cargo mutants")?;
+
+    if !status.success() {
+        bail!("cargo mutants exited with status {}", status);
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -98,9 +84,17 @@ mod tests {
 
     #[test]
     fn errors_when_not_installed() {
-        // Temporarily override PATH to ensure cargo-mutants is not found
-        let result = which::which("cargo-mutants-nonexistent-binary-test");
-        assert!(result.is_err(), "should error for non-existent binary");
+        // Use an empty PATH so cargo-mutants cannot be found
+        let original_path = std::env::var("PATH").unwrap_or_default();
+        unsafe { std::env::set_var("PATH", "/nonexistent") };
+        let result = run(&["ecc-domain".to_string()], None, false, false);
+        unsafe { std::env::set_var("PATH", &original_path) };
+        assert!(result.is_err(), "should error when cargo-mutants not in PATH");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("not installed"),
+            "error should mention installation: {err_msg}"
+        );
     }
 
     #[test]
