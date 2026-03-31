@@ -31,7 +31,7 @@ pub trait Environment: Send + Sync {
 
 #[cfg(test)]
 mod tests {
-    use super::{Architecture, Platform};
+    use super::{Architecture, Environment, Platform};
 
     /// PC-007: Architecture and Platform must be the domain types (re-exported).
     /// This test asserts type identity: a domain Architecture is accepted where
