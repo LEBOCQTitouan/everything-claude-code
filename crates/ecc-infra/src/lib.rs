@@ -18,3 +18,4 @@ pub mod file_config_store;
 pub mod log_schema;
 pub mod sqlite_log_store;
 pub mod sqlite_memory;
+pub mod tarball_extractor;

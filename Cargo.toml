@@ -38,6 +38,10 @@ rusqlite = { version = "0.34", features = ["bundled", "modern_sqlite"] }
 tracing-appender = "0.2"
 notify = "7"
 
+# Tarball extraction
+flate2 = "1"
+tar = "0.4"
+
 # System
 libc = "0.2"
 
