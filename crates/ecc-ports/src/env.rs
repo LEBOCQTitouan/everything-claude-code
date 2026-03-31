@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 
+// Re-export the canonical Architecture and Platform types from the domain layer.
+pub use ecc_domain::update::platform::{Architecture, Platform};
+
 /// Port for environment access (env vars, home dir, platform info).
 pub trait Environment: Send + Sync {
     /// Return the value of an environment variable, or `None` if unset.
@@ -14,67 +17,6 @@ pub trait Environment: Send + Sync {
     fn platform(&self) -> Platform;
     /// Return the host CPU architecture.
     fn architecture(&self) -> Architecture;
-}
-
-/// CPU architecture.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Architecture {
-    /// x86_64 / AMD64.
-    Amd64,
-    /// ARM64 / AArch64.
-    Arm64,
-    /// Any other or undetected architecture.
-    Unknown,
-}
-
-impl Architecture {
-    /// Detect the current architecture at compile time.
-    pub fn current() -> Self {
-        if cfg!(target_arch = "x86_64") {
-            Self::Amd64
-        } else if cfg!(target_arch = "aarch64") {
-            Self::Arm64
-        } else {
-            Self::Unknown
-        }
-    }
-
-    /// Return the architecture label used in release artifact names.
-    pub fn as_label(&self) -> &str {
-        match self {
-            Self::Amd64 => "x86_64",
-            Self::Arm64 => "aarch64",
-            Self::Unknown => "unknown",
-        }
-    }
-}
-
-/// Host operating system platform.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Platform {
-    /// Apple macOS.
-    MacOS,
-    /// Linux (any distribution).
-    Linux,
-    /// Microsoft Windows.
-    Windows,
-    /// Any other or undetected platform.
-    Unknown,
-}
-
-impl Platform {
-    /// Detect the current platform at compile time.
-    pub fn current() -> Self {
-        if cfg!(target_os = "macos") {
-            Self::MacOS
-        } else if cfg!(target_os = "linux") {
-            Self::Linux
-        } else if cfg!(target_os = "windows") {
-            Self::Windows
-        } else {
-            Self::Unknown
-        }
-    }
 }
 
 #[cfg(test)]
