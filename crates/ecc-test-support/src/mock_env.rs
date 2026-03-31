@@ -95,4 +95,19 @@ mod tests {
         let env = MockEnvironment::new().with_architecture(Architecture::Arm64);
         assert_eq!(env.architecture(), Architecture::Arm64);
     }
+
+    /// PC-009: MockEnvironment supports with_current_exe builder and returns it.
+    #[test]
+    fn mock_env_with_current_exe() {
+        let expected = PathBuf::from("/usr/local/bin/ecc");
+        let env = MockEnvironment::new().with_current_exe("/usr/local/bin/ecc");
+        assert_eq!(env.current_exe(), Some(expected));
+    }
+
+    #[test]
+    fn mock_env_current_exe_default() {
+        let env = MockEnvironment::new();
+        // Default should be Some(.../ecc) per design
+        assert!(env.current_exe().is_some());
+    }
 }
