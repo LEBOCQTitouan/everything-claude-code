@@ -1,4 +1,11 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+/// PC-045 compile-check: verifies download_file exists on ReleaseClient trait.
+#[doc(hidden)]
+#[allow(dead_code)]
+fn _pc045_download_file_check(client: &dyn ReleaseClient, dest: &Path) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    client.download_file("https://example.com/file", dest)
+}
 
 /// Result of a version query.
 #[derive(Debug, Clone)]
