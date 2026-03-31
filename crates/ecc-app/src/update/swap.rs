@@ -314,6 +314,38 @@ mod tests {
     }
 
     #[test]
+    fn windows_swap() {
+        // PC-014: Windows swap renames running binary to .old before placing new binary
+        let fs = InMemoryFileSystem::new();
+        let _ = fs.create_dir_all(Path::new("/usr/local/bin"));
+
+        let source = Path::new("/tmp/new-ecc");
+        let target = Path::new("/usr/local/bin/ecc");
+        let expected_old = Path::new("/usr/local/bin/ecc.old");
+
+        // Set up existing target and new binary
+        let _ = fs.write(target, "old-binary");
+        let _ = fs.write(source, "new-binary");
+
+        let result = super::windows_swap(&fs, source, target);
+        assert!(result.is_ok(), "windows_swap should succeed: {result:?}");
+
+        let old_path = result.unwrap();
+        assert_eq!(old_path, expected_old, "should return path to .old file");
+
+        // The old binary should be at .old
+        assert!(fs.exists(expected_old), ".old file must exist");
+        assert_eq!(fs.read_to_string(expected_old).unwrap(), "old-binary");
+
+        // The new binary should be at target
+        assert!(fs.exists(target), "target must exist with new binary");
+        assert_eq!(fs.read_to_string(target).unwrap(), "new-binary");
+
+        // Source should no longer exist (was renamed)
+        assert!(!fs.exists(source), "source should be gone after rename");
+    }
+
+    #[test]
     fn cleanup_backups() {
         // PC-013: cleanup_backups removes .bak files after successful update
         let fs = InMemoryFileSystem::new();
