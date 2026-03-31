@@ -57,6 +57,8 @@ enum Command {
     Status(commands::status::StatusArgs),
     /// Manage ECC configuration preferences
     Config(commands::config::ConfigArgs),
+    /// Update ECC to the latest version
+    Update(commands::update::UpdateArgs),
 }
 
 /// Initialize tracing with layered subscriber: stderr + optional JSON file.
@@ -187,5 +189,6 @@ fn main() -> anyhow::Result<()> {
         Command::AuditWeb(args) => commands::audit_web::run(args),
         Command::Status(args) => commands::status::run(args),
         Command::Config(args) => commands::config::run(args),
+        Command::Update(args) => commands::update::run(&args),
     }
 }
