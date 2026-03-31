@@ -16,6 +16,9 @@ cargo clippy -- -D warnings  # Lint with zero warnings
 cargo deny check        # Supply chain audit (licenses + advisories)
 cargo llvm-cov --workspace   # Coverage report (works on macOS)
 cargo build --release   # Build release binary
+cargo mutants -p ecc-domain   # Mutation testing (domain crate)
+cargo xtask mutants            # Structured mutation testing (all scoped crates)
+cargo xtask mutants --in-diff  # Diff-scoped mutation testing
 ```
 
 ## Architecture
