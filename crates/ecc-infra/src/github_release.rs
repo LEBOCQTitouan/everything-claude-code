@@ -6,7 +6,7 @@ use std::process::Command;
 
 // Compile-time constants for cosign verification (PC-035)
 pub(crate) const COSIGN_CERTIFICATE_IDENTITY: &str =
-    "https://github.com/LEBOCQTitouan/everything-claude-code/.github/workflows/release.yml@refs/heads/main";
+    "https://github.com/LEBOCQTitouan/everything-claude-code/.github/workflows/release.yml@refs/tags/v";
 pub(crate) const COSIGN_OIDC_ISSUER: &str = "https://token.actions.githubusercontent.com";
 
 const CHUNK_SIZE: usize = 8 * 1024; // 8 KiB
@@ -160,7 +160,7 @@ pub(crate) fn build_cosign_command(
     cmd.arg("verify-blob")
         .arg("--bundle")
         .arg(bundle)
-        .arg("--certificate-identity")
+        .arg("--certificate-identity-regexp")
         .arg(identity)
         .arg("--certificate-oidc-issuer")
         .arg(issuer)
@@ -489,8 +489,8 @@ mod tests {
             "must include bundle path"
         );
         assert!(
-            args_str.contains(&"--certificate-identity"),
-            "must contain --certificate-identity"
+            args_str.contains(&"--certificate-identity-regexp"),
+            "must contain --certificate-identity-regexp"
         );
         assert!(
             args_str.contains(&COSIGN_CERTIFICATE_IDENTITY),
