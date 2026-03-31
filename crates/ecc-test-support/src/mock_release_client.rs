@@ -89,19 +89,20 @@ impl ReleaseClient for MockReleaseClient {
         if let Some(ref err) = self.error_mode {
             return Err(Box::new(err.clone()));
         }
-        self.latest_version
-            .clone()
-            .ok_or_else(|| Box::new(MockError::NotFound("no latest version configured".to_string())) as BoxError)
+        self.latest_version.clone().ok_or_else(|| {
+            Box::new(MockError::NotFound(
+                "no latest version configured".to_string(),
+            )) as BoxError
+        })
     }
 
     fn get_version(&self, version: &str) -> Result<ReleaseInfo, BoxError> {
         if let Some(ref err) = self.error_mode {
             return Err(Box::new(err.clone()));
         }
-        self.versions
-            .get(version)
-            .cloned()
-            .ok_or_else(|| Box::new(MockError::NotFound(format!("{version} not found"))) as BoxError)
+        self.versions.get(version).cloned().ok_or_else(|| {
+            Box::new(MockError::NotFound(format!("{version} not found"))) as BoxError
+        })
     }
 
     fn download_tarball(
@@ -116,6 +117,18 @@ impl ReleaseClient for MockReleaseClient {
         }
         let total = self.download_bytes.len() as u64;
         on_progress(total, total);
+        Ok(())
+    }
+
+    fn download_cosign_bundle(
+        &self,
+        _version: &str,
+        _artifact_name: &str,
+        _dest: &Path,
+    ) -> Result<(), BoxError> {
+        if let Some(ref err) = self.error_mode {
+            return Err(Box::new(err.clone()));
+        }
         Ok(())
     }
 
@@ -166,8 +179,7 @@ mod tests {
 
     #[test]
     fn returns_latest_version() {
-        let client = MockReleaseClient::new()
-            .with_latest_version(make_release_info("1.2.3"));
+        let client = MockReleaseClient::new().with_latest_version(make_release_info("1.2.3"));
         let info = client.latest_version(false).unwrap();
         assert_eq!(info.version, "1.2.3");
     }
@@ -182,8 +194,8 @@ mod tests {
 
     #[test]
     fn simulates_rate_limit() {
-        let client = MockReleaseClient::new()
-            .with_error(MockError::RateLimited("rate limited".to_string()));
+        let client =
+            MockReleaseClient::new().with_error(MockError::RateLimited("rate limited".to_string()));
         let err = client.latest_version(false).unwrap_err();
         assert!(err.to_string().contains("rate limited"));
     }
@@ -213,14 +225,17 @@ mod tests {
     fn checksum_verification() {
         let path = PathBuf::from("/tmp/fake.tar.gz");
 
-        let match_client = MockReleaseClient::new()
-            .with_checksum_result(ChecksumResult::Match);
-        let result = match_client.verify_checksum("1.0.0", "ecc.tar.gz", &path).unwrap();
+        let match_client = MockReleaseClient::new().with_checksum_result(ChecksumResult::Match);
+        let result = match_client
+            .verify_checksum("1.0.0", "ecc.tar.gz", &path)
+            .unwrap();
         assert_eq!(result, ChecksumResult::Match);
 
-        let mismatch_client = MockReleaseClient::new()
-            .with_checksum_result(ChecksumResult::Mismatch);
-        let result = mismatch_client.verify_checksum("1.0.0", "ecc.tar.gz", &path).unwrap();
+        let mismatch_client =
+            MockReleaseClient::new().with_checksum_result(ChecksumResult::Mismatch);
+        let result = mismatch_client
+            .verify_checksum("1.0.0", "ecc.tar.gz", &path)
+            .unwrap();
         assert_eq!(result, ChecksumResult::Mismatch);
     }
 
@@ -228,9 +243,10 @@ mod tests {
     fn cosign_not_found() {
         let path = PathBuf::from("/tmp/fake.tar.gz");
         let bundle_path = PathBuf::from("/tmp/fake.tar.gz.bundle");
-        let client = MockReleaseClient::new()
-            .with_cosign_result(CosignResult::NotInstalled);
-        let result = client.verify_cosign("1.0.0", "ecc.tar.gz", &path, &bundle_path).unwrap();
+        let client = MockReleaseClient::new().with_cosign_result(CosignResult::NotInstalled);
+        let result = client
+            .verify_cosign("1.0.0", "ecc.tar.gz", &path, &bundle_path)
+            .unwrap();
         assert_eq!(result, CosignResult::NotInstalled);
     }
 }

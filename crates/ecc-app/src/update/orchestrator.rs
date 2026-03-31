@@ -182,8 +182,19 @@ pub fn run_update(
         return Err(UpdateError::ChecksumMismatch);
     }
 
-    // 10. Verify cosign — NotInstalled aborts (not a warning)
-    let bundle_path = tarball_path.with_extension("bundle");
+    // 10. Download cosign bundle and verify signature — NotInstalled aborts (not a warning)
+    let bundle_path = PathBuf::from(format!("{}.bundle", tarball_path.display()));
+    if let Err(e) = ctx.release_client.download_cosign_bundle(
+        target.as_str(),
+        artifact.as_str(),
+        &bundle_path,
+    ) {
+        let _ = ctx.fs.remove_dir_all(&temp_dir);
+        return Err(UpdateError::NetworkError {
+            reason: format!("failed to download cosign bundle: {e}"),
+        });
+    }
+
     let cosign = ctx
         .release_client
         .verify_cosign(

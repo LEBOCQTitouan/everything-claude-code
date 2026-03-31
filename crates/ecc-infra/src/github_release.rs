@@ -210,6 +210,21 @@ impl ReleaseClient for GithubReleaseClient {
         download_url_streaming(url, dest, &|_, _| {})
     }
 
+    fn download_cosign_bundle(
+        &self,
+        version: &str,
+        artifact_name: &str,
+        dest: &Path,
+    ) -> Result<(), BoxError> {
+        let url = format!(
+            "{}/v{}/{}.tar.gz.bundle",
+            self.release_base_url(),
+            version,
+            artifact_name
+        );
+        download_url_streaming(&url, dest, &|_, _| {})
+    }
+
     fn verify_checksum(
         &self,
         version: &str,

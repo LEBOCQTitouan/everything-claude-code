@@ -82,6 +82,16 @@ pub trait ReleaseClient: Send + Sync {
         dest: &Path,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
+    /// Download the cosign bundle file for the given artifact to `dest`.
+    ///
+    /// The bundle file is `{artifact_name}.tar.gz.bundle` in the release assets.
+    fn download_cosign_bundle(
+        &self,
+        version: &str,
+        artifact_name: &str,
+        dest: &Path,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
     /// Verify the SHA256 checksum of a downloaded file against the release checksum.
     fn verify_checksum(
         &self,
