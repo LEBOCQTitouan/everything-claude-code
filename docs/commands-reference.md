@@ -39,3 +39,5 @@
 | `/catchup` | Session resumption — workflow state, git status, stale detection, memory |
 | `/create-component` | Scaffold or update an ECC component (agent, command, skill, hook) |
 | `/ecc-test-mode` | Isolated worktree for testing ECC config changes |
+| `/comms` | Manage comms pipeline infrastructure — init repo, edit strategies, manage drafts, view calendar |
+| `/comms-generate` | Generate multi-channel DevRel content from codebase with optional channel filtering |
