@@ -106,6 +106,75 @@ pub fn update_shims(
     Ok(updated)
 }
 
+/// Rollback all swapped binaries by restoring each `.bak` backup to its target.
+///
+/// Iterates over `swapped` pairs `(target, backup)` and restores each backup.
+/// Returns `Ok(())` if all restores succeed.
+pub fn rollback_swapped(
+    fs: &dyn FileSystem,
+    swapped: &[(PathBuf, PathBuf)],
+) -> Result<(), UpdateError> {
+    for (target, backup) in swapped {
+        restore_backup(fs, backup, target)?;
+    }
+    Ok(())
+}
+
+/// Rollback all swapped binaries, returning a composite error if rollback itself fails.
+///
+/// `original_error` is the error message that triggered the rollback, included in
+/// `RollbackFailed` for diagnostics.
+pub fn rollback_swapped_or_fail(
+    fs: &dyn FileSystem,
+    swapped: &[(PathBuf, PathBuf)],
+    original_error: &str,
+) -> Result<(), UpdateError> {
+    let mut rollback_err: Option<String> = None;
+    let mut failed_paths: Vec<PathBuf> = Vec::new();
+
+    for (target, backup) in swapped {
+        if let Err(e) = restore_backup(fs, backup, target) {
+            rollback_err.get_or_insert_with(|| e.to_string());
+            failed_paths.push(backup.clone());
+        }
+    }
+
+    if let Some(rollback) = rollback_err {
+        return Err(UpdateError::RollbackFailed {
+            original: original_error.to_string(),
+            rollback,
+            backup_paths: failed_paths,
+        });
+    }
+
+    Ok(())
+}
+
+/// Remove `.bak` backup files after a successful update.
+pub fn cleanup_backups(fs: &dyn FileSystem, swapped: &[(PathBuf, PathBuf)]) {
+    for (_, backup) in swapped {
+        let _ = fs.remove_file(backup);
+    }
+}
+
+/// On Windows, the running binary cannot be overwritten directly.
+/// Rename the target to `.old` first, then place the new binary.
+/// Returns the path of the `.old` file on success.
+pub fn windows_swap(
+    fs: &dyn FileSystem,
+    source: &Path,
+    target: &Path,
+) -> Result<PathBuf, UpdateError> {
+    let old_path = target.with_extension("old");
+    fs.rename(target, &old_path).map_err(|e| UpdateError::SwapFailed {
+        reason: format!("rename to .old failed: {e}"),
+    })?;
+    fs.rename(source, target).map_err(|e| UpdateError::SwapFailed {
+        reason: format!("rename new binary failed: {e}"),
+    })?;
+    Ok(old_path)
+}
+
 /// Detect a partial update by comparing ecc and ecc-workflow versions.
 pub fn detect_partial_update(
     shell: &dyn ShellExecutor,

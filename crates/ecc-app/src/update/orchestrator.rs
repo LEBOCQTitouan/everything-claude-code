@@ -36,17 +36,7 @@ pub fn run_update(
     // 1. Detect platform and architecture
     let platform = ctx.env.platform();
     let arch = ctx.env.architecture();
-    let platform_label = match platform {
-        ecc_ports::env::Platform::MacOS => "macos",
-        ecc_ports::env::Platform::Linux => "linux",
-        other => {
-            return Err(UpdateError::UnsupportedPlatform {
-                platform: format!("{other:?}"),
-                arch: arch.as_label().to_string(),
-            })
-        }
-    };
-    let artifact = ArtifactName::resolve(platform_label, arch.as_label())?;
+    let artifact = ArtifactName::resolve(platform, arch)?;
 
     // 2. Query target version
     let release_info = if let Some(ref target_ver) = options.target_version {
@@ -153,9 +143,10 @@ pub fn run_update(
     }
 
     // 8. Verify cosign
+    let bundle_path = tarball_path.with_extension("bundle");
     let cosign = ctx
         .release_client
-        .verify_cosign(target.as_str(), artifact.as_str(), &tarball_path)
+        .verify_cosign(target.as_str(), artifact.as_str(), &tarball_path, &bundle_path)
         .map_err(|_| UpdateError::CosignUnavailable)?;
 
     match cosign {
