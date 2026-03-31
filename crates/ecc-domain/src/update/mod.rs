@@ -1,6 +1,7 @@
 pub mod artifact;
 pub mod error;
 pub mod plan;
+pub mod platform;
 pub mod version;
 
 pub use artifact::ArtifactName;
