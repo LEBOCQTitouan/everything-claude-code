@@ -9,6 +9,7 @@ pub struct MockEnvironment {
     cwd: Option<PathBuf>,
     platform: Platform,
     architecture: Architecture,
+    current_exe: Option<PathBuf>,
 }
 
 impl MockEnvironment {
@@ -19,6 +20,7 @@ impl MockEnvironment {
             cwd: Some(PathBuf::from("/project")),
             platform: Platform::Linux,
             architecture: Architecture::Amd64,
+            current_exe: Some(PathBuf::from("/usr/local/bin/ecc")),
         }
     }
 
@@ -52,6 +54,12 @@ impl MockEnvironment {
         self.architecture = architecture;
         self
     }
+
+    /// Set the current executable path for this mock environment.
+    pub fn with_current_exe(mut self, path: &str) -> Self {
+        self.current_exe = Some(PathBuf::from(path));
+        self
+    }
 }
 
 impl Default for MockEnvironment {
@@ -83,6 +91,10 @@ impl Environment for MockEnvironment {
 
     fn architecture(&self) -> Architecture {
         self.architecture
+    }
+
+    fn current_exe(&self) -> Option<PathBuf> {
+        self.current_exe.clone()
     }
 }
 

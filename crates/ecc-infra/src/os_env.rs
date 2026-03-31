@@ -28,6 +28,10 @@ impl Environment for OsEnvironment {
     fn architecture(&self) -> Architecture {
         Architecture::current()
     }
+
+    fn current_exe(&self) -> Option<std::path::PathBuf> {
+        std::env::current_exe().ok()
+    }
 }
 
 fn home_dir_impl() -> Option<PathBuf> {
