@@ -13,6 +13,7 @@ pub mod in_memory_lock;
 pub mod in_memory_memory_store;
 pub mod mock_env;
 pub mod mock_executor;
+pub mod mock_extractor;
 pub mod mock_release_client;
 pub mod scripted_input;
 
