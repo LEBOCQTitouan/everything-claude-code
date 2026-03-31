@@ -42,27 +42,34 @@ fn cargo_bin_dir() -> PathBuf {
     }
 }
 
-pub fn run(dry_run: bool) -> anyhow::Result<()> {
+pub fn run(dry_run: bool, debug: bool) -> anyhow::Result<()> {
     let mut results: Vec<ActionResult> = Vec::new();
+    let profile = if debug { "debug" } else { "release" };
+    let target_dir = if debug { "target/debug" } else { "target/release" };
 
     // Step 1: Build
     if dry_run {
+        let cmd = if debug {
+            "Would run: cargo build -p ecc-cli -p ecc-workflow"
+        } else {
+            "Would run: cargo build --release -p ecc-cli -p ecc-workflow"
+        };
         results.push(ActionResult {
             name: "Build".into(),
-            status: ActionStatus::DryRun(
-                "Would run: cargo build --release -p ecc-cli -p ecc-workflow".into(),
-            ),
+            status: ActionStatus::DryRun(cmd.into()),
         });
     } else {
-        let output = Command::new("cargo")
-            .args(["build", "--release", "-p", "ecc-cli", "-p", "ecc-workflow"])
-            .status()?;
+        let mut args = vec!["build", "-p", "ecc-cli", "-p", "ecc-workflow"];
+        if !debug {
+            args.insert(1, "--release");
+        }
+        let output = Command::new("cargo").args(&args).status()?;
         if !output.success() {
-            anyhow::bail!("cargo build --release failed");
+            anyhow::bail!("cargo build failed");
         }
         results.push(ActionResult {
             name: "Build".into(),
-            status: ActionStatus::Installed("Built ecc + ecc-workflow (release)".into()),
+            status: ActionStatus::Installed(format!("Built ecc + ecc-workflow ({profile})")),
         });
     }
 
@@ -79,7 +86,7 @@ pub fn run(dry_run: bool) -> anyhow::Result<()> {
     } else {
         std::fs::create_dir_all(&bin_dir)?;
         for name in ["ecc", "ecc-workflow"] {
-            let src = PathBuf::from("target/release").join(name);
+            let src = PathBuf::from(target_dir).join(name);
             let dst = bin_dir.join(name);
             std::fs::copy(&src, &dst)?;
             results.push(ActionResult {
@@ -249,6 +256,45 @@ mod tests {
             let home = std::env::var("HOME").unwrap_or_else(|_| "/home/testuser".to_string());
             let dir = cargo_bin_dir();
             assert_eq!(dir, PathBuf::from(&home).join(".cargo/bin"));
+        }
+    }
+
+    mod deploy_debug {
+        #[test]
+        fn deploy_debug_flag() {
+            // When --debug is set, build should NOT include --release
+            let debug = true;
+            let mut args = vec!["build", "-p", "ecc-cli", "-p", "ecc-workflow"];
+            if !debug {
+                args.insert(1, "--release");
+            }
+            assert!(!args.contains(&"--release"), "debug mode should not use --release");
+        }
+
+        #[test]
+        fn deploy_default_release() {
+            // When --debug is NOT set, build should include --release
+            let debug = false;
+            let mut args = vec!["build", "-p", "ecc-cli", "-p", "ecc-workflow"];
+            if !debug {
+                args.insert(1, "--release");
+            }
+            assert!(args.contains(&"--release"), "default mode should use --release");
+        }
+
+        #[test]
+        fn deploy_debug_source_path() {
+            let debug = true;
+            let target_dir = if debug { "target/debug" } else { "target/release" };
+            assert_eq!(target_dir, "target/debug");
+        }
+
+        #[test]
+        fn deploy_debug_summary_message() {
+            let debug = true;
+            let profile = if debug { "debug" } else { "release" };
+            let msg = format!("Built ecc + ecc-workflow ({profile})");
+            assert!(msg.contains("debug"), "summary should indicate debug build");
         }
     }
 

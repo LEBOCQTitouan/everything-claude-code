@@ -18,12 +18,15 @@ enum Commands {
         /// Preview actions without performing them
         #[arg(long)]
         dry_run: bool,
+        /// Build in debug mode (faster, no --release)
+        #[arg(long)]
+        debug: bool,
     },
 }
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Deploy { dry_run } => deploy::run(dry_run),
+        Commands::Deploy { dry_run, debug } => deploy::run(dry_run, debug),
     }
 }
