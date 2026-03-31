@@ -64,6 +64,7 @@ docs/CODEMAPS/
 .claude/plans/
 # Agent worktrees (ephemeral, per-session)
 .claude/worktrees/
+.claire/worktrees/
 # Workflow state (ephemeral, per-session)
 .claude/workflow/
 !.claude/workflow/README.md
