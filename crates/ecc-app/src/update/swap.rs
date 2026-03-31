@@ -314,6 +314,39 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_backups() {
+        // PC-013: cleanup_backups removes .bak files after successful update
+        let fs = InMemoryFileSystem::new();
+        let _ = fs.create_dir_all(Path::new("/usr/local/bin"));
+
+        let target1 = PathBuf::from("/usr/local/bin/ecc");
+        let backup1 = PathBuf::from("/usr/local/bin/ecc.bak");
+        let target2 = PathBuf::from("/usr/local/bin/ecc-workflow");
+        let backup2 = PathBuf::from("/usr/local/bin/ecc-workflow.bak");
+
+        // Write backups that should be removed
+        let _ = fs.write(&backup1, "old-ecc");
+        let _ = fs.write(&backup2, "old-ecc-workflow");
+        // Also write current targets
+        let _ = fs.write(&target1, "new-ecc");
+        let _ = fs.write(&target2, "new-ecc-workflow");
+
+        let swapped = vec![
+            (target1.clone(), backup1.clone()),
+            (target2.clone(), backup2.clone()),
+        ];
+
+        super::cleanup_backups(&fs, &swapped);
+
+        // Backups must be gone
+        assert!(!fs.exists(&backup1), "backup1 should be removed");
+        assert!(!fs.exists(&backup2), "backup2 should be removed");
+        // Targets must still be present
+        assert!(fs.exists(&target1), "target1 should still exist");
+        assert!(fs.exists(&target2), "target2 should still exist");
+    }
+
+    #[test]
     fn rollback_both_failures() {
         // PC-012: rollback_swapped_or_fail returns RollbackFailed with both original and rollback errors
         // Use a dir entry (not a file entry) so exists() returns true but rename() fails
