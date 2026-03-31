@@ -178,10 +178,22 @@ pub(crate) fn make_auth_header(token: Option<&str>) -> Option<String> {
 // ── ReleaseClient impl ────────────────────────────────────────────────────────
 
 impl ReleaseClient for GithubReleaseClient {
-    fn latest_version(&self, _include_prerelease: bool) -> Result<ReleaseInfo, BoxError> {
-        let url = format!("{}/releases/latest", self.api_base());
-        let response = make_request(&url, std::env::var("GITHUB_TOKEN").ok().as_deref())?;
-        parse_release_json(&response)
+    fn latest_version(&self, include_prerelease: bool) -> Result<ReleaseInfo, BoxError> {
+        let token = std::env::var("GITHUB_TOKEN").ok();
+        if include_prerelease {
+            // List all releases and return the first (most recent)
+            let url = format!("{}/releases?per_page=1", self.api_base());
+            let response = make_request(&url, token.as_deref())?;
+            let arr: Vec<serde_json::Value> = serde_json::from_str(&response)?;
+            let first = arr.into_iter().next().ok_or("no releases found")?;
+            let json_str = serde_json::to_string(&first)?;
+            parse_release_json(&json_str)
+        } else {
+            // /releases/latest returns the most recent non-prerelease, non-draft release
+            let url = format!("{}/releases/latest", self.api_base());
+            let response = make_request(&url, token.as_deref())?;
+            parse_release_json(&response)
+        }
     }
 
     fn get_version(&self, version: &str) -> Result<ReleaseInfo, BoxError> {
