@@ -314,6 +314,31 @@ mod tests {
     }
 
     #[test]
+    fn rollback_both_failures() {
+        // PC-012: rollback_swapped_or_fail returns RollbackFailed with both original and rollback errors
+        // Use a dir entry (not a file entry) so exists() returns true but rename() fails
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/usr/local/bin/ecc.bak"); // exists() = true, but rename() will fail (not in files map)
+
+        let target = PathBuf::from("/usr/local/bin/ecc");
+        let backup = PathBuf::from("/usr/local/bin/ecc.bak");
+        let swapped = vec![(target, backup)];
+
+        let result = rollback_swapped_or_fail(&fs, &swapped, "original swap failed");
+        assert!(result.is_err(), "should fail when rollback fails");
+
+        let err = result.unwrap_err();
+        match err {
+            UpdateError::RollbackFailed { original, rollback, backup_paths } => {
+                assert!(original.contains("original swap failed"), "original error must be present: {original}");
+                assert!(!rollback.is_empty(), "rollback error must be present: {rollback}");
+                assert!(!backup_paths.is_empty(), "backup_paths must list failing paths");
+            }
+            other => panic!("expected RollbackFailed, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn rollback_swapped_restores() {
         // PC-011: rollback_swapped restores all binaries from .bak backups
         let fs = InMemoryFileSystem::new();
