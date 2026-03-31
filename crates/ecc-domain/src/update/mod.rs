@@ -7,4 +7,5 @@ pub mod version;
 pub use artifact::ArtifactName;
 pub use error::UpdateError;
 pub use plan::UpdatePlan;
+pub use platform::{Architecture, Platform};
 pub use version::Version;

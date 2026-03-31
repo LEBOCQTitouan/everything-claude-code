@@ -1,10 +1,15 @@
+use crate::update::platform::{Architecture, Platform};
+use std::path::PathBuf;
 use thiserror::Error;
 
 /// Errors that can occur during the ECC update process.
 #[derive(Debug, Error)]
 pub enum UpdateError {
     #[error("Unsupported platform: {platform}/{arch}")]
-    UnsupportedPlatform { platform: String, arch: String },
+    UnsupportedPlatform {
+        platform: Platform,
+        arch: Architecture,
+    },
 
     #[error("Version {version} not found")]
     VersionNotFound { version: String },
@@ -38,6 +43,22 @@ pub enum UpdateError {
 
     #[error("cosign not found. Install cosign for enhanced security verification.")]
     CosignUnavailable,
+
+    #[error("Permission denied: cannot write to {path}. Reason: {reason}")]
+    PermissionDenied { path: String, reason: String },
+
+    #[error("Update already in progress: {reason}")]
+    UpdateLocked { reason: String },
+
+    #[error("Security verification failed: {reason}")]
+    SecurityVerificationFailed { reason: String },
+
+    #[error("Rollback failed after update error. Original error: {original}. Rollback error: {rollback}. Manual cleanup required for: {backup_paths:?}")]
+    RollbackFailed {
+        original: String,
+        rollback: String,
+        backup_paths: Vec<PathBuf>,
+    },
 }
 
 #[cfg(test)]

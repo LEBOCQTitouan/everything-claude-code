@@ -1,10 +1,11 @@
 use crate::update::error::UpdateError;
+use crate::update::platform::{Architecture, Platform};
 use std::fmt;
 
 /// Identifies the release artifact name for the current platform.
 ///
 /// Names follow the release.yml convention: `ecc-{os}-{arch}` where
-/// `os` is `darwin` or `linux` and `arch` is `arm64` or `x64`.
+/// `os` is `darwin`, `linux`, or `win32` and `arch` is `arm64` or `x64`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArtifactName(String);
 
@@ -14,17 +15,15 @@ impl ArtifactName {
     /// # Errors
     ///
     /// Returns [`UpdateError::UnsupportedPlatform`] if the combination is not supported.
-    pub fn resolve(platform: &str, arch: &str) -> Result<Self, UpdateError> {
+    pub fn resolve(platform: Platform, arch: Architecture) -> Result<Self, UpdateError> {
         let name = match (platform, arch) {
-            ("macos", "arm64") => "ecc-darwin-arm64",
-            ("macos", "x86_64") => "ecc-darwin-x64",
-            ("linux", "x86_64") => "ecc-linux-x64",
-            ("linux", "aarch64") => "ecc-linux-arm64",
+            (Platform::MacOS, Architecture::Arm64) => "ecc-darwin-arm64",
+            (Platform::MacOS, Architecture::Amd64) => "ecc-darwin-x64",
+            (Platform::Linux, Architecture::Amd64) => "ecc-linux-x64",
+            (Platform::Linux, Architecture::Arm64) => "ecc-linux-arm64",
+            (Platform::Windows, Architecture::Amd64) => "ecc-win32-x64",
             _ => {
-                return Err(UpdateError::UnsupportedPlatform {
-                    platform: platform.to_string(),
-                    arch: arch.to_string(),
-                })
+                return Err(UpdateError::UnsupportedPlatform { platform, arch });
             }
         };
         Ok(Self(name.to_string()))
