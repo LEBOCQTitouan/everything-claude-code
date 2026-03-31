@@ -294,7 +294,10 @@ pub fn run_update(
         }
     }
 
-    // 16. Clean up
+    // 16. Clean up backup files from swap
+    swap::cleanup_backups(ctx.fs, &swapped);
+
+    // 17. Clean up
     let _ = ctx.fs.remove_dir_all(&temp_dir);
 
     Ok(UpdateOutcome::Updated(UpdateSummary {
