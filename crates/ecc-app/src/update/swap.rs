@@ -245,6 +245,41 @@ mod tests {
     }
 
     #[test]
+    fn rollback_swapped_restores() {
+        // PC-011: rollback_swapped restores all binaries from .bak backups
+        let fs = InMemoryFileSystem::new();
+        let _ = fs.create_dir_all(Path::new("/usr/local/bin"));
+
+        // Set up two targets and their .bak backups (simulating a swapped state)
+        let target1 = PathBuf::from("/usr/local/bin/ecc");
+        let backup1 = PathBuf::from("/usr/local/bin/ecc.bak");
+        let target2 = PathBuf::from("/usr/local/bin/ecc-workflow");
+        let backup2 = PathBuf::from("/usr/local/bin/ecc-workflow.bak");
+
+        // Write backup files (the originals saved before swap)
+        let _ = fs.write(&backup1, "original-ecc");
+        let _ = fs.write(&backup2, "original-ecc-workflow");
+        // Write current targets (the newly swapped binaries)
+        let _ = fs.write(&target1, "new-ecc");
+        let _ = fs.write(&target2, "new-ecc-workflow");
+
+        let swapped = vec![
+            (target1.clone(), backup1.clone()),
+            (target2.clone(), backup2.clone()),
+        ];
+
+        let result = rollback_swapped(&fs, &swapped);
+        assert!(result.is_ok(), "rollback_swapped should succeed: {result:?}");
+
+        // Targets should now be restored to original content
+        assert_eq!(fs.read_to_string(&target1).unwrap(), "original-ecc");
+        assert_eq!(fs.read_to_string(&target2).unwrap(), "original-ecc-workflow");
+        // Backups should be gone (renamed to targets)
+        assert!(!fs.exists(&backup1));
+        assert!(!fs.exists(&backup2));
+    }
+
+    #[test]
     fn detects_partial_update() {
         let shell = MockExecutor::new()
             .on_args("/install/ecc", &["version"], CommandOutput {
