@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## Unreleased
+
+### Added
+
+- **Mutation testing integration (BL-116)**: cargo-mutants configured for ecc-domain and ecc-app with nextest integration. `cargo xtask mutants` subcommand with `--package`, `--in-diff`, `--timeout` flags. `/mutants` slash command for Claude Code sessions. `/verify --mutation` opt-in flag for diff-scoped mutation testing. Non-blocking CI mutation job with pinned version and artifact upload. Baseline report templates and mutation score dashboard. ADRs 0037 and 0038.
+
 ## v5.1.0
 
 ### Added
