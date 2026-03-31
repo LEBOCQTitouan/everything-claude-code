@@ -76,3 +76,27 @@ impl Platform {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Architecture, Platform};
+
+    /// PC-007: Architecture and Platform must be the domain types (re-exported).
+    /// This test asserts type identity: a domain Architecture is accepted where
+    /// a ports Architecture is expected, which only compiles if they are the same type.
+    #[test]
+    fn architecture_is_domain_type() {
+        fn accept_domain_arch(a: ecc_domain::update::platform::Architecture) -> Architecture {
+            a
+        }
+        let _ = accept_domain_arch(ecc_domain::update::platform::Architecture::Arm64);
+    }
+
+    #[test]
+    fn platform_is_domain_type() {
+        fn accept_domain_platform(p: ecc_domain::update::platform::Platform) -> Platform {
+            p
+        }
+        let _ = accept_domain_platform(ecc_domain::update::platform::Platform::Linux);
+    }
+}
