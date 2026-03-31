@@ -11,6 +11,8 @@
 pub mod config_store;
 /// Environment variable and platform access port.
 pub mod env;
+/// Tarball extraction port.
+pub mod extract;
 /// Filesystem operations port.
 pub mod fs;
 /// File-based locking port.
