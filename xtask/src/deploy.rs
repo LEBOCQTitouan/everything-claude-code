@@ -45,7 +45,11 @@ fn cargo_bin_dir() -> PathBuf {
 pub fn run(dry_run: bool, debug: bool) -> anyhow::Result<()> {
     let mut results: Vec<ActionResult> = Vec::new();
     let profile = if debug { "debug" } else { "release" };
-    let target_dir = if debug { "target/debug" } else { "target/release" };
+    let target_dir = if debug {
+        "target/debug"
+    } else {
+        "target/release"
+    };
 
     // Step 1: Build
     if dry_run {
@@ -268,7 +272,10 @@ mod tests {
             if !debug {
                 args.insert(1, "--release");
             }
-            assert!(!args.contains(&"--release"), "debug mode should not use --release");
+            assert!(
+                !args.contains(&"--release"),
+                "debug mode should not use --release"
+            );
         }
 
         #[test]
@@ -279,13 +286,20 @@ mod tests {
             if !debug {
                 args.insert(1, "--release");
             }
-            assert!(args.contains(&"--release"), "default mode should use --release");
+            assert!(
+                args.contains(&"--release"),
+                "default mode should use --release"
+            );
         }
 
         #[test]
         fn deploy_debug_source_path() {
             let debug = true;
-            let target_dir = if debug { "target/debug" } else { "target/release" };
+            let target_dir = if debug {
+                "target/debug"
+            } else {
+                "target/release"
+            };
             assert_eq!(target_dir, "target/debug");
         }
 
@@ -295,6 +309,37 @@ mod tests {
             let profile = if debug { "debug" } else { "release" };
             let msg = format!("Built ecc + ecc-workflow ({profile})");
             assert!(msg.contains("debug"), "summary should indicate debug build");
+        }
+    }
+
+    mod three_binaries {
+        use super::*;
+
+        #[test]
+        fn deploy_builds_three() {
+            let pkgs = packages_to_build();
+            assert!(
+                pkgs.contains(&"ecc-flock"),
+                "build list must include ecc-flock; got: {pkgs:?}"
+            );
+        }
+
+        #[test]
+        fn deploy_installs_three() {
+            let bins = binaries_to_install();
+            assert!(
+                bins.contains(&"ecc-flock"),
+                "install list must include ecc-flock; got: {bins:?}"
+            );
+        }
+
+        #[test]
+        fn deploy_dry_run_lists_three() {
+            let msg = dry_run_install_message();
+            assert!(
+                msg.contains("ecc-flock"),
+                "dry-run message must mention ecc-flock; got: {msg}"
+            );
         }
     }
 
