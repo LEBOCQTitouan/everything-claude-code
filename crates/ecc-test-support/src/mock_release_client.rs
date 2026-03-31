@@ -119,6 +119,13 @@ impl ReleaseClient for MockReleaseClient {
         Ok(())
     }
 
+    fn download_file(&self, _url: &str, _dest: &Path) -> Result<(), BoxError> {
+        if let Some(ref err) = self.error_mode {
+            return Err(Box::new(err.clone()));
+        }
+        Ok(())
+    }
+
     fn verify_checksum(
         &self,
         _version: &str,
@@ -136,6 +143,7 @@ impl ReleaseClient for MockReleaseClient {
         _version: &str,
         _artifact_name: &str,
         _file_path: &Path,
+        _bundle_path: &Path,
     ) -> Result<CosignResult, BoxError> {
         if let Some(ref err) = self.error_mode {
             return Err(Box::new(err.clone()));
@@ -219,9 +227,10 @@ mod tests {
     #[test]
     fn cosign_not_found() {
         let path = PathBuf::from("/tmp/fake.tar.gz");
+        let bundle_path = PathBuf::from("/tmp/fake.tar.gz.bundle");
         let client = MockReleaseClient::new()
             .with_cosign_result(CosignResult::NotInstalled);
-        let result = client.verify_cosign("1.0.0", "ecc.tar.gz", &path).unwrap();
+        let result = client.verify_cosign("1.0.0", "ecc.tar.gz", &path, &bundle_path).unwrap();
         assert_eq!(result, CosignResult::NotInstalled);
     }
 }

@@ -51,6 +51,11 @@ impl ReleaseClient for GithubReleaseClient {
         Err("GithubReleaseClient not yet connected to self_update crate".into())
     }
 
+    fn download_file(&self, _url: &str, _dest: &Path) -> Result<(), BoxError> {
+        // TODO: Implement with ureq streaming download
+        Err("GithubReleaseClient download_file not yet implemented".into())
+    }
+
     fn verify_checksum(
         &self,
         _version: &str,
@@ -66,6 +71,7 @@ impl ReleaseClient for GithubReleaseClient {
         _version: &str,
         _artifact_name: &str,
         _file_path: &Path,
+        _bundle_path: &Path,
     ) -> Result<CosignResult, BoxError> {
         // Check if cosign is installed using argument arrays (no shell interpolation)
         let cosign_check = std::process::Command::new("cosign")

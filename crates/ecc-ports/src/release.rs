@@ -1,9 +1,12 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// PC-045 compile-check: verifies download_file exists on ReleaseClient trait.
 #[doc(hidden)]
 #[allow(dead_code)]
-fn _pc045_download_file_check(client: &dyn ReleaseClient, dest: &Path) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn _pc045_download_file_check(
+    client: &dyn ReleaseClient,
+    dest: &Path,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     client.download_file("https://example.com/file", dest)
 }
 
@@ -70,6 +73,15 @@ pub trait ReleaseClient: Send + Sync {
         on_progress: &dyn Fn(u64, u64),
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
+    /// Download a file from `url` to `dest`.
+    ///
+    /// Used to download checksum files and cosign bundle files.
+    fn download_file(
+        &self,
+        url: &str,
+        dest: &Path,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
     /// Verify the SHA256 checksum of a downloaded file against the release checksum.
     fn verify_checksum(
         &self,
@@ -78,11 +90,12 @@ pub trait ReleaseClient: Send + Sync {
         file_path: &Path,
     ) -> Result<ChecksumResult, Box<dyn std::error::Error + Send + Sync>>;
 
-    /// Verify the cosign signature of a downloaded file.
+    /// Verify the cosign signature of a downloaded file using a pre-downloaded bundle.
     fn verify_cosign(
         &self,
         version: &str,
         artifact_name: &str,
         file_path: &Path,
+        bundle_path: &Path,
     ) -> Result<CosignResult, Box<dyn std::error::Error + Send + Sync>>;
 }
