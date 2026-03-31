@@ -4,6 +4,7 @@
 //! filesystem I/O, process execution, environment variables, and terminal
 //! interaction.
 
+pub mod github_release;
 pub mod os_env;
 pub mod os_fs;
 pub mod process_executor;
