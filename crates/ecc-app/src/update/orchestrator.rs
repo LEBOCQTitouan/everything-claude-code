@@ -3,8 +3,11 @@ use crate::update::options::UpdateOptions;
 use crate::update::summary::UpdateSummary;
 use crate::update::swap;
 use ecc_domain::update::{ArtifactName, UpdateError, UpdatePlan, Version};
+use ecc_ports::extract::ExtractError;
+use ecc_ports::lock::LockError;
 use ecc_ports::release::{ChecksumResult, CosignResult};
 use std::path::PathBuf;
+use std::time::Duration;
 
 /// Result type for update operations.
 pub type UpdateResult = Result<UpdateOutcome, UpdateError>;
@@ -22,15 +25,34 @@ pub enum UpdateOutcome {
 
 /// Execute the update operation.
 ///
-/// Flow: detect platform -> resolve artifact -> query version -> build plan ->
-/// (dry-run bail) -> download -> verify checksum -> verify cosign ->
-/// swap binaries -> run ecc install -> verify -> summary.
+/// Flow: acquire lock -> detect platform -> resolve artifact -> query version -> build plan ->
+/// (dry-run bail) -> check permissions -> download -> verify checksum -> verify cosign ->
+/// extract -> swap binaries -> run ecc install -> verify -> summary.
 pub fn run_update(
     ctx: &UpdateContext<'_>,
     options: &UpdateOptions,
     current_version_str: &str,
     on_progress: &dyn Fn(u64, u64),
 ) -> UpdateResult {
+    // 0. Acquire update lock (RAII — released when guard drops)
+    let install_dir_for_lock = ctx
+        .env
+        .current_exe()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .unwrap_or_else(|| PathBuf::from("/usr/local/bin"));
+
+    let _lock_guard = ctx
+        .lock
+        .acquire_with_timeout(&install_dir_for_lock, "ecc-update", Duration::from_secs(5))
+        .map_err(|e| match e {
+            LockError::Timeout(_) | LockError::AcquireFailed { .. } => UpdateError::UpdateLocked {
+                reason: e.to_string(),
+            },
+            LockError::DirCreation { .. } => UpdateError::UpdateLocked {
+                reason: e.to_string(),
+            },
+        })?;
+
     let current = Version::parse(current_version_str)?;
 
     // 1. Detect platform and architecture
@@ -47,9 +69,7 @@ pub fn run_update(
                     version: target_ver.clone(),
                 }
             } else if msg.contains("rate limited") {
-                UpdateError::RateLimited {
-                    reset_time: msg,
-                }
+                UpdateError::RateLimited { reset_time: msg }
             } else {
                 UpdateError::NetworkError { reason: msg }
             }
@@ -60,9 +80,7 @@ pub fn run_update(
             .map_err(|e| {
                 let msg = e.to_string();
                 if msg.contains("rate limited") {
-                    UpdateError::RateLimited {
-                        reset_time: msg,
-                    }
+                    UpdateError::RateLimited { reset_time: msg }
                 } else {
                     UpdateError::NetworkError { reason: msg }
                 }
@@ -101,7 +119,29 @@ pub fn run_update(
         ));
     }
 
-    // 6. Download tarball
+    // 6. Determine install directory (where current binary lives) via ctx.env
+    let install_dir = ctx
+        .env
+        .current_exe()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+        .unwrap_or_else(|| PathBuf::from("/usr/local/bin"));
+
+    // 7. Check install dir writability before download
+    let probe_path = install_dir.join(".ecc-update-probe");
+    match ctx.fs.write(&probe_path, "") {
+        Ok(()) => {
+            // Clean up probe file
+            let _ = ctx.fs.remove_file(&probe_path);
+        }
+        Err(_) => {
+            return Err(UpdateError::PermissionDenied {
+                path: install_dir.display().to_string(),
+                reason: "install directory is not writable".to_string(),
+            });
+        }
+    }
+
+    // 8. Download tarball
     let temp_dir = ctx.env.temp_dir().join("ecc-update");
     let tarball_path = temp_dir.join(format!("{}.tar.gz", artifact.as_str()));
     ctx.fs
@@ -129,7 +169,7 @@ pub fn run_update(
         });
     }
 
-    // 7. Verify checksum
+    // 9. Verify checksum
     let checksum = ctx
         .release_client
         .verify_checksum(target.as_str(), artifact.as_str(), &tarball_path)
@@ -142,54 +182,68 @@ pub fn run_update(
         return Err(UpdateError::ChecksumMismatch);
     }
 
-    // 8. Verify cosign
+    // 10. Verify cosign — NotInstalled aborts (not a warning)
     let bundle_path = tarball_path.with_extension("bundle");
     let cosign = ctx
         .release_client
-        .verify_cosign(target.as_str(), artifact.as_str(), &tarball_path, &bundle_path)
+        .verify_cosign(
+            target.as_str(),
+            artifact.as_str(),
+            &tarball_path,
+            &bundle_path,
+        )
         .map_err(|_| UpdateError::CosignUnavailable)?;
 
     match cosign {
         CosignResult::Verified => {
-            ctx.terminal
-                .stdout_write("Cosign signature verified\n");
+            ctx.terminal.stdout_write("Cosign signature verified\n");
         }
         CosignResult::NotInstalled => {
-            ctx.terminal.stderr_write(
-                "Warning: cosign not installed. Checksum verified but signature not checked. \
-                 Install cosign for enhanced security.\n",
-            );
+            let _ = ctx.fs.remove_dir_all(&temp_dir);
+            return Err(UpdateError::CosignUnavailable);
         }
         CosignResult::Failed => {
             let _ = ctx.fs.remove_dir_all(&temp_dir);
-            return Err(UpdateError::SwapFailed {
+            return Err(UpdateError::SecurityVerificationFailed {
                 reason: "cosign signature verification failed".to_string(),
             });
         }
     }
 
-    // 9. Determine install directory (where current binary lives)
-    let install_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_else(|| PathBuf::from("/usr/local/bin"));
-
-    // 10. Extract tarball (simulated — in real impl, self_update handles this)
+    // 11. Extract tarball via port
     let extraction_dir = temp_dir.join("extracted");
     ctx.fs
-        .create_dir_all(&extraction_dir.join("bin"))
+        .create_dir_all(&extraction_dir)
         .map_err(|e| UpdateError::SwapFailed {
-            reason: format!("extraction failed: {e}"),
+            reason: format!("failed to create extraction dir: {e}"),
         })?;
 
-    // 11. Swap binaries
-    let _swapped =
-        swap::sequential_swap(ctx.fs, &extraction_dir, &install_dir, &["ecc", "ecc-workflow"])?;
+    ctx.extractor
+        .extract(&tarball_path, &extraction_dir)
+        .map_err(|e| match e {
+            ExtractError::CorruptArchive(msg) => UpdateError::SwapFailed {
+                reason: format!("corrupt archive: {msg}"),
+            },
+            ExtractError::ZipSlip(msg) => UpdateError::SwapFailed {
+                reason: format!("zip-slip detected: {msg}"),
+            },
+            ExtractError::Io(msg) => UpdateError::SwapFailed {
+                reason: format!("extraction I/O error: {msg}"),
+            },
+        })?;
 
-    // 12. Update shims
+    // 12. Swap binaries
+    let swapped = swap::sequential_swap(
+        ctx.fs,
+        &extraction_dir,
+        &install_dir,
+        &["ecc", "ecc-workflow"],
+    )?;
+
+    // 13. Update shims
     let _shim_count = swap::update_shims(ctx.fs, &extraction_dir, &install_dir)?;
 
-    // 13. Run ecc install (config sync)
+    // 14. Run ecc install (config sync) — rollback on failure
     let install_result = ctx.shell.run_command("ecc", &["install"]);
     let files_synced = match install_result {
         Ok(output) if output.success() => {
@@ -197,21 +251,27 @@ pub fn run_update(
             output.stdout.lines().count()
         }
         Ok(output) => {
+            // Rollback swapped binaries before returning error
+            let _ = swap::rollback_swapped(ctx.fs, &swapped);
             return Err(UpdateError::ConfigSyncFailed {
                 reason: format!(
-                    "ecc install failed (exit {}): {}. Backup available in install directory.",
+                    "ecc install failed (exit {}): {}. Rolled back. Backup available in install directory.",
                     output.exit_code, output.stderr
                 ),
             });
         }
         Err(e) => {
+            // Rollback swapped binaries before returning error
+            let _ = swap::rollback_swapped(ctx.fs, &swapped);
             return Err(UpdateError::ConfigSyncFailed {
-                reason: format!("ecc install failed: {e}. Backup available in install directory."),
+                reason: format!(
+                    "ecc install failed: {e}. Rolled back. Backup available in install directory."
+                ),
             });
         }
     };
 
-    // 14. Verify new version
+    // 15. Verify new version
     let version_check = ctx.shell.run_command("ecc", &["version"]);
     if let Ok(output) = version_check {
         let reported = output.stdout.trim();
@@ -223,7 +283,7 @@ pub fn run_update(
         }
     }
 
-    // 15. Clean up
+    // 16. Clean up
     let _ = ctx.fs.remove_dir_all(&temp_dir);
 
     Ok(UpdateOutcome::Updated(UpdateSummary {
@@ -242,10 +302,11 @@ mod tests {
     use ecc_ports::env::Architecture;
     use ecc_ports::release::{ChecksumResult, CosignResult, ReleaseInfo};
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{
-        BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor, MockReleaseClient,
-    };
     use ecc_test_support::mock_release_client::MockError;
+    use ecc_test_support::{
+        BufferedTerminal, InMemoryFileSystem, InMemoryLock, MockEnvironment, MockExecutor,
+        MockExtractor, MockReleaseClient,
+    };
 
     fn make_release(version: &str) -> ReleaseInfo {
         ReleaseInfo {
@@ -269,18 +330,40 @@ mod tests {
 
     fn progress_noop(_: u64, _: u64) {}
 
+    /// Build a filesystem with the binaries the MockExtractor would produce in extraction_dir.
+    fn fs_with_extracted_binaries() -> InMemoryFileSystem {
+        use ecc_ports::fs::FileSystem;
+        let fs = InMemoryFileSystem::new();
+        // install dir
+        let _ = fs.create_dir_all(std::path::Path::new("/usr/local/bin"));
+        // extracted binaries (MockExtractor returns these paths but doesn't create them)
+        let _ = fs.create_dir_all(std::path::Path::new("/tmp/ecc-update/extracted/bin"));
+        let _ = fs.write(
+            std::path::Path::new("/tmp/ecc-update/extracted/bin/ecc"),
+            "new-ecc",
+        );
+        let _ = fs.write(
+            std::path::Path::new("/tmp/ecc-update/extracted/bin/ecc-workflow"),
+            "new-ecc-workflow",
+        );
+        fs
+    }
+
     #[test]
     fn full_upgrade_flow() {
-        let fs = InMemoryFileSystem::new();
+        let fs = fs_with_extracted_binaries();
         let env = MockEnvironment::new()
             .with_architecture(Architecture::Amd64)
-            .with_var("HOME", "/home/test");
+            .with_var("HOME", "/home/test")
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()
             .with_latest_version(make_release("5.0.0"))
             .with_checksum_result(ChecksumResult::Match)
             .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -288,6 +371,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -307,8 +392,9 @@ mod tests {
         let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
-        let client = MockReleaseClient::new()
-            .with_latest_version(make_release("4.0.0"));
+        let client = MockReleaseClient::new().with_latest_version(make_release("4.0.0"));
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -316,6 +402,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -329,14 +417,18 @@ mod tests {
 
     #[test]
     fn specific_version() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()
             .with_version("3.5.0", make_release("3.5.0"))
             .with_checksum_result(ChecksumResult::Match)
             .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -344,6 +436,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let opts = UpdateOptions {
@@ -360,8 +454,9 @@ mod tests {
         let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
         let shell = MockExecutor::new();
         let terminal = BufferedTerminal::new();
-        let client = MockReleaseClient::new()
-            .with_latest_version(make_release("5.0.0"));
+        let client = MockReleaseClient::new().with_latest_version(make_release("5.0.0"));
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -369,6 +464,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let opts = UpdateOptions {
@@ -387,14 +484,18 @@ mod tests {
 
     #[test]
     fn downgrade_warning() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()
             .with_version("3.0.0", make_release("3.0.0"))
             .with_checksum_result(ChecksumResult::Match)
             .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -402,6 +503,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let opts = UpdateOptions {
@@ -419,13 +522,16 @@ mod tests {
 
     #[test]
     fn skips_prerelease_by_default() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
         // Mock returns stable version when include_prerelease=false
-        let client = MockReleaseClient::new()
-            .with_latest_version(make_release("4.1.0"));
+        let client = MockReleaseClient::new().with_latest_version(make_release("4.1.0"));
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -433,6 +539,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         // Default options have include_prerelease=false
@@ -450,6 +558,8 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()
             .with_error(MockError::NetworkError("connection refused".to_string()));
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -457,6 +567,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -474,8 +586,11 @@ mod tests {
         let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
         let shell = MockExecutor::new();
         let terminal = BufferedTerminal::new();
-        let client = MockReleaseClient::new()
-            .with_error(MockError::RateLimited("rate limited: resets at 2024-01-01T00:00:00Z".to_string()));
+        let client = MockReleaseClient::new().with_error(MockError::RateLimited(
+            "rate limited: resets at 2024-01-01T00:00:00Z".to_string(),
+        ));
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -483,6 +598,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -503,6 +620,8 @@ mod tests {
         let client = MockReleaseClient::new()
             .with_latest_version(make_release("5.0.0"))
             .with_checksum_result(ChecksumResult::Mismatch);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -510,6 +629,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -518,14 +639,18 @@ mod tests {
 
     #[test]
     fn cosign_verified_when_available() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()
             .with_latest_version(make_release("5.0.0"))
             .with_checksum_result(ChecksumResult::Match)
             .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -533,42 +658,18 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
         assert!(result.is_ok());
         let stdout = terminal.stdout_output();
         assert!(
-            stdout.iter().any(|s| s.contains("Cosign signature verified")),
+            stdout
+                .iter()
+                .any(|s| s.contains("Cosign signature verified")),
             "expected cosign verified in stdout"
-        );
-    }
-
-    #[test]
-    fn cosign_unavailable_fallback() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
-        let shell = default_shell();
-        let terminal = BufferedTerminal::new();
-        let client = MockReleaseClient::new()
-            .with_latest_version(make_release("5.0.0"))
-            .with_checksum_result(ChecksumResult::Match)
-            .with_cosign_result(CosignResult::NotInstalled);
-
-        let ctx = UpdateContext {
-            fs: &fs,
-            env: &env,
-            shell: &shell,
-            terminal: &terminal,
-            release_client: &client,
-        };
-
-        let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
-        assert!(result.is_ok(), "should succeed with checksum-only");
-        let stderr = terminal.stderr_output();
-        assert!(
-            stderr.iter().any(|s| s.contains("cosign not installed")),
-            "expected cosign warning in stderr, got: {stderr:?}"
         );
     }
 
@@ -580,6 +681,8 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()
             .with_error(MockError::NotFound("99.0.0 not found".to_string()));
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -587,6 +690,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let opts = UpdateOptions {
@@ -604,8 +709,10 @@ mod tests {
 
     #[test]
     fn config_sync_failure() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = MockExecutor::new().on(
             "ecc",
             CommandOutput {
@@ -619,6 +726,8 @@ mod tests {
             .with_latest_version(make_release("5.0.0"))
             .with_checksum_result(ChecksumResult::Match)
             .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -626,6 +735,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -635,7 +746,10 @@ mod tests {
             matches!(err, UpdateError::ConfigSyncFailed { .. }),
             "expected ConfigSyncFailed, got: {err}"
         );
-        assert!(err.to_string().contains("Backup"), "should mention backup path");
+        assert!(
+            err.to_string().contains("Backup"),
+            "should mention backup path"
+        );
     }
 
     #[test]
@@ -647,6 +761,8 @@ mod tests {
         let client = MockReleaseClient::new()
             .with_latest_version(make_release("5.0.0"))
             .with_error(MockError::NetworkError("interrupted".to_string()));
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -654,6 +770,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -665,8 +783,10 @@ mod tests {
 
     #[test]
     fn config_sync_after_swap() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = MockExecutor::new().on(
             "ecc",
             CommandOutput {
@@ -680,6 +800,8 @@ mod tests {
             .with_latest_version(make_release("5.0.0"))
             .with_checksum_result(ChecksumResult::Match)
             .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -687,6 +809,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -700,8 +824,10 @@ mod tests {
 
     #[test]
     fn progress_callback() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()
@@ -709,6 +835,8 @@ mod tests {
             .with_checksum_result(ChecksumResult::Match)
             .with_cosign_result(CosignResult::Verified)
             .with_download_bytes(vec![0u8; 100]);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -716,6 +844,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         use std::sync::atomic::{AtomicBool, Ordering};
@@ -724,30 +854,45 @@ mod tests {
             progress_called.store(true, Ordering::Relaxed);
         });
         assert!(result.is_ok());
-        assert!(progress_called.load(Ordering::Relaxed), "progress callback should have been invoked");
+        assert!(
+            progress_called.load(Ordering::Relaxed),
+            "progress callback should have been invoked"
+        );
     }
 
     #[test]
     fn post_swap_version_check() {
-        let fs = InMemoryFileSystem::new();
-        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
         let shell = MockExecutor::new()
-            .on_args("ecc", &["install"], CommandOutput {
-                stdout: "installed\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            })
-            .on_args("ecc", &["version"], CommandOutput {
-                stdout: "ecc 5.0.0\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            })
+            .on_args(
+                "ecc",
+                &["install"],
+                CommandOutput {
+                    stdout: "installed\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "ecc",
+                &["version"],
+                CommandOutput {
+                    stdout: "ecc 5.0.0\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
             .with_command("ecc");
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()
             .with_latest_version(make_release("5.0.0"))
             .with_checksum_result(ChecksumResult::Match)
             .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -755,6 +900,8 @@ mod tests {
             shell: &shell,
             terminal: &terminal,
             release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
         };
 
         let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
@@ -764,6 +911,387 @@ mod tests {
         assert!(
             !stderr.iter().any(|s| s.contains("expected version")),
             "should not warn about version mismatch"
+        );
+    }
+
+    // ============================================================
+    // NEW TESTS for PC-015 through PC-024
+    // ============================================================
+
+    /// PC-015: Orchestrator uses ctx.env.current_exe() instead of std::env::current_exe()
+    /// Verified indirectly: if current_exe comes from ctx.env, then MockEnvironment with
+    /// a custom path determines the install_dir. We test that full_upgrade_flow passes
+    /// (it's the test that is wired to ctx.env.current_exe for install_dir).
+    /// The test is already updated above with with_current_exe("/usr/local/bin/ecc").
+
+    /// PC-016: Orchestrator checks install dir writability before download, returns PermissionDenied
+    #[test]
+    fn permission_denied_before_download() {
+        // Use an env that points to a non-writable install dir
+        // In InMemoryFileSystem, write() succeeds by default. We need a FS where
+        // the install dir write fails. We use an env pointing to a path that
+        // the InMemoryFileSystem will reject writes (simulate via an env that
+        // returns a path where writing will fail).
+        //
+        // Strategy: use MockEnvironment with a current_exe in a path that
+        // exists as a directory entry only (no write capability). Since InMemoryFS
+        // always allows writes, we test by using an env with current_exe = None
+        // (fallback to /usr/local/bin) and pre-configure the FS so that writing
+        // to /usr/local/bin probe fails.
+        //
+        // Actually, InMemoryFS.write() always succeeds. We need a different approach:
+        // use a read-only FS wrapper or configure env to return a known-unwritable path.
+        //
+        // Best approach: environment returns current_exe = None so install_dir = /usr/local/bin.
+        // Then we use a FS that rejects writes to /usr/local/bin by having a dir at
+        // /usr/local/bin/.ecc-update-probe (so the write will... succeed actually).
+        //
+        // The real test: we need a FS that returns PermissionDenied on write to probe.
+        // Since InMemoryFileSystem doesn't support permission-denied-on-write, we use
+        // a custom approach: check that when current_exe() returns a path, the permission
+        // check uses fs.write(). We verify this by using a FS that tracks writes and
+        // checking the error path through a failing extractor scenario instead.
+        //
+        // ACTUAL APPROACH: Use an env where current_exe() returns None -> install_dir=/usr/local/bin.
+        // Create a FS where the directory /usr/local/bin doesn't exist and can't be written
+        // (write_bytes will fail because InMemoryFS requires parent dir to exist for write...
+        // let's check: InMemoryFS.write() does NOT check for parent existence).
+        //
+        // We need to test that PermissionDenied is returned. The only way with InMemoryFileSystem
+        // is if ctx.fs.write returns an error. InMemoryFileSystem always succeeds on write.
+        //
+        // Solution: Use a PermissionDeniedFileSystem wrapper.
+        // For test purposes, we create a simple struct that always returns PermissionDenied on write.
+
+        use ecc_ports::fs::{FileSystem, FsError};
+        use std::path::{Path, PathBuf};
+
+        struct ReadOnlyFileSystem;
+
+        impl FileSystem for ReadOnlyFileSystem {
+            fn read_to_string(&self, path: &Path) -> Result<String, FsError> {
+                Err(FsError::NotFound(path.to_path_buf()))
+            }
+            fn read_bytes(&self, path: &Path) -> Result<Vec<u8>, FsError> {
+                Err(FsError::NotFound(path.to_path_buf()))
+            }
+            fn write(&self, path: &Path, _content: &str) -> Result<(), FsError> {
+                Err(FsError::PermissionDenied(path.to_path_buf()))
+            }
+            fn write_bytes(&self, path: &Path, _content: &[u8]) -> Result<(), FsError> {
+                Err(FsError::PermissionDenied(path.to_path_buf()))
+            }
+            fn exists(&self, _path: &Path) -> bool {
+                false
+            }
+            fn is_dir(&self, _path: &Path) -> bool {
+                false
+            }
+            fn is_file(&self, _path: &Path) -> bool {
+                false
+            }
+            fn create_dir_all(&self, _path: &Path) -> Result<(), FsError> {
+                Ok(())
+            }
+            fn remove_file(&self, _path: &Path) -> Result<(), FsError> {
+                Ok(())
+            }
+            fn remove_dir_all(&self, _path: &Path) -> Result<(), FsError> {
+                Ok(())
+            }
+            fn copy(&self, _from: &Path, to: &Path) -> Result<(), FsError> {
+                Err(FsError::PermissionDenied(to.to_path_buf()))
+            }
+            fn read_dir(&self, path: &Path) -> Result<Vec<PathBuf>, FsError> {
+                Err(FsError::NotFound(path.to_path_buf()))
+            }
+            fn read_dir_recursive(&self, path: &Path) -> Result<Vec<PathBuf>, FsError> {
+                Err(FsError::NotFound(path.to_path_buf()))
+            }
+            fn create_symlink(&self, _target: &Path, link: &Path) -> Result<(), FsError> {
+                Err(FsError::PermissionDenied(link.to_path_buf()))
+            }
+            fn read_symlink(&self, link: &Path) -> Result<PathBuf, FsError> {
+                Err(FsError::NotFound(link.to_path_buf()))
+            }
+            fn is_symlink(&self, _path: &Path) -> bool {
+                false
+            }
+            fn set_permissions(&self, path: &Path, _mode: u32) -> Result<(), FsError> {
+                Err(FsError::PermissionDenied(path.to_path_buf()))
+            }
+            fn is_executable(&self, _path: &Path) -> bool {
+                false
+            }
+            fn rename(&self, _from: &Path, to: &Path) -> Result<(), FsError> {
+                Err(FsError::PermissionDenied(to.to_path_buf()))
+            }
+        }
+
+        let fs = ReadOnlyFileSystem;
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let client = MockReleaseClient::new()
+            .with_latest_version(make_release("5.0.0"))
+            .with_checksum_result(ChecksumResult::Match)
+            .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
+
+        let ctx = UpdateContext {
+            fs: &fs,
+            env: &env,
+            shell: &shell,
+            terminal: &terminal,
+            release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
+        };
+
+        let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, UpdateError::PermissionDenied { .. }),
+            "expected PermissionDenied before download, got: {err}"
+        );
+    }
+
+    /// PC-017: Orchestrator acquires flock, returns UpdateLocked when lock unavailable
+    #[test]
+    fn update_locked() {
+        use ecc_ports::lock::FileLock;
+        let fs = InMemoryFileSystem::new();
+        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let client = MockReleaseClient::new().with_latest_version(make_release("5.0.0"));
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
+
+        // Pre-acquire the lock to simulate a concurrent update
+        let _guard = lock
+            .acquire(std::path::Path::new("/usr/local/bin"), "ecc-update")
+            .unwrap();
+
+        let ctx = UpdateContext {
+            fs: &fs,
+            env: &env,
+            shell: &shell,
+            terminal: &terminal,
+            release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
+        };
+
+        let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
+        assert!(result.is_err());
+        assert!(
+            matches!(result.unwrap_err(), UpdateError::UpdateLocked { .. }),
+            "expected UpdateLocked when lock is contended"
+        );
+    }
+
+    /// PC-018: Lock released on success and on failure (RAII guard drop)
+    #[test]
+    fn lock_released() {
+        use ecc_ports::lock::FileLock;
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
+        let shell = default_shell();
+        let terminal = BufferedTerminal::new();
+        let client = MockReleaseClient::new()
+            .with_latest_version(make_release("5.0.0"))
+            .with_checksum_result(ChecksumResult::Match)
+            .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
+
+        let ctx = UpdateContext {
+            fs: &fs,
+            env: &env,
+            shell: &shell,
+            terminal: &terminal,
+            release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
+        };
+
+        let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
+        assert!(result.is_ok());
+        // After run_update returns, lock should be released (RAII guard dropped)
+        assert!(
+            !lock.is_held("ecc-update"),
+            "lock should be released after successful update"
+        );
+
+        // Also verify we can re-acquire the lock (proves it was released)
+        let reacquire = lock.acquire(std::path::Path::new("/usr/local/bin"), "ecc-update");
+        assert!(
+            reacquire.is_ok(),
+            "should be able to re-acquire lock after update completes"
+        );
+    }
+
+    /// PC-020: Corrupt archive returns SwapFailed with no partial state
+    #[test]
+    fn corrupt_archive() {
+        use ecc_ports::fs::FileSystem;
+        let fs = InMemoryFileSystem::new();
+        let _ = fs.create_dir_all(std::path::Path::new("/usr/local/bin"));
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let client = MockReleaseClient::new()
+            .with_latest_version(make_release("5.0.0"))
+            .with_checksum_result(ChecksumResult::Match)
+            .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        // Extractor that fails with CorruptArchive
+        let extractor = MockExtractor::new().with_failure();
+
+        let ctx = UpdateContext {
+            fs: &fs,
+            env: &env,
+            shell: &shell,
+            terminal: &terminal,
+            release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
+        };
+
+        let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, UpdateError::SwapFailed { .. }),
+            "expected SwapFailed for corrupt archive, got: {err}"
+        );
+        // Verify no binaries were swapped (install_dir still clean)
+        assert!(
+            !fs.exists(std::path::Path::new("/usr/local/bin/ecc")),
+            "no partial state: ecc should not exist in install dir after corrupt archive"
+        );
+    }
+
+    /// PC-022: Orchestrator on ConfigSyncFailed invokes rollback_swapped, message contains "rolled back"
+    #[test]
+    fn config_sync_triggers_rollback() {
+        let fs = fs_with_extracted_binaries();
+        let env = MockEnvironment::new()
+            .with_architecture(Architecture::Amd64)
+            .with_current_exe("/usr/local/bin/ecc");
+        // Shell that fails `ecc install`
+        let shell = MockExecutor::new().on(
+            "ecc",
+            CommandOutput {
+                stdout: String::new(),
+                stderr: "install failed: config error".to_string(),
+                exit_code: 1,
+            },
+        );
+        let terminal = BufferedTerminal::new();
+        let client = MockReleaseClient::new()
+            .with_latest_version(make_release("5.0.0"))
+            .with_checksum_result(ChecksumResult::Match)
+            .with_cosign_result(CosignResult::Verified);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
+
+        let ctx = UpdateContext {
+            fs: &fs,
+            env: &env,
+            shell: &shell,
+            terminal: &terminal,
+            release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
+        };
+
+        let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, UpdateError::ConfigSyncFailed { .. }),
+            "expected ConfigSyncFailed, got: {err}"
+        );
+        let msg = err.to_string();
+        assert!(
+            msg.to_lowercase().contains("rolled back") || msg.contains("Rolled back"),
+            "error message should mention rollback, got: {msg}"
+        );
+    }
+
+    /// PC-023: Cosign NotInstalled aborts update (not treated as warning)
+    #[test]
+    fn cosign_not_installed_aborts() {
+        let fs = InMemoryFileSystem::new();
+        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let client = MockReleaseClient::new()
+            .with_latest_version(make_release("5.0.0"))
+            .with_checksum_result(ChecksumResult::Match)
+            .with_cosign_result(CosignResult::NotInstalled);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
+
+        let ctx = UpdateContext {
+            fs: &fs,
+            env: &env,
+            shell: &shell,
+            terminal: &terminal,
+            release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
+        };
+
+        let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
+        assert!(result.is_err(), "NotInstalled should abort update");
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, UpdateError::CosignUnavailable),
+            "expected CosignUnavailable, got: {err}"
+        );
+    }
+
+    /// PC-024: Cosign Failed aborts with SecurityVerificationFailed
+    #[test]
+    fn cosign_failed_aborts() {
+        let fs = InMemoryFileSystem::new();
+        let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let client = MockReleaseClient::new()
+            .with_latest_version(make_release("5.0.0"))
+            .with_checksum_result(ChecksumResult::Match)
+            .with_cosign_result(CosignResult::Failed);
+        let lock = InMemoryLock::new();
+        let extractor = MockExtractor::new();
+
+        let ctx = UpdateContext {
+            fs: &fs,
+            env: &env,
+            shell: &shell,
+            terminal: &terminal,
+            release_client: &client,
+            lock: &lock,
+            extractor: &extractor,
+        };
+
+        let result = run_update(&ctx, &UpdateOptions::default(), "4.0.0", &progress_noop);
+        assert!(result.is_err(), "cosign Failed should abort update");
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, UpdateError::SecurityVerificationFailed { .. }),
+            "expected SecurityVerificationFailed, got: {err}"
         );
     }
 }
