@@ -25,6 +25,8 @@ pub trait Environment: Send + Sync {
     fn platform(&self) -> Platform;
     /// Return the host CPU architecture.
     fn architecture(&self) -> Architecture;
+    /// Return the path to the current executable, or `None` if unavailable.
+    fn current_exe(&self) -> Option<PathBuf>;
 }
 
 #[cfg(test)]
