@@ -51,22 +51,17 @@ pub fn run_update(
     // 2. Query target version
     let release_info = if let Some(ref target_ver) = options.target_version {
         ctx.release_client.get_version(target_ver).map_err(|e| {
-            if e.to_string().contains("not found") {
+            let msg = e.to_string();
+            if msg.contains("not found") {
                 UpdateError::VersionNotFound {
                     version: target_ver.clone(),
                 }
-            } else if e.to_string().contains("rate limited") {
+            } else if msg.contains("rate limited") {
                 UpdateError::RateLimited {
-                    reset_time: e.to_string(),
-                }
-            } else if e.to_string().contains("network error") {
-                UpdateError::NetworkError {
-                    reason: e.to_string(),
+                    reset_time: msg,
                 }
             } else {
-                UpdateError::NetworkError {
-                    reason: e.to_string(),
-                }
+                UpdateError::NetworkError { reason: msg }
             }
         })?
     } else {
@@ -78,8 +73,6 @@ pub fn run_update(
                     UpdateError::RateLimited {
                         reset_time: msg,
                     }
-                } else if msg.contains("network error") {
-                    UpdateError::NetworkError { reason: msg }
                 } else {
                     UpdateError::NetworkError { reason: msg }
                 }

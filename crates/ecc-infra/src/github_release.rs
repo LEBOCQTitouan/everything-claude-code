@@ -9,6 +9,7 @@ use std::path::Path;
 ///
 /// Cosign verification shells out to `cosign verify-blob` via
 /// `std::process::Command` with argument arrays (no shell interpolation).
+#[allow(dead_code)] // Fields used when self_update crate is connected
 pub struct GithubReleaseClient {
     repo_owner: String,
     repo_name: String,

@@ -1,5 +1,5 @@
 /// Options for the update operation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct UpdateOptions {
     /// Target version to install (None = latest).
     pub target_version: Option<String>,
@@ -9,12 +9,4 @@ pub struct UpdateOptions {
     pub include_prerelease: bool,
 }
 
-impl Default for UpdateOptions {
-    fn default() -> Self {
-        Self {
-            target_version: None,
-            dry_run: false,
-            include_prerelease: false,
-        }
-    }
-}
+
