@@ -41,3 +41,4 @@
 | `/ecc-test-mode` | Isolated worktree for testing ECC config changes |
 | `/comms` | Manage comms pipeline infrastructure — init repo, edit strategies, manage drafts, view calendar |
 | `/comms-generate` | Generate multi-channel DevRel content from codebase with optional channel filtering |
+| `/comms-plan` | Content ideation and scheduling — structured interview, web trend research, publication schedule |
