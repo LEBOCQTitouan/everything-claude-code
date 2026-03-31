@@ -42,6 +42,12 @@ notify = "7"
 flate2 = "1"
 tar = "0.4"
 
+# HTTP client
+ureq = "3"
+
+# Cryptography
+sha2 = "0.10"
+
 # System
 libc = "0.2"
 

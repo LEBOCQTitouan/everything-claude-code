@@ -272,6 +272,80 @@ mod tests {
         assert!(paths.iter().any(|p| p.to_string_lossy().contains("ecc")));
     }
 
+    // ── PC-032: extract_valid_tarball ─────────────────────────────────────
+
+    #[test]
+    fn extract_valid_tarball() {
+        let tmp = TempDir::new().unwrap();
+        let dest = tmp.path().join("extracted");
+        std::fs::create_dir_all(&dest).unwrap();
+
+        let entries: &[(&str, &[u8])] = &[
+            ("bin/ecc", b"ecc-binary-content"),
+            ("bin/ecc-workflow", b"ecc-workflow-binary-content"),
+        ];
+        let tarball = create_valid_tar_gz(tmp.path(), entries);
+
+        let extractor = FlateExtractor::new();
+        let result = extractor.extract(&tarball, &dest);
+        assert!(result.is_ok(), "valid tarball must extract: {result:?}");
+
+        let paths = result.unwrap();
+        assert_eq!(paths.len(), 2, "should extract exactly 2 files");
+
+        // Both ecc and ecc-workflow must be present
+        let names: Vec<String> = paths
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+            .collect();
+        assert!(names.contains(&"ecc".to_string()), "ecc binary must be extracted");
+        assert!(
+            names.contains(&"ecc-workflow".to_string()),
+            "ecc-workflow binary must be extracted"
+        );
+
+        // Content must be correct
+        let ecc_path = paths.iter().find(|p| p.file_name().unwrap() == "ecc").unwrap();
+        let content = std::fs::read(ecc_path).unwrap();
+        assert_eq!(content, b"ecc-binary-content");
+    }
+
+    // ── PC-033: windows_exe_preserved ────────────────────────────────────
+
+    #[test]
+    fn windows_exe_preserved() {
+        let tmp = TempDir::new().unwrap();
+        let dest = tmp.path().join("extracted");
+        std::fs::create_dir_all(&dest).unwrap();
+
+        // Tarball with Windows .exe entries
+        let entries: &[(&str, &[u8])] = &[
+            ("bin/ecc.exe", b"ecc-windows-binary"),
+            ("bin/ecc-workflow.exe", b"ecc-workflow-windows-binary"),
+        ];
+        let tarball = create_valid_tar_gz(tmp.path(), entries);
+
+        let extractor = FlateExtractor::new();
+        let result = extractor.extract(&tarball, &dest);
+        assert!(result.is_ok(), "windows tarball must extract: {result:?}");
+
+        let paths = result.unwrap();
+        let names: Vec<String> = paths
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+            .collect();
+
+        // .exe extensions must be preserved
+        assert!(
+            names.contains(&"ecc.exe".to_string()),
+            "ecc.exe must be extracted with .exe extension, got: {names:?}"
+        );
+        assert!(
+            names.contains(&"ecc-workflow.exe".to_string()),
+            "ecc-workflow.exe must be extracted with .exe extension, got: {names:?}"
+        );
+    }
+
     #[test]
     fn corrupt_archive_returns_error() {
         let tmp = TempDir::new().unwrap();
