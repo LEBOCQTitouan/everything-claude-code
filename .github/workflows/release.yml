@@ -115,17 +115,25 @@ jobs:
 
       - name: Build (native)
         if: "!matrix.cross"
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} -p ecc-cli -p ecc-workflow
 
       - name: Build (cross)
         if: matrix.cross
-        run: cross build --release --target ${{ matrix.target }}
+        run: cross build --release --target ${{ matrix.target }} -p ecc-cli -p ecc-workflow
 
-      - name: Stage binary
+      - name: Stage binaries
         shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          BINARY: ${{ matrix.binary }}
         run: |
           mkdir -p staging
-          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" staging/
+          cp "target/${TARGET}/release/${BINARY}" staging/
+          # Stage ecc-workflow alongside ecc (Unix targets only)
+          WORKFLOW_BIN="target/${TARGET}/release/ecc-workflow"
+          if [ -f "$WORKFLOW_BIN" ]; then
+            cp "$WORKFLOW_BIN" staging/ecc-workflow
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5
@@ -162,10 +170,14 @@ jobs:
           for pkg in ecc-darwin-arm64 ecc-darwin-x64 ecc-linux-x64 ecc-linux-arm64; do
             STAGING=$(mktemp -d)
 
-            # Binary
+            # Binaries (ecc + ecc-workflow)
             mkdir -p "$STAGING/bin"
             cp "artifacts/$pkg/ecc" "$STAGING/bin/ecc"
             chmod +x "$STAGING/bin/ecc"
+            if [ -f "artifacts/$pkg/ecc-workflow" ]; then
+              cp "artifacts/$pkg/ecc-workflow" "$STAGING/bin/ecc-workflow"
+              chmod +x "$STAGING/bin/ecc-workflow"
+            fi
 
             # Shell shims
             cp bin/ecc-hook "$STAGING/bin/ecc-hook"
@@ -199,6 +211,26 @@ jobs:
 
           # Windows zip (binary only — no shell shims)
           zip -j "release-assets/ecc-win32-x64.zip" "artifacts/ecc-win32-x64/ecc.exe"
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd release-assets
+          sha256sum *.tar.gz *.zip > checksums-sha256.txt
+          cat checksums-sha256.txt
+
+      - name: Sign release assets with cosign
+        continue-on-error: true
+        uses: sigstore/cosign-installer@v3
+      - name: Cosign sign blobs
+        continue-on-error: true
+        run: |
+          cd release-assets
+          for asset in *.tar.gz *.zip; do
+            cosign sign-blob "$asset" \
+              --yes \
+              --output-signature "${asset}.sig" \
+              --output-certificate "${asset}.bundle" || true
+          done
 
       - name: Generate changelog
         id: changelog
