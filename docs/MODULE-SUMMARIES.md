@@ -23,3 +23,79 @@ For current module documentation, see the individual crate READMEs and source:
 See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glossary](domain/glossary.md)
 
 <!-- END AUTO-GENERATED -->
+
+<!-- IMPLEMENT-GENERATED -->
+
+### `ecc-domain`
+
+**Purpose:** Pure business logic for ECC — zero I/O, focused on domain models and invariants for update workflows, platform detection, release artifacts, and error handling.
+
+**Key Functions / Types:**
+- `Platform` enum — Rust target triple representation (aarch64-apple-darwin, x86_64-unknown-linux-gnu, etc.)
+- `Architecture` enum — CPU architecture variants derived from platform triples
+- `UpdateArtifact` — Domain model for release artifact resolution with enum-based variant selection
+- `UpdateError` — Comprehensive error domain for update orchestration (invalid platform, verification failure, extraction failure, swap failure)
+- `Swap` — Atomic file replacement abstraction (read current, validate backup path, write new, cleanup on rollback)
+
+**Spec Cross-Link:** BL-088 (ecc-workflow update dual-mode deploy — platform detection and artifact resolution)
+
+**ADR Cross-Link:** N/A
+
+**Design Rationale:** The update module extends the domain with platform-aware artifact resolution and atomic swap semantics. Architecture enum abstracts multi-platform release artifact selection behind a clean domain abstraction. Error enum centralizes domain-level failures (invalid platform, verification, extraction, swap). This isolation enables full in-memory testing without I/O mocks while maintaining hexagonal port boundaries per D-3 (agents/module-summary-updater.md).
+
+**Modified in:** `BL-088` — 2026-03-31
+
+### `ecc-ports`
+
+**Purpose:** Trait definitions for I/O abstraction layer — encapsulates filesystem, environment, release client, and artifact extraction behind mockable port contracts.
+
+**Key Functions / Types:**
+- `TarballExtractor` trait — Abstract tarball extraction (extract_tar → Result<PathBuf>)
+- `ReleaseClient::download_file()` — Download release artifact by URL and stream to disk
+- `ReleaseClient::verify_cosign()` — Verify signature via cosign binary
+- `OsEnvironment::current_exe()` — Get running executable path (required for rollback)
+- Re-exports — Public visibility for all extractor, environment, and release traits
+
+**Spec Cross-Link:** BL-088 (ecc-workflow update dual-mode deploy — port contracts for extraction and release)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
+
+**Design Rationale:** New TarballExtractor port decouples domain swap logic from concrete extraction implementations (FlateExtractor vs system tar). current_exe() addition enables safe rollback path detection. verify_cosign() port abstracts signature verification workflow to support both local and CI contexts. Port visibility and re-exports ensure clean app-layer dependencies per hexagonal architecture (D-3).
+
+**Modified in:** `BL-088` — 2026-03-31
+
+### `ecc-app`
+
+**Purpose:** Application use cases — orchestrates domain swap logic with port adapters for tarball extraction, release client, and environment queries. Implements update orchestration workflow.
+
+**Key Functions / Types:**
+- `UpdateOrchestrator` — Wires platform detection → artifact download → signature verification → tarball extraction → atomic swap
+- `Swap::rollback()` — Attempt restore from backup on failure (idempotent)
+- `Swap::cleanup()` — Remove backup files after successful swap
+
+**Spec Cross-Link:** BL-088 (ecc-workflow update dual-mode deploy — orchestration wiring)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
+
+**Design Rationale:** UpdateOrchestrator implements the complete dual-mode deploy workflow: detects platform, resolves correct artifact from release metadata, downloads and verifies signature, extracts tarball via port, and performs atomic swap with rollback safeguards. Separation of swap logic (domain) from orchestration (app) maintains clean layering. Rollback and cleanup methods implement idempotent failure recovery per D-3.
+
+**Modified in:** `BL-088` — 2026-03-31
+
+### `ecc-infra`
+
+**Purpose:** Production adapters for I/O operations — implements concrete strategies for GitHub release fetching, tarball extraction, and artifact verification.
+
+**Key Functions / Types:**
+- `GithubReleaseClient` — Real ureq HTTP implementation for release downloads and metadata queries
+- `FlateExtractor` — Production tarball extractor using flate2 + tar crates
+- `verify_cosign()` — Execute local cosign binary for signature verification
+
+**Spec Cross-Link:** BL-088 (ecc-workflow update dual-mode deploy — infrastructure adapters)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
+
+**Design Rationale:** GithubReleaseClient uses ureq for synchronous HTTP to match ECC's no-async philosophy and enable safe subprocess spawning. FlateExtractor provides fast Rust-native tarball decompression without external dependencies. verify_cosign() delegates to local cosign binary, supporting both local dev (key-based verification) and CI (identity provider tokens). All adapters implement ecc-ports traits, enabling swap-free test doubles.
+
+**Modified in:** `BL-088` — 2026-03-31
+
+<!-- END IMPLEMENT-GENERATED -->
