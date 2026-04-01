@@ -99,15 +99,11 @@ pub fn compute_wave_plan(
     let mut waves: Vec<Wave> = Vec::new();
 
     for pc in pcs {
-        let pc_files: Vec<String> = file_map
-            .get(&pc.id)
-            .cloned()
-            .unwrap_or_default();
+        let pc_files: Vec<String> = file_map.get(&pc.id).cloned().unwrap_or_default();
 
         // Find the first eligible wave
         let eligible = waves.iter_mut().find(|wave| {
-            wave.pc_ids.len() < effective_max
-                && !pc_files.iter().any(|f| wave.files.contains(f))
+            wave.pc_ids.len() < effective_max && !pc_files.iter().any(|f| wave.files.contains(f))
         });
 
         if let Some(wave) = eligible {
@@ -202,7 +198,10 @@ mod tests {
         // PC-001 has no matching AC, so maps to empty vec
         assert_eq!(map.get(&PcId(1)), Some(&vec![]));
         // The file change with unparseable ref contributes no files
-        assert!(!map.values().any(|files| files.contains(&"src/foo.rs".to_owned())));
+        assert!(
+            !map.values()
+                .any(|files| files.contains(&"src/foo.rs".to_owned()))
+        );
     }
 
     // PC-003: Backtick stripping on file paths
@@ -309,8 +308,15 @@ mod tests {
             make_file_change(4, "d.rs", "AC-004.1"),
         ];
         let plan = compute_wave_plan(&pcs, &fcs, 4);
-        assert_eq!(plan.waves.len(), 1, "4 independent PCs should fit in one wave");
-        assert_eq!(plan.waves[0].pc_ids, vec![PcId(1), PcId(2), PcId(3), PcId(4)]);
+        assert_eq!(
+            plan.waves.len(),
+            1,
+            "4 independent PCs should fit in one wave"
+        );
+        assert_eq!(
+            plan.waves[0].pc_ids,
+            vec![PcId(1), PcId(2), PcId(3), PcId(4)]
+        );
     }
 
     // PC-013: >4 independent PCs split into multiple waves
@@ -341,9 +347,7 @@ mod tests {
     #[test]
     fn wave_custom_max() {
         // 6 independent PCs with max_per_wave=2 -> 3 waves of 2
-        let pcs: Vec<PassCondition> = (1u16..=6)
-            .map(|i| make_pc(i, vec![ac(i, 1)]))
-            .collect();
+        let pcs: Vec<PassCondition> = (1u16..=6).map(|i| make_pc(i, vec![ac(i, 1)])).collect();
         let fcs: Vec<FileChange> = (1u16..=6)
             .map(|i| make_file_change(i, &format!("f{i}.rs"), &format!("AC-{i:03}.1")))
             .collect();
@@ -464,17 +468,18 @@ mod tests {
     // PC-023: max_per_wave=0 treated as max_per_wave=1 (no panic)
     #[test]
     fn wave_max_zero_safe() {
-        let pcs = vec![
-            make_pc(1, vec![ac(1, 1)]),
-            make_pc(2, vec![ac(2, 1)]),
-        ];
+        let pcs = vec![make_pc(1, vec![ac(1, 1)]), make_pc(2, vec![ac(2, 1)])];
         let fcs = vec![
             make_file_change(1, "a.rs", "AC-001.1"),
             make_file_change(2, "b.rs", "AC-002.1"),
         ];
         // max_per_wave=0 must not panic and must behave like max_per_wave=1
         let plan = compute_wave_plan(&pcs, &fcs, 0);
-        assert_eq!(plan.waves.len(), 2, "max_per_wave=0 treated as 1 -> one PC per wave");
+        assert_eq!(
+            plan.waves.len(),
+            2,
+            "max_per_wave=0 treated as 1 -> one PC per wave"
+        );
         assert_eq!(plan.max_per_wave, 1);
     }
 }

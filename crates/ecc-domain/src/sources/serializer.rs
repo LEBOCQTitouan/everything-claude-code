@@ -29,7 +29,12 @@ pub fn serialize_sources(registry: &SourcesRegistry) -> String {
     out.push('\n');
 
     // Four quadrant sections in canonical order
-    for quadrant in &[Quadrant::Adopt, Quadrant::Trial, Quadrant::Assess, Quadrant::Hold] {
+    for quadrant in &[
+        Quadrant::Adopt,
+        Quadrant::Trial,
+        Quadrant::Assess,
+        Quadrant::Hold,
+    ] {
         let quadrant_display = quadrant_title(quadrant);
         out.push_str(&format!("## {quadrant_display}\n\n"));
 
@@ -114,7 +119,11 @@ fn serialize_entry(entry: &SourceEntry, include_quadrant: bool) -> String {
     }
 
     let meta = parts.join(" | ");
-    format!("- [{}]({}) \u{2014} {meta}", entry.title, entry.url.as_str())
+    format!(
+        "- [{}]({}) \u{2014} {meta}",
+        entry.title,
+        entry.url.as_str()
+    )
 }
 
 #[cfg(test)]
@@ -198,14 +207,20 @@ mod tests {
         );
 
         // Inbox section present
-        assert!(output.contains("## Inbox\n"), "Inbox section must be present");
+        assert!(
+            output.contains("## Inbox\n"),
+            "Inbox section must be present"
+        );
         assert!(
             output.contains("- [Inbox Entry](https://example.com/inbox)"),
             "inbox entry must appear"
         );
 
         // Adopt section with subject subsections
-        assert!(output.contains("## Adopt\n"), "Adopt section must be present");
+        assert!(
+            output.contains("## Adopt\n"),
+            "Adopt section must be present"
+        );
         assert!(
             output.contains("### rust-patterns\n"),
             "rust-patterns subject must be a subsection"
@@ -266,7 +281,8 @@ mod tests {
         // Parse → serialize → parse: both registries should be semantically equal.
         let registry1 = parse_sources(input).expect("initial parse must succeed");
         let serialized = serialize_sources(&registry1);
-        let registry2 = parse_sources(&serialized).expect("re-parse of serialized output must succeed");
+        let registry2 =
+            parse_sources(&serialized).expect("re-parse of serialized output must succeed");
 
         // Compare field by field (SourcesRegistry doesn't derive PartialEq)
         assert_eq!(
@@ -334,6 +350,9 @@ mod tests {
             .iter()
             .find(|e| e.url.as_str() == "https://example.com/stale")
             .expect("stale entry must exist after round-trip");
-        assert!(entry.stale, "stale flag must survive serialize → parse round-trip");
+        assert!(
+            entry.stale,
+            "stale flag must survive serialize → parse round-trip"
+        );
     }
 }

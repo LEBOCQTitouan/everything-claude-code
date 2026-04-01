@@ -1,7 +1,7 @@
 //! Daily memory file handler — appends session summary to daily file (BL-047).
 
-use tracing::warn;
 use std::path::PathBuf;
+use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
 use ecc_domain::time::{datetime_from_epoch, format_date, format_time};

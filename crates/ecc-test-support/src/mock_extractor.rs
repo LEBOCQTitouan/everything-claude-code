@@ -13,10 +13,7 @@ impl MockExtractor {
     /// Create a new mock extractor.
     pub fn new() -> Self {
         Self {
-            files_to_create: vec![
-                "bin/ecc".to_string(),
-                "bin/ecc-workflow".to_string(),
-            ],
+            files_to_create: vec!["bin/ecc".to_string(), "bin/ecc-workflow".to_string()],
             should_fail: false,
         }
     }
@@ -45,11 +42,7 @@ impl TarballExtractor for MockExtractor {
         if self.should_fail {
             return Err(ExtractError::CorruptArchive("mock failure".to_string()));
         }
-        let paths: Vec<PathBuf> = self
-            .files_to_create
-            .iter()
-            .map(|f| dest.join(f))
-            .collect();
+        let paths: Vec<PathBuf> = self.files_to_create.iter().map(|f| dest.join(f)).collect();
         Ok(paths)
     }
 }

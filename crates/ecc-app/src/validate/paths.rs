@@ -128,7 +128,13 @@ mod tests {
         let t = term();
         // skills dir exists as a file (not a dir), so read_dir_recursive will fail
         // This verifies the error path is now surfaced
-        let result = run_validate(&fs, &t, &MockEnvironment::default(), &ValidateTarget::Paths, Path::new("/root"));
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Paths,
+            Path::new("/root"),
+        );
         // Should still pass since this path is not a checked extension
         assert!(result);
     }

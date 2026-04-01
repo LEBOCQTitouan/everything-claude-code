@@ -48,31 +48,36 @@ mod tests {
 
     #[test]
     fn resolves_macos_arm64() {
-        let name = ArtifactName::resolve(Platform::MacOS, Architecture::Arm64).expect("should resolve");
+        let name =
+            ArtifactName::resolve(Platform::MacOS, Architecture::Arm64).expect("should resolve");
         assert_eq!(name.as_str(), "ecc-darwin-arm64");
     }
 
     #[test]
     fn resolves_macos_x64() {
-        let name = ArtifactName::resolve(Platform::MacOS, Architecture::Amd64).expect("should resolve");
+        let name =
+            ArtifactName::resolve(Platform::MacOS, Architecture::Amd64).expect("should resolve");
         assert_eq!(name.as_str(), "ecc-darwin-x64");
     }
 
     #[test]
     fn resolves_linux_x64() {
-        let name = ArtifactName::resolve(Platform::Linux, Architecture::Amd64).expect("should resolve");
+        let name =
+            ArtifactName::resolve(Platform::Linux, Architecture::Amd64).expect("should resolve");
         assert_eq!(name.as_str(), "ecc-linux-x64");
     }
 
     #[test]
     fn resolves_linux_arm64() {
-        let name = ArtifactName::resolve(Platform::Linux, Architecture::Arm64).expect("should resolve");
+        let name =
+            ArtifactName::resolve(Platform::Linux, Architecture::Arm64).expect("should resolve");
         assert_eq!(name.as_str(), "ecc-linux-arm64");
     }
 
     #[test]
     fn resolves_windows_x64() {
-        let name = ArtifactName::resolve(Platform::Windows, Architecture::Amd64).expect("should resolve");
+        let name =
+            ArtifactName::resolve(Platform::Windows, Architecture::Amd64).expect("should resolve");
         assert_eq!(name.as_str(), "ecc-win32-x64");
     }
 
@@ -88,7 +93,10 @@ mod tests {
     fn rejects_unsupported_unknown_arch() {
         let result = ArtifactName::resolve(Platform::Linux, Architecture::Unknown);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), UpdateError::UnsupportedPlatform { .. }));
+        assert!(matches!(
+            result.unwrap_err(),
+            UpdateError::UnsupportedPlatform { .. }
+        ));
     }
 
     #[test]
@@ -113,6 +121,9 @@ mod tests {
         // Windows Arm64 not in release matrix
         let result = ArtifactName::resolve(Platform::Windows, Architecture::Arm64);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), UpdateError::UnsupportedPlatform { .. }));
+        assert!(matches!(
+            result.unwrap_err(),
+            UpdateError::UnsupportedPlatform { .. }
+        ));
     }
 }

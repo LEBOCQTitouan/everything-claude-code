@@ -21,8 +21,8 @@ fn validate_path(path: &Path, project_dir: &Path) -> Result<(), anyhow::Error> {
             .ok_or_else(|| anyhow::anyhow!("invalid path: no parent directory"))?;
         std::fs::canonicalize(parent)?.join(path.file_name().unwrap_or_default())
     };
-    let project_root = std::fs::canonicalize(project_dir)
-        .unwrap_or_else(|_| project_dir.to_path_buf());
+    let project_root =
+        std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
     if !resolved.starts_with(&project_root) {
         anyhow::bail!("path escapes project directory: {}", path.display());
     }
@@ -50,8 +50,8 @@ struct SyncOutput {
 
 /// Build the sync JSON output from a parsed `TaskReport`.
 fn build_sync_output(report: &ecc_domain::task::TaskReport) -> SyncOutput {
-    use ecc_domain::task::entry::EntryKind;
     use ecc_domain::task::TaskStatus;
+    use ecc_domain::task::entry::EntryKind;
 
     let mut pending = Vec::new();
     let mut completed = Vec::new();
@@ -151,7 +151,8 @@ fn update_inner(
     let tasks_path = std::path::PathBuf::from(path);
     validate_path(&tasks_path, project_dir)?;
 
-    let new_status = status.parse::<ecc_domain::task::TaskStatus>()
+    let new_status = status
+        .parse::<ecc_domain::task::TaskStatus>()
         .map_err(|e| anyhow::anyhow!("{e}"))?;
 
     let timestamp = crate::time::utc_now_iso8601();
@@ -173,9 +174,7 @@ fn update_inner(
     std::fs::rename(&tmp_path, &tasks_path)
         .map_err(|e| anyhow::anyhow!("failed to rename temp file: {e}"))?;
 
-    Ok(WorkflowOutput::pass(format!(
-        "updated {id} to {status}"
-    )))
+    Ok(WorkflowOutput::pass(format!("updated {id} to {status}")))
 }
 
 /// Run the `tasks init <design_path> --output <output> [--force]` subcommand.
@@ -229,9 +228,7 @@ fn init_inner(
     let mut seen_ids = std::collections::HashSet::new();
     for pc in &pc_report.pcs {
         if !seen_ids.insert(pc.id.number()) {
-            return Ok(WorkflowOutput::block(format!(
-                "duplicate {}", pc.id
-            )));
+            return Ok(WorkflowOutput::block(format!("duplicate {}", pc.id)));
         }
     }
 
@@ -302,29 +299,49 @@ mod tests {
         );
 
         // Parse the JSON in the message
-        let json: serde_json::Value = serde_json::from_str(&output.message)
-            .expect("message should be valid JSON");
+        let json: serde_json::Value =
+            serde_json::from_str(&output.message).expect("message should be valid JSON");
 
         // AC-003.1: arrays present
         assert!(json["pending"].is_array(), "pending must be an array");
         assert!(json["completed"].is_array(), "completed must be an array");
-        assert!(json["in_progress"].is_array(), "in_progress must be an array");
+        assert!(
+            json["in_progress"].is_array(),
+            "in_progress must be an array"
+        );
         assert!(json["failed"].is_array(), "failed must be an array");
         assert!(json["total"].is_number(), "total must be a number");
-        assert!(json["progress_pct"].is_number(), "progress_pct must be a number");
+        assert!(
+            json["progress_pct"].is_number(),
+            "progress_pct must be a number"
+        );
 
         // AC-003.2: pending contains only undone items
         let pending = json["pending"].as_array().unwrap();
         let completed = json["completed"].as_array().unwrap();
-        assert_eq!(pending.len(), 2, "pending array should have 2 items (PC-001 + E2E tests)");
-        assert_eq!(completed.len(), 1, "completed array should have 1 item (PC-002)");
+        assert_eq!(
+            pending.len(),
+            2,
+            "pending array should have 2 items (PC-001 + E2E tests)"
+        );
+        assert_eq!(
+            completed.len(),
+            1,
+            "completed array should have 1 item (PC-002)"
+        );
         assert_eq!(json["total"], 3, "total should be 3");
 
         // Check structure of a pending item
         let first_pending = &pending[0];
         assert!(first_pending["id"].is_string(), "item must have id field");
-        assert!(first_pending["description"].is_string(), "item must have description field");
-        assert!(first_pending["current_status"].is_string(), "item must have current_status field");
+        assert!(
+            first_pending["description"].is_string(),
+            "item must have description field"
+        );
+        assert!(
+            first_pending["current_status"].is_string(),
+            "item must have current_status field"
+        );
     }
 
     // PC-018: tasks sync returns block error for nonexistent path
@@ -373,12 +390,7 @@ mod tests {
         let tasks_path = tmp.path().join("tasks.md");
         std::fs::write(&tasks_path, valid_tasks_md()).unwrap();
 
-        let output = run_update(
-            tasks_path.to_str().unwrap(),
-            "PC-001",
-            "red",
-            tmp.path(),
-        );
+        let output = run_update(tasks_path.to_str().unwrap(), "PC-001", "red", tmp.path());
 
         assert!(
             matches!(output.status, Status::Pass),
@@ -461,9 +473,18 @@ mod tests {
         let content = std::fs::read_to_string(&output_path).unwrap();
         assert!(content.contains("PC-001"), "should contain PC-001");
         assert!(content.contains("PC-002"), "should contain PC-002");
-        assert!(content.contains("## Post-TDD"), "should contain Post-TDD section");
-        assert!(content.contains("E2E tests"), "should contain E2E tests entry");
-        assert!(content.contains("pending@"), "should contain pending timestamp");
+        assert!(
+            content.contains("## Post-TDD"),
+            "should contain Post-TDD section"
+        );
+        assert!(
+            content.contains("E2E tests"),
+            "should contain E2E tests entry"
+        );
+        assert!(
+            content.contains("pending@"),
+            "should contain pending timestamp"
+        );
     }
 
     // PC-024: tasks init blocks when output exists (no --force)

@@ -53,9 +53,7 @@ impl LogStore for InMemoryLogStore {
         let guard = self.entries.lock().expect("lock poisoned");
         let filtered: Vec<&LogEntry> = guard
             .iter()
-            .filter(|e| {
-                session_id.is_none_or(|sid| e.session_id == sid)
-            })
+            .filter(|e| session_id.is_none_or(|sid| e.session_id == sid))
             .collect();
         let start = filtered.len().saturating_sub(count);
         Ok(filtered[start..].iter().map(|e| (*e).clone()).collect())
@@ -70,9 +68,7 @@ impl LogStore for InMemoryLogStore {
 
         let mut guard = self.entries.lock().expect("lock poisoned");
         let before = guard.len();
-        guard.retain(|e| {
-            parse_timestamp_secs(&e.timestamp).is_none_or(|ts| ts >= cutoff_secs)
-        });
+        guard.retain(|e| parse_timestamp_secs(&e.timestamp).is_none_or(|ts| ts >= cutoff_secs));
         let removed = before - guard.len();
         Ok(removed as u64)
     }
@@ -128,7 +124,11 @@ fn matches_query(entry: &LogEntry, query: &LogQuery) -> bool {
             return false;
         }
     }
-    if query.session_id.as_deref().is_some_and(|sid| entry.session_id != sid) {
+    if query
+        .session_id
+        .as_deref()
+        .is_some_and(|sid| entry.session_id != sid)
+    {
         return false;
     }
     if let Some(since) = query.since {
@@ -142,7 +142,11 @@ fn matches_query(entry: &LogEntry, query: &LogQuery) -> bool {
             return false;
         }
     }
-    if query.level.as_deref().is_some_and(|lvl| !entry.level.eq_ignore_ascii_case(lvl)) {
+    if query
+        .level
+        .as_deref()
+        .is_some_and(|lvl| !entry.level.eq_ignore_ascii_case(lvl))
+    {
         return false;
     }
     true
@@ -157,10 +161,7 @@ fn parse_timestamp_secs(ts: &str) -> Option<u64> {
     if parts.len() != 2 {
         return None;
     }
-    let date_parts: Vec<u32> = parts[0]
-        .split('-')
-        .filter_map(|p| p.parse().ok())
-        .collect();
+    let date_parts: Vec<u32> = parts[0].split('-').filter_map(|p| p.parse().ok()).collect();
     let time_parts: Vec<u32> = parts[1]
         .splitn(4, ':')
         .filter_map(|p| p.parse().ok())
@@ -308,7 +309,9 @@ mod tests {
     fn export_json_contains_entries() {
         let store = InMemoryLogStore::new();
         store.seed(vec![make_entry("s1", "INFO", "hello")]);
-        let output = store.export(&LogQuery::default(), ExportFormat::Json).unwrap();
+        let output = store
+            .export(&LogQuery::default(), ExportFormat::Json)
+            .unwrap();
         assert!(output.starts_with('['));
         assert!(output.ends_with(']'));
         assert!(output.contains("hello"));
@@ -318,7 +321,9 @@ mod tests {
     fn export_csv_has_header() {
         let store = InMemoryLogStore::new();
         store.seed(vec![make_entry("s1", "INFO", "hello")]);
-        let output = store.export(&LogQuery::default(), ExportFormat::Csv).unwrap();
+        let output = store
+            .export(&LogQuery::default(), ExportFormat::Csv)
+            .unwrap();
         assert!(output.starts_with("id,session_id,timestamp,level,target,message,fields_json"));
     }
 }

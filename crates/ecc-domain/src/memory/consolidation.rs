@@ -105,10 +105,7 @@ mod tests {
     fn test_recency_factor_180_days() {
         let r = recency_factor(180);
         // 1.0 - 180/365 ≈ 0.5068
-        assert!(
-            (r - 0.5068).abs() < 0.001,
-            "expected ~0.507, got {r}"
-        );
+        assert!((r - 0.5068).abs() < 0.001, "expected ~0.507, got {r}");
     }
 
     #[test]
@@ -162,18 +159,27 @@ mod tests {
     #[test]
     fn test_jaccard_partial_overlap() {
         let score = jaccard_3gram_similarity("hello world", "hello earth");
-        assert!(score > 0.0 && score < 1.0, "expected partial overlap, got {score}");
+        assert!(
+            score > 0.0 && score < 1.0,
+            "expected partial overlap, got {score}"
+        );
     }
 
     // PC-009: should_merge
     #[test]
     fn test_should_merge_identical_returns_true() {
-        assert!(should_merge("hello world foo bar baz", "hello world foo bar baz"));
+        assert!(should_merge(
+            "hello world foo bar baz",
+            "hello world foo bar baz"
+        ));
     }
 
     #[test]
     fn test_should_merge_disjoint_returns_false() {
-        assert!(!should_merge("aardvark elephant zebra", "quantum physics relativity"));
+        assert!(!should_merge(
+            "aardvark elephant zebra",
+            "quantum physics relativity"
+        ));
     }
 
     #[test]

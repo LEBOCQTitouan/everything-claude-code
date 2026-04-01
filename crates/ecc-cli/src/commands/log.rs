@@ -210,7 +210,10 @@ mod tests {
         };
 
         let result = run(args);
-        assert!(result.is_ok(), "log tail should succeed on empty dir: {result:?}");
+        assert!(
+            result.is_ok(),
+            "log tail should succeed on empty dir: {result:?}"
+        );
     }
 
     /// PC Wave 4: ecc log prune subcommand returns Ok on missing db
@@ -227,7 +230,10 @@ mod tests {
         };
 
         let result = run(args);
-        assert!(result.is_ok(), "log prune should succeed on missing db: {result:?}");
+        assert!(
+            result.is_ok(),
+            "log prune should succeed on missing db: {result:?}"
+        );
     }
 
     /// PC Wave 4: ecc log export subcommand returns Ok on missing db
@@ -247,6 +253,9 @@ mod tests {
         };
 
         let result = run(args);
-        assert!(result.is_ok(), "log export should succeed on missing db: {result:?}");
+        assert!(
+            result.is_ok(),
+            "log export should succeed on missing db: {result:?}"
+        );
     }
 }

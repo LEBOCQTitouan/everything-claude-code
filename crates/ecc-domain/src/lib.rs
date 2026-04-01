@@ -5,14 +5,13 @@
 
 pub mod ansi;
 pub mod audit_web;
-pub mod log;
-pub mod update;
 pub mod backlog;
 pub mod claw;
 pub mod config;
 pub mod detection;
 pub mod diff;
 pub mod hook_runtime;
+pub mod log;
 pub mod memory;
 pub mod paths;
 pub mod session;
@@ -21,5 +20,6 @@ pub mod spec;
 pub mod task;
 pub mod time;
 pub mod traits;
+pub mod update;
 pub mod workflow;
 pub mod worktree;

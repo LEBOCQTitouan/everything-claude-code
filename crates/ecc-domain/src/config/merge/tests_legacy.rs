@@ -236,17 +236,23 @@ fn is_legacy_ecc_hook_new_worktree_hooks_not_legacy() {
 #[test]
 fn is_legacy_command_dist_hooks() {
     // dist/hooks/ in ecc-hook 3-arg form is legacy
-    assert!(is_legacy_command("ecc-hook \"pre:bash\" \"dist/hooks/pre-bash.js\" \"standard\""));
+    assert!(is_legacy_command(
+        "ecc-hook \"pre:bash\" \"dist/hooks/pre-bash.js\" \"standard\""
+    ));
 }
 
 #[test]
 fn is_legacy_command_worktree_create_init() {
-    assert!(is_legacy_command("ecc-hook \"worktree:create:init\" \"standard,strict\""));
+    assert!(is_legacy_command(
+        "ecc-hook \"worktree:create:init\" \"standard,strict\""
+    ));
 }
 
 #[test]
 fn is_legacy_command_ecc_package_identifier() {
-    assert!(is_legacy_command("/home/.npm/everything-claude-code/hooks/run.js"));
+    assert!(is_legacy_command(
+        "/home/.npm/everything-claude-code/hooks/run.js"
+    ));
 }
 
 #[test]
@@ -261,12 +267,16 @@ fn is_legacy_command_ecc_root_placeholder() {
 
 #[test]
 fn is_legacy_command_run_with_flags_js() {
-    assert!(is_legacy_command("node /abs/path/dist/hooks/run-with-flags.js"));
+    assert!(is_legacy_command(
+        "node /abs/path/dist/hooks/run-with-flags.js"
+    ));
 }
 
 #[test]
 fn is_legacy_command_run_with_flags_shell() {
-    assert!(is_legacy_command("bash /abs/path/scripts/hooks/run-with-flags-shell.sh"));
+    assert!(is_legacy_command(
+        "bash /abs/path/scripts/hooks/run-with-flags-shell.sh"
+    ));
 }
 
 #[test]
@@ -296,5 +306,7 @@ fn is_legacy_command_not_for_user_hook() {
 
 #[test]
 fn is_legacy_command_stop_worktree_cleanup_reminder() {
-    assert!(is_legacy_command("ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\""));
+    assert!(is_legacy_command(
+        "ecc-hook \"stop:worktree-cleanup-reminder\" \"standard,strict\""
+    ));
 }

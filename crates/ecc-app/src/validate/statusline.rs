@@ -45,7 +45,9 @@ pub(super) fn validate_statusline(
             if !has_placeholder {
                 terminal.stdout_write("✓ No unresolved placeholder\n");
             } else {
-                terminal.stdout_write("✗ Unresolved placeholder: __ECC_VERSION__ found in installed script\n");
+                terminal.stdout_write(
+                    "✗ Unresolved placeholder: __ECC_VERSION__ found in installed script\n",
+                );
             }
             !has_placeholder
         }
@@ -329,8 +331,7 @@ mod tests {
         // clean installed script only at /mock-home. If HOME lookup falls back to
         // source (because the real HOME path isn't in the FS), placeholder check
         // fails. If HOME lookup uses the mock env and finds /mock-home script, pass.
-        let source_with_placeholder =
-            "#!/usr/bin/env bash
+        let source_with_placeholder = "#!/usr/bin/env bash
 jq '.x'
 VER=__ECC_VERSION__
 ";
@@ -341,10 +342,7 @@ VER=__ECC_VERSION__
                 source_with_placeholder,
             )
             .with_file("/root/settings.json", valid_settings())
-            .with_file(
-                "/mock-home/.claude/statusline-command.sh",
-                installed_clean,
-            );
+            .with_file("/mock-home/.claude/statusline-command.sh", installed_clean);
         fs.set_permissions(Path::new("/root/statusline/statusline-command.sh"), 0o755)
             .unwrap();
         let mock_env = MockEnvironment::default().with_home("/mock-home");

@@ -53,7 +53,9 @@ pub enum UpdateError {
     #[error("Security verification failed: {reason}")]
     SecurityVerificationFailed { reason: String },
 
-    #[error("Rollback failed after update error. Original error: {original}. Rollback error: {rollback}. Manual cleanup required for: {backup_paths:?}")]
+    #[error(
+        "Rollback failed after update error. Original error: {original}. Rollback error: {rollback}. Manual cleanup required for: {backup_paths:?}"
+    )]
     RollbackFailed {
         original: String,
         rollback: String,
@@ -118,7 +120,11 @@ mod tests {
         };
         let msg = err.to_string();
         assert!(!msg.is_empty());
-        assert!(msg.contains("/usr/local/bin/ecc") || msg.contains("read-only filesystem") || msg.contains("Permission"));
+        assert!(
+            msg.contains("/usr/local/bin/ecc")
+                || msg.contains("read-only filesystem")
+                || msg.contains("Permission")
+        );
     }
 
     #[test]

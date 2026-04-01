@@ -17,9 +17,10 @@ pub fn atomic_swap(
 
     // Backup existing binary (if it exists)
     if fs.exists(target_path) {
-        fs.copy(target_path, &backup_path).map_err(|e| UpdateError::SwapFailed {
-            reason: format!("backup failed: {e}"),
-        })?;
+        fs.copy(target_path, &backup_path)
+            .map_err(|e| UpdateError::SwapFailed {
+                reason: format!("backup failed: {e}"),
+            })?;
     }
 
     // Atomic rename
@@ -32,9 +33,10 @@ pub fn atomic_swap(
     })?;
 
     // Set executable permissions
-    fs.set_permissions(target_path, 0o755).map_err(|e| UpdateError::SwapFailed {
-        reason: format!("set_permissions failed: {e}"),
-    })?;
+    fs.set_permissions(target_path, 0o755)
+        .map_err(|e| UpdateError::SwapFailed {
+            reason: format!("set_permissions failed: {e}"),
+        })?;
 
     Ok(backup_path)
 }
@@ -46,9 +48,10 @@ pub fn restore_backup(
     target_path: &Path,
 ) -> Result<(), UpdateError> {
     if fs.exists(backup_path) {
-        fs.rename(backup_path, target_path).map_err(|e| UpdateError::BackupRestoreFailed {
-            reason: format!("restore from {} failed: {e}", backup_path.display()),
-        })?;
+        fs.rename(backup_path, target_path)
+            .map_err(|e| UpdateError::BackupRestoreFailed {
+                reason: format!("restore from {} failed: {e}", backup_path.display()),
+            })?;
     }
     Ok(())
 }
@@ -96,9 +99,10 @@ pub fn update_shims(
             fs.copy(&src, &dst).map_err(|e| UpdateError::SwapFailed {
                 reason: format!("shim update failed for {shim}: {e}"),
             })?;
-            fs.set_permissions(&dst, 0o755).map_err(|e| UpdateError::SwapFailed {
-                reason: format!("shim permissions failed for {shim}: {e}"),
-            })?;
+            fs.set_permissions(&dst, 0o755)
+                .map_err(|e| UpdateError::SwapFailed {
+                    reason: format!("shim permissions failed for {shim}: {e}"),
+                })?;
             updated += 1;
         }
     }
@@ -166,12 +170,14 @@ pub fn windows_swap(
     target: &Path,
 ) -> Result<PathBuf, UpdateError> {
     let old_path = target.with_extension("old");
-    fs.rename(target, &old_path).map_err(|e| UpdateError::SwapFailed {
-        reason: format!("rename to .old failed: {e}"),
-    })?;
-    fs.rename(source, target).map_err(|e| UpdateError::SwapFailed {
-        reason: format!("rename new binary failed: {e}"),
-    })?;
+    fs.rename(target, &old_path)
+        .map_err(|e| UpdateError::SwapFailed {
+            reason: format!("rename to .old failed: {e}"),
+        })?;
+    fs.rename(source, target)
+        .map_err(|e| UpdateError::SwapFailed {
+            reason: format!("rename new binary failed: {e}"),
+        })?;
     Ok(old_path)
 }
 
@@ -189,7 +195,10 @@ pub fn detect_partial_update(
         .unwrap_or_default();
 
     let workflow_version = shell
-        .run_command(workflow_path.to_str().unwrap_or("ecc-workflow"), &["--version"])
+        .run_command(
+            workflow_path.to_str().unwrap_or("ecc-workflow"),
+            &["--version"],
+        )
         .map(|o| o.stdout.trim().to_string())
         .unwrap_or_default();
 
@@ -200,23 +209,17 @@ pub fn detect_partial_update(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ecc_test_support::{InMemoryFileSystem, MockExecutor};
     use ecc_ports::shell::CommandOutput;
+    use ecc_test_support::{InMemoryFileSystem, MockExecutor};
 
     fn setup_fs_with_binary(name: &str) -> InMemoryFileSystem {
         let fs = InMemoryFileSystem::new();
         let install_dir = Path::new("/usr/local/bin");
         let _ = fs.create_dir_all(install_dir);
-        let _ = fs.write(
-            &install_dir.join(name),
-            "old-binary-content",
-        );
+        let _ = fs.write(&install_dir.join(name), "old-binary-content");
         let extraction_dir = Path::new("/tmp/ecc-update");
         let _ = fs.create_dir_all(&extraction_dir.join("bin"));
-        let _ = fs.write(
-            &extraction_dir.join("bin").join(name),
-            "new-binary-content",
-        );
+        let _ = fs.write(&extraction_dir.join("bin").join(name), "new-binary-content");
         fs
     }
 
@@ -268,7 +271,10 @@ mod tests {
 
         // Original binary should be restored from backup
         let target = Path::new("/usr/local/bin/ecc");
-        assert!(fs.exists(target), "original binary should be restored after failed swap");
+        assert!(
+            fs.exists(target),
+            "original binary should be restored after failed swap"
+        );
         assert_eq!(fs.read_to_string(target).unwrap(), "old-binary");
     }
 
@@ -293,7 +299,10 @@ mod tests {
 
         // Both updated
         assert_eq!(fs.read_to_string(&install.join("ecc")).unwrap(), "new");
-        assert_eq!(fs.read_to_string(&install.join("ecc-workflow")).unwrap(), "new");
+        assert_eq!(
+            fs.read_to_string(&install.join("ecc-workflow")).unwrap(),
+            "new"
+        );
     }
 
     #[test]
@@ -382,8 +391,7 @@ mod tests {
     fn rollback_both_failures() {
         // PC-012: rollback_swapped_or_fail returns RollbackFailed with both original and rollback errors
         // Use a dir entry (not a file entry) so exists() returns true but rename() fails
-        let fs = InMemoryFileSystem::new()
-            .with_dir("/usr/local/bin/ecc.bak"); // exists() = true, but rename() will fail (not in files map)
+        let fs = InMemoryFileSystem::new().with_dir("/usr/local/bin/ecc.bak"); // exists() = true, but rename() will fail (not in files map)
 
         let target = PathBuf::from("/usr/local/bin/ecc");
         let backup = PathBuf::from("/usr/local/bin/ecc.bak");
@@ -394,10 +402,23 @@ mod tests {
 
         let err = result.unwrap_err();
         match err {
-            UpdateError::RollbackFailed { original, rollback, backup_paths } => {
-                assert!(original.contains("original swap failed"), "original error must be present: {original}");
-                assert!(!rollback.is_empty(), "rollback error must be present: {rollback}");
-                assert!(!backup_paths.is_empty(), "backup_paths must list failing paths");
+            UpdateError::RollbackFailed {
+                original,
+                rollback,
+                backup_paths,
+            } => {
+                assert!(
+                    original.contains("original swap failed"),
+                    "original error must be present: {original}"
+                );
+                assert!(
+                    !rollback.is_empty(),
+                    "rollback error must be present: {rollback}"
+                );
+                assert!(
+                    !backup_paths.is_empty(),
+                    "backup_paths must list failing paths"
+                );
             }
             other => panic!("expected RollbackFailed, got {other:?}"),
         }
@@ -428,11 +449,17 @@ mod tests {
         ];
 
         let result = rollback_swapped(&fs, &swapped);
-        assert!(result.is_ok(), "rollback_swapped should succeed: {result:?}");
+        assert!(
+            result.is_ok(),
+            "rollback_swapped should succeed: {result:?}"
+        );
 
         // Targets should now be restored to original content
         assert_eq!(fs.read_to_string(&target1).unwrap(), "original-ecc");
-        assert_eq!(fs.read_to_string(&target2).unwrap(), "original-ecc-workflow");
+        assert_eq!(
+            fs.read_to_string(&target2).unwrap(),
+            "original-ecc-workflow"
+        );
         // Backups should be gone (renamed to targets)
         assert!(!fs.exists(&backup1));
         assert!(!fs.exists(&backup2));
@@ -441,16 +468,24 @@ mod tests {
     #[test]
     fn detects_partial_update() {
         let shell = MockExecutor::new()
-            .on_args("/install/ecc", &["version"], CommandOutput {
-                stdout: "4.3.0\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            })
-            .on_args("/install/ecc-workflow", &["--version"], CommandOutput {
-                stdout: "4.2.0\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            });
+            .on_args(
+                "/install/ecc",
+                &["version"],
+                CommandOutput {
+                    stdout: "4.3.0\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "/install/ecc-workflow",
+                &["--version"],
+                CommandOutput {
+                    stdout: "4.2.0\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
 
         let result = detect_partial_update(&shell, Path::new("/install")).unwrap();
         assert!(result, "should detect version mismatch as partial update");

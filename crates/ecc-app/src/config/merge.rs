@@ -55,7 +55,10 @@ pub fn pre_scan_directory(
             let src_content = match fs.read_to_string(&src_path) {
                 Ok(c) => c,
                 Err(e) => {
-                    tracing::warn!("pre_scan_directory: cannot read {}: {e}", src_path.display());
+                    tracing::warn!(
+                        "pre_scan_directory: cannot read {}: {e}",
+                        src_path.display()
+                    );
                     errors.push(format!(
                         "pre_scan_directory: cannot read {}: {e}",
                         src_path.display()
@@ -275,7 +278,8 @@ mod tests {
             .with_file("/src/a.md", "content")
             .with_file("/src/b.txt", "content");
 
-        let (to_review, _, _errors) = pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
+        let (to_review, _, _errors) =
+            pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
         assert_eq!(to_review.len(), 1);
         assert_eq!(to_review[0].filename, "a.md");
     }
@@ -379,8 +383,7 @@ mod tests {
         let inner = InMemoryFileSystem::new()
             .with_file("/src/a.md", "content")
             .with_file("/dest/a.md", "content");
-        let fs =
-            FailingFs::new(inner).with_fail_read_to_string("/src/a.md");
+        let fs = FailingFs::new(inner).with_fail_read_to_string("/src/a.md");
 
         let (to_review, unchanged, errors) =
             pre_scan_directory(&fs, Path::new("/src"), Path::new("/dest"), ".md");
@@ -397,5 +400,3 @@ mod tests {
         );
     }
 }
-
-

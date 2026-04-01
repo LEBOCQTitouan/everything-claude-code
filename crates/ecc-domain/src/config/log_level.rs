@@ -45,8 +45,6 @@ impl std::str::FromStr for LogLevel {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
