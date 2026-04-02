@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-use crate::hook::{HookPorts, HookResult};
+use crate::hook::HookPorts;
 
 /// Delta describing changed source files in a cartography session.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -16,9 +16,218 @@ pub struct CartographyDelta {
     pub element_targets: Vec<String>,
 }
 
-// NOTE: Production functions are intentionally absent at RED phase.
-// scaffold_elements_dir, run_cartography_post_loop, and regenerate_index
-// will be implemented in the GREEN phase.
+/// Scaffold the `elements/` subdirectory under `docs/cartography/` if absent.
+///
+/// Creates `docs/cartography/elements/` and a minimal `README.md` stub.
+/// Idempotent: checks `fs.exists` before creating.
+pub fn scaffold_elements_dir(
+    docs_cartography: &Path,
+    ports: &HookPorts<'_>,
+) -> Result<(), String> {
+    let elements_dir = docs_cartography.join("elements");
+
+    if !ports.fs.exists(&elements_dir) {
+        ports
+            .fs
+            .create_dir_all(&elements_dir)
+            .map_err(|e| format!("failed to create elements dir: {e}"))?;
+
+        let readme = elements_dir.join("README.md");
+        let stub = "# Element Registry\n\nPer-element documentation files.\n";
+        ports
+            .fs
+            .write(&readme, stub)
+            .map_err(|e| format!("failed to write elements README: {e}"))?;
+    }
+
+    Ok(())
+}
+
+/// Dispatch element generator, run INDEX regeneration, and return result.
+///
+/// Journey and flow generators are dispatched first; element generator comes
+/// AFTER they complete. On element generator failure: git reset and return error.
+/// On success: git add docs/cartography/ and regenerate INDEX.md.
+pub fn run_cartography_post_loop(
+    docs_cartography: &Path,
+    delta: &CartographyDelta,
+    ports: &HookPorts<'_>,
+) -> Result<(), String> {
+    // Dispatch journey generator for each target
+    for target in &delta.journey_targets {
+        let out = ports
+            .shell
+            .run_command("ecc-journey-generator", &[target])
+            .map_err(|e| format!("journey generator failed: {e}"))?;
+        if !out.success() {
+            let _ = ports
+                .shell
+                .run_command("git", &["reset", "HEAD", "docs/cartography/"]);
+            return Err(format!("journey generator exit {}", out.exit_code));
+        }
+    }
+
+    // Dispatch flow generator for each target
+    for target in &delta.flow_targets {
+        let out = ports
+            .shell
+            .run_command("ecc-flow-generator", &[target])
+            .map_err(|e| format!("flow generator failed: {e}"))?;
+        if !out.success() {
+            let _ = ports
+                .shell
+                .run_command("git", &["reset", "HEAD", "docs/cartography/"]);
+            return Err(format!("flow generator exit {}", out.exit_code));
+        }
+    }
+
+    // Dispatch element generator AFTER journey + flow generators complete
+    if !delta.element_targets.is_empty() {
+        let targets_json = serde_json::to_string(&delta.element_targets)
+            .unwrap_or_else(|_| "[]".to_string());
+        let out = ports
+            .shell
+            .run_command("ecc-element-generator", &[&targets_json])
+            .map_err(|e| format!("element generator failed: {e}"))?;
+
+        if !out.success() {
+            let _ = ports
+                .shell
+                .run_command("git", &["reset", "HEAD", "docs/cartography/"]);
+            return Err(format!("element generator exit {}", out.exit_code));
+        }
+
+        // Stage all cartography files
+        let _ = ports
+            .shell
+            .run_command("git", &["add", "docs/cartography/"]);
+
+        // Regenerate INDEX.md from element files
+        regenerate_index(docs_cartography, ports)?;
+    }
+
+    Ok(())
+}
+
+/// Regenerate `docs/cartography/elements/INDEX.md` as a cross-reference matrix.
+///
+/// Fully replaces any existing content (not a delta merge).
+fn regenerate_index(docs_cartography: &Path, ports: &HookPorts<'_>) -> Result<(), String> {
+    use ecc_domain::cartography::cross_reference::build_cross_reference_matrix;
+    use ecc_domain::cartography::element_types::ElementEntry;
+
+    let elements_dir = docs_cartography.join("elements");
+
+    // Collect element entries from files in elements/ directory
+    let mut elements: Vec<ElementEntry> = Vec::new();
+    let mut journey_slugs: Vec<String> = Vec::new();
+    let mut flow_slugs: Vec<String> = Vec::new();
+
+    if ports.fs.exists(&elements_dir) {
+        let entries = ports.fs.read_dir(&elements_dir).unwrap_or_default();
+
+        for entry_path in &entries {
+            let name = entry_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+            // Skip INDEX.md and README.md — not element files
+            if name == "INDEX.md" || name == "README.md" || !name.ends_with(".md") {
+                continue;
+            }
+            if let Ok(content) = ports.fs.read_to_string(entry_path) {
+                if let Some(entry) = parse_element_entry_from_md(&content, name) {
+                    for j in &entry.participating_journeys {
+                        if !journey_slugs.contains(j) {
+                            journey_slugs.push(j.clone());
+                        }
+                    }
+                    for f in &entry.participating_flows {
+                        if !flow_slugs.contains(f) {
+                            flow_slugs.push(f.clone());
+                        }
+                    }
+                    elements.push(entry);
+                }
+            }
+        }
+    }
+
+    journey_slugs.sort();
+    flow_slugs.sort();
+
+    let matrix = build_cross_reference_matrix(&elements, &journey_slugs, &flow_slugs);
+    let index_content = format!("# Element Cross-Reference Matrix\n\n{matrix}\n");
+
+    let index_path = elements_dir.join("INDEX.md");
+    ports
+        .fs
+        .write(&index_path, &index_content)
+        .map_err(|e| format!("failed to write INDEX.md: {e}"))
+}
+
+/// Parse a minimal `ElementEntry` from a markdown file's content and filename.
+fn parse_element_entry_from_md(
+    content: &str,
+    filename: &str,
+) -> Option<ecc_domain::cartography::element_types::ElementEntry> {
+    use ecc_domain::cartography::element_types::{ElementEntry, ElementType};
+
+    let slug = filename.trim_end_matches(".md").to_string();
+    if slug.is_empty() {
+        return None;
+    }
+
+    let mut journeys: Vec<String> = Vec::new();
+    let mut flows: Vec<String> = Vec::new();
+
+    // Parse participating journeys and flows from markdown links
+    let mut in_journeys = false;
+    let mut in_flows = false;
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed == "## Participating Journeys" {
+            in_journeys = true;
+            in_flows = false;
+            continue;
+        }
+        if trimmed == "## Participating Flows" {
+            in_flows = true;
+            in_journeys = false;
+            continue;
+        }
+        if trimmed.starts_with("## ") {
+            in_journeys = false;
+            in_flows = false;
+            continue;
+        }
+        if in_journeys && trimmed.starts_with("- [") {
+            // Extract slug from link text: `- [slug](path)`
+            if let Some(end) = trimmed.find("](") {
+                let start = 3; // skip `- [`
+                journeys.push(trimmed[start..end].to_string());
+            }
+        }
+        if in_flows && trimmed.starts_with("- [") {
+            if let Some(end) = trimmed.find("](") {
+                let start = 3; // skip `- [`
+                flows.push(trimmed[start..end].to_string());
+            }
+        }
+    }
+
+    Some(ElementEntry {
+        slug,
+        element_type: ElementType::Unknown,
+        purpose: String::new(),
+        uses: Vec::new(),
+        used_by: Vec::new(),
+        participating_flows: flows,
+        participating_journeys: journeys,
+        sources: Vec::new(),
+        last_updated: String::new(),
+    })
+}
 
 #[cfg(test)]
 mod tests {
