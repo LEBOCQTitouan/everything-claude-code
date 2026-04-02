@@ -7,12 +7,16 @@
 
 #![warn(missing_docs)]
 
+/// Clock (time source) port.
+pub mod clock;
 /// Persistent ECC configuration port.
 pub mod config_store;
 /// Environment variable and platform access port.
 pub mod env;
 /// Filesystem operations port.
 pub mod fs;
+/// Git repository information port.
+pub mod git;
 /// File-based locking port.
 pub mod lock;
 /// Three-tier memory store port.
