@@ -1,29 +1,35 @@
+# cargo-dist managed release workflow for ECC
+# Generated structure based on cargo-dist conventions with custom cosign job
+# See dist.toml for configuration
+
 name: Release
 
 on:
   push:
-    tags: ['v*']
-  pull_request:
-    branches: [main]
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
 
+# Serialize releases
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  # ── Job 1: Validate tag and version consistency ──
-  validate:
-    name: Validate
+  # ── Plan: Determine what to build ──
+  plan:
+    name: Plan Release
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
       is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Extract and validate version
-        if: github.event_name == 'push'
+      - name: Extract version from tag
         id: meta
         env:
           TAG_NAME: ${{ github.ref_name }}
@@ -32,10 +38,8 @@ jobs:
             echo "::error::Invalid tag format: $TAG_NAME (expected vX.Y.Z or vX.Y.Z-suffix)"
             exit 1
           fi
-
           VERSION="${TAG_NAME#v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
           if [[ "$VERSION" == *-* ]]; then
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
           else
@@ -43,7 +47,6 @@ jobs:
           fi
 
       - name: Verify Cargo.toml version matches tag
-        if: github.event_name == 'push'
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
@@ -51,48 +54,41 @@ jobs:
           CARGO_VERSION=$(grep -m1 '^version' Cargo.toml | sed 's/.*"\(.*\)"/\1/')
           if [ "$CARGO_VERSION" != "$VERSION" ]; then
             echo "::error::Cargo.toml version ($CARGO_VERSION) does not match tag ($VERSION)"
-            echo "::error::Run scripts/bump-version.sh $VERSION to sync"
             exit 1
           fi
 
-  # ── Job 2: Cross-compile for all platforms ──
-  build:
+  # ── Build: Cross-compile for all platforms ──
+  build-local:
     name: Build (${{ matrix.target }})
-    needs: validate
+    needs: plan
     runs-on: ${{ matrix.runner }}
-
     strategy:
       fail-fast: true
       matrix:
         include:
           - target: aarch64-apple-darwin
             runner: macos-14
-            artifact: ecc-darwin-arm64
-            binary: ecc
+            artifact: ecc-aarch64-apple-darwin
             cross: false
 
           - target: x86_64-apple-darwin
             runner: macos-14
-            artifact: ecc-darwin-x64
-            binary: ecc
+            artifact: ecc-x86_64-apple-darwin
             cross: false
 
           - target: x86_64-unknown-linux-gnu
             runner: ubuntu-latest
-            artifact: ecc-linux-x64
-            binary: ecc
+            artifact: ecc-x86_64-unknown-linux-gnu
             cross: false
 
           - target: aarch64-unknown-linux-gnu
             runner: ubuntu-latest
-            artifact: ecc-linux-arm64
-            binary: ecc
+            artifact: ecc-aarch64-unknown-linux-gnu
             cross: true
 
           - target: x86_64-pc-windows-msvc
             runner: windows-latest
-            artifact: ecc-win32-x64
-            binary: ecc.exe
+            artifact: ecc-x86_64-pc-windows-msvc
             cross: false
 
     steps:
@@ -125,14 +121,15 @@ jobs:
         shell: bash
         env:
           TARGET: ${{ matrix.target }}
-          BINARY: ${{ matrix.binary }}
         run: |
           mkdir -p staging
-          cp "target/${TARGET}/release/${BINARY}" staging/
-          # Stage ecc-workflow alongside ecc (Unix targets only)
-          WORKFLOW_BIN="target/${TARGET}/release/ecc-workflow"
-          if [ -f "$WORKFLOW_BIN" ]; then
-            cp "$WORKFLOW_BIN" staging/ecc-workflow
+          if [[ "$TARGET" == *"windows"* ]]; then
+            cp "target/${TARGET}/release/ecc.exe" staging/
+          else
+            cp "target/${TARGET}/release/ecc" staging/
+            if [ -f "target/${TARGET}/release/ecc-workflow" ]; then
+              cp "target/${TARGET}/release/ecc-workflow" staging/
+            fi
           fi
 
       - name: Upload artifact
@@ -142,13 +139,11 @@ jobs:
           path: staging/
           if-no-files-found: error
 
-  # ── Job 3: Create GitHub Release ──
-  github-release:
-    name: GitHub Release
-    if: github.event_name == 'push'
-    needs: [validate, build]
+  # ── Host: Package and publish release ──
+  host:
+    name: Host Release
+    needs: [plan, build-local]
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -160,17 +155,13 @@ jobs:
         with:
           path: artifacts
 
-      - name: Package release tarballs with content
+      - name: Package release archives
         run: |
           mkdir -p release-assets
+          CONTENT_DIRS="agents commands skills rules hooks contexts mcp-configs examples schemas workflow-templates"
 
-          # Content directories to bundle alongside the binary
-          CONTENT_DIRS="agents commands skills rules hooks contexts mcp-configs examples schemas"
-
-          for pkg in ecc-darwin-arm64 ecc-darwin-x64 ecc-linux-x64 ecc-linux-arm64; do
+          for pkg in ecc-aarch64-apple-darwin ecc-x86_64-apple-darwin ecc-x86_64-unknown-linux-gnu ecc-aarch64-unknown-linux-gnu; do
             STAGING=$(mktemp -d)
-
-            # Binaries (ecc + ecc-workflow)
             mkdir -p "$STAGING/bin"
             cp "artifacts/$pkg/ecc" "$STAGING/bin/ecc"
             chmod +x "$STAGING/bin/ecc"
@@ -179,20 +170,17 @@ jobs:
               chmod +x "$STAGING/bin/ecc-workflow"
             fi
 
-            # Shell shims
             cp bin/ecc-hook "$STAGING/bin/ecc-hook"
             chmod +x "$STAGING/bin/ecc-hook"
             cp bin/ecc-shell-hook.sh "$STAGING/bin/ecc-shell-hook.sh"
             chmod +x "$STAGING/bin/ecc-shell-hook.sh"
 
-            # Content files
             for dir in $CONTENT_DIRS; do
               if [ -d "$dir" ]; then
                 cp -r "$dir" "$STAGING/$dir"
               fi
             done
 
-            # Install script and support files
             cp install.sh "$STAGING/install.sh"
             chmod +x "$STAGING/install.sh"
 
@@ -209,25 +197,14 @@ jobs:
             rm -rf "$STAGING"
           done
 
-          # Windows zip (binary only — no shell shims)
-          zip -j "release-assets/ecc-win32-x64.zip" "artifacts/ecc-win32-x64/ecc.exe"
+          # Windows zip (binary only)
+          zip -j "release-assets/ecc-x86_64-pc-windows-msvc.zip" "artifacts/ecc-x86_64-pc-windows-msvc/ecc.exe"
 
       - name: Generate SHA256 checksums
         run: |
           cd release-assets
           sha256sum *.tar.gz *.zip > checksums-sha256.txt
           cat checksums-sha256.txt
-
-      - name: Sign release assets with cosign
-        continue-on-error: true
-        uses: sigstore/cosign-installer@v3
-      - name: Cosign sign blobs
-        continue-on-error: true
-        run: |
-          cd release-assets
-          for asset in *.tar.gz *.zip; do
-            cosign sign-blob "$asset" --yes --bundle "${asset}.bundle" || true
-          done
 
       - name: Generate changelog
         id: changelog
@@ -245,10 +222,8 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        env:
-          VERSION: ${{ needs.validate.outputs.version }}
         with:
-          prerelease: ${{ needs.validate.outputs.is_prerelease == 'true' }}
+          prerelease: ${{ needs.plan.outputs.is_prerelease == 'true' }}
           body: |
             ## Changes
             ${{ steps.changelog.outputs.commits }}
@@ -261,3 +236,49 @@ jobs:
             Or download the tarball for your platform and extract to `~/.ecc/`.
           files: release-assets/*
           generate_release_notes: false
+
+  # ── Custom: Cosign signing (non-blocking) ──
+  # Declared in dist.toml [plan.jobs.cosign-sign] for preservation across cargo-dist regeneration
+  cosign-sign:
+    name: Sign Release Assets
+    needs: host
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign release archives
+        run: |
+          mkdir -p signatures
+          for asset in artifacts/**/*.tar.gz artifacts/**/*.zip; do
+            if [ -f "$asset" ]; then
+              BASENAME=$(basename "$asset")
+              cosign sign-blob "$asset" \
+                --yes \
+                --output-signature "signatures/${BASENAME}.sig" \
+                --output-certificate "signatures/${BASENAME}.bundle" || true
+            fi
+          done
+
+      - name: Upload signatures
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          files: signatures/*
+          tag_name: ${{ github.ref_name }}
+
+  # ── Announce: Post-release notifications ──
+  announce:
+    name: Announce
+    needs: [host, cosign-sign]
+    if: always() && needs.host.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release complete
+        run: echo "Release ${{ github.ref_name }} published successfully"
