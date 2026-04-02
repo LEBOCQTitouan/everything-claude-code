@@ -15,6 +15,8 @@ pub mod env;
 pub mod extract;
 /// Filesystem operations port.
 pub mod fs;
+/// Git log data access port.
+pub mod git_log;
 /// File-based locking port.
 pub mod lock;
 /// Structured log storage port.
