@@ -15,3 +15,4 @@ pub use merge::{has_section, merge_section};
 pub use slug::derive_slug;
 pub use staleness::{check_staleness, parse_cartography_meta, remove_stale_marker};
 pub use types::{CartographyMeta, ChangedFile, ProjectType, SessionDelta};
+pub use validation::{validate_flow, validate_journey};
