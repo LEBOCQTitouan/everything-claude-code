@@ -1,5 +1,6 @@
 //! Tier 3 Hooks — Session management and file I/O hooks.
 
+pub mod cartography;
 mod compact;
 pub mod daily;
 mod helpers;
