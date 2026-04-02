@@ -3,11 +3,11 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-use crate::hook::HookPorts;
+use crate::hook::{HookPorts, HookResult};
 
 /// Delta describing changed source files in a cartography session.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct CartographyDelta {
+pub(crate) struct CartographyDelta {
     /// Source paths of journey-related files that changed.
     pub journey_targets: Vec<String>,
     /// Source paths of flow-related files that changed.
@@ -20,7 +20,7 @@ pub struct CartographyDelta {
 ///
 /// Creates `docs/cartography/elements/` and a minimal `README.md` stub.
 /// Idempotent: checks `fs.exists` before creating.
-pub fn scaffold_elements_dir(
+pub(crate) fn scaffold_elements_dir(
     docs_cartography: &Path,
     ports: &HookPorts<'_>,
 ) -> Result<(), String> {
@@ -43,59 +43,70 @@ pub fn scaffold_elements_dir(
     Ok(())
 }
 
+/// Dispatch a single generator command for each target, resetting git on failure.
+///
+/// On any generator exit code != 0, runs `git reset HEAD docs/cartography/` and returns `Err`.
+fn dispatch_generator(
+    generator: &str,
+    targets: &[String],
+    ports: &HookPorts<'_>,
+) -> Result<(), String> {
+    for target in targets {
+        let out = ports
+            .shell
+            .run_command(generator, &[target])
+            .map_err(|e| format!("{generator} failed: {e}"))?;
+        if !out.success() {
+            let _ = ports
+                .shell
+                .run_command("git", &["reset", "HEAD", "docs/cartography/"]);
+            return Err(format!("{generator} exit {}", out.exit_code));
+        }
+    }
+    Ok(())
+}
+
+/// Dispatch element generator and reset git on failure.
+///
+/// Passed `targets_json` is a JSON array of element source paths.
+fn dispatch_element_generator(
+    targets_json: &str,
+    ports: &HookPorts<'_>,
+) -> Result<(), String> {
+    let out = ports
+        .shell
+        .run_command("ecc-element-generator", &[targets_json])
+        .map_err(|e| format!("element generator failed: {e}"))?;
+
+    if !out.success() {
+        let _ = ports
+            .shell
+            .run_command("git", &["reset", "HEAD", "docs/cartography/"]);
+        return Err(format!("element generator exit {}", out.exit_code));
+    }
+
+    Ok(())
+}
+
 /// Dispatch element generator, run INDEX regeneration, and return result.
 ///
 /// Journey and flow generators are dispatched first; element generator comes
 /// AFTER they complete. On element generator failure: git reset and return error.
 /// On success: git add docs/cartography/ and regenerate INDEX.md.
-pub fn run_cartography_post_loop(
+pub(crate) fn run_cartography_post_loop(
     docs_cartography: &Path,
     delta: &CartographyDelta,
     ports: &HookPorts<'_>,
 ) -> Result<(), String> {
-    // Dispatch journey generator for each target
-    for target in &delta.journey_targets {
-        let out = ports
-            .shell
-            .run_command("ecc-journey-generator", &[target])
-            .map_err(|e| format!("journey generator failed: {e}"))?;
-        if !out.success() {
-            let _ = ports
-                .shell
-                .run_command("git", &["reset", "HEAD", "docs/cartography/"]);
-            return Err(format!("journey generator exit {}", out.exit_code));
-        }
-    }
-
-    // Dispatch flow generator for each target
-    for target in &delta.flow_targets {
-        let out = ports
-            .shell
-            .run_command("ecc-flow-generator", &[target])
-            .map_err(|e| format!("flow generator failed: {e}"))?;
-        if !out.success() {
-            let _ = ports
-                .shell
-                .run_command("git", &["reset", "HEAD", "docs/cartography/"]);
-            return Err(format!("flow generator exit {}", out.exit_code));
-        }
-    }
+    // Dispatch journey and flow generators first
+    dispatch_generator("ecc-journey-generator", &delta.journey_targets, ports)?;
+    dispatch_generator("ecc-flow-generator", &delta.flow_targets, ports)?;
 
     // Dispatch element generator AFTER journey + flow generators complete
     if !delta.element_targets.is_empty() {
         let targets_json = serde_json::to_string(&delta.element_targets)
             .unwrap_or_else(|_| "[]".to_string());
-        let out = ports
-            .shell
-            .run_command("ecc-element-generator", &[&targets_json])
-            .map_err(|e| format!("element generator failed: {e}"))?;
-
-        if !out.success() {
-            let _ = ports
-                .shell
-                .run_command("git", &["reset", "HEAD", "docs/cartography/"]);
-            return Err(format!("element generator exit {}", out.exit_code));
-        }
+        dispatch_element_generator(&targets_json, ports)?;
 
         // Stage all cartography files
         let _ = ports
@@ -135,20 +146,20 @@ fn regenerate_index(docs_cartography: &Path, ports: &HookPorts<'_>) -> Result<()
             if name == "INDEX.md" || name == "README.md" || !name.ends_with(".md") {
                 continue;
             }
-            if let Ok(content) = ports.fs.read_to_string(entry_path) {
-                if let Some(entry) = parse_element_entry_from_md(&content, name) {
-                    for j in &entry.participating_journeys {
-                        if !journey_slugs.contains(j) {
-                            journey_slugs.push(j.clone());
-                        }
+            if let Ok(content) = ports.fs.read_to_string(entry_path)
+                && let Some(entry) = parse_element_entry_from_md(&content, name)
+            {
+                for j in &entry.participating_journeys {
+                    if !journey_slugs.contains(j) {
+                        journey_slugs.push(j.clone());
                     }
-                    for f in &entry.participating_flows {
-                        if !flow_slugs.contains(f) {
-                            flow_slugs.push(f.clone());
-                        }
-                    }
-                    elements.push(entry);
                 }
+                for f in &entry.participating_flows {
+                    if !flow_slugs.contains(f) {
+                        flow_slugs.push(f.clone());
+                    }
+                }
+                elements.push(entry);
             }
         }
     }
@@ -201,18 +212,13 @@ fn parse_element_entry_from_md(
             in_flows = false;
             continue;
         }
-        if in_journeys && trimmed.starts_with("- [") {
-            // Extract slug from link text: `- [slug](path)`
-            if let Some(end) = trimmed.find("](") {
-                let start = 3; // skip `- [`
-                journeys.push(trimmed[start..end].to_string());
-            }
-        }
-        if in_flows && trimmed.starts_with("- [") {
-            if let Some(end) = trimmed.find("](") {
-                let start = 3; // skip `- [`
-                flows.push(trimmed[start..end].to_string());
-            }
+        // Extract slug from link text: `- [slug](path)`
+        if in_journeys && trimmed.starts_with("- [")
+            && let Some(end) = trimmed.find("](") {
+            journeys.push(trimmed[3..end].to_string()); // skip `- [`
+        } else if in_flows && trimmed.starts_with("- [")
+            && let Some(end) = trimmed.find("](") {
+            flows.push(trimmed[3..end].to_string()); // skip `- [`
         }
     }
 
@@ -227,6 +233,27 @@ fn parse_element_entry_from_md(
         sources: Vec::new(),
         last_updated: String::new(),
     })
+}
+
+/// start:cartography — scaffold `elements/` directory for cartography use.
+pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "start_cartography", "executing handler");
+    let docs_cartography = Path::new("docs/cartography");
+    if let Err(e) = scaffold_elements_dir(docs_cartography, ports) {
+        return HookResult::warn(stdin, &format!("[Cartography] scaffold warning: {e}\n"));
+    }
+    HookResult::passthrough(stdin)
+}
+
+/// stop:cartography — dispatch generators and regenerate INDEX.md.
+pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+    tracing::debug!(handler = "stop_cartography", "executing handler");
+    let delta: CartographyDelta = serde_json::from_str(stdin).unwrap_or_default();
+    let docs_cartography = Path::new("docs/cartography");
+    match run_cartography_post_loop(docs_cartography, &delta, ports) {
+        Ok(()) => HookResult::passthrough(stdin),
+        Err(e) => HookResult::warn(stdin, &format!("[Cartography] error: {e}\n")),
+    }
 }
 
 #[cfg(test)]
