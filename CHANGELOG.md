@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## [Unreleased]
+
+### Added
+
+- **Deterministic Hook System Redesign (Phase 1)**: Unified `ecc workflow` subcommand group mirroring all 23 ecc-workflow subcommands. GitInfo and Clock port traits with adapters. Worktree-scoped state resolution. Stuck-state recovery with injectable clock. Phase verification guards. Lexical path normalization fixing phase gate path traversal. WorkflowState version field. hooks.json migration utility. 15 new characterization and integration tests.
+
 ## v5.1.0
 
 ### Added
