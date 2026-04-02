@@ -88,7 +88,7 @@
 | BL-085 | WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool | — | HIGH | /spec fix | implemented | 2026-03-28 |
 | BL-086 | Knowledge sources registry — curated reference list with quadrant organization and command integration | — | HIGH | /spec | implemented | 2026-03-28 |
 | BL-087 | Cargo xtask deploy — full local machine setup | — | HIGH | /spec-dev | implemented | 2026-03-28 |
-| BL-088 | ecc update — self-update from GitHub Releases + cargo xtask deploy for dev | — | HIGH | /spec dev | open | 2026-03-28 |
+| BL-088 | ecc update — self-update from GitHub Releases + cargo xtask deploy for dev | — | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-089 | GitHub Actions skill + branch isolation hook for CI/CD workflow dev | — | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-090 | ECC component scaffolding — skill + /create-component command for agents, commands, skills, hooks | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-091 | ECC diagnostics — tiered verbosity with tracing + ecc status | — | HIGH | /spec dev | implemented | 2026-03-28 |
@@ -110,6 +110,16 @@
 | BL-107 | Audit-web guided profile — interactive setup, persisted dimensions, self-improvement | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-108 | Smart stop notification — only notify on final stop or user input needed | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-109 | Autonomous comms pipeline — multi-channel content generation from code | — | EPIC | /spec | open | 2026-03-30 |
+| BL-110 | Add cargo-semver-checks to CI pipeline | — | LOW | direct edit | open | 2026-03-31 |
+| BL-111 | Enable GitHub Merge Queue for CI load reduction | — | LOW | direct edit | open | 2026-03-31 |
+| BL-112 | Evaluate cargo-dist to replace custom release.yml | — | MEDIUM | /spec-refactor | open | 2026-03-31 |
+| BL-113 | Upgrade rusqlite 0.34 to 0.38 | — | LOW | direct edit | open | 2026-03-31 |
+| BL-114 | Upgrade rustyline 15 to 17 | — | LOW | direct edit | open | 2026-03-31 |
+| BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | open | 2026-03-31 |
+| BL-116 | Add cargo-mutants mutation testing | — | MEDIUM | /spec-dev | open | 2026-03-31 |
+| BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | open | 2026-03-31 |
+| BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | open | 2026-03-31 |
+| BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | open | 2026-03-31 |
 
 ## Dependency Graph
 

@@ -1,0 +1,58 @@
+# ECC Web Audit Profile
+# Generated: 2026-03-31
+
+project:
+  name: everything-claude-code
+  language: rust
+  architecture: hexagonal
+  repository: https://github.com/LEBOCQTitouan/everything-claude-code
+
+dimensions:
+  standard:
+    - deps
+    - arch
+    - build-tools
+    - dev-tools
+    - ecosystem
+    - competitors
+    - user-requests
+    - blogs
+    - research
+  custom:
+    - name: ci-pipeline
+      description: GitHub Actions workflows, CI/CD patterns, release automation
+      query_hints:
+        - "GitHub Actions Rust CI best practices 2026"
+        - "Rust cross-compilation CI matrix"
+        - "cargo-dist release automation"
+    - name: rust-ecosystem
+      description: Rust-specific tooling, crate ecosystem trends, compiler features
+      query_hints:
+        - "Rust 2026 edition features"
+        - "popular new Rust crates 2026"
+        - "Rust CLI tooling trends"
+    - name: security
+      description: Rust supply chain security, cargo-vet, cargo-audit, artifact signing
+      query_hints:
+        - "Rust supply chain security tools 2026"
+        - "cargo-vet cargo-audit best practices"
+        - "SLSA attestation Rust releases"
+
+thresholds:
+  adopt:
+    strategic_fit_min: 4
+    maturity_min: 4
+    migration_effort_max: 2
+  trial:
+    strategic_fit_min: 3
+    maturity_min: 3
+  assess:
+    maturity_min: 1
+
+improvement_history:
+  - date: "2026-03-31"
+    accepted:
+      - "Add security custom dimension for supply chain tooling"
+      - "Split tools into build-tools and dev-tools for finer granularity"
+    rejected:
+      - "Merge platforms into tools (kept separate)"

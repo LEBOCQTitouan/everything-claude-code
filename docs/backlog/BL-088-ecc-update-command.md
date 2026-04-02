@@ -3,7 +3,7 @@ id: BL-088
 title: "ecc update — self-update from GitHub Releases + cargo xtask deploy for dev"
 scope: HIGH
 target: "/spec dev"
-status: open
+status: implemented
 tags: [cli, deploy, update, developer-experience, ci-cd]
 created: 2026-03-28
 related: [BL-087]
