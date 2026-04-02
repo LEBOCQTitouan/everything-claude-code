@@ -17,6 +17,8 @@ Generated from git conventional commits. Grouped by type and version.
 - **`ci-cd-workflows` skill**: Comprehensive CI/CD skill merging general GitHub Actions patterns with Claude Code workflow template documentation, security guidance, and fork safety patterns. Replaces the `github-actions` skill (deprecated redirect retained for one release cycle).
 - **Backlog in-work filtering (BL-097)**: `/spec` picker now detects active sessions via worktree scan and advisory lock files, hiding in-progress items from the selection. `--show-all` escape hatch available. Lock files auto-cleaned (24h TTL + orphan detection).
 
+- **Backlog in-work filtering (BL-097)**: `/spec` picker now detects active sessions via worktree scan and advisory lock files, hiding in-progress items from the selection. `--show-all` escape hatch available. Lock files auto-cleaned (24h TTL + orphan detection).
+
 ### Changed
 
 - **Release pipeline migrated to cargo-dist (BL-112)**: Replaced hand-rolled 267-line `release.yml` with cargo-dist declarative pipeline (`dist.toml`). Structured as plan/build/host/cosign/announce stages. Custom cosign signing job preserved as non-blocking post-build step. All 5 cross-compilation targets maintained.
