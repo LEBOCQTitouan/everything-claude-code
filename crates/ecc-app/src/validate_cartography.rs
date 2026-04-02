@@ -45,10 +45,40 @@ pub fn run_validate_cartography(
         return true;
     }
 
-    // Scan element files.
-    let element_files = match scan_element_files(fs, &elements_dir, terminal) {
+    let (element_errors, element_slugs, element_sources) =
+        validate_elements_dir(fs, shell, terminal, &elements_dir);
+
+    // AC-014.5 / AC-014.6: INDEX.md presence and staleness.
+    let index_path = elements_dir.join("INDEX.md");
+    if !fs.exists(&index_path) {
+        if !element_slugs.is_empty() {
+            terminal.stderr_write("WARNING: docs/cartography/elements/INDEX.md is absent\n");
+        }
+    } else {
+        // AC-014.6: Check if INDEX.md is stale (missing element slugs).
+        check_index_staleness(fs, terminal, &index_path, &element_slugs);
+    }
+
+    // AC-015.2 / AC-015.3: Coverage calculation includes element-referenced sources.
+    if coverage {
+        run_coverage(fs, terminal, root, &element_sources);
+    }
+
+    !element_errors
+}
+
+/// Validate all element files in the elements directory.
+///
+/// Returns `(has_errors, element_slugs, all_element_sources)`.
+fn validate_elements_dir(
+    fs: &dyn FileSystem,
+    shell: &dyn ShellExecutor,
+    terminal: &dyn TerminalIO,
+    elements_dir: &Path,
+) -> (bool, Vec<String>, Vec<String>) {
+    let element_files = match scan_element_files(fs, elements_dir, terminal) {
         Ok(files) => files,
-        Err(()) => return false,
+        Err(()) => return (true, Vec::new(), Vec::new()),
     };
 
     // AC-011.3: Validate each element file.
@@ -77,7 +107,6 @@ pub fn run_validate_cartography(
             }
         };
 
-        // Validate element content.
         if let Err(missing) = validate_element(&content) {
             terminal.stderr_write(&format!(
                 "ERROR: {} missing sections: {}\n",
@@ -93,33 +122,19 @@ pub fn run_validate_cartography(
     }
 
     // AC-015.1: Staleness check for element files with CARTOGRAPHY-META.
-    check_element_staleness(fs, shell, terminal, &elements_dir, &element_files);
+    check_element_staleness(fs, shell, terminal, &element_files);
 
-    // AC-014.5 / AC-014.6: INDEX.md presence and staleness.
-    let index_path = elements_dir.join("INDEX.md");
-    if !fs.exists(&index_path) {
-        if !element_files.is_empty() {
-            terminal.stderr_write("WARNING: docs/cartography/elements/INDEX.md is absent\n");
-        }
-    } else {
-        // AC-014.6: Check if INDEX.md is stale (missing element slugs).
-        check_index_staleness(fs, terminal, &index_path, &element_slugs);
-    }
-
-    // AC-015.2 / AC-015.3: Coverage calculation includes element-referenced sources.
-    if coverage {
-        run_coverage(fs, terminal, root, &all_element_sources);
-    }
-
-    !has_errors
+    (has_errors, element_slugs, all_element_sources)
 }
 
-/// Scan the elements/ directory and return paths to element .md files (excluding INDEX.md and README.md).
+/// Scan the elements/ directory, returning paths to element `.md` files.
+///
+/// Excludes `INDEX.md` and `README.md`.
 fn scan_element_files(
     fs: &dyn FileSystem,
     elements_dir: &Path,
     terminal: &dyn TerminalIO,
-) -> Result<Vec<std::path::PathBuf>, ()> {
+) -> Result<Vec<PathBuf>, ()> {
     let entries = match fs.read_dir(elements_dir) {
         Ok(e) => e,
         Err(e) => {
@@ -145,22 +160,39 @@ fn scan_element_files(
 fn parse_meta_sources(content: &str) -> Vec<String> {
     for line in content.lines() {
         let trimmed = line.trim();
-        if trimmed.contains(CARTOGRAPHY_META_MARKER) {
-            // Extract sources=<...>
-            if let Some(sources_start) = trimmed.find("sources:") {
-                let rest = &trimmed[sources_start + "sources:".len()..];
-                // Stop at "-->" or whitespace-separated next field
-                let sources_str = rest.trim_end_matches("-->").trim();
-                // sources may contain comma-separated paths
-                return sources_str
-                    .split(',')
-                    .map(|s| s.trim().to_string())
-                    .filter(|s| !s.is_empty())
-                    .collect();
-            }
+        if trimmed.contains(CARTOGRAPHY_META_MARKER)
+            && let Some(sources_start) = trimmed.find("sources:")
+        {
+            let rest = &trimmed[sources_start + "sources:".len()..];
+            let sources_str = rest.trim_end_matches("-->").trim();
+            return sources_str
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
         }
     }
     Vec::new()
+}
+
+/// Parse `last_updated` field from a CARTOGRAPHY-META marker.
+fn parse_meta_last_updated(content: &str) -> String {
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.contains(CARTOGRAPHY_META_MARKER)
+            && let Some(lu_start) = trimmed.find("last_updated:")
+        {
+            let rest = &trimmed[lu_start + "last_updated:".len()..];
+            let value = rest
+                .split_whitespace()
+                .next()
+                .unwrap_or("")
+                .trim_end_matches("-->")
+                .trim();
+            return value.to_string();
+        }
+    }
+    String::new()
 }
 
 /// Check staleness of element files that contain CARTOGRAPHY-META markers.
@@ -171,8 +203,7 @@ fn check_element_staleness(
     fs: &dyn FileSystem,
     shell: &dyn ShellExecutor,
     terminal: &dyn TerminalIO,
-    _elements_dir: &Path,
-    element_files: &[std::path::PathBuf],
+    element_files: &[PathBuf],
 ) {
     for path in element_files {
         let content = match fs.read_to_string(path) {
@@ -191,55 +222,26 @@ fn check_element_staleness(
             continue;
         }
 
-        // Check git log for each source to see if modified after last_updated.
         for source in &sources {
             let result = shell.run_command(
                 "git",
-                &[
-                    "log",
-                    "--since",
-                    &last_updated,
-                    "--oneline",
-                    "--",
-                    source,
-                ],
+                &["log", "--since", &last_updated, "--oneline", "--", source],
             );
-            if let Ok(out) = result {
-                if !out.stdout.trim().is_empty() {
-                    terminal.stderr_write(&format!(
-                        "WARNING: element {} may be stale (source {} modified since {})\n",
-                        path.display(),
-                        source,
-                        last_updated
-                    ));
-                }
+            if let Ok(out) = result
+                && !out.stdout.trim().is_empty()
+            {
+                terminal.stderr_write(&format!(
+                    "WARNING: element {} may be stale (source {} modified since {})\n",
+                    path.display(),
+                    source,
+                    last_updated
+                ));
             }
         }
     }
 }
 
-/// Parse `last_updated` field from a CARTOGRAPHY-META marker.
-fn parse_meta_last_updated(content: &str) -> String {
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.contains(CARTOGRAPHY_META_MARKER) {
-            if let Some(lu_start) = trimmed.find("last_updated:") {
-                let rest = &trimmed[lu_start + "last_updated:".len()..];
-                // Value ends at next space or "-->"
-                let value = rest
-                    .split_whitespace()
-                    .next()
-                    .unwrap_or("")
-                    .trim_end_matches("-->")
-                    .trim();
-                return value.to_string();
-            }
-        }
-    }
-    String::new()
-}
-
-/// Check INDEX.md staleness by comparing table header slugs to known element slugs.
+/// Check INDEX.md staleness by comparing table row slugs to known element slugs.
 fn check_index_staleness(
     fs: &dyn FileSystem,
     terminal: &dyn TerminalIO,
@@ -253,16 +255,16 @@ fn check_index_staleness(
 
     let index_slugs = parse_index_element_slugs(&content);
 
-    let missing_in_index: Vec<&String> = element_slugs
+    let missing_in_index: Vec<&str> = element_slugs
         .iter()
         .filter(|s| !index_slugs.contains(s))
+        .map(|s| s.as_str())
         .collect();
 
     if !missing_in_index.is_empty() {
-        let missing_list: Vec<&str> = missing_in_index.iter().map(|s| s.as_str()).collect();
         terminal.stderr_write(&format!(
             "WARNING: INDEX.md is stale — missing slugs: {}\n",
-            missing_list.join(", ")
+            missing_in_index.join(", ")
         ));
     }
 }
@@ -279,14 +281,14 @@ fn parse_index_element_slugs(content: &str) -> Vec<String> {
         let trimmed = line.trim();
         if trimmed.starts_with('|') && trimmed.ends_with('|') {
             in_table = true;
-            // Skip header separator lines (e.g. `| --- | --- |`)
             let inner = &trimmed[1..trimmed.len() - 1];
+            // Skip header separator lines (e.g. `| --- | --- |`)
             if inner.split('|').all(|c| c.trim().replace('-', "").is_empty()) {
                 header_seen = true;
                 continue;
             }
             if !header_seen {
-                // First row is header
+                // First row is the column header
                 header_seen = true;
                 continue;
             }
@@ -307,63 +309,48 @@ fn parse_index_element_slugs(content: &str) -> Vec<String> {
 
 /// Compute coverage: ratio of element-referenced sources to total discoverable sources.
 ///
-/// When coverage < 50%, prints gap report including element sources.
+/// When coverage < 50%, prints gap report including element-referenced sources.
 fn run_coverage(
     fs: &dyn FileSystem,
     terminal: &dyn TerminalIO,
     root: &Path,
     element_sources: &[String],
 ) {
-    // Count discoverable sources: agents/, commands/, skills/, hooks/, rules/, crates/
-    let discoverable_dirs = [
-        "agents", "commands", "skills", "hooks", "rules", "crates",
-    ];
+    let discoverable_dirs = ["agents", "commands", "skills", "hooks", "rules", "crates"];
 
-    let mut total_discoverable: usize = 0;
-    let mut discovered_sources: Vec<String> = element_sources.to_vec();
-
-    for dir_name in &discoverable_dirs {
-        let dir = normalize_path(root, dir_name);
-        if let Ok(entries) = fs.read_dir_recursive(&dir) {
-            let md_count = entries
-                .iter()
-                .filter(|p| {
-                    p.to_string_lossy().ends_with(".md")
-                        || p.to_string_lossy().ends_with(".rs")
-                        || p.to_string_lossy().ends_with(".toml")
+    let total_discoverable: usize = discoverable_dirs
+        .iter()
+        .map(|dir_name| {
+            let dir = normalize_path(root, dir_name);
+            fs.read_dir_recursive(&dir)
+                .map(|entries| {
+                    entries
+                        .iter()
+                        .filter(|p| {
+                            let s = p.to_string_lossy();
+                            s.ends_with(".md") || s.ends_with(".rs") || s.ends_with(".toml")
+                        })
+                        .count()
                 })
-                .count();
-            total_discoverable += md_count;
-        }
-    }
+                .unwrap_or(0)
+        })
+        .sum();
 
     if total_discoverable == 0 {
         terminal.stdout_write("Coverage: no discoverable sources found\n");
         return;
     }
 
-    let covered = discovered_sources.len();
+    let covered = element_sources.len();
     let pct = (covered * 100) / total_discoverable;
 
     terminal.stdout_write(&format!("Coverage: {covered}/{total_discoverable} ({pct}%)\n"));
 
     if pct < 50 {
         terminal.stderr_write("WARNING: coverage below 50% — gaps:\n");
-        for source in &discovered_sources {
+        for source in element_sources {
             terminal.stderr_write(&format!("  - {source}\n"));
         }
-        // Include element sources in gap report
-        let element_gaps: Vec<&str> = element_sources
-            .iter()
-            .map(|s| s.as_str())
-            .collect();
-        if !element_gaps.is_empty() {
-            terminal.stderr_write("Element sources referenced but not covering:\n");
-            for gap in &element_gaps {
-                terminal.stderr_write(&format!("  - {gap}\n"));
-            }
-        }
-        discovered_sources.dedup();
     }
 }
 
@@ -371,8 +358,7 @@ fn run_coverage(
 mod tests {
     use super::*;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-    use std::path::PathBuf;
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockExecutor};
 
     fn make_success_git_output() -> CommandOutput {
         CommandOutput {
@@ -404,7 +390,6 @@ mod tests {
 
     #[test]
     fn invalid_element_exits_with_error() {
-        // Element file missing required sections
         let invalid_content = "## Overview\n\nOnly overview present.\n";
         let fs = InMemoryFileSystem::new()
             .with_dir("docs/cartography/elements")
@@ -415,16 +400,9 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new().on("git", make_success_git_output());
 
-        let result = run_validate_cartography(
-            &fs,
-            &terminal,
-            &shell,
-            Path::new("."),
-            false,
-        );
+        let result = run_validate_cartography(&fs, &terminal, &shell, Path::new("."), false);
 
         assert!(!result, "should return false when element is invalid");
-
         let stderr = terminal.stderr_output().join("");
         assert!(
             stderr.contains("ERROR"),
@@ -436,7 +414,6 @@ mod tests {
 
     #[test]
     fn missing_index_warns_not_errors() {
-        // elements/ exists with a valid element, but INDEX.md is absent
         let fs = InMemoryFileSystem::new()
             .with_dir("docs/cartography/elements")
             .with_file(
@@ -446,27 +423,17 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new().on("git", make_success_git_output());
 
-        let result = run_validate_cartography(
-            &fs,
-            &terminal,
-            &shell,
-            Path::new("."),
-            false,
-        );
+        let result = run_validate_cartography(&fs, &terminal, &shell, Path::new("."), false);
 
-        // Should NOT return false (missing INDEX is a warning, not error)
         assert!(
             result,
             "should return true when element is valid but INDEX.md absent"
         );
-
         let stderr = terminal.stderr_output().join("");
         assert!(
             stderr.contains("WARNING") && stderr.contains("INDEX"),
             "stderr should warn about missing INDEX.md, got: {stderr}"
         );
-
-        // Must NOT have ERROR in stderr
         assert!(
             !stderr.contains("ERROR"),
             "missing INDEX.md should not produce an error, got: {stderr}"
@@ -477,7 +444,6 @@ mod tests {
 
     #[test]
     fn stale_index_warns_missing_slugs() {
-        // INDEX.md exists but does not list "my-new-element" slug
         let index_content = "\
 # Element Cross-Reference Matrix
 
@@ -499,19 +465,9 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new().on("git", make_success_git_output());
 
-        let result = run_validate_cartography(
-            &fs,
-            &terminal,
-            &shell,
-            Path::new("."),
-            false,
-        );
+        let result = run_validate_cartography(&fs, &terminal, &shell, Path::new("."), false);
 
-        assert!(
-            result,
-            "stale INDEX.md should not cause failure (warning only)"
-        );
-
+        assert!(result, "stale INDEX.md should not cause failure");
         let stderr = terminal.stderr_output().join("");
         assert!(
             stderr.contains("WARNING") && stderr.contains("stale"),
@@ -527,21 +483,13 @@ mod tests {
 
     #[test]
     fn missing_elements_dir_clean_exit() {
-        // elements/ directory does not exist at all
         let fs = InMemoryFileSystem::new();
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new();
 
-        let result = run_validate_cartography(
-            &fs,
-            &terminal,
-            &shell,
-            Path::new("."),
-            false,
-        );
+        let result = run_validate_cartography(&fs, &terminal, &shell, Path::new("."), false);
 
         assert!(result, "should return true when elements/ is missing");
-
         let stderr = terminal.stderr_output().join("");
         assert!(
             !stderr.contains("ERROR"),
@@ -553,10 +501,7 @@ mod tests {
 
     #[test]
     fn staleness_includes_elements() {
-        // Element file with CARTOGRAPHY-META marker
-        let element_content =
-            valid_element_with_meta("2026-01-01", "agents/my-agent.md");
-
+        let element_content = valid_element_with_meta("2026-01-01", "agents/my-agent.md");
         let fs = InMemoryFileSystem::new()
             .with_dir("docs/cartography/elements")
             .with_file(
@@ -565,17 +510,9 @@ mod tests {
             )
             .with_file("docs/cartography/elements/INDEX.md", "# Index\n");
         let terminal = BufferedTerminal::new();
-
-        // git log returns commits indicating source was modified after last_updated
         let shell = MockExecutor::new().on("git", make_stale_git_output());
 
-        run_validate_cartography(
-            &fs,
-            &terminal,
-            &shell,
-            Path::new("."),
-            false,
-        );
+        run_validate_cartography(&fs, &terminal, &shell, Path::new("."), false);
 
         let stderr = terminal.stderr_output().join("");
         assert!(
@@ -588,10 +525,7 @@ mod tests {
 
     #[test]
     fn coverage_includes_element_sources() {
-        // Element file referencing a source via CARTOGRAPHY-META
         let element_content = valid_element_with_meta("2026-01-01", "agents/my-agent.md");
-
-        // Provide an agents/ dir with one file so there's something to count
         let fs = InMemoryFileSystem::new()
             .with_dir("docs/cartography/elements")
             .with_file(
@@ -603,23 +537,9 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new().on("git", make_success_git_output());
 
-        run_validate_cartography(
-            &fs,
-            &terminal,
-            &shell,
-            Path::new("."),
-            true, // --coverage
-        );
+        run_validate_cartography(&fs, &terminal, &shell, Path::new("."), true);
 
         let stdout = terminal.stdout_output().join("");
-        assert!(
-            stdout.contains("Coverage"),
-            "coverage output should be produced, got: {stdout}"
-        );
-
-        // The element source should be included (denominator / numerator)
-        // We simply check coverage was calculated (not specifically asserting the number,
-        // just that element sources are included in the calculation).
         assert!(
             stdout.contains("Coverage:"),
             "should output coverage line, got: {stdout}"
@@ -630,10 +550,7 @@ mod tests {
 
     #[test]
     fn low_coverage_includes_all_gap_types() {
-        // Set up many undocumented sources to force coverage below 50%
-        // and one element file referencing a source
         let element_content = valid_element_with_meta("2026-01-01", "agents/agent-a.md");
-
         let mut fs = InMemoryFileSystem::new()
             .with_dir("docs/cartography/elements")
             .with_file(
@@ -650,18 +567,9 @@ mod tests {
         let terminal = BufferedTerminal::new();
         let shell = MockExecutor::new().on("git", make_success_git_output());
 
-        run_validate_cartography(
-            &fs,
-            &terminal,
-            &shell,
-            Path::new("."),
-            true, // --coverage
-        );
+        run_validate_cartography(&fs, &terminal, &shell, Path::new("."), true);
 
-        let stdout = terminal.stdout_output().join("");
         let stderr = terminal.stderr_output().join("");
-
-        // Coverage should be below 50% — gap report should include element sources
         assert!(
             stderr.contains("WARNING") && stderr.contains("50%"),
             "should warn about low coverage, got stderr: {stderr}"
