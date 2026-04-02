@@ -6,7 +6,9 @@
 pub mod merge;
 pub mod slug;
 pub mod types;
+pub mod validation;
 
 pub use merge::{has_section, merge_section};
 pub use slug::derive_slug;
 pub use types::{CartographyMeta, ChangedFile, ProjectType, SessionDelta};
+pub use validation::{validate_flow, validate_journey};
