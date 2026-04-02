@@ -85,7 +85,9 @@ pub fn run_with_input(project_dir: &Path, input: &str) -> WorkflowOutput {
 
     let result = match tool_name.as_deref() {
         Some("Write") | Some("Edit") | Some("MultiEdit") => {
-            let fp = file_path.as_deref().unwrap_or("");
+            let raw_fp = file_path.as_deref().unwrap_or("");
+            let fp = ecc_domain::workflow::path::normalize_path(raw_fp);
+            let fp = fp.as_str();
             if is_allowed_path(fp) {
                 WorkflowOutput::pass(format!("Write to allowed path '{fp}' permitted"))
             } else {
@@ -363,5 +365,37 @@ mod tests {
         // Lock must be free after run() returns
         ecc_flock::acquire(&project_dir, "state")
             .expect("state lock was not released after phase_gate::run returned");
+    }
+
+    /// PC-005: phase_gate blocks path traversal attack after normalization
+    #[test]
+    fn phase_gate_blocks_traversal_attack() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/specs/../../src/evil.rs"}}"#;
+        let output = super::run_with_input(tmp.path(), hook_input);
+        assert!(
+            matches!(output.status, Status::Block),
+            "Expected Block for traversal attack path during plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-006: phase_gate blocks absolute path outside allowed prefixes
+    #[test]
+    fn phase_gate_blocks_absolute_outside() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"/etc/passwd"}}"#;
+        let output = super::run_with_input(tmp.path(), hook_input);
+        assert!(
+            matches!(output.status, Status::Block),
+            "Expected Block for absolute path /etc/passwd during plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
     }
 }
