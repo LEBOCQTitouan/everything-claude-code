@@ -5,6 +5,7 @@
 pub mod error;
 mod global;
 mod helpers;
+pub mod hooks_migration;
 mod init;
 mod resolve;
 
