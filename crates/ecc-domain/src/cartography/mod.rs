@@ -4,6 +4,9 @@
 //! Zero `std::fs`, `std::process`, `std::net`, or `tokio` imports.
 
 pub mod coverage;
+pub mod cross_reference;
+pub mod element_types;
+pub mod element_validation;
 pub mod merge;
 pub mod slug;
 pub mod staleness;

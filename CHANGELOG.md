@@ -10,28 +10,23 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Cartography element registry (BL-064 Sub-Spec B)**: Per-element documentation files in `docs/cartography/elements/` with cross-reference INDEX.md matrix. Two-tier element types (universal: Module, Interface, Config, Unknown; ECC: Command, Agent, Skill, Hook, Rule, Crate, Port, Adapter, DomainEntity). Post-loop element generation after journey/flow processing. Schema validation, staleness detection, and coverage dashboard extended for elements. New agent: `cartography-element-generator`. 3 ADRs (0042-0044).
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
-
 - **Universal app cartography system (BL-064 Sub-Spec A)**: Two-phase architecture for automatic documentation of user journeys and data flows. Stop hook captures session deltas as JSON; next session's agent processes pending deltas to generate/update `docs/cartography/` files. Includes section-marker-based delta merge, schema validation (`ecc validate cartography`), staleness detection, coverage dashboard (`--coverage`), and `/spec-dev` actor registry integration. 5 ADRs (0037-0041). New bounded context: `ecc-domain::cartography` with types, merge, validation, staleness, and coverage modules.
 - **Mutation testing integration (BL-116)**: cargo-mutants configured for ecc-domain and ecc-app with nextest integration. `cargo xtask mutants` subcommand with `--package`, `--in-diff`, `--timeout` flags. `/mutants` slash command for Claude Code sessions. `/verify --mutation` opt-in flag for diff-scoped mutation testing. Non-blocking CI mutation job with pinned version and artifact upload. Baseline report templates and mutation score dashboard. ADRs 0037 and 0038.
 - **GitHub workflow templates (BL-119)**: 5 reusable GitHub Actions workflow templates for Claude Code integration — PR review, fork-safe PR review, issue triage, release notes generation, and CI convention linter. All use `anthropics/claude-code-action@v1` with least-privilege permissions.
 - **`/scaffold-workflows` command**: Interactive slash command to install workflow templates into a project's `.github/workflows/` directory with template selection, overwrite warnings, and dry-run support.
 - **`ci-cd-workflows` skill**: Comprehensive CI/CD skill merging general GitHub Actions patterns with Claude Code workflow template documentation, security guidance, and fork safety patterns. Replaces the `github-actions` skill (deprecated redirect retained for one release cycle).
 - **Backlog in-work filtering (BL-097)**: `/spec` picker now detects active sessions via worktree scan and advisory lock files, hiding in-progress items from the selection. `--show-all` escape hatch available. Lock files auto-cleaned (24h TTL + orphan detection).
-
-- **Backlog in-work filtering (BL-097)**: `/spec` picker now detects active sessions via worktree scan and advisory lock files, hiding in-progress items from the selection. `--show-all` escape hatch available. Lock files auto-cleaned (24h TTL + orphan detection).
+- **Deterministic Hook System Redesign (Phase 1)**: Unified `ecc workflow` subcommand group mirroring all 23 ecc-workflow subcommands. GitInfo and Clock port traits with adapters. Worktree-scoped state resolution. Stuck-state recovery with injectable clock. Phase verification guards. Lexical path normalization fixing phase gate path traversal. WorkflowState version field. hooks.json migration utility. 15 new characterization and integration tests.
+- **Multi-agent team coordination (BL-104)**: Declarative team manifests (Markdown + YAML frontmatter) in `teams/` directory. `ecc validate teams` with strict agent cross-referencing and tool privilege escalation warnings. Pre-defined teams: implement-team, audit-team, review-team. New skills: shared-state-protocol, task-handoff.
 
 ### Changed
 
 - **Release pipeline migrated to cargo-dist (BL-112)**: Replaced hand-rolled 267-line `release.yml` with cargo-dist declarative pipeline (`dist.toml`). Structured as plan/build/host/cosign/announce stages. Custom cosign signing job preserved as non-blocking post-build step. All 5 cross-compilation targets maintained.
-## [Unreleased]
-
-### Added
-
-- **Deterministic Hook System Redesign (Phase 1)**: Unified `ecc workflow` subcommand group mirroring all 23 ecc-workflow subcommands. GitInfo and Clock port traits with adapters. Worktree-scoped state resolution. Stuck-state recovery with injectable clock. Phase verification guards. Lexical path normalization fixing phase gate path traversal. WorkflowState version field. hooks.json migration utility. 15 new characterization and integration tests.
-- **Multi-agent team coordination (BL-104)**: Declarative team manifests (Markdown + YAML frontmatter) in `teams/` directory. `ecc validate teams` with strict agent cross-referencing and tool privilege escalation warnings. Pre-defined teams: implement-team, audit-team, review-team. New skills: shared-state-protocol, task-handoff.
 
 ## v5.1.0
 

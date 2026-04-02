@@ -169,6 +169,8 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         // Tier 3: Session/File I/O hooks
         "session:start" => handlers::session_start(stdin, ports),
         "stop:session-end" => handlers::session_end(stdin, ports),
+        "start:cartography" => handlers::start_cartography(stdin, ports),
+        "stop:cartography" => handlers::stop_cartography(stdin, ports),
         "pre:compact" => handlers::pre_compact(stdin, ports),
         "stop:evaluate-session" => handlers::evaluate_session(stdin, ports),
         "stop:cost-tracker" => handlers::cost_tracker(stdin, ports),
