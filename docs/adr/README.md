@@ -33,3 +33,8 @@ ADRs are numbered sequentially: `0001-short-title.md`, `0002-short-title.md`, et
 | [0012](0012-wave-parallel-tdd.md) | Wave-Based Parallel TDD Execution | Accepted |
 | [0013](0013-campaign-manifest-convention.md) | Campaign Manifest Convention | Accepted |
 | [0014](0014-context-aware-graceful-exit.md) | Context-Aware Graceful Exit Convention | Superseded |
+| [0037](0037-workflow-templates-content-type.md) | Workflow Templates Content Type | Accepted |
+| [0038](0038-scaffold-command-distribution.md) | Scaffold Command Distribution | Accepted |
+| [0039](0039-cargo-dist-adoption.md) | cargo-dist Adoption for Binary Distribution | Accepted |
+| [0040](0040-cosign-custom-job.md) | Cosign Signing as Custom Post-Build Job | Accepted |
+| [0041](0041-session-detection-pattern.md) | Session Detection Pattern for Backlog Filtering | Accepted |

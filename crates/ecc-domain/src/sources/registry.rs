@@ -151,7 +151,9 @@ mod tests {
     fn add_duplicate_rejected() {
         let registry = SourcesRegistry::default();
         let entry = make_entry("https://example.com/doc", Quadrant::Adopt, "testing");
-        let registry = registry.add(entry.clone()).expect("first add should succeed");
+        let registry = registry
+            .add(entry.clone())
+            .expect("first add should succeed");
 
         let duplicate = make_entry("https://example.com/doc", Quadrant::Trial, "other");
         let result = registry.add(duplicate);
@@ -170,20 +172,34 @@ mod tests {
         let new_registry = original.add(entry.clone()).expect("add should succeed");
 
         // Original is unchanged (immutable)
-        assert!(original.entries.is_empty(), "original entries should be unmodified");
+        assert!(
+            original.entries.is_empty(),
+            "original entries should be unmodified"
+        );
 
         // New registry contains the entry
         assert_eq!(new_registry.entries.len(), 1);
-        assert_eq!(new_registry.entries[0].url.as_str(), "https://example.com/doc");
+        assert_eq!(
+            new_registry.entries[0].url.as_str(),
+            "https://example.com/doc"
+        );
     }
 
     #[test]
     fn list_filters() {
         let registry = SourcesRegistry {
             entries: vec![
-                make_entry("https://example.com/adopt-testing", Quadrant::Adopt, "testing"),
+                make_entry(
+                    "https://example.com/adopt-testing",
+                    Quadrant::Adopt,
+                    "testing",
+                ),
                 make_entry("https://example.com/adopt-rust", Quadrant::Adopt, "rust"),
-                make_entry("https://example.com/trial-testing", Quadrant::Trial, "testing"),
+                make_entry(
+                    "https://example.com/trial-testing",
+                    Quadrant::Trial,
+                    "testing",
+                ),
             ],
             inbox: vec![],
             module_mappings: vec![],
@@ -200,7 +216,10 @@ mod tests {
         // Filter by both quadrant and subject
         let adopt_testing = registry.list(Some(&Quadrant::Adopt), Some("testing"));
         assert_eq!(adopt_testing.len(), 1);
-        assert_eq!(adopt_testing[0].url.as_str(), "https://example.com/adopt-testing");
+        assert_eq!(
+            adopt_testing[0].url.as_str(),
+            "https://example.com/adopt-testing"
+        );
 
         // No filter returns all entries
         let all = registry.list(None, None);
@@ -214,16 +233,21 @@ mod tests {
                 make_entry("https://example.com/inbox1", Quadrant::Adopt, "testing"),
                 make_entry("https://example.com/inbox2", Quadrant::Trial, "rust"),
             ],
-            entries: vec![
-                make_entry("https://example.com/existing", Quadrant::Assess, "cli"),
-            ],
+            entries: vec![make_entry(
+                "https://example.com/existing",
+                Quadrant::Assess,
+                "cli",
+            )],
             module_mappings: vec![],
         };
 
         let reindexed = registry.reindex();
 
         // Inbox is empty after reindex
-        assert!(reindexed.inbox.is_empty(), "inbox should be empty after reindex");
+        assert!(
+            reindexed.inbox.is_empty(),
+            "inbox should be empty after reindex"
+        );
 
         // All entries present (inbox moved + existing preserved)
         assert_eq!(reindexed.entries.len(), 3);
@@ -231,7 +255,7 @@ mod tests {
         // Entries are sorted by quadrant then subject
         // Quadrant order: Adopt < Trial < Assess < Hold (alphabetical by display)
         // Subject alphabetical within quadrant
-                let urls: Vec<&str> = reindexed.entries.iter().map(|e| e.url.as_str()).collect();
+        let urls: Vec<&str> = reindexed.entries.iter().map(|e| e.url.as_str()).collect();
         assert!(
             urls.contains(&"https://example.com/inbox1"),
             "inbox1 should be in entries"
@@ -250,17 +274,19 @@ mod tests {
     fn find_by_module() {
         let registry = SourcesRegistry {
             entries: vec![
-                make_entry("https://example.com/domain", Quadrant::Adopt, "domain-modeling"),
+                make_entry(
+                    "https://example.com/domain",
+                    Quadrant::Adopt,
+                    "domain-modeling",
+                ),
                 make_entry("https://example.com/rust", Quadrant::Adopt, "rust-patterns"),
                 make_entry("https://example.com/cli", Quadrant::Trial, "cli"),
             ],
             inbox: vec![],
-            module_mappings: vec![
-                ModuleMapping {
-                    module_path: "crates/ecc-domain/".to_owned(),
-                    subjects: vec!["domain-modeling".to_owned(), "rust-patterns".to_owned()],
-                },
-            ],
+            module_mappings: vec![ModuleMapping {
+                module_path: "crates/ecc-domain/".to_owned(),
+                subjects: vec!["domain-modeling".to_owned(), "rust-patterns".to_owned()],
+            }],
         };
 
         let results = registry.find_by_module("crates/ecc-domain/");

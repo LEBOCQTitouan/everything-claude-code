@@ -172,10 +172,8 @@ mod tests {
     fn init_rejects_existing() {
         let project_dir = Path::new("/project");
         let profile_path = project_dir.join(PROFILE_PATH);
-        let fs = InMemoryFileSystem::new().with_file(
-            profile_path.to_str().unwrap(),
-            "version: 1\n",
-        );
+        let fs =
+            InMemoryFileSystem::new().with_file(profile_path.to_str().unwrap(), "version: 1\n");
 
         let result = init(&fs, project_dir);
         assert!(
@@ -194,10 +192,8 @@ mod tests {
     fn show_reads_profile() {
         let profile_content = "version: 1\ndimensions: []\n";
         let profile_path = Path::new("/project/docs/audits/audit-web-profile.yaml");
-        let fs = InMemoryFileSystem::new().with_file(
-            profile_path.to_str().unwrap(),
-            profile_content,
-        );
+        let fs =
+            InMemoryFileSystem::new().with_file(profile_path.to_str().unwrap(), profile_content);
 
         let result = show(&fs, profile_path).expect("show should succeed");
         assert_eq!(result, profile_content);
@@ -226,10 +222,8 @@ mod tests {
     #[test]
     fn reset_deletes_profile() {
         let profile_path = Path::new("/project/docs/audits/audit-web-profile.yaml");
-        let fs = InMemoryFileSystem::new().with_file(
-            profile_path.to_str().unwrap(),
-            "version: 1\n",
-        );
+        let fs =
+            InMemoryFileSystem::new().with_file(profile_path.to_str().unwrap(), "version: 1\n");
 
         assert!(fs.exists(profile_path), "profile should exist before reset");
         reset(&fs, profile_path).expect("reset should succeed");
@@ -244,10 +238,8 @@ mod tests {
     #[test]
     fn validate_report_passes() {
         let report_path = Path::new("/project/report.md");
-        let fs = InMemoryFileSystem::new().with_file(
-            report_path.to_str().unwrap(),
-            valid_report_content(),
-        );
+        let fs = InMemoryFileSystem::new()
+            .with_file(report_path.to_str().unwrap(), valid_report_content());
 
         let result = validate_report_file(&fs, report_path);
         assert!(

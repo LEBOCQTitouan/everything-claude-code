@@ -53,7 +53,10 @@ fn emit_design_output(
     for warning in &all_warnings {
         terminal.stderr_write(&format!("WARNING: {warning}\n"));
     }
-    let has_uncovered = uncovered_acs.as_ref().map(|v| !v.is_empty()).unwrap_or(false);
+    let has_uncovered = uncovered_acs
+        .as_ref()
+        .map(|v| !v.is_empty())
+        .unwrap_or(false);
     let valid = all_errors.is_empty() && !has_uncovered;
     let output = DesignValidationOutput {
         valid,

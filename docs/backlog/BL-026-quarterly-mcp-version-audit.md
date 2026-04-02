@@ -4,7 +4,7 @@ title: Quarterly MCP version audit
 tier: 6
 scope: LOW
 target: process
-status: open
+status: "implemented"
 created: 2026-03-20
 file: n/a (recurring process)
 ---

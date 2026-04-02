@@ -1,7 +1,7 @@
 ---
 id: BL-068
 title: Deterministic workflow state machine — typed state.json, phase transitions, artifact resolution
-status: open
+status: "implemented"
 scope: HIGH
 target: /spec dev
 created: 2026-03-26

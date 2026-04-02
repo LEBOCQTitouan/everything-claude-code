@@ -4,7 +4,7 @@ title: Prune stale local permissions
 tier: 1
 scope: LOW
 target: direct edit
-status: open
+status: "implemented"
 created: 2026-03-20
 file: .claude/settings.local.json
 ---

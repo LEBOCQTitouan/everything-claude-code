@@ -1,5 +1,5 @@
-use super::*;
 use super::super::hook_types;
+use super::*;
 
 fn typed_entry(cmd: &str) -> hook_types::HookEntry {
     hook_types::HookEntry {
@@ -35,10 +35,10 @@ fn merge_hooks_typed_empty_both() {
 
 #[test]
 fn merge_hooks_typed_adds_new_to_empty() {
-    let source = typed_map("PreToolUse", vec![
-        typed_entry("ecc-hook format"),
-        typed_entry("ecc-hook lint"),
-    ]);
+    let source = typed_map(
+        "PreToolUse",
+        vec![typed_entry("ecc-hook format"), typed_entry("ecc-hook lint")],
+    );
     let existing = hook_types::HooksMap::new();
     let result = merge_hooks_typed(&source, &existing);
     assert_eq!(result.added, 2);
@@ -61,9 +61,7 @@ fn merge_hooks_typed_deduplicates() {
 #[test]
 fn merge_hooks_typed_removes_legacy() {
     let source = typed_map("PreToolUse", vec![typed_entry("ecc-hook format")]);
-    let existing = typed_map("PreToolUse", vec![
-        typed_entry("node scripts/hooks/old.js"),
-    ]);
+    let existing = typed_map("PreToolUse", vec![typed_entry("node scripts/hooks/old.js")]);
     let result = merge_hooks_typed(&source, &existing);
     assert_eq!(result.added, 1);
     assert_eq!(result.legacy_removed, 1);
@@ -79,20 +77,23 @@ fn merge_hooks_typed_removes_legacy() {
 #[test]
 fn remove_legacy_hooks_typed() {
     let mut hooks = hook_types::HooksMap::new();
-    hooks.insert("PreToolUse".to_string(), vec![
-        // current — keep
-        typed_entry("ecc-hook format"),
-        // legacy: absolute path with ECC package identifier
-        typed_entry("/home/.npm/everything-claude-code/hooks/run.js"),
-        // legacy: scripts/hooks/ path
-        typed_entry("node scripts/hooks/old.js"),
-        // legacy: placeholder
-        typed_entry("${ECC_ROOT}/hooks/run.js"),
-        // legacy: run-with-flags.js
-        typed_entry("node /abs/path/dist/hooks/run-with-flags.js"),
-        // legacy: node -e one-liner
-        typed_entry("node -e 'require(\"dev-server\")'"),
-    ]);
+    hooks.insert(
+        "PreToolUse".to_string(),
+        vec![
+            // current — keep
+            typed_entry("ecc-hook format"),
+            // legacy: absolute path with ECC package identifier
+            typed_entry("/home/.npm/everything-claude-code/hooks/run.js"),
+            // legacy: scripts/hooks/ path
+            typed_entry("node scripts/hooks/old.js"),
+            // legacy: placeholder
+            typed_entry("${ECC_ROOT}/hooks/run.js"),
+            // legacy: run-with-flags.js
+            typed_entry("node /abs/path/dist/hooks/run-with-flags.js"),
+            // legacy: node -e one-liner
+            typed_entry("node -e 'require(\"dev-server\")'"),
+        ],
+    );
 
     let (result, removed) = super::remove_legacy_hooks_typed(&hooks);
     assert_eq!(removed, 5);

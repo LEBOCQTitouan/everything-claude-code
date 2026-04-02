@@ -4,6 +4,7 @@
 
 use clap::{Args, Subcommand};
 use ecc_infra::os_fs::OsFileSystem;
+use ecc_infra::process_executor::ProcessExecutor;
 use ecc_infra::std_terminal::StdTerminal;
 use std::path::PathBuf;
 
@@ -35,6 +36,8 @@ pub enum CliValidateTarget {
     Paths,
     /// Validate statusline installation
     Statusline,
+    /// Validate team manifest files
+    Teams,
     /// Validate spec AC format and numbering
     Spec {
         /// Path to spec.md
@@ -47,6 +50,12 @@ pub enum CliValidateTarget {
         /// Optional path to spec.md for coverage analysis
         #[arg(long)]
         spec: Option<PathBuf>,
+    },
+    /// Validate cartography journey and flow files, check staleness and optionally show coverage
+    Cartography {
+        /// Show coverage dashboard (total files, referenced, percentage, priority gaps)
+        #[arg(long)]
+        coverage: bool,
     },
 }
 
@@ -74,6 +83,21 @@ pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
                 Err(e) => Err(anyhow::anyhow!("{e}")),
             }
         }
+        CliValidateTarget::Cartography { coverage } => {
+            let shell = ProcessExecutor;
+            let project_root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            if ecc_app::validate_cartography::run_validate_cartography(
+                &fs,
+                &shell,
+                &terminal,
+                &project_root,
+                *coverage,
+            ) {
+                Ok(())
+            } else {
+                std::process::exit(1);
+            }
+        }
         other => {
             let target = map_target(other);
             let env = ecc_infra::os_env::OsEnvironment;
@@ -96,9 +120,12 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Rules => ecc_app::validate::ValidateTarget::Rules,
         CliValidateTarget::Paths => ecc_app::validate::ValidateTarget::Paths,
         CliValidateTarget::Statusline => ecc_app::validate::ValidateTarget::Statusline,
-        // Spec and Design are handled directly in run() — unreachable here
-        CliValidateTarget::Spec { .. } | CliValidateTarget::Design { .. } => {
-            unreachable!("Spec and Design are handled before map_target is called")
+        CliValidateTarget::Teams => ecc_app::validate::ValidateTarget::Teams,
+        // Spec, Design, and Cartography are handled directly in run() — unreachable here
+        CliValidateTarget::Spec { .. }
+        | CliValidateTarget::Design { .. }
+        | CliValidateTarget::Cartography { .. } => {
+            unreachable!("Spec, Design, and Cartography are handled before map_target is called")
         }
     }
 }

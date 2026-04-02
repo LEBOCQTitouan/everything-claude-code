@@ -17,7 +17,10 @@ pub(super) fn validate_conventions(
     let agents_dir = root.join("agents");
     if let Ok(files) = fs.read_dir(&agents_dir) {
         {
-            for file in files.iter().filter(|f| f.to_string_lossy().ends_with(".md")) {
+            for file in files
+                .iter()
+                .filter(|f| f.to_string_lossy().ends_with(".md"))
+            {
                 total_checked += 1;
                 let content = match fs.read_to_string(file) {
                     Ok(c) => c,
@@ -38,7 +41,10 @@ pub(super) fn validate_conventions(
     let commands_dir = root.join("commands");
     if let Ok(files) = fs.read_dir(&commands_dir) {
         {
-            for file in files.iter().filter(|f| f.to_string_lossy().ends_with(".md")) {
+            for file in files
+                .iter()
+                .filter(|f| f.to_string_lossy().ends_with(".md"))
+            {
                 total_checked += 1;
                 let content = match fs.read_to_string(file) {
                     Ok(c) => c,
@@ -69,14 +75,14 @@ pub(super) fn validate_conventions(
 
                 // Check for empty directory (no .md files)
                 if let Ok(children) = fs.read_dir(entry) {
-                    let has_md = children.iter().any(|c| c.to_string_lossy().ends_with(".md"));
+                    let has_md = children
+                        .iter()
+                        .any(|c| c.to_string_lossy().ends_with(".md"));
                     if !has_md {
                         findings.push(LintFinding {
                             severity: LintSeverity::Warn,
                             file: dir_name.clone(),
-                            message: format!(
-                                "skill directory '{dir_name}/' contains no .md files"
-                            ),
+                            message: format!("skill directory '{dir_name}/' contains no .md files"),
                         });
                         continue;
                     }
@@ -87,8 +93,7 @@ pub(super) fn validate_conventions(
                 if let Ok(content) = fs.read_to_string(&skill_md) {
                     {
                         let fm = extract_frontmatter(&content);
-                        let fm_name =
-                            fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
+                        let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
                         findings.extend(check_naming_consistency(&dir_name, fm_name, "skill"));
                     }
                 }
@@ -307,7 +312,7 @@ mod tests {
             &t,
             &MockEnvironment::default(),
             &ValidateTarget::Conventions,
-            Path::new("/root")
+            Path::new("/root"),
         );
         assert!(result);
         assert!(t.stderr_output().is_empty());

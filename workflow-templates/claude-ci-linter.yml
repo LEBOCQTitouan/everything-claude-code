@@ -1,0 +1,62 @@
+# ECC Template v0.1.0
+# Claude Code CI Convention Linter — Enforce project conventions on PRs
+# Checks naming conventions, CHANGELOG updates, commit message format, custom rules
+# Configure via CONVENTION_RULES env var or .claude-lint-rules file (file takes precedence)
+# When both .claude-lint-rules and CONVENTION_RULES exist, .claude-lint-rules takes precedence
+name: Claude Code CI Linter
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: claude-lint-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.fork != true
+    steps:
+      - name: Check API key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not configured."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine convention rules
+        id: rules
+        run: |
+          if [ -f ".claude-lint-rules" ]; then
+            echo "source=file" >> "$GITHUB_OUTPUT"
+            echo "rules=$(cat .claude-lint-rules)" >> "$GITHUB_OUTPUT"
+          elif [ -n "$CONVENTION_RULES" ]; then
+            echo "source=env" >> "$GITHUB_OUTPUT"
+            echo "rules=$CONVENTION_RULES" >> "$GITHUB_OUTPUT"
+          else
+            echo "source=default" >> "$GITHUB_OUTPUT"
+            echo "rules=Check naming conventions, verify CHANGELOG.md is updated, validate commit messages follow conventional commits format" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          CONVENTION_RULES: ${{ vars.CONVENTION_RULES || '' }}
+
+      - name: Run Claude Code Convention Linter
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_args: >-
+            --allowedTools Read,Grep,Glob
+            --prompt "Review this PR for convention compliance. Rules: ${{ steps.rules.outputs.rules }}. For each violation, post an inline review comment identifying the issue and suggesting a fix. If no violations found, approve the PR."
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

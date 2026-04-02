@@ -4,7 +4,7 @@ title: "solution-adversary: skills preload + negative examples"
 tier: 2
 scope: LOW
 target: direct edit
-status: open
+status: "implemented"
 created: 2026-03-20
 file: agents/solution-adversary.md
 ---

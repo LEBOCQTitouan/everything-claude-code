@@ -1,7 +1,7 @@
 ---
 id: BL-041
 title: Add CLAUDE_CODE_TASK_LIST_ID for cross-session persistence
-status: open
+status: "implemented"
 created: 2026-03-21
 scope: LOW
 target_command: .claude/hooks/workflow-init.sh

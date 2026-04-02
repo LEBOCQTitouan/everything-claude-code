@@ -9,6 +9,7 @@ pub struct MockEnvironment {
     cwd: Option<PathBuf>,
     platform: Platform,
     architecture: Architecture,
+    current_exe: Option<PathBuf>,
 }
 
 impl MockEnvironment {
@@ -19,6 +20,7 @@ impl MockEnvironment {
             cwd: Some(PathBuf::from("/project")),
             platform: Platform::Linux,
             architecture: Architecture::Amd64,
+            current_exe: Some(PathBuf::from("/usr/local/bin/ecc")),
         }
     }
 
@@ -50,6 +52,12 @@ impl MockEnvironment {
     /// Set the architecture for this mock environment.
     pub fn with_architecture(mut self, architecture: Architecture) -> Self {
         self.architecture = architecture;
+        self
+    }
+
+    /// Set the current executable path for this mock environment.
+    pub fn with_current_exe(mut self, path: &str) -> Self {
+        self.current_exe = Some(PathBuf::from(path));
         self
     }
 }
@@ -84,6 +92,10 @@ impl Environment for MockEnvironment {
     fn architecture(&self) -> Architecture {
         self.architecture
     }
+
+    fn current_exe(&self) -> Option<PathBuf> {
+        self.current_exe.clone()
+    }
 }
 
 #[cfg(test)]
@@ -94,5 +106,20 @@ mod tests {
     fn with_architecture() {
         let env = MockEnvironment::new().with_architecture(Architecture::Arm64);
         assert_eq!(env.architecture(), Architecture::Arm64);
+    }
+
+    /// PC-009: MockEnvironment supports with_current_exe builder and returns it.
+    #[test]
+    fn mock_env_with_current_exe() {
+        let expected = PathBuf::from("/usr/local/bin/ecc");
+        let env = MockEnvironment::new().with_current_exe("/usr/local/bin/ecc");
+        assert_eq!(env.current_exe(), Some(expected));
+    }
+
+    #[test]
+    fn mock_env_current_exe_default() {
+        let env = MockEnvironment::new();
+        // Default should be Some(.../ecc) per design
+        assert!(env.current_exe().is_some());
     }
 }

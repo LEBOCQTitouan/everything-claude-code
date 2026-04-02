@@ -1,7 +1,7 @@
 ---
 id: BL-030
 title: Persist tasks.md as trackable artifact
-status: open
+status: "implemented"
 created: 2026-03-21
 scope: HIGH
 target_command: /implement

@@ -28,6 +28,31 @@ impl Environment for OsEnvironment {
     fn architecture(&self) -> Architecture {
         Architecture::current()
     }
+
+    fn current_exe(&self) -> Option<std::path::PathBuf> {
+        std::env::current_exe().ok()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ecc_ports::env::Environment;
+
+    // ── PC-036: os_env_current_exe ─────────────────────────────────────────
+
+    #[test]
+    fn os_env_current_exe() {
+        let env = OsEnvironment;
+        // The test binary itself is an executable, so current_exe() must return Some.
+        let exe = env.current_exe();
+        assert!(
+            exe.is_some(),
+            "current_exe() must return Some when running inside a test binary"
+        );
+        let path = exe.unwrap();
+        assert!(path.is_absolute(), "current_exe() must return an absolute path");
+    }
 }
 
 fn home_dir_impl() -> Option<PathBuf> {

@@ -1,0 +1,71 @@
+# ECC Template v0.1.0
+# Claude Code Release Notes — Generate categorized release notes on tag push
+# Categorizes commits into: features, fixes, breaking changes, docs, chores
+# Truncation limit: 500 commits for first release (no previous tag)
+name: Claude Code Release Notes
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not configured."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get previous tag
+        id: prev-tag
+        run: |
+          PREV=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          echo "tag=$PREV" >> "$GITHUB_OUTPUT"
+
+      - name: Get commit log
+        id: commits
+        run: |
+          if [ -n "${{ steps.prev-tag.outputs.tag }}" ]; then
+            git log --oneline "${{ steps.prev-tag.outputs.tag }}..HEAD" > commits.txt
+          else
+            # First release — truncation limit of 500 commits max
+            git log --oneline -500 > commits.txt
+          fi
+
+      - name: Generate release notes
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_args: >-
+            --allowedTools Read,Grep,Glob
+            --prompt "Read commits.txt and generate release notes. Categorize into: ## Features, ## Fixes, ## Breaking Changes, ## Documentation, ## Chores. Write human-readable summaries, not raw commit messages. Output as markdown."
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Create or update GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: tag,
+              body: require('fs').readFileSync('release-notes.md', 'utf8'),
+              draft: false,
+              prerelease: tag.includes('-')
+            });

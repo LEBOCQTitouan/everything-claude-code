@@ -15,6 +15,7 @@ Run a single-shot quality gate on the current codebase.
 - `quick` — build + lint + test only (skip reviews)
 - `full` — all steps (default)
 - `--fix` — auto-fix lint/format issues
+- `--mutation` — include diff-scoped mutation testing (opt-in, slow)
 
 > **Tracking**: Create a TodoWrite checklist for this command's steps. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
 
@@ -72,7 +73,17 @@ Invoke the **code-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) with
 
 Invoke the **arch-reviewer** agent (allowedTools: [Read, Grep, Glob, Bash]) with `context: "fork"` on the full project structure.
 
-### 6. Drift Check (conditional)
+### 6. Mutation Testing (if `--mutation` flag)
+
+If `--mutation` was passed, run diff-scoped mutation testing on changed files:
+
+1. Run `cargo xtask mutants --in-diff`
+2. Report results as a `Mutation:` summary line
+3. Surviving mutants do NOT block the "Ready for PR" verdict — this step is informational only and does not affect the pass/fail gate
+
+If `--mutation` was NOT passed, skip this step entirely. Existing `quick` and `full` behavior is unchanged.
+
+### 7. Drift Check (conditional)
 
 If `.claude/workflow/state.json` exists and workflow artifacts are present (state.json and implement-done.md):
 - Invoke the **drift-checker** agent (allowedTools: [Read, Grep, Glob, Bash])
@@ -94,6 +105,7 @@ Lint:         [OK/X issues]
 Tests:        [X/Y passed]
 Code Review:  [PASS/X issues]
 Architecture: [PASS/X issues]
+Mutation:     [N killed / M survived or SKIPPED]
 Drift:        [NONE/LOW/MEDIUM/HIGH or SKIPPED]
 
 Ready for PR: [YES/NO]

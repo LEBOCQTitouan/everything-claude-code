@@ -1,7 +1,7 @@
 ---
 id: BL-032
 title: Wave-based parallel TDD execution
-status: open
+status: "implemented"
 created: 2026-03-21
 scope: MEDIUM
 target_command: /implement

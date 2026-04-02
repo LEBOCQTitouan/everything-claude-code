@@ -1,7 +1,7 @@
 ---
 id: BL-071
 title: Deterministic git analytics CLI — changelog generation, hotspot analysis, evolution metrics
-status: open
+status: implemented
 scope: MEDIUM
 target: /spec dev
 created: 2026-03-26

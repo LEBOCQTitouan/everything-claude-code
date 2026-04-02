@@ -1,7 +1,7 @@
 ---
 id: BL-069
 title: Deterministic convention linting — naming, placement, frontmatter field values
-status: open
+status: "implemented"
 scope: MEDIUM
 target: /spec dev
 created: 2026-03-26

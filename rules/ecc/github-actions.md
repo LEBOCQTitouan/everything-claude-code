@@ -6,17 +6,19 @@ Canonical reference for the 4 ECC workflows. Follow these conventions when editi
 
 ### ci.yml — CI
 
-- **Triggers**: `pull_request` on `[main]`
-- **Jobs**: `validate` (checkout, rust-toolchain, cache, cargo test, cargo clippy, cargo fmt --check, cargo deny check, ecc validate agents/commands/skills/hooks/rules)
+- **Triggers**: `pull_request` on `[main]`, `merge_group`
+- **Jobs**: `validate` (checkout, rust-toolchain, cache, cargo test, cargo clippy, cargo fmt --check, cargo semver-checks, ecc validate agents/commands/skills/hooks/rules)
 - **Concurrency**: `${{ github.workflow }}-${{ github.ref }}`, cancel-in-progress
 - **Permissions**: `contents: read`
 
-### release.yml — Release
+### release.yml — Release (cargo-dist managed)
 
-- **Triggers**: `push tags: ['v*']`, `pull_request` on `[main]`
-- **Jobs**: `validate` (version/tag check, outputs version + is_prerelease), `build` (cross-compile matrix: aarch64-apple-darwin, x86_64-apple-darwin, x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, x86_64-pc-windows-msvc), `github-release` (tarball packaging, checksum, gh release create)
+- **Triggers**: `push tags: ['v*']`
+- **Jobs**: `plan` (version/tag validation), `build-local` (cross-compile matrix: aarch64-apple-darwin, x86_64-apple-darwin, x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, x86_64-pc-windows-msvc), `host` (tarball packaging, checksum, gh release create), `cosign-sign` (non-blocking Sigstore signing), `announce`
+- **Config**: `dist.toml` at workspace root — targets, binaries, includes, checksums, installers
 - **Caching**: `Swatinem/rust-cache@v2` per target
 - **Permissions**: `contents: write`
+- **Custom jobs**: `cosign-sign` declared in `dist.toml` `[plan.jobs]` for preservation across `cargo dist generate-ci`
 
 ### cd.yml — CD
 
@@ -41,3 +43,5 @@ Canonical reference for the 4 ECC workflows. Follow these conventions when editi
 - Cross-compilation matrix must cover all 5 targets listed in release.yml
 - Tag-based releases use `v*` pattern — semver tags only
 - CD pipeline guards: `[skip cd]` in commit message, bot actor check, release label requirement
+
+For general CI/CD patterns and Claude Code workflow templates, see `skills/ci-cd-workflows/SKILL.md`.

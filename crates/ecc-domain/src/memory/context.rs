@@ -21,10 +21,7 @@ pub fn format_context_md(entries: &[MemoryEntry], max_lines: usize) -> String {
     let top_n = DEFAULT_TOP_N.min(entries.len());
     let selected = &entries[..top_n];
 
-    let mut lines: Vec<String> = vec![
-        "# Relevant Memory Context".to_owned(),
-        String::new(),
-    ];
+    let mut lines: Vec<String> = vec!["# Relevant Memory Context".to_owned(), String::new()];
 
     for entry in selected {
         let content_preview = if entry.content.len() > CONTENT_PREVIEW_CHARS {
@@ -107,10 +104,7 @@ mod tests {
         // With max_lines=5, output should be very short
         let result = format_context_md(&entries, 5);
         let line_count = result.lines().count();
-        assert!(
-            line_count <= 5,
-            "expected <= 5 lines, got {line_count}"
-        );
+        assert!(line_count <= 5, "expected <= 5 lines, got {line_count}");
     }
 
     // PC-018: format_context_md entries show tier, title, relevance score, truncated content
@@ -123,7 +117,12 @@ mod tests {
 
     #[test]
     fn test_format_context_md_shows_title() {
-        let entries = vec![make_entry(1, "Important Knowledge", 1.0, MemoryTier::Semantic)];
+        let entries = vec![make_entry(
+            1,
+            "Important Knowledge",
+            1.0,
+            MemoryTier::Semantic,
+        )];
         let result = format_context_md(&entries, 200);
         assert!(result.contains("Important Knowledge"), "should show title");
     }

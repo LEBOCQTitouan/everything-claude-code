@@ -332,8 +332,9 @@ If wave-based parallel execution was used (any wave had 2+ PCs), add a `Wave` co
 After writing:
 1. Update tasks.md: set "Write implement-done.md" entry to `done@<ISO 8601 timestamp>` and mark `[x]`
 2. Commit tasks.md final state: `docs: finalize tasks.md for <feature>`
-3. Run: `!ecc-workflow transition done --artifact implement`
-4. Commit: `chore: write implement-done.md`
+3. **Release backlog lock**: If `docs/backlog/.locks/` contains a lock file matching the current feature's BL-NNN ID, remove it. This releases the advisory lock so other sessions can claim the item. If no lock file exists (item was not claimed via picker), skip silently.
+4. Run: `!ecc-workflow transition done --artifact implement`
+5. Commit: `chore: write implement-done.md`
 5. **Serialized merge**: If running in a worktree, run: `!ecc-workflow merge`
    - On **pass**: The branch was rebased, verified (build+test+clippy), merged ff-only to main, and the worktree+branch cleaned up. Call `ExitWorktree` to return to main repo. Proceed to Phase 8.
    - On **warn** (rebase conflict): Worktree preserved with rebase aborted. Tell the user: "Rebase conflicts detected. Resolve conflicts in the worktree, then re-run `/implement` to re-trigger merge."

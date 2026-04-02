@@ -36,6 +36,10 @@ See also: [Glossary](glossary.md) | [Architecture](../ARCHITECTURE.md)
 
 Knowledge reference registry with Technology Radar vocabulary. Owns `docs/sources.md`. Independent bounded context — no dependencies on or from other domain modules. Entries organized by quadrants (Adopt/Trial/Assess/Hold) with subject-to-module mapping for command integrations. Value objects: `SourceUrl` (validated HTTP/HTTPS URL newtype), `SourceType`, `Quadrant`. Aggregate root: `SourcesRegistry`.
 
+### Workflow Templates
+
+Installable GitHub Actions workflow YAML files that users copy to their project's `.github/workflows/` directory. Distinct from skills (Markdown knowledge for Claude Code) and commands (slash commands). Customized via environment variables at runtime, not via file modification. Distributed via `/scaffold-workflows` slash command. Content type: `.yml` files in `workflow-templates/`.
+
 ### Audit Web
 
 Profile management for `/audit-web` command. Owns `docs/audits/audit-web-profile.yaml`. Independent bounded context. Aggregate: `AuditWebProfile` (versioned YAML with dimensions, thresholds, improvement history). Value objects: `AuditDimension` (with sanitized query templates), `DimensionThreshold`. Report validation: `ReportValidationResult` with section/score/citation checks.

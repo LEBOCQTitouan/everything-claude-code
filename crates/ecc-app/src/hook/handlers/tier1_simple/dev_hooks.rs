@@ -234,7 +234,10 @@ pub fn pre_prompt_context_inject(stdin: &str, ports: &HookPorts<'_>) -> HookResu
 ///
 /// Parses `instructions_path` from stdin JSON. Warns if file not found or empty.
 pub fn instructions_loaded_validate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
-    tracing::debug!(handler = "instructions_loaded_validate", "executing handler");
+    tracing::debug!(
+        handler = "instructions_loaded_validate",
+        "executing handler"
+    );
     let path_str = serde_json::from_str::<serde_json::Value>(stdin)
         .ok()
         .and_then(|v| v.get("instructions_path")?.as_str().map(|s| s.to_string()));
@@ -278,7 +281,10 @@ pub fn instructions_loaded_validate(stdin: &str, ports: &HookPorts<'_>) -> HookR
 /// Parses `tool_input.worktree_path` (fallback: `tool_input.name`, then `"unknown"`) from
 /// PostToolUse stdin JSON.
 pub fn post_exit_worktree_cleanup_reminder(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
-    tracing::debug!(handler = "post_exit_worktree_cleanup_reminder", "executing handler");
+    tracing::debug!(
+        handler = "post_exit_worktree_cleanup_reminder",
+        "executing handler"
+    );
     let path = serde_json::from_str::<serde_json::Value>(stdin)
         .ok()
         .and_then(|v| {

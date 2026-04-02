@@ -4,7 +4,7 @@ title: "Add context:fork to heavy skills"
 tier: 6
 scope: LOW
 target: direct edit
-status: open
+status: "implemented"
 created: 2026-03-20
 files: doc-orchestrator, audit-full, and other skills that scan >50 files
 ---

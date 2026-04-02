@@ -4,12 +4,15 @@
 //! filesystem I/O, process execution, environment variables, and terminal
 //! interaction.
 
+pub mod git_log_adapter;
 pub mod github_release;
 pub mod os_env;
 pub mod os_fs;
+pub mod os_git;
 pub mod process_executor;
 pub mod rustyline_input;
 pub mod std_terminal;
+pub mod system_clock;
 
 #[cfg(unix)]
 pub mod flock_lock;
@@ -18,3 +21,4 @@ pub mod file_config_store;
 pub mod log_schema;
 pub mod sqlite_log_store;
 pub mod sqlite_memory;
+pub mod tarball_extractor;

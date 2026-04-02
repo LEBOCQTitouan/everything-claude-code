@@ -66,9 +66,15 @@ pub fn add(store: &dyn MemoryStore, params: AddParams) -> MemoryResult<MemoryId>
 ///
 /// The query is wrapped in double-quotes for FTS5 safety (sanitization).
 /// Returns an empty vec on no results (not an error).
-pub fn search(store: &dyn MemoryStore, query: &str, limit: usize) -> MemoryResult<Vec<MemoryEntry>> {
+pub fn search(
+    store: &dyn MemoryStore,
+    query: &str,
+    limit: usize,
+) -> MemoryResult<Vec<MemoryEntry>> {
     let sanitized = format!("\"{}\"", query.replace('"', ""));
-    store.search_fts(&sanitized, limit).map_err(MemoryAppError::Store)
+    store
+        .search_fts(&sanitized, limit)
+        .map_err(MemoryAppError::Store)
 }
 
 /// List entries with optional tier and tag filters.

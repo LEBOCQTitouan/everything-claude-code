@@ -17,9 +17,10 @@ pub fn atomic_swap(
 
     // Backup existing binary (if it exists)
     if fs.exists(target_path) {
-        fs.copy(target_path, &backup_path).map_err(|e| UpdateError::SwapFailed {
-            reason: format!("backup failed: {e}"),
-        })?;
+        fs.copy(target_path, &backup_path)
+            .map_err(|e| UpdateError::SwapFailed {
+                reason: format!("backup failed: {e}"),
+            })?;
     }
 
     // Atomic rename
@@ -32,9 +33,10 @@ pub fn atomic_swap(
     })?;
 
     // Set executable permissions
-    fs.set_permissions(target_path, 0o755).map_err(|e| UpdateError::SwapFailed {
-        reason: format!("set_permissions failed: {e}"),
-    })?;
+    fs.set_permissions(target_path, 0o755)
+        .map_err(|e| UpdateError::SwapFailed {
+            reason: format!("set_permissions failed: {e}"),
+        })?;
 
     Ok(backup_path)
 }
@@ -46,9 +48,10 @@ pub fn restore_backup(
     target_path: &Path,
 ) -> Result<(), UpdateError> {
     if fs.exists(backup_path) {
-        fs.rename(backup_path, target_path).map_err(|e| UpdateError::BackupRestoreFailed {
-            reason: format!("restore from {} failed: {e}", backup_path.display()),
-        })?;
+        fs.rename(backup_path, target_path)
+            .map_err(|e| UpdateError::BackupRestoreFailed {
+                reason: format!("restore from {} failed: {e}", backup_path.display()),
+            })?;
     }
     Ok(())
 }
@@ -96,14 +99,86 @@ pub fn update_shims(
             fs.copy(&src, &dst).map_err(|e| UpdateError::SwapFailed {
                 reason: format!("shim update failed for {shim}: {e}"),
             })?;
-            fs.set_permissions(&dst, 0o755).map_err(|e| UpdateError::SwapFailed {
-                reason: format!("shim permissions failed for {shim}: {e}"),
-            })?;
+            fs.set_permissions(&dst, 0o755)
+                .map_err(|e| UpdateError::SwapFailed {
+                    reason: format!("shim permissions failed for {shim}: {e}"),
+                })?;
             updated += 1;
         }
     }
 
     Ok(updated)
+}
+
+/// Rollback all swapped binaries by restoring each `.bak` backup to its target.
+///
+/// Iterates over `swapped` pairs `(target, backup)` and restores each backup.
+/// Returns `Ok(())` if all restores succeed.
+pub fn rollback_swapped(
+    fs: &dyn FileSystem,
+    swapped: &[(PathBuf, PathBuf)],
+) -> Result<(), UpdateError> {
+    for (target, backup) in swapped {
+        restore_backup(fs, backup, target)?;
+    }
+    Ok(())
+}
+
+/// Rollback all swapped binaries, returning a composite error if rollback itself fails.
+///
+/// `original_error` is the error message that triggered the rollback, included in
+/// `RollbackFailed` for diagnostics.
+pub fn rollback_swapped_or_fail(
+    fs: &dyn FileSystem,
+    swapped: &[(PathBuf, PathBuf)],
+    original_error: &str,
+) -> Result<(), UpdateError> {
+    let mut rollback_err: Option<String> = None;
+    let mut failed_paths: Vec<PathBuf> = Vec::new();
+
+    for (target, backup) in swapped {
+        if let Err(e) = restore_backup(fs, backup, target) {
+            rollback_err.get_or_insert_with(|| e.to_string());
+            failed_paths.push(backup.clone());
+        }
+    }
+
+    if let Some(rollback) = rollback_err {
+        return Err(UpdateError::RollbackFailed {
+            original: original_error.to_string(),
+            rollback,
+            backup_paths: failed_paths,
+        });
+    }
+
+    Ok(())
+}
+
+/// Remove `.bak` backup files after a successful update.
+pub fn cleanup_backups(fs: &dyn FileSystem, swapped: &[(PathBuf, PathBuf)]) {
+    for (_, backup) in swapped {
+        let _ = fs.remove_file(backup);
+    }
+}
+
+/// On Windows, the running binary cannot be overwritten directly.
+/// Rename the target to `.old` first, then place the new binary.
+/// Returns the path of the `.old` file on success.
+pub fn windows_swap(
+    fs: &dyn FileSystem,
+    source: &Path,
+    target: &Path,
+) -> Result<PathBuf, UpdateError> {
+    let old_path = target.with_extension("old");
+    fs.rename(target, &old_path)
+        .map_err(|e| UpdateError::SwapFailed {
+            reason: format!("rename to .old failed: {e}"),
+        })?;
+    fs.rename(source, target)
+        .map_err(|e| UpdateError::SwapFailed {
+            reason: format!("rename new binary failed: {e}"),
+        })?;
+    Ok(old_path)
 }
 
 /// Detect a partial update by comparing ecc and ecc-workflow versions.
@@ -120,7 +195,10 @@ pub fn detect_partial_update(
         .unwrap_or_default();
 
     let workflow_version = shell
-        .run_command(workflow_path.to_str().unwrap_or("ecc-workflow"), &["--version"])
+        .run_command(
+            workflow_path.to_str().unwrap_or("ecc-workflow"),
+            &["--version"],
+        )
         .map(|o| o.stdout.trim().to_string())
         .unwrap_or_default();
 
@@ -131,23 +209,17 @@ pub fn detect_partial_update(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ecc_test_support::{InMemoryFileSystem, MockExecutor};
     use ecc_ports::shell::CommandOutput;
+    use ecc_test_support::{InMemoryFileSystem, MockExecutor};
 
     fn setup_fs_with_binary(name: &str) -> InMemoryFileSystem {
         let fs = InMemoryFileSystem::new();
         let install_dir = Path::new("/usr/local/bin");
         let _ = fs.create_dir_all(install_dir);
-        let _ = fs.write(
-            &install_dir.join(name),
-            "old-binary-content",
-        );
+        let _ = fs.write(&install_dir.join(name), "old-binary-content");
         let extraction_dir = Path::new("/tmp/ecc-update");
         let _ = fs.create_dir_all(&extraction_dir.join("bin"));
-        let _ = fs.write(
-            &extraction_dir.join("bin").join(name),
-            "new-binary-content",
-        );
+        let _ = fs.write(&extraction_dir.join("bin").join(name), "new-binary-content");
         fs
     }
 
@@ -199,7 +271,10 @@ mod tests {
 
         // Original binary should be restored from backup
         let target = Path::new("/usr/local/bin/ecc");
-        assert!(fs.exists(target), "original binary should be restored after failed swap");
+        assert!(
+            fs.exists(target),
+            "original binary should be restored after failed swap"
+        );
         assert_eq!(fs.read_to_string(target).unwrap(), "old-binary");
     }
 
@@ -224,7 +299,10 @@ mod tests {
 
         // Both updated
         assert_eq!(fs.read_to_string(&install.join("ecc")).unwrap(), "new");
-        assert_eq!(fs.read_to_string(&install.join("ecc-workflow")).unwrap(), "new");
+        assert_eq!(
+            fs.read_to_string(&install.join("ecc-workflow")).unwrap(),
+            "new"
+        );
     }
 
     #[test]
@@ -245,18 +323,169 @@ mod tests {
     }
 
     #[test]
+    fn windows_swap() {
+        // PC-014: Windows swap renames running binary to .old before placing new binary
+        let fs = InMemoryFileSystem::new();
+        let _ = fs.create_dir_all(Path::new("/usr/local/bin"));
+
+        let source = Path::new("/tmp/new-ecc");
+        let target = Path::new("/usr/local/bin/ecc");
+        let expected_old = Path::new("/usr/local/bin/ecc.old");
+
+        // Set up existing target and new binary
+        let _ = fs.write(target, "old-binary");
+        let _ = fs.write(source, "new-binary");
+
+        let result = super::windows_swap(&fs, source, target);
+        assert!(result.is_ok(), "windows_swap should succeed: {result:?}");
+
+        let old_path = result.unwrap();
+        assert_eq!(old_path, expected_old, "should return path to .old file");
+
+        // The old binary should be at .old
+        assert!(fs.exists(expected_old), ".old file must exist");
+        assert_eq!(fs.read_to_string(expected_old).unwrap(), "old-binary");
+
+        // The new binary should be at target
+        assert!(fs.exists(target), "target must exist with new binary");
+        assert_eq!(fs.read_to_string(target).unwrap(), "new-binary");
+
+        // Source should no longer exist (was renamed)
+        assert!(!fs.exists(source), "source should be gone after rename");
+    }
+
+    #[test]
+    fn cleanup_backups() {
+        // PC-013: cleanup_backups removes .bak files after successful update
+        let fs = InMemoryFileSystem::new();
+        let _ = fs.create_dir_all(Path::new("/usr/local/bin"));
+
+        let target1 = PathBuf::from("/usr/local/bin/ecc");
+        let backup1 = PathBuf::from("/usr/local/bin/ecc.bak");
+        let target2 = PathBuf::from("/usr/local/bin/ecc-workflow");
+        let backup2 = PathBuf::from("/usr/local/bin/ecc-workflow.bak");
+
+        // Write backups that should be removed
+        let _ = fs.write(&backup1, "old-ecc");
+        let _ = fs.write(&backup2, "old-ecc-workflow");
+        // Also write current targets
+        let _ = fs.write(&target1, "new-ecc");
+        let _ = fs.write(&target2, "new-ecc-workflow");
+
+        let swapped = vec![
+            (target1.clone(), backup1.clone()),
+            (target2.clone(), backup2.clone()),
+        ];
+
+        super::cleanup_backups(&fs, &swapped);
+
+        // Backups must be gone
+        assert!(!fs.exists(&backup1), "backup1 should be removed");
+        assert!(!fs.exists(&backup2), "backup2 should be removed");
+        // Targets must still be present
+        assert!(fs.exists(&target1), "target1 should still exist");
+        assert!(fs.exists(&target2), "target2 should still exist");
+    }
+
+    #[test]
+    fn rollback_both_failures() {
+        // PC-012: rollback_swapped_or_fail returns RollbackFailed with both original and rollback errors
+        // Use a dir entry (not a file entry) so exists() returns true but rename() fails
+        let fs = InMemoryFileSystem::new().with_dir("/usr/local/bin/ecc.bak"); // exists() = true, but rename() will fail (not in files map)
+
+        let target = PathBuf::from("/usr/local/bin/ecc");
+        let backup = PathBuf::from("/usr/local/bin/ecc.bak");
+        let swapped = vec![(target, backup)];
+
+        let result = rollback_swapped_or_fail(&fs, &swapped, "original swap failed");
+        assert!(result.is_err(), "should fail when rollback fails");
+
+        let err = result.unwrap_err();
+        match err {
+            UpdateError::RollbackFailed {
+                original,
+                rollback,
+                backup_paths,
+            } => {
+                assert!(
+                    original.contains("original swap failed"),
+                    "original error must be present: {original}"
+                );
+                assert!(
+                    !rollback.is_empty(),
+                    "rollback error must be present: {rollback}"
+                );
+                assert!(
+                    !backup_paths.is_empty(),
+                    "backup_paths must list failing paths"
+                );
+            }
+            other => panic!("expected RollbackFailed, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn rollback_swapped_restores() {
+        // PC-011: rollback_swapped restores all binaries from .bak backups
+        let fs = InMemoryFileSystem::new();
+        let _ = fs.create_dir_all(Path::new("/usr/local/bin"));
+
+        // Set up two targets and their .bak backups (simulating a swapped state)
+        let target1 = PathBuf::from("/usr/local/bin/ecc");
+        let backup1 = PathBuf::from("/usr/local/bin/ecc.bak");
+        let target2 = PathBuf::from("/usr/local/bin/ecc-workflow");
+        let backup2 = PathBuf::from("/usr/local/bin/ecc-workflow.bak");
+
+        // Write backup files (the originals saved before swap)
+        let _ = fs.write(&backup1, "original-ecc");
+        let _ = fs.write(&backup2, "original-ecc-workflow");
+        // Write current targets (the newly swapped binaries)
+        let _ = fs.write(&target1, "new-ecc");
+        let _ = fs.write(&target2, "new-ecc-workflow");
+
+        let swapped = vec![
+            (target1.clone(), backup1.clone()),
+            (target2.clone(), backup2.clone()),
+        ];
+
+        let result = rollback_swapped(&fs, &swapped);
+        assert!(
+            result.is_ok(),
+            "rollback_swapped should succeed: {result:?}"
+        );
+
+        // Targets should now be restored to original content
+        assert_eq!(fs.read_to_string(&target1).unwrap(), "original-ecc");
+        assert_eq!(
+            fs.read_to_string(&target2).unwrap(),
+            "original-ecc-workflow"
+        );
+        // Backups should be gone (renamed to targets)
+        assert!(!fs.exists(&backup1));
+        assert!(!fs.exists(&backup2));
+    }
+
+    #[test]
     fn detects_partial_update() {
         let shell = MockExecutor::new()
-            .on_args("/install/ecc", &["version"], CommandOutput {
-                stdout: "4.3.0\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            })
-            .on_args("/install/ecc-workflow", &["--version"], CommandOutput {
-                stdout: "4.2.0\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            });
+            .on_args(
+                "/install/ecc",
+                &["version"],
+                CommandOutput {
+                    stdout: "4.3.0\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "/install/ecc-workflow",
+                &["--version"],
+                CommandOutput {
+                    stdout: "4.2.0\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            );
 
         let result = detect_partial_update(&shell, Path::new("/install")).unwrap();
         assert!(result, "should detect version mismatch as partial update");

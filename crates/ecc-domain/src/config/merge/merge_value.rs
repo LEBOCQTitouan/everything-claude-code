@@ -1,5 +1,5 @@
-use super::legacy::remove_legacy_hooks;
 use super::MergeHooksPureResult;
+use super::legacy::remove_legacy_hooks;
 
 /// Merge source hook entries into existing entries for one event type.
 ///
@@ -66,11 +66,15 @@ pub fn merge_hooks_pure(
     let mut total_present = 0usize;
 
     for (event, entries) in source_obj {
-        let Some(source_arr) = entries.as_array() else { continue };
+        let Some(source_arr) = entries.as_array() else {
+            continue;
+        };
         let existing_arr = merged
             .entry(event.clone())
             .or_insert_with(|| serde_json::Value::Array(Vec::new()));
-        let Some(existing_entries) = existing_arr.as_array_mut() else { continue };
+        let Some(existing_entries) = existing_arr.as_array_mut() else {
+            continue;
+        };
         let (added, present) = merge_event_entries(source_arr, existing_entries);
         total_added += added;
         total_present += present;

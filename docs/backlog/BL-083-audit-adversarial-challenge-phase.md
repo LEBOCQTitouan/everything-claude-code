@@ -1,7 +1,7 @@
 ---
 id: BL-083
 title: Adversarial challenge phase for all /audit-* commands
-status: open
+status: "implemented"
 created: 2026-03-27
 promoted_to: ""
 tags: [audit, adversarial, quality, pipeline]

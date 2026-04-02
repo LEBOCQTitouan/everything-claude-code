@@ -177,6 +177,8 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "stop:oath-reflection" => handlers::oath_reflection(stdin, ports),
         "stop:craft-velocity" => handlers::craft_velocity(stdin, ports),
         "stop:daily-summary" => handlers::daily_summary(stdin, ports),
+        "stop:cartography" => handlers::stop_cartography(stdin, ports),
+        "start:cartography" => handlers::start_cartography(stdin, ports),
 
         // Unknown hook — passthrough with warning
         _ => {
@@ -278,6 +280,52 @@ mod tests {
         let result = dispatch(&ctx, &ports);
         assert_eq!(result.stdout, "test");
         assert!(result.stderr.contains("Unknown hook ID"));
+    }
+
+    /// PC-017: dispatch routes "stop:cartography" and "start:cartography" to correct handlers.
+    #[test]
+    fn dispatches_cartography_hooks() {
+        // stop:cartography: no CLAUDE_PROJECT_DIR → passthrough (not "Unknown hook ID")
+        {
+            let fs = InMemoryFileSystem::new();
+            let shell = MockExecutor::new();
+            let env = MockEnvironment::new();
+            let term = BufferedTerminal::new();
+            let ports = make_ports(&fs, &shell, &env, &term);
+
+            let ctx = HookContext {
+                hook_id: "stop:cartography".to_string(),
+                stdin_payload: "data".to_string(),
+                profiles_csv: None,
+            };
+            let result = dispatch(&ctx, &ports);
+            assert_eq!(result.stdout, "data");
+            assert!(
+                !result.stderr.contains("Unknown hook ID"),
+                "stop:cartography should route to handler, not fall through to unknown"
+            );
+        }
+
+        // start:cartography: no CLAUDE_PROJECT_DIR → passthrough (not "Unknown hook ID")
+        {
+            let fs = InMemoryFileSystem::new();
+            let shell = MockExecutor::new();
+            let env = MockEnvironment::new();
+            let term = BufferedTerminal::new();
+            let ports = make_ports(&fs, &shell, &env, &term);
+
+            let ctx = HookContext {
+                hook_id: "start:cartography".to_string(),
+                stdin_payload: "data".to_string(),
+                profiles_csv: None,
+            };
+            let result = dispatch(&ctx, &ports);
+            assert_eq!(result.stdout, "data");
+            assert!(
+                !result.stderr.contains("Unknown hook ID"),
+                "start:cartography should route to handler, not fall through to unknown"
+            );
+        }
     }
 
     #[test]

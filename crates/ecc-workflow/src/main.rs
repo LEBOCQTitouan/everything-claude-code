@@ -160,9 +160,7 @@ enum TasksCmd {
 
 fn init_tracing(verbose: u8, quiet: bool) {
     let config_store = ecc_infra::file_config_store::FileConfigStore::new(
-        dirs::home_dir()
-            .unwrap_or_default()
-            .join(".ecc"),
+        dirs::home_dir().unwrap_or_default().join(".ecc"),
         std::env::current_dir().ok().map(|d| d.join(".ecc")),
     );
 
@@ -245,7 +243,9 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::WorktreeName { concern, feature } => {
             commands::worktree_name::run(&concern, &feature)
         }
-        Commands::WavePlan { design_path } => commands::wave_plan::run(&design_path, &project_dir()),
+        Commands::WavePlan { design_path } => {
+            commands::wave_plan::run(&design_path, &project_dir())
+        }
         Commands::Merge => commands::merge::run(&project_dir()),
         Commands::Backlog { subcmd } => match subcmd {
             BacklogCmd::AddEntry {

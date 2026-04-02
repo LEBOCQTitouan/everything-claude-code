@@ -23,6 +23,8 @@ struct Cli {
 
 #[derive(clap::Subcommand)]
 enum Command {
+    /// Deterministic git history analysis
+    Analyze(commands::analyze::AnalyzeArgs),
     /// Show the current ECC version
     Version,
     /// Install ECC configuration to ~/.claude/
@@ -59,11 +61,13 @@ enum Command {
     Config(commands::config::ConfigArgs),
     /// Update ECC to the latest version
     Update(commands::update::UpdateArgs),
+    /// Workflow state machine (mirrors ecc-workflow)
+    Workflow(commands::workflow::WorkflowArgs),
 }
 
 /// Initialize tracing with layered subscriber: stderr + optional JSON file.
 fn init_tracing(env_filter: tracing_subscriber::EnvFilter) {
-    use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+    use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
     let stderr_layer = tracing_subscriber::fmt::layer()
         .with_writer(std::io::stderr)
@@ -76,10 +80,7 @@ fn init_tracing(env_filter: tracing_subscriber::EnvFilter) {
         .join(".ecc")
         .join("logs");
 
-    let json_layer = if logs_dir
-        .parent()
-        .is_some_and(|p| p.exists())
-    {
+    let json_layer = if logs_dir.parent().is_some_and(|p| p.exists()) {
         std::fs::create_dir_all(&logs_dir).ok();
         let file_appender = tracing_appender::rolling::daily(&logs_dir, "ecc");
         let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
@@ -89,9 +90,7 @@ fn init_tracing(env_filter: tracing_subscriber::EnvFilter) {
             tracing_subscriber::fmt::layer()
                 .json()
                 .with_writer(non_blocking)
-                .with_filter(
-                    tracing_subscriber::EnvFilter::new("debug"),
-                ),
+                .with_filter(tracing_subscriber::EnvFilter::new("debug")),
         )
     } else {
         None
@@ -172,6 +171,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     match cli.command {
+        Command::Analyze(args) => commands::analyze::run(args),
         Command::Version => commands::version::run(),
         Command::Install(args) => commands::install::run(args),
         Command::Init(args) => commands::init::run(args),
@@ -190,5 +190,6 @@ fn main() -> anyhow::Result<()> {
         Command::Status(args) => commands::status::run(args),
         Command::Config(args) => commands::config::run(args),
         Command::Update(args) => commands::update::run(&args),
+        Command::Workflow(args) => commands::workflow::run(args),
     }
 }

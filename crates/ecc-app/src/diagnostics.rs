@@ -72,17 +72,22 @@ pub fn gather_status(fs: &dyn FileSystem, env: &dyn Environment) -> DiagnosticRe
         return not_installed_report(ecc_version, env);
     }
 
-    let config_path = home
-        .join(".ecc/config.toml")
-        .to_string_lossy()
-        .into_owned();
+    let config_path = home.join(".ecc/config.toml").to_string_lossy().into_owned();
 
     // Read workflow state
     let state_path = claude_dir.join("workflow/state.json");
     let (workflow_phase, workflow_feature, artifacts) = if fs.is_file(&state_path) {
         parse_state(fs, &state_path)
     } else {
-        (None, None, ArtifactStatus { spec: false, design: false, tasks: false })
+        (
+            None,
+            None,
+            ArtifactStatus {
+                spec: false,
+                design: false,
+                tasks: false,
+            },
+        )
     };
 
     // Count component files
@@ -114,8 +119,17 @@ fn not_installed_report(ecc_version: String, env: &dyn Environment) -> Diagnosti
         ecc_version,
         workflow_phase: None,
         workflow_feature: None,
-        artifacts: ArtifactStatus { spec: false, design: false, tasks: false },
-        component_counts: ComponentCounts { agents: 0, skills: 0, commands: 0, rules: 0 },
+        artifacts: ArtifactStatus {
+            spec: false,
+            design: false,
+            tasks: false,
+        },
+        component_counts: ComponentCounts {
+            agents: 0,
+            skills: 0,
+            commands: 0,
+            rules: 0,
+        },
         hook_count: 0,
         config_path,
         installed: false,
@@ -128,11 +142,31 @@ fn parse_state(
 ) -> (Option<String>, Option<String>, ArtifactStatus) {
     let content = match fs.read_to_string(state_path) {
         Ok(c) => c,
-        Err(_) => return (None, None, ArtifactStatus { spec: false, design: false, tasks: false }),
+        Err(_) => {
+            return (
+                None,
+                None,
+                ArtifactStatus {
+                    spec: false,
+                    design: false,
+                    tasks: false,
+                },
+            );
+        }
     };
     let v: serde_json::Value = match serde_json::from_str(&content) {
         Ok(v) => v,
-        Err(_) => return (None, None, ArtifactStatus { spec: false, design: false, tasks: false }),
+        Err(_) => {
+            return (
+                None,
+                None,
+                ArtifactStatus {
+                    spec: false,
+                    design: false,
+                    tasks: false,
+                },
+            );
+        }
     };
 
     let phase = v.get("phase").and_then(|p| p.as_str()).map(str::to_owned);
@@ -145,7 +179,11 @@ fn parse_state(
             tasks: arts.get("tasks_path").is_some_and(|v| !v.is_null()),
         }
     } else {
-        ArtifactStatus { spec: false, design: false, tasks: false }
+        ArtifactStatus {
+            spec: false,
+            design: false,
+            tasks: false,
+        }
     };
 
     (phase, feature, artifacts)
@@ -173,7 +211,11 @@ pub fn format_human(report: &DiagnosticReport) -> String {
                 lines.push(format!("Feature: {feature}"));
             }
             let spec_mark = if report.artifacts.spec { "✓" } else { "✗" };
-            let design_mark = if report.artifacts.design { "✓" } else { "✗" };
+            let design_mark = if report.artifacts.design {
+                "✓"
+            } else {
+                "✗"
+            };
             let tasks_mark = if report.artifacts.tasks { "✓" } else { "✗" };
             lines.push(format!(
                 "Artifacts: spec [{spec_mark}] design [{design_mark}] tasks [{tasks_mark}]"
@@ -205,10 +247,28 @@ mod tests {
     use super::*;
     use ecc_test_support::{InMemoryFileSystem, MockEnvironment};
 
-    fn make_state_json(phase: &str, feature: &str, spec: bool, design: bool, tasks: bool) -> String {
-        let spec_val = if spec { r#""docs/specs/spec.md""# } else { "null" };
-        let design_val = if design { r#""docs/specs/design.md""# } else { "null" };
-        let tasks_val = if tasks { r#""docs/specs/tasks.md""# } else { "null" };
+    fn make_state_json(
+        phase: &str,
+        feature: &str,
+        spec: bool,
+        design: bool,
+        tasks: bool,
+    ) -> String {
+        let spec_val = if spec {
+            r#""docs/specs/spec.md""#
+        } else {
+            "null"
+        };
+        let design_val = if design {
+            r#""docs/specs/design.md""#
+        } else {
+            "null"
+        };
+        let tasks_val = if tasks {
+            r#""docs/specs/tasks.md""#
+        } else {
+            "null"
+        };
         format!(
             r#"{{
   "phase": "{phase}",
@@ -244,20 +304,29 @@ mod tests {
         fs.create_dir_all(&claude_dir.join("workflow")).unwrap();
 
         let state_json = make_state_json("implement", "my-feature", true, true, false);
-        fs.write(&claude_dir.join("workflow/state.json"), &state_json).unwrap();
+        fs.write(&claude_dir.join("workflow/state.json"), &state_json)
+            .unwrap();
 
-        fs.write(&claude_dir.join("agents/planner.md"), "# planner").unwrap();
-        fs.write(&claude_dir.join("agents/tdd-guide.md"), "# tdd").unwrap();
+        fs.write(&claude_dir.join("agents/planner.md"), "# planner")
+            .unwrap();
+        fs.write(&claude_dir.join("agents/tdd-guide.md"), "# tdd")
+            .unwrap();
 
         let report = gather_status(&fs, &env);
 
-        assert!(report.installed, "should be installed when ~/.claude/ exists");
+        assert!(
+            report.installed,
+            "should be installed when ~/.claude/ exists"
+        );
         assert_eq!(report.workflow_phase.as_deref(), Some("implement"));
         assert_eq!(report.workflow_feature.as_deref(), Some("my-feature"));
         assert!(report.artifacts.spec, "spec artifact should be present");
         assert!(report.artifacts.design, "design artifact should be present");
         assert!(!report.artifacts.tasks, "tasks artifact should be absent");
-        assert_eq!(report.component_counts.agents, 2, "should count 2 agent files");
+        assert_eq!(
+            report.component_counts.agents, 2,
+            "should count 2 agent files"
+        );
     }
 
     #[test]
@@ -270,9 +339,18 @@ mod tests {
 
         let report = gather_status(&fs, &env);
 
-        assert!(report.installed, "should be installed when ~/.claude/ exists");
-        assert!(report.workflow_phase.is_none(), "no workflow phase without state.json");
-        assert!(report.workflow_feature.is_none(), "no workflow feature without state.json");
+        assert!(
+            report.installed,
+            "should be installed when ~/.claude/ exists"
+        );
+        assert!(
+            report.workflow_phase.is_none(),
+            "no workflow phase without state.json"
+        );
+        assert!(
+            report.workflow_feature.is_none(),
+            "no workflow feature without state.json"
+        );
     }
 
     #[test]
@@ -282,7 +360,10 @@ mod tests {
 
         let report = gather_status(&fs, &env);
 
-        assert!(!report.installed, "should be not installed when ~/.claude/ is missing");
+        assert!(
+            !report.installed,
+            "should be not installed when ~/.claude/ is missing"
+        );
     }
 
     #[test]
@@ -291,8 +372,17 @@ mod tests {
             ecc_version: "1.2.3".to_owned(),
             workflow_phase: Some("implement".to_owned()),
             workflow_feature: Some("feature-x".to_owned()),
-            artifacts: ArtifactStatus { spec: true, design: false, tasks: true },
-            component_counts: ComponentCounts { agents: 5, skills: 3, commands: 2, rules: 4 },
+            artifacts: ArtifactStatus {
+                spec: true,
+                design: false,
+                tasks: true,
+            },
+            component_counts: ComponentCounts {
+                agents: 5,
+                skills: 3,
+                commands: 2,
+                rules: 4,
+            },
             hook_count: 7,
             config_path: "/home/test/.ecc/config.toml".to_owned(),
             installed: true,
@@ -302,8 +392,14 @@ mod tests {
 
         assert!(output.contains("ECC"), "output must include 'ECC'");
         assert!(output.contains("Phase:"), "output must include 'Phase:'");
-        assert!(output.contains("Feature:"), "output must include 'Feature:'");
-        assert!(output.contains("Components:"), "output must include 'Components:'");
+        assert!(
+            output.contains("Feature:"),
+            "output must include 'Feature:'"
+        );
+        assert!(
+            output.contains("Components:"),
+            "output must include 'Components:'"
+        );
         assert!(output.contains("Config:"), "output must include 'Config:'");
     }
 
@@ -313,8 +409,17 @@ mod tests {
             ecc_version: "1.0.0".to_owned(),
             workflow_phase: None,
             workflow_feature: None,
-            artifacts: ArtifactStatus { spec: false, design: false, tasks: false },
-            component_counts: ComponentCounts { agents: 0, skills: 0, commands: 0, rules: 0 },
+            artifacts: ArtifactStatus {
+                spec: false,
+                design: false,
+                tasks: false,
+            },
+            component_counts: ComponentCounts {
+                agents: 0,
+                skills: 0,
+                commands: 0,
+                rules: 0,
+            },
             hook_count: 0,
             config_path: String::new(),
             installed: false,

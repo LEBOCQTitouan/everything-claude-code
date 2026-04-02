@@ -17,20 +17,31 @@ pub struct UpdateArgs {
 }
 
 pub fn run(args: &UpdateArgs) -> anyhow::Result<()> {
-    use ecc_app::update::{run_update, UpdateOptions};
     use ecc_app::update::context::UpdateContext;
     use ecc_app::update::orchestrator::UpdateOutcome;
+    use ecc_app::update::{UpdateOptions, run_update};
     use ecc_infra::github_release::GithubReleaseClient;
     use ecc_infra::os_env::OsEnvironment;
     use ecc_infra::os_fs::OsFileSystem;
     use ecc_infra::process_executor::ProcessExecutor;
     use ecc_infra::std_terminal::StdTerminal;
+    use ecc_infra::tarball_extractor::FlateExtractor;
+
+    #[cfg(unix)]
+    use ecc_infra::flock_lock::FlockLock;
 
     let fs = OsFileSystem;
     let env = OsEnvironment;
     let shell = ProcessExecutor;
     let terminal = StdTerminal;
     let client = GithubReleaseClient::new("LEBOCQTitouan", "everything-claude-code");
+    let extractor = FlateExtractor::new();
+
+    #[cfg(unix)]
+    let lock = FlockLock;
+
+    #[cfg(not(unix))]
+    let lock = ecc_infra::no_op_lock::NoOpLock;
 
     let ctx = UpdateContext {
         fs: &fs,
@@ -38,6 +49,8 @@ pub fn run(args: &UpdateArgs) -> anyhow::Result<()> {
         shell: &shell,
         terminal: &terminal,
         release_client: &client,
+        lock: &lock,
+        extractor: &extractor,
     };
 
     let options = UpdateOptions {

@@ -3,6 +3,7 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  merge_group:
 
 # Prevent duplicate runs
 concurrency:
@@ -48,6 +49,11 @@ jobs:
       - name: Clippy
         run: cargo clippy -- -D warnings
 
+      - name: Semver checks
+        run: |
+          cargo install cargo-semver-checks --locked
+          cargo semver-checks
+
       - name: Validate components
         run: |
           ./target/release/ecc validate agents
@@ -55,6 +61,26 @@ jobs:
           ./target/release/ecc validate hooks
           ./target/release/ecc validate skills
           ./target/release/ecc validate rules
+
+      - name: Validate workflow templates
+        run: |
+          python3 -c "
+          import yaml, sys, pathlib
+          errors = []
+          required = ['name', True, 'permissions', 'jobs']
+          for f in sorted(pathlib.Path('workflow-templates').glob('*.yml')):
+              try:
+                  d = yaml.safe_load(f.read_text())
+                  missing = [str(k) for k in required if k not in d]
+                  if missing:
+                      errors.append(f'{f}: missing keys: {missing}')
+              except Exception as e:
+                  errors.append(f'{f}: parse error: {e}')
+          if errors:
+              print('\n'.join(errors), file=sys.stderr)
+              sys.exit(1)
+          print(f'Validated {len(list(pathlib.Path(\"workflow-templates\").glob(\"*.yml\")))} workflow templates')
+          "
 
   security:
     name: Security Audit
@@ -74,6 +100,44 @@ jobs:
 
       - name: Run audit
         run: cargo audit
+
+  mutation:
+    name: Mutation Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo (mutation)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-mutants-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-mutants-
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants@25.1.1
+
+      - name: Run mutation testing
+        run: cargo mutants --package ecc-domain --package ecc-app --timeout 120
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: mutants.out/
 
   lint:
     name: Lint

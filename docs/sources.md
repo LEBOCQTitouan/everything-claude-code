@@ -18,7 +18,8 @@
 - [clap documentation](https://docs.rs/clap/latest/clap/) — type: doc | subject: cli-design | added: 2026-03-29 | by: human | checked: 2026-03-29
 
 ### testing
-- [cargo-nextest](https://nexte.st/) — type: package | subject: testing | added: 2026-03-29 | by: human | checked: 2026-03-29
+- [cargo-nextest](https://nexte.st/) — type: package | subject: testing | added: 2026-03-29 | by: human | checked: 2026-03-31
+- [cargo-mutants](https://mutants.rs/) — type: package | subject: testing | added: 2026-03-31 | by: agent | checked: 2026-03-31
 
 ## Assess
 

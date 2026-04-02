@@ -32,7 +32,8 @@ mod tests {
     use crate::update::{ArtifactName, Version};
 
     fn artifact() -> ArtifactName {
-        ArtifactName::resolve("macos", "arm64").unwrap()
+        use crate::update::platform::{Architecture, Platform};
+        ArtifactName::resolve(Platform::MacOS, Architecture::Arm64).unwrap()
     }
 
     #[test]

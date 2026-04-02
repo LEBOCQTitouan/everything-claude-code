@@ -3,7 +3,7 @@ id: BL-094
 title: "Agent model routing optimization — downgrade misaligned agents from Opus to Sonnet/Haiku"
 scope: HIGH
 target: "/spec refactor"
-status: open
+status: "implemented"
 tags: [cost, model-routing, agents, optimization]
 created: 2026-03-28
 related: [BL-095, BL-096]

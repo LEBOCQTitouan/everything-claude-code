@@ -16,6 +16,10 @@ walkdir = { workspace = true }
 crossterm = { workspace = true }
 rustyline = { workspace = true }
 anyhow = { workspace = true }
+flate2 = { workspace = true }
+tar = { workspace = true }
+ureq = { workspace = true }
+sha2 = { workspace = true }
 tracing = "0.1"
 toml = "0.8"
 serde = { workspace = true }

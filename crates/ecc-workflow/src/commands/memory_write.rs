@@ -70,8 +70,7 @@ fn resolve_project_memory_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Err
     let repo_root = ecc_flock::resolve_repo_root(project_dir);
     // Canonicalize to resolve macOS symlinks (/var → /private/var) so the
     // hash is identical whether called from a worktree or the main repo.
-    let repo_root =
-        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    let repo_root = std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
     if !repo_root.join(".git").exists() {
         return Err(anyhow::anyhow!(
             "not a git repository: {} (resolved from {})",
@@ -669,10 +668,7 @@ mod tests {
         let lines: Vec<&str> = result.lines().collect();
         let daily_pos = lines.iter().position(|l| *l == "## Daily").unwrap();
         let entry_pos = lines.iter().position(|l| *l == entry).unwrap();
-        assert!(
-            entry_pos > daily_pos,
-            "entry should appear after ## Daily"
-        );
+        assert!(entry_pos > daily_pos, "entry should appear after ## Daily");
         assert!(
             entry_pos <= daily_pos + 2,
             "entry should be inserted right after ## Daily (with optional blank)"

@@ -55,8 +55,7 @@ pub fn run(args: AuditWebArgs) -> anyhow::Result<()> {
     match args.action {
         AuditWebAction::Profile { action } => match action {
             ProfileAction::Init => {
-                ecc_app::audit_web::init(&fs, &project_dir)
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                ecc_app::audit_web::init(&fs, &project_dir).map_err(|e| anyhow::anyhow!("{e}"))?;
                 println!("Profile initialized at {}", profile_path.display());
             }
             ProfileAction::Show => {
@@ -108,10 +107,7 @@ mod tests {
 
         let _ = fs::remove_dir_all(&tmp_dir);
 
-        assert!(
-            result.is_ok(),
-            "profile init should succeed: {result:?}"
-        );
+        assert!(result.is_ok(), "profile init should succeed: {result:?}");
         // Note: profile file creation verified via app-layer test; CLI test verifies routing
     }
 

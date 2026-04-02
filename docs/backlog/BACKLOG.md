@@ -71,7 +71,7 @@
 | BL-068 | Deterministic workflow state machine — typed state.json, phase transitions | — | HIGH | /spec dev | implemented | 2026-03-26 |
 | BL-069 | Deterministic convention linting — naming, placement, frontmatter values | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-070 | Deterministic wave grouping algorithm — PC parallelization from file-overlap | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
-| BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | open | 2026-03-26 |
+| BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-072 | Deterministic artifact scaffolding — spec, solution, tasks templates | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-073 | Deterministic diagram trigger heuristics — auto-detect diagram needs | — | LOW | /spec dev | open | 2026-03-26 |
 | BL-074 | Deterministic doc metrics — staleness, coverage, severity counting | — | LOW | /spec dev | open | 2026-03-26 |
@@ -97,7 +97,7 @@
 | BL-094 | Agent model routing optimization — downgrade misaligned agents to Sonnet/Haiku | — | HIGH | /spec refactor | implemented | 2026-03-28 |
 | BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | open | 2026-03-28 |
 | BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
-| BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | open | 2026-03-29 |
+| BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | implemented | 2026-03-29 | 2026-03-29 |
 | BL-098 | Socratic grill-me upgrade — OARS, laddering, MECE, reflective rephrasing | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-099 | Migrate serde_yml to serde-yaml-ng — maintenance risk mitigation | — | MEDIUM | /spec-refactor | implemented | 2026-03-29 |
 | BL-100 | sccache + mold build acceleration for dev environment | — | LOW | direct edit | open | 2026-03-29 |
@@ -110,16 +110,16 @@
 | BL-107 | Audit-web guided profile — interactive setup, persisted dimensions, self-improvement | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-108 | Smart stop notification — only notify on final stop or user input needed | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-109 | Autonomous comms pipeline — multi-channel content generation from code | — | EPIC | /spec | open | 2026-03-30 |
-| BL-110 | Add cargo-semver-checks to CI pipeline | — | LOW | direct edit | open | 2026-03-31 |
-| BL-111 | Enable GitHub Merge Queue for CI load reduction | — | LOW | direct edit | open | 2026-03-31 |
-| BL-112 | Evaluate cargo-dist to replace custom release.yml | — | MEDIUM | /spec-refactor | open | 2026-03-31 |
+| BL-110 | Add cargo-semver-checks to CI pipeline | — | LOW | direct edit | implemented | 2026-03-31 | 2026-03-31 |
+| BL-111 | Enable GitHub Merge Queue for CI load reduction | — | LOW | direct edit | implemented | 2026-03-31 | 2026-03-31 |
+| BL-112 | Evaluate cargo-dist to replace custom release.yml | — | MEDIUM | /spec-refactor | implemented | 2026-03-31 | 2026-03-31 |
 | BL-113 | Upgrade rusqlite 0.34 to 0.38 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-114 | Upgrade rustyline 15 to 17 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-116 | Add cargo-mutants mutation testing | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | open | 2026-03-31 |
-| BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | open | 2026-03-31 |
+| BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
 
 ## Dependency Graph
 
@@ -188,10 +188,10 @@ BL-109 → BL-092 (comms pipeline shares structured log infrastructure)
 
 ## Stats
 
-- **Total:** 108
-- **Open:** 40
+- **Total:** 118
+- **Open:** 37
 - **In-progress:** 0
-- **Implemented:** 64
+- **Implemented:** 77
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)

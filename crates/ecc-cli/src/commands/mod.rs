@@ -1,3 +1,4 @@
+pub mod analyze;
 pub mod audit;
 pub mod audit_web;
 pub mod backlog;
@@ -15,4 +16,5 @@ pub mod status;
 pub mod update;
 pub mod validate;
 pub mod version;
+pub mod workflow;
 pub mod worktree;

@@ -1,6 +1,6 @@
 //! Tier 3 Hooks — Session management and file I/O hooks.
 
-pub mod cartography;
+mod cartography;
 mod compact;
 pub mod daily;
 mod helpers;
@@ -10,8 +10,8 @@ mod reflection;
 mod tracking;
 mod worktree;
 
-use tracing::warn;
 use std::path::Path;
+use tracing::warn;
 
 pub use cartography::{start_cartography, stop_cartography};
 pub use compact::{post_compact, pre_compact};

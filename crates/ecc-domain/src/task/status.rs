@@ -252,9 +252,8 @@ mod tests {
 
         #[test]
         fn rejects_same_state_pending() {
-            let err =
-                TaskStatus::can_transition(TaskStatus::Pending, TaskStatus::Pending, false)
-                    .unwrap_err();
+            let err = TaskStatus::can_transition(TaskStatus::Pending, TaskStatus::Pending, false)
+                .unwrap_err();
             assert!(
                 matches!(err, TaskError::SameState { .. }),
                 "same-state pending transition should produce SameState error, got: {err}"

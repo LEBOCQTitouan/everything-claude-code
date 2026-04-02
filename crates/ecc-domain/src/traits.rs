@@ -118,6 +118,7 @@ mod transitionable_impl {
                 tasks_path: None,
             },
             completed: vec![],
+            version: 1,
         }
     }
 
@@ -184,6 +185,7 @@ mod tests {
                 tasks_path: None,
             },
             completed: vec![],
+            version: 1,
         }
     }
 

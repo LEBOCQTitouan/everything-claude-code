@@ -106,6 +106,18 @@
           }
         ],
         "description": "Load previous context and detect package manager on new session"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"start:cartography\" \"standard,strict\"",
+            "async": true,
+            "timeout": 30
+          }
+        ],
+        "description": "Process pending cartography deltas at session start"
       }
     ],
     "PostToolUse": [
@@ -348,6 +360,18 @@
           }
         ],
         "description": "Append session summary to daily memory file"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"stop:cartography\" \"minimal,standard,strict\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Write session delta for cartography at session end"
       }
     ],
     "PostToolUseFailure": [

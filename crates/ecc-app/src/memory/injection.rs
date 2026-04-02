@@ -18,9 +18,7 @@ pub fn inject_context(
     max_chars: usize,
     now: &str,
 ) -> Result<Option<String>, MemoryAppError> {
-    let candidates = store
-        .list_recent(20)
-        .map_err(MemoryAppError::Store)?;
+    let candidates = store.list_recent(20).map_err(MemoryAppError::Store)?;
 
     if candidates.is_empty() {
         return Ok(None);
@@ -33,9 +31,7 @@ pub fn inject_context(
             let entry_age = age_days(&e.created_at, now);
             let recency = ecc_domain::memory::consolidation::recency_factor(entry_age);
             let base_score = e.relevance_score * recency;
-            let boosted = if project_id.is_some()
-                && e.project_id.as_deref() == project_id
-            {
+            let boosted = if project_id.is_some() && e.project_id.as_deref() == project_id {
                 base_score * 1.5
             } else {
                 base_score
@@ -137,9 +133,23 @@ mod tests {
     fn inject_boosts_project_scoped() {
         let store = make_store();
         // Insert a lower-scored entry scoped to the project
-        insert_entry(&store, "Project Entry", "This is a project-specific memory entry content", MemoryTier::Episodic, Some("my-project"), 0.5);
+        insert_entry(
+            &store,
+            "Project Entry",
+            "This is a project-specific memory entry content",
+            MemoryTier::Episodic,
+            Some("my-project"),
+            0.5,
+        );
         // Insert a higher-scored unscoped entry
-        insert_entry(&store, "Global Entry", "This is a global memory entry content unscoped", MemoryTier::Semantic, None, 0.9);
+        insert_entry(
+            &store,
+            "Global Entry",
+            "This is a global memory entry content unscoped",
+            MemoryTier::Semantic,
+            None,
+            0.9,
+        );
 
         let result = inject_context(&store, Some("my-project"), 5000, NOW).unwrap();
         assert!(result.is_some());
@@ -239,6 +249,9 @@ mod tests {
             output.starts_with("## Relevant Memories"),
             "output should start with ## Relevant Memories header"
         );
-        assert!(output.contains("### My Memory"), "should contain entry title as H3");
+        assert!(
+            output.contains("### My Memory"),
+            "should contain entry title as H3"
+        );
     }
 }

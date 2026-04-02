@@ -1,6 +1,6 @@
-use super::legacy::remove_legacy_hooks_typed;
 use super::super::hook_types;
 use super::MergeHooksTypedResult;
+use super::legacy::remove_legacy_hooks_typed;
 
 /// Merge hooks from source into existing hooks (typed version).
 pub fn merge_hooks_typed(

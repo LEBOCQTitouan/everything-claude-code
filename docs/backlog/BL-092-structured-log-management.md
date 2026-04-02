@@ -3,7 +3,7 @@ id: BL-092
 title: "Structured log management — tracing + JSON rolling files + SQLite index + ecc log CLI"
 scope: HIGH
 target: "/spec dev"
-status: open
+status: "implemented"
 tags: [observability, logging, tracing, sqlite, cli]
 created: 2026-03-28
 related: [BL-091]

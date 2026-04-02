@@ -120,11 +120,17 @@ fn remove_stale_worktree(
         Ok(o) if o.success() => {
             result.removed.push(worktree_name.to_owned());
             if let Some(branch) = &entry.branch {
-                let _ = executor.run_command_in_dir("git", &["branch", "-D", "--", branch], project_dir);
+                let _ = executor.run_command_in_dir(
+                    "git",
+                    &["branch", "-D", "--", branch],
+                    project_dir,
+                );
             }
         }
         Ok(o) => {
-            result.errors.push(format!("{worktree_name}: remove failed: {}", o.stderr));
+            result
+                .errors
+                .push(format!("{worktree_name}: remove failed: {}", o.stderr));
         }
         Err(e) => {
             result.errors.push(format!("{worktree_name}: {e}"));
@@ -153,8 +159,8 @@ pub fn gc(
     project_dir: &Path,
     _force: bool,
 ) -> Result<WorktreeGcResult, WorktreeError> {
-    let list_output =
-        executor.run_command_in_dir("git", &["worktree", "list", "--porcelain"], project_dir)
+    let list_output = executor
+        .run_command_in_dir("git", &["worktree", "list", "--porcelain"], project_dir)
         .map_err(|e| WorktreeError::Shell(e.to_string()))?;
     let entries = parse_worktree_list(&list_output.stdout);
     let mut result = WorktreeGcResult::default();
@@ -299,7 +305,8 @@ mod tests {
         // The error must be a WorktreeError::Shell variant
         assert!(
             matches!(err, WorktreeError::Shell(_)),
-            "expected WorktreeError::Shell but got: {:?}", err
+            "expected WorktreeError::Shell but got: {:?}",
+            err
         );
     }
 

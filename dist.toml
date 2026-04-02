@@ -1,0 +1,60 @@
+# cargo-dist configuration for ECC binary distribution
+# See: https://opensource.axo.dev/cargo-dist/book/reference/config.html
+
+[dist]
+# Target cargo-dist version
+cargo-dist-version = "0.27.0"
+
+# CI provider
+ci = "github"
+
+# Compilation targets (all 5 platforms)
+targets = [
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu",
+  "x86_64-pc-windows-msvc",
+]
+
+# Checksum algorithm
+checksum = "sha256"
+
+# Installers to generate
+installers = ["shell", "powershell"]
+
+# Packages to distribute (both CLI binaries)
+dist = true
+
+# Include extra files in archives
+include = [
+  "agents/",
+  "commands/",
+  "skills/",
+  "rules/",
+  "hooks/",
+  "contexts/",
+  "mcp-configs/",
+  "examples/",
+  "schemas/",
+  "workflow-templates/",
+  "install.sh",
+  "bin/ecc-hook",
+  "bin/ecc-shell-hook.sh",
+  "scripts/hooks/",
+  "scripts/codemaps/",
+]
+
+# Packages to build
+[dist.packages]
+ecc-cli = { dist = true }
+ecc-workflow = { dist = true }
+
+# Custom CI jobs — cosign signing preserved across cargo-dist regeneration
+[plan]
+[plan.jobs]
+
+[plan.jobs.cosign-sign]
+needs = ["host"]
+runs-on = "ubuntu-latest"
+continue-on-error = true

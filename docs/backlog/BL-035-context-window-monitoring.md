@@ -1,7 +1,7 @@
 ---
 id: BL-035
 title: Campaign file manifest for amnesiac agents
-status: open
+status: "implemented"
 created: 2026-03-21
 scope: MEDIUM
 target_command: /spec refactor

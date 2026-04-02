@@ -73,7 +73,10 @@ mod tests {
     fn test_format_entry_as_md_contains_title() {
         let entry = make_entry();
         let md = format_entry_as_md(&entry);
-        assert!(md.contains("# Test Export Entry"), "should contain title as H1");
+        assert!(
+            md.contains("# Test Export Entry"),
+            "should contain title as H1"
+        );
     }
 
     #[test]
@@ -126,7 +129,10 @@ mod tests {
             None,
         );
         let md = format_entry_as_md(&entry);
-        assert!(!md.contains("**Tags**"), "should not have Tags line when empty");
+        assert!(
+            !md.contains("**Tags**"),
+            "should not have Tags line when empty"
+        );
     }
 
     #[test]

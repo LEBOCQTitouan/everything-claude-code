@@ -74,4 +74,9 @@ docs/interviews/
 docs/memory/action-log.json
 docs/memory/work-items/
 !docs/memory/README.md
+# Backlog lock files (session-local, advisory locks for in-work filtering)
+docs/backlog/.locks/
 # End ECC generated files
+
+# Mutation testing output
+mutants.out/

@@ -8,5 +8,3 @@ pub struct UpdateOptions {
     /// Include prerelease versions when querying latest.
     pub include_prerelease: bool,
 }
-
-

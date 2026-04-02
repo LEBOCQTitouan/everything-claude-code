@@ -4,7 +4,7 @@ title: Pin all MCP package versions
 tier: 1
 scope: LOW
 target: direct edit
-status: open
+status: "implemented"
 created: 2026-03-20
 file: mcp-configs/mcp-servers.json
 ---

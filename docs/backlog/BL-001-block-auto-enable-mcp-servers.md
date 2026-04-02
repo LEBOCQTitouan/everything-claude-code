@@ -4,7 +4,7 @@ title: Block auto-enable of MCP servers
 tier: 1
 scope: LOW
 target: direct edit
-status: open
+status: "implemented"
 created: 2026-03-20
 file: ~/.claude/settings.json
 ---

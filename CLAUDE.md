@@ -9,22 +9,31 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (2225 tests)
+cargo test              # Run all Rust tests (2307 tests)
+cargo test              # Run all Rust tests (2252 tests)
 cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (16 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo deny check        # Supply chain audit (licenses + advisories)
 cargo llvm-cov --workspace   # Coverage report (works on macOS)
 cargo build --release   # Build release binary
+cargo mutants -p ecc-domain   # Mutation testing (domain crate)
+cargo xtask mutants            # Structured mutation testing (all scoped crates)
+cargo xtask mutants --in-diff  # Diff-scoped mutation testing
+cargo dist build        # Local release build test (cargo-dist, requires cargo-dist installed)
 ```
 
 ## Architecture
 
-Hexagonal architecture: domain → ports → app → infra → CLI (9 crates). `ecc-workflow` is a standalone binary for workflow state management. `ecc-flock` is a shared POSIX flock utility. See `docs/ARCHITECTURE.md` for full structure.
+Hexagonal architecture: domain → ports → app → infra → CLI (9 crates). `ecc-workflow` is a standalone binary for workflow state management. `ecc-flock` is a shared POSIX flock utility. `workflow-templates/` contains installable GitHub Actions YAML templates. See `docs/ARCHITECTURE.md` for full structure.
 
 ## CLI Commands
 
 ```
+ecc analyze changelog [--since <tag|date>]  Generate conventional commit changelog
+ecc analyze hotspots [--top N] [--since <tag|date>]  Show most frequently changed files
+ecc analyze coupling [--threshold 0.7] [--since <tag|date>]  Show co-change file pairs
+ecc analyze bus-factor [--top N] [--since <tag|date>]  Show files with single-author risk
 ecc version          Show version
 ecc install          Install ECC config to ~/.claude/
 ecc init             Initialize ECC in current project
@@ -37,6 +46,7 @@ ecc dev on|off|status     Toggle ECC config on/off
 ecc dev switch dev|default [--dry-run]  Instant config switching via symlinks
 ecc validate statusline   Verify statusline installation
 ecc validate conventions  Validate naming, values, placement, and cross-references
+ecc validate cartography [--coverage]  Validate cartography schema, staleness, and coverage
 ecc status               Show workflow state, versions, component counts
 ecc config set <key> <value>  Persist CLI preferences (~/.ecc/config.toml)
 ecc log tail [--session <id>]  Live-tail current session logs
@@ -67,16 +77,23 @@ ecc audit-web validate-report <path>  Validate radar report structure
 ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ecc status [--json]      Show diagnostic snapshot (versions, phase, components)
+ecc update [--version <ver>] [--dry-run] [--pre]  Self-update from GitHub Releases
 ecc config set <key> <value>  Set persistent config (e.g., log-level info)
-ecc-workflow tasks sync <path>   Parse tasks.md, output JSON summary
-ecc-workflow tasks update <path> <id> <status>  Atomically update PC status
-ecc-workflow tasks init <design> --output <path>  Generate tasks.md from design PCs
+ecc workflow init <concern> <feature>  Initialize workflow state
+ecc workflow transition <target>      Advance workflow phase
+ecc workflow status                   Show current workflow state
+ecc workflow recover                  Archive stuck state and reset to idle
+ecc workflow phase-gate               Gate writes during plan/solution phases
+ecc workflow tasks sync <path>        Parse tasks.md, output JSON summary
+ecc workflow tasks update <path> <id> <status>  Atomically update PC status
+ecc workflow tasks init <design> --output <path>  Generate tasks.md from design PCs
+ecc-workflow <subcommand>             Legacy alias (thin wrapper for ecc workflow)
 cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, completions, RC)
 ```
 
 ## Slash Commands
 
-Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`, `/audit-web`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/commit`, `/create-component`, `/ecc-test-mode`): see `docs/commands-reference.md`.
+Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`, `/audit-web`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/commit`, `/create-component`, `/ecc-test-mode`, `/scaffold-workflows`): see `docs/commands-reference.md`.
 
 ### Spec-Driven Pipeline (Doc-First)
 
@@ -106,6 +123,8 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 
 ## Gotchas
 
+- Workflow state is worktree-scoped: stored at `<git-dir>/ecc-workflow/state.json`. Falls back to `.claude/workflow/` for non-git dirs.
+- `ecc workflow` mirrors `ecc-workflow` — use either during migration; `ecc-workflow` will become a thin wrapper
 - `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by hook)
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
 - `hooks.json` lives in `hooks/`, not the project root
