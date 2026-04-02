@@ -8,6 +8,7 @@ pub mod merge;
 pub mod slug;
 pub mod staleness;
 pub mod types;
+pub mod validation;
 
 pub use coverage::{calculate_coverage, CoverageReport};
 pub use merge::{has_section, merge_section};

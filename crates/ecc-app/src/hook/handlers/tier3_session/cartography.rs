@@ -3,9 +3,23 @@
 use std::path::{Path, PathBuf};
 
 use ecc_domain::cartography::{ChangedFile, ProjectType, SessionDelta};
+use serde::Serialize;
 use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
+
+/// Enriched context passed to the cartographer agent.
+///
+/// Includes the delta plus all context the agent needs to perform delta-merge,
+/// link to existing flows, and detect external I/O.
+#[derive(Debug, Serialize)]
+struct AgentContext<'a> {
+    delta: &'a SessionDelta,
+    existing_journey: Option<String>,
+    existing_flow: Option<String>,
+    flow_files: Vec<String>,
+    external_io_patterns: Vec<String>,
+}
 
 /// start:cartography — process pending deltas by invoking the cartographer agent.
 ///
@@ -107,28 +121,72 @@ pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     // Step 6: Invoke cartographer agent for each delta (AC-006.3, AC-006.4)
+    // Build enriched context per delta: includes existing journey/flow content,
+    // flow file slugs for link generation, and external I/O patterns.
     let mut success = true;
     for (_path, delta) in &unprocessed {
-        let delta_json = match serde_json::to_string(delta) {
+        // Derive the slug for this delta (first changed file's classification)
+        let slug = delta
+            .changed_files
+            .first()
+            .map(|f| f.classification.as_str())
+            .unwrap_or("unknown");
+
+        let journey_path = docs_cartography.join("journeys").join(format!("{}.md", slug));
+        let flow_path = docs_cartography.join("flows").join(format!("{}.md", slug));
+
+        // Read existing journey/flow content for delta-merge (AC-004.2, AC-005.4)
+        let existing_journey = ports.fs.read_to_string(&journey_path).ok();
+        let existing_flow = ports.fs.read_to_string(&flow_path).ok();
+
+        // List existing flow slugs for link generation (AC-004.4)
+        let flow_files = collect_flow_slugs(ports, &flows_dir);
+
+        // Detect external I/O patterns from file paths (AC-005.2)
+        let external_io_patterns = detect_external_io_patterns(delta);
+
+        let context = AgentContext {
+            delta,
+            existing_journey,
+            existing_flow,
+            flow_files,
+            external_io_patterns,
+        };
+
+        let context_json = match serde_json::to_string(&context) {
             Ok(j) => j,
             Err(_) => {
                 success = false;
                 break;
             }
         };
+
         let agent_result = ports.shell.run_command_in_dir(
             "claude",
-            &["--agent", "cartographer", "--input", &delta_json],
+            &["--agent", "cartographer", "--input", &context_json],
             &project_dir,
         );
-        if let Ok(out) = agent_result {
-            if out.exit_code != 0 {
+
+        match agent_result {
+            Ok(out) if out.exit_code == 0 => {
+                // Write agent output to the journey and flow files if content is provided
+                let output = out.stdout.trim();
+                if !output.is_empty() {
+                    // Write to journey file if output validates as journey
+                    let is_journey = ecc_domain::cartography::validation::validate_journey(output).is_ok();
+                    let is_flow = ecc_domain::cartography::validation::validate_flow(output).is_ok();
+
+                    if is_journey {
+                        let _ = ports.fs.write(&journey_path, output);
+                    } else if is_flow {
+                        let _ = ports.fs.write(&flow_path, output);
+                    }
+                }
+            }
+            _ => {
                 success = false;
                 break;
             }
-        } else {
-            success = false;
-            break;
         }
     }
 
@@ -411,6 +469,50 @@ fn clean_corrupt_deltas(ports: &HookPorts<'_>, cartography_dir: &Path) {
             }
         }
     }
+}
+
+/// Collect slugs of all existing flow files in the flows directory.
+///
+/// Returns the stem of each `.md` file (e.g., `ecc-app` for `ecc-app.md`).
+fn collect_flow_slugs(ports: &HookPorts<'_>, flows_dir: &Path) -> Vec<String> {
+    if !ports.fs.exists(flows_dir) {
+        return Vec::new();
+    }
+    let entries = match ports.fs.read_dir(flows_dir) {
+        Ok(e) => e,
+        Err(_) => return Vec::new(),
+    };
+    entries
+        .into_iter()
+        .filter_map(|p| {
+            let name = p.file_name()?.to_str()?.to_string();
+            if name.ends_with(".md") {
+                Some(name[..name.len() - 3].to_string())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+/// Detect external I/O patterns from the changed file paths in a delta.
+///
+/// Looks for indicators like `http`, `database`, `fs`, `api` in file path components.
+fn detect_external_io_patterns(delta: &SessionDelta) -> Vec<String> {
+    let io_keywords = ["http", "database", "fs", "api"];
+    let mut patterns: Vec<String> = io_keywords
+        .iter()
+        .filter(|&&kw| {
+            delta
+                .changed_files
+                .iter()
+                .any(|f| f.path.to_lowercase().contains(kw))
+        })
+        .map(|&kw| kw.to_string())
+        .collect();
+    patterns.sort();
+    patterns.dedup();
+    patterns
 }
 
 fn epoch_secs() -> u64 {
@@ -719,15 +821,9 @@ mod tests {
                     exit_code: 0,
                 },
             )
-            // agent invocation → success
-            .on_args(
+            // agent invocation → success (any args)
+            .on(
                 "claude",
-                &[
-                    "--agent",
-                    "cartographer",
-                    "--input",
-                    &delta_json,
-                ],
                 CommandOutput {
                     stdout: "ok".to_string(),
                     stderr: String::new(),
@@ -795,14 +891,8 @@ mod tests {
                     exit_code: 0,
                 },
             )
-            .on_args(
+            .on(
                 "claude",
-                &[
-                    "--agent",
-                    "cartographer",
-                    "--input",
-                    &delta_json,
-                ],
                 CommandOutput {
                     stdout: "ok".to_string(),
                     stderr: String::new(),
@@ -870,14 +960,8 @@ mod tests {
                     exit_code: 0,
                 },
             )
-            .on_args(
+            .on(
                 "claude",
-                &[
-                    "--agent",
-                    "cartographer",
-                    "--input",
-                    &delta_json,
-                ],
                 CommandOutput {
                     stdout: "ok".to_string(),
                     stderr: String::new(),
@@ -1093,14 +1177,8 @@ mod tests {
                         exit_code: 0,
                     },
                 )
-                .on_args(
+                .on(
                     "claude",
-                    &[
-                        "--agent",
-                        "cartographer",
-                        "--input",
-                        &delta_json,
-                    ],
                     CommandOutput {
                         stdout: "ok".to_string(),
                         stderr: String::new(),
@@ -1164,14 +1242,8 @@ mod tests {
                         exit_code: 0,
                     },
                 )
-                .on_args(
+                .on(
                     "claude",
-                    &[
-                        "--agent",
-                        "cartographer",
-                        "--input",
-                        &delta_json,
-                    ],
                     CommandOutput {
                         stdout: String::new(),
                         stderr: "agent error".to_string(),
@@ -1410,14 +1482,13 @@ mod tests {
             .with_dir("/project/docs/cartography/flows");
 
         // Build the enriched context the handler should pass to the agent
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": existing_journey,
-            "existing_flow": null,
-            "flow_files": [],
-            "external_io_patterns": []
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: Some(existing_journey.clone()),
+            existing_flow: None,
+            flow_files: vec![],
+            external_io_patterns: vec![],
+        }).unwrap();
 
         // New journey content returned by the agent (with step appended inside marker)
         let updated_journey = make_journey_content(
@@ -1461,14 +1532,13 @@ mod tests {
 
         // Agent returns a fully valid journey file
         let valid_journey = make_journey_content("");
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": null,
-            "existing_flow": null,
-            "flow_files": [],
-            "external_io_patterns": []
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: None,
+            existing_flow: None,
+            flow_files: vec![],
+            external_io_patterns: vec![],
+        }).unwrap();
 
         let shell = make_shell_for_agent(&enriched_json, &valid_journey);
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
@@ -1515,14 +1585,13 @@ mod tests {
             );
 
         // Agent receives enriched context with flow_files populated
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": null,
-            "existing_flow": null,
-            "flow_files": ["ecc-app-handler"],
-            "external_io_patterns": []
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: None,
+            existing_flow: None,
+            flow_files: vec!["ecc-app-handler".to_string()],
+            external_io_patterns: vec![],
+        }).unwrap();
 
         // Agent returns journey with a relative link to the flow
         let journey_with_link = make_journey_content("[ecc-app-handler](../flows/ecc-app-handler.md)\n");
@@ -1562,14 +1631,13 @@ mod tests {
             .with_dir("/project/docs/cartography/journeys")
             .with_dir("/project/docs/cartography/flows");
 
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": null,
-            "existing_flow": null,
-            "flow_files": [],
-            "external_io_patterns": []
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: None,
+            existing_flow: None,
+            flow_files: vec![],
+            external_io_patterns: vec![],
+        }).unwrap();
         let new_journey = make_journey_content("");
         let shell = make_shell_for_agent(&enriched_json, &new_journey);
 
@@ -1614,14 +1682,13 @@ mod tests {
             .with_dir("/project/docs/cartography/journeys")
             .with_dir("/project/docs/cartography/flows");
 
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": null,
-            "existing_flow": null,
-            "flow_files": [],
-            "external_io_patterns": []
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: None,
+            existing_flow: None,
+            flow_files: vec![],
+            external_io_patterns: vec![],
+        }).unwrap();
 
         // Agent returns journey with GAP marker for unknown actor
         let journey_with_gap = format!(
@@ -1677,14 +1744,13 @@ mod tests {
             .with_dir("/project/docs/cartography/flows");
 
         // The enriched context must include detected I/O patterns from the file paths
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": null,
-            "existing_flow": null,
-            "flow_files": [],
-            "external_io_patterns": ["http", "database"]
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: None,
+            existing_flow: None,
+            flow_files: vec![],
+            external_io_patterns: vec!["database".to_string(), "http".to_string()],
+        }).unwrap();
 
         let flow_output = make_flow_content("");
         let shell = make_shell_for_agent(&enriched_json, &flow_output);
@@ -1723,14 +1789,13 @@ mod tests {
             .with_dir("/project/docs/cartography/journeys")
             .with_dir("/project/docs/cartography/flows");
 
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": null,
-            "existing_flow": null,
-            "flow_files": [],
-            "external_io_patterns": []
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: None,
+            existing_flow: None,
+            flow_files: vec![],
+            external_io_patterns: vec![],
+        }).unwrap();
 
         // Agent returns a valid flow file
         let valid_flow = make_flow_content("");
@@ -1780,14 +1845,13 @@ mod tests {
                 &existing_flow,
             );
 
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": null,
-            "existing_flow": existing_flow,
-            "flow_files": ["ecc-app"],
-            "external_io_patterns": []
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: None,
+            existing_flow: Some(existing_flow.clone()),
+            flow_files: vec!["ecc-app".to_string()],
+            external_io_patterns: vec![],
+        }).unwrap();
 
         // Agent returns a flow that only updates step-1, step-2 remains unchanged
         let updated_flow = format!(
@@ -1835,14 +1899,13 @@ mod tests {
             .with_dir("/project/docs/cartography/journeys")
             .with_dir("/project/docs/cartography/flows");
 
-        let enriched = serde_json::json!({
-            "delta": delta,
-            "existing_journey": null,
-            "existing_flow": null,
-            "flow_files": [],
-            "external_io_patterns": []
-        });
-        let enriched_json = serde_json::to_string(&enriched).unwrap();
+        let enriched_json = serde_json::to_string(&AgentContext {
+            delta: &delta,
+            existing_journey: None,
+            existing_flow: None,
+            flow_files: vec![],
+            external_io_patterns: vec![],
+        }).unwrap();
         let journey = make_journey_content("");
 
         // Register `git add docs/cartography/` as a known command that succeeds.
