@@ -33,3 +33,5 @@ ADRs are numbered sequentially: `0001-short-title.md`, `0002-short-title.md`, et
 | [0012](0012-wave-parallel-tdd.md) | Wave-Based Parallel TDD Execution | Accepted |
 | [0013](0013-campaign-manifest-convention.md) | Campaign Manifest Convention | Accepted |
 | [0014](0014-context-aware-graceful-exit.md) | Context-Aware Graceful Exit Convention | Superseded |
+| [0037](0037-workflow-templates-content-type.md) | Workflow Templates Content Type | Accepted |
+| [0038](0038-scaffold-command-distribution.md) | Scaffold Command Distribution | Accepted |
