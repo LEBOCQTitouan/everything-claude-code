@@ -6,6 +6,12 @@
 
 Generated from git conventional commits. Grouped by type and version.
 
+## [Unreleased]
+
+### Added
+
+- **Multi-agent team coordination (BL-104)**: Declarative team manifests (Markdown + YAML frontmatter) in `teams/` directory. `ecc validate teams` with strict agent cross-referencing and tool privilege escalation warnings. Pre-defined teams: implement-team, audit-team, review-team. New skills: shared-state-protocol, task-handoff.
+
 ## v5.1.0
 
 ### Added
