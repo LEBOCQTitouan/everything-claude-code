@@ -42,6 +42,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Deploy ecc-flock not a binary**: `cargo xtask deploy` failed because ecc-flock (lib crate) was listed in binary install list. Removed from deploy lists.
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
 - **Lazy worktree isolation**: Write-guard hook (`pre:write-edit:worktree-guard`) blocks file writes outside worktrees, forcing lazy worktree creation. Session-end merge hook auto-merges worktree to main via rebase + verify + ff-only. ADR-0042.
