@@ -10,7 +10,24 @@
 /// Returns `Ok(())` if all required sections are present, or `Err(missing)` where
 /// `missing` is a list of section names that are absent.
 pub fn validate_journey(content: &str) -> Result<(), Vec<String>> {
-    todo!("implement journey validation")
+    let required = [
+        ("## Overview", "Overview"),
+        ("## Mermaid Diagram", "Mermaid Diagram"),
+        ("## Steps", "Steps"),
+        ("## Related Flows", "Related Flows"),
+    ];
+
+    let missing: Vec<String> = required
+        .iter()
+        .filter(|(header, _)| !content.contains(header))
+        .map(|(_, name)| (*name).to_owned())
+        .collect();
+
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(missing)
+    }
 }
 
 /// Validates a flow file's required sections.
@@ -21,7 +38,25 @@ pub fn validate_journey(content: &str) -> Result<(), Vec<String>> {
 /// Returns `Ok(())` if all required sections are present, or `Err(missing)` where
 /// `missing` is a list of section names that are absent.
 pub fn validate_flow(content: &str) -> Result<(), Vec<String>> {
-    todo!("implement flow validation")
+    let required = [
+        ("## Overview", "Overview"),
+        ("## Mermaid Diagram", "Mermaid Diagram"),
+        ("## Source-Destination", "Source-Destination"),
+        ("## Transformation Steps", "Transformation Steps"),
+        ("## Error Paths", "Error Paths"),
+    ];
+
+    let missing: Vec<String> = required
+        .iter()
+        .filter(|(header, _)| !content.contains(header))
+        .map(|(_, name)| (*name).to_owned())
+        .collect();
+
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(missing)
+    }
 }
 
 #[cfg(test)]
@@ -34,7 +69,8 @@ mod tests {
 
     #[test]
     fn journey_passes_when_all_required_sections_present() {
-        let content = "# My Journey
+        let content = "\
+# My Journey
 
 ## Overview
 Some actor does something.
@@ -53,7 +89,8 @@ Some actor does something.
 
     #[test]
     fn journey_reports_missing_section_name_when_overview_absent() {
-        let content = "# My Journey
+        let content = "\
+# My Journey
 
 ## Mermaid Diagram
 
@@ -73,7 +110,8 @@ Some actor does something.
 
     #[test]
     fn journey_reports_missing_section_name_when_mermaid_diagram_absent() {
-        let content = "# My Journey
+        let content = "\
+# My Journey
 
 ## Overview
 Some actor does something.
@@ -94,7 +132,8 @@ Some actor does something.
 
     #[test]
     fn journey_reports_missing_section_name_when_steps_absent() {
-        let content = "# My Journey
+        let content = "\
+# My Journey
 
 ## Overview
 Some actor does something.
@@ -114,7 +153,8 @@ Some actor does something.
 
     #[test]
     fn journey_reports_missing_section_name_when_related_flows_absent() {
-        let content = "# My Journey
+        let content = "\
+# My Journey
 
 ## Overview
 Some actor does something.
@@ -134,10 +174,7 @@ Some actor does something.
 
     #[test]
     fn journey_reports_all_missing_sections_when_all_absent() {
-        let content = "# My Journey
-
-No required sections here.
-";
+        let content = "# My Journey\n\nNo required sections here.\n";
         let err = validate_journey(content).unwrap_err();
         assert_eq!(err.len(), 4, "expected 4 missing sections, got: {:?}", err);
     }
@@ -148,7 +185,8 @@ No required sections here.
 
     #[test]
     fn flow_passes_when_all_required_sections_present() {
-        let content = "# My Flow
+        let content = "\
+# My Flow
 
 ## Overview
 Describes the data flow.
@@ -170,7 +208,8 @@ Destination: Service B
 
     #[test]
     fn flow_reports_missing_section_name_when_overview_absent() {
-        let content = "# My Flow
+        let content = "\
+# My Flow
 
 ## Mermaid Diagram
 
@@ -193,7 +232,8 @@ Source: Service A
 
     #[test]
     fn flow_reports_missing_section_name_when_source_destination_absent() {
-        let content = "# My Flow
+        let content = "\
+# My Flow
 
 ## Overview
 Describes the data flow.
@@ -216,7 +256,8 @@ Describes the data flow.
 
     #[test]
     fn flow_reports_missing_section_name_when_transformation_steps_absent() {
-        let content = "# My Flow
+        let content = "\
+# My Flow
 
 ## Overview
 Describes the data flow.
@@ -239,7 +280,8 @@ Source: Service A
 
     #[test]
     fn flow_reports_missing_section_name_when_error_paths_absent() {
-        let content = "# My Flow
+        let content = "\
+# My Flow
 
 ## Overview
 Describes the data flow.
@@ -262,10 +304,7 @@ Source: Service A
 
     #[test]
     fn flow_reports_all_missing_sections_when_all_absent() {
-        let content = "# My Flow
-
-No required sections here.
-";
+        let content = "# My Flow\n\nNo required sections here.\n";
         let err = validate_flow(content).unwrap_err();
         assert_eq!(err.len(), 5, "expected 5 missing sections, got: {:?}", err);
     }
