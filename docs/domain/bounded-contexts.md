@@ -1,6 +1,6 @@
 # Bounded Contexts
 
-The `ecc-domain` crate contains 8 domain modules, each responsible for a distinct bounded context. All modules are pure business logic with zero I/O.
+The `ecc-domain` crate contains 9 domain modules, each responsible for a distinct bounded context. All modules are pure business logic with zero I/O.
 
 ## Module Map
 
@@ -14,6 +14,7 @@ The `ecc-domain` crate contains 8 domain modules, each responsible for a distinc
 | `session` | Session lifecycle — metadata parsing, alias management, statistics | `SessionMetadata`, `SessionAlias`, `SessionStats` |
 | `backlog` | Backlog management — entry parsing, ID generation, duplicate detection | `BacklogEntry`, `BacklogError`, `BacklogId` |
 | `workflow` | Workflow state machine — phase transitions, state persistence, toolchain config | `WorkflowState`, `Phase`, `Concern`, `Timestamp`, `Completion` |
+| `cartography` | Cartography document model — delta merge, schema validation, staleness detection, coverage calculation, element registry, cross-reference matrix | `SessionDelta`, `ProjectType`, `ChangedFile`, `CartographyMeta`, `CoverageReport`, `ElementEntry`, `ElementType`, `CrossReferenceMatrix` |
 
 ## Cross-Module Dependencies
 
