@@ -41,3 +41,5 @@ Canonical reference for the 4 ECC workflows. Follow these conventions when editi
 - Cross-compilation matrix must cover all 5 targets listed in release.yml
 - Tag-based releases use `v*` pattern — semver tags only
 - CD pipeline guards: `[skip cd]` in commit message, bot actor check, release label requirement
+
+For general CI/CD patterns and Claude Code workflow templates, see `skills/ci-cd-workflows/SKILL.md`.
