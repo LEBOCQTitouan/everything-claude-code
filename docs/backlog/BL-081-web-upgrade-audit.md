@@ -3,7 +3,7 @@ id: BL-081
 title: Web-based upgrade audit command with Technology Radar output
 scope: EPIC
 target: /spec-dev
-status: promoted
+status: "implemented"
 created: 2026-03-27
 origin: User request — systematic web auditing for codebase upgrades
 ---

@@ -4,7 +4,7 @@ title: Create /spec command
 tier: 4
 scope: MEDIUM
 target: /spec dev
-status: open
+status: "implemented"
 created: 2026-03-20
 file: commands/spec.md
 ---

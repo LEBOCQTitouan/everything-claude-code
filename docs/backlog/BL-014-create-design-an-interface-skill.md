@@ -4,7 +4,7 @@ title: Create design-an-interface skill
 tier: 3
 scope: HIGH
 target: /spec dev
-status: open
+status: "implemented"
 created: 2026-03-20
 file: skills/design-an-interface/SKILL.md
 ---

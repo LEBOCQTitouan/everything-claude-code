@@ -1,7 +1,7 @@
 ---
 id: BL-075
 title: Deterministic task synchronization — single source of truth for TodoWrite and TaskCreate
-status: open
+status: "implemented"
 scope: HIGH
 target: /spec dev
 created: 2026-03-26

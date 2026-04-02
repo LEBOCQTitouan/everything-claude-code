@@ -1,7 +1,7 @@
 ---
 id: BL-031
 title: Fresh context per TDD task via subagent isolation
-status: open
+status: "implemented"
 created: 2026-03-21
 scope: HIGH
 target_command: /implement

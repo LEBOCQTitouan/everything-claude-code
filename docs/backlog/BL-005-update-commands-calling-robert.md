@@ -4,7 +4,7 @@ title: Update commands that call robert to handle his output
 tier: 2
 scope: MEDIUM
 target: direct edit
-status: open
+status: "implemented"
 created: 2026-03-20
 files: commands/review.md, commands/verify.md, commands/audit-full.md
 ---

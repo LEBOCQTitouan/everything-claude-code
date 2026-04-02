@@ -3,7 +3,7 @@ id: BL-085
 title: "WorktreeCreate/WorktreeRemove hooks break EnterWorktree tool"
 scope: HIGH
 target: "/spec fix"
-status: open
+status: "implemented"
 tags: [hooks, worktree, bug, EnterWorktree]
 created: 2026-03-28
 ---

@@ -112,14 +112,14 @@
 | BL-109 | Autonomous comms pipeline — multi-channel content generation from code | — | EPIC | /spec | open | 2026-03-30 |
 | BL-110 | Add cargo-semver-checks to CI pipeline | — | LOW | direct edit | open | 2026-03-31 |
 | BL-111 | Enable GitHub Merge Queue for CI load reduction | — | LOW | direct edit | open | 2026-03-31 |
-| BL-112 | Evaluate cargo-dist to replace custom release.yml | — | MEDIUM | /spec-refactor | open | 2026-03-31 |
+| BL-112 | Evaluate cargo-dist to replace custom release.yml | — | MEDIUM | /spec-refactor | implemented | 2026-03-31 | 2026-03-31 |
 | BL-113 | Upgrade rusqlite 0.34 to 0.38 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-114 | Upgrade rustyline 15 to 17 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-116 | Add cargo-mutants mutation testing | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | open | 2026-03-31 |
-| BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | open | 2026-03-31 |
+| BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
 
 ## Dependency Graph
 
@@ -188,10 +188,10 @@ BL-109 → BL-092 (comms pipeline shares structured log infrastructure)
 
 ## Stats
 
-- **Total:** 108
-- **Open:** 39
+- **Total:** 118
+- **Open:** 37
 - **In-progress:** 0
-- **Implemented:** 65
+- **Implemented:** 77
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)

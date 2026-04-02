@@ -1,7 +1,7 @@
 ---
 id: BL-040
 title: Create meta-steering rules for ECC development
-status: open
+status: "implemented"
 created: 2026-03-21
 scope: LOW
 target_command: rules/ecc/development.md (new)

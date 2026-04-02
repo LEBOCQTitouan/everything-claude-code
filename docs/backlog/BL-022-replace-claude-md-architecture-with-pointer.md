@@ -4,7 +4,7 @@ title: Replace CLAUDE.md architecture block with pointer
 tier: 5
 scope: LOW
 target: direct edit
-status: open
+status: "implemented"
 created: 2026-03-20
 file: CLAUDE.md
 ---

@@ -1,7 +1,7 @@
 ---
 id: BL-051
 title: Explanatory narrative audit — all commands and workflows
-status: open
+status: "implemented"
 created: 2026-03-22
 promoted_to: ""
 tags: [ux, commands, output, narrative, audit]

@@ -3,7 +3,7 @@ id: BL-112
 title: "Evaluate cargo-dist to replace custom release.yml"
 scope: MEDIUM
 target: "/spec-refactor"
-status: open
+status: "implemented"
 created: "2026-03-31"
 source: "docs/audits/web-radar-2026-03-31.md"
 ring: adopt

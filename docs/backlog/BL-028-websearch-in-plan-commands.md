@@ -1,7 +1,7 @@
 ---
 id: BL-028
 title: Add active web search phase to /spec-dev, /spec-fix, /spec-refactor
-status: open
+status: "implemented"
 created: 2026-03-21
 promoted_to: ""
 tags: [plan, search-first, exa, web-search, best-practices, planning]
