@@ -19,6 +19,7 @@ cargo build --release   # Build release binary
 cargo mutants -p ecc-domain   # Mutation testing (domain crate)
 cargo xtask mutants            # Structured mutation testing (all scoped crates)
 cargo xtask mutants --in-diff  # Diff-scoped mutation testing
+cargo dist build        # Local release build test (cargo-dist, requires cargo-dist installed)
 ```
 
 ## Architecture
