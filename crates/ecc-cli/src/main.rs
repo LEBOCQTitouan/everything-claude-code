@@ -23,6 +23,8 @@ struct Cli {
 
 #[derive(clap::Subcommand)]
 enum Command {
+    /// Deterministic git history analysis
+    Analyze(commands::analyze::AnalyzeArgs),
     /// Show the current ECC version
     Version,
     /// Install ECC configuration to ~/.claude/
@@ -167,6 +169,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     match cli.command {
+        Command::Analyze(args) => commands::analyze::run(args),
         Command::Version => commands::version::run(),
         Command::Install(args) => commands::install::run(args),
         Command::Init(args) => commands::init::run(args),

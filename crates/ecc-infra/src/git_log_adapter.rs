@@ -54,10 +54,11 @@ impl GitLogPort for GitLogAdapter<'_> {
     ) -> Result<Vec<RawCommit>, GitLogError> {
         self.check_git()?;
 
+        // Use a unique delimiter to separate commits unambiguously
         let mut args = vec![
             "log",
             "--no-merges",
-            "--format=%H%n%an%n%s",
+            "--format=COMMIT_START%n%H%n%an%n%s",
             "--name-only",
         ];
         let since_args = Self::build_since_args(since);
@@ -96,7 +97,7 @@ impl GitLogPort for GitLogAdapter<'_> {
         let mut args = vec![
             "log",
             "--no-merges",
-            "--format=%an",
+            "--format=AUTHOR_START%n%an",
             "--name-only",
         ];
         let since_args = Self::build_since_args(since);
@@ -113,60 +114,33 @@ impl GitLogPort for GitLogAdapter<'_> {
     }
 }
 
-/// Parse `git log --format=%H%n%an%n%s --name-only` output into `RawCommit`s.
+/// Parse `git log --format=COMMIT_START%n%H%n%an%n%s --name-only` output.
 ///
-/// Format: each commit block is:
-///   <hash>\n<author>\n<message>\n\n<file1>\n<file2>\n...
-/// Commits are separated by blank lines. The blank line after message
-/// separates the header from the file list (git's --name-only format).
+/// Uses `COMMIT_START` delimiter to unambiguously separate commits.
 fn parse_log_with_files(stdout: &str) -> Vec<RawCommit> {
     let mut commits = Vec::new();
 
-    // Split on double newlines to get blocks, then parse each block
-    // git log --name-only outputs: hash\nauthor\nmessage\n\nfile1\nfile2\n\n
-    // So we need to handle the structure: 3 header lines, then files
-    let blocks: Vec<&str> = stdout.split("\n\n").collect();
-
-    let mut i = 0;
-    while i < blocks.len() {
-        let header = blocks[i].trim();
-        if header.is_empty() {
-            i += 1;
+    for block in stdout.split("COMMIT_START") {
+        let block = block.trim();
+        if block.is_empty() {
             continue;
         }
 
-        let header_lines: Vec<&str> = header.lines().collect();
-        if header_lines.len() < 3 {
-            // Might be a file list from the previous commit (if header and files
-            // aren't separated by blank line in some edge cases)
-            i += 1;
+        let lines: Vec<&str> = block.lines().collect();
+        if lines.len() < 3 {
             continue;
         }
 
-        let hash = header_lines[0].trim().to_string();
-        let author = header_lines[1].trim().to_string();
-        let message = header_lines[2].trim().to_string();
+        let hash = lines[0].trim().to_string();
+        let author = lines[1].trim().to_string();
+        let message = lines[2].trim().to_string();
 
-        // Files might be in the same block (lines 3+) or the next block
-        let mut files: Vec<String> = header_lines[3..]
+        let files: Vec<String> = lines[3..]
             .iter()
-            .filter(|l| !l.trim().is_empty())
-            .map(|l| l.trim().to_string())
+            .map(|l| l.trim())
+            .filter(|l| !l.is_empty())
+            .map(|l| l.to_string())
             .collect();
-
-        // Check next block for files (if header had no files after the 3 header lines)
-        if files.is_empty() && i + 1 < blocks.len() {
-            let next = blocks[i + 1].trim();
-            // If next block looks like file paths (no spaces typical of hash/author lines)
-            if !next.is_empty() && !next.contains(' ') || next.contains('/') {
-                files = next
-                    .lines()
-                    .filter(|l| !l.trim().is_empty())
-                    .map(|l| l.trim().to_string())
-                    .collect();
-                i += 1;
-            }
-        }
 
         commits.push(RawCommit {
             hash,
@@ -174,41 +148,33 @@ fn parse_log_with_files(stdout: &str) -> Vec<RawCommit> {
             message,
             files,
         });
-
-        i += 1;
     }
 
     commits
 }
 
-/// Parse `git log --format=%an --name-only` output into `(file, author)` tuples.
+/// Parse `git log --format=AUTHOR_START%n%an --name-only` output into `(file, author)` tuples.
 fn parse_file_authors(stdout: &str) -> Vec<(String, String)> {
     let mut results = Vec::new();
-    let mut lines = stdout.lines().peekable();
 
-    while lines.peek().is_some() {
-        // Skip blank lines
-        while lines.peek().is_some_and(|l| l.trim().is_empty()) {
-            lines.next();
+    for block in stdout.split("AUTHOR_START") {
+        let block = block.trim();
+        if block.is_empty() {
+            continue;
         }
 
-        // Read author line
-        let author = match lines.next() {
-            Some(a) if !a.trim().is_empty() => a.trim().to_string(),
-            _ => break,
-        };
+        let lines: Vec<&str> = block.lines().collect();
+        if lines.is_empty() {
+            continue;
+        }
 
-        // Read file names until blank line or EOF
-        while let Some(line) = lines.peek() {
-            if line.trim().is_empty() {
-                lines.next();
-                break;
-            }
+        let author = lines[0].trim().to_string();
+
+        for line in &lines[1..] {
             let file = line.trim().to_string();
             if !file.is_empty() {
                 results.push((file, author.clone()));
             }
-            lines.next();
         }
     }
 
@@ -223,6 +189,7 @@ mod tests {
     #[test]
     fn parses_git_log_output() {
         let stdout = "\
+COMMIT_START
 abc1234567890
 alice
 feat(cli): add analyze
@@ -230,6 +197,7 @@ feat(cli): add analyze
 crates/ecc-cli/src/commands/analyze.rs
 crates/ecc-cli/src/main.rs
 
+COMMIT_START
 def5678901234
 bob
 fix: handle empty input
@@ -255,10 +223,12 @@ crates/ecc-domain/src/analyze/commit.rs
     #[test]
     fn parses_file_authors() {
         let stdout = "\
+AUTHOR_START
 alice
 src/main.rs
 src/lib.rs
 
+AUTHOR_START
 bob
 src/main.rs
 ";
