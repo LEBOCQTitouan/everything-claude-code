@@ -48,6 +48,11 @@ jobs:
       - name: Clippy
         run: cargo clippy -- -D warnings
 
+      - name: Semver checks
+        run: |
+          cargo install cargo-semver-checks --locked
+          cargo semver-checks
+
       - name: Validate components
         run: |
           ./target/release/ecc validate agents
