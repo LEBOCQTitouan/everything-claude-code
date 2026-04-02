@@ -12,7 +12,24 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
     };
 
     let mut lines = Vec::new();
-    lines.push(format!("Phase:      {}", state.phase));
+
+    // Check staleness for non-idle, non-done phases
+    let now = crate::time::utc_now_iso8601();
+    let stale_suffix =
+        if ecc_domain::workflow::staleness::is_stale(
+            state.started_at.as_str(),
+            &now,
+            ecc_domain::workflow::staleness::DEFAULT_STALENESS_THRESHOLD_SECS,
+        ) && !matches!(
+            state.phase,
+            ecc_domain::workflow::phase::Phase::Idle | ecc_domain::workflow::phase::Phase::Done
+        ) {
+            " (STALE)"
+        } else {
+            ""
+        };
+
+    lines.push(format!("Phase:      {}{stale_suffix}", state.phase));
     lines.push(format!("Concern:    {}", state.concern));
     lines.push(format!("Feature:    {}", state.feature));
     lines.push(format!("Started at: {}", state.started_at));
@@ -58,6 +75,25 @@ pub mod tests {
         assert!(output.message.contains("plan"));
         assert!(output.message.contains("test feature"));
         assert!(output.message.contains("Spec:"));
+    }
+
+    /// PC-024: status shows STALE when threshold exceeded
+    #[test]
+    fn status_shows_stale() {
+        let dir = tempfile::tempdir().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        // Use a timestamp far in the past (2020) so it's always stale
+        std::fs::write(
+            wf_dir.join("state.json"),
+            r#"{"phase":"plan","concern":"dev","feature":"test","started_at":"2020-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[],"version":1}"#,
+        ).unwrap();
+        let output = run(dir.path());
+        assert!(
+            output.message.contains("(STALE)"),
+            "status should show STALE for old workflow, got: {}",
+            output.message
+        );
     }
 
     #[test]
