@@ -121,72 +121,11 @@ pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     // Step 6: Invoke cartographer agent for each delta (AC-006.3, AC-006.4)
-    // Build enriched context per delta: includes existing journey/flow content,
-    // flow file slugs for link generation, and external I/O patterns.
     let mut success = true;
     for (_path, delta) in &unprocessed {
-        // Derive the slug for this delta (first changed file's classification)
-        let slug = delta
-            .changed_files
-            .first()
-            .map(|f| f.classification.as_str())
-            .unwrap_or("unknown");
-
-        let journey_path = docs_cartography.join("journeys").join(format!("{}.md", slug));
-        let flow_path = docs_cartography.join("flows").join(format!("{}.md", slug));
-
-        // Read existing journey/flow content for delta-merge (AC-004.2, AC-005.4)
-        let existing_journey = ports.fs.read_to_string(&journey_path).ok();
-        let existing_flow = ports.fs.read_to_string(&flow_path).ok();
-
-        // List existing flow slugs for link generation (AC-004.4)
-        let flow_files = collect_flow_slugs(ports, &flows_dir);
-
-        // Detect external I/O patterns from file paths (AC-005.2)
-        let external_io_patterns = detect_external_io_patterns(delta);
-
-        let context = AgentContext {
-            delta,
-            existing_journey,
-            existing_flow,
-            flow_files,
-            external_io_patterns,
-        };
-
-        let context_json = match serde_json::to_string(&context) {
-            Ok(j) => j,
-            Err(_) => {
-                success = false;
-                break;
-            }
-        };
-
-        let agent_result = ports.shell.run_command_in_dir(
-            "claude",
-            &["--agent", "cartographer", "--input", &context_json],
-            &project_dir,
-        );
-
-        match agent_result {
-            Ok(out) if out.exit_code == 0 => {
-                // Write agent output to the journey and flow files if content is provided
-                let output = out.stdout.trim();
-                if !output.is_empty() {
-                    // Write to journey file if output validates as journey
-                    let is_journey = ecc_domain::cartography::validation::validate_journey(output).is_ok();
-                    let is_flow = ecc_domain::cartography::validation::validate_flow(output).is_ok();
-
-                    if is_journey {
-                        let _ = ports.fs.write(&journey_path, output);
-                    } else if is_flow {
-                        let _ = ports.fs.write(&flow_path, output);
-                    }
-                }
-            }
-            _ => {
-                success = false;
-                break;
-            }
+        if !invoke_agent_for_delta(ports, delta, &docs_cartography, &flows_dir, &project_dir) {
+            success = false;
+            break;
         }
     }
 
@@ -230,6 +169,61 @@ pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let _ = ports.fs.remove_file(&lock_path);
 
     HookResult::passthrough(stdin)
+}
+
+/// Invoke the cartographer agent for a single delta, writing output to the appropriate file.
+///
+/// Returns `true` on success (agent exited 0), `false` otherwise.
+fn invoke_agent_for_delta(
+    ports: &HookPorts<'_>,
+    delta: &SessionDelta,
+    docs_cartography: &Path,
+    flows_dir: &Path,
+    project_dir: &Path,
+) -> bool {
+    let slug = delta
+        .changed_files
+        .first()
+        .map(|f| f.classification.as_str())
+        .unwrap_or("unknown");
+
+    let journey_path = docs_cartography.join("journeys").join(format!("{}.md", slug));
+    let flow_path = docs_cartography.join("flows").join(format!("{}.md", slug));
+
+    let context = AgentContext {
+        delta,
+        existing_journey: ports.fs.read_to_string(&journey_path).ok(),
+        existing_flow: ports.fs.read_to_string(&flow_path).ok(),
+        flow_files: collect_flow_slugs(ports, flows_dir),
+        external_io_patterns: detect_external_io_patterns(delta),
+    };
+
+    let context_json = match serde_json::to_string(&context) {
+        Ok(j) => j,
+        Err(_) => return false,
+    };
+
+    match ports.shell.run_command_in_dir(
+        "claude",
+        &["--agent", "cartographer", "--input", &context_json],
+        project_dir,
+    ) {
+        Ok(out) if out.exit_code == 0 => {
+            let output = out.stdout.trim();
+            if !output.is_empty() {
+                let is_journey =
+                    ecc_domain::cartography::validation::validate_journey(output).is_ok();
+                let is_flow = ecc_domain::cartography::validation::validate_flow(output).is_ok();
+                if is_journey {
+                    let _ = ports.fs.write(&journey_path, output);
+                } else if is_flow {
+                    let _ = ports.fs.write(&flow_path, output);
+                }
+            }
+            true
+        }
+        _ => false,
+    }
 }
 
 /// Collect all `pending-delta-*.json` files from the cartography directory.
