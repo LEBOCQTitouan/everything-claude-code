@@ -1,0 +1,63 @@
+# ECC Template v0.1.0
+# Claude Code Issue Triage — Auto-label and categorize new issues
+# Default taxonomy: bug, feature, question, docs, enhancement, security, performance
+# Customize via LABEL_TAXONOMY environment variable
+name: Claude Code Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check API key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not configured."
+            exit 1
+          fi
+
+      - name: Check issue body
+        id: check-body
+        run: |
+          BODY="${{ github.event.issue.body }}"
+          if [ -z "$BODY" ] || echo "$BODY" | grep -qP '^\s*!\[.*\]\(.*\)\s*$'; then
+            echo "empty=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "empty=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply needs-triage label for empty issues
+        if: steps.check-body.outputs.empty == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['needs-triage']
+            });
+
+      - name: Checkout
+        if: steps.check-body.outputs.empty == 'false'
+        uses: actions/checkout@v4
+
+      - name: Run Claude Code Triage
+        if: steps.check-body.outputs.empty == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_args: >-
+            --allowedTools Read,Grep,Glob
+            --prompt "Analyze this issue and apply appropriate labels from the taxonomy: ${{ env.LABEL_TAXONOMY || 'bug, feature, question, docs, enhancement, security, performance' }}. Post a brief comment explaining your classification."
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LABEL_TAXONOMY: ${{ vars.LABEL_TAXONOMY || '' }}

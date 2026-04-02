@@ -1,0 +1,55 @@
+# ECC Template v0.1.0
+# Claude Code PR Review (Fork-Safe) — Two-workflow pattern for reviewing fork PRs
+# The companion workflow (claude-pr-review.yml) handles non-fork PRs directly.
+# This workflow uses workflow_run to safely process fork PRs with secrets.
+name: Claude Code PR Review (Fork-Safe)
+
+on:
+  workflow_run:
+    workflows: ["Claude Code PR Review"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: claude-fork-review-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  review-fork:
+    runs-on: ubuntu-latest
+    # Only run for fork PRs that were skipped by the main workflow
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'skipped'
+    steps:
+      - name: Check API key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret is not configured."
+            exit 1
+          fi
+
+      - name: Checkout base
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download PR diff artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-diff
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_args: >-
+            --allowedTools Read,Grep,Glob
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
