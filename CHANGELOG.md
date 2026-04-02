@@ -12,6 +12,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Cartography element registry (BL-064 Sub-Spec B)**: Per-element documentation files in `docs/cartography/elements/` with cross-reference INDEX.md matrix. Two-tier element types (universal: Module, Interface, Config, Unknown; ECC: Command, Agent, Skill, Hook, Rule, Crate, Port, Adapter, DomainEntity). Post-loop element generation after journey/flow processing. Schema validation, staleness detection, and coverage dashboard extended for elements. New agent: `cartography-element-generator`. 3 ADRs (0042-0044).
 
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -32,6 +36,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -48,6 +56,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -58,6 +70,10 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
 
@@ -75,6 +91,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -89,6 +109,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -102,6 +126,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -112,6 +140,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -119,6 +151,10 @@ Generated from git conventional commits. Grouped by type and version.
 - **Structured log management (BL-092)**: JSON rolling daily files via tracing-appender to ~/.ecc/logs/. SQLite FTS5 index for full-text log search. Background indexer thread. `ecc log tail|search|prune|export` CLI commands. Session correlation via CLAUDE_SESSION_ID. 30-day auto-prune at startup with configurable retention. Structured tracing fields on all 40 hook handlers. LogStore port + SqliteLogStore adapter. ADR-0034 documents dual read/write path pattern.
 
 ## v4.7.0
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
 
@@ -130,6 +166,10 @@ Generated from git conventional commits. Grouped by type and version.
   Updated `ARCHITECTURE.md`: added `ecc-flock` to crate list, corrected test count to 1671.
 
 ## v4.3.1
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
 
