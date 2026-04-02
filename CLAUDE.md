@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (2225 tests)
+cargo test              # Run all Rust tests (2252 tests)
 cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (16 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
@@ -68,9 +68,15 @@ ecc claw                  NanoClaw interactive REPL
 ecc completion <shell>    Generate shell completions
 ecc status [--json]      Show diagnostic snapshot (versions, phase, components)
 ecc config set <key> <value>  Set persistent config (e.g., log-level info)
-ecc-workflow tasks sync <path>   Parse tasks.md, output JSON summary
-ecc-workflow tasks update <path> <id> <status>  Atomically update PC status
-ecc-workflow tasks init <design> --output <path>  Generate tasks.md from design PCs
+ecc workflow init <concern> <feature>  Initialize workflow state
+ecc workflow transition <target>      Advance workflow phase
+ecc workflow status                   Show current workflow state
+ecc workflow recover                  Archive stuck state and reset to idle
+ecc workflow phase-gate               Gate writes during plan/solution phases
+ecc workflow tasks sync <path>        Parse tasks.md, output JSON summary
+ecc workflow tasks update <path> <id> <status>  Atomically update PC status
+ecc workflow tasks init <design> --output <path>  Generate tasks.md from design PCs
+ecc-workflow <subcommand>             Legacy alias (thin wrapper for ecc workflow)
 cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, completions, RC)
 ```
 
@@ -106,6 +112,8 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 
 ## Gotchas
 
+- Workflow state is worktree-scoped: stored at `<git-dir>/ecc-workflow/state.json`. Falls back to `.claude/workflow/` for non-git dirs.
+- `ecc workflow` mirrors `ecc-workflow` — use either during migration; `ecc-workflow` will become a thin wrapper
 - `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by hook)
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
 - `hooks.json` lives in `hooks/`, not the project root
