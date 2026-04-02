@@ -4,6 +4,7 @@
 //! zero I/O dependencies. All side effects are pushed to the [`ecc_ports`] layer.
 
 pub mod ansi;
+pub mod cartography;
 pub mod audit_web;
 pub mod log;
 pub mod update;
