@@ -12,8 +12,6 @@ pub struct StalenessInfo {
     pub phase: String,
     /// The ISO 8601 timestamp when the workflow started.
     pub started_at: String,
-    /// How many seconds have elapsed.
-    pub elapsed_secs: u64,
 }
 
 /// Check if a workflow state file is stale.
@@ -43,7 +41,6 @@ pub fn detect_staleness(
         Some(StalenessInfo {
             phase: state.phase.to_string(),
             started_at: state.started_at.as_str().to_owned(),
-            elapsed_secs: 0, // simplified — could compute from timestamps
         })
     } else {
         None
@@ -114,7 +111,7 @@ pub fn archive_dir(state_dir: &Path) -> PathBuf {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
     use ecc_test_support::{InMemoryFileSystem, MockClock};
     use std::path::PathBuf;

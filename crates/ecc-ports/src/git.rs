@@ -31,7 +31,4 @@ pub trait GitInfo: Send + Sync {
     /// For a worktree, this is `<repo>/.git/worktrees/<name>`.
     /// For a bare repo, this is the repo directory itself.
     fn git_dir(&self, working_dir: &Path) -> Result<PathBuf, GitError>;
-
-    /// Return whether the given directory is inside a git worktree (not the main working tree).
-    fn is_inside_worktree(&self, working_dir: &Path) -> bool;
 }

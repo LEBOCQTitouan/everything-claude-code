@@ -38,12 +38,4 @@ impl GitInfo for OsGitInfo {
         }
     }
 
-    fn is_inside_worktree(&self, working_dir: &Path) -> bool {
-        Command::new("git")
-            .args(["rev-parse", "--is-inside-work-tree"])
-            .current_dir(working_dir)
-            .output()
-            .map(|o| o.status.success() && String::from_utf8_lossy(&o.stdout).trim() == "true")
-            .unwrap_or(false)
-    }
 }

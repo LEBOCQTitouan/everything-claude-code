@@ -76,7 +76,7 @@ pub fn resolve_state_dir(
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
     use ecc_test_support::{InMemoryFileSystem, MockEnvironment, MockGitInfo};
 
