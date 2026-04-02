@@ -71,7 +71,7 @@
 | BL-068 | Deterministic workflow state machine — typed state.json, phase transitions | — | HIGH | /spec dev | implemented | 2026-03-26 |
 | BL-069 | Deterministic convention linting — naming, placement, frontmatter values | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-070 | Deterministic wave grouping algorithm — PC parallelization from file-overlap | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
-| BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | open | 2026-03-26 |
+| BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-072 | Deterministic artifact scaffolding — spec, solution, tasks templates | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-073 | Deterministic diagram trigger heuristics — auto-detect diagram needs | — | LOW | /spec dev | open | 2026-03-26 |
 | BL-074 | Deterministic doc metrics — staleness, coverage, severity counting | — | LOW | /spec dev | open | 2026-03-26 |
