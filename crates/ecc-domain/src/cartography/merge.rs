@@ -20,7 +20,56 @@ pub fn has_section(content: &str, section_id: &str) -> bool {
 ///   open and close markers in-place. Content outside all markers is never
 ///   modified.
 pub fn merge_section(existing: &str, section_id: &str, new_content: &str) -> String {
-    todo!("implement merge_section")
+    let open_marker = format!("<!-- CARTOGRAPHY: {} -->", section_id);
+    let close_marker = format!("<!-- /CARTOGRAPHY: {} -->", section_id);
+    let section_block = format!("{}\n{}{}\n", open_marker, new_content, close_marker);
+
+    if has_section(existing, section_id) {
+        // Replace: find open marker, then close marker after it.
+        let open_pos = existing
+            .find(&open_marker)
+            .expect("has_section guarantees open marker exists");
+        let after_open = &existing[open_pos..];
+        let close_relative = after_open
+            .find(&close_marker)
+            .expect("malformed document: open marker without close marker");
+        let close_pos = open_pos + close_relative + close_marker.len();
+
+        let before = &existing[..open_pos];
+        let after = &existing[close_pos..];
+        format!("{}{}{}", before, section_block, after)
+    } else {
+        // Append: find the last closing marker of any section.
+        let any_close = "<!-- /CARTOGRAPHY:";
+        if let Some(last_close_pos) = find_last_close_marker(existing, any_close) {
+            let after_last_close = &existing[last_close_pos..];
+            let end_of_line = after_last_close
+                .find('\n')
+                .map(|i| i + 1)
+                .unwrap_or(after_last_close.len());
+            let insert_at = last_close_pos + end_of_line;
+            let before = &existing[..insert_at];
+            let after = &existing[insert_at..];
+            format!("{}\n{}{}", before, section_block, after)
+        } else {
+            // No existing markers — append at end.
+            let separator = if existing.ends_with('\n') { "" } else { "\n" };
+            format!("{}{}\n{}", existing, separator, section_block)
+        }
+    }
+}
+
+/// Find the byte position of the start of the last line that begins an
+/// arbitrary CARTOGRAPHY closing marker (`<!-- /CARTOGRAPHY: ...`).
+fn find_last_close_marker(content: &str, prefix: &str) -> Option<usize> {
+    let mut last: Option<usize> = None;
+    let mut search_from = 0;
+    while let Some(pos) = content[search_from..].find(prefix) {
+        let abs_pos = search_from + pos;
+        last = Some(abs_pos);
+        search_from = abs_pos + prefix.len();
+    }
+    last
 }
 
 #[cfg(test)]
