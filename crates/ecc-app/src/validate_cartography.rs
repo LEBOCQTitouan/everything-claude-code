@@ -7,10 +7,22 @@ use ecc_domain::cartography::element_validation::validate_element;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Marker embedded in element files for staleness detection.
 const CARTOGRAPHY_META_MARKER: &str = "CARTOGRAPHY-META";
+
+/// Construct a path by joining root to a sub-path, normalizing the `.` prefix.
+///
+/// When root is `"."`, returns `PathBuf::from(sub_path)` instead of `"./sub_path"`.
+/// This ensures InMemoryFileSystem lookups match keys stored without a `./` prefix.
+fn normalize_path(root: &Path, sub_path: &str) -> PathBuf {
+    if root == Path::new(".") {
+        PathBuf::from(sub_path)
+    } else {
+        root.join(sub_path)
+    }
+}
 
 /// Run cartography validation.
 ///
@@ -26,7 +38,7 @@ pub fn run_validate_cartography(
     root: &Path,
     coverage: bool,
 ) -> bool {
-    let elements_dir = root.join("docs/cartography/elements");
+    let elements_dir = normalize_path(root, "docs/cartography/elements");
 
     // AC-016.3: If elements/ dir missing, exit cleanly.
     if !fs.exists(&elements_dir) {
@@ -311,7 +323,7 @@ fn run_coverage(
     let mut discovered_sources: Vec<String> = element_sources.to_vec();
 
     for dir_name in &discoverable_dirs {
-        let dir = root.join(dir_name);
+        let dir = normalize_path(root, dir_name);
         if let Ok(entries) = fs.read_dir_recursive(&dir) {
             let md_count = entries
                 .iter()
