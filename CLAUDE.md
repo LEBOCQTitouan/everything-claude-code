@@ -28,6 +28,10 @@ Hexagonal architecture: domain → ports → app → infra → CLI (9 crates). `
 ## CLI Commands
 
 ```
+ecc analyze changelog [--since <tag|date>]  Generate conventional commit changelog
+ecc analyze hotspots [--top N] [--since <tag|date>]  Show most frequently changed files
+ecc analyze coupling [--threshold 0.7] [--since <tag|date>]  Show co-change file pairs
+ecc analyze bus-factor [--top N] [--since <tag|date>]  Show files with single-author risk
 ecc version          Show version
 ecc install          Install ECC config to ~/.claude/
 ecc init             Initialize ECC in current project
