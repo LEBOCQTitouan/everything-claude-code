@@ -22,6 +22,11 @@ Generated from git conventional commits. Grouped by type and version.
 ### Changed
 
 - **Release pipeline migrated to cargo-dist (BL-112)**: Replaced hand-rolled 267-line `release.yml` with cargo-dist declarative pipeline (`dist.toml`). Structured as plan/build/host/cosign/announce stages. Custom cosign signing job preserved as non-blocking post-build step. All 5 cross-compilation targets maintained.
+## [Unreleased]
+
+### Added
+
+- **Deterministic Hook System Redesign (Phase 1)**: Unified `ecc workflow` subcommand group mirroring all 23 ecc-workflow subcommands. GitInfo and Clock port traits with adapters. Worktree-scoped state resolution. Stuck-state recovery with injectable clock. Phase verification guards. Lexical path normalization fixing phase gate path traversal. WorkflowState version field. hooks.json migration utility. 15 new characterization and integration tests.
 
 ## v5.1.0
 

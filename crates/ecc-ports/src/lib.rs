@@ -7,14 +7,18 @@
 
 #![warn(missing_docs)]
 
+/// Clock (time source) port.
+pub mod clock;
 /// Persistent ECC configuration port.
 pub mod config_store;
 /// Environment variable and platform access port.
 pub mod env;
+/// Filesystem operations port.
 /// Tarball extraction port.
 pub mod extract;
-/// Filesystem operations port.
 pub mod fs;
+/// Git repository information port.
+pub mod git;
 /// Git log data access port.
 pub mod git_log;
 /// File-based locking port.

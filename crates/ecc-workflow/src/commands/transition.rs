@@ -44,6 +44,7 @@ mod tests {
                 tasks_path: None,
             },
             completed: vec![],
+            version: 1,
         };
         let json = serde_json::to_string_pretty(&state).unwrap();
         std::fs::write(wf_dir.join("state.json"), json).unwrap();

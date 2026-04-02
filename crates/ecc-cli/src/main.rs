@@ -61,6 +61,8 @@ enum Command {
     Config(commands::config::ConfigArgs),
     /// Update ECC to the latest version
     Update(commands::update::UpdateArgs),
+    /// Workflow state machine (mirrors ecc-workflow)
+    Workflow(commands::workflow::WorkflowArgs),
 }
 
 /// Initialize tracing with layered subscriber: stderr + optional JSON file.
@@ -188,5 +190,6 @@ fn main() -> anyhow::Result<()> {
         Command::Status(args) => commands::status::run(args),
         Command::Config(args) => commands::config::run(args),
         Command::Update(args) => commands::update::run(&args),
+        Command::Workflow(args) => commands::workflow::run(args),
     }
 }
