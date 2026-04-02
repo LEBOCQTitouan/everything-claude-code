@@ -23,5 +23,5 @@ pub use tier2_tools::{
 pub use tier3_session::{
     config_change_log, cost_tracker, craft_velocity, daily_summary, evaluate_session,
     oath_reflection, post_compact, post_enter_worktree_session_log, pre_compact, session_end,
-    session_start, subagent_start_log, subagent_stop_log,
+    session_start, stop_cartography, subagent_start_log, subagent_stop_log,
 };

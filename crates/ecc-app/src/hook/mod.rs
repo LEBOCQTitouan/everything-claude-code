@@ -175,6 +175,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "stop:oath-reflection" => handlers::oath_reflection(stdin, ports),
         "stop:craft-velocity" => handlers::craft_velocity(stdin, ports),
         "stop:daily-summary" => handlers::daily_summary(stdin, ports),
+        "stop:cartography" => handlers::stop_cartography(stdin, ports),
 
         // Unknown hook — passthrough with warning
         _ => {
