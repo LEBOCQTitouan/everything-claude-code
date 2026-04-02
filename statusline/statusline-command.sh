@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -uo pipefail
+export LC_ALL=C.UTF-8
 
 # ECC Statusline — receives JSON from Claude Code via stdin.
 # Output: ◆ Model │ ctx: [████░░░░] 42% │ 5h: [██░░] 23% 7d: [█░░░] 12% │ ↑15k ↓4k │ +50 -10 │ 2m 0s │ ⎇ main │ ecc 4.2.0
@@ -193,6 +194,7 @@ TERM_WIDTH=${COLUMNS:-$(tput cols 2>/dev/null || echo 120)}
 
 # --- Strip ANSI for length calculation ---
 strip_ansi() { printf '%s' "$1" | sed 's/\x1b\[[0-9;]*m//g'; }
+visible_width() { local s; s=$(strip_ansi "$1"); printf "%d" "${#s}"; }
 
 # --- Build output with priority-based truncation ---
 # Separator: │ (Unicode box-drawing U+2502)
@@ -228,7 +230,7 @@ build_output() {
     [ -z "$seg" ] && continue
     candidate=$(IFS=; printf '%b' "$(join_segments "${active[@]}" "$seg")")
     stripped=$(strip_ansi "$candidate")
-    if [ "${#stripped}" -le "$TERM_WIDTH" ] 2>/dev/null; then
+    if [ $(visible_width "$stripped") -le "$TERM_WIDTH" ] 2>/dev/null; then
       active+=("$seg")
     fi
   done
@@ -263,17 +265,17 @@ if [ -n "$SEG_RL" ] && ! echo "$STRIPPED" | grep -q '5h:\|7d:'; then
   STRIPPED=$(strip_ansi "$OUTPUT")
 fi
 
-if [ "${#STRIPPED}" -gt "$TERM_WIDTH" ] 2>/dev/null && [ -n "$SEG_RL_NARROW" ]; then
+if [ $(visible_width "$STRIPPED") -gt "$TERM_WIDTH" ] 2>/dev/null && [ -n "$SEG_RL_NARROW" ]; then
   SEG_RL="$SEG_RL_NARROW"
   OUTPUT=$(build_output)
   STRIPPED=$(strip_ansi "$OUTPUT")
 fi
-if [ "${#STRIPPED}" -gt "$TERM_WIDTH" ] 2>/dev/null && [ -n "$SEG_WORKTREE_NARROW" ]; then
+if [ $(visible_width "$STRIPPED") -gt "$TERM_WIDTH" ] 2>/dev/null && [ -n "$SEG_WORKTREE_NARROW" ]; then
   SEG_WORKTREE="$SEG_WORKTREE_NARROW"
   OUTPUT=$(build_output)
   STRIPPED=$(strip_ansi "$OUTPUT")
 fi
-if [ "${#STRIPPED}" -gt "$TERM_WIDTH" ] 2>/dev/null; then
+if [ $(visible_width "$STRIPPED") -gt "$TERM_WIDTH" ] 2>/dev/null; then
   SEG_CTX="$SEG_CTX_NARROW"
   OUTPUT=$(build_output)
 fi
