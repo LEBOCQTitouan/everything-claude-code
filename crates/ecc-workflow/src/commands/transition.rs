@@ -212,9 +212,13 @@ fn write_memory_best_effort(
     let concern_str = concern.to_string();
     let mut warnings: Vec<String> = Vec::new();
 
-    if let Err(e) =
-        crate::commands::memory_write::write_action(artifact_name, feature, "success", "[]", project_dir)
-    {
+    if let Err(e) = crate::commands::memory_write::write_action(
+        artifact_name,
+        feature,
+        "success",
+        "[]",
+        project_dir,
+    ) {
         warnings.push(format!("write_action failed: {e}"));
     }
     if let Err(e) =
@@ -261,29 +265,53 @@ pub fn run(
 
     let result = with_state_lock(project_dir, || {
         let mut state = match read_state(project_dir) {
-            Ok(None) => return (WorkflowOutput::warn("No state.json found — workflow not initialized"), None),
+            Ok(None) => {
+                return (
+                    WorkflowOutput::warn("No state.json found — workflow not initialized"),
+                    None,
+                );
+            }
             Ok(Some(s)) => s,
-            Err(e) => return (WorkflowOutput::warn(format!("Failed to read state: {e}")), None),
+            Err(e) => {
+                return (
+                    WorkflowOutput::warn(format!("Failed to read state: {e}")),
+                    None,
+                );
+            }
         };
         let from = state.phase;
         tracing::info!(from_phase = %from, target = %target, "transition: attempting phase change");
         let to = match resolve_transition_by_name(from, &target) {
             Ok(t) => t,
-            Err(e) => return (WorkflowOutput::block(format!("Illegal transition: {e}")), None),
+            Err(e) => {
+                return (
+                    WorkflowOutput::block(format!("Illegal transition: {e}")),
+                    None,
+                );
+            }
         };
         state.phase = to;
         if let Some(ref artifact_name) = artifact
-            && let Err(output) = apply_artifact_stamp(&mut state, artifact_name, path.as_deref(), to)
+            && let Err(output) =
+                apply_artifact_stamp(&mut state, artifact_name, path.as_deref(), to)
         {
             return (output, None);
         }
         match write_state_atomic(project_dir, &state) {
             Ok(()) => {
                 tracing::info!(from = %from, to = %to, feature = %state.feature, "workflow transition");
-                let memory_info = artifact.as_ref().map(|a| (a.clone(), state.feature.clone(), state.concern));
-                (WorkflowOutput::pass(format!("Phase transition: {from} -> {to}")), memory_info)
+                let memory_info = artifact
+                    .as_ref()
+                    .map(|a| (a.clone(), state.feature.clone(), state.concern));
+                (
+                    WorkflowOutput::pass(format!("Phase transition: {from} -> {to}")),
+                    memory_info,
+                )
             }
-            Err(e) => (WorkflowOutput::block(format!("Failed to write state.json: {e}")), None),
+            Err(e) => (
+                WorkflowOutput::block(format!("Failed to write state.json: {e}")),
+                None,
+            ),
         }
     });
 

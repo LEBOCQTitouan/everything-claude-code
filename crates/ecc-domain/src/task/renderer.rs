@@ -57,7 +57,7 @@ pub fn render_tasks(pcs: &[PassCondition], feature_title: &str, timestamp: &str)
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::spec::pc::{PcId, PassCondition};
+    use crate::spec::pc::{PassCondition, PcId};
 
     fn make_pc(num: u16, description: &str, command: &str) -> PassCondition {
         PassCondition {
@@ -72,8 +72,16 @@ mod tests {
 
     fn sample_pcs() -> Vec<PassCondition> {
         vec![
-            make_pc(1, "First pass condition", "cargo test --lib -p ecc-domain first"),
-            make_pc(2, "Second pass condition", "cargo test --lib -p ecc-domain second"),
+            make_pc(
+                1,
+                "First pass condition",
+                "cargo test --lib -p ecc-domain first",
+            ),
+            make_pc(
+                2,
+                "Second pass condition",
+                "cargo test --lib -p ecc-domain second",
+            ),
         ]
     }
 
@@ -123,7 +131,13 @@ mod tests {
     #[test]
     fn renders_all_five_post_tdd_entries() {
         let output = render_tasks(&sample_pcs(), "My Feature", "2026-03-29T10:00:00Z");
-        for label in &["E2E tests", "Code review", "Doc updates", "Supplemental docs", "Write implement-done.md"] {
+        for label in &[
+            "E2E tests",
+            "Code review",
+            "Doc updates",
+            "Supplemental docs",
+            "Write implement-done.md",
+        ] {
             assert!(
                 output.contains(label),
                 "Post-TDD section should contain '{label}', got:\n{output}"

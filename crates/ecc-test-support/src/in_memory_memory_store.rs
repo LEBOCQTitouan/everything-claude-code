@@ -348,7 +348,12 @@ mod tests {
     #[test]
     fn test_search_fts_matches_tags() {
         let store = InMemoryMemoryStore::new();
-        let e = make_entry(MemoryTier::Semantic, "title", "content", vec!["rust", "ddd"]);
+        let e = make_entry(
+            MemoryTier::Semantic,
+            "title",
+            "content",
+            vec!["rust", "ddd"],
+        );
         store.insert(&e).unwrap();
         let results = store.search_fts("rust", 10).unwrap();
         assert_eq!(results.len(), 1);
@@ -376,7 +381,12 @@ mod tests {
     fn test_search_fts_respects_limit() {
         let store = InMemoryMemoryStore::new();
         for i in 0..5 {
-            let e = make_entry(MemoryTier::Episodic, "common", &format!("entry {i}"), vec![]);
+            let e = make_entry(
+                MemoryTier::Episodic,
+                "common",
+                &format!("entry {i}"),
+                vec![],
+            );
             store.insert(&e).unwrap();
         }
         let results = store.search_fts("common", 3).unwrap();

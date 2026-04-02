@@ -156,9 +156,7 @@ fn apply_skill_accept(
     dry_run: bool,
     report: &mut ecc_domain::config::merge::MergeReport,
 ) -> bool {
-    if !dry_run
-        && let Err(e) = copy_dir_recursive(ctx.fs, src_skill, dest_skill)
-    {
+    if !dry_run && let Err(e) = copy_dir_recursive(ctx.fs, src_skill, dest_skill) {
         report.errors.push(format!("{skill_name}: {e}"));
         return false;
     }
@@ -195,7 +193,12 @@ fn apply_skill_smart_merge(
     );
     let existing = ctx.fs.read_to_string(dest_skill_md).unwrap_or_default();
     let incoming = ctx.fs.read_to_string(src_skill_md).unwrap_or_default();
-    let result = smart_merge::smart_merge(ctx.shell, &existing, &incoming, &format!("{skill_name}/SKILL.md"));
+    let result = smart_merge::smart_merge(
+        ctx.shell,
+        &existing,
+        &incoming,
+        &format!("{skill_name}/SKILL.md"),
+    );
     if result.success {
         if let Some(merged) = &result.merged {
             if !dry_run {
@@ -204,7 +207,9 @@ fn apply_skill_smart_merge(
                     return;
                 }
                 if let Err(e) = ctx.fs.write(dest_skill_md, merged) {
-                    report.errors.push(format!("{skill_name}/SKILL.md: write error: {e}"));
+                    report
+                        .errors
+                        .push(format!("{skill_name}/SKILL.md: write error: {e}"));
                     return;
                 }
             }
@@ -212,7 +217,9 @@ fn apply_skill_smart_merge(
         }
     } else {
         let err = result.error.unwrap_or_else(|| "unknown".into());
-        report.errors.push(format!("{skill_name}: smart merge failed: {err}"));
+        report
+            .errors
+            .push(format!("{skill_name}: smart merge failed: {err}"));
     }
 }
 
@@ -252,7 +259,15 @@ fn process_one_skill(
     let choice = resolve_choice(ctx, &file, progress, options);
     match choice {
         ReviewChoice::Accept => {
-            apply_skill_accept(ctx, skill_name, &src_skill, &dest_skill, is_new, options.dry_run, report);
+            apply_skill_accept(
+                ctx,
+                skill_name,
+                &src_skill,
+                &dest_skill,
+                is_new,
+                options.dry_run,
+                report,
+            );
         }
         ReviewChoice::Keep => {
             report.skipped.push(skill_name.to_owned());
@@ -307,11 +322,22 @@ pub fn merge_skills(
     let total = skill_dirs.len();
     for (i, skill_name) in skill_dirs.iter().enumerate() {
         let progress = format!("[{}/{}]", i + 1, total);
-        process_one_skill(ctx, src_dir, dest_dir, skill_name, &progress, options, &mut report);
+        process_one_skill(
+            ctx,
+            src_dir,
+            dest_dir,
+            skill_name,
+            &progress,
+            options,
+            &mut report,
+        );
     }
 
     if !report.added.is_empty() || !report.updated.is_empty() {
-        ctx.terminal.stdout_write(&format!("{}\n", merge::format_merge_report("Skills", &report)));
+        ctx.terminal.stdout_write(&format!(
+            "{}\n",
+            merge::format_merge_report("Skills", &report)
+        ));
     }
 
     report
@@ -386,10 +412,11 @@ pub fn merge_hooks(
 
     if (added > 0 || legacy_removed > 0) && !dry_run {
         // Serialize back at boundary
-        let merged_value =
-            serde_json::to_value(&merge_result.merged).map_err(|e| error::MergeError::Serialization {
+        let merged_value = serde_json::to_value(&merge_result.merged).map_err(|e| {
+            error::MergeError::Serialization {
                 reason: e.to_string(),
-            })?;
+            }
+        })?;
 
         let mut settings = existing_settings;
         settings

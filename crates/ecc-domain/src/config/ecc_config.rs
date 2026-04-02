@@ -23,8 +23,7 @@ pub enum LogLevel {
 
 impl LogLevel {
     /// All valid level strings in canonical order.
-    pub const VALID_LEVELS: &'static [&'static str] =
-        &["error", "warn", "info", "debug", "trace"];
+    pub const VALID_LEVELS: &'static [&'static str] = &["error", "warn", "info", "debug", "trace"];
 }
 
 impl FromStr for LogLevel {
@@ -160,7 +159,10 @@ mod tests {
         let err = "banana".parse::<LogLevel>().unwrap_err();
         assert!(err.contains("banana"), "error should mention the bad value");
         for level in LogLevel::VALID_LEVELS {
-            assert!(err.contains(level), "error should list valid level: {level}");
+            assert!(
+                err.contains(level),
+                "error should list valid level: {level}"
+            );
         }
     }
 

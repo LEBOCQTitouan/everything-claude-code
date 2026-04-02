@@ -479,8 +479,7 @@ impl FileSystem for FailingFs {
 #[test]
 fn step_hooks_and_settings_error_propagates_to_summary() {
     // hooks.json exists but contains invalid JSON — merge_hooks will fail
-    let fs = ecc_source_fs()
-        .with_file("/ecc/hooks/hooks.json", "{ invalid json !!!");
+    let fs = ecc_source_fs().with_file("/ecc/hooks/hooks.json", "{ invalid json !!!");
     let env = no_color_env();
     let terminal = BufferedTerminal::new();
     let shell = MockExecutor::new();
@@ -520,8 +519,7 @@ fn step_hooks_and_settings_error_propagates_to_summary() {
 fn install_accumulates_errors() {
     // hooks.json has invalid content (hook merge fails) +
     // manifest write path will fail via FailingFs
-    let inner = ecc_source_fs()
-        .with_file("/ecc/hooks/hooks.json", "{ bad json }");
+    let inner = ecc_source_fs().with_file("/ecc/hooks/hooks.json", "{ bad json }");
     let fs = FailingFs::new(inner).with_fail_write("/claude/.ecc-manifest.json");
     let env = no_color_env();
     let terminal = BufferedTerminal::new();

@@ -61,7 +61,10 @@ mod tests {
 
     #[test]
     fn test_tier_fromstr_working() {
-        assert_eq!("working".parse::<MemoryTier>().unwrap(), MemoryTier::Working);
+        assert_eq!(
+            "working".parse::<MemoryTier>().unwrap(),
+            MemoryTier::Working
+        );
     }
 
     #[test]

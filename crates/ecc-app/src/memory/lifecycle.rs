@@ -21,11 +21,10 @@ pub fn gc(store: &dyn MemoryStore, dry_run: bool) -> Result<GcResult, MemoryAppE
         // For dry-run: query what would be deleted without deleting.
         // We use delete_stale_older_than in a temp store — but since we can't
         // partially preview, we list all entries and filter manually.
-        let all = store.list_filtered(None, None, None)
+        let all = store
+            .list_filtered(None, None, None)
             .map_err(MemoryAppError::Store)?;
-        let candidates: Vec<MemoryEntry> = all.into_iter()
-            .filter(|e| e.stale)
-            .collect();
+        let candidates: Vec<MemoryEntry> = all.into_iter().filter(|e| e.stale).collect();
         let count = candidates.len();
         return Ok(GcResult {
             deleted_count: count,
@@ -94,11 +93,7 @@ mod tests {
         InMemoryMemoryStore::new()
     }
 
-    fn insert_entry(
-        store: &InMemoryMemoryStore,
-        tier: MemoryTier,
-        stale: bool,
-    ) -> MemoryId {
+    fn insert_entry(store: &InMemoryMemoryStore, tier: MemoryTier, stale: bool) -> MemoryId {
         let entry = ecc_domain::memory::MemoryEntry::new(
             MemoryId(0),
             tier,
@@ -156,8 +151,20 @@ mod tests {
         insert_entry(&store, MemoryTier::Semantic, true);
 
         let s = stats(&store).unwrap();
-        assert_eq!(s.counts_by_tier.get(&MemoryTier::Working).copied().unwrap_or(0), 1);
-        assert_eq!(s.counts_by_tier.get(&MemoryTier::Semantic).copied().unwrap_or(0), 2);
+        assert_eq!(
+            s.counts_by_tier
+                .get(&MemoryTier::Working)
+                .copied()
+                .unwrap_or(0),
+            1
+        );
+        assert_eq!(
+            s.counts_by_tier
+                .get(&MemoryTier::Semantic)
+                .copied()
+                .unwrap_or(0),
+            2
+        );
         assert_eq!(s.stale_count, 1);
     }
 

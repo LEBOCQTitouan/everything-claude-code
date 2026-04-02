@@ -330,8 +330,7 @@ fn transition_writes_memory() {
 
     // Step 5: daily/<today>.md must exist in the project memory dir under HOME
     let repo_root = ecc_flock::resolve_repo_root(temp_dir.path());
-    let repo_root =
-        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    let repo_root = std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
     let abs_str = repo_root.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
     let daily_dir = home_dir

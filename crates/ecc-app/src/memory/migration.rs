@@ -149,7 +149,13 @@ pub fn export(
         let safe_title: String = entry
             .title
             .chars()
-            .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
+            .map(|c| {
+                if c.is_alphanumeric() || c == '-' || c == '_' {
+                    c
+                } else {
+                    '-'
+                }
+            })
             .take(50)
             .collect();
 
@@ -236,7 +242,8 @@ mod tests {
 
         let dir = Path::new("/work-items");
         fs.create_dir_all(dir).unwrap();
-        fs.write(&dir.join("item.md"), "# My Item\n\nContent.").unwrap();
+        fs.write(&dir.join("item.md"), "# My Item\n\nContent.")
+            .unwrap();
 
         migrate_work_items(&store, &fs, dir).unwrap();
         let result2 = migrate_work_items(&store, &fs, dir).unwrap();
@@ -330,8 +337,20 @@ mod tests {
         let store = make_store();
         let fs = make_fs();
 
-        insert_entry(&store, "Semantic Entry", "content", MemoryTier::Semantic, None);
-        insert_entry(&store, "Episodic Entry", "content", MemoryTier::Episodic, None);
+        insert_entry(
+            &store,
+            "Semantic Entry",
+            "content",
+            MemoryTier::Semantic,
+            None,
+        );
+        insert_entry(
+            &store,
+            "Episodic Entry",
+            "content",
+            MemoryTier::Episodic,
+            None,
+        );
 
         let output_dir = Path::new("/export");
         let written = export(&store, &fs, output_dir).unwrap();
@@ -348,7 +367,13 @@ mod tests {
         let store = make_store();
         let fs = make_fs();
 
-        insert_entry(&store, "My Memory", "this is content", MemoryTier::Semantic, None);
+        insert_entry(
+            &store,
+            "My Memory",
+            "this is content",
+            MemoryTier::Semantic,
+            None,
+        );
 
         let output_dir = Path::new("/export");
         export(&store, &fs, output_dir).unwrap();

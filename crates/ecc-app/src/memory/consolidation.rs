@@ -6,7 +6,7 @@ use std::path::Path;
 use ecc_domain::memory::{MemoryEntry, MemoryId, MemoryTier};
 use ecc_ports::memory_store::MemoryStore;
 
-use crate::memory::crud::{current_timestamp, MemoryAppError};
+use crate::memory::crud::{MemoryAppError, current_timestamp};
 
 /// Result of a consolidation run.
 #[derive(Debug)]
@@ -215,9 +215,7 @@ pub fn generate_context_md(
     top_n: usize,
     max_lines: usize,
 ) -> Result<(), MemoryAppError> {
-    let mut entries = store
-        .list_recent(top_n)
-        .map_err(MemoryAppError::Store)?;
+    let mut entries = store.list_recent(top_n).map_err(MemoryAppError::Store)?;
 
     // Sort by relevance_score descending
     entries.sort_by(|a, b| {
@@ -483,7 +481,8 @@ mod tests {
     #[test]
     fn expire_working_promotes_long_content() {
         let store = make_store();
-        let long = "This is a working memory entry that has more than fifty characters in total length.";
+        let long =
+            "This is a working memory entry that has more than fifty characters in total length.";
         assert!(long.len() > 50);
         insert_entry_with_content(
             &store,

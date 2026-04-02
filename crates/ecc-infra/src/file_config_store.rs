@@ -58,8 +58,7 @@ fn read_toml(path: &std::path::Path) -> Result<Option<RawEccConfig>, ConfigError
     if !path.exists() {
         return Ok(None);
     }
-    let contents =
-        std::fs::read_to_string(path).map_err(|e| ConfigError::Io(e.to_string()))?;
+    let contents = std::fs::read_to_string(path).map_err(|e| ConfigError::Io(e.to_string()))?;
     let parsed: ConfigToml =
         toml::from_str(&contents).map_err(|e| ConfigError::Parse(e.to_string()))?;
     Ok(Some(parsed.into()))
@@ -83,12 +82,10 @@ impl ConfigStore for FileConfigStore {
     }
 
     fn save_global(&self, config: &RawEccConfig) -> Result<(), ConfigError> {
-        std::fs::create_dir_all(&self.global_dir)
-            .map_err(|e| ConfigError::Io(e.to_string()))?;
+        std::fs::create_dir_all(&self.global_dir).map_err(|e| ConfigError::Io(e.to_string()))?;
 
         let toml_repr = ConfigToml::from(config);
-        let serialized =
-            toml::to_string(&toml_repr).map_err(|e| ConfigError::Io(e.to_string()))?;
+        let serialized = toml::to_string(&toml_repr).map_err(|e| ConfigError::Io(e.to_string()))?;
 
         // Atomic write: write to tempfile then rename.
         let tmp_path = self.global_dir.join(".config.toml.tmp");

@@ -17,9 +17,9 @@ pub struct UpdateArgs {
 }
 
 pub fn run(args: &UpdateArgs) -> anyhow::Result<()> {
-    use ecc_app::update::{run_update, UpdateOptions};
     use ecc_app::update::context::UpdateContext;
     use ecc_app::update::orchestrator::UpdateOutcome;
+    use ecc_app::update::{UpdateOptions, run_update};
     use ecc_infra::github_release::GithubReleaseClient;
     use ecc_infra::os_env::OsEnvironment;
     use ecc_infra::os_fs::OsFileSystem;

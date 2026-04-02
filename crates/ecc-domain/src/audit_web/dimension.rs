@@ -143,10 +143,7 @@ mod tests {
         let dims = super::standard_dimensions();
         assert_eq!(dims.len(), 8, "expected exactly 8 standard dimensions");
         for dim in &dims {
-            assert!(
-                !dim.name.is_empty(),
-                "dimension name must not be empty"
-            );
+            assert!(!dim.name.is_empty(), "dimension name must not be empty");
             assert!(
                 !dim.query_template.is_empty(),
                 "dimension '{}' must have a query template",
@@ -159,8 +156,14 @@ mod tests {
                 dim.name,
                 dim.query_template
             );
-            assert!(!dim.is_custom, "standard dimensions must have is_custom=false");
-            assert!(dim.enabled, "standard dimensions must be enabled by default");
+            assert!(
+                !dim.is_custom,
+                "standard dimensions must have is_custom=false"
+            );
+            assert!(
+                dim.enabled,
+                "standard dimensions must be enabled by default"
+            );
         }
     }
 }

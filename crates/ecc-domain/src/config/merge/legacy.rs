@@ -13,9 +13,7 @@ pub fn is_legacy_command(cmd: &str) -> bool {
             return true;
         }
         // Deprecated worktree delegation hook IDs (BL-085)
-        if cmd.contains("worktree:create:init")
-            || cmd.contains("stop:worktree-cleanup-reminder")
-        {
+        if cmd.contains("worktree:create:init") || cmd.contains("stop:worktree-cleanup-reminder") {
             return true;
         }
         return false;
@@ -150,9 +148,7 @@ pub fn is_legacy_ecc_hook_typed(entry: &hook_types::HookEntry) -> bool {
 
 /// Remove legacy hooks from a typed hooks map.
 /// Returns a new map with legacy hooks removed, and the count of removed hooks.
-pub fn remove_legacy_hooks_typed(
-    hooks: &hook_types::HooksMap,
-) -> (hook_types::HooksMap, usize) {
+pub fn remove_legacy_hooks_typed(hooks: &hook_types::HooksMap) -> (hook_types::HooksMap, usize) {
     let mut result = hook_types::HooksMap::new();
     let mut removed = 0usize;
 

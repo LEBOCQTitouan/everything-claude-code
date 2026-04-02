@@ -69,8 +69,8 @@ fn load_valid_file() {
         Some("My Project"),
     )]))
     .unwrap();
-    let fs = InMemoryFileSystem::new()
-        .with_file("/home/user/.claude/session-aliases.json", &content);
+    let fs =
+        InMemoryFileSystem::new().with_file("/home/user/.claude/session-aliases.json", &content);
     let data = load_aliases(&fs, &aliases_path(), NOW);
     assert_eq!(data.aliases.len(), 1);
     assert!(data.aliases.contains_key("proj"));
@@ -83,8 +83,8 @@ fn load_preserves_existing_entries() {
         ("b", "/s/2", NOW, Some("Title B")),
     ]))
     .unwrap();
-    let fs = InMemoryFileSystem::new()
-        .with_file("/home/user/.claude/session-aliases.json", &content);
+    let fs =
+        InMemoryFileSystem::new().with_file("/home/user/.claude/session-aliases.json", &content);
     let data = load_aliases(&fs, &aliases_path(), NOW);
     assert_eq!(data.aliases.len(), 2);
     assert_eq!(data.aliases["b"].title.as_deref(), Some("Title B"));
@@ -380,5 +380,3 @@ fn corrupt_aliases_warns() {
         "expected tracing::warn! with 'load_aliases' and 'corrupt' in message"
     );
 }
-
-

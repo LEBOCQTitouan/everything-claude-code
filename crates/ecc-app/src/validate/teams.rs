@@ -7,11 +7,7 @@ use ecc_ports::terminal::TerminalIO;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
-pub(super) fn validate_teams(
-    root: &Path,
-    fs: &dyn FileSystem,
-    terminal: &dyn TerminalIO,
-) -> bool {
+pub(super) fn validate_teams(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let teams_dir = root.join("teams");
     if !fs.exists(&teams_dir) {
         terminal.stdout_write("No teams directory found, skipping validation\n");
@@ -49,10 +45,7 @@ pub(super) fn validate_teams(
 }
 
 /// Agent info: name -> set of tools defined in the agent's frontmatter.
-fn collect_agent_info(
-    root: &Path,
-    fs: &dyn FileSystem,
-) -> HashMap<String, HashSet<String>> {
+fn collect_agent_info(root: &Path, fs: &dyn FileSystem) -> HashMap<String, HashSet<String>> {
     let agents_dir = root.join("agents");
     let mut agents = HashMap::new();
 
@@ -72,19 +65,16 @@ fn collect_agent_info(
         }
 
         let mut tools = HashSet::new();
-        if let Ok(content) = fs.read_to_string(file) {
-            if let Some(fm) = extract_frontmatter(&content) {
-                if let Some(tools_str) = fm.get("tools") {
-                    // Parse tools list: "Read, Write, Edit" or "[Read, Write]"
-                    let cleaned = tools_str
-                        .trim_matches(|c| c == '[' || c == ']')
-                        .to_string();
-                    for tool in cleaned.split(',') {
-                        let t = tool.trim().trim_matches('"').trim_matches('\'').to_string();
-                        if !t.is_empty() {
-                            tools.insert(t);
-                        }
-                    }
+        if let Ok(content) = fs.read_to_string(file)
+            && let Some(fm) = extract_frontmatter(&content)
+            && let Some(tools_str) = fm.get("tools")
+        {
+            // Parse tools list: "Read, Write, Edit" or "[Read, Write]"
+            let cleaned = tools_str.trim_matches(|c| c == '[' || c == ']').to_string();
+            for tool in cleaned.split(',') {
+                let t = tool.trim().trim_matches('"').trim_matches('\'').to_string();
+                if !t.is_empty() {
+                    tools.insert(t);
                 }
             }
         }
@@ -139,16 +129,15 @@ fn validate_team_file(
 
     // Tool escalation check (AC-002.3) — warning only, exit 0
     for agent in &manifest.agents {
-        if let Some(ref team_tools) = agent.allowed_tools {
-            if let Some(agent_tools) = known_agents.get(&agent.name) {
-                for tool in team_tools {
-                    if !agent_tools.contains(tool) {
-                        terminal.stdout_write(&format!(
-                            "WARNING: {file_name} - Tool '{}' in team manifest exceeds agent '{}' allowed tools (privilege escalation)\n",
-                            tool, agent.name
-                        ));
-                        // Warning only — does not set valid = false
-                    }
+        if let Some(ref team_tools) = agent.allowed_tools
+            && let Some(agent_tools) = known_agents.get(&agent.name)
+        {
+            for tool in team_tools {
+                if !agent_tools.contains(tool) {
+                    terminal.stdout_write(&format!(
+                        "WARNING: {file_name} - Tool '{}' in team manifest exceeds agent '{}' allowed tools (privilege escalation)\n",
+                        tool, agent.name
+                    ));
                 }
             }
         }
@@ -187,7 +176,8 @@ agents:
     role: reviewer
 ---
 # Test Team
-"#.to_string()
+"#
+        .to_string()
     }
 
     #[test]
@@ -196,7 +186,12 @@ agents:
         let terminal = BufferedTerminal::new();
         let result = validate_teams(&PathBuf::from("/project"), &fs, &terminal);
         assert!(result, "should succeed when no teams/ directory");
-        assert!(terminal.stdout_output().join("").contains("No teams directory found"));
+        assert!(
+            terminal
+                .stdout_output()
+                .join("")
+                .contains("No teams directory found")
+        );
     }
 
     #[test]
@@ -205,10 +200,8 @@ agents:
         let terminal = BufferedTerminal::new();
         let root = PathBuf::from("/project");
         // No agents/ at all — so all agent refs are unknown
-        fs.write(
-            &root.join("teams/test-team.md"),
-            &valid_team_content(),
-        ).unwrap();
+        fs.write(&root.join("teams/test-team.md"), &valid_team_content())
+            .unwrap();
 
         let result = validate_teams(&root, &fs, &terminal);
         assert!(!result, "should fail when agent not found");
@@ -237,7 +230,8 @@ agents:
     allowed-tools: ["Read", "Grep", "Glob", "Write"]
 ---
 "#;
-        fs.write(&root.join("teams/escalation-team.md"), content).unwrap();
+        fs.write(&root.join("teams/escalation-team.md"), content)
+            .unwrap();
 
         let result = validate_teams(&root, &fs, &terminal);
         assert!(result, "tool escalation should warn, not fail");
@@ -254,11 +248,17 @@ agents:
         let terminal = BufferedTerminal::new();
         let root = PathBuf::from("/project");
         setup_agents(&fs);
-        fs.write(&root.join("teams/test-team.md"), &valid_team_content()).unwrap();
+        fs.write(&root.join("teams/test-team.md"), &valid_team_content())
+            .unwrap();
 
         let result = validate_teams(&root, &fs, &terminal);
         assert!(result, "valid manifest should pass");
-        assert!(terminal.stdout_output().join("").contains("Validated 1 team manifests"));
+        assert!(
+            terminal
+                .stdout_output()
+                .join("")
+                .contains("Validated 1 team manifests")
+        );
     }
 
     #[test]
@@ -270,7 +270,8 @@ agents:
         fs.write(
             &root.join("teams/broken.md"),
             "No frontmatter at all, just text.",
-        ).unwrap();
+        )
+        .unwrap();
 
         let result = validate_teams(&root, &fs, &terminal);
         assert!(!result, "should fail for broken manifest");

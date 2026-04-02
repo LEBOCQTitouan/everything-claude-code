@@ -68,11 +68,7 @@ fn load_registry(fs: &dyn FileSystem, path: &Path) -> Result<SourcesRegistry, So
 }
 
 /// Atomic write: write to temp file, then rename.
-fn atomic_write(
-    fs: &dyn FileSystem,
-    path: &Path,
-    content: &str,
-) -> Result<(), SourcesAppError> {
+fn atomic_write(fs: &dyn FileSystem, path: &Path, content: &str) -> Result<(), SourcesAppError> {
     let tmp_path = path.with_extension("md.tmp");
     fs.write(&tmp_path, content)
         .map_err(|e| SourcesAppError::Io(format!("failed to write temp file: {e}")))?;
@@ -402,15 +398,17 @@ mod tests {
 
     #[test]
     fn list_with_filters() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_sources_md());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_sources_md());
 
         let all = list(&fs, Path::new("/sources.md"), None, None).unwrap();
         assert!(!all.is_empty(), "expected at least one entry");
 
         let adopt_entries = list(&fs, Path::new("/sources.md"), Some("adopt"), None).unwrap();
         assert_eq!(adopt_entries.len(), 1);
-        assert_eq!(adopt_entries[0].url.as_str(), "https://example.com/rust-testing");
+        assert_eq!(
+            adopt_entries[0].url.as_str(),
+            "https://example.com/rust-testing"
+        );
 
         let subject_entries = list(&fs, Path::new("/sources.md"), None, Some("testing")).unwrap();
         assert_eq!(subject_entries.len(), 1);
@@ -423,8 +421,7 @@ mod tests {
 
     #[test]
     fn add_uses_injected_date() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_sources_md());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_sources_md());
 
         add(
             &fs,
@@ -444,15 +441,17 @@ mod tests {
         let entry = registry
             .find_by_url("https://example.com/dated-entry")
             .expect("dated entry must exist");
-        assert_eq!(entry.added_date, "2026-01-15", "entry must use the injected date");
+        assert_eq!(
+            entry.added_date, "2026-01-15",
+            "entry must use the injected date"
+        );
     }
 
     // --- PC-019: add use case appends entry, atomic write ---
 
     #[test]
     fn add_entry() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_sources_md());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_sources_md());
 
         add(
             &fs,
@@ -503,8 +502,7 @@ mod tests {
 
     #[test]
     fn add_duplicate_rejected() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_sources_md());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_sources_md());
 
         let result = add(
             &fs,
@@ -530,8 +528,7 @@ mod tests {
 
     #[test]
     fn reindex_moves_inbox() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_with_inbox());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_with_inbox());
 
         reindex(&fs, Path::new("/sources.md"), false).unwrap();
 
@@ -540,16 +537,21 @@ mod tests {
         assert!(content.contains("https://example.com/new"));
         // Inbox section should be empty
         let registry = parse_sources(&content).unwrap();
-        assert!(registry.inbox.is_empty(), "inbox should be empty after reindex");
-        assert!(!registry.entries.is_empty(), "entries should contain the moved entry");
+        assert!(
+            registry.inbox.is_empty(),
+            "inbox should be empty after reindex"
+        );
+        assert!(
+            !registry.entries.is_empty(),
+            "entries should contain the moved entry"
+        );
     }
 
     // --- PC-023: reindex dry-run returns content without writing ---
 
     #[test]
     fn reindex_dry_run() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_with_inbox());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_with_inbox());
 
         // Record original content
         let original_content = fs.read_to_string(Path::new("/sources.md")).unwrap();
@@ -572,8 +574,7 @@ mod tests {
 
     #[test]
     fn check_stale_on_non_200() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_sources_md());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_sources_md());
 
         let shell = MockShellExecutor::new()
             .with_response("https://example.com/rust-testing", non_200("404"));
@@ -603,8 +604,7 @@ mod tests {
         );
 
         let fs = InMemoryFileSystem::new().with_file("/sources.md", &sources_md);
-        let shell = MockShellExecutor::new()
-            .with_response("https://example.com/old", ok_200());
+        let shell = MockShellExecutor::new().with_response("https://example.com/old", ok_200());
 
         let results = check(&fs, &shell, Path::new("/sources.md"), "2026-03-29").unwrap();
         assert_eq!(results.len(), 1);
@@ -626,8 +626,8 @@ mod tests {
         );
 
         let fs = InMemoryFileSystem::new().with_file("/sources.md", &sources_md);
-        let shell = MockShellExecutor::new()
-            .with_response("https://example.com/very-old", ok_200());
+        let shell =
+            MockShellExecutor::new().with_response("https://example.com/very-old", ok_200());
 
         let results = check(&fs, &shell, Path::new("/sources.md"), "2026-03-29").unwrap();
         assert_eq!(results.len(), 1);
@@ -642,11 +642,12 @@ mod tests {
 
     #[test]
     fn check_curl_timeout() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_sources_md());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_sources_md());
 
-        let shell = MockShellExecutor::new()
-            .with_error("https://example.com/rust-testing", ShellError::Io("timeout".into()));
+        let shell = MockShellExecutor::new().with_error(
+            "https://example.com/rust-testing",
+            ShellError::Io("timeout".into()),
+        );
 
         let results = check(&fs, &shell, Path::new("/sources.md"), "2026-03-29").unwrap();
         assert_eq!(results.len(), 1);
@@ -660,8 +661,7 @@ mod tests {
         let sources_md = "# Knowledge Sources\n\n## Inbox\n\n\n## Adopt\n\n### testing\n- [Stale Entry](https://example.com/stale) \u{2014} type: doc | subject: testing | added: 2026-01-01 | by: human | stale\n\n## Trial\n\n## Assess\n\n## Hold\n\n## Module Mapping\n\n| Module | Subjects |\n|--------|----------|\n";
 
         let fs = InMemoryFileSystem::new().with_file("/sources.md", sources_md);
-        let shell = MockShellExecutor::new()
-            .with_response("https://example.com/stale", ok_200());
+        let shell = MockShellExecutor::new().with_response("https://example.com/stale", ok_200());
 
         let results = check(&fs, &shell, Path::new("/sources.md"), "2026-03-29").unwrap();
         assert_eq!(results.len(), 1);
@@ -670,9 +670,7 @@ mod tests {
         // Stale flag should be cleared
         let content = fs.read_to_string(Path::new("/sources.md")).unwrap();
         let registry = parse_sources(&content).unwrap();
-        let entry = registry
-            .find_by_url("https://example.com/stale")
-            .unwrap();
+        let entry = registry.find_by_url("https://example.com/stale").unwrap();
         assert!(!entry.stale, "stale flag should be cleared on 200 response");
     }
 
@@ -680,11 +678,10 @@ mod tests {
 
     #[test]
     fn check_atomic_write() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/sources.md", &sample_sources_md());
+        let fs = InMemoryFileSystem::new().with_file("/sources.md", &sample_sources_md());
 
-        let shell = MockShellExecutor::new()
-            .with_response("https://example.com/rust-testing", ok_200());
+        let shell =
+            MockShellExecutor::new().with_response("https://example.com/rust-testing", ok_200());
 
         check(&fs, &shell, Path::new("/sources.md"), "2026-03-29").unwrap();
 

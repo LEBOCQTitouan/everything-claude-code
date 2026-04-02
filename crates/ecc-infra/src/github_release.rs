@@ -68,9 +68,7 @@ impl ReleaseClient for GithubReleaseClient {
         _file_path: &Path,
     ) -> Result<CosignResult, BoxError> {
         // Check if cosign is installed using argument arrays (no shell interpolation)
-        let cosign_check = std::process::Command::new("cosign")
-            .arg("version")
-            .output();
+        let cosign_check = std::process::Command::new("cosign").arg("version").output();
 
         match cosign_check {
             Err(_) => Ok(CosignResult::NotInstalled),

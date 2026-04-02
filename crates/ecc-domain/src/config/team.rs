@@ -105,10 +105,10 @@ pub fn validate_team_manifest(manifest: &TeamManifest) -> Vec<TeamValidationErro
         }
     }
 
-    if let Some(mc) = manifest.max_concurrent {
-        if mc < 1 {
-            errors.push(TeamValidationError::InvalidMaxConcurrent(mc));
-        }
+    if let Some(mc) = manifest.max_concurrent
+        && mc < 1
+    {
+        errors.push(TeamValidationError::InvalidMaxConcurrent(mc));
     }
 
     errors
@@ -190,9 +190,11 @@ agents:
 "#;
         let manifest = parse_team_manifest(content).unwrap();
         let errors = validate_team_manifest(&manifest);
-        assert!(errors
-            .iter()
-            .any(|e| matches!(e, TeamValidationError::UnknownStrategy(s) if s == "round-robin")));
+        assert!(
+            errors.iter().any(
+                |e| matches!(e, TeamValidationError::UnknownStrategy(s) if s == "round-robin")
+            )
+        );
     }
 
     #[test]
@@ -210,9 +212,11 @@ agents:
 "#;
         let manifest = parse_team_manifest(content).unwrap();
         let errors = validate_team_manifest(&manifest);
-        assert!(errors
-            .iter()
-            .any(|e| matches!(e, TeamValidationError::DuplicateAgent(n) if n == "same-agent")));
+        assert!(
+            errors
+                .iter()
+                .any(|e| matches!(e, TeamValidationError::DuplicateAgent(n) if n == "same-agent"))
+        );
     }
 
     #[test]
@@ -229,16 +233,21 @@ agents:
 "#;
         let manifest = parse_team_manifest(content).unwrap();
         let errors = validate_team_manifest(&manifest);
-        assert!(errors
-            .iter()
-            .any(|e| matches!(e, TeamValidationError::InvalidMaxConcurrent(0))));
+        assert!(
+            errors
+                .iter()
+                .any(|e| matches!(e, TeamValidationError::InvalidMaxConcurrent(0)))
+        );
     }
 
     #[test]
     fn valid_manifest_passes() {
         let manifest = parse_team_manifest(VALID_MANIFEST).unwrap();
         let errors = validate_team_manifest(&manifest);
-        assert!(errors.is_empty(), "valid manifest should have no errors: {errors:?}");
+        assert!(
+            errors.is_empty(),
+            "valid manifest should have no errors: {errors:?}"
+        );
     }
 
     #[test]

@@ -94,8 +94,8 @@ pub enum MemoryAction {
 }
 
 fn open_store() -> anyhow::Result<ecc_infra::sqlite_memory::SqliteMemoryStore> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
+    let home =
+        dirs::home_dir().ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
     let db_dir = home.join(".ecc").join("memory");
     std::fs::create_dir_all(&db_dir)?;
     let db_path = db_dir.join("memory.db");
@@ -139,7 +139,9 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
             match ecc_app::memory::crud::add(&store, params) {
                 Ok(id) => println!("Added memory entry: {id}"),
                 Err(MemoryAppError::SecretDetected(kind)) => {
-                    eprintln!("Error: content contains likely secrets ({kind}). Use --force to override.");
+                    eprintln!(
+                        "Error: content contains likely secrets ({kind}). Use --force to override."
+                    );
                     std::process::exit(1);
                 }
                 Err(e) => return Err(anyhow::anyhow!("{e}")),
@@ -169,15 +171,14 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
             }
         }
 
-        MemoryAction::List { tier, tag, limit: _ } => {
+        MemoryAction::List {
+            tier,
+            tag,
+            limit: _,
+        } => {
             let store = open_store()?;
             let tier_filter = tier.as_deref().map(parse_tier).transpose()?;
-            let entries = ecc_app::memory::crud::list(
-                &store,
-                tier_filter,
-                tag.as_deref(),
-                None,
-            )?;
+            let entries = ecc_app::memory::crud::list(&store, tier_filter, tag.as_deref(), None)?;
             if entries.is_empty() {
                 println!("No memories found");
             } else {
@@ -206,7 +207,10 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
         MemoryAction::Promote { id } => {
             let store = open_store()?;
             match ecc_app::memory::lifecycle::promote(&store, MemoryId(id)) {
-                Ok(entry) => println!("Promoted entry {} to {} (score: {:.2})", id, entry.tier, entry.relevance_score),
+                Ok(entry) => println!(
+                    "Promoted entry {} to {} (score: {:.2})",
+                    id, entry.tier, entry.relevance_score
+                ),
                 Err(MemoryAppError::AlreadySemantic) => {
                     println!("Already semantic");
                 }
@@ -248,7 +252,10 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
                     println!("  [{}] {} ({})", e.id, e.title, e.created_at);
                 }
             } else {
-                println!("GC complete: {} stale entries deleted", result.deleted_count);
+                println!(
+                    "GC complete: {} stale entries deleted",
+                    result.deleted_count
+                );
             }
         }
 
@@ -292,15 +299,22 @@ mod tests {
         }
 
         let cli = Cli::try_parse_from([
-            "ecc", "memory", "add",
-            "--type", "semantic",
-            "--title", "Test Memory",
-            "--tags", "rust,ddd",
+            "ecc",
+            "memory",
+            "add",
+            "--type",
+            "semantic",
+            "--title",
+            "Test Memory",
+            "--tags",
+            "rust,ddd",
         ])
         .expect("should parse");
         match cli.cmd {
             CliCmd::Memory(args) => match args.action {
-                MemoryAction::Add { tier, title, tags, .. } => {
+                MemoryAction::Add {
+                    tier, title, tags, ..
+                } => {
                     assert_eq!(tier, "semantic");
                     assert_eq!(title, "Test Memory");
                     assert_eq!(tags.unwrap(), "rust,ddd");
@@ -324,8 +338,8 @@ mod tests {
             Memory(MemoryArgs),
         }
 
-        let cli = Cli::try_parse_from(["ecc", "memory", "search", "my query"])
-            .expect("should parse");
+        let cli =
+            Cli::try_parse_from(["ecc", "memory", "search", "my query"]).expect("should parse");
         match cli.cmd {
             CliCmd::Memory(args) => match args.action {
                 MemoryAction::Search { query, .. } => {
@@ -351,9 +365,7 @@ mod tests {
         }
 
         let cli = Cli::try_parse_from([
-            "ecc", "memory", "list",
-            "--type", "semantic",
-            "--tag", "rust",
+            "ecc", "memory", "list", "--type", "semantic", "--tag", "rust",
         ])
         .expect("should parse");
         match cli.cmd {
@@ -381,8 +393,7 @@ mod tests {
             Memory(MemoryArgs),
         }
 
-        let cli = Cli::try_parse_from(["ecc", "memory", "delete", "42"])
-            .expect("should parse");
+        let cli = Cli::try_parse_from(["ecc", "memory", "delete", "42"]).expect("should parse");
         match cli.cmd {
             CliCmd::Memory(args) => match args.action {
                 MemoryAction::Delete { id } => assert_eq!(id, 42),
@@ -405,8 +416,7 @@ mod tests {
             Memory(MemoryArgs),
         }
 
-        let cli = Cli::try_parse_from(["ecc", "memory", "gc", "--dry-run"])
-            .expect("should parse");
+        let cli = Cli::try_parse_from(["ecc", "memory", "gc", "--dry-run"]).expect("should parse");
         match cli.cmd {
             CliCmd::Memory(args) => match args.action {
                 MemoryAction::Gc { dry_run } => assert!(dry_run),
@@ -429,8 +439,7 @@ mod tests {
             Memory(MemoryArgs),
         }
 
-        let cli = Cli::try_parse_from(["ecc", "memory", "stats"])
-            .expect("should parse");
+        let cli = Cli::try_parse_from(["ecc", "memory", "stats"]).expect("should parse");
         match cli.cmd {
             CliCmd::Memory(args) => match args.action {
                 MemoryAction::Stats => {}
@@ -453,8 +462,7 @@ mod tests {
             Memory(MemoryArgs),
         }
 
-        let cli = Cli::try_parse_from(["ecc", "memory", "migrate"])
-            .expect("should parse");
+        let cli = Cli::try_parse_from(["ecc", "memory", "migrate"]).expect("should parse");
         match cli.cmd {
             CliCmd::Memory(args) => match args.action {
                 MemoryAction::Migrate { .. } => {}
