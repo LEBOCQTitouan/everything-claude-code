@@ -1,6 +1,40 @@
 /// Lexical path normalization — pure, no I/O.
-pub fn normalize_path(_path: &str) -> String {
-    todo!("not implemented yet")
+///
+/// Rules:
+/// - `.` components are skipped
+/// - `..` pops the last normal component; at root level `..` is preserved
+/// - Leading `/` is preserved for absolute paths
+/// - Empty input returns empty string
+pub fn normalize_path(path: &str) -> String {
+    if path.is_empty() {
+        return String::new();
+    }
+
+    let absolute = path.starts_with('/');
+    let mut components: Vec<&str> = Vec::new();
+
+    for part in path.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                // Pop if top is a normal component; preserve leading `..` otherwise
+                if components.last().map_or(false, |c| *c != "..") {
+                    components.pop();
+                } else {
+                    components.push("..");
+                }
+            }
+            segment => components.push(segment),
+        }
+    }
+
+    if absolute {
+        format!("/{}", components.join("/"))
+    } else if components.is_empty() {
+        String::new()
+    } else {
+        components.join("/")
+    }
 }
 
 #[cfg(test)]
