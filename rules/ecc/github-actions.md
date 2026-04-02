@@ -6,7 +6,7 @@ Canonical reference for the 4 ECC workflows. Follow these conventions when editi
 
 ### ci.yml — CI
 
-- **Triggers**: `pull_request` on `[main]`
+- **Triggers**: `pull_request` on `[main]`, `merge_group`
 - **Jobs**: `validate` (checkout, rust-toolchain, cache, cargo test, cargo clippy, cargo fmt --check, cargo semver-checks, ecc validate agents/commands/skills/hooks/rules)
 - **Concurrency**: `${{ github.workflow }}-${{ github.ref }}`, cancel-in-progress
 - **Permissions**: `contents: read`
