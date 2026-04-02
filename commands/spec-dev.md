@@ -99,6 +99,19 @@ If `docs/sources.md` exists:
 
 If `docs/sources.md` does not exist, skip this step silently.
 
+## Phase 3.7: Actor Registry Integration
+
+Before identifying actors for user stories, check `docs/cartography/journeys/` for established actor definitions:
+
+1. If `docs/cartography/journeys/` exists, glob for `*.md` files in that directory
+2. For each file found, read its `## Overview` section and extract the **Actor:** field value
+3. Collect all unique actor names as a suggestion list
+4. When defining actors in user stories (US-NNN), present the suggestion list: "Existing actors from cartography registry: <list>"
+5. If the user introduces a new actor not in the list, add a note: "New actor '<name>' introduced. Run cartography to add a journey for this actor."
+6. If `docs/cartography/journeys/` does not exist or contains no files, proceed without suggestions (graceful fallback)
+
+This ensures new user stories reference established actors from `docs/cartography/journeys/` consistently.
+
 ## Phase 4: Prior Audit Check
 
 Read `docs/audits/` for any existing audit reports relevant to the feature area:
