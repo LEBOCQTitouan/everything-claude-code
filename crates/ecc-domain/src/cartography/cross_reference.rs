@@ -14,9 +14,55 @@ pub fn build_cross_reference_matrix(
     journey_slugs: &[String],
     flow_slugs: &[String],
 ) -> String {
-    // Stub — returns empty string so tests fail in RED
-    let _ = (elements, journey_slugs, flow_slugs);
-    String::new()
+    // Sort slugs alphabetically within each group; journeys first, then flows.
+    let mut sorted_journeys: Vec<&str> = journey_slugs.iter().map(String::as_str).collect();
+    sorted_journeys.sort_unstable();
+    let mut sorted_flows: Vec<&str> = flow_slugs.iter().map(String::as_str).collect();
+    sorted_flows.sort_unstable();
+
+    let all_columns: Vec<&str> = sorted_journeys
+        .iter()
+        .chain(sorted_flows.iter())
+        .copied()
+        .collect();
+
+    // Build header row
+    let header = format!(
+        "| Element | {} |",
+        all_columns.join(" | ")
+    );
+
+    // Build separator row
+    let separator = format!(
+        "|---------|{}|",
+        all_columns.iter().map(|c| format!("-{}-|", "-".repeat(c.len()))).collect::<String>()
+    );
+
+    let mut lines = vec![header, separator];
+
+    for element in elements {
+        let cells: Vec<String> = all_columns
+            .iter()
+            .map(|col| {
+                let in_journeys = element.participating_journeys.iter().any(|j| j == col);
+                let in_flows = element.participating_flows.iter().any(|f| f == col);
+                if in_journeys || in_flows {
+                    "Y".to_string()
+                } else {
+                    String::new()
+                }
+            })
+            .collect();
+
+        let row = format!(
+            "| {} | {} |",
+            element.slug,
+            cells.join(" | ")
+        );
+        lines.push(row);
+    }
+
+    lines.join("\n")
 }
 
 #[cfg(test)]

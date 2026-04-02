@@ -2,15 +2,39 @@
 //!
 //! Zero I/O — operates on `&str` content only.
 
+/// Required sections for a valid element markdown file.
+const REQUIRED_ELEMENT_SECTIONS: &[&str] = &[
+    "## Overview",
+    "## Relationships",
+    "## Participating Flows",
+    "## Participating Journeys",
+];
+
 /// Validate element markdown content, checking for all required sections.
 ///
 /// Returns `Ok(())` when all required sections are present.
 /// Returns `Err` with a list of missing section names when any are absent.
 /// Section order is irrelevant — all lines are scanned.
 pub fn validate_element(content: &str) -> Result<(), Vec<String>> {
-    // Stub — always returns Err so tests fail in RED
-    let _ = content;
-    Err(vec!["stub".to_string()])
+    let mut missing: Vec<String> = REQUIRED_ELEMENT_SECTIONS
+        .iter()
+        .filter(|&&section| {
+            !content
+                .lines()
+                .any(|line| line.trim() == section)
+        })
+        .map(|&section| {
+            // Return just the section name without the "## " prefix
+            section.trim_start_matches("## ").to_string()
+        })
+        .collect();
+
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        missing.sort();
+        Err(missing)
+    }
 }
 
 #[cfg(test)]
