@@ -29,3 +29,4 @@ pub mod log_mgmt;
 pub mod update;
 pub mod worktree;
 pub mod memory;
+pub mod validate_cartography;
