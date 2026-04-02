@@ -76,7 +76,7 @@
 | BL-073 | Deterministic diagram trigger heuristics — auto-detect diagram needs | — | LOW | /spec dev | open | 2026-03-26 |
 | BL-074 | Deterministic doc metrics — staleness, coverage, severity counting | — | LOW | /spec dev | open | 2026-03-26 |
 | BL-075 | Deterministic task synchronization — single source of truth for tasks | — | HIGH | /spec dev | implemented | 2026-03-26 |
-| BL-076 | Statusline Unicode byte-counting bug hides rate limit segments | — | LOW | /spec-fix | open | 2026-03-27 |
+| BL-076 | Statusline Unicode byte-counting bug hides rate limit segments | — | LOW | /spec-fix | implemented | 2026-03-27 | 2026-03-27 |
 | BL-077 | Full documentation pass — coverage, drift validation, and gap analysis | — | EPIC | /spec-dev | open | 2026-03-27 |
 | BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | open | 2026-03-27 |
 | BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | open | 2026-03-27 |

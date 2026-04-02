@@ -10,6 +10,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Fixed
+
+- **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
+
 - **Universal app cartography system (BL-064 Sub-Spec A)**: Two-phase architecture for automatic documentation of user journeys and data flows. Stop hook captures session deltas as JSON; next session's agent processes pending deltas to generate/update `docs/cartography/` files. Includes section-marker-based delta merge, schema validation (`ecc validate cartography`), staleness detection, coverage dashboard (`--coverage`), and `/spec-dev` actor registry integration. 5 ADRs (0037-0041). New bounded context: `ecc-domain::cartography` with types, merge, validation, staleness, and coverage modules.
 - **Mutation testing integration (BL-116)**: cargo-mutants configured for ecc-domain and ecc-app with nextest integration. `cargo xtask mutants` subcommand with `--package`, `--in-diff`, `--timeout` flags. `/mutants` slash command for Claude Code sessions. `/verify --mutation` opt-in flag for diff-scoped mutation testing. Non-blocking CI mutation job with pinned version and artifact upload. Baseline report templates and mutation score dashboard. ADRs 0037 and 0038.
 - **GitHub workflow templates (BL-119)**: 5 reusable GitHub Actions workflow templates for Claude Code integration — PR review, fork-safe PR review, issue triage, release notes generation, and CI convention linter. All use `anthropics/claude-code-action@v1` with least-privilege permissions.
@@ -33,6 +37,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Fixed
+
+- **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
+
 - **Deterministic git analytics CLI (BL-071)**: `ecc analyze` with 4 subcommands — `changelog` (conventional commit grouping), `hotspots` (file change frequency), `coupling` (co-change pairs), `bus-factor` (single-author risk). New `GitLogPort` trait (ADR-0037) for proper hex-arch boundary. 56 unit tests, pure domain logic.
 - **Self-update command (BL-088)**: `ecc update` — self-update from GitHub Releases with cosign verification. Downloads platform-specific tarball, verifies keyless Sigstore signature, atomic binary swap with rollback. Supports `--version` pinning, `--dry-run` preview, `--pre` for pre-releases. Uses ureq for minimal HTTP footprint. GitHub Actions release workflow produces tarballs with SHA-256 checksums and cosign signatures. ADR-0037 (ureq), ADR-0038 (Sigstore).
 - **Cargo mutants mutation testing (BL-116)**: `cargo xtask mutants` command with diff-scoped mode (`--in-diff`), package targeting (`-p`), dry-run support, and cargo-nextest integration. Includes `mutants.toml` exclusion config, informational CI job on PRs, and baseline mutation report template.
@@ -44,12 +52,20 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Fixed
+
+- **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
+
 - **Three-tier memory system (BL-093)**: SQLite FTS5-backed memory store at `~/.ecc/memory/memory.db` with working/episodic/semantic tiers. CLI: `ecc memory add/search/list/delete/promote/migrate/gc/stats`. Session-end consolidation (Jaccard 3-gram dedup, stale marking, relevance scoring). CONTEXT.md auto-generation. Session-start injection. Secret detection. MemoryStore port trait.
 
 
 ## v4.8.0
 
 ### Added
+
+### Fixed
+
+- **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
 - **Audit-web guided profile and self-improvement (BL-107)**: YAML-based profile system with `ecc audit-web profile init|show|validate|reset` CLI commands, deterministic report validation via `ecc audit-web validate-report`, Phase 0 (guided setup with codebase scanning) and Phase 5 (self-improvement with coverage gap analysis) added to `/audit-web`. Domain types: `AuditWebProfile`, `AuditDimension`, `DimensionThreshold`, `ImprovementSuggestion`. Query template sanitization, schema versioning, non-interactive CI fallback. ADR 0035.
 
@@ -63,6 +79,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Fixed
+
+- **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
+
 - **Tiered diagnostics via tracing (BL-091)**: Replaced `log`+`env_logger` with `tracing`+`tracing-subscriber` across all crates. 5-level verbosity: -q (errors), default (warnings), -v (info), -vv (debug), -vvv (trace). `ECC_LOG` env var with `RUST_LOG` deprecated fallback. `ecc status` shows workflow state, versions, and component counts. `ecc config set log-level` persists verbosity preference to `~/.ecc/config.toml`. ADR 0031.
 
 ## v4.6.2
@@ -73,6 +93,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Fixed
+
+- **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
+
 - `github-actions` skill: CI/CD patterns, debugging, caching, secrets for GitHub Actions
 - `github-actions-rust` skill: cross-compilation matrix, cargo caching, release patterns for Rust CI
 - `rules/ecc/github-actions.md`: documents all 4 ECC workflows (ci, release, cd, maintenance)
@@ -82,11 +106,19 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+### Fixed
+
+- **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
+
 - **Adversarial challenge for audit commands (BL-083)**: New `audit-challenger` agent (Sonnet) independently re-interrogates codebase after each domain audit, searches web for best practices, produces challenged findings (confirmed/refuted/amended). Disagreements shown to user. Graceful degradation on failure. Always-on across all 10 `/audit-*` commands + audit-orchestrator.
 
 ## v4.8.0
 
 ### Added
+
+### Fixed
+
+- **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
 - **Structured log management (BL-092)**: JSON rolling daily files via tracing-appender to ~/.ecc/logs/. SQLite FTS5 index for full-text log search. Background indexer thread. `ecc log tail|search|prune|export` CLI commands. Session correlation via CLAUDE_SESSION_ID. 30-day auto-prune at startup with configurable retention. Structured tracing fields on all 40 hook handlers. LogStore port + SqliteLogStore adapter. ADR-0034 documents dual read/write path pattern.
 
