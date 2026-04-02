@@ -10,6 +10,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Universal app cartography system (BL-064 Sub-Spec A)**: Two-phase architecture for automatic documentation of user journeys and data flows. Stop hook captures session deltas as JSON; next session's agent processes pending deltas to generate/update `docs/cartography/` files. Includes section-marker-based delta merge, schema validation (`ecc validate cartography`), staleness detection, coverage dashboard (`--coverage`), and `/spec-dev` actor registry integration. 5 ADRs (0037-0041). New bounded context: `ecc-domain::cartography` with types, merge, validation, staleness, and coverage modules.
 - **Mutation testing integration (BL-116)**: cargo-mutants configured for ecc-domain and ecc-app with nextest integration. `cargo xtask mutants` subcommand with `--package`, `--in-diff`, `--timeout` flags. `/mutants` slash command for Claude Code sessions. `/verify --mutation` opt-in flag for diff-scoped mutation testing. Non-blocking CI mutation job with pinned version and artifact upload. Baseline report templates and mutation score dashboard. ADRs 0037 and 0038.
 
 ## v5.1.0
