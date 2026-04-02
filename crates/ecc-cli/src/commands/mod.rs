@@ -15,4 +15,5 @@ pub mod status;
 pub mod update;
 pub mod validate;
 pub mod version;
+pub mod workflow;
 pub mod worktree;
