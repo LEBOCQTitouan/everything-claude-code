@@ -7,6 +7,7 @@ mod doc_hooks;
 mod git_hooks;
 mod helpers;
 mod meta_hooks;
+pub mod worktree_guard;
 
 pub use ci_hooks::pre_edit_write_workflow_branch_guard;
 pub use clean_craft_hooks::{
@@ -24,3 +25,4 @@ pub use git_hooks::{
     stop_uncommitted_reminder,
 };
 pub use meta_hooks::{check_hook_enabled, session_end_marker};
+pub use worktree_guard::pre_worktree_write_guard;

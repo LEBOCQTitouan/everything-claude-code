@@ -143,6 +143,9 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "pre:edit-write:workflow-branch-guard" => {
             handlers::pre_edit_write_workflow_branch_guard(stdin, ports)
         }
+        "pre:write-edit:worktree-guard" => {
+            handlers::pre_worktree_write_guard(stdin, ports)
+        }
 
         // Tier 1: Clean Craft hooks
         "pre:edit:boundary-crossing" => handlers::pre_edit_boundary_crossing(stdin, ports),
@@ -169,6 +172,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         // Tier 3: Session/File I/O hooks
         "session:start" => handlers::session_start(stdin, ports),
         "stop:session-end" => handlers::session_end(stdin, ports),
+"session:end:worktree-merge" => handlers::session_end_merge(stdin, ports),
         "start:cartography" => handlers::start_cartography(stdin, ports),
         "stop:cartography" => handlers::stop_cartography(stdin, ports),
         "pre:compact" => handlers::pre_compact(stdin, ports),
