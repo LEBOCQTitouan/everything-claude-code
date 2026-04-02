@@ -8,6 +8,7 @@ mod paths;
 mod rules;
 mod skills;
 mod statusline;
+mod teams;
 
 /// Which content type to validate.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,6 +21,7 @@ pub enum ValidateTarget {
     Rules,
     Paths,
     Statusline,
+    Teams,
 }
 
 /// Run validation for the given target. Returns `true` on success, `false` on errors.
@@ -39,5 +41,6 @@ pub fn run_validate(
         ValidateTarget::Rules => rules::validate_rules(root, fs, terminal),
         ValidateTarget::Paths => paths::validate_paths(root, fs, terminal),
         ValidateTarget::Statusline => statusline::validate_statusline(root, fs, terminal, env),
+        ValidateTarget::Teams => teams::validate_teams(root, fs, terminal),
     }
 }

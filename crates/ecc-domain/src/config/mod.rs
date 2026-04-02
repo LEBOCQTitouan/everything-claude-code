@@ -16,6 +16,7 @@ pub mod log_level;
 pub mod manifest;
 pub mod merge;
 pub mod statusline;
+pub mod team;
 pub mod validate;
 
 /// Known ECC package identifiers in npm paths.
