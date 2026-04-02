@@ -13,18 +13,46 @@ allowed-tools: [Read, Grep, Glob, Bash, Skill, AskUserQuestion]
 
 ## Phase 0 — Validate Input
 
+### Handle `--show-all` flag
+
+If `$ARGUMENTS` contains `--show-all`, strip the flag and skip all in-work filtering below (show all open items regardless of worktree or lock status). This is an escape hatch for false-positive filtering.
+
+### Active Session Detection
+
+Before presenting the backlog picker, detect which items are currently being worked on:
+
+1. **Worktree scan**: List directories in `.claude/worktrees/`. For each worktree name, extract all BL-NNN IDs using regex `(?i)bl-?(\d{3})` (case-insensitive, matches `bl119`, `bl-119`, `BL-119`; a name like `feature-bl-042-and-bl-055` matches both BL-042 and BL-055). Collect all matched BL-NNN IDs into a `claimed_by_worktree` set.
+
+2. **Lock file scan**: List files in `docs/backlog/.locks/BL-NNN.lock`. For each lock file:
+   - If the lock file's timestamp is > 24 hours old (stale TTL), remove it automatically
+   - If the lock file references a worktree name that no longer exists in `.claude/worktrees/` (orphaned), remove it automatically
+   - Otherwise, add the BL-NNN to a `claimed_by_lock` set
+
+3. **Merge claims**: `claimed_items` = `claimed_by_worktree` ∪ `claimed_by_lock`
+
+4. **Display active sessions**: Before the picker, display:
+   > **Active sessions:**
+   > - `<worktree-name>` → BL-NNN: <Title> (or "no BL match" for worktrees without BL-NNN pattern)
+   >
+   > **(N items in progress, hidden from picker)**
+
+### Backlog Picker
+
 If `$ARGUMENTS` is empty or blank:
 
 1. Check if `docs/backlog/BACKLOG.md` exists
 2. If it exists, read it and collect all entries with status `open`
-3. If there are no open entries (all archived/promoted, or file does not exist), fall back to the free-text prompt below
-4. If there are open entries, present them via AskUserQuestion:
+3. **Filter**: Remove entries whose BL-NNN ID is in `claimed_items` (unless `--show-all` was passed)
+4. If there are no remaining entries after filtering (all claimed or archived), fall back to the free-text prompt below
+5. If there are open entries, present them via AskUserQuestion:
    - Each open backlog item becomes an option with label `"BL-NNN: <Title>"` and description `"Scope: <Scope> | Target: <Target>"`
    - AskUserQuestion automatically provides "Other" for custom input
-5. If the user selects a backlog item (BL-NNN), read its full file at `docs/backlog/BL-NNN-<slug>.md` and extract the optimized prompt from the `## Optimized Prompt` section. Use that prompt as `$ARGUMENTS`
-6. If the user selects "Other" and types custom text, use that as `$ARGUMENTS`
+6. If the user selects a backlog item (BL-NNN):
+   - Read its full file at `docs/backlog/BL-NNN-<slug>.md` and extract the optimized prompt from the `## Optimized Prompt` section. Use that prompt as `$ARGUMENTS`
+   - **Write lock file**: Create `docs/backlog/.locks/BL-NNN.lock` containing the current worktree name (from `git rev-parse --show-toplevel | xargs basename`) and ISO 8601 timestamp
+7. If the user selects "Other" and types custom text, use that as `$ARGUMENTS`
 
-**Fallback** (no backlog or no open entries): use AskUserQuestion to ask:
+**Fallback** (no backlog or no open entries after filtering): use AskUserQuestion to ask:
 
 > What would you like to spec? Describe the feature, bug fix, or refactoring you have in mind.
 
