@@ -401,8 +401,7 @@ impl MemoryStore for SqliteMemoryStore {
             .map_err(|e| MemoryStoreError::Database(e.to_string()))?;
 
         for row in rows {
-            let (tier_str, count) =
-                row.map_err(|e| MemoryStoreError::Database(e.to_string()))?;
+            let (tier_str, count) = row.map_err(|e| MemoryStoreError::Database(e.to_string()))?;
             if let Ok(tier) = tier_str.parse::<MemoryTier>() {
                 counts.insert(tier, count);
             }
@@ -416,32 +415,20 @@ impl MemoryStore for SqliteMemoryStore {
         let conn = self.conn()?;
 
         let stale_count: i64 = conn
-            .query_row(
-                "SELECT COUNT(*) FROM memories WHERE stale = 1",
-                [],
-                |r| r.get(0),
-            )
+            .query_row("SELECT COUNT(*) FROM memories WHERE stale = 1", [], |r| {
+                r.get(0)
+            })
             .map_err(|e| MemoryStoreError::Database(e.to_string()))?;
 
         let oldest: Option<String> = conn
-            .query_row(
-                "SELECT MIN(created_at) FROM memories",
-                [],
-                |r| r.get(0),
-            )
+            .query_row("SELECT MIN(created_at) FROM memories", [], |r| r.get(0))
             .map_err(|e| MemoryStoreError::Database(e.to_string()))?;
 
         let newest: Option<String> = conn
-            .query_row(
-                "SELECT MAX(created_at) FROM memories",
-                [],
-                |r| r.get(0),
-            )
+            .query_row("SELECT MAX(created_at) FROM memories", [], |r| r.get(0))
             .map_err(|e| MemoryStoreError::Database(e.to_string()))?;
 
-        let db_size = std::fs::metadata(&self.path)
-            .map(|m| m.len())
-            .unwrap_or(0);
+        let db_size = std::fs::metadata(&self.path).map(|m| m.len()).unwrap_or(0);
 
         Ok(MemoryStats::new(
             counts,
@@ -545,11 +532,8 @@ impl MemoryStore for SqliteMemoryStore {
             )
             .map_err(|e| MemoryStoreError::Database(e.to_string()))?;
 
-            conn.execute(
-                "DELETE FROM memories WHERE id=?1",
-                params![remove_id.0],
-            )
-            .map_err(|e| MemoryStoreError::Database(e.to_string()))?;
+            conn.execute("DELETE FROM memories WHERE id=?1", params![remove_id.0])
+                .map_err(|e| MemoryStoreError::Database(e.to_string()))?;
 
             Ok(())
         })();
@@ -690,8 +674,7 @@ mod tests {
         let db_path = dir.path().join("memory.db");
 
         // Write garbage to simulate corruption
-        std::fs::write(&db_path, b"this is not a valid sqlite database!!! garbage")
-            .unwrap();
+        std::fs::write(&db_path, b"this is not a valid sqlite database!!! garbage").unwrap();
 
         // SqliteMemoryStore::new should detect corruption and recover
         let store = SqliteMemoryStore::new(&db_path).unwrap();
@@ -777,7 +760,12 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let store = temp_store(&dir);
 
-        let e = make_entry(MemoryTier::Semantic, "Original", "original content", vec!["tag1"]);
+        let e = make_entry(
+            MemoryTier::Semantic,
+            "Original",
+            "original content",
+            vec!["tag1"],
+        );
         let id = store.insert(&e).unwrap();
 
         let mut fetched = store.get(id).unwrap();

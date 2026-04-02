@@ -19,15 +19,16 @@ impl std::str::FromStr for RetentionDuration {
         let stripped = s
             .strip_suffix('d')
             .ok_or_else(|| format!("invalid retention duration '{s}': must end with 'd'"))?;
-        let days: u32 = stripped
-            .parse()
-            .map_err(|_| format!("invalid retention duration '{s}': prefix must be a positive integer"))?;
+        let days: u32 = stripped.parse().map_err(|_| {
+            format!("invalid retention duration '{s}': prefix must be a positive integer")
+        })?;
         if days == 0 {
-            return Err(format!("invalid retention duration '{s}': days must be greater than zero"));
+            return Err(format!(
+                "invalid retention duration '{s}': days must be greater than zero"
+            ));
         }
         Ok(Self { days })
     }
-
 }
 
 impl RetentionDuration {

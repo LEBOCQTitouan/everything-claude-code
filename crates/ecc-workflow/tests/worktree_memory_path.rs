@@ -12,8 +12,7 @@ use std::process::Command;
 /// Derive the project hash the same way resolve_project_memory_dir does.
 fn project_memory_dir(project_dir: &std::path::Path, home: &std::path::Path) -> PathBuf {
     let repo_root = ecc_flock::resolve_repo_root(project_dir);
-    let repo_root =
-        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    let repo_root = std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
     let abs_str = repo_root.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
     home.join(".claude/projects")
@@ -44,7 +43,13 @@ fn worktree_daily_resolves_to_main_repo_hash() {
     // Create a worktree
     let wt_path = main_repo.join("wt-test");
     Command::new("git")
-        .args(["worktree", "add", wt_path.to_str().unwrap(), "-b", "wt-branch"])
+        .args([
+            "worktree",
+            "add",
+            wt_path.to_str().unwrap(),
+            "-b",
+            "wt-branch",
+        ])
         .current_dir(main_repo)
         .output()
         .expect("git worktree add failed");
@@ -100,7 +105,13 @@ fn worktree_memory_index_resolves_to_main_repo_hash() {
 
     let wt_path = main_repo.join("wt-test");
     Command::new("git")
-        .args(["worktree", "add", wt_path.to_str().unwrap(), "-b", "wt-branch"])
+        .args([
+            "worktree",
+            "add",
+            wt_path.to_str().unwrap(),
+            "-b",
+            "wt-branch",
+        ])
         .current_dir(main_repo)
         .output()
         .expect("git worktree add failed");

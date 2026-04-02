@@ -39,7 +39,7 @@ fn parse_iso8601_to_epoch(ts: &str) -> Option<u64> {
 
 /// Calculate days from Unix epoch (1970-01-01) to the given date.
 fn days_from_epoch(year: u64, month: u64, day: u64) -> Option<u64> {
-    if month < 1 || month > 12 || day < 1 || day > 31 {
+    if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
         return None;
     }
     // Adjust for months before March (year starts in March for leap year calc)
@@ -104,7 +104,13 @@ mod tests {
         assert!(epoch.is_some());
         // Verify it's in the right ballpark (after 2025, before 2027)
         let secs = epoch.unwrap();
-        assert!(secs > 1_700_000_000, "2026 should be after ~1.7B epoch secs");
-        assert!(secs < 1_900_000_000, "2026 should be before ~1.9B epoch secs");
+        assert!(
+            secs > 1_700_000_000,
+            "2026 should be after ~1.7B epoch secs"
+        );
+        assert!(
+            secs < 1_900_000_000,
+            "2026 should be before ~1.9B epoch secs"
+        );
     }
 }

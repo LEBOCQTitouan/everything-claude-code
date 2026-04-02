@@ -292,7 +292,6 @@ mod tier2_notify {
                 "newlines should pass through: {result}"
             );
         }
-
     }
 }
 
@@ -481,7 +480,11 @@ mod tests {
         assert_eq!(input.len(), 258, "test string must be 258 bytes");
         // Must not panic; result must be valid UTF-8 with length <= 256
         let result = sanitize_osascript(&input);
-        assert!(result.len() <= 256, "result must be capped at 256 bytes: len={}", result.len());
+        assert!(
+            result.len() <= 256,
+            "result must be capped at 256 bytes: len={}",
+            result.len()
+        );
         // Emoji starts at byte 254, ends at 258 — truncation at 256 is mid-emoji, walk-back drops to 254
         assert_eq!(result, "a".repeat(254), "ascii prefix must be preserved");
     }
@@ -496,7 +499,11 @@ mod tests {
         assert_eq!(input.len(), 258, "test string must be 258 bytes");
         // Must not panic; result must be valid UTF-8 with length <= 256
         let result = sanitize_powershell(&input);
-        assert!(result.len() <= 256, "result must be capped at 256 bytes: len={}", result.len());
+        assert!(
+            result.len() <= 256,
+            "result must be capped at 256 bytes: len={}",
+            result.len()
+        );
         // Emoji starts at byte 254, so truncation at 256 is mid-emoji; walk-back drops to 254
         assert_eq!(result, "b".repeat(254), "ascii prefix must be preserved");
     }

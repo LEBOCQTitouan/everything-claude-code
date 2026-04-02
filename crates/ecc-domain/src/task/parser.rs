@@ -102,7 +102,11 @@ fn parse_pc_entry(rest: &str, completed: bool, line_no: usize) -> Result<TaskEnt
 
     let description = parts[0].trim().to_owned();
     let command = parts[1].trim().trim_matches('`').to_owned();
-    let trail_str = if parts.len() >= 3 { parts[2].trim() } else { "" };
+    let trail_str = if parts.len() >= 3 {
+        parts[2].trim()
+    } else {
+        ""
+    };
     let trail = parse_trail(trail_str, line_no)?;
 
     Ok(TaskEntry {
@@ -124,7 +128,11 @@ fn parse_post_tdd_entry(
 ) -> Result<TaskEntry, TaskError> {
     let parts: Vec<&str> = rest.splitn(2, " | ").collect();
     let label = parts[0].trim().to_owned();
-    let trail_str = if parts.len() >= 2 { parts[1].trim() } else { "" };
+    let trail_str = if parts.len() >= 2 {
+        parts[1].trim()
+    } else {
+        ""
+    };
     let trail = parse_trail(trail_str, line_no)?;
 
     Ok(TaskEntry {
@@ -147,7 +155,11 @@ fn parse_trail(trail_str: &str, line_no: usize) -> Result<Vec<StatusSegment>, Ta
 
     let mut segments = Vec::new();
     // Support both new (`→`) and old (`|`) separator formats (AC-001.6).
-    let separator = if trail_str.contains(" → ") { " → " } else { " | " };
+    let separator = if trail_str.contains(" → ") {
+        " → "
+    } else {
+        " | "
+    };
     for raw in trail_str.split(separator) {
         let raw = raw.trim();
         if raw.is_empty() {
@@ -447,7 +459,10 @@ mod tests {
                 .iter()
                 .find(|e| matches!(&e.kind, EntryKind::PostTdd(label) if label == "E2E tests"))
                 .expect("E2E tests entry must be present");
-            assert!(e2e.command.is_none(), "Post-TDD entries must have no command");
+            assert!(
+                e2e.command.is_none(),
+                "Post-TDD entries must have no command"
+            );
         }
 
         #[test]
@@ -476,8 +491,7 @@ mod tests {
 
         #[test]
         fn old_pipe_separator_reads_trail_segments() {
-            let report =
-                parse_tasks(old_format_input()).expect("should parse old-format tasks.md");
+            let report = parse_tasks(old_format_input()).expect("should parse old-format tasks.md");
             let pc1 = report
                 .entries
                 .iter()
@@ -493,8 +507,7 @@ mod tests {
 
         #[test]
         fn old_pipe_separator_trail_statuses_in_order() {
-            let report =
-                parse_tasks(old_format_input()).expect("should parse old-format tasks.md");
+            let report = parse_tasks(old_format_input()).expect("should parse old-format tasks.md");
             let pc1 = &report.entries[0];
             let statuses: Vec<TaskStatus> = pc1.trail.iter().map(|s| s.status).collect();
             assert_eq!(
@@ -538,7 +551,8 @@ mod tests {
 
 ## Post-TDD
 "#;
-            let report = parse_tasks(input).expect("header-only tasks.md should parse without error");
+            let report =
+                parse_tasks(input).expect("header-only tasks.md should parse without error");
             assert_eq!(report.total, 0, "expected zero total entries");
             assert_eq!(report.completed, 0, "expected zero completed");
             assert_eq!(report.pending, 0, "expected zero pending");

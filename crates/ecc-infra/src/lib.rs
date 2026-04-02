@@ -8,10 +8,10 @@ pub mod github_release;
 pub mod os_env;
 pub mod os_fs;
 pub mod os_git;
-pub mod system_clock;
 pub mod process_executor;
 pub mod rustyline_input;
 pub mod std_terminal;
+pub mod system_clock;
 
 #[cfg(unix)]
 pub mod flock_lock;

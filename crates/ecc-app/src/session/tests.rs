@@ -142,8 +142,8 @@ fn get_all_sessions_has_content_flag() {
 #[test]
 fn get_all_sessions_size_is_content_length() {
     let content = "hello world";
-    let fs = InMemoryFileSystem::new()
-        .with_file("/sessions/2024-03-15-abc12345-session.tmp", content);
+    let fs =
+        InMemoryFileSystem::new().with_file("/sessions/2024-03-15-abc12345-session.tmp", content);
     let result = get_all_sessions(&fs, &sessions_dir(), &GetAllSessionsOptions::default());
     assert_eq!(result.sessions[0].size, content.len());
 }
@@ -154,8 +154,8 @@ fn get_all_sessions_size_is_content_length() {
 
 #[test]
 fn get_session_by_short_id_prefix() {
-    let fs = InMemoryFileSystem::new()
-        .with_file("/sessions/2024-03-15-abc12345-session.tmp", "found");
+    let fs =
+        InMemoryFileSystem::new().with_file("/sessions/2024-03-15-abc12345-session.tmp", "found");
     let result = get_session_by_id(&fs, &sessions_dir(), "abc", false);
     assert!(result.is_some());
     let s = result.unwrap();
@@ -165,8 +165,8 @@ fn get_session_by_short_id_prefix() {
 
 #[test]
 fn get_session_by_full_filename() {
-    let fs = InMemoryFileSystem::new()
-        .with_file("/sessions/2024-03-15-abc12345-session.tmp", "found");
+    let fs =
+        InMemoryFileSystem::new().with_file("/sessions/2024-03-15-abc12345-session.tmp", "found");
     let result = get_session_by_id(
         &fs,
         &sessions_dir(),
@@ -178,8 +178,8 @@ fn get_session_by_full_filename() {
 
 #[test]
 fn get_session_by_filename_without_extension() {
-    let fs = InMemoryFileSystem::new()
-        .with_file("/sessions/2024-03-15-abc12345-session.tmp", "found");
+    let fs =
+        InMemoryFileSystem::new().with_file("/sessions/2024-03-15-abc12345-session.tmp", "found");
     let result = get_session_by_id(&fs, &sessions_dir(), "2024-03-15-abc12345-session", false);
     assert!(result.is_some());
 }
@@ -194,8 +194,8 @@ fn get_session_by_id_no_id_session() {
 
 #[test]
 fn get_session_by_id_not_found() {
-    let fs = InMemoryFileSystem::new()
-        .with_file("/sessions/2024-03-15-abc12345-session.tmp", "found");
+    let fs =
+        InMemoryFileSystem::new().with_file("/sessions/2024-03-15-abc12345-session.tmp", "found");
     let result = get_session_by_id(&fs, &sessions_dir(), "zzz", false);
     assert!(result.is_none());
 }
@@ -213,8 +213,8 @@ fn get_session_by_id_with_content() {
 ### In Progress
 - [ ] WIP task
 ";
-    let fs = InMemoryFileSystem::new()
-        .with_file("/sessions/2024-03-15-abc12345-session.tmp", content);
+    let fs =
+        InMemoryFileSystem::new().with_file("/sessions/2024-03-15-abc12345-session.tmp", content);
     let result = get_session_by_id(&fs, &sessions_dir(), "abc", true);
     let s = result.unwrap();
     assert!(s.content.is_some());
@@ -243,8 +243,7 @@ fn get_session_by_id_without_content_has_no_metadata() {
 
 #[test]
 fn get_session_by_id_empty_id_no_match() {
-    let fs =
-        InMemoryFileSystem::new().with_file("/sessions/2024-03-15-abc12345-session.tmp", "x");
+    let fs = InMemoryFileSystem::new().with_file("/sessions/2024-03-15-abc12345-session.tmp", "x");
     let result = get_session_by_id(&fs, &sessions_dir(), "", false);
     assert!(result.is_none());
 }

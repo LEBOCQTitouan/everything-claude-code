@@ -473,13 +473,28 @@ mod tests {
             concern: Concern::Dev,
             feature: "test".to_owned(),
             started_at: Timestamp::new("2026-01-01T00:00:00Z"),
-            toolchain: Toolchain { test: None, lint: None, build: None },
-            artifacts: Artifacts { plan: None, solution: None, implement: None, campaign_path: None, spec_path: None, design_path: None, tasks_path: None },
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: Artifacts {
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
             completed: vec![],
             version: 1,
         };
         let json = serde_json::to_string_pretty(&state).expect("serialization must succeed");
-        assert!(json.contains(r#""version": 1"#), "JSON must contain version field, got: {json}");
+        assert!(
+            json.contains(r#""version": 1"#),
+            "JSON must contain version field, got: {json}"
+        );
     }
 
     #[test]

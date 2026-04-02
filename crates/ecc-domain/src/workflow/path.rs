@@ -18,7 +18,7 @@ pub fn normalize_path(path: &str) -> String {
             "" | "." => {}
             ".." => {
                 // Pop if top is a normal component; preserve leading `..` otherwise
-                if components.last().map_or(false, |c| *c != "..") {
+                if components.last().is_some_and(|c| *c != "..") {
                     components.pop();
                 } else {
                     components.push("..");

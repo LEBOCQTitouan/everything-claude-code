@@ -17,10 +17,7 @@ use std::path::Path;
 // ---------------------------------------------------------------------------
 
 /// Check whether a session entry matches the given filter options.
-fn entry_matches_filters(
-    fname: &str,
-    options: &GetAllSessionsOptions,
-) -> Option<SessionFilename> {
+fn entry_matches_filters(fname: &str, options: &GetAllSessionsOptions) -> Option<SessionFilename> {
     if !fname.ends_with(".tmp") {
         return None;
     }
@@ -39,13 +36,22 @@ fn entry_matches_filters(
 }
 
 /// Paginate a sorted list of sessions, returning a `SessionListResult`.
-fn paginate_sessions(sessions: Vec<SessionListItem>, options: &GetAllSessionsOptions) -> SessionListResult {
+fn paginate_sessions(
+    sessions: Vec<SessionListItem>,
+    options: &GetAllSessionsOptions,
+) -> SessionListResult {
     let total = sessions.len();
     let offset = options.offset;
     let limit = options.limit.max(1);
     let paginated: Vec<SessionListItem> = sessions.into_iter().skip(offset).take(limit).collect();
     let has_more = offset + limit < total;
-    SessionListResult { sessions: paginated, total, offset, limit, has_more }
+    SessionListResult {
+        sessions: paginated,
+        total,
+        offset,
+        limit,
+        has_more,
+    }
 }
 
 /// List sessions in a directory with optional filtering and pagination.

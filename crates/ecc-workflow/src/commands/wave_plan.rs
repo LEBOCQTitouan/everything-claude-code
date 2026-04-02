@@ -51,8 +51,8 @@ fn run_inner(design_path: &str, project_dir: &Path) -> Result<WorkflowOutput, an
 
     // AC-003.5: Resolve and check for path traversal.
     let resolved = std::fs::canonicalize(path)?;
-    let project_root = std::fs::canonicalize(project_dir)
-        .unwrap_or_else(|_| project_dir.to_path_buf());
+    let project_root =
+        std::fs::canonicalize(project_dir).unwrap_or_else(|_| project_dir.to_path_buf());
     if !resolved.starts_with(&project_root) {
         anyhow::bail!("path escapes project directory: {design_path}");
     }
@@ -151,8 +151,8 @@ mod tests {
         );
 
         // Message must be parseable JSON
-        let json: Value = serde_json::from_str(&output.message)
-            .expect("output.message must be valid JSON");
+        let json: Value =
+            serde_json::from_str(&output.message).expect("output.message must be valid JSON");
 
         // Must have a "waves" array
         let waves = json.get("waves").expect("JSON must have 'waves' key");
@@ -175,8 +175,14 @@ mod tests {
         }
 
         // Must have total_pcs and max_per_wave
-        assert!(json.get("total_pcs").is_some(), "JSON must have 'total_pcs'");
-        assert!(json.get("max_per_wave").is_some(), "JSON must have 'max_per_wave'");
+        assert!(
+            json.get("total_pcs").is_some(),
+            "JSON must have 'total_pcs'"
+        );
+        assert!(
+            json.get("max_per_wave").is_some(),
+            "JSON must have 'max_per_wave'"
+        );
         assert_eq!(json["total_pcs"], 2);
     }
 
@@ -273,16 +279,22 @@ No pass conditions table here.
         );
 
         // Message must be parseable JSON with waves
-        let json: Value = serde_json::from_str(&output.message)
-            .expect("output.message must be valid JSON");
+        let json: Value =
+            serde_json::from_str(&output.message).expect("output.message must be valid JSON");
 
         let waves = json.get("waves").expect("JSON must have 'waves' key");
         assert!(waves.is_array(), "'waves' must be an array");
-        assert!(!waves.as_array().unwrap().is_empty(), "waves must not be empty");
+        assert!(
+            !waves.as_array().unwrap().is_empty(),
+            "waves must not be empty"
+        );
 
         // Must include warnings
         let warnings = json.get("warnings").expect("JSON must have 'warnings' key");
         assert!(warnings.is_array(), "'warnings' must be an array");
-        assert!(!warnings.as_array().unwrap().is_empty(), "warnings must not be empty");
+        assert!(
+            !warnings.as_array().unwrap().is_empty(),
+            "warnings must not be empty"
+        );
     }
 }

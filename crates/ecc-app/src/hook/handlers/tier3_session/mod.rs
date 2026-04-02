@@ -9,8 +9,8 @@ mod reflection;
 mod tracking;
 mod worktree;
 
-use tracing::warn;
 use std::path::Path;
+use tracing::warn;
 
 pub use compact::{post_compact, pre_compact};
 pub use daily::daily_summary;

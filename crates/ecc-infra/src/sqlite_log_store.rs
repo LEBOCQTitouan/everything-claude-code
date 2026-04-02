@@ -12,8 +12,7 @@ pub struct SqliteLogStore {
 impl SqliteLogStore {
     /// Open (or create) the SQLite database at `db_path`.
     pub fn new(db_path: &std::path::Path) -> Result<Self, LogStoreError> {
-        let conn = Connection::open(db_path)
-            .map_err(|e| LogStoreError::Database(e.to_string()))?;
+        let conn = Connection::open(db_path).map_err(|e| LogStoreError::Database(e.to_string()))?;
         crate::log_schema::ensure_schema(&conn)
             .map_err(|e| LogStoreError::Database(e.to_string()))?;
         Ok(Self {
@@ -63,7 +62,20 @@ fn format_iso8601(secs: u64) -> String {
         days -= days_in_year;
         year += 1;
     }
-    let months = [31u64, if is_leap(year) { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let months = [
+        31u64,
+        if is_leap(year) { 29 } else { 28 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
     let mut month = 1u64;
     for &dim in &months {
         if days < dim {
@@ -82,7 +94,10 @@ fn is_leap(year: u64) -> bool {
 
 impl LogStore for SqliteLogStore {
     fn search(&self, query: &LogQuery) -> Result<Vec<LogEntry>, LogStoreError> {
-        let conn = self.conn.lock().map_err(|e| LogStoreError::Database(e.to_string()))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| LogStoreError::Database(e.to_string()))?;
 
         let limit = query.limit as i64;
 
@@ -127,15 +142,17 @@ impl LogStore for SqliteLogStore {
 
         // Combine
         let where_clause = if !filters.is_empty() {
-            let prefix = if query.text.is_some() { " AND " } else { " WHERE " };
+            let prefix = if query.text.is_some() {
+                " AND "
+            } else {
+                " WHERE "
+            };
             format!("{prefix}{}", filters.join(" AND "))
         } else {
             String::new()
         };
 
-        let sql = format!(
-            "{base_sql}{where_clause} ORDER BY timestamp DESC LIMIT ?{param_idx}"
-        );
+        let sql = format!("{base_sql}{where_clause} ORDER BY timestamp DESC LIMIT ?{param_idx}");
         positional_params.push(Box::new(limit));
 
         let params_refs: Vec<&dyn rusqlite::types::ToSql> =
@@ -155,7 +172,10 @@ impl LogStore for SqliteLogStore {
     }
 
     fn tail(&self, count: usize, session_id: Option<&str>) -> Result<Vec<LogEntry>, LogStoreError> {
-        let conn = self.conn.lock().map_err(|e| LogStoreError::Database(e.to_string()))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| LogStoreError::Database(e.to_string()))?;
 
         let sql = if session_id.is_some() {
             "SELECT id, session_id, timestamp, level, target, message, fields_json \
@@ -187,7 +207,10 @@ impl LogStore for SqliteLogStore {
     }
 
     fn prune(&self, older_than: Duration) -> Result<u64, LogStoreError> {
-        let conn = self.conn.lock().map_err(|e| LogStoreError::Database(e.to_string()))?;
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|e| LogStoreError::Database(e.to_string()))?;
         let cutoff = cutoff_timestamp(older_than);
 
         let removed = conn
@@ -353,7 +376,9 @@ mod tests {
     fn export_json_format() {
         let (store, _dir) = make_store();
         insert_entry(&store, "s1", "INFO", "hello", "2024-01-01T00:00:00Z");
-        let output = store.export(&LogQuery::default(), ExportFormat::Json).unwrap();
+        let output = store
+            .export(&LogQuery::default(), ExportFormat::Json)
+            .unwrap();
         assert!(output.starts_with('['));
         assert!(output.ends_with(']'));
         assert!(output.contains("hello"));

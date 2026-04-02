@@ -33,8 +33,8 @@ pub fn parse_sources(content: &str) -> Result<SourcesRegistry, Vec<SourceError>>
                 parse_inbox_section(section_body, &mut inbox, &mut errors);
             }
             "Adopt" | "Trial" | "Assess" | "Hold" => {
-                let quadrant = Quadrant::from_str(name)
-                    .expect("quadrant name already matched, must be valid");
+                let quadrant =
+                    Quadrant::from_str(name).expect("quadrant name already matched, must be valid");
                 parse_quadrant_section(section_body, quadrant, &mut entries, &mut errors);
             }
             "Module Mapping" => {
@@ -127,7 +127,11 @@ fn parse_module_mapping_section(body: &str, mappings: &mut Vec<ModuleMapping>) {
     for line in body.lines() {
         let trimmed = line.trim();
         // Skip header rows and separator rows.
-        if !trimmed.starts_with('|') || trimmed.starts_with("| Module") || trimmed.starts_with("|---") || trimmed.starts_with("|-----") {
+        if !trimmed.starts_with('|')
+            || trimmed.starts_with("| Module")
+            || trimmed.starts_with("|---")
+            || trimmed.starts_with("|-----")
+        {
             continue;
         }
         // Parse `| module_path | subjects |`
@@ -173,12 +177,10 @@ fn parse_entry_line(
         })?;
 
     // Extract [Title](url) part.
-    let bracket_start = rest
-        .find('[')
-        .ok_or_else(|| SourceError::ParseError {
-            line: 0,
-            message: format!("missing '[' in entry line: {rest}"),
-        })?;
+    let bracket_start = rest.find('[').ok_or_else(|| SourceError::ParseError {
+        line: 0,
+        message: format!("missing '[' in entry line: {rest}"),
+    })?;
     let bracket_end = rest.find("](").ok_or_else(|| SourceError::ParseError {
         line: 0,
         message: format!("missing '](' in entry line: {rest}"),
@@ -328,16 +330,15 @@ mod tests {
         assert!(registry.module_mappings.is_empty());
 
         // Only a title, no sections
-        let registry =
-            parse_sources("# Knowledge Sources\n").expect("no sections should return empty registry");
+        let registry = parse_sources("# Knowledge Sources\n")
+            .expect("no sections should return empty registry");
         assert!(registry.inbox.is_empty());
         assert!(registry.entries.is_empty());
         assert!(registry.module_mappings.is_empty());
 
         // Sections present but empty
         let minimal = "# Knowledge Sources\n\n## Inbox\n\n## Adopt\n\n## Module Mapping\n";
-        let registry =
-            parse_sources(minimal).expect("empty sections should return empty registry");
+        let registry = parse_sources(minimal).expect("empty sections should return empty registry");
         assert!(registry.inbox.is_empty());
         assert!(registry.entries.is_empty());
         assert!(registry.module_mappings.is_empty());
@@ -355,7 +356,10 @@ mod tests {
         );
 
         let result = parse_sources(doc);
-        assert!(result.is_err(), "errors should be returned for malformed entries");
+        assert!(
+            result.is_err(),
+            "errors should be returned for malformed entries"
+        );
 
         let errors = result.unwrap_err();
         // Both bad entries should produce errors (not just the first)

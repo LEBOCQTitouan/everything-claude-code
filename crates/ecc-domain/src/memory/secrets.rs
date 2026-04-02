@@ -19,7 +19,10 @@ pub fn contains_likely_secret(content: &str) -> Option<String> {
         // Generic bearer tokens (long base64-ish strings after 'Bearer ')
         (r"(?i)bearer\s+[A-Za-z0-9+/=_\-]{20,}", "Bearer token"),
         // Connection strings with passwords
-        (r"(?i)://[^@\s]+:[^@\s]+@[^@\s]+", "Connection string with credentials"),
+        (
+            r"(?i)://[^@\s]+:[^@\s]+@[^@\s]+",
+            "Connection string with credentials",
+        ),
         // Slack tokens
         (r"xox[baprs]-[A-Za-z0-9\-]{10,}", "Slack token"),
     ];
@@ -75,7 +78,10 @@ mod tests {
     fn test_detects_connection_string() {
         let content = "DB: postgres://user:password@localhost:5432/mydb";
         let result = contains_likely_secret(content);
-        assert!(result.is_some(), "should detect connection string with credentials");
+        assert!(
+            result.is_some(),
+            "should detect connection string with credentials"
+        );
     }
 
     #[test]

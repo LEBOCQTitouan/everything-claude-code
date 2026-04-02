@@ -130,8 +130,11 @@ pub mod tests {
         let fs = InMemoryFileSystem::new();
         let state_dir = PathBuf::from("/state");
         let state_path = state_dir.join("state.json");
-        fs.write(&state_path, &make_state_json("plan", "2026-04-01T06:00:00Z"))
-            .unwrap();
+        fs.write(
+            &state_path,
+            &make_state_json("plan", "2026-04-01T06:00:00Z"),
+        )
+        .unwrap();
 
         let clock = MockClock::fixed("2026-04-01T12:00:00Z", 0);
 
@@ -147,10 +150,7 @@ pub mod tests {
 
         // Archive should exist
         let archive_path = state_dir.join("archive/state-2026-04-01120000.json");
-        assert!(
-            fs.exists(&archive_path),
-            "archive file should exist"
-        );
+        assert!(fs.exists(&archive_path), "archive file should exist");
     }
 
     #[test]
@@ -165,7 +165,10 @@ pub mod tests {
 
         // Verify the error is a ReadFailed variant
         let err_msg = format!("{}", result.unwrap_err());
-        assert!(err_msg.contains("read"), "error should mention read failure: {err_msg}");
+        assert!(
+            err_msg.contains("read"),
+            "error should mention read failure: {err_msg}"
+        );
     }
 
     #[test]

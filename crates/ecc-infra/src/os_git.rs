@@ -43,10 +43,7 @@ impl GitInfo for OsGitInfo {
             .args(["rev-parse", "--is-inside-work-tree"])
             .current_dir(working_dir)
             .output()
-            .map(|o| {
-                o.status.success()
-                    && String::from_utf8_lossy(&o.stdout).trim() == "true"
-            })
+            .map(|o| o.status.success() && String::from_utf8_lossy(&o.stdout).trim() == "true")
             .unwrap_or(false)
     }
 }

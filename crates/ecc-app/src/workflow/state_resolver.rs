@@ -114,7 +114,10 @@ pub mod tests {
         let (dir_main, _) = resolve_state_dir(&env_main, &git_main, &fs);
         let (dir_wt, _) = resolve_state_dir(&env_wt, &git_wt, &fs);
 
-        assert_ne!(dir_main, dir_wt, "main and worktree must have different state dirs");
+        assert_ne!(
+            dir_main, dir_wt,
+            "main and worktree must have different state dirs"
+        );
     }
 
     #[test]
@@ -151,7 +154,11 @@ pub mod tests {
         .unwrap();
 
         let (dir, warnings) = resolve_state_dir(&env, &git, &fs);
-        assert_eq!(dir, PathBuf::from("/project/.claude/workflow"), "should fall back to old location");
+        assert_eq!(
+            dir,
+            PathBuf::from("/project/.claude/workflow"),
+            "should fall back to old location"
+        );
         assert!(warnings.iter().any(|w| w.message.contains("Migrating")));
     }
 

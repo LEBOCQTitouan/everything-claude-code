@@ -22,7 +22,11 @@ impl Version {
         // Split on '-' to separate core from pre-release
         let core = stripped.split('-').next().unwrap_or("");
         let parts: Vec<&str> = core.split('.').collect();
-        if parts.len() != 3 || parts.iter().any(|p| p.is_empty() || p.parse::<u64>().is_err()) {
+        if parts.len() != 3
+            || parts
+                .iter()
+                .any(|p| p.is_empty() || p.parse::<u64>().is_err())
+        {
             return Err(UpdateError::InvalidVersion { raw: s.to_string() });
         }
         Ok(Self(stripped.to_string()))

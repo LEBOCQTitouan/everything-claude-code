@@ -46,8 +46,7 @@ pub fn apply_update(
         let rest = &trimmed[6..]; // skip "- [ ] " or "- [x] "
         let matches = if is_post_tdd {
             // PostTdd: label is the text before " | "
-            rest.starts_with(entry_id)
-                && rest[entry_id.len()..].starts_with(" |")
+            rest.starts_with(entry_id) && rest[entry_id.len()..].starts_with(" |")
         } else {
             // PC entry: "PC-NNN: ..."
             rest.starts_with(&format!("{entry_id}: "))
@@ -107,8 +106,16 @@ fn extract_last_status(rest: &str) -> Result<TaskStatus, TaskError> {
     }
 
     // Find the last segment by splitting on ` → ` or ` | `
-    let separator = if trail_str.contains(" → ") { " → " } else { " | " };
-    let last_seg = trail_str.split(separator).last().unwrap_or(trail_str).trim();
+    let separator = if trail_str.contains(" → ") {
+        " → "
+    } else {
+        " | "
+    };
+    let last_seg = trail_str
+        .split(separator)
+        .last()
+        .unwrap_or(trail_str)
+        .trim();
 
     // Parse `status@timestamp`
     let at_pos = last_seg.find('@').ok_or_else(|| TaskError::ParseError {
@@ -236,7 +243,8 @@ mod tests {
 
         // The PostTdd entry line should have the trail appended
         assert!(
-            updated.contains("E2E tests | pending@2026-03-29T14:00:00Z → done@2026-03-29T15:00:00Z"),
+            updated
+                .contains("E2E tests | pending@2026-03-29T14:00:00Z → done@2026-03-29T15:00:00Z"),
             "PostTdd entry should have trail appended by string identifier, got:\n{updated}"
         );
 

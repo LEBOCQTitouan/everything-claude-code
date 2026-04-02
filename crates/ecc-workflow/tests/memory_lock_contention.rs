@@ -22,8 +22,7 @@ fn binary_path() -> PathBuf {
 fn project_memory_dir(project_dir: &std::path::Path) -> PathBuf {
     let home = std::env::var("HOME").expect("HOME not set");
     let repo_root = ecc_flock::resolve_repo_root(project_dir);
-    let repo_root =
-        std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
+    let repo_root = std::fs::canonicalize(&repo_root).unwrap_or_else(|_| repo_root.to_path_buf());
     let abs_str = repo_root.to_string_lossy();
     let project_hash = abs_str.trim_start_matches('/').replace('/', "-");
     PathBuf::from(home)

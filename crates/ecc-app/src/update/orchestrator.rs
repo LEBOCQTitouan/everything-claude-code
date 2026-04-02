@@ -43,7 +43,7 @@ pub fn run_update(
             return Err(UpdateError::UnsupportedPlatform {
                 platform: format!("{other:?}"),
                 arch: arch.as_label().to_string(),
-            })
+            });
         }
     };
     let artifact = ArtifactName::resolve(platform_label, arch.as_label())?;
@@ -57,9 +57,7 @@ pub fn run_update(
                     version: target_ver.clone(),
                 }
             } else if msg.contains("rate limited") {
-                UpdateError::RateLimited {
-                    reset_time: msg,
-                }
+                UpdateError::RateLimited { reset_time: msg }
             } else {
                 UpdateError::NetworkError { reason: msg }
             }
@@ -70,9 +68,7 @@ pub fn run_update(
             .map_err(|e| {
                 let msg = e.to_string();
                 if msg.contains("rate limited") {
-                    UpdateError::RateLimited {
-                        reset_time: msg,
-                    }
+                    UpdateError::RateLimited { reset_time: msg }
                 } else {
                     UpdateError::NetworkError { reason: msg }
                 }
@@ -160,8 +156,7 @@ pub fn run_update(
 
     match cosign {
         CosignResult::Verified => {
-            ctx.terminal
-                .stdout_write("Cosign signature verified\n");
+            ctx.terminal.stdout_write("Cosign signature verified\n");
         }
         CosignResult::NotInstalled => {
             ctx.terminal.stderr_write(
@@ -192,8 +187,12 @@ pub fn run_update(
         })?;
 
     // 11. Swap binaries
-    let _swapped =
-        swap::sequential_swap(ctx.fs, &extraction_dir, &install_dir, &["ecc", "ecc-workflow"])?;
+    let _swapped = swap::sequential_swap(
+        ctx.fs,
+        &extraction_dir,
+        &install_dir,
+        &["ecc", "ecc-workflow"],
+    )?;
 
     // 12. Update shims
     let _shim_count = swap::update_shims(ctx.fs, &extraction_dir, &install_dir)?;
@@ -251,10 +250,10 @@ mod tests {
     use ecc_ports::env::Architecture;
     use ecc_ports::release::{ChecksumResult, CosignResult, ReleaseInfo};
     use ecc_ports::shell::CommandOutput;
+    use ecc_test_support::mock_release_client::MockError;
     use ecc_test_support::{
         BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor, MockReleaseClient,
     };
-    use ecc_test_support::mock_release_client::MockError;
 
     fn make_release(version: &str) -> ReleaseInfo {
         ReleaseInfo {
@@ -316,8 +315,7 @@ mod tests {
         let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
-        let client = MockReleaseClient::new()
-            .with_latest_version(make_release("4.0.0"));
+        let client = MockReleaseClient::new().with_latest_version(make_release("4.0.0"));
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -369,8 +367,7 @@ mod tests {
         let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
         let shell = MockExecutor::new();
         let terminal = BufferedTerminal::new();
-        let client = MockReleaseClient::new()
-            .with_latest_version(make_release("5.0.0"));
+        let client = MockReleaseClient::new().with_latest_version(make_release("5.0.0"));
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -433,8 +430,7 @@ mod tests {
         let shell = default_shell();
         let terminal = BufferedTerminal::new();
         // Mock returns stable version when include_prerelease=false
-        let client = MockReleaseClient::new()
-            .with_latest_version(make_release("4.1.0"));
+        let client = MockReleaseClient::new().with_latest_version(make_release("4.1.0"));
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -483,8 +479,9 @@ mod tests {
         let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
         let shell = MockExecutor::new();
         let terminal = BufferedTerminal::new();
-        let client = MockReleaseClient::new()
-            .with_error(MockError::RateLimited("rate limited: resets at 2024-01-01T00:00:00Z".to_string()));
+        let client = MockReleaseClient::new().with_error(MockError::RateLimited(
+            "rate limited: resets at 2024-01-01T00:00:00Z".to_string(),
+        ));
 
         let ctx = UpdateContext {
             fs: &fs,
@@ -548,7 +545,9 @@ mod tests {
         assert!(result.is_ok());
         let stdout = terminal.stdout_output();
         assert!(
-            stdout.iter().any(|s| s.contains("Cosign signature verified")),
+            stdout
+                .iter()
+                .any(|s| s.contains("Cosign signature verified")),
             "expected cosign verified in stdout"
         );
     }
@@ -644,7 +643,10 @@ mod tests {
             matches!(err, UpdateError::ConfigSyncFailed { .. }),
             "expected ConfigSyncFailed, got: {err}"
         );
-        assert!(err.to_string().contains("Backup"), "should mention backup path");
+        assert!(
+            err.to_string().contains("Backup"),
+            "should mention backup path"
+        );
     }
 
     #[test]
@@ -733,7 +735,10 @@ mod tests {
             progress_called.store(true, Ordering::Relaxed);
         });
         assert!(result.is_ok());
-        assert!(progress_called.load(Ordering::Relaxed), "progress callback should have been invoked");
+        assert!(
+            progress_called.load(Ordering::Relaxed),
+            "progress callback should have been invoked"
+        );
     }
 
     #[test]
@@ -741,16 +746,24 @@ mod tests {
         let fs = InMemoryFileSystem::new();
         let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
         let shell = MockExecutor::new()
-            .on_args("ecc", &["install"], CommandOutput {
-                stdout: "installed\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            })
-            .on_args("ecc", &["version"], CommandOutput {
-                stdout: "ecc 5.0.0\n".to_string(),
-                stderr: String::new(),
-                exit_code: 0,
-            })
+            .on_args(
+                "ecc",
+                &["install"],
+                CommandOutput {
+                    stdout: "installed\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on_args(
+                "ecc",
+                &["version"],
+                CommandOutput {
+                    stdout: "ecc 5.0.0\n".to_string(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
             .with_command("ecc");
         let terminal = BufferedTerminal::new();
         let client = MockReleaseClient::new()

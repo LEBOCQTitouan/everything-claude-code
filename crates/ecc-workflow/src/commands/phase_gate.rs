@@ -388,8 +388,7 @@ mod tests {
     fn phase_gate_blocks_absolute_outside() {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
-        let hook_input =
-            r#"{"tool_name":"Write","tool_input":{"file_path":"/etc/passwd"}}"#;
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"/etc/passwd"}}"#;
         let output = super::run_with_input(tmp.path(), hook_input);
         assert!(
             matches!(output.status, Status::Block),

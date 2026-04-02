@@ -61,8 +61,8 @@ pub fn validate_report(content: &str) -> ReportValidationResult {
 
     // Parse scores: **Strategic Fit**: N/5
     static SCORE_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-    let score_re =
-        SCORE_RE.get_or_init(|| Regex::new(r"\*\*Strategic Fit\*\*:\s*(-?\d+)/5").expect("valid regex"));
+    let score_re = SCORE_RE
+        .get_or_init(|| Regex::new(r"\*\*Strategic Fit\*\*:\s*(-?\d+)/5").expect("valid regex"));
 
     // Parse section headers to associate scores with sections
     static SECTION_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
@@ -71,35 +71,45 @@ pub fn validate_report(content: &str) -> ReportValidationResult {
 
     // Parse citation links: [text](url)
     static LINK_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-    let link_re = LINK_RE.get_or_init(|| Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").expect("valid regex"));
+    let link_re =
+        LINK_RE.get_or_init(|| Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").expect("valid regex"));
 
     let mut current_section = String::new();
     let mut section_score: Option<i32> = None;
     let mut section_citations: usize = 0;
 
-    let flush_section =
-        |section: &str, score: Option<i32>, citations: usize, errors: &mut Vec<ReportError>, warnings: &mut Vec<ReportWarning>| {
-            if let Some(s) = score
-                && !(0..=5_i32).contains(&s)
-            {
-                errors.push(ReportError::ScoreOutOfRange {
-                    section: section.to_owned(),
-                    score: s,
-                });
-            }
-            let is_required = REQUIRED_SECTIONS.contains(&section);
-            if is_required && citations < 3 {
-                warnings.push(ReportWarning::LowCitations {
-                    section: section.to_owned(),
-                    count: citations,
-                });
-            }
-        };
+    let flush_section = |section: &str,
+                         score: Option<i32>,
+                         citations: usize,
+                         errors: &mut Vec<ReportError>,
+                         warnings: &mut Vec<ReportWarning>| {
+        if let Some(s) = score
+            && !(0..=5_i32).contains(&s)
+        {
+            errors.push(ReportError::ScoreOutOfRange {
+                section: section.to_owned(),
+                score: s,
+            });
+        }
+        let is_required = REQUIRED_SECTIONS.contains(&section);
+        if is_required && citations < 3 {
+            warnings.push(ReportWarning::LowCitations {
+                section: section.to_owned(),
+                count: citations,
+            });
+        }
+    };
 
     for line in content.lines() {
         if let Some(caps) = section_re.captures(line) {
             // Flush previous section
-            flush_section(&current_section, section_score, section_citations, &mut errors, &mut warnings);
+            flush_section(
+                &current_section,
+                section_score,
+                section_citations,
+                &mut errors,
+                &mut warnings,
+            );
             current_section = caps[1].trim().to_owned();
             section_score = None;
             section_citations = 0;
@@ -111,7 +121,13 @@ pub fn validate_report(content: &str) -> ReportValidationResult {
         }
     }
     // Flush final section
-    flush_section(&current_section, section_score, section_citations, &mut errors, &mut warnings);
+    flush_section(
+        &current_section,
+        section_score,
+        section_citations,
+        &mut errors,
+        &mut warnings,
+    );
 
     ReportValidationResult { errors, warnings }
 }
@@ -322,9 +338,10 @@ mod tests {
             "low citations should be a warning, not an error: {:?}",
             result.errors
         );
-        let has_warning = result.warnings.iter().any(|w| {
-            matches!(w, ReportWarning::LowCitations { count, .. } if *count < 3)
-        });
+        let has_warning = result
+            .warnings
+            .iter()
+            .any(|w| matches!(w, ReportWarning::LowCitations { count, .. } if *count < 3));
         assert!(
             has_warning,
             "expected LowCitations warning, got: {:?}",

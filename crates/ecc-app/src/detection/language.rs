@@ -102,19 +102,19 @@ pub fn get_python_deps(fs: &dyn FileSystem, dir: &Path) -> Vec<String> {
     if let Ok(content) = fs.read_to_string(&dir.join("pyproject.toml"))
         && let Some(captures) = RE_PYPROJECT_DEPS.captures(&content)
     {
-            let block = &captures[1];
-            for m in RE_QUOTED.captures_iter(block) {
-                let raw = &m[1];
-                let name = raw
-                    .split(['>', '=', '<', '!', '[', ';'])
-                    .next()
-                    .unwrap_or("")
-                    .trim()
-                    .to_lowercase();
-                if !name.is_empty() {
-                    deps.push(name);
-                }
+        let block = &captures[1];
+        for m in RE_QUOTED.captures_iter(block) {
+            let raw = &m[1];
+            let name = raw
+                .split(['>', '=', '<', '!', '[', ';'])
+                .next()
+                .unwrap_or("")
+                .trim()
+                .to_lowercase();
+            if !name.is_empty() {
+                deps.push(name);
             }
+        }
     }
 
     deps

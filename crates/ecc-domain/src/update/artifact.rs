@@ -24,7 +24,7 @@ impl ArtifactName {
                 return Err(UpdateError::UnsupportedPlatform {
                     platform: platform.to_string(),
                     arch: arch.to_string(),
-                })
+                });
             }
         };
         Ok(Self(name.to_string()))
@@ -96,13 +96,19 @@ mod tests {
     fn rejects_windows_platform() {
         let result = ArtifactName::resolve("windows", "x86_64");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), UpdateError::UnsupportedPlatform { .. }));
+        assert!(matches!(
+            result.unwrap_err(),
+            UpdateError::UnsupportedPlatform { .. }
+        ));
     }
 
     #[test]
     fn rejects_unknown_architecture() {
         let result = ArtifactName::resolve("linux", "mips");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), UpdateError::UnsupportedPlatform { .. }));
+        assert!(matches!(
+            result.unwrap_err(),
+            UpdateError::UnsupportedPlatform { .. }
+        ));
     }
 }

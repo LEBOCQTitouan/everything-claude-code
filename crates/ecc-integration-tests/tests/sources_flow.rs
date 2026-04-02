@@ -34,9 +34,16 @@ fn list_outputs_entries() {
         .arg("list")
         .output()
         .expect("failed to run ecc sources list");
-    assert!(output.status.success(), "ecc sources list failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "ecc sources list failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Adopt Testing"), "output must contain 'Adopt Testing', got: {stdout}");
+    assert!(
+        stdout.contains("Adopt Testing"),
+        "output must contain 'Adopt Testing', got: {stdout}"
+    );
 }
 
 // --- PC-017: add creates entry ---
@@ -65,9 +72,16 @@ fn add_creates_entry() {
         .arg("testing")
         .output()
         .expect("failed to run ecc sources add");
-    assert!(output.status.success(), "ecc sources add failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "ecc sources add failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Added: New Entry"), "output must contain 'Added: New Entry', got: {stdout}");
+    assert!(
+        stdout.contains("Added: New Entry"),
+        "output must contain 'Added: New Entry', got: {stdout}"
+    );
 
     let content = fs::read_to_string(&sources_path).unwrap();
     assert!(
@@ -97,9 +111,16 @@ fn reindex_moves_inbox() {
         .arg("reindex")
         .output()
         .expect("failed to run ecc sources reindex");
-    assert!(output.status.success(), "ecc sources reindex failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "ecc sources reindex failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Reindexed"), "output must contain 'Reindexed', got: {stdout}");
+    assert!(
+        stdout.contains("Reindexed"),
+        "output must contain 'Reindexed', got: {stdout}"
+    );
 
     let content = fs::read_to_string(&sources_path).unwrap();
     // Inbox section should be empty after reindex
@@ -139,11 +160,12 @@ fn reindex_dry_run_no_write() {
         .arg("--dry-run")
         .output()
         .expect("failed to run ecc sources reindex --dry-run");
-    assert!(output.status.success(), "ecc sources reindex --dry-run failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "ecc sources reindex --dry-run failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     let after = fs::read_to_string(&sources_path).unwrap();
-    assert_eq!(
-        original, after,
-        "file must be unchanged after --dry-run"
-    );
+    assert_eq!(original, after, "file must be unchanged after --dry-run");
 }

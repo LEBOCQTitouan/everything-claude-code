@@ -117,7 +117,10 @@ pub fn run(args: SourcesArgs) -> anyhow::Result<()> {
             for entry in &entries {
                 println!(
                     "{} | {} | {} | {}",
-                    entry.title, entry.url.as_str(), entry.source_type, entry.quadrant
+                    entry.title,
+                    entry.url.as_str(),
+                    entry.source_type,
+                    entry.quadrant
                 );
             }
             if entries.is_empty() {

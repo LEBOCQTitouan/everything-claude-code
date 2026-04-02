@@ -19,15 +19,15 @@ pub mod fs;
 pub mod git;
 /// File-based locking port.
 pub mod lock;
+/// Structured log storage port.
+pub mod log_store;
 /// Three-tier memory store port.
 pub mod memory_store;
+/// Release artifact discovery and download port.
+pub mod release;
 /// REPL line-input port.
 pub mod repl;
 /// Shell command execution port.
 pub mod shell;
-/// Release artifact discovery and download port.
-pub mod release;
 /// Terminal I/O port.
 pub mod terminal;
-/// Structured log storage port.
-pub mod log_store;
