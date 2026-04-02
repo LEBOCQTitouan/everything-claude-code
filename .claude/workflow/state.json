@@ -1,0 +1,21 @@
+{
+  "phase": "implement",
+  "concern": "dev",
+  "feature": "Force EnterWorktree at the start of every Claude Code session and merge worktree back to main at end of session. Strategy: (1) Session start hook automatically creates a worktree and switches into it, so all work is isolated from main. (2) Session end / stop hook merges the worktree branch back to main (rebase + fast-forward) and cleans up the worktree. This ensures every session works in isolation and main only gets clean, verified merges.",
+  "started_at": "2026-04-02T15:16:37Z",
+  "toolchain": {
+    "test": null,
+    "lint": null,
+    "build": null
+  },
+  "artifacts": {
+    "plan": "2026-04-02T15:50:32Z",
+    "solution": "2026-04-02T15:50:32Z",
+    "implement": null,
+    "campaign_path": null,
+    "spec_path": "docs/specs/2026-04-02-lazy-worktree-isolation/spec.md",
+    "design_path": "docs/specs/2026-04-02-lazy-worktree-isolation/design.md",
+    "tasks_path": null
+  },
+  "completed": []
+}
