@@ -13,7 +13,7 @@ mod worktree;
 use std::path::Path;
 use tracing::warn;
 
-pub use cartography::stop_cartography;
+pub use cartography::{start_cartography, stop_cartography};
 pub use compact::{post_compact, pre_compact};
 pub use daily::daily_summary;
 pub use lifecycle::{session_end, session_start};
