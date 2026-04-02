@@ -17,7 +17,27 @@ pub struct CartographyMetaParsed {
 ///
 /// Returns `None` if no marker is found.
 pub fn parse_cartography_meta(content: &str) -> Option<CartographyMetaParsed> {
-    todo!("implement parse_cartography_meta")
+    let marker_prefix = "<!-- CARTOGRAPHY-META: ";
+    let start = content.find(marker_prefix)?;
+    let after_prefix = start + marker_prefix.len();
+    let end = content[after_prefix..].find("-->")?;
+    let inner = &content[after_prefix..after_prefix + end].trim();
+
+    let mut last_updated = None;
+    let mut sources = Vec::new();
+
+    for part in inner.split(", ") {
+        if let Some(val) = part.strip_prefix("last_updated=") {
+            last_updated = Some(val.to_string());
+        } else if let Some(val) = part.strip_prefix("sources=") {
+            sources = val.split(',').map(|s| s.trim().to_string()).collect();
+        }
+    }
+
+    Some(CartographyMetaParsed {
+        last_updated: last_updated?,
+        sources,
+    })
 }
 
 /// Check whether a cartography entry is stale relative to source file dates.
@@ -31,14 +51,35 @@ pub fn check_staleness(
     content: &str,
     source_modified_dates: &[(&str, &str)],
 ) -> Option<String> {
-    todo!("implement check_staleness")
+    let meta = parse_cartography_meta(content)?;
+
+    // Find the most recent modification date among listed sources
+    let most_recent = source_modified_dates
+        .iter()
+        .filter(|(path, _)| meta.sources.contains(&path.to_string()))
+        .map(|(_, date)| *date)
+        .max()?;
+
+    // Stale if any source was modified after last_updated
+    if most_recent > meta.last_updated.as_str() {
+        Some(format!(
+            "<!-- STALE: last_updated={}, source_modified={} -->",
+            meta.last_updated, most_recent
+        ))
+    } else {
+        None
+    }
 }
 
 /// Strip any `<!-- STALE: ... -->` markers from the given content.
 ///
 /// Returns the content with all stale annotation lines removed.
 pub fn remove_stale_marker(content: &str) -> String {
-    todo!("implement remove_stale_marker")
+    content
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("<!-- STALE:"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]

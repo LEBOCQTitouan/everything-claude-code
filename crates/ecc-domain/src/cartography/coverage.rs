@@ -31,7 +31,52 @@ pub fn calculate_coverage(
     referenced_files: &[String],
     file_frequencies: &[(String, u32)],
 ) -> CoverageReport {
-    todo!("implement calculate_coverage")
+    let total = all_source_files.len();
+    let referenced = all_source_files
+        .iter()
+        .filter(|f| referenced_files.contains(f))
+        .count();
+
+    let percentage = if total == 0 {
+        100.0
+    } else {
+        (referenced as f64 / total as f64) * 100.0
+    };
+
+    let priority_gaps = if percentage < 50.0 {
+        let unreferenced: Vec<&String> = all_source_files
+            .iter()
+            .filter(|f| !referenced_files.contains(f))
+            .collect();
+
+        let mut with_freq: Vec<(&String, u32)> = unreferenced
+            .iter()
+            .map(|f| {
+                let freq = file_frequencies
+                    .iter()
+                    .find(|(path, _)| path == *f)
+                    .map(|(_, count)| *count)
+                    .unwrap_or(0);
+                (*f, freq)
+            })
+            .collect();
+
+        with_freq.sort_by(|a, b| b.1.cmp(&a.1));
+        with_freq
+            .into_iter()
+            .take(10)
+            .map(|(path, _)| path.clone())
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    CoverageReport {
+        total,
+        referenced,
+        percentage,
+        priority_gaps,
+    }
 }
 
 #[cfg(test)]
