@@ -35,6 +35,8 @@ pub enum CliValidateTarget {
     Paths,
     /// Validate statusline installation
     Statusline,
+    /// Validate team manifest files
+    Teams,
     /// Validate spec AC format and numbering
     Spec {
         /// Path to spec.md
@@ -96,6 +98,7 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Rules => ecc_app::validate::ValidateTarget::Rules,
         CliValidateTarget::Paths => ecc_app::validate::ValidateTarget::Paths,
         CliValidateTarget::Statusline => ecc_app::validate::ValidateTarget::Statusline,
+        CliValidateTarget::Teams => ecc_app::validate::ValidateTarget::Teams,
         // Spec and Design are handled directly in run() — unreachable here
         CliValidateTarget::Spec { .. } | CliValidateTarget::Design { .. } => {
             unreachable!("Spec and Design are handled before map_target is called")
