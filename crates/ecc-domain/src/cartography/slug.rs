@@ -15,9 +15,47 @@
 /// 3. Collapse consecutive hyphens into a single hyphen
 /// 4. Truncate to 60 characters maximum
 /// 5. Strip leading/trailing hyphens after truncation
-pub fn derive_slug(_input: &str) -> String {
-    // Stub: returns empty string — tests will fail (RED phase)
-    String::new()
+pub fn derive_slug(input: &str) -> String {
+    if input.is_empty() {
+        return String::new();
+    }
+
+    // Step 1 & 2: lowercase and replace non-alphanumeric with hyphens
+    let lowercased: String = input
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect();
+
+    // Step 3: collapse consecutive hyphens
+    let mut collapsed = String::with_capacity(lowercased.len());
+    let mut last_was_hyphen = false;
+    for c in lowercased.chars() {
+        if c == '-' {
+            if !last_was_hyphen {
+                collapsed.push(c);
+            }
+            last_was_hyphen = true;
+        } else {
+            collapsed.push(c);
+            last_was_hyphen = false;
+        }
+    }
+
+    // Step 4: truncate at 60 characters (on char boundary)
+    let truncated = if collapsed.len() > 60 {
+        &collapsed[..60]
+    } else {
+        &collapsed
+    };
+
+    // Step 5: strip leading/trailing hyphens
+    truncated.trim_matches('-').to_string()
 }
 
 #[cfg(test)]
