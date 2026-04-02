@@ -40,6 +40,7 @@ ecc dev on|off|status     Toggle ECC config on/off
 ecc dev switch dev|default [--dry-run]  Instant config switching via symlinks
 ecc validate statusline   Verify statusline installation
 ecc validate conventions  Validate naming, values, placement, and cross-references
+ecc validate cartography [--coverage]  Validate cartography schema, staleness, and coverage
 ecc status               Show workflow state, versions, component counts
 ecc config set <key> <value>  Persist CLI preferences (~/.ecc/config.toml)
 ecc log tail [--session <id>]  Live-tail current session logs
