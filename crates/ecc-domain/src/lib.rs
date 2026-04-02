@@ -6,6 +6,7 @@
 pub mod ansi;
 pub mod audit_web;
 pub mod backlog;
+pub mod cartography;
 pub mod claw;
 pub mod config;
 pub mod detection;
