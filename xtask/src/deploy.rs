@@ -33,17 +33,17 @@ impl std::fmt::Display for ActionStatus {
 
 /// Returns the list of packages to build with cargo.
 pub fn packages_to_build() -> Vec<&'static str> {
-    vec!["ecc-cli", "ecc-workflow", "ecc-flock"]
+    vec!["ecc-cli", "ecc-workflow"]
 }
 
 /// Returns the list of binary names to install.
 pub fn binaries_to_install() -> Vec<&'static str> {
-    vec!["ecc", "ecc-workflow", "ecc-flock"]
+    vec!["ecc", "ecc-workflow"]
 }
 
 /// Returns the dry-run message describing which binaries would be installed.
 pub fn dry_run_install_message() -> String {
-    "Would copy ecc, ecc-workflow, ecc-flock to <cargo_bin>".to_string()
+    "Would copy ecc, ecc-workflow to <cargo_bin>".to_string()
 }
 
 /// Detect cargo bin directory
@@ -95,7 +95,7 @@ pub fn run(dry_run: bool, debug: bool) -> anyhow::Result<()> {
         results.push(ActionResult {
             name: "Build".into(),
             status: ActionStatus::Installed(format!(
-                "Built ecc + ecc-workflow + ecc-flock ({profile})"
+                "Built ecc + ecc-workflow ({profile})"
             )),
         });
     }
@@ -338,33 +338,35 @@ mod tests {
         }
     }
 
-    mod three_binaries {
+    mod binary_lists {
         use super::*;
 
         #[test]
-        fn deploy_builds_three() {
+        fn deploy_packages_no_flock() {
             let pkgs = packages_to_build();
             assert!(
-                pkgs.contains(&"ecc-flock"),
-                "build list must include ecc-flock; got: {pkgs:?}"
+                !pkgs.contains(&"ecc-flock"),
+                "ecc-flock is a lib crate, must not be in build list; got: {pkgs:?}"
             );
+            assert_eq!(pkgs, vec!["ecc-cli", "ecc-workflow"]);
         }
 
         #[test]
-        fn deploy_installs_three() {
+        fn deploy_binaries_no_flock() {
             let bins = binaries_to_install();
             assert!(
-                bins.contains(&"ecc-flock"),
-                "install list must include ecc-flock; got: {bins:?}"
+                !bins.contains(&"ecc-flock"),
+                "ecc-flock is a lib crate, must not be in install list; got: {bins:?}"
             );
+            assert_eq!(bins, vec!["ecc", "ecc-workflow"]);
         }
 
         #[test]
-        fn deploy_dry_run_lists_three() {
+        fn deploy_dry_run_no_flock() {
             let msg = dry_run_install_message();
             assert!(
-                msg.contains("ecc-flock"),
-                "dry-run message must mention ecc-flock; got: {msg}"
+                !msg.contains("ecc-flock"),
+                "dry-run message must not mention ecc-flock; got: {msg}"
             );
         }
     }
