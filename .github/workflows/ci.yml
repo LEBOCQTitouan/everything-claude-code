@@ -56,6 +56,26 @@ jobs:
           ./target/release/ecc validate skills
           ./target/release/ecc validate rules
 
+      - name: Validate workflow templates
+        run: |
+          python3 -c "
+          import yaml, sys, pathlib
+          errors = []
+          required = ['name', True, 'permissions', 'jobs']
+          for f in sorted(pathlib.Path('workflow-templates').glob('*.yml')):
+              try:
+                  d = yaml.safe_load(f.read_text())
+                  missing = [str(k) for k in required if k not in d]
+                  if missing:
+                      errors.append(f'{f}: missing keys: {missing}')
+              except Exception as e:
+                  errors.append(f'{f}: parse error: {e}')
+          if errors:
+              print('\n'.join(errors), file=sys.stderr)
+              sys.exit(1)
+          print(f'Validated {len(list(pathlib.Path(\"workflow-templates\").glob(\"*.yml\")))} workflow templates')
+          "
+
   security:
     name: Security Audit
     runs-on: ubuntu-latest
