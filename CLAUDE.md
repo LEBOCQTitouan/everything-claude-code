@@ -23,7 +23,7 @@ cargo xtask mutants --in-diff  # Diff-scoped mutation testing
 
 ## Architecture
 
-Hexagonal architecture: domain → ports → app → infra → CLI (9 crates). `ecc-workflow` is a standalone binary for workflow state management. `ecc-flock` is a shared POSIX flock utility. See `docs/ARCHITECTURE.md` for full structure.
+Hexagonal architecture: domain → ports → app → infra → CLI (9 crates). `ecc-workflow` is a standalone binary for workflow state management. `ecc-flock` is a shared POSIX flock utility. `workflow-templates/` contains installable GitHub Actions YAML templates. See `docs/ARCHITECTURE.md` for full structure.
 
 ## CLI Commands
 
@@ -85,7 +85,7 @@ cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, compl
 
 ## Slash Commands
 
-Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`, `/audit-web`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/commit`, `/create-component`, `/ecc-test-mode`): see `docs/commands-reference.md`.
+Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`, `/audit-web`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/commit`, `/create-component`, `/ecc-test-mode`, `/scaffold-workflows`): see `docs/commands-reference.md`.
 
 ### Spec-Driven Pipeline (Doc-First)
 
