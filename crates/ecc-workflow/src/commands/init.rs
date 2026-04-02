@@ -57,6 +57,7 @@ pub fn run(concern: &str, feature: &str, project_dir: &Path) -> WorkflowOutput {
                 tasks_path: None,
             },
             completed: vec![],
+            version: 1,
         };
 
         match write_state_atomic(project_dir, &state) {

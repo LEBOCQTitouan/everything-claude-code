@@ -51,6 +51,14 @@ pub struct Completion {
 }
 
 /// The root aggregate for workflow state machine data.
+fn default_version() -> u32 {
+    1
+}
+
+/// The root aggregate for workflow state machine data.
+///
+/// Note: `deny_unknown_fields` must NEVER be added — forward compatibility
+/// requires ignoring unknown fields so older readers can parse newer state files.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkflowState {
     pub phase: Phase,
@@ -60,6 +68,8 @@ pub struct WorkflowState {
     pub toolchain: Toolchain,
     pub artifacts: Artifacts,
     pub completed: Vec<Completion>,
+    #[serde(default = "default_version")]
+    pub version: u32,
 }
 
 impl WorkflowState {
@@ -203,6 +213,7 @@ mod tests {
             toolchain,
             artifacts,
             completed: vec![],
+            version: 1,
         };
 
         // Serialize to JSON
@@ -322,6 +333,7 @@ mod tests {
             toolchain: toolchain.clone(),
             artifacts: artifacts.clone(),
             completed: vec![completion.clone()],
+            version: 1,
         };
 
         // Verify phase field
@@ -436,5 +448,56 @@ mod tests {
         let restored: Completion =
             serde_json::from_str(&json).expect("deserialization must succeed");
         assert_eq!(restored.phase, Phase::Unknown);
+    }
+
+    #[test]
+    fn version_field_default() {
+        // Old JSON without version field should deserialize with version=1
+        let json = r#"{
+            "phase": "plan",
+            "concern": "dev",
+            "feature": "test",
+            "started_at": "2026-01-01T00:00:00Z",
+            "toolchain": {"test": null, "lint": null, "build": null},
+            "artifacts": {"plan": null, "solution": null, "implement": null, "campaign_path": null, "spec_path": null, "design_path": null, "tasks_path": null},
+            "completed": []
+        }"#;
+        let state = WorkflowState::from_json(json).expect("should deserialize without version");
+        assert_eq!(state.version, 1, "version must default to 1 when absent");
+    }
+
+    #[test]
+    fn version_field_serialized() {
+        let state = WorkflowState {
+            phase: Phase::Idle,
+            concern: Concern::Dev,
+            feature: "test".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
+            toolchain: Toolchain { test: None, lint: None, build: None },
+            artifacts: Artifacts { plan: None, solution: None, implement: None, campaign_path: None, spec_path: None, design_path: None, tasks_path: None },
+            completed: vec![],
+            version: 1,
+        };
+        let json = serde_json::to_string_pretty(&state).expect("serialization must succeed");
+        assert!(json.contains(r#""version": 1"#), "JSON must contain version field, got: {json}");
+    }
+
+    #[test]
+    fn ignores_unknown_fields() {
+        // JSON with an extra unknown field should deserialize without error
+        let json = r#"{
+            "phase": "plan",
+            "concern": "dev",
+            "feature": "test",
+            "started_at": "2026-01-01T00:00:00Z",
+            "toolchain": {"test": null, "lint": null, "build": null},
+            "artifacts": {"plan": null, "solution": null, "implement": null, "campaign_path": null, "spec_path": null, "design_path": null, "tasks_path": null},
+            "completed": [],
+            "version": 1,
+            "future_field": true
+        }"#;
+        let state = WorkflowState::from_json(json).expect("should ignore unknown fields");
+        assert_eq!(state.phase, Phase::Plan);
+        assert_eq!(state.version, 1);
     }
 }

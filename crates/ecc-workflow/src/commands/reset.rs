@@ -53,6 +53,7 @@ pub fn run(force: bool, project_dir: &Path) -> WorkflowOutput {
                 tasks_path: None,
             },
             completed: vec![],
+            version: 1,
         };
 
         match write_state_atomic(project_dir, &idle_state) {
@@ -98,6 +99,7 @@ pub mod tests {
                 tasks_path: None,
             },
             completed: vec![],
+            version: 1,
         };
         serde_json::to_string_pretty(&state).unwrap()
     }

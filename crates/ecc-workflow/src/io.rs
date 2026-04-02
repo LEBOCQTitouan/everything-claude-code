@@ -219,6 +219,7 @@ mod tests {
                 tasks_path: None,
             },
             completed: vec![],
+            version: 1,
         };
         serde_json::to_string_pretty(&state).unwrap()
     }
