@@ -69,6 +69,12 @@ ecc memory promote <id>    Promote episodic to semantic
 ecc memory migrate         Migrate legacy docs/memory/ to SQLite
 ecc memory gc [--dry-run]  Garbage-collect stale memories
 ecc memory stats           Show memory store statistics
+ecc cost summary [--since 7d] [--model M]  Aggregated cost breakdown by model
+ecc cost breakdown --by agent|model [--since 7d]  Per-agent or per-model breakdown
+ecc cost compare --before DATE --after DATE  Before/after cost comparison
+ecc cost export --format json|csv [--since 7d]  Export cost data
+ecc cost prune [--older-than 90d]  Delete old cost records
+ecc cost migrate  Import legacy JSONL data into SQLite
 ecc audit-web profile init    Generate suggested audit profile from codebase
 ecc audit-web profile show    Display current audit profile
 ecc audit-web profile validate  Check profile structural correctness
