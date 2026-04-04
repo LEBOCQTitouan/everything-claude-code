@@ -243,4 +243,23 @@ mod tests {
         let result = resolve_repo_root(tmp.path());
         assert_eq!(result, tmp.path().to_path_buf());
     }
+
+    #[test]
+    fn lock_dir_for_returns_locks_subdir() {
+        let tmp = TempDir::new().unwrap();
+        let result = lock_dir_for(tmp.path());
+        assert_eq!(result, tmp.path().join(".locks"));
+    }
+
+    #[test]
+    fn acquire_for_creates_lock() {
+        let tmp = TempDir::new().unwrap();
+        let guard = acquire_for(tmp.path(), "test-for").unwrap();
+        // .locks/ dir exists under base_dir
+        assert!(lock_dir_for(tmp.path()).exists());
+        // .lock file exists
+        let lock_file = lock_dir_for(tmp.path()).join("test-for.lock");
+        assert!(lock_file.exists());
+        drop(guard);
+    }
 }
