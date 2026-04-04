@@ -5,6 +5,7 @@
 //! (install, audit, merge, validate, etc.).
 
 pub mod analyze;
+pub mod cost_mgmt;
 pub mod act_ci;
 pub mod audit;
 pub mod audit_web;
