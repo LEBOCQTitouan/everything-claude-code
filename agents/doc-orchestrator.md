@@ -397,3 +397,11 @@ Commit after each major phase — one concern per commit:
 | After Phase 5 (if fixes applied) | `fix: resolve CLAUDE.md inconsistencies` |
 
 Do not batch all doc files into a single commit. Each phase produces a distinct logical change.
+
+## Cost Reporting
+
+After all documentation phases complete, report session cost breakdown:
+
+1. Run `ecc cost breakdown --by agent --since 1h` to get per-agent token usage for this doc-suite session
+2. Include the cost table in the console output summary
+3. If `ecc cost` is not available or returns no data, skip silently

@@ -267,6 +267,19 @@ Codebase Health Audit Complete
 - You correlate findings across domains and produce the unified report
 - You provide the user-facing summary
 
+## Cost Reporting
+
+After all subagents complete, report session cost breakdown:
+
+1. Run `ecc cost breakdown --by agent --since 1h` to get per-agent token usage for this audit session
+2. Include the cost table in the audit report's summary section:
+   ```
+   ## Session Cost
+   | Agent | Model | Input Tokens | Output Tokens | Estimated Cost |
+   |-------|-------|-------------|---------------|----------------|
+   ```
+3. If `ecc cost` is not available or returns no data, skip silently
+
 ## Commit Cadence
 
 Audits are read-only — the only file written is the report in `docs/audits/`. Single commit: `docs: generate codebase health audit report`
