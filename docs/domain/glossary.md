@@ -119,6 +119,10 @@ A Claude Code lifecycle event handler. Each hook is a Node.js script that reads 
 - **Related:** [Hook Profile](#hook-profile), [Run With Flags](#run-with-flags), [Stdin Passthrough](#stdin-passthrough)
 - **Files:** 23 hook scripts in [`src/hooks/`](../src/hooks/), [`hooks.json`](../hooks/hooks.json), `crates/ecc-domain/src/hook_runtime/profiles.rs`, `crates/ecc-app/src/hook/mod.rs`, `crates/ecc-app/src/validate/hooks.rs`, `crates/ecc-app/src/detect.rs`
 
+### Language Matrix
+A cross-language comparison table within a [Pattern](#pattern-library) showing idiomatic implementations per programming language. Each row maps a concept to its language-specific realization.
+- **Related:** [Pattern Library](#pattern-library), [Pattern Schema](#pattern-schema)
+
 ### Manifest
 JSON file (`.ecc-manifest.json`) tracking which [Artifacts](#artifact) ECC installed, their version, languages, and timestamps. Used to distinguish ECC-managed vs user-custom files during updates. Updated immutably.
 - **Related:** [Artifact](#artifact), [ECC Root](#ecc-root)
@@ -188,6 +192,19 @@ A subagent ([Agent](#agent)) that executes a single Pass Condition's RED-GREEN-R
 A structured subsection in each phase of a [planner](#agent) output that specifies what to scaffold and test before implementation. Includes interfaces to scaffold, unit tests, integration tests, edge cases, and expected test file paths. Consumed by the `/spec` [Command](#command) TDD execution loop to drive the RED phase.
 - **Related:** [Agent](#agent), [Command](#command)
 - **Files:** [`planner.md`](../agents/planner.md), [`spec.md`](../commands/spec.md), [`validate-plan-tdd.test.js`](../tests/ci/validate-plan-tdd.test.js)
+
+### Pattern Category
+A subdirectory of `patterns/` grouping related patterns (e.g., `creational/`, `architecture/`, `resilience/`). Maps 1:1 to the `category` frontmatter field in each pattern file. Validated by `ecc validate patterns`.
+- **Related:** [Pattern Library](#pattern-library), [Pattern Schema](#pattern-schema)
+
+### Pattern Library
+A curated collection of software design patterns as markdown files in `patterns/`, structured with YAML frontmatter for agent discovery. Each file follows the [Pattern Schema](#pattern-schema) with language-specific implementations. See ADR-0045.
+- **Related:** [Pattern Category](#pattern-category), [Pattern Schema](#pattern-schema), [Language Matrix](#language-matrix)
+- **Files:** `patterns/`, `crates/ecc-app/src/validate/patterns.rs`
+
+### Pattern Schema
+The required structure of a pattern file: YAML frontmatter (name, category, tags, languages, difficulty) plus 9 mandatory sections (Intent, Problem, Solution, Language Implementations, When to Use, When NOT to Use, Anti-Patterns, Related Patterns, References). See ADR-0046.
+- **Related:** [Pattern Library](#pattern-library), [Pattern Category](#pattern-category)
 
 ### Phase
 A value object representing a stage in the ECC workflow state machine: Idle, Plan, Solution, Implement, Done. Supports Display (lowercase), FromStr (with aliases: "spec" → Plan, "design" → Solution), and serde serialization. The `is_gated()` method returns true for Plan and Solution (gated phases where Write/Edit tools are restricted). Defined in `ecc-domain::workflow::phase`.
