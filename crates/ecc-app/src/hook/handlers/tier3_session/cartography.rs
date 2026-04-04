@@ -339,12 +339,12 @@ fn extract_links_from_section(content: &str, section_header: &str) -> Vec<String
         }
         if in_section {
             // Extract slug from markdown links like [slug-name](../flows/slug-name.md)
-            if let Some(start) = line.find('[') {
-                if let Some(end) = line[start..].find(']') {
-                    let name = &line[start + 1..start + end];
-                    if !name.is_empty() {
-                        slugs.push(name.to_string());
-                    }
+            if let Some(start) = line.find('[')
+                && let Some(end) = line[start..].find(']')
+            {
+                let name = &line[start + 1..start + end];
+                if !name.is_empty() {
+                    slugs.push(name.to_string());
                 }
             }
         }
@@ -683,6 +683,7 @@ mod tests {
             shell,
             env,
             terminal: term,
+            cost_store: None,
         }
     }
 

@@ -151,20 +151,20 @@ impl CostStore for InMemoryCostStore {
 }
 
 fn matches_query(record: &TokenUsageRecord, query: &CostQuery) -> bool {
-    if let Some(ref model) = query.model {
-        if !record.model.as_str().contains(model.as_str()) {
-            return false;
-        }
+    if let Some(ref model) = query.model
+        && !record.model.as_str().contains(model.as_str())
+    {
+        return false;
     }
-    if let Some(ref agent_type) = query.agent_type {
-        if record.agent_type != *agent_type {
-            return false;
-        }
+    if let Some(ref agent_type) = query.agent_type
+        && record.agent_type != *agent_type
+    {
+        return false;
     }
-    if let Some(ref session_id) = query.session_id {
-        if record.session_id != *session_id {
-            return false;
-        }
+    if let Some(ref session_id) = query.session_id
+        && record.session_id != *session_id
+    {
+        return false;
     }
     if let Some(since) = query.since {
         use std::time::{SystemTime, UNIX_EPOCH};
