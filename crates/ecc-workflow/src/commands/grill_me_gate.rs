@@ -44,7 +44,26 @@ pub fn run(state_dir: &Path) -> WorkflowOutput {
         }
     }
 
-    // Collect the paths to check.
+    // Version >= 2: block if campaign_path is absent or file missing.
+    if state.version >= 2 {
+        match &state.artifacts.campaign_path {
+            None => {
+                return WorkflowOutput::block(
+                    "Campaign file not found. Run: ecc-workflow campaign init <spec-dir>"
+                        .to_string(),
+                );
+            }
+            Some(path) => {
+                if !std::path::Path::new(path).exists() {
+                    return WorkflowOutput::block(format!(
+                        "Campaign file not found at {path}. Run: ecc-workflow campaign init <spec-dir>"
+                    ));
+                }
+            }
+        }
+    }
+
+    // Collect the paths to check for grill-me markers.
     let paths_to_check: Vec<&str> = [
         state.artifacts.spec_path.as_deref(),
         state.artifacts.campaign_path.as_deref(),
@@ -75,6 +94,56 @@ pub fn run(state_dir: &Path) -> WorkflowOutput {
 mod tests {
     use crate::output::Status;
     use tempfile::TempDir;
+
+    fn write_state(dir: &std::path::Path, phase: &str, campaign_path: Option<&str>, version: u32) {
+        let wd = dir.join(".claude/workflow");
+        std::fs::create_dir_all(&wd).unwrap();
+        let cp = campaign_path
+            .map(|p| format!(r#""{p}""#))
+            .unwrap_or_else(|| "null".to_string());
+        let json = format!(
+            r#"{{"phase":"{phase}","concern":"dev","feature":"test","started_at":"2026-01-01T00:00:00Z","toolchain":{{"test":null,"lint":null,"build":null}},"artifacts":{{"plan":null,"solution":null,"implement":null,"campaign_path":{cp},"spec_path":null,"design_path":null,"tasks_path":null}},"completed":[],"version":{version}}}"#
+        );
+        std::fs::write(wd.join("state.json"), json).unwrap();
+    }
+
+    #[test]
+    fn blocks_v2_plan_no_campaign() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan", None, 2);
+        let out = super::run(tmp.path());
+        assert!(matches!(out.status, Status::Block), "Expected Block, got {:?}: {}", out.status, out.message);
+        assert!(out.message.contains("Campaign file not found"));
+    }
+
+    #[test]
+    fn passes_v1_plan() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan", None, 1);
+        let out = super::run(tmp.path());
+        // v1 grandfathered — should not block
+        assert!(!matches!(out.status, Status::Block), "v1 should not block, got {:?}: {}", out.status, out.message);
+    }
+
+    #[test]
+    fn passes_non_spec_phases() {
+        for phase in &["idle", "implement", "done"] {
+            let tmp = TempDir::new().unwrap();
+            write_state(tmp.path(), phase, None, 2);
+            let out = super::run(tmp.path());
+            assert!(matches!(out.status, Status::Pass), "Phase {phase} should pass, got {:?}: {}", out.status, out.message);
+        }
+    }
+
+    #[test]
+    fn passes_when_campaign_present() {
+        let tmp = TempDir::new().unwrap();
+        let campaign = tmp.path().join("campaign.md");
+        std::fs::write(&campaign, "## Grill-Me Decisions").unwrap();
+        write_state(tmp.path(), "plan", Some(campaign.to_str().unwrap()), 2);
+        let out = super::run(tmp.path());
+        assert!(matches!(out.status, Status::Pass), "Expected Pass when campaign exists, got {:?}: {}", out.status, out.message);
+    }
 
     /// PC-038: grill_me_gate passes through for Idle phase (AC-001.1)
     #[test]
