@@ -13,9 +13,9 @@ pub mod clock;
 pub mod config_store;
 /// Environment variable and platform access port.
 pub mod env;
-/// Filesystem operations port.
 /// Tarball extraction port.
 pub mod extract;
+/// Filesystem operations port.
 pub mod fs;
 /// Git repository information port.
 pub mod git;
