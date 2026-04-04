@@ -48,3 +48,8 @@ fn validate_paths_passes() {
 fn validate_conventions_passes() {
     validate_target("conventions");
 }
+
+#[test]
+fn validate_patterns_passes() {
+    validate_target("patterns");
+}
