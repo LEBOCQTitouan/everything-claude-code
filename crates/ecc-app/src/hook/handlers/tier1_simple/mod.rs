@@ -5,6 +5,7 @@ mod clean_craft_hooks;
 pub mod context_hydration;
 mod dev_hooks;
 mod doc_hooks;
+pub mod effort_enforcement;
 mod git_hooks;
 mod helpers;
 mod meta_hooks;
@@ -27,4 +28,5 @@ pub use git_hooks::{
     stop_uncommitted_reminder,
 };
 pub use meta_hooks::{check_hook_enabled, session_end_marker};
+pub use effort_enforcement::subagent_start_effort;
 pub use worktree_guard::pre_worktree_write_guard;

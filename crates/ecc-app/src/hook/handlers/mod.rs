@@ -15,7 +15,7 @@ pub use tier1_simple::{
     pre_bash_git_push_reminder, pre_bash_tmux_reminder, pre_edit_boundary_crossing,
     pre_edit_stepdown_warning, pre_edit_write_workflow_branch_guard, pre_prompt_context_hydrate,
     pre_prompt_context_inject, pre_worktree_write_guard, session_end_marker,
-    stop_uncommitted_reminder, suggest_compact,
+    stop_uncommitted_reminder, subagent_start_effort, suggest_compact,
 };
 pub use tier2_notify::stop_notify;
 pub use tier2_tools::{

@@ -158,6 +158,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "pre:prompt:context-inject" => handlers::pre_prompt_context_inject(stdin, ports),
         "post:compact:state-save" => handlers::post_compact(stdin, ports),
         "subagent:start:log" => handlers::subagent_start_log(stdin, ports),
+        "subagent:start:effort" => handlers::subagent_start_effort(stdin, ports),
         "subagent:stop:log" => handlers::subagent_stop_log(stdin, ports),
         "instructions:loaded:validate" => handlers::instructions_loaded_validate(stdin, ports),
         "config:change:log" => handlers::config_change_log(stdin, ports),

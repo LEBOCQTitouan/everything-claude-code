@@ -436,6 +436,17 @@
           }
         ],
         "description": "Log subagent lifecycle start to session file"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"subagent:start:effort\" \"standard,strict\"",
+            "timeout": 5
+          }
+        ],
+        "description": "Set MAX_THINKING_TOKENS based on agent effort field"
       }
     ],
     "SubagentStop": [
