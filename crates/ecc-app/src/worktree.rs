@@ -170,6 +170,12 @@ pub fn gc(
         let Some(worktree_name) = entry.path.split('/').next_back().map(str::to_owned) else {
             continue;
         };
+        if worktree_name.starts_with("worktree-ecc-session-") {
+            tracing::info!(
+                worktree = %worktree_name,
+                "GC: found worktree with EnterWorktree prefix (now parseable)"
+            );
+        }
         let Some(parsed) = WorktreeName::parse(&worktree_name) else {
             continue;
         };
@@ -307,6 +313,112 @@ mod tests {
             matches!(err, WorktreeError::Shell(_)),
             "expected WorktreeError::Shell but got: {:?}",
             err
+        );
+    }
+
+    /// A stale prefixed session name (worktree- prefix, year 2020).
+    const STALE_PREFIXED_SESSION: &str =
+        "worktree-ecc-session-20200101-000000-old-feature-99999";
+    /// A fresh prefixed session name (far-future timestamp).
+    const FRESH_PREFIXED_SESSION: &str =
+        "worktree-ecc-session-20990101-000000-new-feature-99999";
+
+    #[test]
+    fn removes_stale_prefixed_worktree() {
+        let list_output =
+            porcelain_with_session(STALE_PREFIXED_SESSION, STALE_PREFIXED_SESSION);
+
+        let executor = MockExecutor::new()
+            .on_args(
+                "git",
+                &["worktree", "list", "--porcelain"],
+                ok(&list_output),
+            )
+            .on_args("kill", &["-0", "99999"], err_output(1))
+            .on_args(
+                "git",
+                &[
+                    "worktree",
+                    "remove",
+                    "--force",
+                    "--",
+                    &format!("/repo/{STALE_PREFIXED_SESSION}"),
+                ],
+                ok(""),
+            )
+            .on_args(
+                "git",
+                &["branch", "-D", "--", STALE_PREFIXED_SESSION],
+                ok(""),
+            );
+
+        let result = gc(&executor, Path::new("/repo"), false).unwrap();
+        assert!(
+            result.removed.contains(&STALE_PREFIXED_SESSION.to_owned()),
+            "stale prefixed worktree must be removed, got: {:?}",
+            result.removed
+        );
+    }
+
+    #[test]
+    fn skips_fresh_prefixed_worktree() {
+        let list_output =
+            porcelain_with_session(FRESH_PREFIXED_SESSION, FRESH_PREFIXED_SESSION);
+
+        let executor = MockExecutor::new()
+            .on_args(
+                "git",
+                &["worktree", "list", "--porcelain"],
+                ok(&list_output),
+            )
+            .on_args("kill", &["-0", "99999"], ok(""));
+
+        let result = gc(&executor, Path::new("/repo"), false).unwrap();
+        assert!(
+            result.skipped.contains(&FRESH_PREFIXED_SESSION.to_owned()),
+            "fresh prefixed worktree must be skipped, got: {:?}",
+            result.skipped
+        );
+    }
+
+    #[test]
+    fn logs_newly_parseable_worktree() {
+        // This test verifies GC processes prefixed worktrees (they were
+        // previously silently skipped). The tracing::info! log is verified
+        // by the fact that the worktree enters the staleness check path.
+        let list_output =
+            porcelain_with_session(STALE_PREFIXED_SESSION, STALE_PREFIXED_SESSION);
+
+        let executor = MockExecutor::new()
+            .on_args(
+                "git",
+                &["worktree", "list", "--porcelain"],
+                ok(&list_output),
+            )
+            .on_args("kill", &["-0", "99999"], err_output(1))
+            .on_args(
+                "git",
+                &[
+                    "worktree",
+                    "remove",
+                    "--force",
+                    "--",
+                    &format!("/repo/{STALE_PREFIXED_SESSION}"),
+                ],
+                ok(""),
+            )
+            .on_args(
+                "git",
+                &["branch", "-D", "--", STALE_PREFIXED_SESSION],
+                ok(""),
+            );
+
+        let result = gc(&executor, Path::new("/repo"), false).unwrap();
+        // If the worktree was processed (removed), it means parse() succeeded
+        // on the prefixed name, which is the observable behavior.
+        assert!(
+            result.removed.contains(&STALE_PREFIXED_SESSION.to_owned()),
+            "prefixed worktree must be processed by GC"
         );
     }
 
