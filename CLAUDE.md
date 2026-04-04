@@ -93,7 +93,7 @@ cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, compl
 
 ## Slash Commands
 
-Audit commands (`/audit-full`, `/audit-archi`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`, `/audit-web`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/commit`, `/create-component`, `/ecc-test-mode`, `/scaffold-workflows`): see `docs/commands-reference.md`.
+Audit commands (`/audit-full`, `/audit-archi`, `/audit-backlog`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`, `/audit-web`) and side commands (`/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/commit`, `/create-component`, `/ecc-test-mode`, `/scaffold-workflows`): see `docs/commands-reference.md`.
 
 ### Spec-Driven Pipeline (Doc-First)
 
