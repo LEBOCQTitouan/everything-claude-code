@@ -266,22 +266,6 @@ pub(super) fn to_u64(value: &serde_json::Value, key: &str) -> Option<u64> {
         .and_then(|v| v.as_u64().or_else(|| v.as_f64().map(|f| f as u64)))
 }
 
-/// Estimate cost based on model and token counts.
-pub(super) fn estimate_cost(model: &str, input_tokens: u64, output_tokens: u64) -> f64 {
-    let normalized = model.to_lowercase();
-    let (in_rate, out_rate) = if normalized.contains("haiku") {
-        (0.8, 4.0)
-    } else if normalized.contains("opus") {
-        (15.0, 75.0)
-    } else {
-        // Default to sonnet rates
-        (3.0, 15.0)
-    };
-
-    let cost = (input_tokens as f64 / 1_000_000.0) * in_rate
-        + (output_tokens as f64 / 1_000_000.0) * out_rate;
-    (cost * 1_000_000.0).round() / 1_000_000.0
-}
 
 #[cfg(test)]
 mod tests {
@@ -303,6 +287,7 @@ mod tests {
             shell,
             env,
             terminal: term,
+            cost_store: None,
         }
     }
 
@@ -527,24 +512,6 @@ mod tests {
         assert!(content.contains("estimated_cost_usd"));
     }
 
-    #[test]
-    fn cost_tracker_estimates_correctly() {
-        // Sonnet: $3/M input, $15/M output
-        let cost = estimate_cost("sonnet", 1_000_000, 1_000_000);
-        assert!((cost - 18.0).abs() < 0.001);
-    }
-
-    #[test]
-    fn cost_tracker_haiku_rates() {
-        let cost = estimate_cost("haiku", 1_000_000, 1_000_000);
-        assert!((cost - 4.8).abs() < 0.001);
-    }
-
-    #[test]
-    fn cost_tracker_opus_rates() {
-        let cost = estimate_cost("opus", 1_000_000, 1_000_000);
-        assert!((cost - 90.0).abs() < 0.001);
-    }
 
     // --- extract_session_summary ---
 
