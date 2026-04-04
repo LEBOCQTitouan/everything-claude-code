@@ -219,6 +219,22 @@ Aggregate root for the ECC pipeline state machine. Contains phase (Phase), conce
 
 Ephemeral, session-scoped memories. Tier 1 in the three-tier memory system. Auto-expire after 24h unless promoted. Written by hooks during active sessions.
 
+### Visual Assertion
+A natural-language description validated against a screenshot by Claude's vision capabilities (via the Read tool). The agent reads a captured PNG and evaluates whether the described UI state matches what it observes. Reports pass/fail with reasoning.
+- **Related:** [Visual Checkpoint](#visual-checkpoint), [Visual Baseline](#visual-baseline)
+
+### Visual Baseline
+A reference screenshot representing the approved visual state of a UI at a specific checkpoint. Baselines are keyed by `{test-name}/{checkpoint-id}/{browser-viewport}` and stored in `visual-baselines/`. Updated when intentional UI changes are reviewed and approved.
+- **Related:** [Visual Regression](#visual-regression), [Visual Checkpoint](#visual-checkpoint)
+
+### Visual Checkpoint
+A named point in an E2E test where a screenshot is captured for visual analysis. Checkpoints are defined in journey specs and trigger screenshot capture, vision assertions, and baseline comparison when visual mode is active.
+- **Related:** [Visual Assertion](#visual-assertion), [Visual Baseline](#visual-baseline)
+
+### Visual Regression
+An unintended visual difference detected between a baseline screenshot and a current screenshot at the same checkpoint. Classified by severity: cosmetic (spacing, rendering), functional (missing elements, layout breakage), or breaking (blank render, navigation failure).
+- **Related:** [Visual Baseline](#visual-baseline), [Visual Checkpoint](#visual-checkpoint)
+
 ## Infrastructure Terms
 
 ### Apply All
