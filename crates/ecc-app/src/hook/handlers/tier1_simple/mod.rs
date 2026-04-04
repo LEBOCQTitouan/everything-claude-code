@@ -15,6 +15,7 @@ pub use clean_craft_hooks::{
     post_edit_boy_scout_delta, post_edit_naming_review, post_edit_newspaper_check,
     pre_edit_boundary_crossing, pre_edit_stepdown_warning,
 };
+pub use context_hydration::pre_prompt_context_hydrate;
 pub use dev_hooks::{
     instructions_loaded_validate, post_bash_build_complete, post_bash_pr_created,
     post_exit_worktree_cleanup_reminder, post_failure_error_context, pre_bash_tmux_reminder,

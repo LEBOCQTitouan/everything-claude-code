@@ -156,6 +156,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
         // New event handlers
         "post:failure:error-context" => handlers::post_failure_error_context(stdin, ports),
+        "pre:prompt:context-hydrate" => handlers::pre_prompt_context_hydrate(stdin, ports),
         "pre:prompt:context-inject" => handlers::pre_prompt_context_inject(stdin, ports),
         "post:compact:state-save" => handlers::post_compact(stdin, ports),
         "subagent:start:log" => handlers::subagent_start_log(stdin, ports),
