@@ -285,6 +285,24 @@ mod tests {
         assert!(result.stderr.contains("deferred"), "should mention deferred cleanup");
     }
 
+    // PC-002: merge success message has no "cleaned up" claim
+    #[test]
+    fn merge_success_message_no_cleanup_claim() {
+        let fs = InMemoryFileSystem::new();
+        let shell = in_worktree_shell()
+            .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("3\n"))
+            .on("ecc-workflow", ok("Merged successfully\n"))
+            .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = session_end_merge("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+        assert!(result.stderr.contains("merged"), "should mention merge success");
+        assert!(!result.stderr.contains("cleaned up"), "should not claim 'cleaned up'");
+    }
+
     // PC-002g: bypass skips merge
     #[test]
     fn bypass_skips_merge() {
