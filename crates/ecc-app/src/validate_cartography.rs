@@ -7,6 +7,7 @@
 use ecc_domain::cartography::{
     calculate_coverage, check_staleness, parse_cartography_meta,
 };
+use ecc_domain::cartography::element_validation::validate_element;
 use ecc_domain::cartography::validation::{validate_flow, validate_journey};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
@@ -30,6 +31,7 @@ pub fn run_validate_cartography(
 ) -> bool {
     let journeys_dir = project_root.join("docs/cartography/journeys");
     let flows_dir = project_root.join("docs/cartography/flows");
+    let elements_dir = project_root.join("docs/cartography/elements");
 
     let mut has_errors = false;
     let mut all_content: Vec<(String, String)> = Vec::new(); // (path_str, content)
@@ -81,6 +83,65 @@ pub fn run_validate_cartography(
                 }
                 all_content.push((path_str, content));
             }
+        }
+    }
+
+    // Validate element files (missing dir = clean exit)
+    if let Ok(entries) = fs.read_dir(&elements_dir) {
+        let mut element_slugs: Vec<String> = Vec::new();
+
+        for entry in &entries {
+            let path_str = entry.to_string_lossy().to_string();
+            if !path_str.ends_with(".md") {
+                continue;
+            }
+            let file_name = entry
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| path_str.clone());
+            // Skip INDEX.md from element validation
+            if file_name == "INDEX.md" {
+                continue;
+            }
+            // Derive slug from file name (strip .md suffix)
+            let slug = file_name.trim_end_matches(".md").to_string();
+            element_slugs.push(slug);
+
+            if let Ok(content) = fs.read_to_string(entry) {
+                if let Err(missing) = validate_element(&content) {
+                    let sections: Vec<String> = missing;
+                    terminal.stdout_write(&format!(
+                        "ERROR [element] {file_name}: missing sections: {}\n",
+                        sections.join(", ")
+                    ));
+                    has_errors = true;
+                }
+                all_content.push((path_str, content));
+            }
+        }
+
+        // INDEX.md checks
+        let index_path = elements_dir.join("INDEX.md");
+        if element_slugs.is_empty() {
+            // No element files, nothing to check
+        } else if let Ok(index_content) = fs.read_to_string(&index_path) {
+            // INDEX.md exists: check for missing slugs
+            let missing_from_index: Vec<&str> = element_slugs
+                .iter()
+                .filter(|slug| !index_content.contains(slug.as_str()))
+                .map(|s| s.as_str())
+                .collect();
+            if !missing_from_index.is_empty() {
+                terminal.stdout_write(&format!(
+                    "WARN [elements] INDEX.md missing slugs: {}\n",
+                    missing_from_index.join(", ")
+                ));
+            }
+        } else {
+            // INDEX.md absent but element files exist → warn
+            terminal.stdout_write(
+                "WARN [elements] INDEX.md not found; consider adding one to track element slugs\n",
+            );
         }
     }
 
@@ -173,8 +234,18 @@ fn report_coverage(
     let src_dir = project_root.join("src");
     let source_files = collect_source_files(fs, &src_dir);
 
-    // Extract referenced files from cartography content
-    let referenced = extract_referenced_files(cartography_content);
+    // Extract referenced files from cartography content and resolve to absolute paths
+    let referenced_rel = extract_referenced_files(cartography_content);
+    let referenced: Vec<String> = referenced_rel
+        .into_iter()
+        .map(|r| {
+            if r.starts_with('/') {
+                r
+            } else {
+                project_root.join(&r).to_string_lossy().to_string()
+            }
+        })
+        .collect();
 
     let report = calculate_coverage(&source_files, &referenced, &[]);
 
