@@ -1,4 +1,7 @@
-use ecc_domain::config::validate::{REQUIRED_PATTERN_SECTIONS, extract_frontmatter};
+use ecc_domain::config::validate::{
+    REQUIRED_PATTERN_SECTIONS, UNSAFE_CODE_PATTERNS, VALID_PATTERN_DIFFICULTIES,
+    VALID_PATTERN_LANGUAGES, extract_frontmatter, parse_tool_list,
+};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
@@ -14,16 +17,63 @@ pub(super) fn validate_patterns(
         return true;
     }
 
-    let categories = match fs.read_dir(&patterns_dir) {
-        Ok(entries) => entries
-            .into_iter()
-            .filter(|p| fs.is_dir(p))
-            .collect::<Vec<_>>(),
-        Err(e) => {
-            terminal.stderr_write(&format!("ERROR: Cannot read patterns directory: {e}\n"));
+    // Warn about root-level .md files (not in a category subdir), skip them.
+    let root_entries = match fs.read_dir(&patterns_dir) {
+        Ok(e) => e,
+        Err(err) => {
+            terminal.stderr_write(&format!("ERROR: Cannot read patterns directory: {err}\n"));
             return false;
         }
     };
+
+    for entry in &root_entries {
+        if !fs.is_dir(entry)
+            && entry
+                .extension()
+                .map(|ext| ext.eq_ignore_ascii_case("md"))
+                .unwrap_or(false)
+        {
+            let fname = entry
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+            // index.md is the index file — always skip without warning
+            if fname != "index.md" {
+                terminal.stderr_write(&format!(
+                    "WARN: {fname} - root-level .md file in patterns/ is not in a category subdirectory, skipping\n"
+                ));
+            }
+        }
+    }
+
+    let categories: Vec<_> = root_entries.into_iter().filter(|p| fs.is_dir(p)).collect();
+
+    // Read index.md for coverage checking
+    let index_path = patterns_dir.join("index.md");
+    let index_content = if fs.exists(&index_path) {
+        fs.read_to_string(&index_path).unwrap_or_default()
+    } else {
+        String::new()
+    };
+
+    // First pass: collect all pattern stems across all categories for cross-ref resolution
+    let mut all_stems: Vec<String> = Vec::new();
+    for category_path in &categories {
+        if let Ok(files) = fs.read_dir(category_path) {
+            for file_path in files {
+                if file_path
+                    .extension()
+                    .map(|ext| ext.eq_ignore_ascii_case("md"))
+                    .unwrap_or(false)
+                {
+                    if let Some(stem) = file_path.file_stem() {
+                        all_stems.push(stem.to_string_lossy().to_string());
+                    }
+                }
+            }
+        }
+    }
 
     let mut file_count: usize = 0;
     let mut category_count: usize = 0;
@@ -54,6 +104,11 @@ pub(super) fn validate_patterns(
         }
 
         for file_path in &files {
+            let stem = file_path
+                .file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             let file_label = format!(
                 "{}/{}",
                 category_name,
@@ -68,7 +123,22 @@ pub(super) fn validate_patterns(
                 }
             };
 
-            if !validate_pattern_file(&file_label, &category_name, &content, terminal) {
+            // Check index coverage
+            if !index_content.is_empty() && !index_content.contains(&stem) {
+                terminal.stderr_write(&format!(
+                    "ERROR: {file_label} - pattern '{stem}' is not listed in patterns/index.md\n"
+                ));
+                has_errors = true;
+            }
+
+            if !validate_pattern_file(
+                &file_label,
+                &stem,
+                &category_name,
+                &content,
+                &all_stems,
+                terminal,
+            ) {
                 has_errors = true;
             }
         }
@@ -87,8 +157,10 @@ pub(super) fn validate_patterns(
 
 fn validate_pattern_file(
     label: &str,
+    stem: &str,
     expected_category: &str,
     content: &str,
+    all_stems: &[String],
     terminal: &dyn TerminalIO,
 ) -> bool {
     let mut has_errors = false;
@@ -125,6 +197,87 @@ fn validate_pattern_file(
         has_errors = true;
     }
 
+    // --- Language validation ---
+    if let Some(raw_langs) = fm.get("languages") {
+        let langs = parse_tool_list(raw_langs.trim());
+        if langs.is_empty() {
+            terminal.stderr_write(&format!(
+                "ERROR: {label} - languages list is empty\n"
+            ));
+            has_errors = true;
+        } else {
+            let is_all = langs.len() == 1 && langs[0] == "all";
+            for lang in &langs {
+                if !VALID_PATTERN_LANGUAGES.contains(&lang.as_str()) {
+                    terminal.stderr_write(&format!(
+                        "ERROR: {label} - unrecognized language '{lang}'\n"
+                    ));
+                    has_errors = true;
+                }
+            }
+            // Language-implementation heading matching (skip when languages: [all])
+            if !is_all && !has_errors {
+                let impl_headings = extract_impl_headings(content);
+                for heading_lang in &impl_headings {
+                    let heading_lower = heading_lang.to_lowercase();
+                    if !langs
+                        .iter()
+                        .any(|l| l.to_lowercase() == heading_lower)
+                    {
+                        terminal.stderr_write(&format!(
+                            "ERROR: {label} - Language Implementations heading '### {heading_lang}' not listed in frontmatter languages\n"
+                        ));
+                        has_errors = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Difficulty validation ---
+    if let Some(diff) = fm.get("difficulty")
+        && !diff.trim().is_empty()
+        && !VALID_PATTERN_DIFFICULTIES.contains(&diff.trim())
+    {
+        terminal.stderr_write(&format!(
+            "ERROR: {label} - unrecognized difficulty '{diff}'\n"
+        ));
+        has_errors = true;
+    }
+
+    // --- Cross-reference validation ---
+    if let Some(raw_refs) = fm.get("related-patterns") {
+        let refs = parse_tool_list(raw_refs.trim());
+        for ref_name in &refs {
+            if ref_name == stem {
+                terminal.stderr_write(&format!(
+                    "WARN: {label} - self-reference in related-patterns: '{ref_name}'\n"
+                ));
+            } else if !all_stems.iter().any(|s| s == ref_name) {
+                terminal.stderr_write(&format!(
+                    "ERROR: {label} - cross-reference to non-existent pattern '{ref_name}'\n"
+                ));
+                has_errors = true;
+            }
+        }
+    }
+
+    // --- Unsafe code scanning ---
+    let suppress_unsafe = fm
+        .get("unsafe-examples")
+        .map(|v| v.trim() == "true")
+        .unwrap_or(false);
+    if !suppress_unsafe {
+        let in_code_block = scan_code_blocks(content);
+        for pattern in UNSAFE_CODE_PATTERNS {
+            if in_code_block.contains(*pattern) {
+                terminal.stderr_write(&format!(
+                    "WARN: {label} - unsafe code pattern '{pattern}' found in code block\n"
+                ));
+            }
+        }
+    }
+
     // --- Section validation ---
     for &section in REQUIRED_PATTERN_SECTIONS {
         let heading = format!("## {section}");
@@ -142,6 +295,48 @@ fn validate_pattern_file(
     }
 
     !has_errors
+}
+
+/// Extract all `### <Name>` headings found under `## Language Implementations`.
+fn extract_impl_headings(content: &str) -> Vec<String> {
+    let section_heading = "## Language Implementations";
+    let Some(start) = content.find(section_heading) else {
+        return Vec::new();
+    };
+    let after = &content[start + section_heading.len()..];
+    // Scope to this section only (up to next ## heading)
+    let section_body = match after.find("\n## ") {
+        Some(end) => &after[..end],
+        None => after,
+    };
+    section_body
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim();
+            if let Some(rest) = line.strip_prefix("### ") {
+                Some(rest.trim().to_string())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+/// Collect all text inside code blocks (between ``` markers) in the content.
+fn scan_code_blocks(content: &str) -> String {
+    let mut result = String::new();
+    let mut in_block = false;
+    for line in content.lines() {
+        if line.trim_start().starts_with("```") {
+            in_block = !in_block;
+            continue;
+        }
+        if in_block {
+            result.push_str(line);
+            result.push('\n');
+        }
+    }
+    result
 }
 
 /// Returns true if the `## <section>` heading is present but its body is empty.
