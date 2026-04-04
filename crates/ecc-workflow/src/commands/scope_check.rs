@@ -133,10 +133,8 @@ fn is_exception_with_state_dir(path: &str, state_dir: &Path) -> bool {
         return true;
     }
     // Also match relative git-dir paths (git diff returns relative paths like .git/ecc-workflow/)
-    if let Some(rel) = state_prefix.strip_prefix('/') {
-        if path.starts_with(rel) {
-            return true;
-        }
+    if state_prefix.strip_prefix('/').is_some_and(|rel| path.starts_with(rel)) {
+        return true;
     }
     // Match common .git/worktrees/*/ecc-workflow/ or .git/ecc-workflow/ patterns
     if path.starts_with(".git/") && path.contains("ecc-workflow/") {
