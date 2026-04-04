@@ -499,6 +499,18 @@
           }
         ],
         "description": "Session end lifecycle marker (non-blocking)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"session:end:worktree-merge\" \"standard,strict\""
+          }
+        ],
+        "description": "Merge worktree back to main at session end (rebase + verify + ff-only)",
+        "timeout": 300,
+        "async": false
       }
     ]
   }
