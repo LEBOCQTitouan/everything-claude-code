@@ -63,6 +63,8 @@ enum Command {
     Update(commands::update::UpdateArgs),
     /// Workflow state machine (mirrors ecc-workflow)
     Workflow(commands::workflow::WorkflowArgs),
+    /// Manage session cost tracking
+    Cost(commands::cost::CostArgs),
 }
 
 /// Initialize tracing with layered subscriber: stderr + optional JSON file.
@@ -191,5 +193,6 @@ fn main() -> anyhow::Result<()> {
         Command::Config(args) => commands::config::run(args),
         Command::Update(args) => commands::update::run(&args),
         Command::Workflow(args) => commands::workflow::run(args),
+        Command::Cost(args) => commands::cost::run(args),
     }
 }

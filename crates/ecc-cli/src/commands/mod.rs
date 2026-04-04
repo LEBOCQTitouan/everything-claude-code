@@ -1,4 +1,5 @@
 pub mod analyze;
+pub mod cost;
 pub mod audit;
 pub mod audit_web;
 pub mod backlog;
