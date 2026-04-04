@@ -166,6 +166,12 @@ fn matches_query(record: &TokenUsageRecord, query: &CostQuery) -> bool {
     {
         return false;
     }
+    if let Some((ref start, ref end)) = query.date_range
+        && (record.timestamp.as_str() < start.as_str()
+            || record.timestamp.as_str() > end.as_str())
+    {
+        return false;
+    }
     if let Some(since) = query.since {
         use std::time::{SystemTime, UNIX_EPOCH};
         let cutoff = SystemTime::now()

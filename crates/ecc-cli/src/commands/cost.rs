@@ -1,4 +1,6 @@
 use clap::{Args, Parser, Subcommand};
+use ecc_app::cost_mgmt;
+use ecc_ports::cost_store::{CostExportFormat, CostQuery};
 
 #[derive(Debug, Args)]
 pub struct CostArgs {
@@ -68,32 +70,117 @@ pub fn run(args: CostArgs) -> anyhow::Result<()> {
 
     match args.action {
         CostAction::Summary { since, model } => {
-            let _ = (since, model, store);
-            println!("Cost summary not yet implemented.");
+            let query = CostQuery {
+                since: parse_duration(&since),
+                model,
+                ..Default::default()
+            };
+            let summary = cost_mgmt::summary(&store, &query)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("Cost Summary (last {since})");
+            println!("  Total cost:      ${:.6}", summary.total_cost.value());
+            println!("  Input tokens:    {}", summary.total_input_tokens.value());
+            println!("  Output tokens:   {}", summary.total_output_tokens.value());
+            println!("  Thinking tokens: {}", summary.total_thinking_tokens.value());
+            println!("  Records:         {}", summary.record_count);
+            if !summary.breakdowns.is_empty() {
+                println!("\n  By model:");
+                for b in &summary.breakdowns {
+                    println!("    {}: ${:.6} ({} records)", b.model.as_str(), b.cost.value(), b.record_count);
+                }
+            }
         }
         CostAction::Breakdown { by, since } => {
-            let _ = (by, since, store);
-            println!("Cost breakdown not yet implemented.");
+            let query = CostQuery {
+                since: parse_duration(&since),
+                ..Default::default()
+            };
+            let by_enum = match by.as_str() {
+                "agent" => cost_mgmt::BreakdownBy::Agent,
+                _ => cost_mgmt::BreakdownBy::Model,
+            };
+            let breakdowns = cost_mgmt::breakdown(&store, &query, by_enum)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("Cost Breakdown by {by} (last {since})");
+            for b in &breakdowns {
+                println!("  {}: ${:.6} (in:{} out:{} think:{}, {} records)",
+                    b.model.as_str(), b.cost.value(),
+                    b.input_tokens.value(), b.output_tokens.value(),
+                    b.thinking_tokens.value(), b.record_count);
+            }
+            if breakdowns.is_empty() {
+                println!("  No data found.");
+            }
         }
         CostAction::Compare { before, after } => {
-            let _ = (before, after, store);
-            println!("Cost compare not yet implemented.");
+            let before_q = CostQuery {
+                date_range: Some((String::new(), before.clone())),
+                ..Default::default()
+            };
+            let after_q = CostQuery {
+                date_range: Some((after.clone(), "9999-12-31".to_string())),
+                ..Default::default()
+            };
+            let comparison = cost_mgmt::compare(&store, &before_q, &after_q)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("Cost Comparison");
+            println!("  Before ({before}): ${:.6} ({} records)",
+                comparison.before.total_cost.value(), comparison.before.record_count);
+            println!("  After  ({after}):  ${:.6} ({} records)",
+                comparison.after.total_cost.value(), comparison.after.record_count);
         }
         CostAction::Export { format, since } => {
-            let _ = (format, since, store);
-            println!("Cost export not yet implemented.");
+            let query = CostQuery {
+                since: parse_duration(&since),
+                ..Default::default()
+            };
+            let fmt = match format.as_str() {
+                "csv" => CostExportFormat::Csv,
+                _ => CostExportFormat::Json,
+            };
+            let output = cost_mgmt::export(&store, &query, fmt)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("{output}");
         }
         CostAction::Prune { older_than } => {
-            let _ = (older_than, store);
-            println!("Cost prune not yet implemented.");
+            let duration = parse_duration(&older_than).unwrap_or(std::time::Duration::from_secs(90 * 86400));
+            let count = cost_mgmt::prune(&store, duration)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("Pruned {count} records older than {older_than}.");
         }
         CostAction::Migrate => {
-            let _ = store;
-            println!("Cost migrate not yet implemented.");
+            let jsonl_path = dirs::home_dir()
+                .unwrap_or_default()
+                .join(".claude/metrics/costs.jsonl");
+            let fs = ecc_infra::os_fs::OsFileSystem;
+            let result = cost_mgmt::migrate(&store, &fs, &jsonl_path)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            if result.not_found {
+                println!("No legacy data found at {}", jsonl_path.display());
+            } else {
+                println!("Migrated {} records ({} skipped).", result.imported, result.skipped);
+            }
         }
     }
 
     Ok(())
+}
+
+/// Parse a human-friendly duration string like "7d", "30d", "1h" into a `Duration`.
+fn parse_duration(s: &str) -> Option<std::time::Duration> {
+    let s = s.trim();
+    if let Some(days) = s.strip_suffix('d') {
+        days.parse::<u64>()
+            .ok()
+            .map(|d| std::time::Duration::from_secs(d * 86400))
+    } else if let Some(hours) = s.strip_suffix('h') {
+        hours
+            .parse::<u64>()
+            .ok()
+            .map(|h| std::time::Duration::from_secs(h * 3600))
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

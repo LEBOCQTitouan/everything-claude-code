@@ -154,6 +154,18 @@ impl CostStore for SqliteCostStore {
         )
         .map_err(|e| CostStoreError::Database(e.to_string()))?;
 
+        if conn.changes() == 0 {
+            // Duplicate detected via UNIQUE constraint — return existing row's ID
+            let existing_id: i64 = conn
+                .query_row(
+                    "SELECT id FROM token_usage WHERE timestamp = ?1 AND session_id = ?2 AND model = ?3",
+                    params![record.timestamp, record.session_id, record.model.as_str()],
+                    |row| row.get(0),
+                )
+                .map_err(|e| CostStoreError::Database(e.to_string()))?;
+            return Ok(RecordId(existing_id));
+        }
+
         let row_id = conn.last_insert_rowid();
         Ok(RecordId(row_id))
     }
