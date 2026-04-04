@@ -675,7 +675,7 @@ mod tests {
         rebase_onto_main(&wt_dir, "ecc-session-preserve").unwrap();
         checkout_main(tmp.path()).unwrap();
         merge_fast_forward(tmp.path(), "ecc-session-preserve").unwrap();
-        // Branch delete (as execute_merge does)
+        // Even a manual branch delete should not remove the worktree directory
         let _ = Command::new("git")
             .args(["branch", "-D", "--", "ecc-session-preserve"])
             .current_dir(tmp.path())

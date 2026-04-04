@@ -3,7 +3,8 @@ use crate::hook::{HookPorts, HookResult};
 
 /// session:end:worktree-merge — merge worktree back to main at session end.
 ///
-/// Calls `ecc-workflow merge` which handles rebase + verify + ff-only merge + cleanup.
+/// Calls `ecc-workflow merge` which handles rebase + verify + ff-only merge.
+/// Worktree cleanup is deferred to `ecc worktree gc` at next session start.
 /// If the merge fails, the worktree is preserved and a recovery file is written.
 pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "session_end_merge", "executing handler");
