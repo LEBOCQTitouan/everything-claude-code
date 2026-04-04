@@ -3,6 +3,7 @@ name: cartography-flow-generator
 description: Generates or updates flow markdown files in docs/cartography/flows/ with section markers, Mermaid diagrams, Transformation Steps, and GAP annotations for unknown data paths. Invoked by the cartographer orchestrator with delta context.
 tools: ["Read", "Write", "Edit", "Grep", "Glob"]
 model: haiku
+effort: low
 ---
 
 # Cartography Flow Generator

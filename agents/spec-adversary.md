@@ -3,6 +3,7 @@ name: spec-adversary
 description: Adversarial spec reviewer that attacks plan.md on 7 dimensions — ambiguity, edge cases, scope, dependencies, testability, decisions, and rollback. Produces a verdict (PASS/FAIL/CONDITIONAL) that gates phase transitions.
 tools: ["Read", "Grep", "Glob"]
 model: opus
+effort: max
 skills: ["clean-craft"]
 memory: project
 ---

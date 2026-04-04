@@ -3,6 +3,7 @@ name: cartography-journey-generator
 description: Generates or updates journey markdown files in docs/cartography/journeys/ with section markers, Mermaid diagrams, Steps sections, and GAP annotations for unknown actors. Invoked by the cartographer orchestrator with delta context.
 tools: ["Read", "Write", "Edit", "Grep", "Glob"]
 model: haiku
+effort: low
 ---
 
 # Cartography Journey Generator

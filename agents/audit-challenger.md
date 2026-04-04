@@ -3,6 +3,7 @@ name: audit-challenger
 description: Independent adversarial challenger for audit findings. Re-interrogates the codebase, searches web for best practices, and produces challenged findings (confirmed/refuted/amended) with per-finding rationale.
 tools: ["Read", "Grep", "Glob", "Bash", "WebSearch"]
 model: sonnet
+effort: high
 skills: ["clean-craft"]
 memory: project
 ---

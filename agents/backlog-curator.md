@@ -3,6 +3,7 @@ name: backlog-curator
 description: Lightweight curation agent for the /backlog command. Challenges inputs, optimizes ideas into ready-to-execute prompts, and manages the persistent backlog index.
 tools: ["Read", "Grep", "Glob", "Write", "Edit", "AskUserQuestion"]
 model: sonnet
+effort: medium
 skills: ["backlog-management", "prompt-optimizer", "grill-me"]
 ---
 

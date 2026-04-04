@@ -2,6 +2,7 @@
 name: interviewer
 description: Orchestrates collaborative requirements interviews with codebase-aware questioning, security hard-gate, and structured output persistence.
 model: opus
+effort: high
 tools: ["Read", "Grep", "Glob", "Agent", "Write", "AskUserQuestion", "TodoWrite", "TodoRead"]
 skills: ["interview-me"]
 ---

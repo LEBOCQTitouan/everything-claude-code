@@ -3,6 +3,7 @@ name: solution-adversary
 description: Adversarial solution reviewer that attacks solution.md on 8 dimensions — coverage, order, fragility, rollback, architecture, blast radius, missing PCs, and doc plan. Produces a verdict (PASS/FAIL/CONDITIONAL) that gates phase transitions.
 tools: ["Read", "Bash", "Grep", "Glob"]
 model: opus
+effort: max
 skills: ["clean-craft", "component-principles"]
 memory: project
 ---

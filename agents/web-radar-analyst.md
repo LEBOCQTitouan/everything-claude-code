@@ -3,6 +3,7 @@ name: web-radar-analyst
 description: Reusable web search agent spawned per category for Technology Radar findings. Executes 2-3 targeted searches, applies source triangulation across 3+ independent sources, and returns a condensed structured finding.
 tools: ["WebSearch"]
 model: haiku
+effort: low
 skills: ["web-research-strategy"]
 ---
 

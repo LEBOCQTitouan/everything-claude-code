@@ -3,6 +3,7 @@ name: comms-generator
 description: Orchestrates multi-channel content generation from codebases. Produces DevRel and marketing content (social media, blog, devblog, docs) as file-based drafts with auto-redaction.
 tools: Read, Write, Edit, Bash, Grep, Glob, Agent, AskUserQuestion
 model: sonnet
+effort: medium
 skills: ["comms-strategy", "comms-adapter", "comms-redactor"]
 ---
 

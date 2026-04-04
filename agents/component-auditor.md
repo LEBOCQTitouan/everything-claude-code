@@ -3,6 +3,7 @@ name: component-auditor
 description: Evaluates package/module design against the 6 component principles (REP, CCP, CRP, ADP, SDP, SAP). Computes instability, abstractness, and main sequence distance. Produces findings in [COMP-NNN] format. Use during /audit for component-level health analysis.
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: opus
+effort: high
 skills: ["component-principles", "architecture-review"]
 ---
 

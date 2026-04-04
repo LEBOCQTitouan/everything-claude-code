@@ -2,6 +2,7 @@
 name: interface-designer
 description: Orchestrates parallel sub-agents to explore radically different interface designs for a module or port, compares them on 5 dimensions, and synthesizes via user feedback.
 model: opus
+effort: high
 tools: ["Read", "Grep", "Glob", "Agent", "Write", "TodoWrite", "TodoRead", "AskUserQuestion"]
 skills: ["design-an-interface"]
 ---

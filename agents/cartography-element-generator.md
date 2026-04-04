@@ -3,6 +3,7 @@ name: cartography-element-generator
 description: Generates and delta-merges per-element documentation files in docs/cartography/elements/
 tools: ["Read", "Grep", "Glob"]
 model: sonnet
+effort: medium
 ---
 
 You are the cartography element generator. You create and update per-element documentation files at `docs/cartography/elements/<slug>.md`. You operate read-only — the handler writes files based on your output.

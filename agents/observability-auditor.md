@@ -3,6 +3,7 @@ name: observability-auditor
 description: Observability quality analyst. Audits log level consistency, structured logging, correlation ID propagation, metric coverage, and health endpoint depth.
 tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
+effort: medium
 skills: ["observability-audit"]
 ---
 

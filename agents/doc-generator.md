@@ -3,6 +3,7 @@ name: doc-generator
 description: Documentation generator. Writes missing doc comments into source files, generates module summaries, glossary, changelog, and usage examples from tests. Reads analysis output from doc-analyzer.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: haiku
+effort: low
 skills: ["api-reference-gen", "changelog-gen", "readme-gen"]
 ---
 

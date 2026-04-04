@@ -3,6 +3,7 @@ name: typescript-reviewer
 description: Expert TypeScript code reviewer specializing in type safety, React patterns, async handling, and performance. Use for all TypeScript code changes. MUST BE USED for TypeScript projects.
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
+effort: medium
 skills: ["coding-standards", "typescript-testing"]
 ---
 
