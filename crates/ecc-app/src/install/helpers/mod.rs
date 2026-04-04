@@ -1,7 +1,9 @@
 //! Install helpers — artifact collection, settings management, and summary display.
 
 mod artifacts;
+pub(super) mod rule_filter;
 mod settings;
+pub(super) mod stack_detect;
 mod summary;
 
 pub(super) use artifacts::{collect_installed_artifacts, collect_rule_groups};
