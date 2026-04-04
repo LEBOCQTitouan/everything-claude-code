@@ -118,37 +118,7 @@ pub(super) fn step_merge_artifacts(
 
     let rule_groups = collect_rule_groups(ctx.fs, ecc_root, &options.languages);
     let rules_src = ecc_root.join("rules");
-
-    let skip_paths = if options.all_rules {
-        vec![]
-    } else {
-        // Detect project stack and filter rules
-        let stack = stack_detect::detect_project_stack(ctx.fs, &std::env::current_dir().unwrap_or_default());
-
-        if stack.languages.is_empty() && stack.frameworks.is_empty() {
-            ctx.terminal.stderr_write("Warning: No stack detected, installing all rules\n");
-            vec![]
-        } else {
-            let lang_list = stack.languages.join(", ");
-            ctx.terminal.stderr_write(&format!("Detected: [{lang_list}]\n"));
-
-            let filter_result = rule_filter::filter_rules_by_stack(
-                ctx.fs,
-                &rules_src,
-                &rule_groups,
-                &stack,
-            );
-
-            let skipped = filter_result.skipped.len();
-            if skipped > 0 {
-                ctx.terminal.stderr_write(&format!(
-                    "Skipped {skipped} rules (not matching detected stack)\n"
-                ));
-            }
-
-            filter_result.skipped
-        }
-    };
+    let skip_paths = resolve_rule_skip_paths(ctx, &rules_src, &rule_groups, options);
 
     all_reports.push(merge::merge_rules_filtered(
         &merge_ctx,
@@ -160,6 +130,49 @@ pub(super) fn step_merge_artifacts(
     ));
 
     domain_merge::combine_reports(&all_reports)
+}
+
+/// Determine which rule files to skip based on detected project stack.
+///
+/// Returns an empty vec when `--all-rules` is active or when no stack is
+/// detected (fail-open). Otherwise returns paths of rules whose `applies-to`
+/// conditions do not match the detected stack.
+fn resolve_rule_skip_paths(
+    ctx: &InstallContext,
+    rules_src: &Path,
+    rule_groups: &[String],
+    options: &InstallOptions,
+) -> Vec<std::path::PathBuf> {
+    if options.all_rules {
+        return vec![];
+    }
+
+    let stack = stack_detect::detect_project_stack(
+        ctx.fs,
+        &std::env::current_dir().unwrap_or_default(),
+    );
+
+    if stack.languages.is_empty() && stack.frameworks.is_empty() {
+        ctx.terminal
+            .stderr_write("Warning: No stack detected, installing all rules\n");
+        return vec![];
+    }
+
+    let lang_list = stack.languages.join(", ");
+    ctx.terminal
+        .stderr_write(&format!("Detected: [{lang_list}]\n"));
+
+    let filter_result =
+        rule_filter::filter_rules_by_stack(ctx.fs, rules_src, rule_groups, &stack);
+
+    let skipped = filter_result.skipped.len();
+    if skipped > 0 {
+        ctx.terminal.stderr_write(&format!(
+            "Skipped {skipped} rules (not matching detected stack)\n"
+        ));
+    }
+
+    filter_result.skipped
 }
 
 pub(super) fn step_hooks_and_settings(
