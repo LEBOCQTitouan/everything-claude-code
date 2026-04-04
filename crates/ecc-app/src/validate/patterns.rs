@@ -1,3 +1,4 @@
+use ecc_domain::config::validate::{REQUIRED_PATTERN_SECTIONS, extract_frontmatter};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
@@ -26,9 +27,16 @@ pub(super) fn validate_patterns(
 
     let mut file_count: usize = 0;
     let mut category_count: usize = 0;
+    let mut has_errors = false;
 
-    for category in &categories {
-        let files = match fs.read_dir(category) {
+    for category_path in &categories {
+        let category_name = category_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+
+        let files = match fs.read_dir(category_path) {
             Ok(entries) => entries
                 .into_iter()
                 .filter(|p| {
@@ -39,10 +47,35 @@ pub(super) fn validate_patterns(
                 .collect::<Vec<_>>(),
             Err(_) => continue,
         };
+
         if !files.is_empty() {
             category_count += 1;
             file_count += files.len();
         }
+
+        for file_path in &files {
+            let file_label = format!(
+                "{}/{}",
+                category_name,
+                file_path.file_name().unwrap_or_default().to_string_lossy()
+            );
+            let content = match fs.read_to_string(file_path) {
+                Ok(c) => c,
+                Err(e) => {
+                    terminal.stderr_write(&format!("ERROR: {file_label} - {e}\n"));
+                    has_errors = true;
+                    continue;
+                }
+            };
+
+            if !validate_pattern_file(&file_label, &category_name, &content, terminal) {
+                has_errors = true;
+            }
+        }
+    }
+
+    if has_errors {
+        return false;
     }
 
     terminal.stdout_write(&format!(
@@ -50,6 +83,82 @@ pub(super) fn validate_patterns(
         file_count, category_count
     ));
     true
+}
+
+fn validate_pattern_file(
+    label: &str,
+    expected_category: &str,
+    content: &str,
+    terminal: &dyn TerminalIO,
+) -> bool {
+    let mut has_errors = false;
+
+    // --- Frontmatter validation ---
+    let fm = match extract_frontmatter(content) {
+        Some(map) => map,
+        None => {
+            terminal.stderr_write(&format!("ERROR: {label} - No frontmatter found\n"));
+            return false;
+        }
+    };
+
+    for field in &["name", "category", "tags", "languages", "difficulty"] {
+        match fm.get(*field) {
+            Some(v) if !v.trim().is_empty() => {}
+            _ => {
+                terminal.stderr_write(&format!(
+                    "ERROR: {label} - Missing required frontmatter field '{field}'\n"
+                ));
+                has_errors = true;
+            }
+        }
+    }
+
+    // Check category matches parent directory
+    if let Some(cat) = fm.get("category") {
+        if !cat.trim().is_empty() && cat.trim() != expected_category {
+            terminal.stderr_write(&format!(
+                "ERROR: {label} - category frontmatter '{cat}' does not match directory '{expected_category}'\n"
+            ));
+            has_errors = true;
+        }
+    }
+
+    // --- Section validation ---
+    for &section in REQUIRED_PATTERN_SECTIONS {
+        let heading = format!("## {section}");
+        if !content.contains(&heading) {
+            terminal.stderr_write(&format!(
+                "ERROR: {label} - Missing required section '{section}'\n"
+            ));
+            has_errors = true;
+        } else if section_body_is_empty(content, section) {
+            terminal.stderr_write(&format!(
+                "ERROR: {label} - Section '{section}' has empty body\n"
+            ));
+            has_errors = true;
+        }
+    }
+
+    !has_errors
+}
+
+/// Returns true if the `## <section>` heading is present but its body is empty.
+///
+/// "Empty" means no non-whitespace content before the next `## ` heading or end of file.
+fn section_body_is_empty(content: &str, section: &str) -> bool {
+    let heading = format!("## {section}");
+    let Some(start) = content.find(&heading) else {
+        return false; // not present — separate check handles missing sections
+    };
+    // Advance past the heading line
+    let after_heading = &content[start + heading.len()..];
+    // Find the end of the section: next `## ` or end of string
+    let body = match after_heading.find("\n## ") {
+        Some(next) => &after_heading[..next],
+        None => after_heading,
+    };
+    body.trim().is_empty()
 }
 
 #[cfg(test)]
