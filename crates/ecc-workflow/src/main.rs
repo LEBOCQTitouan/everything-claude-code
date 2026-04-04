@@ -207,18 +207,25 @@ fn resolve_state_dir() -> std::path::PathBuf {
     let (state_dir, warnings) =
         ecc_app::workflow::state_resolver::resolve_state_dir(&env, &git, &fs);
     for w in &warnings {
-        eprintln!("[ecc-workflow] warning: {}", w.message);
+        tracing::debug!("state_resolver warning: {}", w.message);
     }
     state_dir
 }
 
 /// Migrate state from `.claude/workflow/` to the worktree-scoped location if needed.
-/// Serialized under the state flock to prevent races.
+/// Only acquires the flock if migration appears necessary (TOCTOU-safe: re-checks under lock).
 fn migrate_state_if_needed(project_dir: &std::path::Path, state_dir: &std::path::Path) {
     let old_dir = project_dir.join(".claude/workflow");
     if old_dir == *state_dir {
         return;
     }
+    // Quick pre-check without lock — skip if new state already exists or old doesn't
+    let new_state = state_dir.join("state.json");
+    let old_state = old_dir.join("state.json");
+    if new_state.exists() || !old_state.exists() {
+        return;
+    }
+    // Lock only when migration looks needed
     let fs = ecc_infra::os_fs::OsFileSystem;
     let _guard = match ecc_flock::acquire_for(state_dir, "state") {
         Ok(g) => g,
@@ -227,6 +234,7 @@ fn migrate_state_if_needed(project_dir: &std::path::Path, state_dir: &std::path:
             return;
         }
     };
+    // Re-check under lock (TOCTOU-safe)
     match ecc_app::workflow::state_resolver::migrate_if_needed(&old_dir, state_dir, &fs) {
         Ok(true) => eprintln!("[ecc-workflow] State migration complete"),
         Ok(false) => {}
