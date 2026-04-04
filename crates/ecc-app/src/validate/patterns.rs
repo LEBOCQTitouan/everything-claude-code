@@ -66,10 +66,9 @@ pub(super) fn validate_patterns(
                     .extension()
                     .map(|ext| ext.eq_ignore_ascii_case("md"))
                     .unwrap_or(false)
+                    && let Some(stem) = file_path.file_stem()
                 {
-                    if let Some(stem) = file_path.file_stem() {
-                        all_stems.push(stem.to_string_lossy().to_string());
-                    }
+                    all_stems.push(stem.to_string_lossy().to_string());
                 }
             }
         }
@@ -313,11 +312,7 @@ fn extract_impl_headings(content: &str) -> Vec<String> {
         .lines()
         .filter_map(|line| {
             let line = line.trim();
-            if let Some(rest) = line.strip_prefix("### ") {
-                Some(rest.trim().to_string())
-            } else {
-                None
-            }
+            line.strip_prefix("### ").map(|rest| rest.trim().to_string())
         })
         .collect()
 }
