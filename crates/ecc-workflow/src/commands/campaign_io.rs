@@ -35,10 +35,8 @@ pub fn next_decision_number(content: &str) -> u32 {
         if trimmed.starts_with('|') {
             let parts: Vec<&str> = trimmed.split('|').collect();
             if parts.len() >= 3 {
-                if let Ok(n) = parts[1].trim().parse::<u32>() {
-                    if n > max { max = n; }
+                    max = parts[1].trim().parse::<u32>().unwrap_or(0).max(max);
                 }
-            }
         }
     }
     max + 1
