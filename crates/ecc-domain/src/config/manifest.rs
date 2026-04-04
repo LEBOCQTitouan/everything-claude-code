@@ -301,4 +301,39 @@ mod tests {
         assert_eq!(diff.updated, vec!["a.md", "b.md"]);
         assert!(diff.removed.is_empty());
     }
+
+    // --- patterns field ---
+
+    #[test]
+    fn patterns_field_defaults_empty() {
+        // Simulate an old manifest JSON that lacks the "patterns" field
+        let json = r#"{
+            "version": "3.0.0",
+            "installedAt": "2025-01-01T00:00:00Z",
+            "updatedAt": "2025-01-01T00:00:00Z",
+            "artifacts": {
+                "agents": [],
+                "commands": [],
+                "skills": [],
+                "rules": {},
+                "hookDescriptions": []
+            }
+        }"#;
+        let manifest: EccManifest = serde_json::from_str(json).expect("should deserialize");
+        assert!(
+            manifest.artifacts.patterns.is_empty(),
+            "patterns should default to empty vec when missing from JSON"
+        );
+    }
+
+    #[test]
+    fn is_ecc_managed_patterns() {
+        let artifacts = Artifacts {
+            patterns: vec!["creational".into(), "behavioral".into()],
+            ..Artifacts::default()
+        };
+        let m = create_manifest("4.0.0", "now", &[], artifacts);
+        assert!(is_ecc_managed(Some(&m), "patterns", "creational"));
+        assert!(!is_ecc_managed(Some(&m), "patterns", "nonexistent"));
+    }
 }
