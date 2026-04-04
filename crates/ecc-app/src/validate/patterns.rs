@@ -115,13 +115,14 @@ fn validate_pattern_file(
     }
 
     // Check category matches parent directory
-    if let Some(cat) = fm.get("category") {
-        if !cat.trim().is_empty() && cat.trim() != expected_category {
-            terminal.stderr_write(&format!(
-                "ERROR: {label} - category frontmatter '{cat}' does not match directory '{expected_category}'\n"
-            ));
-            has_errors = true;
-        }
+    if let Some(cat) = fm.get("category")
+        && !cat.trim().is_empty()
+        && cat.trim() != expected_category
+    {
+        terminal.stderr_write(&format!(
+            "ERROR: {label} - category frontmatter '{cat}' does not match directory '{expected_category}'\n"
+        ));
+        has_errors = true;
     }
 
     // --- Section validation ---
