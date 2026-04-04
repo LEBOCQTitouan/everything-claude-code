@@ -209,7 +209,6 @@ impl CostStore for SqliteCostStore {
         };
 
         let limit_clause = if let Some(limit) = query.limit {
-            filters.push(format!("LIMIT ?{param_idx}"));
             positional_params.push(Box::new(limit as i64));
             format!(" LIMIT ?{param_idx}")
         } else {
