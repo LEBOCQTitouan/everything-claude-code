@@ -112,6 +112,11 @@ enum Commands {
         #[command(subcommand)]
         subcmd: TasksCmd,
     },
+    /// Campaign manifest management for grill-me decision persistence.
+    Campaign {
+        #[command(subcommand)]
+        subcmd: CampaignCmd,
+    },
 }
 
 #[derive(Subcommand)]
@@ -127,6 +132,29 @@ enum BacklogCmd {
         #[arg(long, default_value = "")]
         tags: String,
     },
+}
+
+#[derive(Subcommand)]
+enum CampaignCmd {
+    /// Create campaign.md in the spec directory.
+    Init {
+        /// Path to the spec directory (e.g., docs/specs/2026-04-04-feature/)
+        spec_dir: String,
+    },
+    /// Append a grill-me decision to campaign.md.
+    AppendDecision {
+        /// The question asked
+        #[arg(long)]
+        question: String,
+        /// The answer given
+        #[arg(long)]
+        answer: String,
+        /// Source: "recommended" or "user"
+        #[arg(long)]
+        source: String,
+    },
+    /// Show campaign.md content as JSON.
+    Show,
 }
 
 #[derive(Subcommand)]
@@ -287,6 +315,17 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
                 target,
                 tags,
             } => commands::backlog::run(&title, &scope, &target, &tags, &proj),
+        },
+        Commands::Campaign { subcmd } => match subcmd {
+            CampaignCmd::Init { spec_dir } => {
+                commands::campaign::run_init(&spec_dir, &project_dir())
+            }
+            CampaignCmd::AppendDecision {
+                question,
+                answer,
+                source,
+            } => commands::campaign::run_append_decision(&question, &answer, &source, &project_dir()),
+            CampaignCmd::Show => commands::campaign::run_show(&project_dir()),
         },
         Commands::Tasks { subcmd } => match subcmd {
             TasksCmd::Sync { path } => commands::tasks::run_sync(&path, &proj),

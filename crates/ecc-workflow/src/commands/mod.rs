@@ -19,3 +19,5 @@ pub mod toolchain_persist;
 pub mod transition;
 pub mod wave_plan;
 pub mod worktree_name;
+pub mod campaign;
+pub mod campaign_io;
