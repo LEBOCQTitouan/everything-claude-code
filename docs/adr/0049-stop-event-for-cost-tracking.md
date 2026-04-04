@@ -1,4 +1,4 @@
-# ADR 0047: Stop Event over PostToolUse for Cost Tracking
+# ADR 0049: Stop Event over PostToolUse for Cost Tracking
 
 ## Status
 

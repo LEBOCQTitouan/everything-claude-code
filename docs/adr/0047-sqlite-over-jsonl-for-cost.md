@@ -1,4 +1,4 @@
-# ADR 0045: SQLite over JSONL for Cost Storage
+# ADR 0047: SQLite over JSONL for Cost Storage
 
 ## Status
 

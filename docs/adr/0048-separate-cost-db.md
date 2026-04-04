@@ -1,4 +1,4 @@
-# ADR 0046: Separate Cost Database from Logs Database
+# ADR 0048: Separate Cost Database from Logs Database
 
 ## Status
 
