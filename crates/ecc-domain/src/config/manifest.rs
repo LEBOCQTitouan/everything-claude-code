@@ -30,6 +30,8 @@ pub struct Artifacts {
     pub rules: BTreeMap<String, Vec<String>>,
     #[serde(default)]
     pub hook_descriptions: Vec<String>,
+    #[serde(default)]
+    pub patterns: Vec<String>,
 }
 
 /// Diff between two file lists — files added, updated (in both), and removed.
@@ -94,6 +96,7 @@ pub fn is_ecc_managed(manifest: Option<&EccManifest>, artifact_type: &str, filen
         "agents" => &manifest.artifacts.agents,
         "commands" => &manifest.artifacts.commands,
         "skills" => &manifest.artifacts.skills,
+        "patterns" => &manifest.artifacts.patterns,
         _ => return false,
     };
 
@@ -153,6 +156,7 @@ mod tests {
                 m
             },
             hook_descriptions: vec!["hook1".into()],
+            patterns: vec![],
         }
     }
 
