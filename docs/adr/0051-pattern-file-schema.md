@@ -1,4 +1,4 @@
-# ADR-0046: Pattern File Schema Design
+# ADR-0051: Pattern File Schema Design
 
 ## Status
 

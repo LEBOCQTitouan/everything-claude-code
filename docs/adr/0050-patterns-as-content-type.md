@@ -1,4 +1,4 @@
-# ADR-0045: Patterns as Separate Content Type
+# ADR-0050: Patterns as Separate Content Type
 
 ## Status
 
