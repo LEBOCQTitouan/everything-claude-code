@@ -64,7 +64,7 @@
 | BL-061 | Interactive stage-by-stage questioning via AskUserQuestion for grill-me and backlog | — | HIGH | /spec-refactor | implemented | 2026-03-23 |
 | BL-062 | Display full spec/design/implement artifacts inline in terminal | — | MEDIUM | /spec-refactor | implemented | 2026-03-26 |
 | BL-063 | Create /commit slash command | — | MEDIUM | /spec-dev | implemented | 2026-03-26 |
-| BL-064 | Full app cartography — user journeys, data flows, element registry | — | EPIC | /spec dev | open | 2026-03-26 |
+| BL-064 | Full app cartography — user journeys, data flows, element registry | — | EPIC | /spec dev | implemented | 2026-03-26 |
 | BL-065 | Concurrent session safety — worktree isolation, serialized merge, audit fixes | — | EPIC | /spec dev | implemented | 2026-03-26 |
 | BL-066 | Deterministic backlog management — ID generation, duplicate detection, index auto-gen | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-067 | Deterministic spec/design artifact validation — AC format, PC table, coverage mapping | — | HIGH | /spec dev | implemented | 2026-03-26 |

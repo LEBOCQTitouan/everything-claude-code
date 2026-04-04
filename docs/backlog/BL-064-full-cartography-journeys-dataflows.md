@@ -1,7 +1,7 @@
 ---
 id: BL-064
 title: Full app cartography — user journeys, data flows, and element registry across all sessions
-status: open
+status: implemented
 created: 2026-03-26
 promoted_to: ""
 tags: [documentation, cartography, user-journeys, data-flows, diagrams, all-commands]
