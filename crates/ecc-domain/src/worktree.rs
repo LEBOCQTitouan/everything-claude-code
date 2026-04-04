@@ -63,6 +63,9 @@ impl WorktreeName {
 
     /// Parse a worktree name back to its components.
     pub fn parse(name: &str) -> Option<ParsedWorktreeName> {
+        // Strip optional worktree- prefix (added by EnterWorktree tool).
+        // Only strip once to reject double-prefix like worktree-worktree-ecc-session-*.
+        let name = name.strip_prefix("worktree-").unwrap_or(name);
         let rest = name.strip_prefix("ecc-session-")?;
         // Timestamp is YYYYMMDD-HHMMSS = 15 chars
         if rest.len() < 16 {
