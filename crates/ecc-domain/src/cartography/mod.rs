@@ -4,6 +4,8 @@
 //! Zero `std::fs`, `std::process`, `std::net`, or `tokio` imports.
 
 pub mod coverage;
+pub mod cross_reference;
+pub mod element_types;
 pub mod element_validation;
 pub mod merge;
 pub mod slug;
@@ -12,6 +14,8 @@ pub mod types;
 pub mod validation;
 
 pub use coverage::{calculate_coverage, CoverageReport};
+pub use cross_reference::build_cross_reference_matrix;
+pub use element_types::{infer_element_type_from_path, ElementEntry};
 pub use element_validation::validate_element;
 pub use merge::{has_section, merge_section};
 pub use slug::derive_slug;
