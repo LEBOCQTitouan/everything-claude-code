@@ -1,9 +1,9 @@
 ---
 name: e2e-runner
-description: End-to-end testing specialist using Vercel Agent Browser (preferred) with Playwright fallback. Use PROACTIVELY for generating, maintaining, and running E2E tests. Manages test journeys, quarantines flaky tests, uploads artifacts (screenshots, videos, traces), and ensures critical user flows work.
+description: End-to-end testing specialist using Vercel Agent Browser (preferred) with Playwright fallback. Use PROACTIVELY for generating, maintaining, and running E2E tests. Manages test journeys, quarantines flaky tests, uploads artifacts (screenshots, videos, traces), and ensures critical user flows work. Supports visual testing mode with vision-based assertions and regression detection.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
-skills: ["e2e-testing"]
+skills: ["e2e-testing", "visual-testing"]
 ---
 
 # E2E Test Runner
@@ -56,6 +56,7 @@ When invoked from `/e2e`, this agent receives a journey spec:
 - **scenarios** — list of scenarios to test (happy path, edge cases, error cases)
 - **risk level** — HIGH / MEDIUM / LOW
 - **target dir** — where to write test files
+- **visual** (optional) — set `visual: true` to activate visual testing mode (screenshot capture, vision assertions, regression detection). When visual mode is not specified, behavior is identical to standard E2E testing with no visual testing overhead.
 
 When invoked directly (not from `/e2e`), this agent performs its own journey planning.
 
@@ -66,6 +67,10 @@ Return structured results:
 - **test_results** — pass/fail counts, duration
 - **flaky_tests** — tests that failed intermittently (from repeat runs)
 - **artifact_paths** — screenshots, videos, traces, reports
+- **visual_results** (when `visual: true`) — visual testing metrics:
+  - `screenshots_captured` — number of screenshots taken at visual checkpoints
+  - `vision_assertions` — `{ passed: number, failed: number, skipped: number }`
+  - `regressions_detected` — number of visual regressions found against baselines
 
 ## Workflow
 
@@ -80,6 +85,36 @@ Return structured results:
 - Run locally 3-5 times to check for flakiness
 - Quarantine flaky tests with `test.fixme()` or `test.skip()`
 - Upload artifacts to CI
+
+## Visual Testing Mode
+
+When `visual: true` is set in the journey spec, activate the visual testing workflow in addition to standard E2E testing. Visual testing requires Playwright — Agent Browser does not support screenshot capture for vision analysis.
+
+### Screenshot Capture
+
+At each checkpoint in the journey, capture a screenshot with metadata (URL, viewport dimensions, timestamp, test step name). Use the `VisualCapture` pattern from the `visual-testing` skill. Always call `waitForStable()` before capture to ensure animations and network requests have completed.
+
+Store screenshots in `visual-artifacts/` with a `manifest.json` listing all captures. See the visual-testing skill for the manifest schema.
+
+### Vision Assertions
+
+For each visual assertion defined in the journey spec, read the captured screenshot using the Read tool and evaluate the natural-language assertion. Report pass/fail with reasoning.
+
+If a visual assertion fails, include in the report: the screenshot path, the assertion text, and an explanation of why it failed. If the Read tool cannot process a screenshot (file not found, corrupt), mark the assertion as **skipped** with a warning — not as a failure.
+
+### Visual Regression Detection
+
+Compare current screenshots against baselines from previous runs. Baselines are keyed by `{test-name}/{checkpoint-id}/{browser-viewport}`.
+
+When comparing, read both the baseline and current screenshots via the Read tool, then describe any significant visual differences. Classify each difference by severity:
+
+- **cosmetic**: spacing, font rendering, color shade differences
+- **functional**: missing elements, wrong content, layout breakage
+- **breaking**: page crash, blank render, navigation failure
+
+Generate a regression report listing checkpoint name, baseline path, current path, description of changes, and severity.
+
+When no baseline exists for a checkpoint (first run or new checkpoint), save the current screenshot as the new baseline with no regression reported.
 
 ## Key Principles
 
