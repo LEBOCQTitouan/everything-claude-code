@@ -1,4 +1,4 @@
-use ecc_domain::config::validate::{VALID_MODELS, extract_frontmatter};
+use ecc_domain::config::validate::{VALID_EFFORT_LEVELS, VALID_MODELS, extract_frontmatter};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
@@ -85,6 +85,60 @@ fn validate_agent_file(file: &Path, fs: &dyn FileSystem, terminal: &dyn Terminal
         valid = false;
     }
 
+    // Reject deprecated budget_tokens / budget-tokens
+    if frontmatter.contains_key("budget_tokens") || frontmatter.contains_key("budget-tokens") {
+        terminal.stderr_write(&format!(
+            "ERROR: {} - budget_tokens is deprecated — use effort field instead\n",
+            name
+        ));
+        valid = false;
+    }
+
+    // Validate effort if present
+    if let Some(effort) = frontmatter.get("effort") {
+        let trimmed = effort.trim();
+        if !trimmed.is_empty() && !VALID_EFFORT_LEVELS.contains(&trimmed) {
+            terminal.stderr_write(&format!(
+                "ERROR: {} - Invalid effort '{}'. Must be one of: {}\n",
+                name,
+                trimmed,
+                VALID_EFFORT_LEVELS.join(", ")
+            ));
+            valid = false;
+        }
+
+        // Model/effort cross-validation (warnings only)
+        if let Some(model) = frontmatter.get("model") {
+            let model = model.trim();
+            let effort = trimmed;
+            match model {
+                "haiku" if effort != "low" && !effort.is_empty() => {
+                    terminal.stdout_write(&format!(
+                        "WARNING: {} - model/effort mismatch: haiku should use effort: low\n",
+                        name
+                    ));
+                }
+                "opus" if (effort == "low" || effort == "medium") && !effort.is_empty() => {
+                    terminal.stdout_write(&format!(
+                        "WARNING: {} - underutilized effort for opus: consider high or max\n",
+                        name
+                    ));
+                }
+                "sonnet"
+                    if effort != "medium"
+                        && effort != "high"
+                        && !effort.is_empty() =>
+                {
+                    terminal.stdout_write(&format!(
+                        "WARNING: {} - model/effort mismatch: sonnet should use medium or high\n",
+                        name
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+
     valid
 }
 
@@ -161,6 +215,133 @@ mod tests {
             t.stderr_output()
                 .iter()
                 .any(|s| s.contains("Missing required field"))
+        );
+    }
+
+    #[test]
+    fn agents_budget_tokens_rejected() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/bad.md",
+            "---\nmodel: sonnet\ntools: Read\nbudget_tokens: 8000\n---\n# Agent",
+        );
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("budget_tokens is deprecated"))
+        );
+    }
+
+    #[test]
+    fn agents_budget_tokens_kebab_rejected() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/bad.md",
+            "---\nmodel: sonnet\ntools: Read\nbudget-tokens: 8000\n---\n# Agent",
+        );
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("budget_tokens is deprecated"))
+        );
+    }
+
+    #[test]
+    fn agents_no_budget_tokens_no_warning() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/good.md",
+            "---\nmodel: sonnet\ntools: Read\n---\n# Agent",
+        );
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            !t.stderr_output()
+                .iter()
+                .any(|s| s.contains("budget_tokens"))
+        );
+    }
+
+    #[test]
+    fn agents_haiku_high_effort_warns() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/bad.md",
+            "---\nmodel: haiku\ntools: Read\neffort: high\n---\n# Agent",
+        );
+        let t = term();
+        // Validation still passes (warning, not error)
+        assert!(run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stdout_output()
+                .iter()
+                .any(|s| s.contains("model/effort mismatch"))
+        );
+    }
+
+    #[test]
+    fn agents_opus_low_effort_warns() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/bad.md",
+            "---\nmodel: opus\ntools: Read\neffort: low\n---\n# Agent",
+        );
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stdout_output()
+                .iter()
+                .any(|s| s.contains("underutilized effort"))
+        );
+    }
+
+    #[test]
+    fn agents_valid_model_effort_no_warning() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/good.md",
+            "---\nmodel: sonnet\ntools: Read\neffort: medium\n---\n# Agent",
+        );
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        assert!(
+            !t.stdout_output()
+                .iter()
+                .any(|s| s.contains("WARNING"))
         );
     }
 
