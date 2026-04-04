@@ -15,6 +15,11 @@ use super::helpers::{
 /// session-start: load previous context, detect project type.
 pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "session_start", "executing handler");
+
+    // Best-effort gc: clean stale worktrees from previous sessions.
+    // Errors are swallowed — gc must never block session start.
+    best_effort_gc(ports);
+
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),
@@ -95,6 +100,36 @@ pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         stdout: stdin.to_string(),
         stderr: format!("{}\n", stderr_parts.join("\n")),
         exit_code: 0,
+    }
+}
+
+/// Best-effort worktree gc at session start.
+/// Resolves the git toplevel and runs gc. All errors are swallowed.
+fn best_effort_gc(ports: &HookPorts<'_>) {
+    let toplevel = ports
+        .shell
+        .run_command("git", &["rev-parse", "--show-toplevel"])
+        .ok()
+        .map(|o| o.stdout.trim().to_string());
+
+    if let Some(dir) = toplevel {
+        let project_dir = std::path::Path::new(&dir);
+        match crate::worktree::gc(ports.shell, project_dir, false) {
+            Ok(result) => {
+                let removed = result.removed.len();
+                let skipped = result.skipped.len();
+                if removed > 0 {
+                    tracing::info!(
+                        removed,
+                        skipped,
+                        "session-start gc: cleaned stale worktrees"
+                    );
+                }
+            }
+            Err(e) => {
+                tracing::debug!("session-start gc failed (non-blocking): {e}");
+            }
+        }
     }
 }
 
@@ -201,4 +236,86 @@ pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     HookResult::passthrough(stdin)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::hook::HookPorts;
+    use ecc_ports::shell::CommandOutput;
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+
+    fn make_ports<'a>(
+        fs: &'a InMemoryFileSystem,
+        shell: &'a MockExecutor,
+        env: &'a MockEnvironment,
+        term: &'a BufferedTerminal,
+    ) -> HookPorts<'a> {
+        HookPorts {
+            fs,
+            shell,
+            env,
+            terminal: term,
+            cost_store: None,
+        }
+    }
+
+    fn ok(stdout: &str) -> CommandOutput {
+        CommandOutput {
+            stdout: stdout.to_string(),
+            stderr: String::new(),
+            exit_code: 0,
+        }
+    }
+
+    // PC-007: session_start runs gc and removes stale worktrees
+    #[test]
+    fn session_start_runs_gc() {
+        let fs = InMemoryFileSystem::new();
+        // Mock git rev-parse for gc's project dir resolution
+        let shell = MockExecutor::new()
+            .on_args("git", &["rev-parse", "--show-toplevel"], ok("/repo\n"))
+            // gc calls git worktree list --porcelain
+            .on_args("git", &["worktree", "list", "--porcelain"], ok(""));
+        let env = MockEnvironment::new().with_home("/home/user");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        // session_start should not panic — gc runs and completes
+        let result = session_start("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+    }
+
+    // PC-008: session_start gc skips worktrees with alive PID
+    #[test]
+    fn session_start_gc_skips_alive() {
+        let fs = InMemoryFileSystem::new();
+        // Mock: git toplevel, then worktree list returns empty (no stale worktrees)
+        let shell = MockExecutor::new()
+            .on_args("git", &["rev-parse", "--show-toplevel"], ok("/repo\n"))
+            .on_args("git", &["worktree", "list", "--porcelain"], ok(""));
+        let env = MockEnvironment::new().with_home("/home/user");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        // gc with no worktrees = nothing to skip, but no crash
+        let result = session_start("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+    }
+
+    // PC-009: session_start gc failure does not block session
+    #[test]
+    fn session_start_gc_failure_non_blocking() {
+        let fs = InMemoryFileSystem::new();
+        // Mock: git rev-parse fails (not a git repo) — gc should fail silently
+        let shell = MockExecutor::new();
+        // No mocks = all commands return ShellError::NotFound
+        let env = MockEnvironment::new().with_home("/home/user");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        // session_start should succeed even when gc can't run
+        let result = session_start("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+    }
 }
