@@ -396,6 +396,18 @@
           }
         ],
         "description": "Inject context reminders before prompt processing"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ecc-hook \"pre:prompt:context-hydrate\" \"standard,strict\"",
+            "async": true,
+            "timeout": 5
+          }
+        ],
+        "description": "Pre-hydrate context for ECC commands"
       }
     ],
     "PostCompact": [

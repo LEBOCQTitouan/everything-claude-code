@@ -24,16 +24,9 @@ fn detect_command(stdin: &str) -> Option<CommandType> {
 
 /// Detect command type from raw text, scanning left to right.
 fn detect_command_from_text(text: &str) -> Option<CommandType> {
-    let mut spec_pos = text.find("/spec");
-    // /spec-dev, /spec-fix, /spec-refactor all start with /spec, so finding /spec is enough
-    // But we need to make sure /spec doesn't also match as part of something else
-    let design_pos = text.find("/design");
-    let implement_pos = text.find("/implement");
-
-    // Normalize missing positions to usize::MAX for comparison
-    let spec_i = spec_pos.unwrap_or(usize::MAX);
-    let design_i = design_pos.unwrap_or(usize::MAX);
-    let implement_i = implement_pos.unwrap_or(usize::MAX);
+    let spec_i = text.find("/spec").unwrap_or(usize::MAX);
+    let design_i = text.find("/design").unwrap_or(usize::MAX);
+    let implement_i = text.find("/implement").unwrap_or(usize::MAX);
 
     let min_pos = spec_i.min(design_i).min(implement_i);
     if min_pos == usize::MAX {
@@ -41,7 +34,6 @@ fn detect_command_from_text(text: &str) -> Option<CommandType> {
     }
 
     if min_pos == spec_i {
-        spec_pos = Some(spec_i);
         Some(CommandType::Spec)
     } else if min_pos == design_i {
         Some(CommandType::Design)
@@ -104,7 +96,11 @@ fn build_spec_context(ports: &HookPorts<'_>) -> String {
                         .map(|e| e == "md")
                         .unwrap_or(false)
                 })
-                .filter_map(|p| p.file_name().and_then(|n| n.to_str()).map(|s| s.to_string()))
+                .filter_map(|p| {
+                    p.file_name()
+                        .and_then(|n| n.to_str())
+                        .map(|s| s.to_string())
+                })
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
@@ -180,7 +176,12 @@ fn build_implement_context(ports: &HookPorts<'_>, design_path: Option<&str>) -> 
 
                 let file_changes_count = content
                     .lines()
-                    .filter(|l| l.contains("File:") || l.contains("| `crates/") || l.contains("| `hooks/") || l.contains("| `docs/"))
+                    .filter(|l| {
+                        l.contains("File:")
+                            || l.contains("| `crates/")
+                            || l.contains("| `hooks/")
+                            || l.contains("| `docs/")
+                    })
                     .count();
                 lines.push(format!("File changes: {}", file_changes_count));
             }
@@ -266,11 +267,26 @@ pub fn pre_prompt_context_hydrate(stdin: &str, ports: &HookPorts<'_>) -> HookRes
 
     let (phase, concern, feature_name, spec_path, design_path) = match &state_json {
         Some(state) => (
-            state.get("phase").and_then(|v| v.as_str()).map(String::from),
-            state.get("concern").and_then(|v| v.as_str()).map(String::from),
-            state.get("feature_name").and_then(|v| v.as_str()).map(String::from),
-            state.get("spec_path").and_then(|v| v.as_str()).map(String::from),
-            state.get("design_path").and_then(|v| v.as_str()).map(String::from),
+            state
+                .get("phase")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            state
+                .get("concern")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            state
+                .get("feature_name")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            state
+                .get("spec_path")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            state
+                .get("design_path")
+                .and_then(|v| v.as_str())
+                .map(String::from),
         ),
         None => (None, None, None, None, None),
     };
@@ -798,7 +814,7 @@ mod tests {
 
     #[test]
     fn dispatches_context_hydrate() {
-        use crate::hook::{dispatch, HookContext};
+        use crate::hook::{HookContext, dispatch};
 
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
