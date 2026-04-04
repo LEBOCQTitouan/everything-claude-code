@@ -199,10 +199,36 @@ fn project_dir() -> std::path::PathBuf {
         .unwrap_or_else(|_| std::path::PathBuf::from("."))
 }
 
-/// Temporary bridge: derive state_dir from project_dir.
-/// Will be replaced in Wave 4 with the proper `resolve_state_dir` call.
-fn state_dir(project_dir: &std::path::Path) -> std::path::PathBuf {
-    project_dir.join(".claude/workflow")
+fn resolve_state_dir_for_project(_project_dir: &std::path::Path) -> std::path::PathBuf {
+    let env = ecc_infra::os_env::OsEnvironment;
+    let git = ecc_infra::os_git::OsGitInfo;
+    let fs = ecc_infra::os_fs::OsFileSystem;
+    let (state_dir, warnings) =
+        ecc_app::workflow::state_resolver::resolve_state_dir(&env, &git, &fs);
+    for w in &warnings {
+        eprintln!("[ecc-workflow] warning: {}", w.message);
+    }
+    state_dir
+}
+
+fn migrate_state_if_needed(project_dir: &std::path::Path, state_dir: &std::path::Path) {
+    let old_dir = project_dir.join(".claude/workflow");
+    if old_dir == *state_dir {
+        return;
+    }
+    let fs = ecc_infra::os_fs::OsFileSystem;
+    let _guard = match ecc_flock::acquire_for(state_dir, "state") {
+        Ok(g) => g,
+        Err(e) => {
+            eprintln!("[ecc-workflow] Cannot acquire lock for migration: {e}");
+            return;
+        }
+    };
+    match ecc_app::workflow::state_resolver::migrate_if_needed(&old_dir, state_dir, &fs) {
+        Ok(true) => eprintln!("[ecc-workflow] State migration complete"),
+        Ok(false) => {}
+        Err(e) => eprintln!("[ecc-workflow] State migration failed: {e}"),
+    }
 }
 
 fn dispatch(cli: Cli) -> WorkflowOutput {
@@ -211,38 +237,27 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         std::mem::discriminant(&cli.command)
     );
     let proj = project_dir();
-    let sd = state_dir(&proj);
+    let sd = resolve_state_dir_for_project(&proj);
+    migrate_state_if_needed(&proj, &sd);
     match cli.command {
-        Commands::Init { concern, feature } => {
-            commands::init::run(&concern, &feature, &proj, &sd)
-        }
+        Commands::Init { concern, feature } => commands::init::run(&concern, &feature, &proj, &sd),
         Commands::Transition {
             target,
             artifact,
             path,
-        } => commands::transition::run(
-            &target,
-            artifact.as_deref(),
-            path.as_deref(),
-            &proj,
-            &sd,
-        ),
+        } => commands::transition::run(&target, artifact.as_deref(), path.as_deref(), &proj, &sd),
         Commands::ToolchainPersist {
             test_cmd,
             lint_cmd,
             build_cmd,
         } => commands::toolchain_persist::run(&test_cmd, &lint_cmd, &build_cmd, &sd),
-        Commands::MemoryWrite { kind, args } => {
-            commands::memory_write::run(&kind, &args, &proj)
-        }
+        Commands::MemoryWrite { kind, args } => commands::memory_write::run(&kind, &args, &proj),
         Commands::PhaseGate => commands::phase_gate::run(&proj, &sd),
         Commands::StopGate => commands::stop_gate::run(&sd),
         Commands::GrillMeGate => commands::grill_me_gate::run(&sd),
         Commands::TddEnforcement => commands::tdd_enforcement::run(&sd),
         Commands::Status => commands::status::run(&sd),
-        Commands::Artifact { artifact_type } => {
-            commands::artifact::run(&artifact_type, &proj, &sd)
-        }
+        Commands::Artifact { artifact_type } => commands::artifact::run(&artifact_type, &proj, &sd),
         Commands::Reset { force } => commands::reset::run(force, &sd),
         Commands::ScopeCheck => commands::scope_check::run(&proj, &sd),
         Commands::DocEnforcement => commands::doc_enforcement::run(&sd),
@@ -252,9 +267,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::WorktreeName { concern, feature } => {
             commands::worktree_name::run(&concern, &feature)
         }
-        Commands::WavePlan { design_path } => {
-            commands::wave_plan::run(&design_path, &proj)
-        }
+        Commands::WavePlan { design_path } => commands::wave_plan::run(&design_path, &proj),
         Commands::Merge => commands::merge::run(&proj, &sd),
         Commands::Backlog { subcmd } => match subcmd {
             BacklogCmd::AddEntry {
