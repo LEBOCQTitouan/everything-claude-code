@@ -50,6 +50,7 @@ pub fn run(args: HookArgs) -> anyhow::Result<()> {
         shell: &shell,
         env: &env,
         terminal: &terminal,
+        cost_store: None,
     };
 
     // Parse rest args: supports 3 formats:

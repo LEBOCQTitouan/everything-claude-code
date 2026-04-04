@@ -1,6 +1,7 @@
 //! Hook dispatch use case — routes hookId to the appropriate handler.
 
 use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
+use ecc_ports::cost_store::CostStore;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
@@ -67,6 +68,7 @@ pub struct HookPorts<'a> {
     pub shell: &'a dyn ShellExecutor,
     pub env: &'a dyn Environment,
     pub terminal: &'a dyn TerminalIO,
+    pub cost_store: Option<&'a dyn CostStore>,
 }
 
 /// Truncate stdin payload to MAX_STDIN bytes.
@@ -210,6 +212,7 @@ mod tests {
             shell,
             env,
             terminal: term,
+            cost_store: None,
         }
     }
 
@@ -350,12 +353,40 @@ mod tests {
         assert!(result.stderr.is_empty());
     }
 
+    /// PC-028: HookPorts compiles with cost_store field and dispatches normally
     #[test]
     fn hook_result_passthrough() {
         let r = HookResult::passthrough("input");
         assert_eq!(r.stdout, "input");
         assert!(r.stderr.is_empty());
         assert_eq!(r.exit_code, 0);
+    }
+
+    /// PC-039: HookPorts with cost_store None dispatches unknown hook correctly
+    #[test]
+    fn hook_ports_with_cost_store_none() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+        };
+
+        let ctx = HookContext {
+            hook_id: "nonexistent:hook:for-pc039".to_string(),
+            stdin_payload: "data".to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(result.stdout, "data");
+        assert!(result.stderr.contains("Unknown hook ID"));
+        assert_eq!(result.exit_code, 0);
     }
 
     #[test]

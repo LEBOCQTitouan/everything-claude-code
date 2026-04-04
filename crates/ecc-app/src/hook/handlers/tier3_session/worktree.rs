@@ -69,6 +69,7 @@ mod tests {
             shell,
             env,
             terminal: term,
+            cost_store: None,
         }
     }
 
