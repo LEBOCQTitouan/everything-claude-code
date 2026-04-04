@@ -5,6 +5,7 @@ tools: ["Read", "Grep", "Glob", "Agent"]
 model: opus
 effort: max
 skills: ["architecture-review"]
+patterns: ["architecture"]
 memory: project
 ---
 

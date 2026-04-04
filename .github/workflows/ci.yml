@@ -61,6 +61,7 @@ jobs:
           ./target/release/ecc validate hooks
           ./target/release/ecc validate skills
           ./target/release/ecc validate rules
+          ./target/release/ecc validate patterns
 
       - name: Validate workflow templates
         run: |
