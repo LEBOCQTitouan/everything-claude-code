@@ -3,11 +3,16 @@
 use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
+use ecc_domain::cost::{
+    calculator::{CostCalculator, PricingTable},
+    record::TokenUsageRecord,
+    value_objects::{ModelId, TokenCount},
+};
 use ecc_domain::time::{datetime_from_epoch, format_datetime};
 use std::path::Path;
 
 use super::epoch_secs;
-use super::helpers::{estimate_cost, to_u64};
+use super::helpers::to_u64;
 
 /// evaluate-session: count messages and log evaluation hint.
 pub fn evaluate_session(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
@@ -68,7 +73,7 @@ pub fn evaluate_session(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     HookResult::warn(stdin, &msg)
 }
 
-/// cost-tracker: estimate cost and append JSONL metrics.
+/// cost-tracker: estimate cost and persist via CostStore (or JSONL fallback).
 pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "cost_tracker", "executing handler");
     let home = match ports.env.home_dir() {
@@ -93,20 +98,23 @@ pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let output_tokens = to_u64(&usage, "output_tokens")
         .or_else(|| to_u64(&usage, "completion_tokens"))
         .unwrap_or(0);
+    let thinking_tokens = to_u64(&usage, "thinking_tokens").unwrap_or(0);
 
-    let model = input
+    let model_str = input
         .get("model")
         .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
         .unwrap_or_else(|| {
             ports
                 .env
                 .var("CLAUDE_MODEL")
-                .as_deref()
-                .unwrap_or("unknown")
-                // Can't return a reference to a local, so just use "unknown"
-                ;
-            "unknown"
-        })
+                .unwrap_or_else(|| "unknown".to_string())
+        });
+
+    let agent_type = input
+        .get("agent_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("main")
         .to_string();
 
     let session_id = ports
@@ -114,28 +122,71 @@ pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .var("CLAUDE_SESSION_ID")
         .unwrap_or_else(|| "default".to_string());
 
-    let metrics_dir = home.join(".claude").join("metrics");
-    if let Err(e) = ports.fs.create_dir_all(&metrics_dir) {
-        warn!("Cannot create metrics dir: {}", e);
-    }
-
-    let cost = estimate_cost(&model, input_tokens, output_tokens);
     let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
 
-    let row = serde_json::json!({
-        "timestamp": timestamp,
-        "session_id": session_id,
-        "model": model,
-        "input_tokens": input_tokens,
-        "output_tokens": output_tokens,
-        "estimated_cost_usd": cost,
-    });
+    // Try to persist via CostStore; fall back to JSONL otherwise.
+    if let Some(store) = ports.cost_store {
+        let table = PricingTable::default();
+        let model_id = ModelId::new(&model_str).unwrap_or_else(|_| {
+            ModelId::new("unknown").expect("'unknown' is a valid ModelId")
+        });
+        let cost = CostCalculator::estimate(
+            &table,
+            &model_id,
+            TokenCount::new(input_tokens),
+            TokenCount::new(output_tokens),
+            TokenCount::new(thinking_tokens),
+        );
+        let record = TokenUsageRecord {
+            record_id: None,
+            session_id,
+            timestamp,
+            model: model_id,
+            input_tokens: TokenCount::new(input_tokens),
+            output_tokens: TokenCount::new(output_tokens),
+            thinking_tokens: TokenCount::new(thinking_tokens),
+            estimated_cost: cost,
+            agent_type,
+            parent_session_id: None,
+        };
+        if let Err(e) = store.append(&record) {
+            warn!("CostStore::append failed: {}", e);
+        }
+    } else {
+        // JSONL fallback
+        let metrics_dir = home.join(".claude").join("metrics");
+        if let Err(e) = ports.fs.create_dir_all(&metrics_dir) {
+            warn!("Cannot create metrics dir: {}", e);
+        }
 
-    let costs_file = metrics_dir.join("costs.jsonl");
-    let existing = ports.fs.read_to_string(&costs_file).unwrap_or_default();
-    let new_content = format!("{}{}\n", existing, row);
-    if let Err(e) = ports.fs.write(&costs_file, &new_content) {
-        super::log_write_failure(&costs_file, &e, None);
+        let table = PricingTable::default();
+        let model_id = ModelId::new(&model_str).unwrap_or_else(|_| {
+            ModelId::new("unknown").expect("'unknown' is a valid ModelId")
+        });
+        let cost = CostCalculator::estimate(
+            &table,
+            &model_id,
+            TokenCount::new(input_tokens),
+            TokenCount::new(output_tokens),
+            TokenCount::new(thinking_tokens),
+        );
+
+        let row = serde_json::json!({
+            "timestamp": timestamp,
+            "session_id": session_id,
+            "model": model_str,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "thinking_tokens": thinking_tokens,
+            "estimated_cost_usd": cost.value(),
+        });
+
+        let costs_file = metrics_dir.join("costs.jsonl");
+        let existing = ports.fs.read_to_string(&costs_file).unwrap_or_default();
+        let new_content = format!("{}{}\n", existing, row);
+        if let Err(e) = ports.fs.write(&costs_file, &new_content) {
+            super::log_write_failure(&costs_file, &e, None);
+        }
     }
 
     HookResult::passthrough(stdin)
