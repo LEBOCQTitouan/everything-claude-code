@@ -69,7 +69,7 @@ pub(super) fn validate_patterns(
             let mut errors = String::new();
             let mut has_errors = false;
 
-            if !index_content.is_empty() && !index_content.contains(&stem) {
+            if !index_content.is_empty() && !stem_in_index(&index_content, &stem) {
                 errors.push_str(&format!(
                     "ERROR: {file_label} - pattern '{stem}' is not listed in patterns/index.md\n"
                 ));
@@ -214,6 +214,38 @@ fn collect_work_items(
         }
     }
     items
+}
+
+/// Check whether stem appears in the index as a path component (word-boundary-aware).
+///
+/// Matches patterns like `/factory-method.md`, `(factory-method)`, or the stem
+/// preceded by a word boundary character and followed by `.md`, `)`, or whitespace.
+fn stem_in_index(index_content: &str, stem: &str) -> bool {
+    let boundary_before = |c: char| -> bool {
+        matches!(c, '/' | '(' | '[' | ' ' | '\t' | '\n' | '-') || c == '`'
+    };
+    let boundary_after = |s: &str| -> bool {
+        s.is_empty()
+            || s.starts_with(".md")
+            || s.starts_with(')')
+            || s.starts_with(']')
+            || s.starts_with(char::is_whitespace)
+            || s.starts_with('`')
+    };
+
+    let mut search_from = 0;
+    while let Some(pos) = index_content[search_from..].find(stem) {
+        let abs_pos = search_from + pos;
+        let before_ok =
+            abs_pos == 0 || boundary_before(index_content.as_bytes()[abs_pos - 1] as char);
+        let after_start = abs_pos + stem.len();
+        let after_ok = boundary_after(&index_content[after_start..]);
+        if before_ok && after_ok {
+            return true;
+        }
+        search_from = abs_pos + 1;
+    }
+    false
 }
 
 /// Validate a single pattern file. Returns (error_messages, is_valid).
@@ -1745,4 +1777,20 @@ Generic.
         );
     }
 
+    #[test]
+    fn stem_in_index_word_boundary_match() {
+        // "factory" should NOT match when index only contains "factory-method"
+        assert!(!super::stem_in_index("factory-method\n", "factory"));
+        // "factory-method" should match as a standalone word
+        assert!(super::stem_in_index("factory-method\n", "factory-method"));
+        // Match when preceded by `/` (path component)
+        assert!(super::stem_in_index(
+            "- [Factory Method](creational/factory-method.md)",
+            "factory-method"
+        ));
+        // Match when preceded by `(`
+        assert!(super::stem_in_index("(factory-method)", "factory-method"));
+        // No match when embedded in a longer word
+        assert!(!super::stem_in_index("abstract-factory-method-extra\n", "factory-method"));
+    }
 }
