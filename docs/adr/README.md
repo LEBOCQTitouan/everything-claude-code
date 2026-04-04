@@ -38,3 +38,4 @@ ADRs are numbered sequentially: `0001-short-title.md`, `0002-short-title.md`, et
 | [0039](0039-cargo-dist-adoption.md) | cargo-dist Adoption for Binary Distribution | Accepted |
 | [0040](0040-cosign-custom-job.md) | Cosign Signing as Custom Post-Build Job | Accepted |
 | [0041](0041-session-detection-pattern.md) | Session Detection Pattern for Backlog Filtering | Accepted |
+| [0042](0042-context-pre-hydration.md) | Context Pre-Hydration Pattern | Accepted |

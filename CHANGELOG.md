@@ -12,6 +12,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Cartography element registry (BL-064 Sub-Spec B)**: Per-element documentation files in `docs/cartography/elements/` with cross-reference INDEX.md matrix. Two-tier element types (universal: Module, Interface, Config, Unknown; ECC: Command, Agent, Skill, Hook, Rule, Crate, Port, Adapter, DomainEntity). Post-loop element generation after journey/flow processing. Schema validation, staleness detection, and coverage dashboard extended for elements. New agent: `cartography-element-generator`. 3 ADRs (0042-0044).
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
 ### Changed
 
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
@@ -29,6 +31,8 @@ Generated from git conventional commits. Grouped by type and version.
 - **Autonomous visual testing (BL-103)**: Extended e2e-runner agent with vision-based UI validation. New `visual-testing` skill with screenshot capture patterns (VisualCapture helper, manifest schema), AI-powered visual assertions (visualAssert via Read tool), visual regression detection (baseline keying, severity classification), pixel-diff supplementary guidance (pixelmatch, reg-cli), security warnings (PII in screenshots, .gitignore patterns), and cost/latency estimation. Opt-in via `visual: true` in journey specs. ADR 0042: vision-vs-pixel comparison.
 - **Multi-agent team coordination (BL-104)**: Declarative team manifests (Markdown + YAML frontmatter) in `teams/` directory. `ecc validate teams` with strict agent cross-referencing and tool privilege escalation warnings. Pre-defined teams: implement-team, audit-team, review-team. New skills: shared-state-protocol, task-handoff.
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
 ### Changed
 
 - **Release pipeline migrated to cargo-dist (BL-112)**: Replaced hand-rolled 267-line `release.yml` with cargo-dist declarative pipeline (`dist.toml`). Structured as plan/build/host/cosign/announce stages. Custom cosign signing job preserved as non-blocking post-build step. All 5 cross-compilation targets maintained.
@@ -36,6 +40,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## v5.1.0
 
 ### Added
+
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 
 ### Changed
 
@@ -58,6 +64,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
 ### Changed
 
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
@@ -72,6 +80,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 
 ### Changed
 
@@ -93,6 +103,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
 ### Changed
 
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
@@ -111,6 +123,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
 ### Changed
 
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
@@ -128,6 +142,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
 ### Changed
 
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
@@ -142,6 +158,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
 ### Changed
 
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
@@ -153,6 +171,8 @@ Generated from git conventional commits. Grouped by type and version.
 - **Structured log management (BL-092)**: JSON rolling daily files via tracing-appender to ~/.ecc/logs/. SQLite FTS5 index for full-text log search. Background indexer thread. `ecc log tail|search|prune|export` CLI commands. Session correlation via CLAUDE_SESSION_ID. 30-day auto-prune at startup with configurable retention. Structured tracing fields on all 40 hook handlers. LogStore port + SqliteLogStore adapter. ADR-0034 documents dual read/write path pattern.
 
 ## v4.7.0
+
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 
 ### Changed
 
@@ -168,6 +188,8 @@ Generated from git conventional commits. Grouped by type and version.
   Updated `ARCHITECTURE.md`: added `ecc-flock` to crate list, corrected test count to 1671.
 
 ## v4.3.1
+
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 
 ### Changed
 
