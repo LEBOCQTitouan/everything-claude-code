@@ -46,15 +46,13 @@ pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let merge_result = ports.shell.run_command("ecc-workflow", &["merge"]);
 
     match merge_result {
-        Ok(output) if output.exit_code == 0 => {
-            HookResult::warn(
-                stdin,
-                &format!(
-                    "[Session] Worktree merged to main successfully.\n{}",
-                    output.stderr
-                ),
-            )
-        }
+        Ok(output) if output.exit_code == 0 => HookResult::warn(
+            stdin,
+            &format!(
+                "[Session] Worktree merged to main successfully.\n{}",
+                output.stderr
+            ),
+        ),
         Ok(output) => {
             // Non-zero exit — preserve worktree, write recovery file, warn
             let cwd = ports
@@ -78,8 +76,7 @@ pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 cwd,
             );
 
-            let recovery_path =
-                std::path::Path::new(&cwd).join(".ecc-merge-recovery");
+            let recovery_path = std::path::Path::new(&cwd).join(".ecc-merge-recovery");
             let _ = ports.fs.write(&recovery_path, &recovery_content);
 
             HookResult::warn(
@@ -173,11 +170,7 @@ mod tests {
 
     fn not_in_worktree_shell() -> MockExecutor {
         MockExecutor::new()
-            .on_args(
-                "git",
-                &["rev-parse", "--show-toplevel"],
-                ok("/repo\n"),
-            )
+            .on_args("git", &["rev-parse", "--show-toplevel"], ok("/repo\n"))
             .on_args(
                 "git",
                 &["rev-parse", "--git-common-dir"],
@@ -257,7 +250,10 @@ mod tests {
         let fs = InMemoryFileSystem::new();
         let shell = in_worktree_shell()
             .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("3\n"))
-            .on("ecc-workflow", fail(3, "merge lock held by another session\n"))
+            .on(
+                "ecc-workflow",
+                fail(3, "merge lock held by another session\n"),
+            )
             .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -273,16 +269,25 @@ mod tests {
     fn empty_worktree_defers_to_gc() {
         let fs = InMemoryFileSystem::new();
         // No mock for "git worktree remove" — if code calls it, MockExecutor panics
-        let shell = in_worktree_shell()
-            .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("0\n"));
+        let shell = in_worktree_shell().on_args(
+            "git",
+            &["rev-list", "HEAD", "^main", "--count"],
+            ok("0\n"),
+        );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
-        assert!(!result.stderr.contains("cleaned up"), "should not claim 'cleaned up'");
-        assert!(result.stderr.contains("deferred"), "should mention deferred cleanup");
+        assert!(
+            !result.stderr.contains("cleaned up"),
+            "should not claim 'cleaned up'"
+        );
+        assert!(
+            result.stderr.contains("deferred"),
+            "should mention deferred cleanup"
+        );
     }
 
     // PC-002: merge success message has no "cleaned up" claim
@@ -299,8 +304,14 @@ mod tests {
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
-        assert!(result.stderr.contains("merged"), "should mention merge success");
-        assert!(!result.stderr.contains("cleaned up"), "should not claim 'cleaned up'");
+        assert!(
+            result.stderr.contains("merged"),
+            "should mention merge success"
+        );
+        assert!(
+            !result.stderr.contains("cleaned up"),
+            "should not claim 'cleaned up'"
+        );
     }
 
     // PC-002g: bypass skips merge

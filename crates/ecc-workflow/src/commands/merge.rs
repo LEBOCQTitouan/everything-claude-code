@@ -69,7 +69,9 @@ fn execute_merge(project_dir: &Path) -> Result<String, MergeError> {
     // Worktree directory is NOT removed here to avoid orphaning the caller's CWD.
     // Branch deletion is also deferred — git refuses to delete a branch that a
     // worktree is using. Both are cleaned up by `ecc worktree gc` at next session start.
-    Ok(format!("Merged {branch} into main. Worktree directory preserved (cleanup deferred to gc)."))
+    Ok(format!(
+        "Merged {branch} into main. Worktree directory preserved (cleanup deferred to gc)."
+    ))
 }
 
 fn current_branch(dir: &Path) -> Result<String, MergeError> {
@@ -519,7 +521,10 @@ mod tests {
         setup_git_repo_with_main(tmp.path());
         // Already on main — checkout should be a no-op success
         let result = checkout_main(tmp.path());
-        assert!(result.is_ok(), "checkout main should succeed when already on main: {result:?}");
+        assert!(
+            result.is_ok(),
+            "checkout main should succeed when already on main: {result:?}"
+        );
     }
 
     #[test]
@@ -540,7 +545,10 @@ mod tests {
             .unwrap();
         // Now checkout main should succeed
         let result = checkout_main(tmp.path());
-        assert!(result.is_ok(), "checkout main from detached HEAD should succeed: {result:?}");
+        assert!(
+            result.is_ok(),
+            "checkout main from detached HEAD should succeed: {result:?}"
+        );
     }
 
     #[test]
@@ -553,7 +561,10 @@ mod tests {
             .output()
             .unwrap();
         let result = checkout_main(tmp.path());
-        assert!(result.is_ok(), "checkout main from other branch should succeed: {result:?}");
+        assert!(
+            result.is_ok(),
+            "checkout main from other branch should succeed: {result:?}"
+        );
     }
 
     #[test]
@@ -620,7 +631,10 @@ mod tests {
 
         // Verify working tree has the file with correct content
         let content = std::fs::read_to_string(tmp.path().join("new_feature.txt")).unwrap();
-        assert_eq!(content, "feature content", "working tree file should match merged content");
+        assert_eq!(
+            content, "feature content",
+            "working tree file should match merged content"
+        );
     }
 
     // PC-003: execute_merge no longer contains cleanup_worktree call
@@ -635,8 +649,11 @@ mod tests {
         let wt_dir = tmp.path().join("worktree-preserve");
         Command::new("git")
             .args([
-                "worktree", "add", wt_dir.to_str().unwrap(),
-                "-b", "ecc-session-preserve",
+                "worktree",
+                "add",
+                wt_dir.to_str().unwrap(),
+                "-b",
+                "ecc-session-preserve",
             ])
             .current_dir(tmp.path())
             .output()
@@ -665,7 +682,10 @@ mod tests {
             .output();
 
         // Worktree directory must still exist
-        assert!(wt_dir.exists(), "worktree directory should be preserved after merge");
+        assert!(
+            wt_dir.exists(),
+            "worktree directory should be preserved after merge"
+        );
     }
 
     // PC-004: execute_merge success message no "cleaned up"
@@ -673,10 +693,21 @@ mod tests {
     fn merge_success_message_no_cleanup() {
         // The success message format is deterministic — verify it directly
         let branch = "ecc-session-test";
-        let expected_msg = format!("Merged {branch} into main. Worktree directory preserved (cleanup deferred to gc).");
-        assert!(!expected_msg.contains("cleaned up"), "message should not contain 'cleaned up'");
-        assert!(expected_msg.contains("Merged"), "message should contain 'Merged'");
-        assert!(expected_msg.contains("deferred"), "message should contain 'deferred'");
+        let expected_msg = format!(
+            "Merged {branch} into main. Worktree directory preserved (cleanup deferred to gc)."
+        );
+        assert!(
+            !expected_msg.contains("cleaned up"),
+            "message should not contain 'cleaned up'"
+        );
+        assert!(
+            expected_msg.contains("Merged"),
+            "message should contain 'Merged'"
+        );
+        assert!(
+            expected_msg.contains("deferred"),
+            "message should contain 'deferred'"
+        );
     }
 
     // PC-005: execute_merge defers branch deletion (can't delete while worktree exists)
@@ -688,8 +719,11 @@ mod tests {
         let wt_dir = tmp.path().join("worktree-branch");
         Command::new("git")
             .args([
-                "worktree", "add", wt_dir.to_str().unwrap(),
-                "-b", "ecc-session-branch-def",
+                "worktree",
+                "add",
+                wt_dir.to_str().unwrap(),
+                "-b",
+                "ecc-session-branch-def",
             ])
             .current_dir(tmp.path())
             .output()
@@ -731,7 +765,10 @@ mod tests {
             .output()
             .unwrap();
         let log_str = String::from_utf8_lossy(&log.stdout);
-        assert!(log_str.contains("branch commit"), "commit should be on main");
+        assert!(
+            log_str.contains("branch commit"),
+            "commit should be on main"
+        );
     }
 
     #[test]
@@ -766,6 +803,9 @@ mod tests {
             .output()
             .unwrap();
         let status_str = String::from_utf8_lossy(&status.stdout);
-        assert!(status_str.trim().is_empty(), "working tree should be clean after merge, got: {status_str}");
+        assert!(
+            status_str.trim().is_empty(),
+            "working tree should be clean after merge, got: {status_str}"
+        );
     }
 }
