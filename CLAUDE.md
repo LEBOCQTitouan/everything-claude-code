@@ -135,7 +135,6 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - `pre:write-edit:worktree-guard` blocks Write/Edit/MultiEdit on main branch — Claude must call EnterWorktree first; bypass with `ECC_WORKFLOW_BYPASS=1` (lazy worktree: created on first write, not session start)
 - `session:end:worktree-merge` auto-merges worktree to main at session end via `ecc-workflow merge` (rebase + full verify + ff-only) — if merge fails, worktree preserved; retry with `ecc-workflow merge` or clean up with `ecc worktree gc`
 - Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end
-- Never use `git update-ref` to merge worktree branches — it moves the branch pointer but doesn't update working tree files, causing stale code. Always use `ecc-workflow merge`.
 
 ## Development Notes
 

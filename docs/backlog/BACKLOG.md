@@ -120,6 +120,7 @@
 | BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
+| BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | open | 2026-04-04 |
 
 ## Dependency Graph
 
@@ -184,12 +185,15 @@ BL-107 → BL-081 (extends the audit-web command created in BL-081)
 BL-107 → BL-083 (adversarial challenge phase complements self-improvement suggestions)
 BL-109 → BL-091 (comms pipeline benefits from tracing for observability)
 BL-109 → BL-092 (comms pipeline shares structured log infrastructure)
+BL-120 → BL-086 (pattern library extends knowledge sources registry with internal patterns)
+BL-120 → BL-079 (conditional rule loading enables language-aware pattern injection)
+BL-120 → BL-093 (pattern search benefits from memory system infrastructure)
 ```
 
 ## Stats
 
-- **Total:** 118
-- **Open:** 37
+- **Total:** 119
+- **Open:** 38
 - **In-progress:** 0
 - **Implemented:** 77
 - **Archived:** 4
