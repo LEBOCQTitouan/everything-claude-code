@@ -43,6 +43,40 @@ pub const VALID_TOOLS: &[&str] = &[
     "TaskList",
 ];
 
+/// Canonical language identifiers for pattern frontmatter (AC-001.5).
+///
+/// 10 named languages plus the special value "all" for universal patterns.
+pub const VALID_PATTERN_LANGUAGES: &[&str] = &[
+    "rust", "go", "python", "typescript", "java",
+    "kotlin", "csharp", "cpp", "swift", "shell", "all",
+];
+
+/// Canonical difficulty values for pattern frontmatter (AC-001.6).
+pub const VALID_PATTERN_DIFFICULTIES: &[&str] = &["beginner", "intermediate", "advanced"];
+
+/// Required markdown sections that every pattern file must contain (AC-002.5).
+pub const REQUIRED_PATTERN_SECTIONS: &[&str] = &[
+    "Intent",
+    "Problem",
+    "Solution",
+    "Language Implementations",
+    "When to Use",
+    "When NOT to Use",
+    "Anti-Patterns",
+    "Related Patterns",
+    "References",
+];
+
+/// Known-unsafe code patterns to warn about in pattern file code blocks (AC-002.8).
+pub const UNSAFE_CODE_PATTERNS: &[&str] = &[
+    "eval(", "eval ",
+    "exec(", "exec ",
+    "system(",
+    "innerHTML",
+    "f\"SELECT", "f\"INSERT", "f\"UPDATE", "f\"DELETE",
+    "f'SELECT", "f'INSERT", "f'UPDATE", "f'DELETE",
+];
+
 /// Check if a string matches kebab-case: `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
 pub fn is_kebab_case(s: &str) -> bool {
     if s.is_empty() {
