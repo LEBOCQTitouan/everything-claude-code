@@ -127,6 +127,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - `ecc workflow` mirrors `ecc-workflow` — use either during migration; `ecc-workflow` will become a thin wrapper
 - `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by hook)
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
+- Agent frontmatter `effort` field (low/medium/high/max) controls thinking budget via SubagentStart hook — must match model tier
 - `hooks.json` lives in `hooks/`, not the project root
 - Skill directory name must match the `name` field in its frontmatter
 - Test count in CLAUDE.md must be updated after adding or removing tests
@@ -141,5 +142,5 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Source is Rust, organized as a Cargo workspace with 9 crates
 - Hexagonal architecture: domain → ports → infra → app → CLI
 - All I/O is abstracted behind port traits, enabling full in-memory testing
-- Agent/skill/hook format: Markdown with YAML frontmatter (see `agents/`, `skills/`, `hooks/`)
+- Agent/skill/hook format: Markdown with YAML frontmatter (see `agents/`, `skills/`, `hooks/`). Agent frontmatter includes `name`, `description`, `model`, `tools`, `effort`.
 - File naming: lowercase with hyphens (e.g., `python-reviewer.md`, `tdd-workflow.md`)

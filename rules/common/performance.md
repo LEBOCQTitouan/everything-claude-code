@@ -26,6 +26,24 @@
 - Design exploration (interviewer, interface-designer)
 - Audit orchestration (audit-orchestrator)
 
+## Thinking Effort Tiers
+
+Adaptive thinking is the default for Opus/Sonnet 4.6. ECC controls per-agent thinking budgets via the `effort` frontmatter field.
+
+| Effort | MAX_THINKING_TOKENS | Typical Use |
+|--------|---------------------|-------------|
+| low    | 2,048               | Haiku agents — diff detection, formatting, extraction |
+| medium | 8,192               | Sonnet agents — code review, audit checks, TDD |
+| high   | 16,384              | Sonnet (complex) / Opus — architecture, security |
+| max    | 32,768              | Opus agents — adversarial review, multi-phase planning |
+
+**Model-to-effort guidance:**
+- Haiku 4.5 → `low`
+- Sonnet 4.6 → `medium` or `high`
+- Opus 4.6 → `high` or `max`
+
+The `SubagentStart` hook reads the agent's `effort` field and sets `MAX_THINKING_TOKENS` accordingly. Bypass with `ECC_EFFORT_BYPASS=1` for debugging or benchmarking.
+
 ## Context Window Management
 
 Avoid last 20% of context window for:

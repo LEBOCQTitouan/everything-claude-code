@@ -18,6 +18,10 @@ A user-defined short name for a Claude Code [Session](#session). Stored in `~/.c
 - **Related:** [Session](#session), [Session Manager](#session-manager)
 - **Files:** `crates/ecc-app/src/session/aliases.rs` (21 exports), `crates/ecc-app/src/hook/handlers/tier3_session/lifecycle.rs`, `crates/ecc-app/src/session/mod.rs`
 
+### Adaptive Thinking
+Anthropic's mode where the model self-determines reasoning depth. Default for Opus/Sonnet 4.6. Replaces fixed `budget_tokens`.
+- **Related:** [Effort Level](#effort-level), [Thinking Tier](#thinking-tier)
+
 ### Adversary Mode
 An opt-in enhancement to the grill-me interview skill that adds adaptive adversarial questioning with answer scoring (completeness and specificity 0-3), follow-up probing on weak answers, and question-generation challenge at each stage. Activated when a user says "adversary mode" or "hard mode".
 - **Related:** [Skill](#skill)
@@ -86,6 +90,10 @@ An enum representing the ECC configuration source mode. `Default` = release-inst
 
 ### Draft
 Generated content awaiting human review. Lives in `comms/drafts/{channel}/`. Never auto-published.
+
+### Effort Level
+One of low/medium/high/max controlling thinking budget allocation per agent. Set via the `effort` frontmatter field. Maps to `MAX_THINKING_TOKENS` via the effort enforcement hook.
+- **Related:** [Adaptive Thinking](#adaptive-thinking), [Thinking Tier](#thinking-tier), [Agent](#agent)
 
 ### Diagram Generator
 A doc-system [Agent](#agent) (`diagram-generator.md`) that analyzes codebase structure and generates Mermaid diagrams (module dependency graphs, data flow, sequence diagrams). Part of the 6-agent doc system alongside doc-orchestrator, doc-analyzer, doc-generator, doc-validator, and doc-reporter. Respects the [Custom Diagram Registry](#custom-diagram-registry) to avoid overwriting user-maintained diagrams.
@@ -166,6 +174,10 @@ Parent-side check after each [TDD Executor](#tdd-executor) subagent completes du
 A file-based, session-independent implementation progress tracker persisted at `docs/specs/<slug>/tasks.md`. Written by the `/implement` parent orchestrator during Phase 2 with single-writer semantics — only the parent writes, all other consumers (including [TDD Executor](#tdd-executor) subagents and future `/catchup`) read only. Tracks PC statuses (`pending`, `red`, `green`, `done`, `failed`) and post-TDD phases (E2E, code review, doc updates, implement-done) with inline pipe-separated ISO 8601 timestamp trails. Serves as the authoritative cross-session resume source, replacing ephemeral TodoWrite for re-entry. Distinct from TodoWrite (ephemeral, session-bound) and TaskCreate (native Claude, lost on compaction).
 - **Related:** [TDD Executor](#tdd-executor), [Context Brief](#context-brief), [Command](#command)
 - **Files:** [`commands/implement.md`](../commands/implement.md)
+
+### Thinking Tier
+The category-to-effort mapping: haiku agents use low, sonnet agents use medium/high, opus agents use high/max. Enforced by the `SubagentStart` hook and validated by `ecc validate agents`.
+- **Related:** [Adaptive Thinking](#adaptive-thinking), [Effort Level](#effort-level), [Agent](#agent)
 
 ### TDD Executor
 A subagent ([Agent](#agent)) that executes a single Pass Condition's RED-GREEN-REFACTOR cycle in an isolated context window. Receives a [Context Brief](#context-brief) from the parent, implements the PC, commits atomically (test, implementation, optional refactor), and returns structured results (pc_id, status, commits, files_changed, error). Owned by `/implement` Phase 3.

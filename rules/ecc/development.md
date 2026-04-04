@@ -6,7 +6,8 @@ Meta-steering for how ECC agents, commands, skills, and hooks should be built. W
 
 - All agents with 4+ step workflows MUST include TodoWrite with graceful degradation: "If TodoWrite is unavailable, proceed without tracking"
 - All agents that spawn subagents MUST specify `allowedTools` on every spawn
-- All agents MUST have frontmatter: `name`, `description`, `tools`, `model`
+- All agents MUST have frontmatter: `name`, `description`, `tools`, `model`, `effort`
+- Agent `effort` field (low, medium, high, max) should match model tier: haiku=low, sonnet=medium/high, opus=high/max
 - Agents with cross-session concerns SHOULD have `memory: project`
 - Read-only analysis agents MUST NOT have `Write` or `Edit` in tools
 
