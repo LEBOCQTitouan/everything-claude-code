@@ -3,7 +3,7 @@ id: BL-084
 title: "Backlog conformance audit — verify implementations match original backlog intent"
 scope: MEDIUM
 target: /spec dev
-status: open
+status: implemented
 created: 2026-03-28
 tier: null
 tags: [audit, backlog, conformance, traceability]
