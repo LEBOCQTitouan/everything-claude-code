@@ -576,4 +576,841 @@ Solution.
             t.stderr_output()
         );
     }
+
+    // Helper: pattern content with innerHTML (unsafe code) in a code block
+    fn unsafe_code_content(suppress: bool) -> String {
+        // Note: the string below deliberately tests the unsafe-code scanner.
+        // The unsafe marker used is "innerHTML" which is an XSS risk in real code
+        // but is intentional here as test data for the scanner.
+        let suppress_line = if suppress {
+            "unsafe-examples: true\n"
+        } else {
+            ""
+        };
+        // Build the unsafe marker via concatenation to document intent
+        let unsafe_marker = ["inner", "HTML"].concat();
+        format!(
+            r#"---
+name: factory-method
+category: creational
+tags: [design-pattern]
+languages: [rust]
+difficulty: intermediate
+{suppress_line}---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+```javascript
+el.{unsafe_marker} = userInput;
+```
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#
+        )
+    }
+
+    #[test]
+    fn invalid_cross_ref_errors() {
+        // related-patterns frontmatter references a pattern that does not exist
+        let content = r#"---
+name: factory-method
+category: creational
+tags: [design-pattern]
+languages: [rust]
+difficulty: intermediate
+related-patterns: [non-existent-pattern]
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Implementation.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Non-existent pattern.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", content)
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(!result, "Expected invalid cross-ref to fail");
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("ERROR") && s.contains("non-existent-pattern")),
+            "Expected ERROR about 'non-existent-pattern', got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn lang_impl_mismatch_errors() {
+        // Language Implementations has ### Go but frontmatter only lists rust
+        let content = r#"---
+name: factory-method
+category: creational
+tags: [design-pattern]
+languages: [rust]
+difficulty: intermediate
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Rust implementation.
+
+### Go
+Go implementation.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", content)
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(!result, "Expected lang impl mismatch to fail");
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("ERROR") && s.contains("Go")),
+            "Expected ERROR about 'Go' not in frontmatter, got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn languages_all_skips_impl_check() {
+        // languages: [all] — any ### headings allowed, no mismatch error
+        let content = r#"---
+name: hexagonal
+category: architecture
+tags: [architecture]
+languages: [all]
+difficulty: advanced
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Any Language
+Generic implementation.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/architecture")
+            .with_file("/root/patterns/architecture/hexagonal.md", content)
+            .with_file("/root/patterns/index.md", "hexagonal\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            result,
+            "Expected languages:[all] to skip impl check. stderr: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn empty_languages_errors() {
+        let content = r#"---
+name: factory-method
+category: creational
+tags: [design-pattern]
+languages: []
+difficulty: intermediate
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Implementation.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", content)
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(!result, "Expected empty languages list to fail");
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("ERROR") && s.contains("languages")),
+            "Expected ERROR about empty languages, got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn invalid_language_errors() {
+        let content = r#"---
+name: factory-method
+category: creational
+tags: [design-pattern]
+languages: [rust, brainfuck]
+difficulty: intermediate
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Rust impl.
+
+### Brainfuck
+BF impl.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", content)
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(!result, "Expected invalid language to fail");
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("ERROR") && s.contains("brainfuck")),
+            "Expected ERROR about 'brainfuck', got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn invalid_difficulty_errors() {
+        let content = r#"---
+name: factory-method
+category: creational
+tags: [design-pattern]
+languages: [rust]
+difficulty: expert
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Implementation.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", content)
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(!result, "Expected invalid difficulty to fail");
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("ERROR") && s.contains("expert")),
+            "Expected ERROR about 'expert', got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn unsafe_code_warns() {
+        // Code block contains an unsafe pattern — should emit a WARNING (not error)
+        let content = unsafe_code_content(false);
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", &content)
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            result,
+            "Expected unsafe code to only warn, not fail. stderr: {:?}",
+            t.stderr_output()
+        );
+        let unsafe_marker = ["inner", "HTML"].concat();
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("WARN") && s.contains(&unsafe_marker)),
+            "Expected WARN about unsafe pattern, got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn unsafe_examples_suppresses() {
+        // unsafe-examples: true suppresses the warning
+        let content = unsafe_code_content(true);
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", &content)
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            result,
+            "Expected unsafe-examples:true to suppress warning. stderr: {:?}",
+            t.stderr_output()
+        );
+        let unsafe_marker = ["inner", "HTML"].concat();
+        assert!(
+            !t.stderr_output()
+                .iter()
+                .any(|s| s.contains("WARN") && s.contains(&unsafe_marker)),
+            "Expected no WARN about unsafe pattern when unsafe-examples:true, got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn self_reference_warns() {
+        // related-patterns lists the pattern's own name
+        let content = r#"---
+name: factory-method
+category: creational
+tags: [design-pattern]
+languages: [rust]
+difficulty: intermediate
+related-patterns: [factory-method]
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Implementation.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- This pattern itself.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", content)
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            result,
+            "Expected self-reference to only warn. stderr: {:?}",
+            t.stderr_output()
+        );
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("WARN") && s.contains("self")),
+            "Expected WARN about self-reference, got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn root_level_file_warns() {
+        // An .md file directly in patterns/ (not in a category subdir) is warned and skipped
+        let valid_content = valid_pattern_content();
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", &valid_content)
+            .with_file("/root/patterns/readme.md", "# Root level file\n")
+            .with_file("/root/patterns/index.md", "factory-method\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            result,
+            "Expected root-level file to only warn, not fail. stderr: {:?}",
+            t.stderr_output()
+        );
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("WARN") && s.contains("readme.md")),
+            "Expected WARN about root-level 'readme.md', got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn yaml_flow_list_syntax() {
+        // Both [rust, go] and ["rust", "go"] flow styles should parse correctly
+        let content_bare = r#"---
+name: factory-method
+category: creational
+tags: [design-pattern, gof]
+languages: [rust, go]
+difficulty: intermediate
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Rust impl.
+
+### Go
+Go impl.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let content_quoted = r#"---
+name: abstract-factory
+category: creational
+tags: ["design-pattern", "gof"]
+languages: ["rust", "go"]
+difficulty: intermediate
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Rust impl.
+
+### Go
+Go impl.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", content_bare)
+            .with_file(
+                "/root/patterns/creational/abstract-factory.md",
+                content_quoted,
+            )
+            .with_file(
+                "/root/patterns/index.md",
+                "factory-method\nabstract-factory\n",
+            );
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            result,
+            "Expected both flow-list syntaxes to pass. stderr: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn missing_from_index_errors() {
+        // Pattern exists on disk but is NOT listed in patterns/index.md
+        let content = valid_pattern_content();
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", &content)
+            .with_file(
+                "/root/patterns/index.md",
+                "# Pattern Index\n\n(no patterns listed)\n",
+            );
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(!result, "Expected missing from index to fail");
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("ERROR") && s.contains("factory-method")),
+            "Expected ERROR about 'factory-method' not in index, got: {:?}",
+            t.stderr_output()
+        );
+    }
+
+    #[test]
+    fn success_message_counts() {
+        // Multiple files across categories — success message shows correct N and M
+        let content_a = valid_pattern_content(); // category: creational
+        let content_b = r#"---
+name: abstract-factory
+category: creational
+tags: [design-pattern]
+languages: [rust]
+difficulty: intermediate
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Rust
+Implementation.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let content_c = r#"---
+name: hexagonal
+category: architecture
+tags: [architecture]
+languages: [all]
+difficulty: advanced
+---
+
+## Intent
+Intent.
+
+## Problem
+Problem.
+
+## Solution
+Solution.
+
+## Language Implementations
+### Any Language
+Generic.
+
+## When to Use
+- Use case.
+
+## When NOT to Use
+- Counter.
+
+## Anti-Patterns
+- Bad.
+
+## Related Patterns
+- Other.
+
+## References
+- Book.
+"#;
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_dir("/root/patterns/architecture")
+            .with_file("/root/patterns/creational/factory-method.md", &content_a)
+            .with_file("/root/patterns/creational/abstract-factory.md", content_b)
+            .with_file("/root/patterns/architecture/hexagonal.md", content_c)
+            .with_file(
+                "/root/patterns/index.md",
+                "factory-method\nabstract-factory\nhexagonal\n",
+            );
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            result,
+            "Expected all patterns to pass. stderr: {:?}",
+            t.stderr_output()
+        );
+        assert!(
+            t.stdout_output()
+                .iter()
+                .any(|s| s.contains("3 pattern files across 2 categories")),
+            "Expected '3 pattern files across 2 categories', got: {:?}",
+            t.stdout_output()
+        );
+    }
 }
