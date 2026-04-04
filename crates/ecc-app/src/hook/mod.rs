@@ -143,6 +143,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "pre:edit-write:workflow-branch-guard" => {
             handlers::pre_edit_write_workflow_branch_guard(stdin, ports)
         }
+        "pre:write-edit:worktree-guard" => handlers::pre_worktree_write_guard(stdin, ports),
 
         // Tier 1: Clean Craft hooks
         "pre:edit:boundary-crossing" => handlers::pre_edit_boundary_crossing(stdin, ports),
@@ -153,6 +154,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
         // New event handlers
         "post:failure:error-context" => handlers::post_failure_error_context(stdin, ports),
+        "pre:prompt:context-hydrate" => handlers::pre_prompt_context_hydrate(stdin, ports),
         "pre:prompt:context-inject" => handlers::pre_prompt_context_inject(stdin, ports),
         "post:compact:state-save" => handlers::post_compact(stdin, ports),
         "subagent:start:log" => handlers::subagent_start_log(stdin, ports),
@@ -169,14 +171,15 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         // Tier 3: Session/File I/O hooks
         "session:start" => handlers::session_start(stdin, ports),
         "stop:session-end" => handlers::session_end(stdin, ports),
+        "session:end:worktree-merge" => handlers::session_end_merge(stdin, ports),
+        "start:cartography" => handlers::start_cartography(stdin, ports),
+        "stop:cartography" => handlers::stop_cartography(stdin, ports),
         "pre:compact" => handlers::pre_compact(stdin, ports),
         "stop:evaluate-session" => handlers::evaluate_session(stdin, ports),
         "stop:cost-tracker" => handlers::cost_tracker(stdin, ports),
         "stop:oath-reflection" => handlers::oath_reflection(stdin, ports),
         "stop:craft-velocity" => handlers::craft_velocity(stdin, ports),
         "stop:daily-summary" => handlers::daily_summary(stdin, ports),
-        "stop:cartography" => handlers::stop_cartography(stdin, ports),
-        "start:cartography" => handlers::start_cartography(stdin, ports),
 
         // Unknown hook — passthrough with warning
         _ => {

@@ -14,7 +14,7 @@ The `ecc-domain` crate contains 9 domain modules, each responsible for a distinc
 | `session` | Session lifecycle — metadata parsing, alias management, statistics | `SessionMetadata`, `SessionAlias`, `SessionStats` |
 | `backlog` | Backlog management — entry parsing, ID generation, duplicate detection | `BacklogEntry`, `BacklogError`, `BacklogId` |
 | `workflow` | Workflow state machine — phase transitions, state persistence, toolchain config | `WorkflowState`, `Phase`, `Concern`, `Timestamp`, `Completion` |
-| `cartography` | Cartography document model — delta merge, schema validation, staleness detection, coverage calculation | `SessionDelta`, `ProjectType`, `ChangedFile`, `CartographyMeta`, `CoverageReport` |
+| `cartography` | Cartography document model — delta merge, schema validation, staleness detection, coverage calculation, element registry, cross-reference matrix | `SessionDelta`, `ProjectType`, `ChangedFile`, `CartographyMeta`, `CoverageReport`, `ElementEntry`, `ElementType`, `CrossReferenceMatrix` |
 
 ## Cross-Module Dependencies
 
@@ -39,6 +39,10 @@ Knowledge reference registry with Technology Radar vocabulary. Owns `docs/source
 ### Workflow Templates
 
 Installable GitHub Actions workflow YAML files that users copy to their project's `.github/workflows/` directory. Distinct from skills (Markdown knowledge for Claude Code) and commands (slash commands). Customized via environment variables at runtime, not via file modification. Distributed via `/scaffold-workflows` slash command. Content type: `.yml` files in `workflow-templates/`.
+
+### Pre-Hydration
+
+Deterministic context injection before ECC commands. UserPromptSubmit hook pre-fetches project type, workflow state, and per-command context (spec: git+backlog, design: spec summary, implement: design summary+tests). Tool subsetting recommendations per command type. Lives in `hook_runtime` bounded context as a specialized handler.
 
 ### Audit Web
 

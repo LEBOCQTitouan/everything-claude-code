@@ -13,8 +13,9 @@ pub use tier1_simple::{
     post_edit_boy_scout_delta, post_edit_console_warn, post_edit_naming_review,
     post_edit_newspaper_check, post_exit_worktree_cleanup_reminder, post_failure_error_context,
     pre_bash_git_push_reminder, pre_bash_tmux_reminder, pre_edit_boundary_crossing,
-    pre_edit_stepdown_warning, pre_edit_write_workflow_branch_guard, pre_prompt_context_inject,
-    session_end_marker, stop_uncommitted_reminder, suggest_compact,
+    pre_edit_stepdown_warning, pre_edit_write_workflow_branch_guard, pre_prompt_context_hydrate,
+    pre_prompt_context_inject, pre_worktree_write_guard, session_end_marker,
+    stop_uncommitted_reminder, suggest_compact,
 };
 pub use tier2_notify::stop_notify;
 pub use tier2_tools::{
@@ -23,5 +24,6 @@ pub use tier2_tools::{
 pub use tier3_session::{
     config_change_log, cost_tracker, craft_velocity, daily_summary, evaluate_session,
     oath_reflection, post_compact, post_enter_worktree_session_log, pre_compact, session_end,
-    session_start, start_cartography, stop_cartography, subagent_start_log, subagent_stop_log,
+    session_end_merge, session_start, start_cartography, stop_cartography, subagent_start_log,
+    subagent_stop_log,
 };

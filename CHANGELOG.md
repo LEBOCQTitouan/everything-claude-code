@@ -10,37 +10,49 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Cartography element registry (BL-064 Sub-Spec B)**: Per-element documentation files in `docs/cartography/elements/` with cross-reference INDEX.md matrix. Two-tier element types (universal: Module, Interface, Config, Unknown; ECC: Command, Agent, Skill, Hook, Rule, Crate, Port, Adapter, DomainEntity). Post-loop element generation after journey/flow processing. Schema validation, staleness detection, and coverage dashboard extended for elements. New agent: `cartography-element-generator`. 3 ADRs (0042-0044).
+
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
-
 - **Universal app cartography system (BL-064 Sub-Spec A)**: Two-phase architecture for automatic documentation of user journeys and data flows. Stop hook captures session deltas as JSON; next session's agent processes pending deltas to generate/update `docs/cartography/` files. Includes section-marker-based delta merge, schema validation (`ecc validate cartography`), staleness detection, coverage dashboard (`--coverage`), and `/spec-dev` actor registry integration. 5 ADRs (0037-0041). New bounded context: `ecc-domain::cartography` with types, merge, validation, staleness, and coverage modules.
 - **Mutation testing integration (BL-116)**: cargo-mutants configured for ecc-domain and ecc-app with nextest integration. `cargo xtask mutants` subcommand with `--package`, `--in-diff`, `--timeout` flags. `/mutants` slash command for Claude Code sessions. `/verify --mutation` opt-in flag for diff-scoped mutation testing. Non-blocking CI mutation job with pinned version and artifact upload. Baseline report templates and mutation score dashboard. ADRs 0037 and 0038.
 - **GitHub workflow templates (BL-119)**: 5 reusable GitHub Actions workflow templates for Claude Code integration — PR review, fork-safe PR review, issue triage, release notes generation, and CI convention linter. All use `anthropics/claude-code-action@v1` with least-privilege permissions.
 - **`/scaffold-workflows` command**: Interactive slash command to install workflow templates into a project's `.github/workflows/` directory with template selection, overwrite warnings, and dry-run support.
 - **`ci-cd-workflows` skill**: Comprehensive CI/CD skill merging general GitHub Actions patterns with Claude Code workflow template documentation, security guidance, and fork safety patterns. Replaces the `github-actions` skill (deprecated redirect retained for one release cycle).
 - **Backlog in-work filtering (BL-097)**: `/spec` picker now detects active sessions via worktree scan and advisory lock files, hiding in-progress items from the selection. `--show-all` escape hatch available. Lock files auto-cleaned (24h TTL + orphan detection).
+- **Deterministic Hook System Redesign (Phase 1)**: Unified `ecc workflow` subcommand group mirroring all 23 ecc-workflow subcommands. GitInfo and Clock port traits with adapters. Worktree-scoped state resolution. Stuck-state recovery with injectable clock. Phase verification guards. Lexical path normalization fixing phase gate path traversal. WorkflowState version field. hooks.json migration utility. 15 new characterization and integration tests.
+- **Autonomous visual testing (BL-103)**: Extended e2e-runner agent with vision-based UI validation. New `visual-testing` skill with screenshot capture patterns (VisualCapture helper, manifest schema), AI-powered visual assertions (visualAssert via Read tool), visual regression detection (baseline keying, severity classification), pixel-diff supplementary guidance (pixelmatch, reg-cli), security warnings (PII in screenshots, .gitignore patterns), and cost/latency estimation. Opt-in via `visual: true` in journey specs. ADR 0042: vision-vs-pixel comparison.
+- **Multi-agent team coordination (BL-104)**: Declarative team manifests (Markdown + YAML frontmatter) in `teams/` directory. `ecc validate teams` with strict agent cross-referencing and tool privilege escalation warnings. Pre-defined teams: implement-team, audit-team, review-team. New skills: shared-state-protocol, task-handoff.
 
-- **Backlog in-work filtering (BL-097)**: `/spec` picker now detects active sessions via worktree scan and advisory lock files, hiding in-progress items from the selection. `--show-all` escape hatch available. Lock files auto-cleaned (24h TTL + orphan detection).
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 
 ### Changed
 
 - **Release pipeline migrated to cargo-dist (BL-112)**: Replaced hand-rolled 267-line `release.yml` with cargo-dist declarative pipeline (`dist.toml`). Structured as plan/build/host/cosign/announce stages. Custom cosign signing job preserved as non-blocking post-build step. All 5 cross-compilation targets maintained.
-## [Unreleased]
-
-### Added
-
-- **Deterministic Hook System Redesign (Phase 1)**: Unified `ecc workflow` subcommand group mirroring all 23 ecc-workflow subcommands. GitInfo and Clock port traits with adapters. Worktree-scoped state resolution. Stuck-state recovery with injectable clock. Phase verification guards. Lexical path normalization fixing phase gate path traversal. WorkflowState version field. hooks.json migration utility. 15 new characterization and integration tests.
-- **Multi-agent team coordination (BL-104)**: Declarative team manifests (Markdown + YAML frontmatter) in `teams/` directory. `ecc validate teams` with strict agent cross-referencing and tool privilege escalation warnings. Pre-defined teams: implement-team, audit-team, review-team. New skills: shared-state-protocol, task-handoff.
 
 ## v5.1.0
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
+- **Deploy ecc-flock not a binary**: `cargo xtask deploy` failed because ecc-flock (lib crate) was listed in binary install list. Removed from deploy lists.
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
+- **Lazy worktree isolation**: Write-guard hook (`pre:write-edit:worktree-guard`) blocks file writes outside worktrees, forcing lazy worktree creation. Session-end merge hook auto-merges worktree to main via rebase + verify + ff-only. ADR-0042.
 - **Deterministic git analytics CLI (BL-071)**: `ecc analyze` with 4 subcommands — `changelog` (conventional commit grouping), `hotspots` (file change frequency), `coupling` (co-change pairs), `bus-factor` (single-author risk). New `GitLogPort` trait (ADR-0037) for proper hex-arch boundary. 56 unit tests, pure domain logic.
 - **Self-update command (BL-088)**: `ecc update` — self-update from GitHub Releases with cosign verification. Downloads platform-specific tarball, verifies keyless Sigstore signature, atomic binary swap with rollback. Supports `--version` pinning, `--dry-run` preview, `--pre` for pre-releases. Uses ureq for minimal HTTP footprint. GitHub Actions release workflow produces tarballs with SHA-256 checksums and cosign signatures. ADR-0037 (ureq), ADR-0038 (Sigstore).
 - **Cargo mutants mutation testing (BL-116)**: `cargo xtask mutants` command with diff-scoped mode (`--in-diff`), package targeting (`-p`), dry-run support, and cargo-nextest integration. Includes `mutants.toml` exclusion config, informational CI job on PRs, and baseline mutation report template.
@@ -52,6 +64,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -62,6 +80,12 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
 
@@ -79,6 +103,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -93,6 +123,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -106,6 +142,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -116,6 +158,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
+
 ### Fixed
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -123,6 +171,12 @@ Generated from git conventional commits. Grouped by type and version.
 - **Structured log management (BL-092)**: JSON rolling daily files via tracing-appender to ~/.ecc/logs/. SQLite FTS5 index for full-text log search. Background indexer thread. `ecc log tail|search|prune|export` CLI commands. Session correlation via CLAUDE_SESSION_ID. 30-day auto-prune at startup with configurable retention. Structured tracing fields on all 40 hook handlers. LogStore port + SqliteLogStore adapter. ADR-0034 documents dual read/write path pattern.
 
 ## v4.7.0
+
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
 
@@ -134,6 +188,12 @@ Generated from git conventional commits. Grouped by type and version.
   Updated `ARCHITECTURE.md`: added `ecc-flock` to crate list, corrected test count to 1671.
 
 ## v4.3.1
+
+- **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+
+### Changed
+
+- **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
 

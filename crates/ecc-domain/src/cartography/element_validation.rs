@@ -1,31 +1,38 @@
-//! Schema validation for cartography element files.
+//! Validation logic for element markdown files.
 //!
-//! Pure string validation -- checks for required markdown headers.
-//! Zero I/O.
+//! Zero I/O — operates on `&str` content only.
 
-/// Validates an element file's required sections.
+/// Required sections for a valid element markdown file.
+const REQUIRED_ELEMENT_SECTIONS: &[&str] = &[
+    "## Overview",
+    "## Relationships",
+    "## Participating Flows",
+    "## Participating Journeys",
+];
+
+/// Validate element markdown content, checking for all required sections.
 ///
-/// Required sections: `## Overview`, `## Responsibilities`, `## Interfaces`, `## Related Journeys`
-///
-/// Returns `Ok(())` if all required sections are present, or `Err(missing)` where
-/// `missing` is a list of section names that are absent.
+/// Returns `Ok(())` when all required sections are present.
+/// Returns `Err` with a list of missing section names when any are absent.
+/// Section order is irrelevant — all lines are scanned.
 pub fn validate_element(content: &str) -> Result<(), Vec<String>> {
-    let required = [
-        ("## Overview", "Overview"),
-        ("## Responsibilities", "Responsibilities"),
-        ("## Interfaces", "Interfaces"),
-        ("## Related Journeys", "Related Journeys"),
-    ];
-
-    let missing: Vec<String> = required
+    let mut missing: Vec<String> = REQUIRED_ELEMENT_SECTIONS
         .iter()
-        .filter(|(header, _)| !content.contains(header))
-        .map(|(_, name)| (*name).to_owned())
+        .filter(|&&section| {
+            !content
+                .lines()
+                .any(|line| line.trim() == section)
+        })
+        .map(|&section| {
+            // Return just the section name without the "## " prefix
+            section.trim_start_matches("## ").to_string()
+        })
         .collect();
 
     if missing.is_empty() {
         Ok(())
     } else {
+        missing.sort();
         Err(missing)
     }
 }
@@ -35,32 +42,70 @@ mod tests {
     use super::*;
 
     #[test]
-    fn element_passes_when_all_required_sections_present() {
+    fn valid_element_all_sections() {
         let content = "\
-# Element: auth-service
-
 ## Overview
-The authentication service.
 
-## Responsibilities
-- Handle login
-- Issue tokens
+Some overview text.
 
-## Interfaces
-- POST /auth/login
+## Relationships
 
-## Related Journeys
-- user-login-journey
+Some relationships.
+
+## Participating Flows
+
+- flow-alpha
+
+## Participating Journeys
+
+- journey-beta
 ";
-        assert!(validate_element(content).is_ok());
+        assert_eq!(validate_element(content), Ok(()));
     }
 
     #[test]
-    fn element_reports_missing_sections_when_absent() {
-        let content = "# Element: bad\n\n## Overview\nSome text.\n";
-        let err = validate_element(content).unwrap_err();
-        assert!(err.iter().any(|s| s.contains("Responsibilities")));
-        assert!(err.iter().any(|s| s.contains("Interfaces")));
-        assert!(err.iter().any(|s| s.contains("Related Journeys")));
+    fn missing_sections_reported() {
+        let content = "\
+## Overview
+
+Only the overview section is present.
+";
+        let result = validate_element(content);
+        assert!(result.is_err(), "expected Err for missing sections");
+        let missing = result.unwrap_err();
+        assert!(
+            missing.contains(&"Relationships".to_string()),
+            "expected 'Relationships' in missing list, got: {missing:?}"
+        );
+        assert!(
+            missing.contains(&"Participating Flows".to_string()),
+            "expected 'Participating Flows' in missing list, got: {missing:?}"
+        );
+        assert!(
+            missing.contains(&"Participating Journeys".to_string()),
+            "expected 'Participating Journeys' in missing list, got: {missing:?}"
+        );
+    }
+
+    #[test]
+    fn section_order_independent() {
+        let content = "\
+## Participating Journeys
+
+- journey-one
+
+## Participating Flows
+
+- flow-one
+
+## Relationships
+
+Uses nothing.
+
+## Overview
+
+Reversed order element.
+";
+        assert_eq!(validate_element(content), Ok(()));
     }
 }

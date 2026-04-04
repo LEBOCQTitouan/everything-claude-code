@@ -78,7 +78,7 @@
 | BL-075 | Deterministic task synchronization — single source of truth for tasks | — | HIGH | /spec dev | implemented | 2026-03-26 |
 | BL-076 | Statusline Unicode byte-counting bug hides rate limit segments | — | LOW | /spec-fix | implemented | 2026-03-27 | 2026-03-27 |
 | BL-077 | Full documentation pass — coverage, drift validation, and gap analysis | — | EPIC | /spec-dev | open | 2026-03-27 |
-| BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | open | 2026-03-27 |
+| BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | implemented | 2026-03-27 | 2026-03-27 |
 | BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | open | 2026-03-27 |
 | BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | open | 2026-03-27 |
 | BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | implemented | 2026-03-27 |
@@ -105,7 +105,7 @@
 | BL-102 | Promptware Engineering practices — prompt testing and monitoring | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-103 | Autonomous visual testing integration — vision-based UI validation | — | HIGH | /spec-dev | open | 2026-03-29 |
 | BL-104 | Multi-agent team coordination — shared state and task handoff | — | HIGH | /spec-dev | open | 2026-03-29 |
-| BL-105 | Bump crossterm 0.28 → 0.29.0 | — | LOW | direct edit | open | 2026-03-29 |
+| BL-105 | Bump crossterm 0.28 → 0.29.0 | — | LOW | direct edit | implemented | 2026-03-29 | 2026-03-29 |
 | BL-106 | Harness reliability metrics — benchmark against reference patterns | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-107 | Audit-web guided profile — interactive setup, persisted dimensions, self-improvement | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-108 | Smart stop notification — only notify on final stop or user input needed | — | MEDIUM | /spec-dev | open | 2026-03-29 |
@@ -120,6 +120,7 @@
 | BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
+| BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | open | 2026-04-04 |
 
 ## Dependency Graph
 
@@ -184,12 +185,15 @@ BL-107 → BL-081 (extends the audit-web command created in BL-081)
 BL-107 → BL-083 (adversarial challenge phase complements self-improvement suggestions)
 BL-109 → BL-091 (comms pipeline benefits from tracing for observability)
 BL-109 → BL-092 (comms pipeline shares structured log infrastructure)
+BL-120 → BL-086 (pattern library extends knowledge sources registry with internal patterns)
+BL-120 → BL-079 (conditional rule loading enables language-aware pattern injection)
+BL-120 → BL-093 (pattern search benefits from memory system infrastructure)
 ```
 
 ## Stats
 
-- **Total:** 118
-- **Open:** 37
+- **Total:** 119
+- **Open:** 38
 - **In-progress:** 0
 - **Implemented:** 77
 - **Archived:** 4

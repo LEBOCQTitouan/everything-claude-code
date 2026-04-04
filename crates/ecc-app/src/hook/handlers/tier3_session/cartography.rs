@@ -149,7 +149,10 @@ pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
             delta
                 .changed_files
                 .iter()
-                .any(|f| infer_element_type_from_path(&f.path).is_some())
+                .any(|f| {
+                    let et = infer_element_type_from_path(&f.path);
+                    !matches!(et, ecc_domain::cartography::element_types::ElementType::Unknown)
+                })
         });
 
         if has_element_targets {
@@ -307,9 +310,46 @@ fn collect_element_entries(ports: &HookPorts<'_>, elements_dir: &Path) -> Vec<El
             }
             let slug = name[..name.len() - 3].to_string();
             let content = ports.fs.read_to_string(&path).ok()?;
-            Some(ElementEntry { slug, content })
+            // Parse participating flows and journeys from markdown content
+            let participating_flows = extract_links_from_section(&content, "## Participating Flows");
+            let participating_journeys = extract_links_from_section(&content, "## Participating Journeys");
+            Some(ElementEntry {
+                slug,
+                element_type: ecc_domain::cartography::element_types::ElementType::Unknown,
+                purpose: String::new(),
+                uses: Vec::new(),
+                used_by: Vec::new(),
+                participating_flows,
+                participating_journeys,
+                sources: Vec::new(),
+                last_updated: String::new(),
+            })
         })
         .collect()
+}
+
+/// Extract slug references from a markdown section (lines containing `[slug](path)` links).
+fn extract_links_from_section(content: &str, section_header: &str) -> Vec<String> {
+    let mut in_section = false;
+    let mut slugs = Vec::new();
+    for line in content.lines() {
+        if line.starts_with("## ") {
+            in_section = line.trim() == section_header;
+            continue;
+        }
+        if in_section {
+            // Extract slug from markdown links like [slug-name](../flows/slug-name.md)
+            if let Some(start) = line.find('[') {
+                if let Some(end) = line[start..].find(']') {
+                    let name = &line[start + 1..start + end];
+                    if !name.is_empty() {
+                        slugs.push(name.to_string());
+                    }
+                }
+            }
+        }
+    }
+    slugs
 }
 
 /// Collect slugs from `*.md` files in a directory (file stem, excluding INDEX.md and README.md).
