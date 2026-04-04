@@ -73,6 +73,9 @@ ecc cost breakdown --by agent|model [--since 7d]  Per-agent or per-model breakdo
 ecc cost compare --before DATE --after DATE  Before/after cost comparison
 ecc cost export --format json|csv [--since 7d]  Export cost data
 ecc cost prune [--older-than 90d]  Delete old cost records
+ecc campaign init <spec-dir>    Create campaign.md for grill-me decision persistence
+ecc campaign append-decision --question Q --answer A --source recommended|user  Append decision
+ecc campaign show              Output campaign.md as JSON
 ecc cost migrate  Import legacy JSONL data into SQLite
 ecc audit-web profile init    Generate suggested audit profile from codebase
 ecc audit-web profile show    Display current audit profile
