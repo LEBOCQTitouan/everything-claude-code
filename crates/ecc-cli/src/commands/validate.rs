@@ -38,6 +38,8 @@ pub enum CliValidateTarget {
     Statusline,
     /// Validate team manifest files
     Teams,
+    /// Validate pattern library files
+    Patterns,
     /// Validate spec AC format and numbering
     Spec {
         /// Path to spec.md
@@ -121,6 +123,7 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Paths => ecc_app::validate::ValidateTarget::Paths,
         CliValidateTarget::Statusline => ecc_app::validate::ValidateTarget::Statusline,
         CliValidateTarget::Teams => ecc_app::validate::ValidateTarget::Teams,
+        CliValidateTarget::Patterns => ecc_app::validate::ValidateTarget::Patterns,
         // Spec, Design, and Cartography are handled directly in run() — unreachable here
         CliValidateTarget::Spec { .. }
         | CliValidateTarget::Design { .. }

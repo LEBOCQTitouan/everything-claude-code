@@ -253,6 +253,7 @@ mod tests {
                 skills: vec!["tdd".to_string()],
                 rules,
                 hook_descriptions: vec![],
+                patterns: vec![],
             },
         }
     }

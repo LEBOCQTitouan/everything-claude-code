@@ -5,6 +5,7 @@ mod commands;
 mod conventions;
 mod hooks;
 mod paths;
+mod patterns;
 mod rules;
 mod skills;
 mod statusline;
@@ -20,6 +21,7 @@ pub enum ValidateTarget {
     Skills,
     Rules,
     Paths,
+    Patterns,
     Statusline,
     Teams,
 }
@@ -40,6 +42,7 @@ pub fn run_validate(
         ValidateTarget::Skills => skills::validate_skills(root, fs, terminal),
         ValidateTarget::Rules => rules::validate_rules(root, fs, terminal),
         ValidateTarget::Paths => paths::validate_paths(root, fs, terminal),
+        ValidateTarget::Patterns => patterns::validate_patterns(root, fs, terminal),
         ValidateTarget::Statusline => statusline::validate_statusline(root, fs, terminal, env),
         ValidateTarget::Teams => teams::validate_teams(root, fs, terminal),
     }

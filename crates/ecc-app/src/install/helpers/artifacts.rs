@@ -48,6 +48,7 @@ pub(in crate::install) fn collect_installed_artifacts(
         skills,
         rules,
         hook_descriptions: vec![],
+        patterns: vec![],
     }
 }
 

@@ -118,6 +118,7 @@ mod tests {
                 skills: vec!["tdd".to_string()],
                 rules,
                 hook_descriptions: vec!["phase-gate".to_string()],
+                patterns: vec![],
             },
         }
     }
