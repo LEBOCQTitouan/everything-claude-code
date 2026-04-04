@@ -4,6 +4,7 @@ use ecc_domain::config::validate::{
 };
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
+use rayon::prelude::*;
 use std::path::Path;
 
 pub(super) fn validate_patterns(
@@ -74,35 +75,31 @@ pub(super) fn validate_patterns(
         }
     }
 
-    let mut file_count: usize = 0;
-    let mut category_count: usize = 0;
-    let mut has_errors = false;
-
+    // Collect per-file work items for parallel validation
+    let mut work_items: Vec<(String, std::path::PathBuf)> = Vec::new();
     for category_path in &categories {
         let category_name = category_path
             .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-
-        let files = match fs.read_dir(category_path) {
-            Ok(entries) => entries
-                .into_iter()
-                .filter(|p| {
-                    p.extension()
-                        .map(|ext| ext.eq_ignore_ascii_case("md"))
-                        .unwrap_or(false)
-                })
-                .collect::<Vec<_>>(),
-            Err(_) => continue,
-        };
-
-        if !files.is_empty() {
-            category_count += 1;
-            file_count += files.len();
+        if let Ok(entries) = fs.read_dir(category_path) {
+            for file_path in entries {
+                if file_path
+                    .extension()
+                    .map(|ext| ext.eq_ignore_ascii_case("md"))
+                    .unwrap_or(false)
+                {
+                    work_items.push((category_name.clone(), file_path));
+                }
+            }
         }
+    }
 
-        for file_path in &files {
+    // Parallel pattern file validation via rayon
+    let results: Vec<(String, bool)> = work_items
+        .par_iter()
+        .map(|(category_name, file_path)| {
             let stem = file_path
                 .file_stem()
                 .unwrap_or_default()
@@ -116,15 +113,16 @@ pub(super) fn validate_patterns(
             let content = match fs.read_to_string(file_path) {
                 Ok(c) => c,
                 Err(e) => {
-                    terminal.stderr_write(&format!("ERROR: {file_label} - {e}\n"));
-                    has_errors = true;
-                    continue;
+                    return (format!("ERROR: {file_label} - {e}\n"), false);
                 }
             };
 
+            let mut errors = String::new();
+            let mut has_errors = false;
+
             // Check index coverage
             if !index_content.is_empty() && !index_content.contains(&stem) {
-                terminal.stderr_write(&format!(
+                errors.push_str(&format!(
                     "ERROR: {file_label} - pattern '{stem}' is not listed in patterns/index.md\n"
                 ));
                 has_errors = true;
@@ -133,19 +131,49 @@ pub(super) fn validate_patterns(
             if !validate_pattern_file(
                 &file_label,
                 &stem,
-                &category_name,
+                category_name,
                 &content,
                 &all_stems,
-                terminal,
+                &mut errors,
             ) {
                 has_errors = true;
             }
+
+            (errors, !has_errors)
+        })
+        .collect();
+
+    // Aggregate results sequentially (terminal output must be serial)
+    let mut has_errors = false;
+    let mut file_count: usize = 0;
+    for (errors, ok) in &results {
+        file_count += 1;
+        if !errors.is_empty() {
+            terminal.stderr_write(errors);
+        }
+        if !ok {
+            has_errors = true;
         }
     }
 
     if has_errors {
         return false;
     }
+
+    let category_count = categories
+        .iter()
+        .filter(|cat| {
+            fs.read_dir(cat)
+                .map(|entries| {
+                    entries.iter().any(|p| {
+                        p.extension()
+                            .map(|ext| ext.eq_ignore_ascii_case("md"))
+                            .unwrap_or(false)
+                    })
+                })
+                .unwrap_or(false)
+        })
+        .count();
 
     terminal.stdout_write(&format!(
         "Validated {} pattern files across {} categories\n",
@@ -160,7 +188,7 @@ fn validate_pattern_file(
     expected_category: &str,
     content: &str,
     all_stems: &[String],
-    terminal: &dyn TerminalIO,
+    errors: &mut String,
 ) -> bool {
     let mut has_errors = false;
 
@@ -168,7 +196,7 @@ fn validate_pattern_file(
     let fm = match extract_frontmatter(content) {
         Some(map) => map,
         None => {
-            terminal.stderr_write(&format!("ERROR: {label} - No frontmatter found\n"));
+            errors.push_str(&format!("ERROR: {label} - No frontmatter found\n"));
             return false;
         }
     };
@@ -177,7 +205,7 @@ fn validate_pattern_file(
         match fm.get(*field) {
             Some(v) if !v.trim().is_empty() => {}
             _ => {
-                terminal.stderr_write(&format!(
+                errors.push_str(&format!(
                     "ERROR: {label} - Missing required frontmatter field '{field}'\n"
                 ));
                 has_errors = true;
@@ -190,7 +218,7 @@ fn validate_pattern_file(
         && !cat.trim().is_empty()
         && cat.trim() != expected_category
     {
-        terminal.stderr_write(&format!(
+        errors.push_str(&format!(
             "ERROR: {label} - category frontmatter '{cat}' does not match directory '{expected_category}'\n"
         ));
         has_errors = true;
@@ -200,7 +228,7 @@ fn validate_pattern_file(
     if let Some(raw_langs) = fm.get("languages") {
         let langs = parse_tool_list(raw_langs.trim());
         if langs.is_empty() {
-            terminal.stderr_write(&format!(
+            errors.push_str(&format!(
                 "ERROR: {label} - languages list is empty\n"
             ));
             has_errors = true;
@@ -208,7 +236,7 @@ fn validate_pattern_file(
             let is_all = langs.len() == 1 && langs[0] == "all";
             for lang in &langs {
                 if !VALID_PATTERN_LANGUAGES.contains(&lang.as_str()) {
-                    terminal.stderr_write(&format!(
+                    errors.push_str(&format!(
                         "ERROR: {label} - unrecognized language '{lang}'\n"
                     ));
                     has_errors = true;
@@ -223,7 +251,7 @@ fn validate_pattern_file(
                         .iter()
                         .any(|l| l.to_lowercase() == heading_lower)
                     {
-                        terminal.stderr_write(&format!(
+                        errors.push_str(&format!(
                             "ERROR: {label} - Language Implementations heading '### {heading_lang}' not listed in frontmatter languages\n"
                         ));
                         has_errors = true;
@@ -238,7 +266,7 @@ fn validate_pattern_file(
         && !diff.trim().is_empty()
         && !VALID_PATTERN_DIFFICULTIES.contains(&diff.trim())
     {
-        terminal.stderr_write(&format!(
+        errors.push_str(&format!(
             "ERROR: {label} - unrecognized difficulty '{diff}'\n"
         ));
         has_errors = true;
@@ -249,11 +277,11 @@ fn validate_pattern_file(
         let refs = parse_tool_list(raw_refs.trim());
         for ref_name in &refs {
             if ref_name == stem {
-                terminal.stderr_write(&format!(
+                errors.push_str(&format!(
                     "WARN: {label} - self-reference in related-patterns: '{ref_name}'\n"
                 ));
             } else if !all_stems.iter().any(|s| s == ref_name) {
-                terminal.stderr_write(&format!(
+                errors.push_str(&format!(
                     "ERROR: {label} - cross-reference to non-existent pattern '{ref_name}'\n"
                 ));
                 has_errors = true;
@@ -270,7 +298,7 @@ fn validate_pattern_file(
         let in_code_block = scan_code_blocks(content);
         for pattern in UNSAFE_CODE_PATTERNS {
             if in_code_block.contains(*pattern) {
-                terminal.stderr_write(&format!(
+                errors.push_str(&format!(
                     "WARN: {label} - unsafe code pattern '{pattern}' found in code block\n"
                 ));
             }
@@ -281,12 +309,12 @@ fn validate_pattern_file(
     for &section in REQUIRED_PATTERN_SECTIONS {
         let heading = format!("## {section}");
         if !content.contains(&heading) {
-            terminal.stderr_write(&format!(
+            errors.push_str(&format!(
                 "ERROR: {label} - Missing required section '{section}'\n"
             ));
             has_errors = true;
         } else if section_body_is_empty(content, section) {
-            terminal.stderr_write(&format!(
+            errors.push_str(&format!(
                 "ERROR: {label} - Section '{section}' has empty body\n"
             ));
             has_errors = true;
