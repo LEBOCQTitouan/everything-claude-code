@@ -1,11 +1,7 @@
-//! Characterization test for worktree state isolation (PC-035).
+//! Characterization test for worktree state isolation (PC-029, PC-030, PC-031).
 //!
 //! Creates a git worktree and verifies that workflow state is independent
-//! between the main repo and the worktree.
-//!
-//! This test is #[ignore]'d by default because it requires git and creates
-//! temporary worktrees. It will be un-ignored after the worktree-scoped
-//! state implementation is complete.
+//! between the main repo and the worktree, stored under the git directory.
 
 use assert_cmd::Command;
 use std::path::Path;
@@ -18,21 +14,35 @@ fn wf_cmd(project_dir: &Path) -> Command {
     cmd
 }
 
+/// Get the git-dir for a given project directory.
+fn git_dir(project_dir: &Path) -> std::path::PathBuf {
+    let output = std::process::Command::new("git")
+        .args(["rev-parse", "--git-dir"])
+        .current_dir(project_dir)
+        .output()
+        .expect("git rev-parse --git-dir failed");
+    let path_str = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    let path = std::path::PathBuf::from(&path_str);
+    if path.is_relative() {
+        project_dir.join(path)
+    } else {
+        path
+    }
+}
+
+/// Read the workflow phase from the worktree-scoped state directory:
+/// `<git-dir>/ecc-workflow/state.json`
 fn read_phase(project_dir: &Path) -> Option<String> {
-    let path = project_dir.join(".claude/workflow/state.json");
+    let gd = git_dir(project_dir);
+    let path = gd.join("ecc-workflow/state.json");
     let content = std::fs::read_to_string(&path).ok()?;
     let v: serde_json::Value = serde_json::from_str(&content).ok()?;
     v["phase"].as_str().map(|s| s.to_owned())
 }
 
-/// PC-035: Worktree isolation — main and worktree have independent state.
-///
-/// This test currently documents that the ecc-workflow binary stores state
-/// at `.claude/workflow/state.json` relative to CLAUDE_PROJECT_DIR. When
-/// CLAUDE_PROJECT_DIR points to different directories, state is naturally
-/// independent.
+/// PC-029, PC-030, PC-031: Worktree isolation — state stored in git-dir,
+/// and each worktree has an independent phase after divergent transitions.
 #[test]
-#[ignore = "Requires git; un-ignore after worktree-scoped state is implemented"]
 fn worktree_state_isolation() {
     let tmp = TempDir::new().unwrap();
     let main_dir = tmp.path().join("main");
@@ -77,6 +87,21 @@ fn worktree_state_isolation() {
         .args(["init", "fix", "wt-feature"])
         .assert()
         .success();
+
+    // PC-029: state must NOT be at .claude/workflow (old location)
+    assert!(
+        !wt_dir.join(".claude/workflow/state.json").exists(),
+        "state must NOT be at .claude/workflow/state.json in worktree"
+    );
+
+    // PC-030: state must be at <git-dir>/ecc-workflow/state.json
+    let wt_git_dir = git_dir(&wt_dir);
+    let wt_state_file = wt_git_dir.join("ecc-workflow/state.json");
+    assert!(
+        wt_state_file.exists(),
+        "state must be at <git-dir>/ecc-workflow/state.json, git_dir={:?}",
+        wt_git_dir
+    );
 
     // Both should have plan phase
     assert_eq!(read_phase(&main_dir), Some("plan".to_owned()));

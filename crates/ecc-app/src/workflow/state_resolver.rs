@@ -239,8 +239,10 @@ mod tests {
         let fs = InMemoryFileSystem::new();
         let old_dir = PathBuf::from("/project/.claude/workflow");
         let new_dir = PathBuf::from("/project/.git/ecc-workflow");
-        fs.write(&old_dir.join("state.json"), r#"{"phase":"plan"}"#).unwrap();
-        fs.write(&new_dir.join("state.json"), r#"{"phase":"idle"}"#).unwrap();
+        fs.write(&old_dir.join("state.json"), r#"{"phase":"plan"}"#)
+            .unwrap();
+        fs.write(&new_dir.join("state.json"), r#"{"phase":"idle"}"#)
+            .unwrap();
 
         let result = migrate_if_needed(&old_dir, &new_dir, &fs);
         assert_eq!(result, Ok(false));
@@ -250,7 +252,8 @@ mod tests {
     fn migrate_noop_same_dir() {
         let fs = InMemoryFileSystem::new();
         let dir = PathBuf::from("/project/.claude/workflow");
-        fs.write(&dir.join("state.json"), r#"{"phase":"plan"}"#).unwrap();
+        fs.write(&dir.join("state.json"), r#"{"phase":"plan"}"#)
+            .unwrap();
 
         let result = migrate_if_needed(&dir, &dir, &fs);
         assert_eq!(result, Ok(false));
@@ -272,10 +275,42 @@ mod tests {
         let fs = InMemoryFileSystem::new();
         let old_dir = PathBuf::from("/project/.claude/workflow");
         let new_dir = PathBuf::from("/project/.git/ecc-workflow");
-        fs.write(&old_dir.join("state.json"), r#"{"phase":"plan"}"#).unwrap();
+        fs.write(&old_dir.join("state.json"), r#"{"phase":"plan"}"#)
+            .unwrap();
 
         let result = migrate_if_needed(&old_dir, &new_dir, &fs);
         assert_eq!(result, Ok(true));
         assert!(logs_contain("Migrating"));
+    }
+
+    // --- PC-034: Concurrent migration serialization test ---
+
+    /// PC-034: Two processes race on old→new migration; exactly one copy
+    /// occurs, no corruption. Simulated sequentially since InMemoryFileSystem
+    /// is single-threaded, but validates the re-check logic:
+    /// - First call: old exists, new does not → migrates → Ok(true)
+    /// - Second call: new already exists → no-op → Ok(false)
+    /// - Content is identical (no corruption)
+    #[test]
+    fn migrate_concurrent_serialized() {
+        let fs = InMemoryFileSystem::new();
+        let old_dir = PathBuf::from("/project/.claude/workflow");
+        let new_dir = PathBuf::from("/project/.git/ecc-workflow");
+        let content = r#"{"phase":"plan","feature":"concurrent-test"}"#;
+
+        fs.write(&old_dir.join("state.json"), content).unwrap();
+
+        // First "process": should migrate
+        let first = migrate_if_needed(&old_dir, &new_dir, &fs);
+        assert_eq!(first, Ok(true), "first call must migrate");
+
+        // Second "process": new state already exists, must be no-op
+        let second = migrate_if_needed(&old_dir, &new_dir, &fs);
+        assert_eq!(second, Ok(false), "second call must be no-op (already migrated)");
+
+        // Verify no corruption: content in new location matches original
+        let new_state = new_dir.join("state.json");
+        let written = fs.read_to_string(&new_state).unwrap();
+        assert_eq!(written, content, "migrated content must not be corrupted");
     }
 }
