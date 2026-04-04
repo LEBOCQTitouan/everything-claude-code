@@ -1,11 +1,19 @@
+<<<<<<< HEAD
 # Implementation Complete: Worktree Branch Naming Convention Mismatch Fix
 
 ## Spec Reference
 Concern: fix, Feature: worktree-branch-naming-mismatch
+=======
+# Implementation Complete: Phase-Gate Worktree State Resolution Fix
+
+## Spec Reference
+Concern: fix, Feature: phase-gate resolves state from main repo instead of worktree
+>>>>>>> 28c576eb (chore: write implement-done.md for phase-gate worktree fix)
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
+<<<<<<< HEAD
 | 1 | crates/ecc-domain/src/worktree.rs | modify | PC-001-006 | parses_prefixed_name, rejects_random_name, rejects_double_prefix, rejects_prefixed_non_session, prefixed_and_unprefixed_produce_identical_fields | done |
 | 2 | crates/ecc-workflow/src/commands/merge.rs | modify | PC-007-010 | accepts_prefixed_session_branch, accepts_unprefixed_session_branch, rejects_non_session_branches, rejects_prefixed_non_session_branch | done |
 | 3 | crates/ecc-app/src/worktree.rs | modify | PC-011-013 | removes_stale_prefixed_worktree, skips_fresh_prefixed_worktree, logs_newly_parseable_worktree | done |
@@ -45,10 +53,29 @@ All pass conditions: 16/17 ✅ (1 pre-existing failure in validate_cartography, 
 
 ## E2E Tests
 No E2E tests required by solution
+=======
+| 1 | ecc-app/src/workflow/state_resolver.rs | modify | PC-001-004 | migrate tests | done |
+| 2 | ecc-flock/src/lib.rs | modify | PC-005-007 | lock_dir_for/acquire_for | done |
+| 3 | ecc-workflow/src/io.rs | modify | PC-008-010 | state_dir param tests | done |
+| 4 | ecc-workflow/src/main.rs | modify | PC-029-033 | resolve + migrate bootstrap | done |
+| 5 | ecc-workflow/src/commands/phase_gate.rs | modify | PC-011-015 | dynamic prefix + SEC-010 | done |
+| 6 | ecc-workflow/src/commands/scope_check.rs | modify | PC-016 | dynamic exception | done |
+| 7-19 | 13 command files | modify | PC-017-024 | state_dir wiring | done |
+
+## TDD Log
+Implementation was completed in a prior session via 6 TDD phases. This session fixed 2 remaining test failures (stderr warnings) and a clippy issue.
+
+## Pass Condition Results
+All 40 PCs verified. 130 unit tests + 29 integration tests pass. 2 pre-existing failures in validate_cartography (unrelated).
+
+## E2E Tests
+No E2E tests required by solution.
+>>>>>>> 28c576eb (chore: write implement-done.md for phase-gate worktree fix)
 
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
+<<<<<<< HEAD
 | 1 | CLAUDE.md | Gotchas | Added worktree- prefix note, fixed test counts |
 | 2 | CHANGELOG.md | project | Added worktree branch naming fix entry |
 
@@ -66,3 +93,22 @@ APPROVE -- 0 CRITICAL/HIGH findings. 2 MEDIUM (duplicate test body for AC-003.3,
 
 ## Suggested Commit
 fix: handle worktree- branch prefix in merge validation and GC
+=======
+| 1 | CLAUDE.md | Gotchas | Updated worktree state path, cleanup instructions |
+| 2 | CHANGELOG.md | project | Added phase-gate fix entry |
+
+## ADRs Created
+None required (ADR-0038 already covers this migration).
+
+## Supplemental Docs
+No supplemental docs generated.
+
+## Subagent Execution
+Inline execution.
+
+## Code Review
+Prior session included code review. This session fixed residual clippy + test issues.
+
+## Suggested Commit
+fix: resolve workflow state from worktree root instead of main repo
+>>>>>>> 28c576eb (chore: write implement-done.md for phase-gate worktree fix)
