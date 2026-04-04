@@ -139,6 +139,73 @@ pub fn check_command_descriptions(fs: &dyn FileSystem, commands_dir: &Path) -> A
     }
 }
 
+/// Check that installed patterns directories contain at least one .md file each.
+pub fn check_pattern_count(fs: &dyn FileSystem, patterns_dir: &Path) -> AuditCheckResult {
+    let mut findings = Vec::new();
+
+    if !fs.exists(patterns_dir) {
+        return AuditCheckResult {
+            name: "Pattern count".into(),
+            passed: true,
+            findings,
+        };
+    }
+
+    let category_entries = match fs.read_dir(patterns_dir) {
+        Ok(e) => e,
+        Err(_) => {
+            return AuditCheckResult {
+                name: "Pattern count".into(),
+                passed: true,
+                findings,
+            };
+        }
+    };
+
+    let categories: Vec<_> = category_entries
+        .iter()
+        .filter(|p| fs.is_dir(p))
+        .collect();
+
+    let mut empty_categories: Vec<String> = Vec::new();
+    for cat_path in &categories {
+        let md_files = match fs.read_dir(cat_path) {
+            Ok(e) => e
+                .iter()
+                .filter(|p| {
+                    p.extension()
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("md"))
+                })
+                .count(),
+            Err(_) => 0,
+        };
+        if md_files == 0
+            && let Some(name) = cat_path.file_name()
+        {
+            empty_categories.push(name.to_string_lossy().into_owned());
+        }
+    }
+
+    if !empty_categories.is_empty() {
+        findings.push(AuditFinding {
+            id: "PAT-001".into(),
+            severity: Severity::Low,
+            title: format!(
+                "{} pattern category(s) contain no .md files",
+                empty_categories.len()
+            ),
+            detail: format!("Empty categories: {}", empty_categories.join(", ")),
+            fix: "Add at least one .md pattern file to each category directory.".into(),
+        });
+    }
+
+    AuditCheckResult {
+        name: "Pattern count".into(),
+        passed: findings.is_empty(),
+        findings,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

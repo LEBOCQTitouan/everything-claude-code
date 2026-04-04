@@ -1,4 +1,4 @@
-use ecc_domain::config::validate::{VALID_EFFORT_LEVELS, VALID_MODELS, extract_frontmatter};
+use ecc_domain::config::validate::{VALID_EFFORT_LEVELS, VALID_MODELS, extract_frontmatter, parse_tool_list};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
@@ -24,7 +24,7 @@ pub(super) fn validate_agents(root: &Path, fs: &dyn FileSystem, terminal: &dyn T
 
     let mut has_errors = false;
     for file in &md_files {
-        if !validate_agent_file(file, fs, terminal) {
+        if !validate_agent_file(file, root, fs, terminal) {
             has_errors = true;
         }
     }
@@ -37,7 +37,7 @@ pub(super) fn validate_agents(root: &Path, fs: &dyn FileSystem, terminal: &dyn T
     true
 }
 
-fn validate_agent_file(file: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
+fn validate_agent_file(file: &Path, root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
     let required_fields = ["model", "tools"];
 
     let content = match fs.read_to_string(file) {
@@ -135,6 +135,20 @@ fn validate_agent_file(file: &Path, fs: &dyn FileSystem, terminal: &dyn Terminal
                     ));
                 }
                 _ => {}
+            }
+        }
+    }
+
+    // Optional: validate patterns field if present
+    if let Some(raw_patterns) = frontmatter.get("patterns") {
+        let categories = parse_tool_list(raw_patterns.trim());
+        for category in &categories {
+            let category_dir = root.join("patterns").join(category);
+            if !fs.is_dir(&category_dir) {
+                terminal.stderr_write(&format!(
+                    "WARNING: {} - patterns category '{}' not found\n",
+                    name, category
+                ));
             }
         }
     }

@@ -442,6 +442,81 @@ fn merge_directory_filtered(
     report
 }
 
+/// Merge pattern category directories (each subdir of patterns/ is a category).
+///
+/// Each category is a directory; the whole directory is copied on accept.
+/// Uses the same force/interactive/apply-all logic as `merge_skills`.
+pub fn merge_patterns(
+    ctx: &MergeContext,
+    src_dir: &Path,
+    dest_dir: &Path,
+    options: &mut MergeOptions,
+) -> MergeReport {
+    let mut report = merge::empty_report();
+
+    let src_entries = match ctx.fs.read_dir(src_dir) {
+        Ok(e) => e,
+        Err(e) => {
+            tracing::warn!("merge_patterns: cannot read {}: {e}", src_dir.display());
+            return report;
+        }
+    };
+
+    let category_dirs: Vec<String> = src_entries
+        .iter()
+        .filter(|p| ctx.fs.is_dir(p))
+        .filter_map(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
+        .collect();
+
+    if category_dirs.is_empty() {
+        return report;
+    }
+
+    let total = category_dirs.len();
+    for (i, category) in category_dirs.iter().enumerate() {
+        let progress = format!("[{}/{}]", i + 1, total);
+        let src_cat = src_dir.join(category);
+        let dest_cat = dest_dir.join(category);
+        let is_new = !ctx.fs.exists(&dest_cat);
+
+        let file = ecc_domain::config::merge::FileToReview {
+            filename: category.clone(),
+            src_path: src_cat.clone(),
+            dest_path: dest_cat.clone(),
+            is_new,
+        };
+
+        let choice = resolve_choice(ctx, &file, &progress, options);
+        match choice {
+            ReviewChoice::Accept | ReviewChoice::SmartMerge => {
+                if !options.dry_run
+                    && let Err(e) = copy_dir_recursive(ctx.fs, &src_cat, &dest_cat)
+                {
+                    report.errors.push(format!("{category}: {e}"));
+                    continue;
+                }
+                if is_new {
+                    report.added.push(category.clone());
+                } else {
+                    report.updated.push(category.clone());
+                }
+            }
+            ReviewChoice::Keep => {
+                report.skipped.push(category.clone());
+            }
+        }
+    }
+
+    if !report.added.is_empty() || !report.updated.is_empty() {
+        ctx.terminal.stdout_write(&format!(
+            "{}\n",
+            merge::format_merge_report("Patterns", &report)
+        ));
+    }
+
+    report
+}
+
 /// Merge hooks from a source hooks.json into settings.json.
 ///
 /// Returns `(added, existing, legacy_removed)` counts.

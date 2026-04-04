@@ -41,6 +41,7 @@ pub(in crate::install) fn collect_installed_artifacts(
     let commands = list_files_with_ext(fs, &claude_dir.join("commands"), ".md");
     let skills = list_dirs(fs, &claude_dir.join("skills"));
     let rules = collect_rules_map(fs, &claude_dir.join("rules"));
+    let patterns = list_dirs(fs, &claude_dir.join("patterns"));
 
     Artifacts {
         agents,
@@ -48,7 +49,7 @@ pub(in crate::install) fn collect_installed_artifacts(
         skills,
         rules,
         hook_descriptions: vec![],
-        patterns: vec![],
+        patterns,
     }
 }
 
