@@ -75,6 +75,48 @@ pub fn resolve_state_dir(
     (state_dir, warnings)
 }
 
+/// Migrate state from old location to new location if needed.
+///
+/// Must be called under the state lock. Copies (not moves) old state.json
+/// to the new location. The old file is preserved for rollback.
+///
+/// Returns Ok(true) if migration occurred, Ok(false) if not needed.
+pub fn migrate_if_needed(
+    old_dir: &std::path::Path,
+    new_dir: &std::path::Path,
+    fs: &dyn FileSystem,
+) -> Result<bool, String> {
+    if old_dir == new_dir {
+        return Ok(false);
+    }
+
+    let new_state = new_dir.join("state.json");
+    if fs.exists(&new_state) {
+        return Ok(false);
+    }
+
+    let old_state = old_dir.join("state.json");
+    if !fs.exists(&old_state) {
+        return Ok(false);
+    }
+
+    tracing::warn!(
+        "Migrating workflow state from {} to {}",
+        old_dir.display(),
+        new_dir.display()
+    );
+
+    let content = fs
+        .read_to_string(&old_state)
+        .map_err(|e| format!("failed to read old state: {e}"))?;
+    fs.create_dir_all(new_dir)
+        .map_err(|e| format!("failed to create new dir: {e}"))?;
+    fs.write(&new_state, &content)
+        .map_err(|e| format!("failed to write new state: {e}"))?;
+
+    Ok(true)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
