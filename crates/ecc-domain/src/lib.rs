@@ -10,6 +10,7 @@ pub mod backlog;
 pub mod cartography;
 pub mod claw;
 pub mod config;
+pub mod cost;
 pub mod detection;
 pub mod diff;
 pub mod hook_runtime;
