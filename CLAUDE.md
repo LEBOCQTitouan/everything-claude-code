@@ -142,7 +142,8 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - `pre:edit-write:workflow-branch-guard` blocks `.github/workflows/` edits on main/master/production — create a feature branch first
 - ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
 - `pre:write-edit:worktree-guard` blocks Write/Edit/MultiEdit on main branch — Claude must call EnterWorktree first; bypass with `ECC_WORKFLOW_BYPASS=1` (lazy worktree: created on first write, not session start)
-- `session:end:worktree-merge` auto-merges worktree to main at session end via `ecc-workflow merge` (rebase + full verify + ff-only) — if merge fails, worktree preserved; retry with `ecc-workflow merge` or clean up with `ecc worktree gc`
+- `session:end:worktree-merge` auto-merges worktree to main at session end via `ecc-workflow merge` (rebase + full verify + ff-only) — worktree directory is **not** deleted after merge (deferred to gc to avoid orphaning Claude Code's CWD); if merge fails, worktree preserved; retry with `ecc-workflow merge` or clean up with `ecc worktree gc`
+- `session:start` triggers `ecc worktree gc` automatically to clean stale worktrees from previous sessions (best-effort, non-blocking)
 - Claude Code's `EnterWorktree` prepends `worktree-` to branch names (e.g., `ecc-session-*` becomes `worktree-ecc-session-*`). ECC handles both forms — `WorktreeName::parse()` strips the prefix automatically
 - Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end
 
