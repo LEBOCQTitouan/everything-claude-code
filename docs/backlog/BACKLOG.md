@@ -79,7 +79,7 @@
 | BL-076 | Statusline Unicode byte-counting bug hides rate limit segments | — | LOW | /spec-fix | implemented | 2026-03-27 | 2026-03-27 |
 | BL-077 | Full documentation pass — coverage, drift validation, and gap analysis | — | EPIC | /spec-dev | open | 2026-03-27 |
 | BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | implemented | 2026-03-27 | 2026-03-27 |
-| BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | open | 2026-03-27 |
+| BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | implemented | 2026-03-27 | 2026-03-27 |
 | BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | open | 2026-03-27 |
 | BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | implemented | 2026-03-27 |
 | BL-082 | Add worktree display segment to statusline | — | LOW | direct edit | implemented | 2026-03-27 |

@@ -13,6 +13,7 @@ Generated from git conventional commits. Grouped by type and version.
 - **Cartography element registry (BL-064 Sub-Spec B)**: Per-element documentation files in `docs/cartography/elements/` with cross-reference INDEX.md matrix. Two-tier element types (universal: Module, Interface, Config, Unknown; ECC: Command, Agent, Skill, Hook, Rule, Crate, Port, Adapter, DomainEntity). Post-loop element generation after journey/flow processing. Schema validation, staleness detection, and coverage dashboard extended for elements. New agent: `cartography-element-generator`. 3 ADRs (0042-0044).
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -32,6 +33,7 @@ Generated from git conventional commits. Grouped by type and version.
 - **Multi-agent team coordination (BL-104)**: Declarative team manifests (Markdown + YAML frontmatter) in `teams/` directory. `ecc validate teams` with strict agent cross-referencing and tool privilege escalation warnings. Pre-defined teams: implement-team, audit-team, review-team. New skills: shared-state-protocol, task-handoff.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -42,6 +44,7 @@ Generated from git conventional commits. Grouped by type and version.
 ### Added
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -65,6 +68,7 @@ Generated from git conventional commits. Grouped by type and version.
 ### Added
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -82,6 +86,7 @@ Generated from git conventional commits. Grouped by type and version.
 ### Added
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -104,6 +109,7 @@ Generated from git conventional commits. Grouped by type and version.
 ### Added
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -124,6 +130,7 @@ Generated from git conventional commits. Grouped by type and version.
 ### Added
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -143,6 +150,7 @@ Generated from git conventional commits. Grouped by type and version.
 ### Added
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -159,6 +167,7 @@ Generated from git conventional commits. Grouped by type and version.
 ### Added
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -173,6 +182,7 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.7.0
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
@@ -190,6 +200,7 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.3.1
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
+- **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 
 ### Changed
 
