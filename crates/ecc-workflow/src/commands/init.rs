@@ -84,6 +84,33 @@ mod tests {
     use crate::output::Status;
     use tempfile::TempDir;
 
+    /// PC-017: init creates state at state_dir, not .claude/workflow/ (AC-004.3)
+    #[test]
+    fn init_creates_at_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        let project_dir = tmp.path();
+        // Use a non-default state_dir: .git/ecc-workflow
+        let custom_state_dir = tmp.path().join(".git/ecc-workflow");
+
+        let result = super::run("dev", "test-feature", project_dir, &custom_state_dir);
+        assert!(
+            matches!(result.status, Status::Pass),
+            "init should succeed: {:?}",
+            result.message
+        );
+
+        // state.json must exist at custom_state_dir, NOT at .claude/workflow/
+        assert!(
+            custom_state_dir.join("state.json").exists(),
+            "state.json must be created at custom state_dir {:?}",
+            custom_state_dir
+        );
+        assert!(
+            !project_dir.join(".claude/workflow/state.json").exists(),
+            "state.json must NOT be at .claude/workflow/ when using custom state_dir"
+        );
+    }
+
     #[test]
     fn init_acquires_state_lock() {
         let tmp = TempDir::new().unwrap();

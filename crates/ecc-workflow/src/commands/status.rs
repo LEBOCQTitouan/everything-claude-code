@@ -15,19 +15,18 @@ pub fn run(state_dir: &Path) -> WorkflowOutput {
 
     // Check staleness for non-idle, non-done phases
     let now = crate::time::utc_now_iso8601();
-    let stale_suffix =
-        if ecc_domain::workflow::staleness::is_stale(
-            state.started_at.as_str(),
-            &now,
-            ecc_domain::workflow::staleness::DEFAULT_STALENESS_THRESHOLD_SECS,
-        ) && !matches!(
-            state.phase,
-            ecc_domain::workflow::phase::Phase::Idle | ecc_domain::workflow::phase::Phase::Done
-        ) {
-            " (STALE)"
-        } else {
-            ""
-        };
+    let stale_suffix = if ecc_domain::workflow::staleness::is_stale(
+        state.started_at.as_str(),
+        &now,
+        ecc_domain::workflow::staleness::DEFAULT_STALENESS_THRESHOLD_SECS,
+    ) && !matches!(
+        state.phase,
+        ecc_domain::workflow::phase::Phase::Idle | ecc_domain::workflow::phase::Phase::Done
+    ) {
+        " (STALE)"
+    } else {
+        ""
+    };
 
     lines.push(format!("Phase:      {}{stale_suffix}", state.phase));
     lines.push(format!("Concern:    {}", state.concern));
@@ -94,6 +93,34 @@ pub mod tests {
             output.message.contains("(STALE)"),
             "status should show STALE for old workflow, got: {}",
             output.message
+        );
+    }
+
+    /// PC-024: status reads from state_dir (not .claude/workflow/) (AC-004.1)
+    #[test]
+    fn status_reads_from_state_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        // Use a non-default state_dir: .git/ecc-workflow
+        let custom_state_dir = dir.path().join(".git/ecc-workflow");
+        std::fs::create_dir_all(&custom_state_dir).unwrap();
+        std::fs::write(
+            custom_state_dir.join("state.json"),
+            r#"{"phase":"plan","concern":"dev","feature":"custom-state-dir-test","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[],"version":1}"#,
+        )
+        .unwrap();
+
+        let output = run(&custom_state_dir);
+
+        assert!(
+            output.message.contains("custom-state-dir-test"),
+            "status must read from custom state_dir, got: {}",
+            output.message
+        );
+
+        // .claude/workflow/ must NOT have been created
+        assert!(
+            !dir.path().join(".claude/workflow").exists(),
+            ".claude/workflow must NOT be created when using custom state_dir"
         );
     }
 

@@ -296,7 +296,11 @@ mod tests {
 
         // Pass state_dir directly — not a parent that contains .claude/workflow/
         let phase = read_phase(&state_dir);
-        assert_eq!(phase, Some("implement".to_owned()), "read_phase must read from state_dir/state.json");
+        assert_eq!(
+            phase,
+            Some("implement".to_owned()),
+            "read_phase must read from state_dir/state.json"
+        );
     }
 
     /// PC-009: `write_state_atomic(state_dir, state)` writes to `state_dir/state.json`
@@ -304,9 +308,9 @@ mod tests {
     fn write_state_to_state_dir() {
         use ecc_domain::workflow::{
             concern::Concern,
+            phase::Phase,
             state::{Artifacts, Toolchain, WorkflowState},
             timestamp::Timestamp,
-            phase::Phase,
         };
 
         let tmp = TempDir::new().unwrap();
@@ -318,7 +322,11 @@ mod tests {
             concern: Concern::Dev,
             feature: "test-write".to_owned(),
             started_at: Timestamp::new("2026-01-01T00:00:00Z"),
-            toolchain: Toolchain { test: None, lint: None, build: None },
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
             artifacts: Artifacts {
                 plan: None,
                 solution: None,
@@ -336,7 +344,10 @@ mod tests {
 
         // The file must be at state_dir/state.json — NOT state_dir/.claude/workflow/state.json
         let expected_path = state_dir.join("state.json");
-        assert!(expected_path.exists(), "write_state_atomic must write to state_dir/state.json");
+        assert!(
+            expected_path.exists(),
+            "write_state_atomic must write to state_dir/state.json"
+        );
 
         let content = std::fs::read_to_string(&expected_path).unwrap();
         let v: serde_json::Value = serde_json::from_str(&content).unwrap();
@@ -354,7 +365,52 @@ mod tests {
 
         // Lock file must be at state_dir/.locks/state.lock — NOT state_dir/.claude/workflow/.locks/state.lock
         let lock_file = state_dir.join(".locks").join("state.lock");
-        assert!(lock_file.exists(), "with_state_lock must create lock at state_dir/.locks/state.lock");
+        assert!(
+            lock_file.exists(),
+            "with_state_lock must create lock at state_dir/.locks/state.lock"
+        );
+    }
+
+    /// PC-022: archive_state archives to state_dir/archive/ (AC-004.6)
+    #[test]
+    fn archive_uses_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        // Use a non-default state_dir
+        let custom_state_dir = tmp.path().join(".git/ecc-workflow");
+        std::fs::create_dir_all(&custom_state_dir).unwrap();
+
+        let state_path = custom_state_dir.join("state.json");
+        std::fs::write(
+            &state_path,
+            make_state_json(ecc_domain::workflow::phase::Phase::Plan),
+        )
+        .unwrap();
+
+        archive_state(&custom_state_dir, true).unwrap();
+
+        // state.json must have been moved (archived)
+        assert!(
+            !state_path.exists(),
+            "state.json should have been archived from custom state_dir"
+        );
+
+        // archive dir must be under custom state_dir, NOT under .claude/workflow/
+        let archive_dir = custom_state_dir.join("archive");
+        assert!(
+            archive_dir.exists(),
+            "archive dir must be created under custom state_dir"
+        );
+        let entries: Vec<_> = std::fs::read_dir(&archive_dir).unwrap().collect();
+        assert!(
+            !entries.is_empty(),
+            "archive dir must contain the archived state file"
+        );
+
+        // .claude/workflow/ must NOT have been touched
+        assert!(
+            !tmp.path().join(".claude/workflow").exists(),
+            ".claude/workflow must NOT be created when using custom state_dir"
+        );
     }
 
     /// PC-028: `ensure_state_dir` error message contains the target directory path

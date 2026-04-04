@@ -250,6 +250,52 @@ pub mod tests {
         );
     }
 
+    /// PC-023: reset archives and writes idle to state_dir (not .claude/workflow/) (AC-004.6)
+    #[test]
+    fn reset_uses_state_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        // Use a non-default state_dir: .git/ecc-workflow
+        let custom_state_dir = dir.path().join(".git/ecc-workflow");
+        std::fs::create_dir_all(&custom_state_dir).unwrap();
+        std::fs::write(
+            custom_state_dir.join("state.json"),
+            make_state_json(Phase::Implement),
+        )
+        .unwrap();
+
+        let output = run(true, &custom_state_dir);
+
+        assert!(
+            matches!(output.status, crate::output::Status::Pass),
+            "reset should succeed with custom state_dir: {:?}",
+            output.message
+        );
+
+        // idle state.json must exist at custom state_dir
+        assert!(
+            custom_state_dir.join("state.json").exists(),
+            "state.json must be written at custom state_dir"
+        );
+
+        // archive must be under custom state_dir
+        let archive_dir = custom_state_dir.join("archive");
+        assert!(
+            archive_dir.exists(),
+            "archive dir must be under custom state_dir"
+        );
+
+        // .claude/workflow/ must NOT exist
+        assert!(
+            !dir.path().join(".claude/workflow").exists(),
+            ".claude/workflow must NOT be created when using custom state_dir"
+        );
+
+        // Verify written state is idle
+        let content = std::fs::read_to_string(custom_state_dir.join("state.json")).unwrap();
+        let state = WorkflowState::from_json(&content).unwrap();
+        assert_eq!(state.phase, Phase::Idle, "phase must be idle after reset");
+    }
+
     // PC-036: Archive failure blocks reset (fail-safe)
     #[test]
     fn reset_archive_failure_blocks() {

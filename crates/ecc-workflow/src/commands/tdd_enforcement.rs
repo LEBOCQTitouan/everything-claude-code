@@ -97,3 +97,48 @@ fn write_tdd_state(state_dir: &Path, state: &str) {
         let _ = std::fs::rename(&tmp_path, &path);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    /// PC-018: tdd_enforcement reads .tdd-state from state_dir (AC-004.5)
+    #[test]
+    fn tdd_reads_from_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        let custom_state_dir = tmp.path().join(".git/ecc-workflow");
+        std::fs::create_dir_all(&custom_state_dir).unwrap();
+
+        // Write implement phase state to custom state_dir
+        let state_json = r#"{"phase":"implement","concern":"dev","feature":"test","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[],"version":1}"#;
+        std::fs::write(custom_state_dir.join("state.json"), state_json).unwrap();
+
+        // Pre-write RED state to the custom state_dir
+        std::fs::write(custom_state_dir.join(".tdd-state"), "RED").unwrap();
+
+        // Verify the file is read from custom state_dir (not .claude/workflow/)
+        let state_file_path = custom_state_dir.join(".tdd-state");
+        assert!(
+            state_file_path.exists(),
+            ".tdd-state must exist at custom state_dir"
+        );
+        let content = std::fs::read_to_string(&state_file_path).unwrap();
+        assert_eq!(content, "RED", ".tdd-state must be readable from custom state_dir");
+
+        // .tdd-state must NOT exist at .claude/workflow/
+        let default_path = tmp.path().join(".claude/workflow/.tdd-state");
+        assert!(
+            !default_path.exists(),
+            ".tdd-state must NOT be at .claude/workflow/ when using custom state_dir"
+        );
+
+        // tdd_state_path function must resolve under custom state_dir
+        let resolved = tdd_state_path(&custom_state_dir);
+        assert!(
+            resolved.starts_with(&custom_state_dir),
+            "tdd_state_path must resolve under custom state_dir, got {:?}",
+            resolved
+        );
+    }
+}

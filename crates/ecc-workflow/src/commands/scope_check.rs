@@ -269,6 +269,41 @@ mod tests {
         assert!(!is_exception("crates/ecc-app/src/lib.rs"));
     }
 
+    /// PC-016: is_exception uses dynamic state_dir (AC-004.4)
+    #[test]
+    fn scope_check_exception_uses_state_dir() {
+        use std::path::Path;
+        use tempfile::TempDir;
+
+        let tmp = TempDir::new().unwrap();
+        let custom_state_dir = tmp.path().join(".git/ecc-workflow");
+
+        // A path under the custom state_dir should be an exception
+        let path_under_state_dir = format!(
+            "{}/state.json",
+            custom_state_dir.to_string_lossy()
+        );
+        assert!(
+            is_exception_with_state_dir(&path_under_state_dir, &custom_state_dir),
+            "path under custom state_dir should be an exception"
+        );
+
+        // A path NOT under state_dir and not docs/ etc should not be an exception
+        assert!(
+            !is_exception_with_state_dir("src/lib.rs", &custom_state_dir),
+            "src/lib.rs should not be an exception"
+        );
+
+        // The legacy .claude/workflow/ path should still be an exception for backward compat
+        assert!(
+            is_exception_with_state_dir(
+                ".claude/workflow/state.json",
+                Path::new("/some/other/dir")
+            ),
+            ".claude/workflow/ path should still be an exception (backward compat)"
+        );
+    }
+
     /// PC-037: scope_check passes through ungated for Idle phase (AC-001.1)
     #[test]
     fn scope_check_idle_passes() {

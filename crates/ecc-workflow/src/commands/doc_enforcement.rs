@@ -61,6 +61,44 @@ fn check_sections(content: &str) -> Option<String> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::output::Status;
+    use tempfile::TempDir;
+
+    /// PC-019: doc_enforcement reads implement-done.md from state_dir (AC-004.5)
+    #[test]
+    fn doc_enforcement_reads_from_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        let custom_state_dir = tmp.path().join(".git/ecc-workflow");
+        std::fs::create_dir_all(&custom_state_dir).unwrap();
+
+        // Write done phase state to custom state_dir
+        let state_json = r#"{"phase":"done","concern":"dev","feature":"test","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[],"version":1}"#;
+        std::fs::write(custom_state_dir.join("state.json"), state_json).unwrap();
+
+        // Write implement-done.md at custom state_dir
+        let implement_done = "## Docs Updated\n\n- updated CLAUDE.md\n\n## Supplemental Docs\n\n(none)\n";
+        std::fs::write(custom_state_dir.join("implement-done.md"), implement_done).unwrap();
+
+        // Run doc_enforcement with custom state_dir
+        let output = run(&custom_state_dir);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "doc_enforcement should pass when implement-done.md is at custom state_dir, got: {:?}: {}",
+            output.status,
+            output.message
+        );
+
+        // Verify .claude/workflow/ was NOT consulted
+        assert!(
+            !tmp.path().join(".claude/workflow/implement-done.md").exists(),
+            "implement-done.md must NOT exist at .claude/workflow/ when using custom state_dir"
+        );
+    }
+}
+
 /// Returns true if the section heading exists and is followed by at least one
 /// list item (`- `) or table row (`|`) before the next heading or end of file.
 fn has_section_with_content(content: &str, heading: &str) -> bool {
