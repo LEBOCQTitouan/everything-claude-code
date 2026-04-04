@@ -377,6 +377,137 @@ mod tests {
             .expect("state lock was not released after phase_gate::run returned");
     }
 
+    // ----------------------------------------------------------------
+    // Wave 3 tests: dynamic allowlisting (PC-011-015) + SEC-010 (PC-026)
+    // ----------------------------------------------------------------
+
+    /// PC-026: contains_encoded_traversal detects %2e%2e, %2f, %5c (AC-003.3)
+    #[test]
+    fn contains_encoded_traversal_detects() {
+        assert!(
+            super::contains_encoded_traversal("docs/specs/%2e%2e/src/evil.rs"),
+            "should detect %2e%2e"
+        );
+        assert!(
+            super::contains_encoded_traversal("docs%2fspecs%2fevil.rs"),
+            "should detect %2f"
+        );
+        assert!(
+            super::contains_encoded_traversal("docs%5cevil.rs"),
+            "should detect %5c"
+        );
+        assert!(
+            !super::contains_encoded_traversal("docs/specs/normal.md"),
+            "should not flag normal path"
+        );
+        // Case-insensitive
+        assert!(
+            super::contains_encoded_traversal("docs/specs/%2E%2E/src/evil.rs"),
+            "should detect %2E%2E (uppercase)"
+        );
+    }
+
+    /// PC-011: phase_gate allows writes to resolved state_dir during spec (AC-003.1)
+    #[test]
+    fn phase_gate_allows_resolved_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        // Create a custom state dir (simulating worktree state dir)
+        let state_dir = tmp.path().join("some/worktree/.ecc-workflow");
+        std::fs::create_dir_all(&state_dir).unwrap();
+        let json = r#"{"phase":"plan","concern":"dev","feature":"feat","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(state_dir.join("state.json"), json).unwrap();
+
+        // A file inside the state_dir should be allowed
+        let file_in_state_dir = state_dir.join("custom.json");
+        let file_path_str = file_in_state_dir.to_string_lossy();
+        let hook_input = format!(
+            r#"{{"tool_name":"Write","tool_input":{{"file_path":"{file_path_str}"}}}}"#
+        );
+        let output = super::run_with_input(tmp.path(), &state_dir, &hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for write inside resolved state_dir, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-012: phase_gate allows writes to .claude/workflow/ during spec (fallback) (AC-003.2)
+    #[test]
+    fn phase_gate_allows_fallback_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        // Write to the legacy .claude/workflow/ path — must be allowed
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":".claude/workflow/state.json"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for write to .claude/workflow/ (fallback), got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-013: phase_gate blocks URL-encoded traversal %2e%2e (AC-003.3)
+    #[test]
+    fn phase_gate_blocks_url_encoded_traversal() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/specs/%2e%2e/src/evil.rs"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Block),
+            "Expected Block for URL-encoded traversal, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-014: phase_gate with worktree state_dir in implement allows src/ writes (AC-001.1)
+    #[test]
+    fn phase_gate_worktree_implement_allows() {
+        let tmp = TempDir::new().unwrap();
+        // Worktree state_dir (non-standard path)
+        let state_dir = tmp.path().join("worktree-state");
+        std::fs::create_dir_all(&state_dir).unwrap();
+        let json = r#"{"phase":"implement","concern":"dev","feature":"feat","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(state_dir.join("state.json"), json).unwrap();
+
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"src/main.rs"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for src/main.rs in implement phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-015: phase_gate with worktree state_dir in spec blocks src/ writes (AC-001.2)
+    #[test]
+    fn phase_gate_worktree_spec_blocks() {
+        let tmp = TempDir::new().unwrap();
+        // Worktree state_dir (non-standard path)
+        let state_dir = tmp.path().join("worktree-state");
+        std::fs::create_dir_all(&state_dir).unwrap();
+        let json = r#"{"phase":"plan","concern":"dev","feature":"feat","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(state_dir.join("state.json"), json).unwrap();
+
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"src/main.rs"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Block),
+            "Expected Block for src/main.rs in plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    // ----------------------------------------------------------------
+
     /// PC-005: phase_gate blocks path traversal attack after normalization
     #[test]
     fn phase_gate_blocks_traversal_attack() {
