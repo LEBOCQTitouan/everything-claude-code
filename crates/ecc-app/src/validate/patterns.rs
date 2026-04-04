@@ -9,8 +9,43 @@ pub(super) fn validate_patterns(root: &Path, fs: &dyn FileSystem, terminal: &dyn
         return true;
     }
 
-    // TODO: implement full logic
-    false
+    let categories = match fs.read_dir(&patterns_dir) {
+        Ok(entries) => entries
+            .into_iter()
+            .filter(|p| fs.is_dir(p))
+            .collect::<Vec<_>>(),
+        Err(e) => {
+            terminal.stderr_write(&format!("ERROR: Cannot read patterns directory: {e}\n"));
+            return false;
+        }
+    };
+
+    let mut file_count: usize = 0;
+    let mut category_count: usize = 0;
+
+    for category in &categories {
+        let files = match fs.read_dir(category) {
+            Ok(entries) => entries
+                .into_iter()
+                .filter(|p| {
+                    p.extension()
+                        .map(|ext| ext.eq_ignore_ascii_case("md"))
+                        .unwrap_or(false)
+                })
+                .collect::<Vec<_>>(),
+            Err(_) => continue,
+        };
+        if !files.is_empty() {
+            category_count += 1;
+            file_count += files.len();
+        }
+    }
+
+    terminal.stdout_write(&format!(
+        "Validated {} pattern files across {} categories\n",
+        file_count, category_count
+    ));
+    true
 }
 
 #[cfg(test)]
