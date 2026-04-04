@@ -34,10 +34,7 @@ pub fn group_by_type(commits: &[ConventionalCommit]) -> BTreeMap<String, Vec<&Co
 ///
 /// If `fallback_header` is `Some`, it is included as a note at the top
 /// (e.g., "Showing commits from the last 90 days (no semver tags found)").
-pub fn format_changelog(
-    commits: &[ConventionalCommit],
-    fallback_header: Option<&str>,
-) -> String {
+pub fn format_changelog(commits: &[ConventionalCommit], fallback_header: Option<&str>) -> String {
     if commits.is_empty() {
         return String::from("No commits found in the specified range.\n");
     }

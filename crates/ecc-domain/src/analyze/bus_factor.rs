@@ -18,7 +18,11 @@ pub struct BusFactor {
 
 impl std::fmt::Display for BusFactor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let risk = if self.is_risk { " RISK: single author" } else { "" };
+        let risk = if self.is_risk {
+            " RISK: single author"
+        } else {
+            ""
+        };
         write!(
             f,
             "{}: {} authors, {} commits{}",

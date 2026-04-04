@@ -142,11 +142,7 @@ mod tests {
     // PC-027: threshold filter
     #[test]
     fn coupling_threshold_filter() {
-        let commits = vec![
-            files(&["a.rs", "b.rs"]),
-            files(&["a.rs"]),
-            files(&["a.rs"]),
-        ];
+        let commits = vec![files(&["a.rs", "b.rs"]), files(&["a.rs"]), files(&["a.rs"])];
         // a=3, b=1, together=1, ratio = 1/3 ≈ 0.33 — below 0.7
         let result = compute_coupling(&commits, 0.7, 1, 20);
         assert!(result.is_empty());
@@ -202,7 +198,10 @@ mod tests {
         let exact: Vec<String> = (0..20).map(|i| format!("file{i}.rs")).collect();
         let commits = vec![exact.clone(), exact];
         let result = compute_coupling(&commits, 0.0, 1, 20);
-        assert!(!result.is_empty(), "Commits with exactly max_files should be included");
+        assert!(
+            !result.is_empty(),
+            "Commits with exactly max_files should be included"
+        );
     }
 
     // PC-051: threshold=0.0 includes all
@@ -229,7 +228,10 @@ mod tests {
         ];
         // Both files have 3 commits, min_commits=3 — should be included
         let result = compute_coupling(&commits, 0.0, 3, 20);
-        assert!(!result.is_empty(), "Files with exactly min_commits should be included");
+        assert!(
+            !result.is_empty(),
+            "Files with exactly min_commits should be included"
+        );
     }
 
     #[test]

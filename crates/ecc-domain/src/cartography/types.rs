@@ -69,8 +69,7 @@ mod tests {
         };
 
         let json = serde_json::to_string(&delta).expect("serialize failed");
-        let round_tripped: SessionDelta =
-            serde_json::from_str(&json).expect("deserialize failed");
+        let round_tripped: SessionDelta = serde_json::from_str(&json).expect("deserialize failed");
 
         assert_eq!(delta, round_tripped);
     }

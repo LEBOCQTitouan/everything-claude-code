@@ -94,8 +94,7 @@ mod tests {
 
     #[test]
     fn has_section_is_exact_match() {
-        let doc =
-            "<!-- CARTOGRAPHY: step-10 -->\ncontent\n<!-- /CARTOGRAPHY: step-10 -->\n";
+        let doc = "<!-- CARTOGRAPHY: step-10 -->\ncontent\n<!-- /CARTOGRAPHY: step-10 -->\n";
         // "step-1" must NOT match inside "step-10"
         assert!(!has_section(doc, "step-1"));
     }

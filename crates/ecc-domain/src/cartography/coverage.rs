@@ -96,8 +96,8 @@ mod tests {
     #[test]
     fn coverage_60_percent_with_10_files_and_6_referenced() {
         let all = make_files(&[
-            "src/a.rs", "src/b.rs", "src/c.rs", "src/d.rs", "src/e.rs",
-            "src/f.rs", "src/g.rs", "src/h.rs", "src/i.rs", "src/j.rs",
+            "src/a.rs", "src/b.rs", "src/c.rs", "src/d.rs", "src/e.rs", "src/f.rs", "src/g.rs",
+            "src/h.rs", "src/i.rs", "src/j.rs",
         ]);
         let referenced = make_files(&[
             "src/a.rs", "src/b.rs", "src/c.rs", "src/d.rs", "src/e.rs", "src/f.rs",
@@ -106,9 +106,16 @@ mod tests {
         let report = calculate_coverage(&all, &referenced, &freqs);
         assert_eq!(report.total, 10);
         assert_eq!(report.referenced, 6);
-        assert!((report.percentage - 60.0).abs() < 0.01, "percentage should be 60.0, got {}", report.percentage);
+        assert!(
+            (report.percentage - 60.0).abs() < 0.01,
+            "percentage should be 60.0, got {}",
+            report.percentage
+        );
         // 60% >= 50% so priority_gaps must be empty
-        assert!(report.priority_gaps.is_empty(), "no priority gaps when coverage >= 50%");
+        assert!(
+            report.priority_gaps.is_empty(),
+            "no priority gaps when coverage >= 50%"
+        );
     }
 
     #[test]
@@ -140,7 +147,10 @@ mod tests {
         let report = calculate_coverage(&all, &referenced, &freqs);
         assert_eq!(report.total, 0);
         assert_eq!(report.referenced, 0);
-        assert!((report.percentage - 100.0).abs() < 0.01, "empty set should be 100%");
+        assert!(
+            (report.percentage - 100.0).abs() < 0.01,
+            "empty set should be 100%"
+        );
         assert!(report.priority_gaps.is_empty());
     }
 
@@ -158,10 +168,22 @@ mod tests {
         }
         let referenced = make_files(&[]);
         let report = calculate_coverage(&all, &referenced, &freqs_raw);
-        assert_eq!(report.priority_gaps.len(), 10, "should have exactly 10 gaps");
+        assert_eq!(
+            report.priority_gaps.len(),
+            10,
+            "should have exactly 10 gaps"
+        );
         // Highest frequency files should appear first
-        assert!(report.priority_gaps[0].contains("file20"), "highest-freq first, got {:?}", report.priority_gaps[0]);
-        assert!(report.priority_gaps[1].contains("file19"), "second highest, got {:?}", report.priority_gaps[1]);
+        assert!(
+            report.priority_gaps[0].contains("file20"),
+            "highest-freq first, got {:?}",
+            report.priority_gaps[0]
+        );
+        assert!(
+            report.priority_gaps[1].contains("file19"),
+            "second highest, got {:?}",
+            report.priority_gaps[1]
+        );
     }
 
     #[test]
@@ -177,7 +199,10 @@ mod tests {
         ]);
         let report = calculate_coverage(&all, &referenced, &freqs);
         assert!((report.percentage - 25.0).abs() < 0.01);
-        assert!(!report.priority_gaps.contains(&"src/a.rs".to_string()), "referenced file must not be in gaps");
+        assert!(
+            !report.priority_gaps.contains(&"src/a.rs".to_string()),
+            "referenced file must not be in gaps"
+        );
         // Gaps should be sorted by frequency desc: c(8) > b(5) > d(3)
         assert_eq!(report.priority_gaps[0], "src/c.rs");
         assert_eq!(report.priority_gaps[1], "src/b.rs");

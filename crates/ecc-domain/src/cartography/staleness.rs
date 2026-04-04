@@ -47,10 +47,7 @@ pub fn parse_cartography_meta(content: &str) -> Option<CartographyMetaParsed> {
 ///
 /// Returns a stale marker string if any source is newer than `last_updated`,
 /// or `None` if up-to-date (or if no CARTOGRAPHY-META marker is found).
-pub fn check_staleness(
-    content: &str,
-    source_modified_dates: &[(&str, &str)],
-) -> Option<String> {
+pub fn check_staleness(content: &str, source_modified_dates: &[(&str, &str)]) -> Option<String> {
     let meta = parse_cartography_meta(content)?;
 
     // Find the most recent modification date among listed sources
@@ -98,8 +95,7 @@ mod tests {
 
     #[test]
     fn parses_meta_marker_with_multiple_sources() {
-        let content =
-            "<!-- CARTOGRAPHY-META: last_updated=2026-03-15, sources=src/a.rs,src/b.rs,src/c.rs -->";
+        let content = "<!-- CARTOGRAPHY-META: last_updated=2026-03-15, sources=src/a.rs,src/b.rs,src/c.rs -->";
         let meta = parse_cartography_meta(content).expect("should find meta");
         assert_eq!(meta.last_updated, "2026-03-15");
         assert_eq!(meta.sources, vec!["src/a.rs", "src/b.rs", "src/c.rs"]);
@@ -115,8 +111,7 @@ mod tests {
 
     #[test]
     fn returns_stale_marker_when_source_is_newer() {
-        let content =
-            "<!-- CARTOGRAPHY-META: last_updated=2026-01-01, sources=src/main.rs -->";
+        let content = "<!-- CARTOGRAPHY-META: last_updated=2026-01-01, sources=src/main.rs -->";
         let dates = [("src/main.rs", "2026-03-15")];
         let result = check_staleness(content, &dates);
         assert!(result.is_some(), "expected stale marker");
@@ -129,22 +124,23 @@ mod tests {
             marker.contains("source_modified=2026-03-15"),
             "marker should include source_modified"
         );
-        assert!(marker.starts_with("<!-- STALE:"), "marker should be HTML comment");
+        assert!(
+            marker.starts_with("<!-- STALE:"),
+            "marker should be HTML comment"
+        );
         assert!(marker.ends_with("-->"), "marker should close HTML comment");
     }
 
     #[test]
     fn returns_none_when_source_matches_last_updated() {
-        let content =
-            "<!-- CARTOGRAPHY-META: last_updated=2026-03-15, sources=src/main.rs -->";
+        let content = "<!-- CARTOGRAPHY-META: last_updated=2026-03-15, sources=src/main.rs -->";
         let dates = [("src/main.rs", "2026-03-15")];
         assert!(check_staleness(content, &dates).is_none());
     }
 
     #[test]
     fn returns_none_when_source_is_older_than_last_updated() {
-        let content =
-            "<!-- CARTOGRAPHY-META: last_updated=2026-03-15, sources=src/main.rs -->";
+        let content = "<!-- CARTOGRAPHY-META: last_updated=2026-03-15, sources=src/main.rs -->";
         let dates = [("src/main.rs", "2026-01-01")];
         assert!(check_staleness(content, &dates).is_none());
     }
@@ -158,18 +154,21 @@ mod tests {
 
     #[test]
     fn uses_most_recent_modified_date_when_multiple_sources_and_one_is_newer() {
-        let content = "<!-- CARTOGRAPHY-META: last_updated=2026-01-01, sources=src/a.rs,src/b.rs -->";
+        let content =
+            "<!-- CARTOGRAPHY-META: last_updated=2026-01-01, sources=src/a.rs,src/b.rs -->";
         let dates = [("src/a.rs", "2025-12-01"), ("src/b.rs", "2026-06-01")];
         let result = check_staleness(content, &dates);
-        assert!(result.is_some(), "expected stale marker because src/b.rs is newer");
+        assert!(
+            result.is_some(),
+            "expected stale marker because src/b.rs is newer"
+        );
         let marker = result.unwrap();
         assert!(marker.contains("source_modified=2026-06-01"));
     }
 
     #[test]
     fn returns_none_when_none_of_the_sources_are_listed_in_dates() {
-        let content =
-            "<!-- CARTOGRAPHY-META: last_updated=2026-01-01, sources=src/other.rs -->";
+        let content = "<!-- CARTOGRAPHY-META: last_updated=2026-01-01, sources=src/other.rs -->";
         let dates = [("src/main.rs", "2026-03-15")];
         assert!(check_staleness(content, &dates).is_none());
     }
@@ -178,10 +177,17 @@ mod tests {
 
     #[test]
     fn removes_stale_marker_from_content() {
-        let content = "# Doc\n<!-- STALE: last_updated=2026-01-01, source_modified=2026-03-15 -->\nBody text";
+        let content =
+            "# Doc\n<!-- STALE: last_updated=2026-01-01, source_modified=2026-03-15 -->\nBody text";
         let cleaned = remove_stale_marker(content);
-        assert!(!cleaned.contains("<!-- STALE:"), "stale marker should be removed");
-        assert!(cleaned.contains("# Doc"), "non-stale content should be preserved");
+        assert!(
+            !cleaned.contains("<!-- STALE:"),
+            "stale marker should be removed"
+        );
+        assert!(
+            cleaned.contains("# Doc"),
+            "non-stale content should be preserved"
+        );
         assert!(cleaned.contains("Body text"), "body should be preserved");
     }
 

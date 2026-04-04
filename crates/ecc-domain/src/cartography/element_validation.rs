@@ -18,11 +18,7 @@ const REQUIRED_ELEMENT_SECTIONS: &[&str] = &[
 pub fn validate_element(content: &str) -> Result<(), Vec<String>> {
     let mut missing: Vec<String> = REQUIRED_ELEMENT_SECTIONS
         .iter()
-        .filter(|&&section| {
-            !content
-                .lines()
-                .any(|line| line.trim() == section)
-        })
+        .filter(|&&section| !content.lines().any(|line| line.trim() == section))
         .map(|&section| {
             // Return just the section name without the "## " prefix
             section.trim_start_matches("## ").to_string()

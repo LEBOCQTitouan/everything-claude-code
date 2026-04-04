@@ -105,14 +105,15 @@ mod tests {
     // PC-046: deleted files counted
     #[test]
     fn hotspots_include_deleted() {
-        let commits = vec![
-            files(&["deleted.rs", "alive.rs"]),
-            files(&["deleted.rs"]),
-        ];
+        let commits = vec![files(&["deleted.rs", "alive.rs"]), files(&["deleted.rs"])];
         let result = compute_hotspots(&commits, 10, 20).unwrap();
         assert!(result.iter().any(|h| h.path == "deleted.rs"));
         assert_eq!(
-            result.iter().find(|h| h.path == "deleted.rs").unwrap().change_count,
+            result
+                .iter()
+                .find(|h| h.path == "deleted.rs")
+                .unwrap()
+                .change_count,
             2
         );
     }

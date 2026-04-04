@@ -27,15 +27,15 @@ pub fn build_cross_reference_matrix(
         .collect();
 
     // Build header row
-    let header = format!(
-        "| Element | {} |",
-        all_columns.join(" | ")
-    );
+    let header = format!("| Element | {} |", all_columns.join(" | "));
 
     // Build separator row
     let separator = format!(
         "|---------|{}|",
-        all_columns.iter().map(|c| format!("-{}-|", "-".repeat(c.len()))).collect::<String>()
+        all_columns
+            .iter()
+            .map(|c| format!("-{}-|", "-".repeat(c.len())))
+            .collect::<String>()
     );
 
     let mut lines = vec![header, separator];
@@ -54,11 +54,7 @@ pub fn build_cross_reference_matrix(
             })
             .collect();
 
-        let row = format!(
-            "| {} | {} |",
-            element.slug,
-            cells.join(" | ")
-        );
+        let row = format!("| {} | {} |", element.slug, cells.join(" | "));
         lines.push(row);
     }
 
@@ -137,7 +133,10 @@ mod tests {
 
         let table = build_cross_reference_matrix(&elements, &journeys, &flows);
 
-        let header_line = table.lines().next().expect("table should have at least one line");
+        let header_line = table
+            .lines()
+            .next()
+            .expect("table should have at least one line");
         let j_pos = header_line.find("j-first").expect("j-first not in header");
         let f_pos = header_line.find("f-last").expect("f-last not in header");
         assert!(
@@ -166,8 +165,7 @@ mod tests {
         );
         // Should have no element rows (only header + separator)
         assert_eq!(
-            line_count,
-            2,
+            line_count, 2,
             "expected exactly 2 lines for empty element list, got {line_count}"
         );
     }

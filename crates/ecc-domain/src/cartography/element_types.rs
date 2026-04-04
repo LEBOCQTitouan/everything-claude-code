@@ -53,8 +53,12 @@ pub fn infer_element_type_from_crate(crate_name: &str) -> ElementType {
         "ecc-domain" => ElementType::DomainEntity,
         "ecc-ports" => ElementType::Port,
         "ecc-infra" => ElementType::Adapter,
-        "ecc-app" | "ecc-cli" | "ecc-workflow" | "ecc-test-support"
-        | "ecc-integration-tests" | "ecc-flock" => ElementType::Module,
+        "ecc-app"
+        | "ecc-cli"
+        | "ecc-workflow"
+        | "ecc-test-support"
+        | "ecc-integration-tests"
+        | "ecc-flock" => ElementType::Module,
         _ => ElementType::Unknown,
     }
 }
@@ -129,25 +133,73 @@ mod tests {
 
     #[test]
     fn crate_type_inference() {
-        assert_eq!(infer_element_type_from_crate("ecc-domain"), ElementType::DomainEntity);
-        assert_eq!(infer_element_type_from_crate("ecc-ports"), ElementType::Port);
-        assert_eq!(infer_element_type_from_crate("ecc-infra"), ElementType::Adapter);
-        assert_eq!(infer_element_type_from_crate("ecc-app"), ElementType::Module);
-        assert_eq!(infer_element_type_from_crate("ecc-cli"), ElementType::Module);
-        assert_eq!(infer_element_type_from_crate("ecc-workflow"), ElementType::Module);
-        assert_eq!(infer_element_type_from_crate("ecc-test-support"), ElementType::Module);
-        assert_eq!(infer_element_type_from_crate("ecc-integration-tests"), ElementType::Module);
-        assert_eq!(infer_element_type_from_crate("ecc-flock"), ElementType::Module);
+        assert_eq!(
+            infer_element_type_from_crate("ecc-domain"),
+            ElementType::DomainEntity
+        );
+        assert_eq!(
+            infer_element_type_from_crate("ecc-ports"),
+            ElementType::Port
+        );
+        assert_eq!(
+            infer_element_type_from_crate("ecc-infra"),
+            ElementType::Adapter
+        );
+        assert_eq!(
+            infer_element_type_from_crate("ecc-app"),
+            ElementType::Module
+        );
+        assert_eq!(
+            infer_element_type_from_crate("ecc-cli"),
+            ElementType::Module
+        );
+        assert_eq!(
+            infer_element_type_from_crate("ecc-workflow"),
+            ElementType::Module
+        );
+        assert_eq!(
+            infer_element_type_from_crate("ecc-test-support"),
+            ElementType::Module
+        );
+        assert_eq!(
+            infer_element_type_from_crate("ecc-integration-tests"),
+            ElementType::Module
+        );
+        assert_eq!(
+            infer_element_type_from_crate("ecc-flock"),
+            ElementType::Module
+        );
     }
 
     #[test]
     fn path_type_inference() {
-        assert_eq!(infer_element_type_from_path("agents/my-agent.md"), ElementType::Agent);
-        assert_eq!(infer_element_type_from_path("commands/my-command.md"), ElementType::Command);
-        assert_eq!(infer_element_type_from_path("skills/my-skill.md"), ElementType::Skill);
-        assert_eq!(infer_element_type_from_path("hooks/my-hook.md"), ElementType::Hook);
-        assert_eq!(infer_element_type_from_path("rules/my-rule.md"), ElementType::Rule);
-        assert_eq!(infer_element_type_from_path("src/some-file.rs"), ElementType::Unknown);
-        assert_eq!(infer_element_type_from_path("unknown/path"), ElementType::Unknown);
+        assert_eq!(
+            infer_element_type_from_path("agents/my-agent.md"),
+            ElementType::Agent
+        );
+        assert_eq!(
+            infer_element_type_from_path("commands/my-command.md"),
+            ElementType::Command
+        );
+        assert_eq!(
+            infer_element_type_from_path("skills/my-skill.md"),
+            ElementType::Skill
+        );
+        assert_eq!(
+            infer_element_type_from_path("hooks/my-hook.md"),
+            ElementType::Hook
+        );
+        assert_eq!(
+            infer_element_type_from_path("rules/my-rule.md"),
+            ElementType::Rule
+        );
+        assert_eq!(
+            infer_element_type_from_path("src/some-file.rs"),
+            ElementType::Unknown
+        );
+        assert_eq!(
+            infer_element_type_from_path("unknown/path"),
+            ElementType::Unknown
+        );
     }
 }
