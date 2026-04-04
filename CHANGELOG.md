@@ -16,6 +16,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -36,6 +37,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -47,6 +49,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -71,6 +74,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -89,6 +93,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -112,6 +117,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -133,6 +139,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -153,6 +160,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -170,6 +178,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -185,6 +194,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
@@ -203,6 +213,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
+- **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
 
 ### Changed
 
