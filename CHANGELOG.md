@@ -49,6 +49,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Worktree merge checkout main**: `ecc-workflow merge` now explicitly checks out `main` before ff-only merge, preventing stale working tree when the main repo is in detached HEAD or on another branch. 6 new tests.
+
 - **Deploy ecc-flock not a binary**: `cargo xtask deploy` failed because ecc-flock (lib crate) was listed in binary install list. Removed from deploy lists.
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
