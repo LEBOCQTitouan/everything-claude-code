@@ -1,19 +1,19 @@
 {
-  "phase": "solution",
-  "concern": "dev",
-  "feature": "Pattern Library for Agent-Assisted Development",
-  "started_at": "2026-04-04T09:15:00Z",
+  "phase": "plan",
+  "concern": "fix",
+  "feature": "phase-gate resolves state from main repo instead of worktree",
+  "started_at": "2026-04-04T19:56:47Z",
   "toolchain": {
     "test": null,
     "lint": null,
     "build": null
   },
   "artifacts": {
-    "plan": "2026-04-04T09:41:10Z",
+    "plan": null,
     "solution": null,
     "implement": null,
     "campaign_path": null,
-    "spec_path": "docs/specs/2026-04-04-pattern-library/spec.md",
+    "spec_path": null,
     "design_path": null,
     "tasks_path": null
   },

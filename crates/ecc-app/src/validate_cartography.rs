@@ -403,14 +403,13 @@ Source: A
 ## Overview
 The authentication service.
 
-## Responsibilities
-- Handle login
-- Issue tokens
+## Relationships
+- Depends on token-store
 
-## Interfaces
-- POST /auth/login
+## Participating Flows
+- login-flow
 
-## Related Journeys
+## Participating Journeys
 - user-login-journey
 "
     }
