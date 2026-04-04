@@ -36,6 +36,8 @@ Persist detected commands to state.json and create campaign manifest:
 
 > **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Project Detection section for toolchain-persist.sh usage and Campaign Init section for campaign.md creation.
 
+4. **Campaign init**: Run `!ecc-workflow campaign init docs/specs/<spec-dir>` to create campaign.md for incremental grill-me decision persistence.
+
 > **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
 
 TodoWrite items:
@@ -142,6 +144,8 @@ You have gathered evolution analysis, architecture review, component audit, exis
 > **Shared**: Use the `grill-me` skill in spec-mode for the interview. See `skills/grill-me/SKILL.md`.
 
 ### Grill-Me Accumulator
+
+After each answer, run: `!ecc-workflow campaign append-decision --question "<question>" --answer "<answer>" --source recommended|user`
 
 During each grill-me question, accumulate the question and the user's answer (or accepted recommendation) into a structured list. Track the Source for each answer as either "Recommended" (user accepted) or "User" (user overrode). This accumulated list is used in the Phase Summary.
 
@@ -286,6 +290,7 @@ After adversarial PASS (or user override), write the spec to a versioned file:
 2. Create directory `docs/specs/YYYY-MM-DD-<slug>/`
 3. Write the full spec to `docs/specs/YYYY-MM-DD-<slug>/spec.md`
 4. If the file already exists (re-entry), append a `## Revision` block with timestamp instead of overwriting
+   On re-entry, run `!ecc-workflow campaign show` to reload prior grill-me decisions from campaign.md.
 5. Pass the file path to the phase-transition command as the 3rd argument
 
 ## Phase 9: Present and STOP
