@@ -5,6 +5,18 @@ use std::collections::HashMap;
 /// Valid model identifiers for agent frontmatter.
 pub const VALID_MODELS: &[&str] = &["haiku", "sonnet", "opus"];
 
+/// Valid effort levels for agent thinking budget configuration.
+pub const VALID_EFFORT_LEVELS: &[&str] = &["low", "medium", "high", "max"];
+
+/// Effort-to-tokens mapping for MAX_THINKING_TOKENS.
+/// Authoritative source for the effort → token budget lookup.
+pub const EFFORT_TOKENS: &[(&str, u32)] = &[
+    ("low", 2_048),
+    ("medium", 8_192),
+    ("high", 16_384),
+    ("max", 32_768),
+];
+
 /// Valid tool identifiers for agent/command frontmatter.
 pub const VALID_TOOLS: &[&str] = &[
     "Read",
@@ -328,6 +340,26 @@ pub fn check_hook_entry(hook: &serde_json::Value, label: &str) -> Vec<String> {
 mod tests {
     use super::*;
     use crate::config::hook_types::{HookCommand, HookCommandValue};
+
+    // --- VALID_EFFORT_LEVELS ---
+
+    #[test]
+    fn valid_effort_levels_defined() {
+        assert_eq!(
+            VALID_EFFORT_LEVELS,
+            &["low", "medium", "high", "max"]
+        );
+    }
+
+    #[test]
+    fn effort_tokens_has_entry_for_each_level() {
+        for level in VALID_EFFORT_LEVELS {
+            assert!(
+                EFFORT_TOKENS.iter().any(|(l, _)| l == level),
+                "Missing EFFORT_TOKENS entry for '{level}'"
+            );
+        }
+    }
 
     // --- check_hook_command (typed) ---
 

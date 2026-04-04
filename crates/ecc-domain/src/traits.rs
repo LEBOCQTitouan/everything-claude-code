@@ -53,6 +53,7 @@ mod validatable_impl {
             description: Some("A test agent".to_string()),
             model: Some("sonnet".to_string()),
             tools: Some(vec!["Bash".to_string()]),
+            effort: None,
         };
         let result: Result<(), Vec<String>> = v.validate();
         assert!(
@@ -68,6 +69,7 @@ mod validatable_impl {
             description: None,
             model: Some("invalid-model".to_string()),
             tools: None,
+            effort: None,
         };
         let result: Result<(), Vec<String>> = v.validate();
         assert!(result.is_err(), "invalid agent should fail validation");

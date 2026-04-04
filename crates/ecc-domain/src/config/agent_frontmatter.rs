@@ -3,7 +3,7 @@
 //! These types implement the `Validatable` trait for agent and hook frontmatter
 //! parsed from markdown files in the ECC configuration.
 
-use crate::config::validate::VALID_MODELS;
+use crate::config::validate::{VALID_EFFORT_LEVELS, VALID_MODELS};
 use crate::traits::Validatable;
 
 /// Parsed frontmatter fields for an agent file.
@@ -15,6 +15,7 @@ pub struct AgentFrontmatter {
     pub description: Option<String>,
     pub model: Option<String>,
     pub tools: Option<Vec<String>>,
+    pub effort: Option<String>,
 }
 
 /// Parsed frontmatter fields for a hook entry.
@@ -50,6 +51,17 @@ impl Validatable<String> for AgentFrontmatter {
                 VALID_MODELS.join(", ")
             )),
             None => errors.push("agent 'model' field is missing".to_string()),
+        }
+
+        // Validate effort if present (optional field)
+        if let Some(e) = &self.effort {
+            let trimmed = e.trim();
+            if !trimmed.is_empty() && !VALID_EFFORT_LEVELS.contains(&trimmed) {
+                errors.push(format!(
+                    "agent 'effort' value '{trimmed}' is not valid; must be one of: {}",
+                    VALID_EFFORT_LEVELS.join(", ")
+                ));
+            }
         }
 
         if errors.is_empty() {
@@ -93,6 +105,7 @@ mod tests {
             description: Some("Does stuff".to_string()),
             model: Some("opus".to_string()),
             tools: Some(vec!["Read".to_string()]),
+            effort: None,
         };
         assert!(a.validate().is_ok());
     }
@@ -104,6 +117,7 @@ mod tests {
             description: Some("Desc".to_string()),
             model: Some("sonnet".to_string()),
             tools: None,
+            effort: None,
         };
         let errs = a.validate().unwrap_err();
         assert!(errs.iter().any(|e| e.contains("name")));
@@ -116,9 +130,47 @@ mod tests {
             description: Some("desc".to_string()),
             model: Some("gpt-4".to_string()),
             tools: None,
+            effort: None,
         };
         let errs = a.validate().unwrap_err();
         assert!(errs.iter().any(|e| e.contains("model")));
+    }
+
+    #[test]
+    fn agent_with_valid_effort_passes() {
+        let a = AgentFrontmatter {
+            name: Some("my-agent".to_string()),
+            description: Some("Does stuff".to_string()),
+            model: Some("sonnet".to_string()),
+            tools: None,
+            effort: Some("medium".to_string()),
+        };
+        assert!(a.validate().is_ok());
+    }
+
+    #[test]
+    fn agent_with_invalid_effort_reports_error() {
+        let a = AgentFrontmatter {
+            name: Some("my-agent".to_string()),
+            description: Some("Does stuff".to_string()),
+            model: Some("sonnet".to_string()),
+            tools: None,
+            effort: Some("extreme".to_string()),
+        };
+        let errs = a.validate().unwrap_err();
+        assert!(errs.iter().any(|e| e.contains("effort")));
+    }
+
+    #[test]
+    fn agent_without_effort_passes() {
+        let a = AgentFrontmatter {
+            name: Some("my-agent".to_string()),
+            description: Some("Does stuff".to_string()),
+            model: Some("sonnet".to_string()),
+            tools: None,
+            effort: None,
+        };
+        assert!(a.validate().is_ok());
     }
 
     #[test]
