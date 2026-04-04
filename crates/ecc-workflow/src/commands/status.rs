@@ -4,8 +4,8 @@ use crate::io;
 use crate::output::WorkflowOutput;
 use std::path::Path;
 
-pub fn run(project_dir: &Path) -> WorkflowOutput {
-    let state = match io::read_state(project_dir) {
+pub fn run(state_dir: &Path) -> WorkflowOutput {
+    let state = match io::read_state(state_dir) {
         Ok(Some(s)) => s,
         Ok(None) => return WorkflowOutput::pass("No active workflow"),
         Err(e) => return WorkflowOutput::warn(format!("Failed to read state: {e}")),
@@ -57,7 +57,8 @@ pub mod tests {
     #[test]
     fn status_no_workflow() {
         let dir = tempfile::tempdir().unwrap();
-        let output = run(dir.path());
+        let state_dir = dir.path().join(".claude/workflow");
+        let output = run(&state_dir);
         assert_eq!(output.message, "No active workflow");
     }
 
@@ -70,7 +71,7 @@ pub mod tests {
             wf_dir.join("state.json"),
             r#"{"phase":"plan","concern":"dev","feature":"test feature","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":"docs/specs/test/spec.md","design_path":null,"tasks_path":null},"completed":[]}"#,
         ).unwrap();
-        let output = run(dir.path());
+        let output = run(&wf_dir);
         assert!(output.message.contains("Phase:"));
         assert!(output.message.contains("plan"));
         assert!(output.message.contains("test feature"));
@@ -88,7 +89,7 @@ pub mod tests {
             wf_dir.join("state.json"),
             r#"{"phase":"plan","concern":"dev","feature":"test","started_at":"2020-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[],"version":1}"#,
         ).unwrap();
-        let output = run(dir.path());
+        let output = run(&wf_dir);
         assert!(
             output.message.contains("(STALE)"),
             "status should show STALE for old workflow, got: {}",
@@ -105,7 +106,7 @@ pub mod tests {
             wf_dir.join("state.json"),
             r#"{"phase":"implement","concern":"fix","feature":"bug fix","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null},"completed":[]}"#,
         ).unwrap();
-        let output = run(dir.path());
+        let output = run(&wf_dir);
         // Verify labeled fields
         assert!(output.message.contains("Phase:"));
         assert!(output.message.contains("Concern:"));

@@ -64,8 +64,9 @@ mod tests {
         let dir = TempDir::new().unwrap();
         write_plan_state(&dir);
         block_memory_dir(&dir);
+        let state_dir = dir.path().join(".claude/workflow");
 
-        let output = super::run("solution", Some("plan"), None, dir.path());
+        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir);
 
         assert!(
             matches!(output.status, crate::output::Status::Warn),
@@ -86,8 +87,9 @@ mod tests {
         let dir = TempDir::new().unwrap();
         write_plan_state(&dir);
         block_memory_dir(&dir);
+        let state_dir = dir.path().join(".claude/workflow");
 
-        let output = super::run("solution", Some("plan"), None, dir.path());
+        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir);
 
         // write_action and write_work_item both write to docs/memory and should fail.
         // The warning must contain both error descriptions.
@@ -116,8 +118,9 @@ mod tests {
             .current_dir(dir.path())
             .output()
             .expect("git init failed");
+        let state_dir = dir.path().join(".claude/workflow");
 
-        let output = super::run("solution", Some("plan"), None, dir.path());
+        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir);
 
         assert!(
             matches!(output.status, crate::output::Status::Pass),
@@ -138,10 +141,11 @@ mod tests {
         let dir = TempDir::new().unwrap();
         write_plan_state(&dir);
         block_memory_dir(&dir);
+        let state_dir = dir.path().join(".claude/workflow");
 
-        super::run("solution", Some("plan"), None, dir.path());
+        super::run("solution", Some("plan"), None, dir.path(), &state_dir);
 
-        let state_path = dir.path().join(".claude/workflow/state.json");
+        let state_path = state_dir.join("state.json");
         assert!(
             state_path.exists(),
             "state.json must exist after transition"
@@ -246,7 +250,7 @@ fn write_memory_best_effort(
 
 /// Run the `transition` subcommand: advance the workflow to the target phase.
 ///
-/// - Reads state.json from project_dir under the state lock.
+/// - Reads state.json from state_dir under the state lock.
 /// - If missing, returns a warn (exit 0).
 /// - Resolves the transition via domain rules.
 /// - If illegal, returns a block (exit 2).
@@ -259,13 +263,14 @@ pub fn run(
     artifact: Option<&str>,
     path: Option<&str>,
     project_dir: &Path,
+    state_dir: &Path,
 ) -> WorkflowOutput {
     let target = target.to_owned();
     let artifact = artifact.map(str::to_owned);
     let path = path.map(str::to_owned);
 
-    let result = with_state_lock(project_dir, || {
-        let mut state = match read_state(project_dir) {
+    let result = with_state_lock(state_dir, || {
+        let mut state = match read_state(state_dir) {
             Ok(None) => {
                 return (
                     WorkflowOutput::warn("No state.json found — workflow not initialized"),
@@ -298,7 +303,7 @@ pub fn run(
         {
             return (output, None);
         }
-        match write_state_atomic(project_dir, &state) {
+        match write_state_atomic(state_dir, &state) {
             Ok(()) => {
                 tracing::info!(from = %from, to = %to, feature = %state.feature, "workflow transition");
                 let memory_info = artifact

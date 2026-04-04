@@ -199,14 +199,22 @@ fn project_dir() -> std::path::PathBuf {
         .unwrap_or_else(|_| std::path::PathBuf::from("."))
 }
 
+/// Temporary bridge: derive state_dir from project_dir.
+/// Will be replaced in Wave 4 with the proper `resolve_state_dir` call.
+fn state_dir(project_dir: &std::path::Path) -> std::path::PathBuf {
+    project_dir.join(".claude/workflow")
+}
+
 fn dispatch(cli: Cli) -> WorkflowOutput {
     tracing::debug!(
         "dispatching command: {:?}",
         std::mem::discriminant(&cli.command)
     );
+    let proj = project_dir();
+    let sd = state_dir(&proj);
     match cli.command {
         Commands::Init { concern, feature } => {
-            commands::init::run(&concern, &feature, &project_dir())
+            commands::init::run(&concern, &feature, &proj, &sd)
         }
         Commands::Transition {
             target,
@@ -216,55 +224,56 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
             &target,
             artifact.as_deref(),
             path.as_deref(),
-            &project_dir(),
+            &proj,
+            &sd,
         ),
         Commands::ToolchainPersist {
             test_cmd,
             lint_cmd,
             build_cmd,
-        } => commands::toolchain_persist::run(&test_cmd, &lint_cmd, &build_cmd, &project_dir()),
+        } => commands::toolchain_persist::run(&test_cmd, &lint_cmd, &build_cmd, &sd),
         Commands::MemoryWrite { kind, args } => {
-            commands::memory_write::run(&kind, &args, &project_dir())
+            commands::memory_write::run(&kind, &args, &proj)
         }
-        Commands::PhaseGate => commands::phase_gate::run(&project_dir()),
-        Commands::StopGate => commands::stop_gate::run(&project_dir()),
-        Commands::GrillMeGate => commands::grill_me_gate::run(&project_dir()),
-        Commands::TddEnforcement => commands::tdd_enforcement::run(&project_dir()),
-        Commands::Status => commands::status::run(&project_dir()),
+        Commands::PhaseGate => commands::phase_gate::run(&proj, &sd),
+        Commands::StopGate => commands::stop_gate::run(&sd),
+        Commands::GrillMeGate => commands::grill_me_gate::run(&sd),
+        Commands::TddEnforcement => commands::tdd_enforcement::run(&sd),
+        Commands::Status => commands::status::run(&sd),
         Commands::Artifact { artifact_type } => {
-            commands::artifact::run(&artifact_type, &project_dir())
+            commands::artifact::run(&artifact_type, &proj, &sd)
         }
-        Commands::Reset { force } => commands::reset::run(force, &project_dir()),
-        Commands::ScopeCheck => commands::scope_check::run(&project_dir()),
-        Commands::DocEnforcement => commands::doc_enforcement::run(&project_dir()),
-        Commands::DocLevelCheck => commands::doc_level_check::run(&project_dir()),
-        Commands::PassConditionCheck => commands::pass_condition_check::run(&project_dir()),
-        Commands::E2eBoundaryCheck => commands::e2e_boundary_check::run(&project_dir()),
+        Commands::Reset { force } => commands::reset::run(force, &sd),
+        Commands::ScopeCheck => commands::scope_check::run(&proj, &sd),
+        Commands::DocEnforcement => commands::doc_enforcement::run(&sd),
+        Commands::DocLevelCheck => commands::doc_level_check::run(&proj, &sd),
+        Commands::PassConditionCheck => commands::pass_condition_check::run(&sd),
+        Commands::E2eBoundaryCheck => commands::e2e_boundary_check::run(&sd),
         Commands::WorktreeName { concern, feature } => {
             commands::worktree_name::run(&concern, &feature)
         }
         Commands::WavePlan { design_path } => {
-            commands::wave_plan::run(&design_path, &project_dir())
+            commands::wave_plan::run(&design_path, &proj)
         }
-        Commands::Merge => commands::merge::run(&project_dir()),
+        Commands::Merge => commands::merge::run(&proj, &sd),
         Commands::Backlog { subcmd } => match subcmd {
             BacklogCmd::AddEntry {
                 title,
                 scope,
                 target,
                 tags,
-            } => commands::backlog::run(&title, &scope, &target, &tags, &project_dir()),
+            } => commands::backlog::run(&title, &scope, &target, &tags, &proj),
         },
         Commands::Tasks { subcmd } => match subcmd {
-            TasksCmd::Sync { path } => commands::tasks::run_sync(&path, &project_dir()),
+            TasksCmd::Sync { path } => commands::tasks::run_sync(&path, &proj),
             TasksCmd::Update { path, id, status } => {
-                commands::tasks::run_update(&path, &id, &status, &project_dir())
+                commands::tasks::run_update(&path, &id, &status, &proj)
             }
             TasksCmd::Init {
                 design_path,
                 output,
                 force,
-            } => commands::tasks::run_init(&design_path, &output, force, &project_dir()),
+            } => commands::tasks::run_init(&design_path, &output, force, &proj),
         },
     }
 }

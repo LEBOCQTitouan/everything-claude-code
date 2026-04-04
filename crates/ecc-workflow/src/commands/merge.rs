@@ -52,7 +52,8 @@ impl MergeError {
 }
 
 /// Top-level run function — thin wrapper mapping MergeError to WorkflowOutput
-pub fn run(project_dir: &Path) -> WorkflowOutput {
+pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
+    let _ = state_dir; // kept for future use (Wave 4)
     match execute_merge(project_dir) {
         Ok(msg) => WorkflowOutput::pass(msg),
         Err(e) => e.to_output(),

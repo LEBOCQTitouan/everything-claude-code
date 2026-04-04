@@ -6,14 +6,14 @@ use ecc_domain::workflow::state::WorkflowState;
 
 /// Acquire an exclusive state lock, run `f`, then release the lock.
 ///
-/// The lock file is `<project_dir>/.claude/workflow/.locks/state.lock`.
+/// The lock file is `<state_dir>/.locks/state.lock`.
 /// The lock is released when the `FlockGuard` is dropped at the end of this
 /// function.
-pub fn with_state_lock<F, R>(project_dir: &Path, f: F) -> Result<R, anyhow::Error>
+pub fn with_state_lock<F, R>(state_dir: &Path, f: F) -> Result<R, anyhow::Error>
 where
     F: FnOnce() -> R,
 {
-    let _guard = ecc_flock::acquire(project_dir, "state")
+    let _guard = ecc_flock::acquire_for(state_dir, "state")
         .map_err(|e| anyhow::anyhow!("Failed to acquire state lock: {e}"))?;
     Ok(f())
 }
@@ -22,8 +22,8 @@ where
 ///
 /// Returns `None` when state.json does not exist or cannot be parsed.
 /// Returns `Some(phase_string)` when the phase field is present.
-pub fn read_phase(project_dir: &Path) -> Option<String> {
-    let state_path = project_dir.join(".claude/workflow/state.json");
+pub fn read_phase(state_dir: &Path) -> Option<String> {
+    let state_path = state_dir.join("state.json");
     if !state_path.exists() {
         return None;
     }
@@ -34,13 +34,13 @@ pub fn read_phase(project_dir: &Path) -> Option<String> {
         .map(|s| s.to_owned())
 }
 
-/// Read the workflow state from the project directory.
+/// Read the workflow state from the state directory.
 ///
 /// Returns `Ok(None)` when state.json does not exist (workflow not initialized).
 /// Returns `Ok(Some(state))` when state.json exists and parses correctly.
 /// Returns `Err` when the file exists but cannot be read or parsed.
-pub fn read_state(project_dir: &Path) -> Result<Option<WorkflowState>, anyhow::Error> {
-    let state_path = project_dir.join(".claude/workflow/state.json");
+pub fn read_state(state_dir: &Path) -> Result<Option<WorkflowState>, anyhow::Error> {
+    let state_path = state_dir.join("state.json");
     if !state_path.exists() {
         return Ok(None);
     }
@@ -51,13 +51,16 @@ pub fn read_state(project_dir: &Path) -> Result<Option<WorkflowState>, anyhow::E
     Ok(Some(state))
 }
 
-/// Ensure the `.claude/workflow/` directory exists inside the project directory.
-/// Returns the path to the workflow directory.
-pub fn ensure_workflow_dir(project_dir: &Path) -> Result<PathBuf, anyhow::Error> {
-    let dir = project_dir.join(".claude/workflow");
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create workflow directory: {e}"))?;
-    Ok(dir)
+/// Ensure the state directory exists.
+/// Returns the path to the state directory.
+pub fn ensure_state_dir(state_dir: &Path) -> Result<PathBuf, anyhow::Error> {
+    std::fs::create_dir_all(state_dir).map_err(|e| {
+        anyhow::anyhow!(
+            "Failed to create state directory {}: {e}",
+            state_dir.display()
+        )
+    })?;
+    Ok(state_dir.to_path_buf())
 }
 
 pub(crate) const MAX_STDIN_BYTES: u64 = 1_048_576; // 1 MB
@@ -121,8 +124,8 @@ pub fn archive_state(workflow_dir: &Path, include_done: bool) -> Result<(), anyh
 }
 
 /// Write the workflow state to state.json atomically (temp file + rename).
-pub fn write_state_atomic(project_dir: &Path, state: &WorkflowState) -> Result<(), anyhow::Error> {
-    let dir = ensure_workflow_dir(project_dir)?;
+pub fn write_state_atomic(state_dir: &Path, state: &WorkflowState) -> Result<(), anyhow::Error> {
+    let dir = ensure_state_dir(state_dir)?;
     let state_path = dir.join("state.json");
     let json = serde_json::to_string_pretty(state)
         .map_err(|e| anyhow::anyhow!("Failed to serialize state: {e}"))?;
@@ -143,11 +146,11 @@ mod tests {
     #[test]
     fn with_state_lock_raii() {
         let tmp = TempDir::new().unwrap();
-        let project_dir = tmp.path();
-        let flag_path = project_dir.join("inside_closure.flag");
+        let state_dir = tmp.path();
+        let flag_path = state_dir.join("inside_closure.flag");
         let flag_path_clone = flag_path.clone();
 
-        with_state_lock(project_dir, || {
+        with_state_lock(state_dir, || {
             std::fs::write(&flag_path_clone, b"ran").unwrap();
         })
         .unwrap();
@@ -157,10 +160,10 @@ mod tests {
             "closure did not run inside with_state_lock"
         );
 
-        let lock_file = ecc_flock::lock_dir(project_dir).join("state.lock");
+        let lock_file = ecc_flock::lock_dir_for(state_dir).join("state.lock");
         assert!(lock_file.exists(), "state.lock file was not created");
 
-        ecc_flock::acquire(project_dir, "state")
+        ecc_flock::acquire_for(state_dir, "state")
             .expect("lock should be free after with_state_lock returns");
     }
 

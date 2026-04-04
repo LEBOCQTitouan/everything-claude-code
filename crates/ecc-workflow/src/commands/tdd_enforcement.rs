@@ -23,8 +23,8 @@ const TEST_PATTERNS: &[&str] = &[
 /// Maintains TDD state at `.claude/workflow/.tdd-state`.
 /// Only active during "implement" phase.
 /// Always exits 0 — informational logging only.
-pub fn run(project_dir: &Path) -> WorkflowOutput {
-    let phase = match read_phase(project_dir) {
+pub fn run(state_dir: &Path) -> WorkflowOutput {
+    let phase = match read_phase(state_dir) {
         Some(p) => p,
         None => return WorkflowOutput::pass(""),
     };
@@ -40,12 +40,12 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
         Some("Write") | Some("Edit") | Some("MultiEdit") => {
             let fp = file_path.as_deref().unwrap_or("");
             if is_test_file(fp) {
-                write_tdd_state(project_dir, "RED");
+                write_tdd_state(state_dir, "RED");
                 WorkflowOutput::pass("TDD state: RED")
             } else {
-                let current = read_tdd_state(project_dir);
+                let current = read_tdd_state(state_dir);
                 if current.as_deref() == Some("RED") {
-                    write_tdd_state(project_dir, "GREEN");
+                    write_tdd_state(state_dir, "GREEN");
                     WorkflowOutput::pass("TDD state: GREEN")
                 } else {
                     WorkflowOutput::pass("TDD state unchanged")
@@ -78,16 +78,16 @@ fn is_test_file(path: &str) -> bool {
         .any(|pattern| path.ends_with(pattern) || path.contains(pattern))
 }
 
-fn tdd_state_path(project_dir: &Path) -> std::path::PathBuf {
-    project_dir.join(".claude/workflow/.tdd-state")
+fn tdd_state_path(state_dir: &Path) -> std::path::PathBuf {
+    state_dir.join(".tdd-state")
 }
 
-fn read_tdd_state(project_dir: &Path) -> Option<String> {
-    std::fs::read_to_string(tdd_state_path(project_dir)).ok()
+fn read_tdd_state(state_dir: &Path) -> Option<String> {
+    std::fs::read_to_string(tdd_state_path(state_dir)).ok()
 }
 
-fn write_tdd_state(project_dir: &Path, state: &str) {
-    let path = tdd_state_path(project_dir);
+fn write_tdd_state(state_dir: &Path, state: &str) {
+    let path = tdd_state_path(state_dir);
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }

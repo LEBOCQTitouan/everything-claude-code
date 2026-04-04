@@ -60,8 +60,8 @@ fn longest_code_block(path: &Path) -> usize {
 }
 
 /// Run the `doc-level-check` subcommand.
-pub fn run(project_dir: &Path) -> WorkflowOutput {
-    let state = match crate::io::read_state(project_dir) {
+pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
+    let state = match crate::io::read_state(state_dir) {
         Ok(None) => return WorkflowOutput::pass(""),
         Ok(Some(s)) => s,
         Err(_) => return WorkflowOutput::pass(""),

@@ -29,8 +29,8 @@ fn file_has_grill_me_marker(path: &str) -> bool {
 }
 
 /// Run the `grill-me-gate` subcommand.
-pub fn run(project_dir: &Path) -> WorkflowOutput {
-    let state = match crate::io::read_state(project_dir) {
+pub fn run(state_dir: &Path) -> WorkflowOutput {
+    let state = match crate::io::read_state(state_dir) {
         Ok(None) => return WorkflowOutput::pass(""),
         Ok(Some(s)) => s,
         Err(_) => return WorkflowOutput::pass(""),
@@ -85,7 +85,7 @@ mod tests {
         let json = r#"{"phase":"idle","concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
         std::fs::write(workflow_dir.join("state.json"), json).unwrap();
 
-        let output = super::run(tmp.path());
+        let output = super::run(&workflow_dir);
         assert!(
             matches!(output.status, Status::Pass),
             "Expected Pass for idle phase in grill_me_gate, got {:?}: {}",

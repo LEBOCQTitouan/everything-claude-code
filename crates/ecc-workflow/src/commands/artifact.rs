@@ -4,8 +4,8 @@ use crate::io;
 use crate::output::WorkflowOutput;
 use std::path::Path;
 
-pub fn run(artifact_type: &str, project_dir: &Path) -> WorkflowOutput {
-    let state = match io::read_state(project_dir) {
+pub fn run(artifact_type: &str, project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
+    let state = match io::read_state(state_dir) {
         Ok(Some(s)) => s,
         Ok(None) => return WorkflowOutput::block("No active workflow"),
         Err(e) => return WorkflowOutput::block(format!("Failed to read state: {e}")),
@@ -58,12 +58,13 @@ pub mod tests {
     fn artifact_valid_spec() {
         let dir = tempfile::tempdir().unwrap();
         setup_state(dir.path(), Some("docs/specs/test/spec.md"));
+        let state_dir = dir.path().join(".claude/workflow");
         // Create the artifact file
         let spec_dir = dir.path().join("docs/specs/test");
         std::fs::create_dir_all(&spec_dir).unwrap();
         std::fs::write(spec_dir.join("spec.md"), "# Spec").unwrap();
 
-        let output = run("spec", dir.path());
+        let output = run("spec", dir.path(), &state_dir);
         assert_eq!(output.message, "docs/specs/test/spec.md");
     }
 
@@ -71,8 +72,9 @@ pub mod tests {
     fn artifact_file_missing() {
         let dir = tempfile::tempdir().unwrap();
         setup_state(dir.path(), Some("docs/specs/test/spec.md"));
+        let state_dir = dir.path().join(".claude/workflow");
         // Don't create the file
-        let output = run("spec", dir.path());
+        let output = run("spec", dir.path(), &state_dir);
         assert!(output.message.contains("artifact file not found"));
     }
 
@@ -80,7 +82,8 @@ pub mod tests {
     fn artifact_path_null() {
         let dir = tempfile::tempdir().unwrap();
         setup_state(dir.path(), None);
-        let output = run("spec", dir.path());
+        let state_dir = dir.path().join(".claude/workflow");
+        let output = run("spec", dir.path(), &state_dir);
         assert!(output.message.contains("no spec artifact registered"));
     }
 
@@ -88,16 +91,17 @@ pub mod tests {
     fn artifact_all_types() {
         let dir = tempfile::tempdir().unwrap();
         setup_state(dir.path(), None);
+        let state_dir = dir.path().join(".claude/workflow");
         // All 4 types should be recognized (even if null)
         for t in &["spec", "design", "tasks", "campaign"] {
-            let output = run(t, dir.path());
+            let output = run(t, dir.path(), &state_dir);
             assert!(
                 output.message.contains("no") || output.message.contains("artifact"),
                 "type {t} should be recognized"
             );
         }
         // Unknown type should error
-        let output = run("unknown", dir.path());
+        let output = run("unknown", dir.path(), &state_dir);
         assert!(output.message.contains("Unknown artifact type"));
     }
 }

@@ -12,8 +12,8 @@ use crate::output::WorkflowOutput;
 /// Required sections:
 /// - `## Docs Updated` with at least one list item or table row
 /// - `## Supplemental Docs`
-pub fn run(project_dir: &Path) -> WorkflowOutput {
-    let phase = match read_phase(project_dir) {
+pub fn run(state_dir: &Path) -> WorkflowOutput {
+    let phase = match read_phase(state_dir) {
         Some(p) => p,
         None => return WorkflowOutput::pass(""),
     };
@@ -22,7 +22,7 @@ pub fn run(project_dir: &Path) -> WorkflowOutput {
         return WorkflowOutput::pass("");
     }
 
-    let implement_done_path = project_dir.join(".claude/workflow/implement-done.md");
+    let implement_done_path = state_dir.join("implement-done.md");
     let content = match std::fs::read_to_string(&implement_done_path) {
         Ok(c) => c,
         Err(_) => {

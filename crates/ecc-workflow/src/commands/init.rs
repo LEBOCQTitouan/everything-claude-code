@@ -18,17 +18,15 @@ use crate::time::utc_now_iso8601;
 /// If a previous state.json exists and its phase is not "done", it is archived to
 /// `.claude/workflow/archive/state-YYYYMMDD-HHMMSS.json` before the new state is written.
 /// Artifact files `implement-done.md` and `.tdd-state` are cleaned up on every init.
-pub fn run(concern: &str, feature: &str, project_dir: &Path) -> WorkflowOutput {
-    let workflow_dir = project_dir.join(".claude/workflow");
-
-    let result = with_state_lock(project_dir, || {
+pub fn run(concern: &str, feature: &str, project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
+    let result = with_state_lock(state_dir, || {
         // Archive stale state if present and not done
-        if let Err(e) = archive_state(&workflow_dir, false) {
+        if let Err(e) = archive_state(state_dir, false) {
             return WorkflowOutput::block(format!("Failed to archive stale state: {e}"));
         }
 
         // Clean previous artifact files
-        cleanup_artifacts(&workflow_dir);
+        cleanup_artifacts(state_dir);
 
         let concern_enum = match Concern::from_str(concern) {
             Ok(c) => c,
@@ -60,7 +58,7 @@ pub fn run(concern: &str, feature: &str, project_dir: &Path) -> WorkflowOutput {
             version: 1,
         };
 
-        match write_state_atomic(project_dir, &state) {
+        match write_state_atomic(state_dir, &state) {
             Ok(()) => WorkflowOutput::pass(format!(
                 "Workflow initialized: concern={concern}, feature=\"{feature}\""
             )),
@@ -68,6 +66,7 @@ pub fn run(concern: &str, feature: &str, project_dir: &Path) -> WorkflowOutput {
         }
     });
 
+    let _ = project_dir; // kept for future use (Wave 4)
     match result {
         Ok(output) => output,
         Err(e) => WorkflowOutput::block(format!("Failed to acquire state lock: {e}")),
@@ -89,8 +88,9 @@ mod tests {
     fn init_acquires_state_lock() {
         let tmp = TempDir::new().unwrap();
         let project_dir = tmp.path();
+        let state_dir = project_dir.join(".claude/workflow");
 
-        let result = super::run("dev", "test-feature", project_dir);
+        let result = super::run("dev", "test-feature", project_dir, &state_dir);
         assert!(
             matches!(result.status, Status::Pass),
             "init should succeed: {:?}",
@@ -98,7 +98,7 @@ mod tests {
         );
 
         // The lock file must exist (proves acquire was called during init)
-        let lock_file = ecc_flock::lock_dir(project_dir).join("state.lock");
+        let lock_file = ecc_flock::lock_dir_for(&state_dir).join("state.lock");
         assert!(
             lock_file.exists(),
             "state.lock file not found at {:?} — init did not acquire the state lock",

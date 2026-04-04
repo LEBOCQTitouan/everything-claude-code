@@ -46,22 +46,23 @@ const BLOCKED_BASH_PATTERNS: &[&str] = &[
 ///
 /// The workflow phase is read under the state lock so that phase-gate never
 /// observes a partially-written state.json during a concurrent transition.
-pub fn run(project_dir: &Path) -> WorkflowOutput {
+pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
     // Read stdin before acquiring the lock — stdin is not state-dependent.
     let input = read_stdin();
-    run_with_input(project_dir, &input)
+    run_with_input(project_dir, state_dir, &input)
 }
 
 /// Testable entry point: same as `run` but accepts hook input directly.
-pub fn run_with_input(project_dir: &Path, input: &str) -> WorkflowOutput {
+pub fn run_with_input(project_dir: &Path, state_dir: &Path, input: &str) -> WorkflowOutput {
+    let _ = project_dir; // kept for future use (Wave 4)
     // Fast path: if state.json does not exist, skip locking entirely.
-    let state_path = project_dir.join(".claude/workflow/state.json");
+    let state_path = state_dir.join("state.json");
     if !state_path.exists() {
         return WorkflowOutput::pass("No workflow active");
     }
 
     // Acquire state lock to read the phase atomically with respect to transitions.
-    let phase_result = match with_state_lock(project_dir, || read_phase_typed(project_dir)) {
+    let phase_result = match with_state_lock(state_dir, || read_phase_typed(state_dir)) {
         Ok(r) => r,
         Err(e) => return WorkflowOutput::pass(format!("Could not acquire state lock: {e}")),
     };
@@ -122,8 +123,8 @@ enum PhaseResult {
     Parsed(Phase),
 }
 
-fn read_phase_typed(project_dir: &Path) -> PhaseResult {
-    let state_path = project_dir.join(".claude/workflow/state.json");
+fn read_phase_typed(state_dir: &Path) -> PhaseResult {
+    let state_path = state_dir.join("state.json");
     if !state_path.exists() {
         return PhaseResult::Missing;
     }
@@ -199,12 +200,17 @@ mod tests {
         std::fs::write(workflow_dir.join("state.json"), content).unwrap();
     }
 
+    fn state_dir_for(tmp: &TempDir) -> std::path::PathBuf {
+        tmp.path().join(".claude/workflow")
+    }
+
     /// PC-015: phase_gate passes for idle state (AC-001.7, AC-002.1)
     #[test]
     fn phase_gate_passes_for_idle() {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "idle");
-        let output = super::run_with_input(tmp.path(), "");
+        let state_dir = state_dir_for(&tmp);
+        let output = super::run_with_input(tmp.path(), &state_dir, "");
         assert!(
             matches!(output.status, Status::Pass),
             "Expected Pass for idle phase, got {:?}: {}",
@@ -221,7 +227,8 @@ mod tests {
             tmp.path(),
             r#"{"phase":123,"concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#,
         );
-        let output = super::run_with_input(tmp.path(), "");
+        let state_dir = state_dir_for(&tmp);
+        let output = super::run_with_input(tmp.path(), &state_dir, "");
         assert!(
             matches!(output.status, Status::Warn),
             "Expected Warn for corrupt type, got {:?}: {}",
@@ -243,7 +250,8 @@ mod tests {
             tmp.path(),
             r#"{"concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#,
         );
-        let output = super::run_with_input(tmp.path(), "");
+        let state_dir = state_dir_for(&tmp);
+        let output = super::run_with_input(tmp.path(), &state_dir, "");
         assert!(
             matches!(output.status, Status::Warn),
             "Expected Warn for missing phase, got {:?}: {}",
@@ -257,8 +265,9 @@ mod tests {
     fn phase_gate_plan_blocks_write() {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
         let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"src/main.rs"}}"#;
-        let output = super::run_with_input(tmp.path(), hook_input);
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Block),
             "Expected Block for Write to src/main.rs during plan phase, got {:?}: {}",
@@ -275,7 +284,8 @@ mod tests {
             tmp.path(),
             r#"{"phase":"banana","concern":"dev","feature":"","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#,
         );
-        let output = super::run_with_input(tmp.path(), "");
+        let state_dir = state_dir_for(&tmp);
+        let output = super::run_with_input(tmp.path(), &state_dir, "");
         assert!(
             matches!(output.status, Status::Warn),
             "Expected Warn for unknown variant 'banana', got {:?}: {}",
@@ -323,11 +333,11 @@ mod tests {
         // Barrier: main thread and lock-holder thread synchronize on lock acquisition
         let barrier = Arc::new(Barrier::new(2));
         let barrier_clone = Arc::clone(&barrier);
-        let project_dir_clone = project_dir.clone();
+        let workflow_dir_clone = workflow_dir.clone();
 
         // Background thread: acquire the state lock, signal barrier, hold for 200ms, then release
         let lock_thread = std::thread::spawn(move || {
-            let guard = ecc_flock::acquire(&project_dir_clone, "state")
+            let guard = ecc_flock::acquire_for(&workflow_dir_clone, "state")
                 .expect("background thread failed to acquire state lock");
             // Signal main thread that lock is held
             barrier_clone.wait();
@@ -342,7 +352,7 @@ mod tests {
 
         // Now call run() — it must acquire the lock itself, so it must wait ~200ms
         let start = std::time::Instant::now();
-        let output = super::run(&project_dir);
+        let output = super::run(&project_dir, &workflow_dir);
         let elapsed = start.elapsed();
 
         lock_thread.join().expect("lock thread panicked");
@@ -363,7 +373,7 @@ mod tests {
         );
 
         // Lock must be free after run() returns
-        ecc_flock::acquire(&project_dir, "state")
+        ecc_flock::acquire_for(&workflow_dir, "state")
             .expect("state lock was not released after phase_gate::run returned");
     }
 
@@ -372,9 +382,10 @@ mod tests {
     fn phase_gate_blocks_traversal_attack() {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
         let hook_input =
             r#"{"tool_name":"Write","tool_input":{"file_path":"docs/specs/../../src/evil.rs"}}"#;
-        let output = super::run_with_input(tmp.path(), hook_input);
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Block),
             "Expected Block for traversal attack path during plan phase, got {:?}: {}",
@@ -388,8 +399,9 @@ mod tests {
     fn phase_gate_blocks_absolute_outside() {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
         let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"/etc/passwd"}}"#;
-        let output = super::run_with_input(tmp.path(), hook_input);
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Block),
             "Expected Block for absolute path /etc/passwd during plan phase, got {:?}: {}",
