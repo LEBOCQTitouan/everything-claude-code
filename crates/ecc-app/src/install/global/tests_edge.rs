@@ -29,6 +29,7 @@ fn install_with_empty_source_dir_succeeds_with_zero_artifacts() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -65,6 +66,7 @@ fn install_with_missing_agents_dir_still_succeeds() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -127,6 +129,7 @@ fn install_first_time_installs_statusline() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -175,6 +178,7 @@ fn install_preserves_custom_statusline() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     install_global(
         &ctx,
@@ -215,6 +219,7 @@ fn install_missing_statusline_source_does_not_fail() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,

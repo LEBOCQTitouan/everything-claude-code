@@ -57,6 +57,7 @@ fn install_first_time() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -96,6 +97,7 @@ fn install_dry_run() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -132,6 +134,7 @@ fn install_update_existing() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -167,6 +170,7 @@ fn install_non_interactive() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -204,6 +208,7 @@ fn install_with_clean_all() {
         clean: false,
         clean_all: true,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -238,6 +243,7 @@ fn install_with_clean_needs_manifest() {
         clean: true,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     install_global(
         &ctx,
@@ -273,6 +279,7 @@ fn install_deny_rules_added() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     install_global(
         &ctx,
@@ -310,6 +317,7 @@ fn install_shows_summary() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     install_global(
         &ctx,
@@ -348,6 +356,7 @@ fn install_with_languages() {
         clean: false,
         clean_all: false,
         languages: vec!["typescript".to_string()],
+        all_rules: true,
     };
     install_global(
         &ctx,
@@ -497,6 +506,7 @@ fn step_hooks_and_settings_error_propagates_to_summary() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,
@@ -538,6 +548,7 @@ fn install_accumulates_errors() {
         clean: false,
         clean_all: false,
         languages: vec![],
+        all_rules: true,
     };
     let summary = install_global(
         &ctx,

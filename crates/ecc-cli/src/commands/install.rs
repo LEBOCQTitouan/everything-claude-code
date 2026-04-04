@@ -37,6 +37,10 @@ pub struct InstallArgs {
     #[arg(long)]
     pub languages: Vec<String>,
 
+    /// Install all rules regardless of detected project stack
+    #[arg(long)]
+    pub all_rules: bool,
+
     /// Path to ECC assets directory (defaults to bundled location)
     #[arg(long, env = "ECC_ROOT")]
     pub ecc_root: Option<std::path::PathBuf>,
@@ -93,6 +97,7 @@ pub fn run(args: InstallArgs) -> anyhow::Result<()> {
         clean: args.clean,
         clean_all: args.clean_all,
         languages: args.languages,
+        all_rules: args.all_rules,
     };
 
     let summary = install::install_global(

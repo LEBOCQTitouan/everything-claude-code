@@ -351,6 +351,21 @@ pub fn merge_rules(
     groups: &[String],
     options: &mut MergeOptions,
 ) -> MergeReport {
+    merge_rules_filtered(ctx, src_dir, dest_dir, groups, &[], options)
+}
+
+/// Merge rules with an optional skip-list (paths to exclude from merging).
+///
+/// Used when stack-based filtering is active: files in `skip_paths` are not
+/// merged into the destination. All other rules in `groups` are merged normally.
+pub fn merge_rules_filtered(
+    ctx: &MergeContext,
+    src_dir: &Path,
+    dest_dir: &Path,
+    groups: &[String],
+    skip_paths: &[std::path::PathBuf],
+    options: &mut MergeOptions,
+) -> MergeReport {
     let mut reports = Vec::new();
 
     for group in groups {
@@ -361,18 +376,70 @@ pub fn merge_rules(
             continue;
         }
 
-        let group_report = merge_directory(
+        let group_report = merge_directory_filtered(
             ctx,
             &src_group,
             &dest_group,
             &format!("Rules/{group}"),
             ".md",
+            skip_paths,
             options,
         );
         reports.push(group_report);
     }
 
     merge::combine_reports(&reports)
+}
+
+/// Merge a directory of files with an optional skip-list.
+fn merge_directory_filtered(
+    ctx: &MergeContext,
+    src_dir: &Path,
+    dest_dir: &Path,
+    artifact_type: &str,
+    ext: &str,
+    skip_paths: &[std::path::PathBuf],
+    options: &mut MergeOptions,
+) -> MergeReport {
+    let mut report = merge::empty_report();
+
+    let (mut files_to_review, unchanged, scan_errors) =
+        config_merge::pre_scan_directory(ctx.fs, src_dir, dest_dir, ext);
+    report.unchanged = unchanged;
+    report.errors.extend(scan_errors);
+
+    // Remove files that are in the skip-list
+    if !skip_paths.is_empty() {
+        files_to_review.retain(|f| !skip_paths.contains(&f.src_path));
+    }
+
+    if files_to_review.is_empty() {
+        return report;
+    }
+
+    let total = files_to_review.len();
+    for (i, file) in files_to_review.iter().enumerate() {
+        let progress = format!("[{}/{}]", i + 1, total);
+
+        let choice = resolve_choice(ctx, file, &progress, options);
+        apply_review_choice(
+            ctx.fs,
+            ctx.shell,
+            choice,
+            file,
+            options.dry_run,
+            &mut report,
+        );
+    }
+
+    if !report.added.is_empty() || !report.updated.is_empty() {
+        ctx.terminal.stdout_write(&format!(
+            "{}\n",
+            merge::format_merge_report(artifact_type, &report)
+        ));
+    }
+
+    report
 }
 
 /// Merge hooks from a source hooks.json into settings.json.

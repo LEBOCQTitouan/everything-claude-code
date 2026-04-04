@@ -1,6 +1,6 @@
 use super::super::helpers::{
     collect_installed_artifacts, collect_rule_groups, ensure_deny_rules_in_settings,
-    ensure_statusline_in_settings,
+    ensure_statusline_in_settings, rule_filter, stack_detect,
 };
 use super::super::{InstallContext, InstallOptions};
 use crate::config::clean as app_clean;
@@ -117,11 +117,45 @@ pub(super) fn step_merge_artifacts(
     ));
 
     let rule_groups = collect_rule_groups(ctx.fs, ecc_root, &options.languages);
-    all_reports.push(merge::merge_rules(
+    let rules_src = ecc_root.join("rules");
+
+    let skip_paths = if options.all_rules {
+        vec![]
+    } else {
+        // Detect project stack and filter rules
+        let stack = stack_detect::detect_project_stack(ctx.fs, &std::env::current_dir().unwrap_or_default());
+
+        if stack.languages.is_empty() && stack.frameworks.is_empty() {
+            ctx.terminal.stderr_write("Warning: No stack detected, installing all rules\n");
+            vec![]
+        } else {
+            let lang_list = stack.languages.join(", ");
+            ctx.terminal.stderr_write(&format!("Detected: [{lang_list}]\n"));
+
+            let filter_result = rule_filter::filter_rules_by_stack(
+                ctx.fs,
+                &rules_src,
+                &rule_groups,
+                &stack,
+            );
+
+            let skipped = filter_result.skipped.len();
+            if skipped > 0 {
+                ctx.terminal.stderr_write(&format!(
+                    "Skipped {skipped} rules (not matching detected stack)\n"
+                ));
+            }
+
+            filter_result.skipped
+        }
+    };
+
+    all_reports.push(merge::merge_rules_filtered(
         &merge_ctx,
-        &ecc_root.join("rules"),
+        &rules_src,
         &claude_dir.join("rules"),
         &rule_groups,
+        &skip_paths,
         &mut merge_options,
     ));
 

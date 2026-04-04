@@ -32,6 +32,8 @@ pub struct InstallOptions {
     pub clean: bool,
     pub clean_all: bool,
     pub languages: Vec<String>,
+    /// Install all rules regardless of detected stack (override filtering).
+    pub all_rules: bool,
 }
 
 impl Default for InstallOptions {
@@ -44,6 +46,7 @@ impl Default for InstallOptions {
             clean: false,
             clean_all: false,
             languages: vec![],
+            all_rules: false,
         }
     }
 }
