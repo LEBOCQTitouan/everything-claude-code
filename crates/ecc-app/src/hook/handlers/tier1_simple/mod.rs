@@ -2,6 +2,7 @@
 
 mod ci_hooks;
 mod clean_craft_hooks;
+pub mod context_hydration;
 mod dev_hooks;
 mod doc_hooks;
 mod git_hooks;
