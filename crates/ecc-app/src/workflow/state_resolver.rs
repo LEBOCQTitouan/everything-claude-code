@@ -10,7 +10,7 @@
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::git::{GitError, GitInfo};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Warning emitted during state resolution.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,8 +82,8 @@ pub fn resolve_state_dir(
 ///
 /// Returns Ok(true) if migration occurred, Ok(false) if not needed.
 pub fn migrate_if_needed(
-    old_dir: &std::path::Path,
-    new_dir: &std::path::Path,
+    old_dir: &Path,
+    new_dir: &Path,
     fs: &dyn FileSystem,
 ) -> Result<bool, String> {
     if old_dir == new_dir {
