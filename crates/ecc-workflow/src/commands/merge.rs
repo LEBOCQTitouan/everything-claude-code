@@ -582,6 +582,35 @@ mod tests {
         assert!(out.message.contains("'main'"));
     }
 
+    #[test]
+    fn accepts_prefixed_session_branch() {
+        let result = validate_session_branch(
+            "worktree-ecc-session-20260404-150000-my-feature-12345",
+        );
+        assert!(result.is_ok(), "prefixed session branch should be accepted");
+    }
+
+    #[test]
+    fn accepts_unprefixed_session_branch() {
+        let result =
+            validate_session_branch("ecc-session-20260404-150000-my-feature-12345");
+        assert!(result.is_ok(), "unprefixed session branch should be accepted");
+    }
+
+    #[test]
+    fn rejects_non_session_branches() {
+        assert!(validate_session_branch("main").is_err());
+        assert!(validate_session_branch("feature-x").is_err());
+    }
+
+    #[test]
+    fn rejects_prefixed_non_session_branch() {
+        assert!(
+            validate_session_branch("worktree-feature-x").is_err(),
+            "worktree-feature-x should be rejected"
+        );
+    }
+
     // --- checkout_main tests ---
 
     #[test]
