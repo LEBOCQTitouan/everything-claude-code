@@ -90,7 +90,7 @@ fn current_branch(dir: &Path) -> Result<String, MergeError> {
 }
 
 fn validate_session_branch(branch: &str) -> Result<(), MergeError> {
-    if !branch.starts_with("ecc-session-") {
+    if ecc_domain::worktree::WorktreeName::parse(branch).is_none() {
         return Err(MergeError::NotSessionBranch {
             branch: branch.to_owned(),
         });
