@@ -280,4 +280,95 @@ mod tests {
             );
         }
     }
+
+    /// PC-008: `read_phase(state_dir)` reads from `state_dir/state.json`
+    #[test]
+    fn read_phase_from_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        // state_dir is the directory that directly contains state.json
+        let state_dir = tmp.path().join("my-state-dir");
+        std::fs::create_dir_all(&state_dir).unwrap();
+        let state_path = state_dir.join("state.json");
+        std::fs::write(&state_path, r#"{"phase":"implement","concern":"dev","feature":"f","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[],"version":1}"#).unwrap();
+
+        // Pass state_dir directly — not a parent that contains .claude/workflow/
+        let phase = read_phase(&state_dir);
+        assert_eq!(phase, Some("implement".to_owned()), "read_phase must read from state_dir/state.json");
+    }
+
+    /// PC-009: `write_state_atomic(state_dir, state)` writes to `state_dir/state.json`
+    #[test]
+    fn write_state_to_state_dir() {
+        use ecc_domain::workflow::{
+            concern::Concern,
+            state::{Artifacts, Toolchain, WorkflowState},
+            timestamp::Timestamp,
+            phase::Phase,
+        };
+
+        let tmp = TempDir::new().unwrap();
+        let state_dir = tmp.path().join("my-state-dir");
+        // state_dir does NOT need to exist yet — ensure_state_dir creates it
+
+        let state = WorkflowState {
+            phase: Phase::Plan,
+            concern: Concern::Dev,
+            feature: "test-write".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
+            toolchain: Toolchain { test: None, lint: None, build: None },
+            artifacts: Artifacts {
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
+            completed: vec![],
+            version: 1,
+        };
+
+        write_state_atomic(&state_dir, &state).unwrap();
+
+        // The file must be at state_dir/state.json — NOT state_dir/.claude/workflow/state.json
+        let expected_path = state_dir.join("state.json");
+        assert!(expected_path.exists(), "write_state_atomic must write to state_dir/state.json");
+
+        let content = std::fs::read_to_string(&expected_path).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&content).unwrap();
+        assert_eq!(v["phase"], "plan");
+    }
+
+    /// PC-010: `with_state_lock(state_dir)` locks under `state_dir/.locks/`
+    #[test]
+    fn with_state_lock_uses_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        let state_dir = tmp.path().join("my-state-dir");
+        std::fs::create_dir_all(&state_dir).unwrap();
+
+        with_state_lock(&state_dir, || {}).unwrap();
+
+        // Lock file must be at state_dir/.locks/state.lock — NOT state_dir/.claude/workflow/.locks/state.lock
+        let lock_file = state_dir.join(".locks").join("state.lock");
+        assert!(lock_file.exists(), "with_state_lock must create lock at state_dir/.locks/state.lock");
+    }
+
+    /// PC-028: `ensure_state_dir` error message contains the target directory path
+    #[test]
+    fn ensure_state_dir_error_contains_path() {
+        // Use a path that cannot be created (parent is a file, not a directory)
+        let tmp = TempDir::new().unwrap();
+        let blocker = tmp.path().join("blocker");
+        std::fs::write(&blocker, b"I am a file").unwrap();
+        // state_dir = blocker/subdir — cannot be created because blocker is a file
+        let state_dir = blocker.join("subdir");
+
+        let err = ensure_state_dir(&state_dir).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains(state_dir.to_str().unwrap()),
+            "ensure_state_dir error must contain the target path. Got: {msg}"
+        );
+    }
 }
