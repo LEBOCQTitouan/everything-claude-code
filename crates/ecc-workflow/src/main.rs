@@ -199,7 +199,8 @@ fn project_dir() -> std::path::PathBuf {
         .unwrap_or_else(|_| std::path::PathBuf::from("."))
 }
 
-fn resolve_state_dir_for_project(_project_dir: &std::path::Path) -> std::path::PathBuf {
+/// Resolve the worktree-scoped state directory via env, git, and filesystem.
+fn resolve_state_dir() -> std::path::PathBuf {
     let env = ecc_infra::os_env::OsEnvironment;
     let git = ecc_infra::os_git::OsGitInfo;
     let fs = ecc_infra::os_fs::OsFileSystem;
@@ -211,6 +212,8 @@ fn resolve_state_dir_for_project(_project_dir: &std::path::Path) -> std::path::P
     state_dir
 }
 
+/// Migrate state from `.claude/workflow/` to the worktree-scoped location if needed.
+/// Serialized under the state flock to prevent races.
 fn migrate_state_if_needed(project_dir: &std::path::Path, state_dir: &std::path::Path) {
     let old_dir = project_dir.join(".claude/workflow");
     if old_dir == *state_dir {
@@ -237,7 +240,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         std::mem::discriminant(&cli.command)
     );
     let proj = project_dir();
-    let sd = resolve_state_dir_for_project(&proj);
+    let sd = resolve_state_dir();
     migrate_state_if_needed(&proj, &sd);
     match cli.command {
         Commands::Init { concern, feature } => commands::init::run(&concern, &feature, &proj, &sd),
