@@ -96,15 +96,14 @@ mod tests {
     use tempfile::TempDir;
 
     fn write_state(dir: &std::path::Path, phase: &str, campaign_path: Option<&str>, version: u32) {
-        let wd = dir.join(".claude/workflow");
-        std::fs::create_dir_all(&wd).unwrap();
+        std::fs::create_dir_all(dir).unwrap();
         let cp = campaign_path
             .map(|p| format!(r#""{p}""#))
             .unwrap_or_else(|| "null".to_string());
         let json = format!(
             r#"{{"phase":"{phase}","concern":"dev","feature":"test","started_at":"2026-01-01T00:00:00Z","toolchain":{{"test":null,"lint":null,"build":null}},"artifacts":{{"plan":null,"solution":null,"implement":null,"campaign_path":{cp},"spec_path":null,"design_path":null,"tasks_path":null}},"completed":[],"version":{version}}}"#
         );
-        std::fs::write(wd.join("state.json"), json).unwrap();
+        std::fs::write(dir.join("state.json"), json).unwrap();
     }
 
     #[test]

@@ -215,7 +215,7 @@ mod tests {
     use super::*;
     use tempfile::TempDir;
 
-    fn setup_state(dir: &Path, campaign_path: Option<&str>, version: u32) {
+    fn setup_state(dir: &std::path::Path, campaign_path: Option<&str>, version: u32) {
         std::fs::create_dir_all(dir).unwrap();
         let cp = campaign_path
             .map(|p| format!(r#""{p}""#))
@@ -226,19 +226,19 @@ mod tests {
         std::fs::write(dir.join("state.json"), json).unwrap();
     }
 
-    fn make_workflow_dir(tmp: &TempDir) -> std::path::PathBuf {
-        let wd = tmp.path().join(".claude/workflow");
-        std::fs::create_dir_all(&wd).unwrap();
-        wd
+    fn make_state_dir(tmp: &TempDir) -> std::path::PathBuf {
+        let sd = tmp.path().join("state");
+        std::fs::create_dir_all(&sd).unwrap();
+        sd
     }
 
     #[test]
     fn init_creates_campaign_md() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
-        setup_state(&wd, None, 1);
+        let sd = make_state_dir(&tmp);
+        setup_state(&sd, None, 1);
         let spec_dir = tmp.path().join("specs/test");
-        let out = run_init(spec_dir.to_str().unwrap(), tmp.path());
+        let out = run_init(spec_dir.to_str().unwrap(), &sd);
         assert!(matches!(out.status, crate::output::Status::Pass), "got: {:?} {}", out.status, out.message);
         assert!(spec_dir.join("campaign.md").exists());
         let c = std::fs::read_to_string(spec_dir.join("campaign.md")).unwrap();
@@ -248,11 +248,11 @@ mod tests {
     #[test]
     fn init_sets_campaign_path_and_version() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
-        setup_state(&wd, None, 1);
+        let sd = make_state_dir(&tmp);
+        setup_state(&sd, None, 1);
         let spec_dir = tmp.path().join("specs/test");
-        run_init(spec_dir.to_str().unwrap(), tmp.path());
-        let state = crate::io::read_state(tmp.path()).unwrap().unwrap();
+        run_init(spec_dir.to_str().unwrap(), &sd);
+        let state = crate::io::read_state(&sd).unwrap().unwrap();
         assert!(state.artifacts.campaign_path.is_some());
         assert_eq!(state.version, 2);
     }
@@ -260,11 +260,11 @@ mod tests {
     #[test]
     fn init_idempotent() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
-        setup_state(&wd, None, 1);
+        let sd = make_state_dir(&tmp);
+        setup_state(&sd, None, 1);
         let spec_dir = tmp.path().join("specs/test");
-        let out1 = run_init(spec_dir.to_str().unwrap(), tmp.path());
-        let out2 = run_init(spec_dir.to_str().unwrap(), tmp.path());
+        let out1 = run_init(spec_dir.to_str().unwrap(), &sd);
+        let out2 = run_init(spec_dir.to_str().unwrap(), &sd);
         assert!(matches!(out1.status, crate::output::Status::Pass));
         assert!(matches!(out2.status, crate::output::Status::Pass));
         assert!(out2.message.contains("already exists"));
@@ -273,10 +273,10 @@ mod tests {
     #[test]
     fn init_creates_missing_dir() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
-        setup_state(&wd, None, 1);
+        let sd = make_state_dir(&tmp);
+        setup_state(&sd, None, 1);
         let spec_dir = tmp.path().join("deep/nested/specs");
-        let out = run_init(spec_dir.to_str().unwrap(), tmp.path());
+        let out = run_init(spec_dir.to_str().unwrap(), &sd);
         assert!(matches!(out.status, crate::output::Status::Pass));
         assert!(spec_dir.join("campaign.md").exists());
     }
@@ -284,11 +284,11 @@ mod tests {
     #[test]
     fn append_adds_numbered_row() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
+        let sd = make_state_dir(&tmp);
         let campaign = tmp.path().join("campaign.md");
         std::fs::write(&campaign, CAMPAIGN_TEMPLATE).unwrap();
-        setup_state(&wd, Some(campaign.to_str().unwrap()), 2);
-        let out = run_append_decision("Q1", "A1", "recommended", tmp.path());
+        setup_state(&sd, Some(campaign.to_str().unwrap()), 2);
+        let out = run_append_decision("Q1", "A1", "recommended", &sd);
         assert!(matches!(out.status, crate::output::Status::Pass), "got: {:?} {}", out.status, out.message);
         let c = std::fs::read_to_string(&campaign).unwrap();
         assert!(c.contains("| 1 | Q1 | A1 | recommended |"), "content: {c}");
@@ -297,13 +297,13 @@ mod tests {
     #[test]
     fn append_auto_numbers() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
+        let sd = make_state_dir(&tmp);
         let campaign = tmp.path().join("campaign.md");
         std::fs::write(&campaign, CAMPAIGN_TEMPLATE).unwrap();
-        setup_state(&wd, Some(campaign.to_str().unwrap()), 2);
-        run_append_decision("Q1", "A1", "recommended", tmp.path());
-        run_append_decision("Q2", "A2", "user", tmp.path());
-        run_append_decision("Q3", "A3", "recommended", tmp.path());
+        setup_state(&sd, Some(campaign.to_str().unwrap()), 2);
+        run_append_decision("Q1", "A1", "recommended", &sd);
+        run_append_decision("Q2", "A2", "user", &sd);
+        run_append_decision("Q3", "A3", "recommended", &sd);
         let c = std::fs::read_to_string(&campaign).unwrap();
         assert!(c.contains("| 1 |") && c.contains("| 2 |") && c.contains("| 3 |"), "content: {c}");
     }
@@ -311,11 +311,11 @@ mod tests {
     #[test]
     fn append_escapes_pipes_and_newlines() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
+        let sd = make_state_dir(&tmp);
         let campaign = tmp.path().join("campaign.md");
         std::fs::write(&campaign, CAMPAIGN_TEMPLATE).unwrap();
-        setup_state(&wd, Some(campaign.to_str().unwrap()), 2);
-        run_append_decision("Q with | pipe", "A with\nnewline", "user", tmp.path());
+        setup_state(&sd, Some(campaign.to_str().unwrap()), 2);
+        run_append_decision("Q with | pipe", "A with\nnewline", "user", &sd);
         let c = std::fs::read_to_string(&campaign).unwrap();
         assert!(c.contains(r"Q with \| pipe"), "content: {c}");
         assert!(c.contains("A with<br>newline"), "content: {c}");
@@ -332,11 +332,11 @@ mod tests {
     #[test]
     fn append_malformed_warns() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
+        let sd = make_state_dir(&tmp);
         let campaign = tmp.path().join("campaign.md");
         std::fs::write(&campaign, "# No decisions section").unwrap();
-        setup_state(&wd, Some(campaign.to_str().unwrap()), 2);
-        let out = run_append_decision("Q", "A", "recommended", tmp.path());
+        setup_state(&sd, Some(campaign.to_str().unwrap()), 2);
+        let out = run_append_decision("Q", "A", "recommended", &sd);
         assert!(matches!(out.status, crate::output::Status::Warn));
         assert!(out.message.contains("Malformed"));
     }
@@ -344,11 +344,11 @@ mod tests {
     #[test]
     fn show_returns_json() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
+        let sd = make_state_dir(&tmp);
         let campaign = tmp.path().join("campaign.md");
         std::fs::write(&campaign, CAMPAIGN_TEMPLATE).unwrap();
-        setup_state(&wd, Some(campaign.to_str().unwrap()), 2);
-        let out = run_show(tmp.path());
+        setup_state(&sd, Some(campaign.to_str().unwrap()), 2);
+        let out = run_show(&sd);
         assert!(matches!(out.status, crate::output::Status::Pass));
         let v: serde_json::Value = serde_json::from_str(&out.message).unwrap();
         assert!(v["decisions"].is_array());
@@ -357,13 +357,13 @@ mod tests {
     #[test]
     fn show_returns_all_decisions() {
         let tmp = TempDir::new().unwrap();
-        let wd = make_workflow_dir(&tmp);
+        let sd = make_state_dir(&tmp);
         let campaign = tmp.path().join("campaign.md");
         std::fs::write(&campaign, CAMPAIGN_TEMPLATE).unwrap();
-        setup_state(&wd, Some(campaign.to_str().unwrap()), 2);
-        run_append_decision("Q1", "A1", "recommended", tmp.path());
-        run_append_decision("Q2", "A2", "user", tmp.path());
-        let out = run_show(tmp.path());
+        setup_state(&sd, Some(campaign.to_str().unwrap()), 2);
+        run_append_decision("Q1", "A1", "recommended", &sd);
+        run_append_decision("Q2", "A2", "user", &sd);
+        let out = run_show(&sd);
         let v: serde_json::Value = serde_json::from_str(&out.message).unwrap();
         assert_eq!(v["decisions"].as_array().unwrap().len(), 2);
     }
