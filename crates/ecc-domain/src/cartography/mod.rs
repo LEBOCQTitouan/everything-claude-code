@@ -14,6 +14,9 @@ pub mod types;
 pub mod validation;
 
 pub use coverage::{calculate_coverage, CoverageReport};
+pub use cross_reference::build_cross_reference_matrix;
+pub use element_types::{infer_element_type_from_path, ElementEntry};
+pub use element_validation::validate_element;
 pub use merge::{has_section, merge_section};
 pub use slug::derive_slug;
 pub use staleness::{check_staleness, parse_cartography_meta, remove_stale_marker};

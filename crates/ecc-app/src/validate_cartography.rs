@@ -7,6 +7,7 @@
 use ecc_domain::cartography::{
     calculate_coverage, check_staleness, parse_cartography_meta,
 };
+use ecc_domain::cartography::element_validation::validate_element;
 use ecc_domain::cartography::validation::{validate_flow, validate_journey};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
@@ -30,6 +31,7 @@ pub fn run_validate_cartography(
 ) -> bool {
     let journeys_dir = project_root.join("docs/cartography/journeys");
     let flows_dir = project_root.join("docs/cartography/flows");
+    let elements_dir = project_root.join("docs/cartography/elements");
 
     let mut has_errors = false;
     let mut all_content: Vec<(String, String)> = Vec::new(); // (path_str, content)
@@ -81,6 +83,65 @@ pub fn run_validate_cartography(
                 }
                 all_content.push((path_str, content));
             }
+        }
+    }
+
+    // Validate element files (missing dir = clean exit)
+    if let Ok(entries) = fs.read_dir(&elements_dir) {
+        let mut element_slugs: Vec<String> = Vec::new();
+
+        for entry in &entries {
+            let path_str = entry.to_string_lossy().to_string();
+            if !path_str.ends_with(".md") {
+                continue;
+            }
+            let file_name = entry
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| path_str.clone());
+            // Skip INDEX.md from element validation
+            if file_name == "INDEX.md" {
+                continue;
+            }
+            // Derive slug from file name (strip .md suffix)
+            let slug = file_name.trim_end_matches(".md").to_string();
+            element_slugs.push(slug);
+
+            if let Ok(content) = fs.read_to_string(entry) {
+                if let Err(missing) = validate_element(&content) {
+                    let sections: Vec<String> = missing;
+                    terminal.stdout_write(&format!(
+                        "ERROR [element] {file_name}: missing sections: {}\n",
+                        sections.join(", ")
+                    ));
+                    has_errors = true;
+                }
+                all_content.push((path_str, content));
+            }
+        }
+
+        // INDEX.md checks
+        let index_path = elements_dir.join("INDEX.md");
+        if element_slugs.is_empty() {
+            // No element files, nothing to check
+        } else if let Ok(index_content) = fs.read_to_string(&index_path) {
+            // INDEX.md exists: check for missing slugs
+            let missing_from_index: Vec<&str> = element_slugs
+                .iter()
+                .filter(|slug| !index_content.contains(slug.as_str()))
+                .map(|s| s.as_str())
+                .collect();
+            if !missing_from_index.is_empty() {
+                terminal.stdout_write(&format!(
+                    "WARN [elements] INDEX.md missing slugs: {}\n",
+                    missing_from_index.join(", ")
+                ));
+            }
+        } else {
+            // INDEX.md absent but element files exist → warn
+            terminal.stdout_write(
+                "WARN [elements] INDEX.md not found; consider adding one to track element slugs\n",
+            );
         }
     }
 
@@ -173,8 +234,18 @@ fn report_coverage(
     let src_dir = project_root.join("src");
     let source_files = collect_source_files(fs, &src_dir);
 
-    // Extract referenced files from cartography content
-    let referenced = extract_referenced_files(cartography_content);
+    // Extract referenced files from cartography content and resolve to absolute paths
+    let referenced_rel = extract_referenced_files(cartography_content);
+    let referenced: Vec<String> = referenced_rel
+        .into_iter()
+        .map(|r| {
+            if r.starts_with('/') {
+                r
+            } else {
+                project_root.join(&r).to_string_lossy().to_string()
+            }
+        })
+        .collect();
 
     let report = calculate_coverage(&source_files, &referenced, &[]);
 
@@ -245,7 +316,16 @@ fn looks_like_file_path(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ecc_ports::shell::CommandOutput;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockExecutor};
+
+    fn git_date_output(date: &str) -> CommandOutput {
+        CommandOutput {
+            stdout: format!("{date}\n"),
+            stderr: String::new(),
+            exit_code: 0,
+        }
+    }
 
     fn valid_journey() -> &'static str {
         "\
@@ -314,5 +394,187 @@ Source: A
         let terminal = BufferedTerminal::new();
         let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
         assert!(result, "no dirs means no errors");
+    }
+
+    fn valid_element() -> &'static str {
+        "\
+# Element: auth-service
+
+## Overview
+The authentication service.
+
+## Responsibilities
+- Handle login
+- Issue tokens
+
+## Interfaces
+- POST /auth/login
+
+## Related Journeys
+- user-login-journey
+"
+    }
+
+    // PC-009
+    #[test]
+    fn invalid_element_exits_with_error() {
+        // Element file missing required sections → validate returns false + prints ERROR
+        let fs = InMemoryFileSystem::new()
+            .with_file("/p/docs/cartography/elements/bad-element.md", "# Element: bad\n\n## Overview\nSome text.\n");
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
+        assert!(!result, "invalid element should cause false return");
+        let out = terminal.stdout_output().join("");
+        assert!(out.contains("ERROR") && out.contains("element"), "expected element error in output, got: {out}");
+    }
+
+    // PC-010
+    #[test]
+    fn missing_index_warns_not_errors() {
+        // elements/ has files but no INDEX.md → warn, not error
+        let fs = InMemoryFileSystem::new()
+            .with_file("/p/docs/cartography/elements/auth.md", valid_element());
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
+        assert!(result, "missing INDEX.md should not cause error");
+        let out = terminal.stdout_output().join("");
+        assert!(out.contains("WARN") || out.contains("warn") || out.contains("index") || out.contains("INDEX"),
+            "expected warning about missing INDEX.md, got: {out}");
+    }
+
+    // PC-011
+    #[test]
+    fn stale_index_warns_missing_slugs() {
+        // INDEX.md present but missing a slug → warn with list
+        let index_content = "\
+# Elements Index
+
+| Slug | Description |
+|------|-------------|
+| other-element | Some other element |
+";
+        let fs = InMemoryFileSystem::new()
+            .with_file("/p/docs/cartography/elements/auth.md", valid_element())
+            .with_file("/p/docs/cartography/elements/INDEX.md", index_content);
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
+        assert!(result, "stale INDEX should not cause error");
+        let out = terminal.stdout_output().join("");
+        assert!(out.contains("WARN") || out.contains("warn") || out.contains("auth"),
+            "expected warning about missing slug in INDEX, got: {out}");
+    }
+
+    // PC-012
+    #[test]
+    fn missing_elements_dir_clean_exit() {
+        // No elements/ dir at all → returns true, no output about elements
+        let fs = InMemoryFileSystem::new()
+            .with_file("/p/docs/cartography/journeys/j.md", valid_journey())
+            .with_file("/p/docs/cartography/flows/f.md", valid_flow());
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
+        assert!(result, "missing elements dir should be clean exit");
+    }
+
+    // PC-013
+    #[test]
+    fn staleness_includes_elements() {
+        // Element file with CARTOGRAPHY-META marker → staleness check runs
+        let element_with_meta = "\
+# Element: auth-service
+
+## Overview
+The authentication service.
+
+## Responsibilities
+- Handle login
+
+## Interfaces
+- POST /auth/login
+
+## Related Journeys
+- user-login-journey
+
+<!-- CARTOGRAPHY-META: last_updated=2026-01-01, sources=src/auth.rs -->
+";
+        let fs = InMemoryFileSystem::new()
+            .with_file("/p/docs/cartography/elements/auth.md", element_with_meta);
+        let shell = MockExecutor::new()
+            .on_args("git", &["log", "-1", "--format=%Y-%m-%d", "src/auth.rs"], git_date_output("2026-06-01"));
+        let terminal = BufferedTerminal::new();
+        run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
+        let out = terminal.stdout_output().join("");
+        assert!(out.contains("STALE"), "expected STALE output for element file, got: {out}");
+    }
+
+    // PC-014
+    #[test]
+    fn coverage_includes_element_sources() {
+        // Element referencing a source file → coverage counts it
+        let element = "\
+# Element: auth-service
+
+## Overview
+The authentication service. See `src/auth.rs` for implementation.
+
+## Responsibilities
+- Handle login
+
+## Interfaces
+- POST /auth/login
+
+## Related Journeys
+- user-login-journey
+";
+        let fs = InMemoryFileSystem::new()
+            .with_file("/p/docs/cartography/elements/auth.md", element)
+            .with_file("/p/src/auth.rs", "// auth");
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), true);
+        let out = terminal.stdout_output().join("");
+        // auth.rs is referenced in element and exists in src/ → referenced count >= 1
+        assert!(out.contains("Coverage:"), "expected coverage output, got: {out}");
+        // With 1 file and 1 referenced → 100%
+        assert!(out.contains("100") || out.contains("1/1"), "expected 100% coverage, got: {out}");
+    }
+
+    // PC-015
+    #[test]
+    fn low_coverage_includes_all_gap_types() {
+        // Multiple src files, only one referenced across journeys+flows+elements
+        // → coverage < 50% → priority gaps printed
+        let journey_ref = "\
+# Journey
+
+## Overview
+See `src/a.rs`.
+
+## Mermaid Diagram
+
+## Steps
+1. Step
+
+## Related Flows
+- none
+";
+        let fs = InMemoryFileSystem::new()
+            .with_file("/p/docs/cartography/journeys/j.md", journey_ref)
+            .with_file("/p/src/a.rs", "// a")
+            .with_file("/p/src/b.rs", "// b")
+            .with_file("/p/src/c.rs", "// c")
+            .with_file("/p/src/d.rs", "// d");
+        let shell = MockExecutor::new();
+        let terminal = BufferedTerminal::new();
+        run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), true);
+        let out = terminal.stdout_output().join("");
+        assert!(out.contains("Coverage:"), "expected coverage output");
+        // 1/4 = 25% < 50% → priority gaps shown
+        assert!(out.contains("Priority gaps") || out.contains("gap") || out.contains("src/b.rs") || out.contains("src/c.rs"),
+            "expected priority gaps output for low coverage, got: {out}");
     }
 }
