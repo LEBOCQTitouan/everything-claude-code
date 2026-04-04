@@ -3,6 +3,7 @@ paths:
   - "**/*.rs"
   - "**/Cargo.toml"
   - "**/Cargo.lock"
+applies-to: { languages: [rust] }
 ---
 # Rust Coding Style
 

@@ -4,6 +4,7 @@ paths:
   - "**/pom.xml"
   - "**/build.gradle"
   - "**/build.gradle.kts"
+applies-to: { languages: [java] }
 ---
 # Java Hooks
 

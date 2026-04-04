@@ -2,6 +2,7 @@
 paths:
   - "**/*.php"
   - "**/composer.json"
+applies-to: { languages: [php] }
 ---
 # PHP Coding Style
 

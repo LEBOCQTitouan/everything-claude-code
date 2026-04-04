@@ -2,6 +2,7 @@
 paths:
   - "**/*.rs"
   - "**/Cargo.toml"
+applies-to: { languages: [rust] }
 ---
 # Rust Security
 

@@ -7,6 +7,7 @@ paths:
   - "**/*.cc"
   - "**/*.cxx"
   - "**/CMakeLists.txt"
+applies-to: { languages: [cpp] }
 ---
 # C/C++ Hooks
 

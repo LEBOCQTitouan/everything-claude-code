@@ -5,6 +5,7 @@ paths:
   - "**/*.t"
   - "**/*.psgi"
   - "**/*.cgi"
+applies-to: { languages: [perl] }
 ---
 # Perl Security
 

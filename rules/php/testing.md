@@ -4,6 +4,7 @@ paths:
   - "**/phpunit.xml"
   - "**/phpunit.xml.dist"
   - "**/composer.json"
+applies-to: { languages: [php] }
 ---
 # PHP Testing
 

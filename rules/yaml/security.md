@@ -2,6 +2,7 @@
 paths:
   - "**/*.yml"
   - "**/*.yaml"
+applies-to: { files: ["*.yml", "*.yaml"] }
 ---
 # YAML Security
 

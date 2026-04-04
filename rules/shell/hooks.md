@@ -3,6 +3,7 @@ paths:
   - "**/*.sh"
   - "**/*.bash"
   - "**/*.zsh"
+applies-to: { files: ["*.sh"] }
 ---
 # Shell Hooks
 

@@ -3,6 +3,7 @@ paths:
   - "crates/ecc-integration-tests/**"
   - "crates/ecc-infra/**"
   - "crates/ecc-ports/**"
+applies-to: { languages: [rust] }
 ---
 
 # E2E Testing Conventions (Rust)

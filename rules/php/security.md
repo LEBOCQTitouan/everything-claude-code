@@ -3,6 +3,7 @@ paths:
   - "**/*.php"
   - "**/composer.lock"
   - "**/composer.json"
+applies-to: { languages: [php] }
 ---
 # PHP Security
 

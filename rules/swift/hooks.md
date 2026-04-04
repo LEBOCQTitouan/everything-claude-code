@@ -2,6 +2,7 @@
 paths:
   - "**/*.swift"
   - "**/Package.swift"
+applies-to: { languages: [swift] }
 ---
 # Swift Hooks
 

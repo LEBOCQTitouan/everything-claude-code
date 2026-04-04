@@ -4,6 +4,7 @@ paths:
   - "**/*.tsx"
   - "**/*.js"
   - "**/*.jsx"
+applies-to: { languages: [typescript] }
 ---
 # TypeScript/JavaScript Coding Style
 

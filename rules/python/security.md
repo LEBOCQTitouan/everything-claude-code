@@ -2,6 +2,7 @@
 paths:
   - "**/*.py"
   - "**/*.pyi"
+applies-to: { languages: [python] }
 ---
 # Python Security
 

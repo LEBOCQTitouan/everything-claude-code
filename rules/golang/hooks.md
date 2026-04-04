@@ -3,6 +3,7 @@ paths:
   - "**/*.go"
   - "**/go.mod"
   - "**/go.sum"
+applies-to: { languages: [golang] }
 ---
 # Go Hooks
 

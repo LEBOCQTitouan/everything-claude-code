@@ -2,6 +2,7 @@
 paths:
   - "**/*.json"
   - "**/*.jsonc"
+applies-to: { files: ["*.json"] }
 ---
 # JSON Coding Style
 

@@ -5,6 +5,7 @@ paths:
   - "**/phpstan.neon"
   - "**/phpstan.neon.dist"
   - "**/psalm.xml"
+applies-to: { languages: [php] }
 ---
 # PHP Hooks
 

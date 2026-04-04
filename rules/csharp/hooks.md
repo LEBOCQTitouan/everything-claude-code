@@ -4,6 +4,7 @@ paths:
   - "**/*.csproj"
   - "**/*.sln"
   - "**/Directory.Build.props"
+applies-to: { languages: [csharp] }
 ---
 # C# Hooks
 

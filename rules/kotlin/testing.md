@@ -4,6 +4,7 @@ paths:
   - "**/*.kts"
   - "**/build.gradle.kts"
   - "**/settings.gradle.kts"
+applies-to: { languages: [kotlin] }
 ---
 # Kotlin Testing
 
