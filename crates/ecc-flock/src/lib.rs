@@ -81,9 +81,23 @@ pub fn lock_dir(repo_root: &Path) -> PathBuf {
     repo_root.join(".claude/workflow/.locks")
 }
 
+/// Returns the `.locks` directory path under a given base directory.
+pub fn lock_dir_for(base_dir: &Path) -> PathBuf {
+    base_dir.join(".locks")
+}
+
 /// Creates the `.locks` directory if it does not already exist.
 pub fn ensure_lock_dir(repo_root: &Path) -> Result<(), FlockError> {
     let dir = lock_dir(repo_root);
+    std::fs::create_dir_all(&dir).map_err(|e| FlockError::DirCreation {
+        path: dir,
+        message: e.to_string(),
+    })
+}
+
+/// Creates the `.locks` directory under `base_dir` if it does not already exist.
+pub fn ensure_lock_dir_for(base_dir: &Path) -> Result<(), FlockError> {
+    let dir = lock_dir_for(base_dir);
     std::fs::create_dir_all(&dir).map_err(|e| FlockError::DirCreation {
         path: dir,
         message: e.to_string(),
@@ -104,6 +118,86 @@ pub fn acquire_with_timeout(
     timeout: Duration,
 ) -> Result<FlockGuard, FlockError> {
     do_acquire(repo_root, name, Some(timeout))
+}
+
+/// Acquires an exclusive POSIX flock on `base_dir/.locks/<name>.lock` (blocking).
+pub fn acquire_for(base_dir: &Path, name: &str) -> Result<FlockGuard, FlockError> {
+    acquire_for_impl(base_dir, name, None)
+}
+
+/// Acquires an exclusive POSIX flock under `base_dir/.locks/<name>.lock`, retrying until `timeout` elapses.
+pub fn acquire_for_with_timeout(
+    base_dir: &Path,
+    name: &str,
+    timeout: Duration,
+) -> Result<FlockGuard, FlockError> {
+    acquire_for_impl(base_dir, name, Some(timeout))
+}
+
+fn acquire_for_impl(
+    base_dir: &Path,
+    name: &str,
+    timeout: Option<Duration>,
+) -> Result<FlockGuard, FlockError> {
+    use std::fs::OpenOptions;
+    use std::os::unix::io::AsRawFd;
+    use std::time::Instant;
+
+    ensure_lock_dir_for(base_dir)?;
+    let lock_path = lock_dir_for(base_dir).join(format!("{name}.lock"));
+
+    let file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(&lock_path)
+        .map_err(|e| FlockError::AcquireFailed {
+            path: lock_path.clone(),
+            message: e.to_string(),
+        })?;
+
+    let raw_fd = file.as_raw_fd();
+
+    match timeout {
+        None => {
+            // SAFETY: raw_fd is valid, obtained from an open File.
+            let ret = unsafe { libc::flock(raw_fd, libc::LOCK_EX) };
+            if ret != 0 {
+                return Err(FlockError::AcquireFailed {
+                    path: lock_path,
+                    message: std::io::Error::last_os_error().to_string(),
+                });
+            }
+        }
+        Some(dur) => {
+            let deadline = Instant::now() + dur;
+            loop {
+                // SAFETY: raw_fd is valid, obtained from an open File.
+                let ret = unsafe { libc::flock(raw_fd, libc::LOCK_EX | libc::LOCK_NB) };
+                if ret == 0 {
+                    break;
+                }
+                let err = std::io::Error::last_os_error();
+                if err.kind() != std::io::ErrorKind::WouldBlock {
+                    return Err(FlockError::AcquireFailed {
+                        path: lock_path,
+                        message: err.to_string(),
+                    });
+                }
+                if Instant::now() >= deadline {
+                    return Err(FlockError::Timeout(dur));
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+        }
+    }
+
+    std::mem::forget(file);
+
+    Ok(FlockGuard {
+        lock_path,
+        fd: raw_fd,
+    })
 }
 
 fn do_acquire(
