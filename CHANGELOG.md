@@ -10,8 +10,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Effort-based thinking budget tuning (BL-095)**: Per-agent `effort` frontmatter field (low/medium/high/max) with Rust validation and SubagentStart hook enforcement. Maps effort to MAX_THINKING_TOKENS. Cross-validates model/effort combinations. Rejects deprecated budget_tokens. ECC_EFFORT_BYPASS=1 bypass. 2 ADRs (0045, 0046).
 - **Backlog conformance audit (BL-084)**: `/audit-backlog` command verifying implemented entries match original intent. Shadow detection with HIGH/MEDIUM/LOW confidence. Scoped test runs. Report at `docs/audits/backlog-conformance-YYYY-MM-DD.md`. Integrated into `/audit-full` as CONF domain.
-
 - **Cartography element registry (BL-064 Sub-Spec B)**: Per-element documentation files in `docs/cartography/elements/` with cross-reference INDEX.md matrix. Two-tier element types (universal: Module, Interface, Config, Unknown; ECC: Command, Agent, Skill, Hook, Rule, Crate, Port, Adapter, DomainEntity). Post-loop element generation after journey/flow processing. Schema validation, staleness detection, and coverage dashboard extended for elements. New agent: `cartography-element-generator`. 3 ADRs (0042-0044).
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
