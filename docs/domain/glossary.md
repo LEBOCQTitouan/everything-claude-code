@@ -215,10 +215,6 @@ Aggregate root for the ECC pipeline state machine. Contains phase (Phase), conce
 - **Related:** [Phase](#phase)
 - **Files:** [`crates/ecc-domain/src/workflow/state.rs`](../../crates/ecc-domain/src/workflow/state.rs)
 
-### Working Memory
-
-Ephemeral, session-scoped memories. Tier 1 in the three-tier memory system. Auto-expire after 24h unless promoted. Written by hooks during active sessions.
-
 ### Visual Assertion
 A natural-language description validated against a screenshot by Claude's vision capabilities (via the Read tool). The agent reads a captured PNG and evaluates whether the described UI state matches what it observes. Reports pass/fail with reasoning.
 - **Related:** [Visual Checkpoint](#visual-checkpoint), [Visual Baseline](#visual-baseline)
@@ -234,6 +230,10 @@ A named point in an E2E test where a screenshot is captured for visual analysis.
 ### Visual Regression
 An unintended visual difference detected between a baseline screenshot and a current screenshot at the same checkpoint. Classified by severity: cosmetic (spacing, rendering), functional (missing elements, layout breakage), or breaking (blank render, navigation failure).
 - **Related:** [Visual Baseline](#visual-baseline), [Visual Checkpoint](#visual-checkpoint)
+
+### Working Memory
+
+Ephemeral, session-scoped memories. Tier 1 in the three-tier memory system. Auto-expire after 24h unless promoted. Written by hooks during active sessions.
 
 ## Infrastructure Terms
 

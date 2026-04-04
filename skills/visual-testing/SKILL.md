@@ -303,7 +303,7 @@ visual-baselines/
 visual-diffs/
 visual-report.html
 visual-report.json
-**/manifest.json
+visual-artifacts/manifest.json
 ```
 
 ### Best Practices
