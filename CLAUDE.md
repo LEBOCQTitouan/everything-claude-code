@@ -9,10 +9,9 @@ A collection of production-ready agents, skills, hooks, commands, rules, and MCP
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (2307 tests)
-cargo test              # Run all Rust tests (2252 tests)
+cargo test              # Run all Rust tests (997 tests)
 cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
-bats tests/statusline/  # Run statusline Bats tests (16 tests)
+bats tests/statusline/  # Run statusline Bats tests (22 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo deny check        # Supply chain audit (licenses + advisories)
 cargo llvm-cov --workspace   # Coverage report (works on macOS)
@@ -141,6 +140,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
 - `pre:write-edit:worktree-guard` blocks Write/Edit/MultiEdit on main branch — Claude must call EnterWorktree first; bypass with `ECC_WORKFLOW_BYPASS=1` (lazy worktree: created on first write, not session start)
 - `session:end:worktree-merge` auto-merges worktree to main at session end via `ecc-workflow merge` (rebase + full verify + ff-only) — if merge fails, worktree preserved; retry with `ecc-workflow merge` or clean up with `ecc worktree gc`
+- Claude Code's `EnterWorktree` prepends `worktree-` to branch names (e.g., `ecc-session-*` becomes `worktree-ecc-session-*`). ECC handles both forms — `WorktreeName::parse()` strips the prefix automatically
 - Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end
 
 ## Development Notes
