@@ -218,4 +218,20 @@ mod tests {
         let result = check_command_descriptions(&fs, Path::new("/commands"));
         assert!(result.passed);
     }
+
+    // --- check_pattern_count ---
+
+    #[test]
+    fn check_pattern_count_reports() {
+        // patterns/testing has 1 md file → check should produce a finding or at least report
+        let fs = InMemoryFileSystem::new()
+            .with_file("/patterns/testing/pattern1.md", "# Pattern 1")
+            .with_file("/patterns/testing/pattern2.md", "# Pattern 2");
+
+        let result = check_pattern_count(&fs, Path::new("/patterns"));
+        // The check runs without panic, returns a valid result
+        assert_eq!(result.name, "Pattern count");
+        // With patterns present the check should pass (findings only on problems)
+        assert!(result.passed, "expected passed=true for populated patterns dir");
+    }
 }

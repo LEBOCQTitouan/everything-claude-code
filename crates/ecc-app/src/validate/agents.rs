@@ -365,4 +365,53 @@ mod tests {
                 .any(|s| s.contains("Invalid model"))
         );
     }
+
+    #[test]
+    fn agent_patterns_invalid_category_warns() {
+        // Agent references a patterns category that doesn't exist as a dir → WARNING
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/planner.md",
+            "---\nmodel: sonnet\ntools: Read\npatterns: nonexistent-category\n---\n# Planner",
+        );
+        let t = term();
+        // Validation should still succeed (warning, not error)
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root"),
+        );
+        assert!(result, "should pass (warning only, not error)");
+        // But a warning should be emitted
+        let stderr = t.stderr_output();
+        assert!(
+            stderr.iter().any(|s| s.contains("nonexistent-category")),
+            "expected warning about missing pattern category, got: {stderr:?}"
+        );
+    }
+
+    #[test]
+    fn agent_no_patterns_field_ok() {
+        // Agent without patterns field — no warning, validation passes
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/simple.md",
+            "---\nmodel: sonnet\ntools: Read\n---\n# Simple",
+        );
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root"),
+        );
+        assert!(result, "should pass when patterns field is absent");
+        // No stderr output about patterns
+        let stderr = t.stderr_output();
+        assert!(
+            !stderr.iter().any(|s| s.to_lowercase().contains("pattern")),
+            "unexpected pattern warning when field absent: {stderr:?}"
+        );
+    }
 }

@@ -504,3 +504,58 @@ pub fn merge_hooks(
 
     Ok((added, existing, legacy_removed))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    use std::path::Path;
+
+    fn make_ctx<'a>(
+        fs: &'a dyn ecc_ports::fs::FileSystem,
+        terminal: &'a dyn ecc_ports::terminal::TerminalIO,
+        env: &'a dyn ecc_ports::env::Environment,
+        shell: &'a dyn ecc_ports::shell::ShellExecutor,
+    ) -> MergeContext<'a> {
+        MergeContext { fs, terminal, env, shell }
+    }
+
+    #[test]
+    fn merge_patterns_copies() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/src/patterns/testing/pattern1.md", "# Pattern 1")
+            .with_file("/src/patterns/security/pattern2.md", "# Pattern 2");
+
+        let terminal = BufferedTerminal::new();
+        let env = MockEnvironment::default();
+        let shell = MockExecutor::default();
+        let ctx = make_ctx(&fs, &terminal, &env, &shell);
+        let mut opts = MergeOptions {
+            dry_run: false,
+            force: true,
+            interactive: false,
+            apply_all: Some(ReviewChoice::Accept),
+        };
+
+        let report = merge_patterns(
+            &ctx,
+            Path::new("/src/patterns"),
+            Path::new("/dest/patterns"),
+            &mut opts,
+        );
+
+        assert!(
+            report.errors.is_empty(),
+            "expected no errors, got: {:?}",
+            report.errors
+        );
+        // At least one category should be added or updated
+        let total_changes = report.added.len() + report.updated.len();
+        assert!(
+            total_changes > 0,
+            "expected pattern categories to be copied, added={:?} updated={:?}",
+            report.added,
+            report.updated
+        );
+    }
+}

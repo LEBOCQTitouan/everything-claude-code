@@ -143,4 +143,23 @@ mod tests {
         let groups = collect_rule_groups(&fs, Path::new("/nonexistent"), &[]);
         assert!(groups.is_empty());
     }
+
+    #[test]
+    fn collect_artifacts_includes_patterns() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/claude/patterns/testing")
+            .with_dir("/claude/patterns/security");
+
+        let artifacts = collect_installed_artifacts(&fs, Path::new("/claude"));
+        assert!(
+            artifacts.patterns.contains(&"testing".to_string()),
+            "expected 'testing' in patterns, got: {:?}",
+            artifacts.patterns
+        );
+        assert!(
+            artifacts.patterns.contains(&"security".to_string()),
+            "expected 'security' in patterns, got: {:?}",
+            artifacts.patterns
+        );
+    }
 }
