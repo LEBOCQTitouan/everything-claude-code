@@ -631,6 +631,63 @@ mod tests {
         assert!(findings.is_empty());
     }
 
+    // --- Pattern domain constants (PC-001..PC-004) ---
+
+    #[test]
+    fn valid_pattern_languages() {
+        // AC-001.5: 10 language identifiers + "all" = 11 entries
+        assert_eq!(VALID_PATTERN_LANGUAGES.len(), 11);
+        for lang in &[
+            "rust", "go", "python", "typescript", "java",
+            "kotlin", "csharp", "cpp", "swift", "shell", "all",
+        ] {
+            assert!(
+                VALID_PATTERN_LANGUAGES.contains(lang),
+                "Missing language: {lang}"
+            );
+        }
+    }
+
+    #[test]
+    fn valid_pattern_difficulties() {
+        // AC-001.6: exactly 3 difficulty values
+        assert_eq!(VALID_PATTERN_DIFFICULTIES.len(), 3);
+        for diff in &["beginner", "intermediate", "advanced"] {
+            assert!(
+                VALID_PATTERN_DIFFICULTIES.contains(diff),
+                "Missing difficulty: {diff}"
+            );
+        }
+    }
+
+    #[test]
+    fn unsafe_code_patterns_non_empty() {
+        // AC-002.8: deny-list constant is non-empty
+        assert!(!UNSAFE_CODE_PATTERNS.is_empty());
+    }
+
+    #[test]
+    fn required_pattern_sections() {
+        // AC-002.5: exactly 9 required sections
+        assert_eq!(REQUIRED_PATTERN_SECTIONS.len(), 9);
+        for section in &[
+            "Intent",
+            "Problem",
+            "Solution",
+            "Language Implementations",
+            "When to Use",
+            "When NOT to Use",
+            "Anti-Patterns",
+            "Related Patterns",
+            "References",
+        ] {
+            assert!(
+                REQUIRED_PATTERN_SECTIONS.contains(section),
+                "Missing section: {section}"
+            );
+        }
+    }
+
     mod proptests {
         use super::*;
         use proptest::prelude::*;
