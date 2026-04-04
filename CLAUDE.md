@@ -128,7 +128,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 
 ## Gotchas
 
-- Workflow state is worktree-scoped: stored at `<git-dir>/ecc-workflow/state.json`. Falls back to `.claude/workflow/` for non-git dirs.
+- Workflow state is worktree-scoped: stored at `<git-dir>/ecc-workflow/state.json`. Falls back to `.claude/workflow/` for non-git dirs. Old state at `.claude/workflow/state.json` is auto-migrated on first write.
 - `ecc workflow` mirrors `ecc-workflow` — use either during migration; `ecc-workflow` will become a thin wrapper
 - `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by hook)
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
