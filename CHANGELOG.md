@@ -8,6 +8,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
+### Fixed
+
+- **Worktree session CWD orphaning**: Defer worktree directory deletion from merge/hook paths to session-start gc to prevent Claude Code session paralysis when CWD points to a deleted worktree. Session-end merge now preserves the worktree directory; `session:start` runs best-effort `ecc worktree gc` for self-healing cleanup of stale worktrees.
+
 ### Added
 
 - **Grill-me decision persistence (BL-034)**: New `ecc-workflow campaign` subcommand group (init, append-decision, show) for atomic incremental persistence of grill-me interview decisions to campaign.md. `grill_me_gate` becomes blocking (exit 2) during plan/solution phases for version >= 2 states without campaign.md, forcing Claude to create the file. Version 1 states grandfathered. Spec commands updated with campaign init/append-decision calls.
