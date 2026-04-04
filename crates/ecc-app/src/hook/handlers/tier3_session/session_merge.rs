@@ -35,13 +35,10 @@ pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .unwrap_or_default();
 
     if commit_count == "0" {
-        // No commits — clean up empty worktree
-        let _ = ports
-            .shell
-            .run_command("git", &["worktree", "remove", "--force", "."]);
+        // No commits — defer cleanup to session-start gc (worktree directory preserved)
         return HookResult::warn(
             stdin,
-            "[Session] Empty worktree cleaned up (no commits to merge).\n",
+            "[Session] Empty worktree (no commits to merge). Cleanup deferred to next session gc.\n",
         );
     }
 
@@ -271,20 +268,21 @@ mod tests {
         assert!(result.stderr.contains("merge failed"));
     }
 
-    // PC-002f: empty worktree cleaned up
+    // PC-001: empty worktree defers to gc (no removal, no "cleaned up")
     #[test]
-    fn empty_worktree_cleaned_up() {
+    fn empty_worktree_defers_to_gc() {
         let fs = InMemoryFileSystem::new();
+        // No mock for "git worktree remove" — if code calls it, MockExecutor panics
         let shell = in_worktree_shell()
-            .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("0\n"))
-            .on_args("git", &["worktree", "remove", "--force", "."], ok(""));
+            .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("0\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
-        assert!(result.stderr.contains("Empty worktree"));
+        assert!(!result.stderr.contains("cleaned up"), "should not claim 'cleaned up'");
+        assert!(result.stderr.contains("deferred"), "should mention deferred cleanup");
     }
 
     // PC-002g: bypass skips merge
