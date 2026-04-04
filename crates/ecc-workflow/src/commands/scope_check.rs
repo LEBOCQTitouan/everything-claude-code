@@ -127,9 +127,19 @@ fn is_exception_with_state_dir(path: &str, state_dir: &Path) -> bool {
     if path.starts_with("docs/") {
         return true;
     }
-    // Dynamic check against the actual state_dir
+    // Dynamic check against the actual state_dir (absolute path match)
     let state_prefix = state_dir.to_string_lossy();
     if path.starts_with(state_prefix.as_ref()) {
+        return true;
+    }
+    // Also match relative git-dir paths (git diff returns relative paths like .git/ecc-workflow/)
+    if let Some(rel) = state_prefix.strip_prefix('/') {
+        if path.starts_with(rel) {
+            return true;
+        }
+    }
+    // Match common .git/worktrees/*/ecc-workflow/ or .git/ecc-workflow/ patterns
+    if path.starts_with(".git/") && path.contains("ecc-workflow/") {
         return true;
     }
     // Backward compat: always except the legacy default location
