@@ -34,7 +34,7 @@ clap = { version = "4", features = ["derive", "env"] }
 clap_complete = "4"
 
 # Database / logging
-rusqlite = { version = "0.34", features = ["bundled", "modern_sqlite"] }
+rusqlite = { version = "0.38", features = ["bundled", "modern_sqlite"] }
 tracing-appender = "0.2"
 notify = "7"
 
