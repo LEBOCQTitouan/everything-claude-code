@@ -432,3 +432,7 @@ journey_risk = sum(boundary_risk_weights)
 | 0-2 | LOW | Standard Playwright, no special infra |
 | 3-5 | MEDIUM | Add retries, increase timeouts |
 | 6+ | HIGH | Mock external boundaries, add trace capture |
+
+## Visual Testing
+
+For vision-based UI validation, screenshot regression detection, and AI-powered visual assertions, see the dedicated [visual-testing](../visual-testing/SKILL.md) skill.
