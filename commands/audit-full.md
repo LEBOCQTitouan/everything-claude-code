@@ -62,6 +62,7 @@ Launch all domain agents in parallel:
 | `error-handling-auditor` | Error Handling | ERR |
 | `observability-auditor` | Observability | OBS |
 | `doc-analyzer` + `doc-validator` | Documentation | DOC |
+| `/audit-backlog` (inline) | Backlog Conformance | CONF |
 
 ### Phase 3: Cross-Domain Correlation
 
