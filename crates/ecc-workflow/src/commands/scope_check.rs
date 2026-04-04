@@ -118,14 +118,21 @@ fn git_changed_files(project_dir: &Path) -> Vec<String> {
 ///
 /// Excluded patterns (matching the design spec):
 /// - docs/*
-/// - .claude/workflow/*
+/// - `state_dir`/* (dynamic — the actual workflow state directory)
+/// - .claude/workflow/* (backward compat — legacy default location)
 /// - CHANGELOG.md
 /// - test files (*_test.*, *.test.*)
 /// - lock files (Cargo.lock, package-lock.json, yarn.lock)
-fn is_exception(path: &str) -> bool {
+fn is_exception_with_state_dir(path: &str, state_dir: &Path) -> bool {
     if path.starts_with("docs/") {
         return true;
     }
+    // Dynamic check against the actual state_dir
+    let state_prefix = state_dir.to_string_lossy();
+    if path.starts_with(state_prefix.as_ref()) {
+        return true;
+    }
+    // Backward compat: always except the legacy default location
     if path.starts_with(".claude/workflow/") {
         return true;
     }
@@ -145,6 +152,7 @@ fn is_exception(path: &str) -> bool {
     }
     false
 }
+
 
 /// Run the `scope-check` subcommand.
 pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
@@ -194,7 +202,7 @@ pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
     let unexpected: Vec<&str> = changed
         .iter()
         .map(String::as_str)
-        .filter(|f| !is_exception(f) && !expected.contains(*f))
+        .filter(|f| !is_exception_with_state_dir(f, state_dir) && !expected.contains(*f))
         .collect();
 
     if unexpected.is_empty() {
@@ -243,30 +251,45 @@ mod tests {
 
     #[test]
     fn is_exception_docs() {
-        assert!(is_exception("docs/specs/foo/design.md"));
+        assert!(is_exception_with_state_dir(
+            "docs/specs/foo/design.md",
+            Path::new(".claude/workflow")
+        ));
     }
 
     #[test]
     fn is_exception_workflow() {
-        assert!(is_exception(".claude/workflow/state.json"));
+        assert!(is_exception_with_state_dir(
+            ".claude/workflow/state.json",
+            Path::new("/other/dir")
+        ));
     }
 
     #[test]
     fn is_exception_lock_files() {
-        assert!(is_exception("Cargo.lock"));
-        assert!(is_exception("package-lock.json"));
+        assert!(is_exception_with_state_dir("Cargo.lock", Path::new(".claude/workflow")));
+        assert!(is_exception_with_state_dir(
+            "package-lock.json",
+            Path::new(".claude/workflow")
+        ));
     }
 
     #[test]
     fn is_exception_test_files() {
-        assert!(is_exception("src/foo_test.rs"));
-        assert!(is_exception("src/foo.test.ts"));
+        assert!(is_exception_with_state_dir("src/foo_test.rs", Path::new(".claude/workflow")));
+        assert!(is_exception_with_state_dir("src/foo.test.ts", Path::new(".claude/workflow")));
     }
 
     #[test]
     fn non_exception_path_not_excluded() {
-        assert!(!is_exception("src/commands/scope_check.rs"));
-        assert!(!is_exception("crates/ecc-app/src/lib.rs"));
+        assert!(!is_exception_with_state_dir(
+            "src/commands/scope_check.rs",
+            Path::new(".claude/workflow")
+        ));
+        assert!(!is_exception_with_state_dir(
+            "crates/ecc-app/src/lib.rs",
+            Path::new(".claude/workflow")
+        ));
     }
 
     /// PC-016: is_exception uses dynamic state_dir (AC-004.4)
