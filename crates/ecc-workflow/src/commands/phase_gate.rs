@@ -6,20 +6,43 @@ use ecc_domain::workflow::state::WorkflowState;
 use crate::io::{read_stdin, with_state_lock};
 use crate::output::WorkflowOutput;
 
-/// Allowed path prefixes during plan/solution phases.
-/// A file_path is allowed if it starts with any of these prefixes
-/// (both relative and prefixed with an arbitrary parent directory).
-const ALLOWED_PREFIXES: &[&str] = &[
-    ".claude/workflow/",
-    ".claude/plans/",
-    "docs/audits/",
-    "docs/backlog/",
-    "docs/user-stories/",
-    "docs/specs/",
-    "docs/plans/",
-    "docs/designs/",
-    "docs/adr/",
-];
+/// Returns the dynamic allowlist of path prefixes for the given state directory.
+///
+/// Always includes standard doc paths. Adds the resolved `state_dir` as a prefix
+/// (so writes to the state directory itself are always permitted). Also always
+/// includes the legacy `.claude/workflow/` prefix for backward compatibility
+/// unless the `state_dir` already points there.
+fn allowed_prefixes(state_dir: &Path) -> Vec<String> {
+    let mut prefixes = vec![
+        ".claude/plans/".to_owned(),
+        "docs/audits/".to_owned(),
+        "docs/backlog/".to_owned(),
+        "docs/user-stories/".to_owned(),
+        "docs/specs/".to_owned(),
+        "docs/plans/".to_owned(),
+        "docs/designs/".to_owned(),
+        "docs/adr/".to_owned(),
+    ];
+    let state_str = state_dir.to_string_lossy();
+    let with_slash = if state_str.ends_with('/') {
+        state_str.to_string()
+    } else {
+        format!("{state_str}/")
+    };
+    prefixes.push(with_slash);
+    // Always include legacy for backward compat
+    prefixes.push(".claude/workflow/".to_owned());
+    prefixes
+}
+
+/// Returns `true` if the path contains URL-encoded traversal sequences.
+///
+/// Detects `%2e%2e` (dot-dot), `%2f` (slash), and `%5c` (backslash)
+/// to block attempts to escape the allowlisted prefix via percent-encoding.
+fn contains_encoded_traversal(path: &str) -> bool {
+    let lower = path.to_lowercase();
+    lower.contains("%2e%2e") || lower.contains("%2f") || lower.contains("%5c")
+}
 
 /// Destructive Bash command patterns that are blocked during plan/solution phases.
 const BLOCKED_BASH_PATTERNS: &[&str] = &[
@@ -84,12 +107,20 @@ pub fn run_with_input(project_dir: &Path, state_dir: &Path, input: &str) -> Work
     let phase_str = phase.to_string();
     let (tool_name, file_path, command) = parse_hook_input(input);
 
+    let prefixes = allowed_prefixes(state_dir);
     let result = match tool_name.as_deref() {
         Some("Write") | Some("Edit") | Some("MultiEdit") => {
             let raw_fp = file_path.as_deref().unwrap_or("");
+            // SEC-010: block URL-encoded traversal before normalization
+            if contains_encoded_traversal(raw_fp) {
+                return WorkflowOutput::block(format!(
+                    "BLOCKED: URL-encoded traversal detected in path '{raw_fp}' during \
+                     {phase_str} phase."
+                ));
+            }
             let fp = ecc_domain::workflow::path::normalize_path(raw_fp);
             let fp = fp.as_str();
-            if is_allowed_path(fp) {
+            if is_allowed_path(fp, &prefixes) {
                 WorkflowOutput::pass(format!("Write to allowed path '{fp}' permitted"))
             } else {
                 WorkflowOutput::block(format!(
@@ -158,9 +189,9 @@ fn parse_hook_input(input: &str) -> (Option<String>, Option<String>, Option<Stri
     (tool_name, file_path, command)
 }
 
-fn is_allowed_path(path: &str) -> bool {
-    for prefix in ALLOWED_PREFIXES {
-        if path.starts_with(prefix) || path.contains(&format!("/{prefix}")) {
+fn is_allowed_path(path: &str, prefixes: &[String]) -> bool {
+    for prefix in prefixes {
+        if path.starts_with(prefix.as_str()) || path.contains(&format!("/{prefix}")) {
             return true;
         }
         // Also allow exact match without trailing slash for directory itself
@@ -420,9 +451,8 @@ mod tests {
         // A file inside the state_dir should be allowed
         let file_in_state_dir = state_dir.join("custom.json");
         let file_path_str = file_in_state_dir.to_string_lossy();
-        let hook_input = format!(
-            r#"{{"tool_name":"Write","tool_input":{{"file_path":"{file_path_str}"}}}}"#
-        );
+        let hook_input =
+            format!(r#"{{"tool_name":"Write","tool_input":{{"file_path":"{file_path_str}"}}}}"#);
         let output = super::run_with_input(tmp.path(), &state_dir, &hook_input);
         assert!(
             matches!(output.status, Status::Pass),
@@ -439,7 +469,8 @@ mod tests {
         write_state(tmp.path(), "plan");
         let state_dir = state_dir_for(&tmp);
         // Write to the legacy .claude/workflow/ path — must be allowed
-        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":".claude/workflow/state.json"}}"#;
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":".claude/workflow/state.json"}}"#;
         let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Pass),
