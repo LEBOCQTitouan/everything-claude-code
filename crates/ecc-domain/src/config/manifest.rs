@@ -32,6 +32,8 @@ pub struct Artifacts {
     pub hook_descriptions: Vec<String>,
     #[serde(default)]
     pub patterns: Vec<String>,
+    #[serde(default)]
+    pub teams: Vec<String>,
 }
 
 /// Diff between two file lists — files added, updated (in both), and removed.
@@ -97,6 +99,7 @@ pub fn is_ecc_managed(manifest: Option<&EccManifest>, artifact_type: &str, filen
         "commands" => &manifest.artifacts.commands,
         "skills" => &manifest.artifacts.skills,
         "patterns" => &manifest.artifacts.patterns,
+        "teams" => &manifest.artifacts.teams,
         _ => return false,
     };
 
@@ -157,6 +160,7 @@ mod tests {
             },
             hook_descriptions: vec!["hook1".into()],
             patterns: vec![],
+            teams: vec![],
         }
     }
 
@@ -339,5 +343,49 @@ mod tests {
         let m = create_manifest("4.0.0", "now", &[], artifacts);
         assert!(is_ecc_managed(Some(&m), "patterns", "creational"));
         assert!(!is_ecc_managed(Some(&m), "patterns", "nonexistent"));
+    }
+
+    // --- teams field ---
+
+    #[test]
+    fn artifacts_default_includes_teams() {
+        let artifacts = Artifacts::default();
+        assert!(
+            artifacts.teams.is_empty(),
+            "teams should default to empty vec"
+        );
+    }
+
+    #[test]
+    fn teams_field_defaults_empty() {
+        // Simulate an old manifest JSON that lacks the "teams" field
+        let json = r#"{
+            "version": "3.0.0",
+            "installedAt": "2025-01-01T00:00:00Z",
+            "updatedAt": "2025-01-01T00:00:00Z",
+            "artifacts": {
+                "agents": [],
+                "commands": [],
+                "skills": [],
+                "rules": {},
+                "hookDescriptions": []
+            }
+        }"#;
+        let manifest: EccManifest = serde_json::from_str(json).expect("should deserialize");
+        assert!(
+            manifest.artifacts.teams.is_empty(),
+            "teams should default to empty vec when missing from JSON"
+        );
+    }
+
+    #[test]
+    fn is_ecc_managed_recognizes_teams() {
+        let artifacts = Artifacts {
+            teams: vec!["implement-team.md".into(), "audit-team.md".into()],
+            ..Artifacts::default()
+        };
+        let m = create_manifest("4.0.0", "now", &[], artifacts);
+        assert!(is_ecc_managed(Some(&m), "teams", "implement-team.md"));
+        assert!(!is_ecc_managed(Some(&m), "teams", "nonexistent.md"));
     }
 }
