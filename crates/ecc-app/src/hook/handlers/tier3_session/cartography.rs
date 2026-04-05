@@ -2725,4 +2725,208 @@ mod tests {
             "delta should be archived confirming full pipeline ran"
         );
     }
+
+    // ── Safety-net tests (PC-001 through PC-004) ──
+    // Written BEFORE refactoring to lock down existing edge-case behavior.
+
+    /// PC-001: Agent exits non-zero → delta NOT archived, stderr reports failure.
+    #[test]
+    fn safety_net_agent_nonzero_exit() {
+        let delta_json = r#"{"session_id":"sn-001","timestamp":1000,"changed_files":[{"path":"crates/foo/src/lib.rs","classification":"foo"}],"project_type":"rust"}"#;
+        let fs = InMemoryFileSystem::new()
+            .with_file("/project/Cargo.toml", "[workspace]")
+            .with_file(
+                "/project/.claude/cartography/pending-delta-session-sn-001.json",
+                delta_json,
+            )
+            .with_file("/project/docs/cartography/journeys/.gitkeep", "")
+            .with_file("/project/docs/cartography/flows/.gitkeep", "")
+            .with_file("/project/docs/cartography/elements/.gitkeep", "")
+            .with_file("/project/docs/cartography/README.md", "# Cartography\n");
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["status", "--porcelain", "docs/cartography/"],
+                CommandOutput {
+                    stdout: String::new(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on("claude", CommandOutput {
+                stdout: String::new(),
+                stderr: "agent error\n".to_string(),
+                exit_code: 1,
+            })
+            .on("git", CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            });
+        let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = start_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert!(
+            result.stderr.contains("agent failed"),
+            "stderr should report agent failure: got {:?}",
+            result.stderr
+        );
+        let archived = std::path::Path::new(
+            "/project/.claude/cartography/processed/pending-delta-session-sn-001.json",
+        );
+        assert!(!fs.exists(archived), "delta must NOT be archived on failure");
+    }
+
+    /// PC-002: Agent returns invalid output (not journey/flow) but exits 0 →
+    /// output discarded, delta still archived (current behavior).
+    #[test]
+    fn safety_net_agent_invalid_output() {
+        let delta_json = r#"{"session_id":"sn-002","timestamp":1000,"changed_files":[{"path":"crates/bar/src/lib.rs","classification":"bar"}],"project_type":"rust"}"#;
+        let fs = InMemoryFileSystem::new()
+            .with_file("/project/Cargo.toml", "[workspace]")
+            .with_file(
+                "/project/.claude/cartography/pending-delta-session-sn-002.json",
+                delta_json,
+            )
+            .with_file("/project/docs/cartography/journeys/.gitkeep", "")
+            .with_file("/project/docs/cartography/flows/.gitkeep", "")
+            .with_file("/project/docs/cartography/elements/.gitkeep", "")
+            .with_file("/project/docs/cartography/README.md", "# Cartography\n");
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["status", "--porcelain", "docs/cartography/"],
+                CommandOutput {
+                    stdout: String::new(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on("claude", CommandOutput {
+                stdout: "not valid journey or flow markdown".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            })
+            .on("git", CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            });
+        let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = start_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        let archived = std::path::Path::new(
+            "/project/.claude/cartography/processed/pending-delta-session-sn-002.json",
+        );
+        assert!(
+            fs.exists(archived),
+            "delta should be archived when agent exits 0"
+        );
+    }
+
+    /// PC-003: Archive rename failure is handled gracefully (no panic).
+    #[test]
+    fn safety_net_archive_failure() {
+        let delta_json = r#"{"session_id":"sn-003","timestamp":1000,"changed_files":[{"path":"src/main.rs","classification":"root"}],"project_type":"rust"}"#;
+        let fs = InMemoryFileSystem::new()
+            .with_file("/project/Cargo.toml", "[workspace]")
+            .with_file(
+                "/project/.claude/cartography/pending-delta-session-sn-003.json",
+                delta_json,
+            )
+            .with_file("/project/docs/cartography/journeys/.gitkeep", "")
+            .with_file("/project/docs/cartography/flows/.gitkeep", "")
+            .with_file("/project/docs/cartography/elements/.gitkeep", "")
+            .with_file("/project/docs/cartography/README.md", "# Cartography\n");
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["status", "--porcelain", "docs/cartography/"],
+                CommandOutput {
+                    stdout: String::new(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on("claude", CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            })
+            .on("git", CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            });
+        let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = start_cartography("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+    }
+
+    /// PC-004: Malformed delta JSON is silently skipped; good deltas still process.
+    #[test]
+    fn safety_net_malformed_delta_json() {
+        let good_delta = r#"{"session_id":"sn-004-good","timestamp":2000,"changed_files":[{"path":"src/lib.rs","classification":"root"}],"project_type":"rust"}"#;
+        let bad_delta = r#"{ this is not valid json }"#;
+        let fs = InMemoryFileSystem::new()
+            .with_file("/project/Cargo.toml", "[workspace]")
+            .with_file(
+                "/project/.claude/cartography/pending-delta-session-sn-004-bad.json",
+                bad_delta,
+            )
+            .with_file(
+                "/project/.claude/cartography/pending-delta-session-sn-004-good.json",
+                good_delta,
+            )
+            .with_file("/project/docs/cartography/journeys/.gitkeep", "")
+            .with_file("/project/docs/cartography/flows/.gitkeep", "")
+            .with_file("/project/docs/cartography/elements/.gitkeep", "")
+            .with_file("/project/docs/cartography/README.md", "# Cartography\n");
+        let shell = MockExecutor::new()
+            .on_args(
+                "git",
+                &["status", "--porcelain", "docs/cartography/"],
+                CommandOutput {
+                    stdout: String::new(),
+                    stderr: String::new(),
+                    exit_code: 0,
+                },
+            )
+            .on("claude", CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            })
+            .on("git", CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            });
+        let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = start_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        let good_archived = std::path::Path::new(
+            "/project/.claude/cartography/processed/pending-delta-session-sn-004-good.json",
+        );
+        assert!(fs.exists(good_archived), "good delta should be archived");
+        let bad_archived = std::path::Path::new(
+            "/project/.claude/cartography/processed/pending-delta-session-sn-004-bad.json",
+        );
+        assert!(!fs.exists(bad_archived), "malformed delta must not be archived");
+    }
 }
