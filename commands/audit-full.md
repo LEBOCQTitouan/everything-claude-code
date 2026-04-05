@@ -48,6 +48,16 @@ Invoke the `audit-orchestrator` agent, which executes the following sequence:
 
 Run `evolution-analyst` first — hotspot data is required by downstream agents for cross-correlation.
 
+### Team Manifest Configuration
+
+Before dispatching domain agents, read team configuration from `teams/audit-team.md`:
+
+1. If `teams/audit-team.md` exists, parse its YAML frontmatter for agent names, roles, and concurrency settings
+2. Use the manifest's `agents` list for agent names and dispatch configuration
+3. If `teams/audit-team.md` does NOT exist:
+   - If `ECC_LEGACY_DISPATCH=1` is set: fall back to hard-coded agent configuration with a deprecation warning: "DEPRECATED: Using legacy dispatch. Create teams/audit-team.md to use team manifests."
+   - Otherwise: fail with error: "Team manifest required: teams/audit-team.md not found. Set ECC_LEGACY_DISPATCH=1 for legacy behavior."
+
 ### Phase 2: Domain Audits (Parallel)
 
 Launch all domain agents in parallel:

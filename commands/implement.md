@@ -114,6 +114,17 @@ Generate tasks.md in the spec directory using the tasks-generation skill's forma
 
 After generating tasks.md, analyze the PC dependency graph and display the wave plan to the user before proceeding to Phase 3.
 
+### Team Manifest Configuration
+
+Before dispatching subagents, read team configuration from `teams/implement-team.md`:
+
+1. If `teams/implement-team.md` exists, parse its YAML frontmatter for agent names, roles, allowed-tools, and `max-concurrent`
+2. Use the manifest's `agents` list to construct subagent spawn parameters — each entry's `name` identifies the agent and `allowed-tools` restricts tool access
+3. Use `max-concurrent` from the manifest as the wave concurrency cap (overrides the default of 4)
+4. If `teams/implement-team.md` does NOT exist:
+   - If `ECC_LEGACY_DISPATCH=1` is set: fall back to hard-coded agent configuration with a deprecation warning: "DEPRECATED: Using legacy dispatch. Create teams/implement-team.md to use team manifests."
+   - Otherwise: fail with error: "Team manifest required: teams/implement-team.md not found. Set ECC_LEGACY_DISPATCH=1 for legacy behavior."
+
 ## Phase 3: TDD Loop (Subagent Dispatch)
 
 For each PC in the order specified by Test Strategy, dispatch to an isolated `tdd-executor` subagent. PCs are dispatched in **waves**. Within each wave, independent PCs are dispatched concurrently. Waves are executed sequentially. If all waves contain a single PC, behavior is identical to sequential dispatch (backward compatible). Each subagent gets a fresh context window.
