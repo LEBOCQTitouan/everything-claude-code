@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A collection of production-ready agents, skills, hooks, commands, rules, and MCP configurations for software development using Claude Code. Core CLI is implemented in Rust (Hexagonal Architecture, DDD, Clean Code).
+A collection of production-ready agents, skills, hooks, commands, rules, teams, and MCP configurations for software development using Claude Code. Core CLI is implemented in Rust (Hexagonal Architecture, DDD, Clean Code).
 
 ## Running Tests
 
@@ -38,7 +38,7 @@ ecc install          Install ECC config to ~/.claude/
 ecc init             Initialize ECC in current project
 ecc audit            Audit ECC configuration health
 ecc hook <id> [profiles]  Run a hook by ID
-ecc validate <target>     Validate content files (agents|commands|hooks|skills|rules|paths|patterns)
+ecc validate <target>     Validate content files (agents|commands|hooks|skills|rules|paths|patterns|teams)
 ecc validate spec <path>  Validate spec artifact (AC numbering, sequential IDs, no gaps)
 ecc validate design <path> [--spec <spec-path>]  Validate design artifact (PC table, AC coverage, dependency order)
 ecc dev on|off|status     Toggle ECC config on/off
