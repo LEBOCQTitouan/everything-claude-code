@@ -156,6 +156,13 @@ pub fn clean_from_manifest(
         remove_directory(fs, &dir_path, &label, dry_run, &mut report);
     }
 
+    // Remove team files
+    for team in &manifest.artifacts.teams {
+        let file_path = dir.join("teams").join(team);
+        let label = format!("teams/{team}");
+        remove_file(fs, &file_path, &label, dry_run, &mut report);
+    }
+
     // Remove rule files (grouped by language/group)
     for (group, files) in &manifest.artifacts.rules {
         for file in files {

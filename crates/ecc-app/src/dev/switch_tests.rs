@@ -9,7 +9,8 @@ fn dev_switch_dev_creates_symlinks() {
         .with_dir("/ecc/agents")
         .with_dir("/ecc/commands")
         .with_dir("/ecc/skills")
-        .with_dir("/ecc/rules");
+        .with_dir("/ecc/rules")
+        .with_dir("/ecc/teams");
     let terminal = BufferedTerminal::new();
 
     let result = dev_switch(
@@ -34,7 +35,8 @@ fn dev_switch_default_restores_copies() {
         .with_symlink("/claude/agents", "/ecc/agents")
         .with_symlink("/claude/commands", "/ecc/commands")
         .with_symlink("/claude/skills", "/ecc/skills")
-        .with_symlink("/claude/rules", "/ecc/rules");
+        .with_symlink("/claude/rules", "/ecc/rules")
+        .with_symlink("/claude/teams", "/ecc/teams");
     let terminal = BufferedTerminal::new();
 
     let _result = dev_switch(
@@ -61,7 +63,8 @@ fn dev_switch_dry_run() {
         .with_dir("/ecc/agents")
         .with_dir("/ecc/commands")
         .with_dir("/ecc/skills")
-        .with_dir("/ecc/rules");
+        .with_dir("/ecc/rules")
+        .with_dir("/ecc/teams");
     let terminal = BufferedTerminal::new();
 
     let result = dev_switch(
@@ -157,7 +160,8 @@ fn dev_switch_uses_absolute_paths() {
         .with_dir("/ecc/agents")
         .with_dir("/ecc/commands")
         .with_dir("/ecc/skills")
-        .with_dir("/ecc/rules");
+        .with_dir("/ecc/rules")
+        .with_dir("/ecc/teams");
     let terminal = BufferedTerminal::new();
 
     let result = dev_switch(
@@ -212,6 +216,7 @@ fn dev_switch_manifest_preservation() {
         .with_dir("/ecc/commands")
         .with_dir("/ecc/skills")
         .with_dir("/ecc/rules")
+        .with_dir("/ecc/teams")
         .with_file("/claude/.ecc-manifest.json", &manifest_content);
     let terminal = BufferedTerminal::new();
 
@@ -242,7 +247,8 @@ fn dev_switch_handles_dangling_symlinks() {
         .with_dir("/ecc/agents")
         .with_dir("/ecc/commands")
         .with_dir("/ecc/skills")
-        .with_dir("/ecc/rules");
+        .with_dir("/ecc/rules")
+        .with_dir("/ecc/teams");
     let terminal = BufferedTerminal::new();
 
     let result = dev_switch(
@@ -270,7 +276,8 @@ fn dev_switch_removes_existing_dirs() {
         .with_dir("/ecc/agents")
         .with_dir("/ecc/commands")
         .with_dir("/ecc/skills")
-        .with_dir("/ecc/rules");
+        .with_dir("/ecc/rules")
+        .with_dir("/ecc/teams");
     let terminal = BufferedTerminal::new();
 
     let result = dev_switch(

@@ -1,5 +1,5 @@
 /// Artifact directory names relative to the Claude config directory.
-pub const ARTIFACT_DIRS: &[&str] = &["agents", "commands", "skills", "rules"];
+pub const ARTIFACT_DIRS: &[&str] = &["agents", "commands", "skills", "rules", "teams"];
 
 /// Report of what was removed, skipped, or errored during cleanup.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

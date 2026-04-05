@@ -139,7 +139,8 @@ mod tests {
             .with_symlink("/claude/agents", "/ecc/agents")
             .with_symlink("/claude/commands", "/ecc/commands")
             .with_symlink("/claude/skills", "/ecc/skills")
-            .with_symlink("/claude/rules", "/ecc/rules");
+            .with_symlink("/claude/rules", "/ecc/rules")
+            .with_symlink("/claude/teams", "/ecc/teams");
 
         let status = dev_status(&fs, Path::new("/claude"));
 
@@ -154,7 +155,8 @@ mod tests {
             .with_dir("/claude/agents")
             .with_dir("/claude/commands")
             .with_dir("/claude/skills")
-            .with_dir("/claude/rules");
+            .with_dir("/claude/rules")
+            .with_dir("/claude/teams");
 
         let status = dev_status(&fs, Path::new("/claude"));
 
@@ -195,7 +197,8 @@ mod tests {
             .with_symlink("/claude/agents", "/ecc/agents")
             .with_symlink("/claude/commands", "/ecc/commands")
             .with_symlink("/claude/skills", "/ecc/skills")
-            .with_symlink("/claude/rules", "/ecc/rules");
+            .with_symlink("/claude/rules", "/ecc/rules")
+            .with_symlink("/claude/teams", "/ecc/teams");
         assert_eq!(
             dev_status(&fs_dev, Path::new("/claude")).profile,
             DevProfileStatus::Dev
@@ -206,7 +209,8 @@ mod tests {
             .with_dir("/claude/agents")
             .with_dir("/claude/commands")
             .with_dir("/claude/skills")
-            .with_dir("/claude/rules");
+            .with_dir("/claude/rules")
+            .with_dir("/claude/teams");
         assert_eq!(
             dev_status(&fs_default, Path::new("/claude")).profile,
             DevProfileStatus::Default

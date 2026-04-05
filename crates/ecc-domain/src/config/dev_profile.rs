@@ -6,7 +6,7 @@
 use std::path::{Path, PathBuf};
 
 /// Directories managed by ECC that are symlinked into `~/.claude/`.
-pub const MANAGED_DIRS: &[&str] = &["agents", "commands", "skills", "rules"];
+pub const MANAGED_DIRS: &[&str] = &["agents", "commands", "skills", "rules", "teams"];
 
 /// Which config profile is active.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -136,6 +136,6 @@ mod tests {
     // PC-007: MANAGED_DIRS constant contains exactly agents, commands, skills, rules
     #[test]
     fn managed_dirs_constant() {
-        assert_eq!(MANAGED_DIRS, &["agents", "commands", "skills", "rules"]);
+        assert_eq!(MANAGED_DIRS, &["agents", "commands", "skills", "rules", "teams"]);
     }
 }
