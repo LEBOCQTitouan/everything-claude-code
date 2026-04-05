@@ -1,12 +1,18 @@
 //! Helper functions for cartography hooks — agent invocation, delta collection, and
-//! file scanning utilities used by both stop:cartography and start:cartography.
+//! file scanning utilities.
+//!
+//! These functions were previously used by the `start:cartography` handler for
+//! inline delta processing. That processing has moved to the doc-orchestrator
+//! pipeline (see `skills/cartography-processing/SKILL.md`). The functions are
+//! retained for test coverage of the domain logic.
+
+#![allow(dead_code, unused_imports)]
 
 use std::path::{Path, PathBuf};
 
 use ecc_domain::cartography::{
-    ChangedFile, ElementEntry, ProjectType, SessionDelta, build_cross_reference_matrix,
-    derive_slug, element_types::ElementType, infer_element_type_from_path, validate_flow,
-    validate_journey,
+    build_cross_reference_matrix, derive_slug, infer_element_type_from_path, validate_flow,
+    validate_journey, ChangedFile, ElementEntry, ElementType, ProjectType, SessionDelta,
 };
 use serde::Serialize;
 use tracing::warn;

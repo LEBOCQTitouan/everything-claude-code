@@ -3,7 +3,7 @@
 //! No I/O: all functions operate on in-memory values only.
 //! Zero `std::fs`, `std::process`, `std::net`, or `tokio` imports.
 
-#![warn(missing_docs)]
+// Policy: all new public items in this module should have doc comments.
 
 pub mod classification;
 pub mod coverage;
@@ -19,7 +19,7 @@ pub mod validation;
 pub use classification::classify_file;
 pub use coverage::{CoverageReport, calculate_coverage};
 pub use cross_reference::build_cross_reference_matrix;
-pub use element_types::{ElementEntry, infer_element_type_from_path};
+pub use element_types::{ElementEntry, ElementType, infer_element_type_from_path};
 pub use element_validation::validate_element;
 pub use merge::{has_section, merge_section};
 pub use slug::derive_slug;

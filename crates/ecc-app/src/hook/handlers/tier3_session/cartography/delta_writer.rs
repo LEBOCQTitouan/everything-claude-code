@@ -1,13 +1,13 @@
 //! stop:cartography hook — detects changed files and writes a pending delta.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use ecc_domain::cartography::{ChangedFile, ProjectType, SessionDelta, classify_file, derive_slug};
+use ecc_domain::cartography::{ChangedFile, ProjectType, SessionDelta, classify_file};
 use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
 
-use super::delta_helpers::{clean_corrupt_deltas, collect_pending_deltas};
+use super::delta_helpers::clean_corrupt_deltas;
 
 /// stop:cartography — detect changed files and write a pending delta.
 ///
