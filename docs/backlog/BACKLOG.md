@@ -121,6 +121,7 @@
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | open | 2026-03-31 |
 | BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
 | BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | open | 2026-04-04 |
+| BL-121 | Token optimization audit — comprehensive spend reduction opportunity mapping | — | EPIC | /audit | open | 2026-04-05 |
 
 ## Dependency Graph
 
@@ -188,12 +189,14 @@ BL-109 → BL-092 (comms pipeline shares structured log infrastructure)
 BL-120 → BL-086 (pattern library extends knowledge sources registry with internal patterns)
 BL-120 → BL-079 (conditional rule loading enables language-aware pattern injection)
 BL-120 → BL-093 (pattern search benefits from memory system infrastructure)
+BL-121 → BL-095 (token audit needs thinking budget baseline from effort tuning)
+BL-121 → BL-096 (token audit needs cost tracking baseline for before/after comparison)
 ```
 
 ## Stats
 
-- **Total:** 119
-- **Open:** 38
+- **Total:** 120
+- **Open:** 39
 - **In-progress:** 0
 - **Implemented:** 77
 - **Archived:** 4
