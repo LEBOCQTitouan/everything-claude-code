@@ -1995,3 +1995,53 @@ Use the {name} pattern.
         );
     }
 }
+
+#[cfg(test)]
+mod cross_ref_tests {
+    use super::*;
+
+    #[test]
+    fn category_prefixed_cross_ref_resolves() {
+        let all_stems = vec![
+            "ddd/repository".to_string(),
+            "repository".to_string(),
+            "data-access/repository".to_string(),
+        ];
+        let mut fm = HashMap::new();
+        fm.insert(
+            "related-patterns".to_string(),
+            "[ddd/repository]".to_string(),
+        );
+        let (errors, ok) = validate_cross_refs(&fm, "adapter", &all_stems, "test");
+        assert!(ok, "Category-prefixed cross-ref should resolve. Errors: {errors}");
+        assert!(errors.is_empty(), "No errors expected. Got: {errors}");
+    }
+
+    #[test]
+    fn bare_cross_ref_still_resolves() {
+        let all_stems = vec![
+            "creational/factory-method".to_string(),
+            "factory-method".to_string(),
+        ];
+        let mut fm = HashMap::new();
+        fm.insert(
+            "related-patterns".to_string(),
+            "[factory-method]".to_string(),
+        );
+        let (errors, ok) = validate_cross_refs(&fm, "builder", &all_stems, "test");
+        assert!(ok, "Bare cross-ref should still resolve. Errors: {errors}");
+    }
+
+    #[test]
+    fn non_existent_prefixed_ref_fails() {
+        let all_stems = vec!["ddd/repository".to_string(), "repository".to_string()];
+        let mut fm = HashMap::new();
+        fm.insert(
+            "related-patterns".to_string(),
+            "[nonexistent/pattern]".to_string(),
+        );
+        let (errors, ok) = validate_cross_refs(&fm, "adapter", &all_stems, "test");
+        assert!(!ok, "Non-existent prefixed ref should fail");
+        assert!(errors.contains("non-existent"), "Should mention non-existent: {errors}");
+    }
+}
