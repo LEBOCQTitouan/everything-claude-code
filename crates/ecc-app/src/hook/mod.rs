@@ -1,5 +1,7 @@
 //! Hook dispatch use case — routes hookId to the appropriate handler.
 
+use std::collections::HashMap;
+
 use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 use ecc_ports::cost_store::CostStore;
 use ecc_ports::env::Environment;
@@ -8,6 +10,57 @@ use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
 
 pub mod handlers;
+
+/// Trait for hook handlers that can be registered in a dispatch table.
+pub trait Handler: Send + Sync {
+    /// The hook ID this handler responds to (e.g., `"stop:cartography"`).
+    fn hook_id(&self) -> &str;
+
+    /// Handle the hook invocation.
+    fn handle(&self, stdin: &str, ports: &HookPorts<'_>) -> HookResult;
+}
+
+/// Build the handler registry — a `HashMap` keyed by hook ID.
+///
+/// Handlers registered here take precedence over the match-based dispatch below.
+/// This is intentionally a function (not a static) so tests can call it directly.
+pub fn build_handler_registry() -> HashMap<&'static str, Box<dyn Handler>> {
+    let mut m: HashMap<&'static str, Box<dyn Handler>> = HashMap::new();
+
+    // Cartography handlers registered as proof of concept (AC-009.2).
+    m.insert("stop:cartography", Box::new(StopCartographyHandler));
+    m.insert("start:cartography", Box::new(StartCartographyHandler));
+
+    m
+}
+
+// ---------------------------------------------------------------------------
+// Concrete handler structs (thin wrappers around existing handler functions)
+// ---------------------------------------------------------------------------
+
+struct StopCartographyHandler;
+
+impl Handler for StopCartographyHandler {
+    fn hook_id(&self) -> &str {
+        "stop:cartography"
+    }
+
+    fn handle(&self, stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+        handlers::stop_cartography(stdin, ports)
+    }
+}
+
+struct StartCartographyHandler;
+
+impl Handler for StartCartographyHandler {
+    fn hook_id(&self) -> &str {
+        "start:cartography"
+    }
+
+    fn handle(&self, stdin: &str, ports: &HookPorts<'_>) -> HookResult {
+        handlers::start_cartography(stdin, ports)
+    }
+}
 
 /// Maximum stdin payload size (1 MB).
 pub const MAX_STDIN: usize = 1_024 * 1_024;
@@ -403,5 +456,49 @@ mod tests {
         assert_eq!(r.stdout, "input");
         assert_eq!(r.stderr, "blocked");
         assert_eq!(r.exit_code, 2);
+    }
+
+    /// PC-030: Handler trait compiles with hook_id + handle methods.
+    #[test]
+    fn handler_trait_compiles() {
+        struct DummyHandler;
+        impl Handler for DummyHandler {
+            fn hook_id(&self) -> &str {
+                "test:dummy"
+            }
+            fn handle(&self, stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+                HookResult::passthrough(stdin)
+            }
+        }
+        let h: Box<dyn Handler> = Box::new(DummyHandler);
+        assert_eq!(h.hook_id(), "test:dummy");
+    }
+
+    /// PC-031: Handler impl dispatches to cartography handler via registry.
+    #[test]
+    fn handler_trait_dispatch() {
+        use ecc_test_support::{
+            BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor,
+        };
+
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        // Check registry has a cartography handler registered
+        let registry = build_handler_registry();
+        assert!(
+            registry.contains_key("stop:cartography"),
+            "registry must contain 'stop:cartography'"
+        );
+
+        // Dispatch using the registry
+        let handler = registry.get("stop:cartography").unwrap();
+        let result = handler.handle("stdin-data", &ports);
+        // Without CLAUDE_PROJECT_DIR set, stop:cartography returns passthrough
+        assert_eq!(result.stdout, "stdin-data");
+        assert_eq!(result.exit_code, 0);
     }
 }

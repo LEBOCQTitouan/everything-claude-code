@@ -1,9 +1,10 @@
 ---
 name: cartographer
-description: Orchestrator agent that reads pending delta JSON files, decides which journey and flow files to update, and dispatches cartography-journey-generator and cartography-flow-generator as sub-Tasks. Handles git commit scoped to docs/cartography/, archive of processed deltas, and git reset on commit failure.
+description: Orchestrator agent that reads pending delta JSON files, decides which journey and flow files to update, and dispatches cartography-journey-generator and cartography-flow-generator as sub-Tasks. Returns results as JSON envelope for the doc-orchestrator to commit.
 tools: ["Read", "Write", "Edit", "Grep", "Glob", "Bash"]
 model: haiku
 effort: low
+skills: ["cartography-processing"]
 ---
 
 # Cartographer
@@ -32,7 +33,7 @@ From the changed files in each delta:
 - **Journey targets**: files that are command handlers, CLI entrypoints, or user-facing operations (commands/, agents/, hooks/)
 - **Flow targets**: files that cross module boundaries (different crates for rust, different packages for javascript/typescript, different top-level directories for unknown)
 
-Derive slug for each target using: lowercase filename parent directory name (for commands: command name; for crates: crate name; fallback: first directory in delta). Rules: lowercase, replace non-alphanumeric with hyphens, collapse multiple hyphens, max 60 chars.
+Derive slug for each target using the `derive_slug` algorithm: lowercase, replace non-alphanumeric with hyphens, collapse multiple hyphens, max 60 chars, strip leading/trailing hyphens.
 
 ### Step 3 — Dispatch journey generator
 
@@ -44,27 +45,24 @@ For each journey target, dispatch a Task with the `cartography-journey-generator
 For each flow target, dispatch a Task with the `cartography-flow-generator` agent:
 - Provide: delta content, slug, existing flow file content (if any), `docs_cartography_path`
 
-### Step 5 — Commit changes
+### Step 5 — Return JSON envelope
 
-After all generators complete:
-1. Run `git add docs/cartography/`
-2. Run `git commit -m "docs(cartography): update registries for <session-slug>"`
-3. If commit fails (non-zero exit): run `git reset HEAD docs/cartography/`, log error to stderr, leave pending deltas unarchived, and exit with failure
+After all generators complete, return a JSON envelope for each processed target:
 
-### Step 6 — Archive processed deltas
+```json
+{"status": "success", "type": "journey"|"flow"|"element", "file_path": "<relative-path-under-docs/cartography>", "content": "<generated-markdown>", "error": null}
+```
 
-After successful commit:
-1. Move each processed delta from `.claude/cartography/` to `.claude/cartography/processed/`
-2. NEVER archive before commit — commit first to prevent data loss
+On failure, return:
+```json
+{"status": "error", "type": null, "file_path": null, "content": null, "error": "<description>"}
+```
 
-### Step 7 — Prune old processed deltas
-
-Delete processed delta files older than 30 days from `.claude/cartography/processed/`.
+The doc-orchestrator handles committing and delta archiving — do NOT run git operations, archive, or prune.
 
 ## Constraints
 
-- Never stage files outside `docs/cartography/` — never use `git add .` or `git add -A`
-- Commit before archiving (data loss prevention)
+- Never stage files or run git commands — the doc-orchestrator owns the transaction
 - Log failures to stderr but never block session continuation
-- If no targets found, exit cleanly without committing
-- All file paths must be relative, never `..` traversal
+- If no targets found, return a success envelope with empty content
+- All file paths must be relative to `docs/cartography/`, never `..` traversal
