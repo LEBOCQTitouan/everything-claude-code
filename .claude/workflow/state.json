@@ -1,22 +1,28 @@
 {
-  "phase": "plan",
-  "concern": "fix",
-  "feature": "phase-gate resolves state from main repo instead of worktree",
-  "started_at": "2026-04-04T19:56:47Z",
+  "phase": "done",
+  "concern": "refactor",
+  "feature": "Create a /doc-suite slash command that invokes the existing doc-orchestrator agent, and integrate cartography delta processing as a new phase within it. The current start:cartography SessionStart hook fails silently because CLAUDE_PROJECT_DIR is not set and the 30s timeout is too short for agent invocation. The stop:cartography hook (delta writer) works fine and stays unchanged. The start:cartography hook should become a thin reminder pointing users to /doc-suite. Key findings from prior analysis: cartography.rs is 2728 lines (needs decomposition), detect_project_type is duplicated with ecc-app::detection::framework, classify_file is domain logic in adapter layer, slug derivation is split across 3 locations, TOCTOU file lock needs shell flock(1), and agent output uses content-sniffing instead of structured protocol.",
+  "started_at": "2026-04-05T10:40:45Z",
   "toolchain": {
-    "test": null,
-    "lint": null,
-    "build": null
+    "test": "cargo test",
+    "lint": "cargo clippy -- -D warnings",
+    "build": "cargo build"
   },
   "artifacts": {
-    "plan": null,
-    "solution": null,
-    "implement": null,
+    "plan": "2026-04-05T11:01:38Z",
+    "solution": "2026-04-05T21:40:11Z",
+    "implement": "2026-04-05T22:44:47Z",
     "campaign_path": null,
-    "spec_path": null,
-    "design_path": null,
+    "spec_path": "docs/specs/2026-04-05-doc-suite-with-cartography/spec.md",
+    "design_path": "docs/specs/2026-04-05-doc-suite-with-cartography/design.md",
     "tasks_path": null
   },
-  "completed": [],
+  "completed": [
+    {
+      "phase": "implement",
+      "file": "implement-done.md",
+      "at": "2026-04-05T22:44:47Z"
+    }
+  ],
   "version": 1
 }
