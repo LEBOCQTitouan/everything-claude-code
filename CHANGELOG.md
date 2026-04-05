@@ -14,6 +14,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Multi-agent team coordination (BL-104)**: Declarative team manifests (`teams/*.md`) with YAML frontmatter for agent team composition. `ecc validate teams` with agent cross-referencing and tool escalation warnings. Install pipeline merges teams to `~/.claude/teams/`. Commands (`/implement`, `/audit-full`) read team manifests with `ECC_LEGACY_DISPATCH=1` fallback. Pre-defined templates: implement-team (wave-dispatch), audit-team (parallel), review-team (sequential). Skills: shared-state-protocol, task-handoff.
+
 - **Grill-me decision persistence (BL-034)**: New `ecc-workflow campaign` subcommand group (init, append-decision, show) for atomic incremental persistence of grill-me interview decisions to campaign.md. `grill_me_gate` becomes blocking (exit 2) during plan/solution phases for version >= 2 states without campaign.md, forcing Claude to create the file. Version 1 states grandfathered. Spec commands updated with campaign init/append-decision calls.
 
 - **Pattern Library Phase 1 (BL-120)**: Structured, searchable pattern library as a new `patterns/` content type with YAML frontmatter schema. Full quality-gate validation via `ecc validate patterns` (frontmatter, required sections, cross-reference resolution, language-implementation matching, unsafe code scanning). 8 seed patterns: 5 Creational (Factory Method, Abstract Factory, Builder with Rust typestate, Prototype, Singleton) + 3 Architecture (Hexagonal with ECC cross-refs, Clean Architecture, CQRS). 17 category directories. Rayon parallel processing. Install integration (`merge_patterns`), audit reporting, agent discovery via `patterns:` frontmatter field. 2 ADRs (0050-0051). 4 glossary terms.
