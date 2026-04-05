@@ -53,3 +53,8 @@ fn validate_conventions_passes() {
 fn validate_patterns_passes() {
     validate_target("patterns");
 }
+
+#[test]
+fn validate_teams_passes() {
+    validate_target("teams");
+}
