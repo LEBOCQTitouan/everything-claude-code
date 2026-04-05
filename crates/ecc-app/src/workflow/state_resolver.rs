@@ -55,12 +55,19 @@ pub fn resolve_state_dir(
         }
     };
 
-    // Step 3: Check for old-location migration
+    // Step 3: Check for old-location migration (main repo only, never worktrees)
     let old_location = project_dir.join(".claude/workflow");
     let new_state_file = state_dir.join("state.json");
     let old_state_file = old_location.join("state.json");
 
-    if state_dir != old_location {
+    // Worktrees have git-dir paths like `.git/worktrees/<name>/ecc-workflow`.
+    // They must NEVER fall back to the main repo's `.claude/workflow/` —
+    // that would cause one session's state to bleed into another.
+    let is_worktree = state_dir
+        .components()
+        .any(|c| c.as_os_str() == "worktrees");
+
+    if state_dir != old_location && !is_worktree {
         let new_exists = fs.exists(&new_state_file);
         let old_exists = fs.exists(&old_state_file);
 
@@ -215,6 +222,63 @@ mod tests {
         assert!(warnings.is_empty());
     }
 
+    /// PC-001: Worktree with no local state but main repo has state.json →
+    /// must return the worktree's git-dir-scoped path, NOT the main repo path.
+    #[test]
+    fn worktree_ignores_main_repo_state() {
+        let env = make_env(Some("/project"), None);
+        let git = MockGitInfo::worktree("/project/.git/worktrees/feature-x");
+        let fs = InMemoryFileSystem::new();
+        // Main repo has state.json at old location
+        fs.write(
+            &PathBuf::from("/project/.claude/workflow/state.json"),
+            r#"{"phase":"plan"}"#,
+        )
+        .unwrap();
+        // Worktree does NOT have its own state yet
+
+        let (dir, warnings) = resolve_state_dir(&env, &git, &fs);
+
+        // Must return worktree path, not main repo path
+        assert_eq!(
+            dir,
+            PathBuf::from("/project/.git/worktrees/feature-x/ecc-workflow"),
+            "worktree must NOT fall back to main repo state"
+        );
+        // No migration warning — worktrees don't migrate
+        assert!(
+            !warnings.iter().any(|w| w.message.contains("Migrating")),
+            "no migration warning for worktrees"
+        );
+    }
+
+    /// PC-002: Worktree with its own state.json → returns worktree path.
+    #[test]
+    fn worktree_with_own_state() {
+        let env = make_env(Some("/project"), None);
+        let git = MockGitInfo::worktree("/project/.git/worktrees/my-session");
+        let fs = InMemoryFileSystem::new();
+        // Both main and worktree have state
+        fs.write(
+            &PathBuf::from("/project/.claude/workflow/state.json"),
+            r#"{"phase":"plan"}"#,
+        )
+        .unwrap();
+        fs.write(
+            &PathBuf::from("/project/.git/worktrees/my-session/ecc-workflow/state.json"),
+            r#"{"phase":"implement"}"#,
+        )
+        .unwrap();
+
+        let (dir, _) = resolve_state_dir(&env, &git, &fs);
+
+        assert_eq!(
+            dir,
+            PathBuf::from("/project/.git/worktrees/my-session/ecc-workflow"),
+            "worktree must use its own state"
+        );
+    }
+
     // --- migrate_if_needed tests ---
 
     #[test]
@@ -306,7 +370,11 @@ mod tests {
 
         // Second "process": new state already exists, must be no-op
         let second = migrate_if_needed(&old_dir, &new_dir, &fs);
-        assert_eq!(second, Ok(false), "second call must be no-op (already migrated)");
+        assert_eq!(
+            second,
+            Ok(false),
+            "second call must be no-op (already migrated)"
+        );
 
         // Verify no corruption: content in new location matches original
         let new_state = new_dir.join("state.json");
