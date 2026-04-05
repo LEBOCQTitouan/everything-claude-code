@@ -170,18 +170,38 @@ fn read_index_content(patterns_dir: &Path, fs: &dyn FileSystem) -> String {
 }
 
 /// Collect all pattern stems across all categories for cross-ref resolution.
+///
+/// For the `idioms` category, recurses one level into language subdirectories
+/// (e.g., `idioms/rust/`, `idioms/go/`) and collects stems from those subdirs.
+/// Stems include both bare names (`newtype`) and category-prefixed variants
+/// (`idioms/newtype`) for disambiguation.
 fn collect_pattern_stems(categories: &[std::path::PathBuf], fs: &dyn FileSystem) -> Vec<String> {
     let mut all_stems: Vec<String> = Vec::new();
     for category_path in categories {
-        if let Ok(files) = fs.read_dir(category_path) {
-            for file_path in files {
-                if file_path
-                    .extension()
-                    .map(|ext| ext.eq_ignore_ascii_case("md"))
-                    .unwrap_or(false)
-                    && let Some(stem) = file_path.file_stem()
-                {
-                    all_stems.push(stem.to_string_lossy().to_string());
+        let category_name = category_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let dirs_to_scan = if category_name == "idioms" {
+            collect_idiom_subdirs(category_path, fs)
+        } else {
+            vec![category_path.clone()]
+        };
+        for dir in &dirs_to_scan {
+            if let Ok(files) = fs.read_dir(dir) {
+                for file_path in files {
+                    if file_path
+                        .extension()
+                        .map(|ext| ext.eq_ignore_ascii_case("md"))
+                        .unwrap_or(false)
+                        && let Some(stem) = file_path.file_stem()
+                    {
+                        let stem_str = stem.to_string_lossy().to_string();
+                        // Add category-prefixed variant for disambiguation
+                        all_stems.push(format!("{category_name}/{stem_str}"));
+                        all_stems.push(stem_str);
+                    }
                 }
             }
         }
@@ -189,7 +209,26 @@ fn collect_pattern_stems(categories: &[std::path::PathBuf], fs: &dyn FileSystem)
     all_stems
 }
 
+/// Collect language subdirectories within the idioms category.
+fn collect_idiom_subdirs(
+    idioms_path: &std::path::Path,
+    fs: &dyn FileSystem,
+) -> Vec<std::path::PathBuf> {
+    let mut subdirs = Vec::new();
+    if let Ok(entries) = fs.read_dir(idioms_path) {
+        for entry in entries {
+            if fs.is_dir(&entry) {
+                subdirs.push(entry);
+            }
+        }
+    }
+    subdirs
+}
+
 /// Collect (category_name, file_path) pairs for all .md files in category dirs.
+///
+/// For the `idioms` category, recurses into language subdirectories and uses
+/// `idioms` as the category_name for all nested files (matching frontmatter convention).
 fn collect_work_items(
     categories: &[std::path::PathBuf],
     fs: &dyn FileSystem,
@@ -201,14 +240,21 @@ fn collect_work_items(
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        if let Ok(entries) = fs.read_dir(category_path) {
-            for file_path in entries {
-                if file_path
-                    .extension()
-                    .map(|ext| ext.eq_ignore_ascii_case("md"))
-                    .unwrap_or(false)
-                {
-                    items.push((category_name.clone(), file_path));
+        let dirs_to_scan = if category_name == "idioms" {
+            collect_idiom_subdirs(category_path, fs)
+        } else {
+            vec![category_path.clone()]
+        };
+        for dir in &dirs_to_scan {
+            if let Ok(entries) = fs.read_dir(dir) {
+                for file_path in entries {
+                    if file_path
+                        .extension()
+                        .map(|ext| ext.eq_ignore_ascii_case("md"))
+                        .unwrap_or(false)
+                    {
+                        items.push((category_name.clone(), file_path));
+                    }
                 }
             }
         }
@@ -1792,5 +1838,119 @@ Generic.
         assert!(super::stem_in_index("(factory-method)", "factory-method"));
         // No match when embedded in a longer word
         assert!(!super::stem_in_index("abstract-factory-method-extra\n", "factory-method"));
+    }
+
+    /// Build a valid idiom pattern file for a single language.
+    fn valid_idiom_content(name: &str, language: &str) -> String {
+        format!(
+            r#"---
+name: {name}
+category: idioms
+tags: [idiom, {language}]
+languages: [{language}]
+difficulty: intermediate
+---
+
+## Intent
+Idiomatic {language} pattern for {name}.
+
+## Problem
+Non-idiomatic code reduces readability.
+
+## Solution
+Use the {name} pattern.
+
+## Language Implementations
+### {lang_title}
+```{language}
+// example
+```
+
+## When to Use
+- When writing idiomatic {language} code.
+
+## When NOT to Use
+- When the pattern adds unnecessary complexity.
+
+## Anti-Patterns
+- Over-applying the pattern.
+
+## Related Patterns
+- None.
+
+## References
+- {language} documentation.
+"#,
+            name = name,
+            language = language,
+            lang_title = match language {
+                "rust" => "Rust",
+                "go" => "Go",
+                "python" => "Python",
+                "typescript" => "TypeScript",
+                "kotlin" => "Kotlin",
+                _ => language,
+            }
+        )
+    }
+
+    #[test]
+    fn idiom_subdirectory_recursion_validates_nested_files() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/idioms")
+            .with_dir("/root/patterns/idioms/rust")
+            .with_dir("/root/patterns/idioms/go")
+            .with_file(
+                "/root/patterns/idioms/rust/newtype.md",
+                &valid_idiom_content("newtype", "rust"),
+            )
+            .with_file(
+                "/root/patterns/idioms/go/functional-options.md",
+                &valid_idiom_content("functional-options", "go"),
+            )
+            .with_file("/root/patterns/index.md", "# Index\n- [Newtype](idioms/rust/newtype.md)\n- [Functional Options](idioms/go/functional-options.md)\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        let output = t.stdout_output().join("\n");
+        // Should find 2 files across the idioms category
+        assert!(
+            result,
+            "Validation should pass for valid idiom files in subdirectories. Output:\n{output}"
+        );
+        assert!(
+            output.contains("2 pattern files"),
+            "Should report 2 pattern files. Output:\n{output}"
+        );
+    }
+
+    #[test]
+    fn idiom_files_have_category_idioms_in_frontmatter() {
+        // An idiom file with category != "idioms" should fail
+        let bad_content = valid_idiom_content("newtype", "rust").replace("category: idioms", "category: rust");
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/idioms")
+            .with_dir("/root/patterns/idioms/rust")
+            .with_file("/root/patterns/idioms/rust/newtype.md", &bad_content)
+            .with_file("/root/patterns/index.md", "# Index\n- [Newtype](idioms/rust/newtype.md)\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            !result,
+            "Validation should fail when idiom file has wrong category"
+        );
     }
 }

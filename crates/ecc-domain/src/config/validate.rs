@@ -77,6 +77,20 @@ pub const UNSAFE_CODE_PATTERNS: &[&str] = &[
     "f'SELECT", "f'INSERT", "f'UPDATE", "f'DELETE",
 ];
 
+/// Canonical pattern category directory names for validation.
+pub const VALID_PATTERN_CATEGORIES: &[&str] = &[
+    "creational", "architecture", "structural", "behavioral", "concurrency",
+    "error-handling", "resilience", "testing", "ddd", "api-design",
+    "security", "observability", "cicd", "agentic", "functional",
+    "data-access", "idioms",
+];
+
+/// Language subdirectories within the idioms category.
+pub const IDIOM_SUBCATEGORIES: &[&str] = &["rust", "go", "python", "typescript", "kotlin"];
+
+/// Pattern files exceeding this line count trigger a validation warning.
+pub const PATTERN_SIZE_WARNING_LINES: usize = 500;
+
 /// Check if a string matches kebab-case: `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
 pub fn is_kebab_case(s: &str) -> bool {
     if s.is_empty() {
