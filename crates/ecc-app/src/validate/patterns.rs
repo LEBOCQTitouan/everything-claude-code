@@ -335,6 +335,17 @@ fn validate_pattern_file(ctx: &ValidationCtx<'_>) -> (String, bool) {
 
     errors.push_str(&scan_unsafe_code(&fm, ctx.content, ctx.label));
 
+    // Warn (but don't error) if file exceeds recommended size
+    let line_count = ctx.content.lines().count();
+    if line_count > ecc_domain::config::validate::PATTERN_SIZE_WARNING_LINES {
+        errors.push_str(&format!(
+            "WARN: {} - File has {} lines (exceeds {} recommended max)\n",
+            ctx.label,
+            line_count,
+            ecc_domain::config::validate::PATTERN_SIZE_WARNING_LINES,
+        ));
+    }
+
     let (sec_errs, sec_ok) = validate_sections(ctx.content, ctx.label);
     errors.push_str(&sec_errs);
     if !sec_ok {
@@ -1951,6 +1962,36 @@ Use the {name} pattern.
         assert!(
             !result,
             "Validation should fail when idiom file has wrong category"
+        );
+    }
+
+    #[test]
+    fn large_file_emits_size_warning() {
+        // Create a valid pattern that exceeds 500 lines
+        let mut content = valid_pattern_content();
+        // Pad the References section with extra lines to exceed threshold
+        for i in 0..500 {
+            content.push_str(&format!("- Reference line {i}\n"));
+        }
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", &content)
+            .with_file("/root/patterns/index.md", "# Index\n- [Factory Method](creational/factory-method.md)\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        // Should still pass (warning, not error)
+        assert!(result, "Large file should pass validation with warning");
+        let stderr = t.stderr_output().join("\n");
+        assert!(
+            stderr.contains("WARN") && stderr.contains("lines"),
+            "Should emit size warning on stderr. Stderr:\n{stderr}"
         );
     }
 }
