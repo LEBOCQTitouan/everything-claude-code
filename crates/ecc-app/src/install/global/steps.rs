@@ -109,6 +109,15 @@ pub(super) fn step_merge_artifacts(
         &mut merge_options,
     ));
 
+    all_reports.push(merge::merge_directory(
+        &merge_ctx,
+        &ecc_root.join("teams"),
+        &claude_dir.join("teams"),
+        "Teams",
+        ".md",
+        &mut merge_options,
+    ));
+
     all_reports.push(merge::merge_skills(
         &merge_ctx,
         &ecc_root.join("skills"),
