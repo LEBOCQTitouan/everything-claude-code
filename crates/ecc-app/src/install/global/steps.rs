@@ -64,6 +64,7 @@ pub(super) fn step_detect(ctx: &InstallContext, claude_dir: &Path) {
     ));
 }
 
+#[allow(clippy::vec_init_then_push)]
 pub(super) fn step_merge_artifacts(
     ctx: &InstallContext,
     ecc_root: &Path,
