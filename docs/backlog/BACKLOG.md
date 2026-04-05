@@ -34,7 +34,7 @@
 | BL-031 | Fresh context per TDD task via subagent isolation | 8 | HIGH | /implement | implemented | 2026-03-21 |
 | BL-032 | Wave-based parallel TDD execution | 8 | MEDIUM | /implement | implemented | 2026-03-21 |
 | BL-033 | Add /spec-quick for lightweight changes | 8 | MEDIUM | /spec-quick (new) | archived | 2026-03-21 |
-| BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | open | 2026-03-21 |
+| BL-034 | Capture grill-me decisions in work-item files | 8 | MEDIUM | /spec commands | implemented | 2026-03-21 |
 | BL-035 | Campaign file manifest for amnesiac agents | 9 | MEDIUM | /spec refactor | implemented | 2026-03-21 |
 | BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | implemented | 2026-03-21 |
 | BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | implemented | 2026-03-21 |
@@ -73,14 +73,14 @@
 | BL-070 | Deterministic wave grouping algorithm — PC parallelization from file-overlap | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-071 | Deterministic git analytics CLI — changelog, hotspots, evolution metrics | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
 | BL-072 | Deterministic artifact scaffolding — spec, solution, tasks templates | — | MEDIUM | /spec dev | implemented | 2026-03-26 |
-| BL-073 | Deterministic diagram trigger heuristics — auto-detect diagram needs | — | LOW | /spec dev | open | 2026-03-26 |
-| BL-074 | Deterministic doc metrics — staleness, coverage, severity counting | — | LOW | /spec dev | open | 2026-03-26 |
+| BL-073 | Deterministic diagram trigger heuristics — auto-detect diagram needs | — | LOW | /spec dev | implemented | 2026-03-26 |
+| BL-074 | Deterministic doc metrics — staleness, coverage, severity counting | — | LOW | /spec dev | implemented | 2026-03-26 |
 | BL-075 | Deterministic task synchronization — single source of truth for tasks | — | HIGH | /spec dev | implemented | 2026-03-26 |
 | BL-076 | Statusline Unicode byte-counting bug hides rate limit segments | — | LOW | /spec-fix | implemented | 2026-03-27 | 2026-03-27 |
-| BL-077 | Full documentation pass — coverage, drift validation, and gap analysis | — | EPIC | /spec-dev | open | 2026-03-27 |
+| BL-077 | Full documentation pass — coverage, drift validation, and gap analysis | — | EPIC | /spec-dev | implemented | 2026-03-27 |
 | BL-078 | Context pre-hydration via hook before command runs | — | MEDIUM | /spec-dev | implemented | 2026-03-27 | 2026-03-27 |
 | BL-079 | Conditional rule/skill loading via frontmatter applicability | — | MEDIUM | /spec-dev | implemented | 2026-03-27 | 2026-03-27 |
-| BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | open | 2026-03-27 |
+| BL-080 | TDD fix-loop budget cap at 2 rounds | — | LOW | direct edit | implemented | 2026-03-27 |
 | BL-081 | Web-based upgrade audit command with Technology Radar output | — | EPIC | /spec-dev | implemented | 2026-03-27 |
 | BL-082 | Add worktree display segment to statusline | — | LOW | direct edit | implemented | 2026-03-27 |
 | BL-083 | Adversarial challenge phase for all /audit-* commands | — | HIGH | /spec-dev | implemented | 2026-03-27 |
@@ -95,33 +95,33 @@
 | BL-092 | Structured log management — JSON rolling files + SQLite index + ecc log CLI | — | HIGH | /spec dev | implemented | 2026-03-28 |
 | BL-093 | Three-tier memory system — semantic/episodic/working + SQLite + consolidation | — | EPIC | /spec dev | implemented | 2026-03-28 |
 | BL-094 | Agent model routing optimization — downgrade misaligned agents to Sonnet/Haiku | — | HIGH | /spec refactor | implemented | 2026-03-28 |
-| BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | open | 2026-03-28 |
-| BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | open | 2026-03-28 |
+| BL-095 | Extended thinking and effort tuning — adaptive thinking budgets per agent type | — | MEDIUM | /spec dev | implemented | 2026-03-28 |
+| BL-096 | Cost and token tracking — observability prerequisite for optimization | — | MEDIUM | /spec dev | implemented | 2026-03-28 |
 | BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | implemented | 2026-03-29 | 2026-03-29 |
 | BL-098 | Socratic grill-me upgrade — OARS, laddering, MECE, reflective rephrasing | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-099 | Migrate serde_yml to serde-yaml-ng — maintenance risk mitigation | — | MEDIUM | /spec-refactor | implemented | 2026-03-29 |
 | BL-100 | sccache + mold build acceleration for dev environment | — | LOW | direct edit | open | 2026-03-29 |
 | BL-101 | Miri unsafe code verification for ecc-flock | — | LOW | direct edit | open | 2026-03-29 |
-| BL-102 | Promptware Engineering practices — prompt testing and monitoring | — | MEDIUM | /spec-dev | open | 2026-03-29 |
-| BL-103 | Autonomous visual testing integration — vision-based UI validation | — | HIGH | /spec-dev | open | 2026-03-29 |
-| BL-104 | Multi-agent team coordination — shared state and task handoff | — | HIGH | /spec-dev | open | 2026-03-29 |
+| BL-102 | Promptware Engineering practices — prompt testing and monitoring | — | MEDIUM | /spec-dev | implemented | 2026-03-29 |
+| BL-103 | Autonomous visual testing integration — vision-based UI validation | — | HIGH | /spec-dev | implemented | 2026-03-29 |
+| BL-104 | Multi-agent team coordination — shared state and task handoff | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-105 | Bump crossterm 0.28 → 0.29.0 | — | LOW | direct edit | implemented | 2026-03-29 | 2026-03-29 |
 | BL-106 | Harness reliability metrics — benchmark against reference patterns | — | MEDIUM | /spec-dev | open | 2026-03-29 |
 | BL-107 | Audit-web guided profile — interactive setup, persisted dimensions, self-improvement | — | HIGH | /spec-dev | implemented | 2026-03-29 |
-| BL-108 | Smart stop notification — only notify on final stop or user input needed | — | MEDIUM | /spec-dev | open | 2026-03-29 |
-| BL-109 | Autonomous comms pipeline — multi-channel content generation from code | — | EPIC | /spec | open | 2026-03-30 |
+| BL-108 | Smart stop notification — only notify on final stop or user input needed | — | MEDIUM | /spec-dev | implemented | 2026-03-29 |
+| BL-109 | Autonomous comms pipeline — multi-channel content generation from code | — | EPIC | /spec | implemented | 2026-03-30 |
 | BL-110 | Add cargo-semver-checks to CI pipeline | — | LOW | direct edit | implemented | 2026-03-31 | 2026-03-31 |
 | BL-111 | Enable GitHub Merge Queue for CI load reduction | — | LOW | direct edit | implemented | 2026-03-31 | 2026-03-31 |
 | BL-112 | Evaluate cargo-dist to replace custom release.yml | — | MEDIUM | /spec-refactor | implemented | 2026-03-31 | 2026-03-31 |
 | BL-113 | Upgrade rusqlite 0.34 to 0.38 | — | LOW | direct edit | implemented | 2026-03-31 | 2026-03-31 |
 | BL-114 | Upgrade rustyline 15 to 17 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | open | 2026-03-31 |
-| BL-116 | Add cargo-mutants mutation testing | — | MEDIUM | /spec-dev | open | 2026-03-31 |
+| BL-116 | Add cargo-mutants mutation testing | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | open | 2026-03-31 |
-| BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | open | 2026-03-31 |
+| BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
-| BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | open | 2026-04-04 |
-| BL-121 | Token optimization audit — comprehensive spend reduction opportunity mapping | — | EPIC | /audit | open | 2026-04-05 |
+| BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | implemented | 2026-04-04 |
+| BL-121 | Token optimization audit — comprehensive spend reduction opportunity mapping | — | EPIC | /audit | implemented | 2026-04-05 |
 
 ## Dependency Graph
 
@@ -196,9 +196,9 @@ BL-121 → BL-096 (token audit needs cost tracking baseline for before/after com
 ## Stats
 
 - **Total:** 120
-- **Open:** 39
+- **Open:** 12
 - **In-progress:** 0
-- **Implemented:** 77
+- **Implemented:** 104
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)
