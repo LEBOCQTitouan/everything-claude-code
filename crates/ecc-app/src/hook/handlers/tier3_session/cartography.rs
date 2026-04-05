@@ -3,8 +3,8 @@
 use std::path::{Path, PathBuf};
 
 use ecc_domain::cartography::{
-    build_cross_reference_matrix, infer_element_type_from_path, ChangedFile, ElementEntry,
-    ProjectType, SessionDelta,
+    build_cross_reference_matrix, classify_file, derive_slug, infer_element_type_from_path,
+    ChangedFile, ElementEntry, ProjectType, SessionDelta,
 };
 use serde::Serialize;
 use tracing::warn;
@@ -213,11 +213,12 @@ fn invoke_agent_for_delta(
     flows_dir: &Path,
     project_dir: &Path,
 ) -> bool {
-    let slug = delta
+    let raw_classification = delta
         .changed_files
         .first()
         .map(|f| f.classification.as_str())
         .unwrap_or("unknown");
+    let slug = derive_slug(raw_classification);
 
     let journey_path = docs_cartography.join("journeys").join(format!("{}.md", slug));
     let flow_path = docs_cartography.join("flows").join(format!("{}.md", slug));
@@ -446,8 +447,9 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         return HookResult::passthrough(stdin);
     }
 
-    // Detect project type
-    let project_type = detect_project_type(ports, &project_dir);
+    // Detect project type via detection framework, map to cartography enum
+    let detected = crate::detection::framework::detect_project_type(ports.fs, &project_dir);
+    let project_type = ProjectType::from(&detected);
 
     // Get session ID
     let session_id = ports
@@ -512,60 +514,8 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 }
 
 /// Detect project type based on the presence of build files at the project root.
-fn detect_project_type(ports: &HookPorts<'_>, project_dir: &Path) -> ProjectType {
-    if ports.fs.exists(&project_dir.join("Cargo.toml")) {
-        return ProjectType::Rust;
-    }
-    if ports.fs.exists(&project_dir.join("package.json")) {
-        // Check for TypeScript indicator
-        if ports.fs.exists(&project_dir.join("tsconfig.json"))
-            || ports.fs.exists(&project_dir.join("tsconfig.base.json"))
-        {
-            return ProjectType::Typescript;
-        }
-        return ProjectType::Javascript;
-    }
-    if ports.fs.exists(&project_dir.join("pyproject.toml"))
-        || ports.fs.exists(&project_dir.join("setup.py"))
-    {
-        return ProjectType::Python;
-    }
-    if ports.fs.exists(&project_dir.join("go.mod")) {
-        return ProjectType::Go;
-    }
-    if ports.fs.exists(&project_dir.join("pom.xml"))
-        || ports.fs.exists(&project_dir.join("build.gradle"))
-    {
-        return ProjectType::Java;
-    }
-    ProjectType::Unknown
-}
-
-/// Classify a changed file path based on the project type.
-fn classify_file(path: &str, project_type: &ProjectType) -> String {
-    let parts: Vec<&str> = path.splitn(4, '/').collect();
-    match project_type {
-        ProjectType::Rust => {
-            // crates/<crate-name>/... → <crate-name>
-            if parts.len() >= 2 && parts[0] == "crates" {
-                return parts[1].to_string();
-            }
-            // Fallback: first path component
-            parts[0].to_string()
-        }
-        ProjectType::Javascript | ProjectType::Typescript => {
-            // packages/<package>/... → <package>
-            if parts.len() >= 2 && (parts[0] == "packages" || parts[0] == "apps") {
-                return parts[1].to_string();
-            }
-            parts[0].to_string()
-        }
-        _ => {
-            // Unknown: top-level directory
-            parts[0].to_string()
-        }
-    }
-}
+// detect_project_type removed — delegated to crate::detection::framework::detect_project_type
+// classify_file removed — moved to ecc_domain::cartography::classification
 
 /// Generate a fallback session ID from timestamp + process ID.
 fn generate_fallback_session_id() -> String {

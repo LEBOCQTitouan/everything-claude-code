@@ -46,6 +46,20 @@ pub struct CartographyMeta {
     pub session_id: String,
 }
 
+impl From<&crate::detection::framework::ProjectType> for ProjectType {
+    fn from(detected: &crate::detection::framework::ProjectType) -> Self {
+        match detected.primary.as_str() {
+            "rust" => Self::Rust,
+            "javascript" => Self::Javascript,
+            "typescript" => Self::Typescript,
+            "python" => Self::Python,
+            "go" => Self::Go,
+            "java" => Self::Java,
+            _ => Self::Unknown,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
