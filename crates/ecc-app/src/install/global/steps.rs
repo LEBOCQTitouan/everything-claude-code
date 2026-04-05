@@ -116,6 +116,13 @@ pub(super) fn step_merge_artifacts(
         &mut merge_options,
     ));
 
+
+    all_reports.push(merge::merge_patterns(
+        &merge_ctx,
+        &ecc_root.join("patterns"),
+        &claude_dir.join("patterns"),
+        &mut merge_options,
+    ));
     let rule_groups = collect_rule_groups(ctx.fs, ecc_root, &options.languages);
     let rules_src = ecc_root.join("rules");
     let skip_paths = resolve_rule_skip_paths(ctx, &rules_src, &rule_groups, options);
