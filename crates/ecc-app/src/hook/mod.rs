@@ -404,4 +404,46 @@ mod tests {
         assert_eq!(r.stderr, "blocked");
         assert_eq!(r.exit_code, 2);
     }
+
+    /// PC-030: Handler trait compiles with hook_id + handle methods.
+    #[test]
+    fn handler_trait_compiles() {
+        struct DummyHandler;
+        impl Handler for DummyHandler {
+            fn hook_id(&self) -> &str {
+                "test:dummy"
+            }
+            fn handle(&self, stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
+                HookResult::passthrough(stdin)
+            }
+        }
+        let h: Box<dyn Handler> = Box::new(DummyHandler);
+        assert_eq!(h.hook_id(), "test:dummy");
+    }
+
+    /// PC-031: Handler impl dispatches to cartography handler via registry.
+    #[test]
+    fn handler_trait_dispatch() {
+        use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        // Check registry has a cartography handler registered
+        let registry = build_handler_registry();
+        assert!(
+            registry.contains_key("stop:cartography"),
+            "registry must contain 'stop:cartography'"
+        );
+
+        // Dispatch using the registry
+        let handler = registry.get("stop:cartography").unwrap();
+        let result = handler.handle("stdin-data", &ports);
+        // Without CLAUDE_PROJECT_DIR set, stop:cartography returns passthrough
+        assert_eq!(result.stdout, "stdin-data");
+        assert_eq!(result.exit_code, 0);
+    }
 }
