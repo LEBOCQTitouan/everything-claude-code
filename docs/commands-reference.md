@@ -31,6 +31,7 @@
 
 | Command | Purpose |
 |---------|---------|
+| `/doc-suite` | Full documentation pipeline: analysis, generation, cartography, validation, coverage, README sync |
 | `/verify` | Build + tests + lint + code review + architecture review + drift check |
 | `/review` | Robert professional conscience check |
 | `/backlog` | Capture and manage implementation ideas |

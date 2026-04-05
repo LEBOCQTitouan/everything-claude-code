@@ -45,6 +45,7 @@ You coordinate the full documentation pipeline: planning, analysis, generation, 
 TodoWrite items:
 - "Phase 0: Plan"
 - "Phase 1: Discovery + Extraction"
+- "Phase 1.5: Cartography"
 - "Phase 2: Generation (parallel)"
 - "Phase 2b: Quality (parallel)"
 - "Phase 3: Index Assembly"
@@ -58,7 +59,7 @@ Mark each item complete as the phase finishes.
 ## Arguments
 
 - `--scope=<path>` — directory to analyze (default: project root)
-- `--phase=<plan|analyze|generate|validate|coverage|diagrams|readme|claude-md|all>` — run specific phase (default: all)
+- `--phase=<plan|analyze|cartography|generate|validate|coverage|diagrams|readme|claude-md|all>` — run specific phase (default: all)
 - `--base=<branch|commit>` — baseline for coverage diff (default: previous run)
 - `--dry-run` — report what would be written without writing
 - `--comments-only` — only write doc comments into source (skip other artifacts)
@@ -119,6 +120,12 @@ Wait for completion. Read the generated `docs/ARCHITECTURE.md` to get:
 - Codebase size classification (small/large)
 - Module list (with priority ranking for large codebases)
 - Output structure (single files or folders)
+
+### Phase 1.5: Cartography
+
+> **Skill**: Follow `skills/cartography-processing/SKILL.md` for the full cartography delta processing protocol.
+
+Process pending cartography deltas from `.claude/cartography/`. If no deltas exist, skip. Commit: `docs: process cartography deltas`.
 
 ### Phase 2: Generation (Parallel)
 
@@ -276,6 +283,7 @@ When `--phase` is specified, run only that phase:
 |-------|-----------|---------------|
 | `plan` | Phase 0 only | None |
 | `analyze` | doc-analyzer only | None |
+| `cartography` | Cartography delta processing only | `.claude/cartography/` with pending deltas |
 | `generate` | doc-generator only | `docs/ARCHITECTURE.md` must exist |
 | `validate` | doc-validator only | `docs/API-SURFACE.md` must exist |
 | `coverage` | doc-reporter only | `docs/API-SURFACE.md` must exist |
@@ -377,31 +385,14 @@ Each phase depends on the previous phase's outputs. Within a phase, agents run i
 
 ## Manifest Tracking
 
-The pipeline maintains `docs/.doc-manifest.json` (schema: `schemas/doc-manifest.schema.json`) to enable:
-- **Incremental runs**: Only regenerate docs whose source dependencies changed
-- **Staleness detection**: Compare manifest git SHA against current HEAD
-- **Quality tracking**: Historical quality gate results
-- **CI integration**: Machine-readable pipeline status
+The pipeline maintains `docs/.doc-manifest.json` (schema: `schemas/doc-manifest.schema.json`) for incremental runs (only regenerate changed), staleness detection (git SHA compare), quality tracking, and CI integration.
 
 ## Commit Cadence
 
-Commit after each major phase — one concern per commit:
+Commit after each major phase — one concern per commit. Do not batch all doc files into a single commit.
 
-| Trigger | Commit Message |
-|---------|---------------|
-| After Phase 1 (Discovery + Extraction) | `docs: sync documentation from source files` |
-| After Phase 2 (Generation) | `docs: generate module documentation` |
-| After Phase 2 (Diagrams complete) | `docs: add diagrams` |
-| After Phase 3 (Index Assembly) | `docs: update codemaps` |
-| After Phase 4 (README Sync) | `docs: sync README` |
-| After Phase 5 (if fixes applied) | `fix: resolve CLAUDE.md inconsistencies` |
-
-Do not batch all doc files into a single commit. Each phase produces a distinct logical change.
+Phases: Discovery → `docs: sync documentation from source files`, Cartography → `docs: process cartography deltas`, Generation → `docs: generate module documentation`, Diagrams → `docs: add diagrams`, Index → `docs: update codemaps`, README → `docs: sync README`, CLAUDE.md fixes → `fix: resolve CLAUDE.md inconsistencies`.
 
 ## Cost Reporting
 
-After all documentation phases complete, report session cost breakdown:
-
-1. Run `ecc cost breakdown --by agent --since 1h` to get per-agent token usage for this doc-suite session
-2. Include the cost table in the console output summary
-3. If `ecc cost` is not available or returns no data, skip silently
+After completion, run `ecc cost breakdown --by agent --since 1h` and include in the console summary. Skip silently if unavailable.
