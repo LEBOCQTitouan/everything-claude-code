@@ -39,7 +39,11 @@ pub enum CliValidateTarget {
     /// Validate team manifest files
     Teams,
     /// Validate pattern library files
-    Patterns,
+    Patterns {
+        /// Auto-regenerate patterns/index.md from frontmatter
+        #[arg(long)]
+        fix: bool,
+    },
     /// Validate spec AC format and numbering
     Spec {
         /// Path to spec.md
@@ -100,6 +104,20 @@ pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
                 std::process::exit(1);
             }
         }
+        CliValidateTarget::Patterns { fix } => {
+            let env = ecc_infra::os_env::OsEnvironment;
+            if ecc_app::validate::run_validate_patterns(
+                &fs,
+                &terminal,
+                &env,
+                &args.ecc_root,
+                *fix,
+            ) {
+                Ok(())
+            } else {
+                std::process::exit(1);
+            }
+        }
         other => {
             let target = map_target(other);
             let env = ecc_infra::os_env::OsEnvironment;
@@ -123,12 +141,13 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Paths => ecc_app::validate::ValidateTarget::Paths,
         CliValidateTarget::Statusline => ecc_app::validate::ValidateTarget::Statusline,
         CliValidateTarget::Teams => ecc_app::validate::ValidateTarget::Teams,
-        CliValidateTarget::Patterns => ecc_app::validate::ValidateTarget::Patterns,
+
         // Spec, Design, and Cartography are handled directly in run() — unreachable here
-        CliValidateTarget::Spec { .. }
+        CliValidateTarget::Patterns { .. }
+        | CliValidateTarget::Spec { .. }
         | CliValidateTarget::Design { .. }
         | CliValidateTarget::Cartography { .. } => {
-            unreachable!("Spec, Design, and Cartography are handled before map_target is called")
+            unreachable!("Patterns, Spec, Design, and Cartography are handled before map_target is called")
         }
     }
 }

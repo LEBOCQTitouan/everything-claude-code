@@ -2045,3 +2045,283 @@ mod cross_ref_tests {
         assert!(errors.contains("non-existent"), "Should mention non-existent: {errors}");
     }
 }
+
+/// Generate patterns/index.md from pattern file frontmatter.
+///
+/// Called when `--fix` is passed to `ecc validate patterns`.
+/// Scans all pattern files, extracts frontmatter, and writes a structured index
+/// with category headers, pattern links, language coverage table,
+/// alphabetized tag list with occurrence counts, and total pattern count.
+pub(super) fn generate_index(
+    root: &Path,
+    fs: &dyn FileSystem,
+    terminal: &dyn TerminalIO,
+) {
+    use ecc_domain::config::validate::extract_frontmatter;
+    use std::collections::BTreeMap;
+
+    let patterns_dir = root.join("patterns");
+    if !fs.exists(&patterns_dir) {
+        return;
+    }
+
+    let root_entries = match fs.read_dir(&patterns_dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    let categories: Vec<_> = root_entries
+        .into_iter()
+        .filter(|p| fs.is_dir(p))
+        .collect();
+
+    // Collect all pattern info grouped by category
+    let mut category_patterns: BTreeMap<String, Vec<(String, String, Vec<String>)>> = BTreeMap::new();
+    let mut language_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut tag_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut total_count: usize = 0;
+
+    let work_items = collect_work_items(&categories, fs);
+
+    for (category_name, file_path) in &work_items {
+        let content = match fs.read_to_string(file_path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+
+        let fm = match extract_frontmatter(&content) {
+            Some(m) => m,
+            None => continue,
+        };
+
+        let name = fm.get("name").cloned().unwrap_or_default();
+        let languages: Vec<String> = fm
+            .get("languages")
+            .map(|l| {
+                ecc_domain::config::validate::parse_tool_list(l.trim())
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            })
+            .unwrap_or_default();
+        let tags: Vec<String> = fm
+            .get("tags")
+            .map(|t| {
+                ecc_domain::config::validate::parse_tool_list(t.trim())
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // Track language counts
+        for lang in &languages {
+            *language_counts.entry(lang.clone()).or_insert(0) += 1;
+        }
+
+        // Track tag counts
+        for tag in &tags {
+            *tag_counts.entry(tag.clone()).or_insert(0) += 1;
+        }
+
+        // Compute relative path from patterns/ to this file
+        let rel_path = file_path
+            .strip_prefix(&patterns_dir)
+            .unwrap_or(file_path)
+            .to_string_lossy()
+            .to_string();
+
+        category_patterns
+            .entry(category_name.clone())
+            .or_default()
+            .push((name, rel_path, languages));
+
+        total_count += 1;
+    }
+
+    // Generate index content
+    let mut index = String::new();
+    index.push_str("# Pattern Library Index\n\n");
+
+    // Categories with pattern links
+    index.push_str("## Categories\n\n");
+    for (category, patterns) in &category_patterns {
+        let title = category
+            .split('-')
+            .map(|w| {
+                let mut chars = w.chars();
+                match chars.next() {
+                    None => String::new(),
+                    Some(c) => c.to_uppercase().to_string() + chars.as_str(),
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
+        index.push_str(&format!(
+            "### {} ({} patterns)\n\n",
+            title,
+            patterns.len()
+        ));
+        for (name, rel_path, _) in patterns {
+            let display_name = name
+                .split('-')
+                .map(|w| {
+                    let mut chars = w.chars();
+                    match chars.next() {
+                        None => String::new(),
+                        Some(c) => c.to_uppercase().to_string() + chars.as_str(),
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            index.push_str(&format!("- [{display_name}]({rel_path})\n"));
+        }
+        index.push('\n');
+    }
+
+    // Language coverage table
+    index.push_str("## Language Coverage\n\n");
+    index.push_str("| Language | Pattern Count |\n");
+    index.push_str("|----------|---------------|\n");
+    for (lang, count) in &language_counts {
+        index.push_str(&format!("| {lang} | {count} |\n"));
+    }
+    index.push('\n');
+
+    // Tag list with counts
+    index.push_str("## Tags\n\n");
+    for (tag, count) in &tag_counts {
+        index.push_str(&format!("- `{tag}` ({count})\n"));
+    }
+    index.push('\n');
+
+    // Total count
+    index.push_str(&format!("**Total patterns: {total_count}**\n"));
+
+    // Write index
+    let index_path = patterns_dir.join("index.md");
+    match fs.write(&index_path, &index) {
+        Ok(()) => {
+            terminal.stdout_write(&format!(
+                "Generated patterns/index.md ({total_count} patterns across {} categories)\n",
+                category_patterns.len()
+            ));
+        }
+        Err(e) => {
+            terminal.stderr_write(&format!(
+                "ERROR: Failed to write patterns/index.md: {e}\n"
+            ));
+        }
+    }
+}
+
+#[cfg(test)]
+mod fix_index_tests {
+    use super::super::{run_validate_patterns};
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment};
+    use std::path::Path;
+
+    fn valid_pattern(name: &str, category: &str, tags: &str, languages: &str) -> String {
+        format!(
+            r#"---
+name: {name}
+category: {category}
+tags: [{tags}]
+languages: [{languages}]
+difficulty: intermediate
+---
+
+## Intent
+Test pattern.
+
+## Problem
+Test problem.
+
+## Solution
+Test solution.
+
+## Language Implementations
+### Rust
+```rust
+// example
+```
+
+## When to Use
+- Test.
+
+## When NOT to Use
+- Test.
+
+## Anti-Patterns
+- Test.
+
+## Related Patterns
+- None.
+
+## References
+- Test.
+"#
+        )
+    }
+
+    #[test]
+    fn fix_generates_index_with_categories_and_counts() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_dir("/root/patterns/structural")
+            .with_file(
+                "/root/patterns/creational/factory-method.md",
+                &valid_pattern("factory-method", "creational", "gof, creational", "rust, go"),
+            )
+            .with_file(
+                "/root/patterns/creational/builder.md",
+                &valid_pattern("builder", "creational", "gof, creational", "rust, go, python"),
+            )
+            .with_file(
+                "/root/patterns/structural/adapter.md",
+                &valid_pattern("adapter", "structural", "gof, structural", "rust, typescript"),
+            )
+            .with_file("/root/patterns/index.md", "# Index\n- [Factory Method](creational/factory-method.md)\n- [Builder](creational/builder.md)\n- [Adapter](structural/adapter.md)\n");
+        let t = BufferedTerminal::new();
+        let env = MockEnvironment::default();
+
+        let result = run_validate_patterns(&fs, &t, &env, Path::new("/root"), true);
+        assert!(result, "Validation with --fix should pass");
+
+        // Check the generated index
+        let dyn_fs: &dyn ecc_ports::fs::FileSystem = &fs;
+        let index = dyn_fs.read_to_string(Path::new("/root/patterns/index.md")).unwrap();
+        assert!(index.contains("# Pattern Library Index"), "Should have title");
+        assert!(index.contains("### Creational (2 patterns)"), "Should list creational with count");
+        assert!(index.contains("### Structural (1 patterns)"), "Should list structural with count");
+        assert!(index.contains("| rust |"), "Should have rust in language table");
+        assert!(index.contains("**Total patterns: 3**"), "Should show total count");
+        assert!(index.contains("`gof`"), "Should list tags");
+
+        let stdout = t.stdout_output().join("\n");
+        assert!(stdout.contains("Generated patterns/index.md"), "Should report generation");
+    }
+
+    #[test]
+    fn fix_does_not_generate_on_validation_failure() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file(
+                "/root/patterns/creational/bad.md",
+                "no frontmatter here\n",
+            )
+            .with_file("/root/patterns/index.md", "# Old index\n- [Bad](creational/bad.md)\n");
+        let t = BufferedTerminal::new();
+        let env = MockEnvironment::default();
+
+        let result = run_validate_patterns(&fs, &t, &env, Path::new("/root"), true);
+        assert!(!result, "Validation should fail for bad file");
+
+        // Index should NOT be regenerated
+        let dyn_fs: &dyn ecc_ports::fs::FileSystem = &fs;
+        let index = dyn_fs.read_to_string(Path::new("/root/patterns/index.md")).unwrap();
+        assert!(index.contains("Old index"), "Index should not be regenerated on failure");
+    }
+}
