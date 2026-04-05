@@ -318,14 +318,14 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         },
         Commands::Campaign { subcmd } => match subcmd {
             CampaignCmd::Init { spec_dir } => {
-                commands::campaign::run_init(&spec_dir, &project_dir())
+                commands::campaign::run_init(&spec_dir, &sd)
             }
             CampaignCmd::AppendDecision {
                 question,
                 answer,
                 source,
-            } => commands::campaign::run_append_decision(&question, &answer, &source, &project_dir()),
-            CampaignCmd::Show => commands::campaign::run_show(&project_dir()),
+            } => commands::campaign::run_append_decision(&question, &answer, &source, &sd),
+            CampaignCmd::Show => commands::campaign::run_show(&sd),
         },
         Commands::Tasks { subcmd } => match subcmd {
             TasksCmd::Sync { path } => commands::tasks::run_sync(&path, &proj),

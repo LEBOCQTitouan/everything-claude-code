@@ -1,8 +1,8 @@
 {
-  "phase": "plan",
-  "concern": "fix",
-  "feature": "phase-gate resolves state from main repo instead of worktree",
-  "started_at": "2026-04-04T19:56:47Z",
+  "phase": "idle",
+  "concern": "dev",
+  "feature": "",
+  "started_at": "2026-04-05T10:10:22Z",
   "toolchain": {
     "test": null,
     "lint": null,

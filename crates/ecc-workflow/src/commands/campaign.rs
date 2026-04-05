@@ -32,14 +32,14 @@ const CAMPAIGN_TEMPLATE: &str = "\
 ";
 
 /// `campaign init <spec-dir>` — create campaign.md and update state.json.
-pub fn run_init(spec_dir: &str, project_dir: &Path) -> WorkflowOutput {
-    match init_campaign(spec_dir, project_dir) {
+pub fn run_init(spec_dir: &str, state_dir: &Path) -> WorkflowOutput {
+    match init_campaign(spec_dir, state_dir) {
         Ok(output) => output,
         Err(e) => WorkflowOutput::block(format!("campaign init failed: {e}")),
     }
 }
 
-fn init_campaign(spec_dir: &str, project_dir: &Path) -> Result<WorkflowOutput, anyhow::Error> {
+fn init_campaign(spec_dir: &str, state_dir: &Path) -> Result<WorkflowOutput, anyhow::Error> {
     let dir = Path::new(spec_dir);
     std::fs::create_dir_all(dir)
         .map_err(|e| anyhow::anyhow!("Failed to create spec dir {spec_dir}: {e}"))?;
@@ -57,12 +57,12 @@ fn init_campaign(spec_dir: &str, project_dir: &Path) -> Result<WorkflowOutput, a
     })?;
 
     // Update state.json: set campaign_path and bump version to 2
-    let _ = crate::io::with_state_lock(project_dir, || {
-        let state = crate::io::read_state(project_dir)?;
+    let _ = crate::io::with_state_lock(state_dir, || {
+        let state = crate::io::read_state(state_dir)?;
         if let Some(mut s) = state {
             s.artifacts.campaign_path = Some(campaign_path.to_string_lossy().to_string());
             s.version = 2;
-            crate::io::write_state_atomic(project_dir, &s)?;
+            crate::io::write_state_atomic(state_dir, &s)?;
         }
         Ok::<(), anyhow::Error>(())
     });
@@ -78,7 +78,7 @@ pub fn run_append_decision(
     question: &str,
     answer: &str,
     source: &str,
-    project_dir: &Path,
+    state_dir: &Path,
 ) -> WorkflowOutput {
     // Validate source
     if source != "recommended" && source != "user" {
@@ -87,7 +87,7 @@ pub fn run_append_decision(
         ));
     }
 
-    match append_decision(question, answer, source, project_dir) {
+    match append_decision(question, answer, source, state_dir) {
         Ok(output) => output,
         Err(e) => WorkflowOutput::block(format!("campaign append-decision failed: {e}")),
     }
@@ -97,9 +97,9 @@ fn append_decision(
     question: &str,
     answer: &str,
     source: &str,
-    project_dir: &Path,
+    state_dir: &Path,
 ) -> Result<WorkflowOutput, anyhow::Error> {
-    let state = crate::io::read_state(project_dir)?
+    let state = crate::io::read_state(state_dir)?
         .ok_or_else(|| anyhow::anyhow!("No workflow state found"))?;
     let campaign_path_str = state
         .artifacts
@@ -170,15 +170,15 @@ fn insert_row_in_decisions_table(content: &str, row: &str) -> String {
 }
 
 /// `campaign show` — output campaign.md content as JSON.
-pub fn run_show(project_dir: &Path) -> WorkflowOutput {
-    match show_campaign(project_dir) {
+pub fn run_show(state_dir: &Path) -> WorkflowOutput {
+    match show_campaign(state_dir) {
         Ok(output) => output,
         Err(e) => WorkflowOutput::block(format!("campaign show failed: {e}")),
     }
 }
 
-fn show_campaign(project_dir: &Path) -> Result<WorkflowOutput, anyhow::Error> {
-    let state = crate::io::read_state(project_dir)?
+fn show_campaign(state_dir: &Path) -> Result<WorkflowOutput, anyhow::Error> {
+    let state = crate::io::read_state(state_dir)?
         .ok_or_else(|| anyhow::anyhow!("No workflow state found"))?;
     let campaign_path_str = state
         .artifacts
