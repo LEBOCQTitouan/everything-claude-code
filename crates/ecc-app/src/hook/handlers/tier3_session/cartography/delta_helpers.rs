@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 
 use ecc_domain::cartography::{
     ChangedFile, ElementEntry, ProjectType, SessionDelta, build_cross_reference_matrix,
-    derive_slug, infer_element_type_from_path,
+    derive_slug, element_types::ElementType, infer_element_type_from_path, validate_flow,
+    validate_journey,
 };
 use serde::Serialize;
 use tracing::warn;
@@ -151,10 +152,7 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
         let has_element_targets = unprocessed.iter().any(|(_, delta)| {
             delta.changed_files.iter().any(|f| {
                 let et = infer_element_type_from_path(&f.path);
-                !matches!(
-                    et,
-                    ecc_domain::cartography::element_types::ElementType::Unknown
-                )
+                !matches!(et, ElementType::Unknown)
             })
         });
 
@@ -249,9 +247,8 @@ pub(super) fn invoke_agent_for_delta(
         Ok(out) if out.exit_code == 0 => {
             let output = out.stdout.trim();
             if !output.is_empty() {
-                let is_journey =
-                    ecc_domain::cartography::validation::validate_journey(output).is_ok();
-                let is_flow = ecc_domain::cartography::validation::validate_flow(output).is_ok();
+                let is_journey = validate_journey(output).is_ok();
+                let is_flow = validate_flow(output).is_ok();
                 if is_journey {
                     let _ = ports.fs.write(&journey_path, output);
                 } else if is_flow {
@@ -331,7 +328,7 @@ pub(super) fn collect_element_entries(
                 extract_links_from_section(&content, "## Participating Journeys");
             Some(ElementEntry {
                 slug,
-                element_type: ecc_domain::cartography::element_types::ElementType::Unknown,
+                element_type: ElementType::Unknown,
                 purpose: String::new(),
                 uses: Vec::new(),
                 used_by: Vec::new(),
