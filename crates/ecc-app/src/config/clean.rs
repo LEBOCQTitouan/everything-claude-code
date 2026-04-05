@@ -254,6 +254,7 @@ mod tests {
                 rules,
                 hook_descriptions: vec![],
                 patterns: vec![],
+                teams: vec![],
             },
         }
     }

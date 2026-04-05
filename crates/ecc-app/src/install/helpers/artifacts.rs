@@ -43,6 +43,8 @@ pub(in crate::install) fn collect_installed_artifacts(
     let rules = collect_rules_map(fs, &claude_dir.join("rules"));
     let patterns = list_dirs(fs, &claude_dir.join("patterns"));
 
+    let teams = list_files_with_ext(fs, &claude_dir.join("teams"), ".md");
+
     Artifacts {
         agents,
         commands,
@@ -50,6 +52,7 @@ pub(in crate::install) fn collect_installed_artifacts(
         rules,
         hook_descriptions: vec![],
         patterns,
+        teams,
     }
 }
 
@@ -161,6 +164,25 @@ mod tests {
             artifacts.patterns.contains(&"security".to_string()),
             "expected 'security' in patterns, got: {:?}",
             artifacts.patterns
+        );
+    }
+
+    #[test]
+    fn collect_artifacts_includes_teams() {
+        let fs = InMemoryFileSystem::new()
+            .with_file("/claude/teams/implement-team.md", "team content")
+            .with_file("/claude/teams/audit-team.md", "team content");
+
+        let artifacts = collect_installed_artifacts(&fs, Path::new("/claude"));
+        assert!(
+            artifacts.teams.contains(&"implement-team.md".to_string()),
+            "expected 'implement-team.md' in teams, got: {:?}",
+            artifacts.teams
+        );
+        assert!(
+            artifacts.teams.contains(&"audit-team.md".to_string()),
+            "expected 'audit-team.md' in teams, got: {:?}",
+            artifacts.teams
         );
     }
 }

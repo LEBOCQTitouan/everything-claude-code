@@ -49,6 +49,7 @@ mod tests {
             },
             hook_descriptions: vec!["hook1".into()],
             patterns: vec![],
+            teams: vec![],
         }
     }
 

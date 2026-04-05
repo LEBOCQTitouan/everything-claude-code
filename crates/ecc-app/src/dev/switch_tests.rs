@@ -203,6 +203,7 @@ fn dev_switch_manifest_preservation() {
             rules,
             hook_descriptions: vec![],
             patterns: vec![],
+            teams: vec![],
         },
     };
     let manifest_content = serde_json::to_string_pretty(&m).unwrap();

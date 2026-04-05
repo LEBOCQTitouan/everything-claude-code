@@ -122,6 +122,7 @@ mod tests {
                 rules,
                 hook_descriptions: vec!["phase-gate".to_string()],
                 patterns: vec![],
+                teams: vec![],
             },
         }
     }
