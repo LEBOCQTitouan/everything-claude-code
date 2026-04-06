@@ -161,6 +161,53 @@ The commit message templates for RED, GREEN, REFACTOR.
 
 The RED-GREEN-REFACTOR instructions from the `tdd-executor` agent.
 
+#### ## User Guidance
+
+If the user provided free-text guidance after a budget-exceeded prompt (see Fix-Round Budget below), include it verbatim here. Otherwise, omit this section from the context brief.
+
+### Fix-Round Budget
+
+Each PC has a per-PC `fix_round_count` starting at 0. The counter is owned by the parent orchestrator, NOT by the tdd-executor. The tdd-executor has no knowledge of the budget — it continues returning `failure` as before.
+
+**Counter rules:**
+- Only GREEN phase test failures consume a fix round. RED phase compilation fixes (tdd-executor line 69) do NOT increment the counter.
+- Each time a tdd-executor returns `status: failure` for a given PC, the parent increments that PC's `fix_round_count`.
+- A tdd-executor crash or timeout (no structured result returned) does NOT consume a fix round. Report the crash to the user immediately without budget logic.
+- If a PC succeeds within budget (fix_round_count is 1 or 2), mark it as success with a note "fixed in N rounds".
+
+**Budget exceeded (fix_round_count reaches 2):**
+
+When a PC's `fix_round_count` reaches 2 and the test still fails, STOP retrying and present a diagnostic report followed by AskUserQuestion.
+
+**Diagnostic report format:**
+
+```markdown
+### Test Name
+<PC-NNN: description>
+
+### Error Output
+<last 50 lines of the failing test output>
+
+### Files Modified
+- <file1>
+- <file2>
+
+### Fix Attempts
+1. Round 1: <what was tried and why it failed>
+2. Round 2: <what was tried and why it failed>
+```
+
+**AskUserQuestion options:**
+
+Present via AskUserQuestion with these options:
+- **"Keep trying (+2 rounds)"** — grants 2 more fix rounds and re-dispatches the tdd-executor with the same context brief
+- **"Skip this PC"** — marks the PC as `failed` in tasks.md and proceeds to the next PC
+- **"Abort implementation"** — preserves the current state and stops the /implement pipeline
+
+The user may also select "Other" to provide free-text guidance. If guidance is provided, include it in the re-dispatched context brief under a `## User Guidance` heading.
+
+**Hard cap:** The user may select "Keep trying" at most 3 times per PC, for a maximum of 8 total fix rounds (2 initial + 3×2 extensions). After 8 rounds, the only remaining options are "Skip this PC" or "Abort implementation".
+
 ### Wave Dispatch
 
 > **Shared**: See `skills/wave-dispatch/SKILL.md` for the full wave dispatch logic — pre-wave setup with git tag `wave-N-start`, single-PC wave (backward compatible, no worktree isolation), multi-PC wave (parallel dispatch with `isolation: "worktree"`, prior waves only in context briefs), post-wave merge (sequential in PC-ID order, merge conflict detection), wave regression verification (run all PC commands from waves 1..W), and wave failure handling (let wave finish, merge successful, discard failed PCs' branches, re-derive on re-entry).
@@ -179,7 +226,7 @@ Read the solution's `## E2E Activation Rules`:
 - If E2E tests are activated:
   1. Un-ignore each activated E2E test
   2. Run each test and record results
-  3. If any E2E test fails → fix and re-run. All must pass.
+  3. If any E2E test fails, apply the same fix-round budget as Phase 3: maintain a per-test `fix_round_count`, fix and re-run. Only GREEN phase test failures (not compilation fixes) consume a round. After 2 failed fix attempts, present the diagnostic report and AskUserQuestion with the same options (Keep trying, Skip, Abort, or user guidance via Other). The hard cap of at most 3 extensions (maximum of 8 total fix rounds) applies.
   4. Commit: `test(e2e): add <boundary> E2E tests`
 
 After E2E phase completes (whether tests ran or not), update tasks.md: set "E2E tests" entry to `done@<ISO 8601 timestamp>` and mark `[x]`.

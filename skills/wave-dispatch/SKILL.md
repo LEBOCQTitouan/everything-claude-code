@@ -25,8 +25,8 @@ If the wave contains exactly one PC, dispatch it using the existing sequential p
 4. Receive the subagent's structured result: pc_id, status, red_result, green_result, refactor_result, commits, files_changed, error
    - **Commit SHA Accumulator**: After each successful subagent, accumulate all commit SHA hashes and messages. Also append each SHA and message to the campaign manifest's `## Commit Trail` table (parent orchestrator only, never subagents).
 5. If the subagent returns `RED_ALREADY_PASSES` → investigate
-6. If the subagent crashes or times out → report and do NOT auto-revert
-7. If the subagent returns `failure` → STOP and report
+6. If the subagent crashes or times out → report to the user immediately. Crashes do NOT consume a fix round (per Fix-Round Budget in implement.md). Do NOT auto-revert.
+7. If the subagent returns `failure` → apply Fix-Round Budget (see implement.md § Fix-Round Budget). Increment the PC's `fix_round_count`. If budget not exceeded, re-dispatch with the same context brief. If budget exceeded, present diagnostic report and AskUserQuestion per the budget protocol. If user selects "Skip this PC" or "Abort", handle accordingly. Do NOT hard-STOP on first failure.
 
 ## Multi-PC Wave (Parallel Dispatch)
 
@@ -63,5 +63,5 @@ If one or more PCs in a wave fail:
 
 1. Let all other subagents in the wave finish (their work is valid — PCs are independent)
 2. Merge successful PCs' branches. Discard failed PCs' branches.
-3. STOP and report the failure. Do not proceed to the next wave.
+3. For each failed PC, apply Fix-Round Budget (see implement.md § Fix-Round Budget). If budget not exceeded, re-dispatch the failed PC. If budget exceeded, present diagnostic report and AskUserQuestion per the budget protocol. If user selects "Skip this PC", mark as failed and proceed. If "Abort", stop the pipeline. If "Keep trying", grant 2 more rounds and re-dispatch. Merge conflicts, worktree failures, and regression failures remain immediate STOPs — budget logic applies ONLY to subagent test failures.
 4. On re-entry, re-derive the wave plan from tasks.md. Skip completed PCs. Re-dispatch only failed/incomplete PCs in the first incomplete wave.
