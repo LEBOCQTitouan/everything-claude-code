@@ -121,7 +121,9 @@
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
 | BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | implemented | 2026-04-04 |
-| BL-121 | Token optimization audit — comprehensive spend reduction opportunity mapping | — | EPIC | /audit | implemented | 2026-04-05 |
+| BL-121 | Token optimization audit — comprehensive spend reduction opportunity mapping | — | EPIC | /audit | open | 2026-04-05 |
+| BL-122 | Worktree auto-merge-cleanup enforcement | — | MEDIUM | /spec-dev | open | 2026-04-05 |
+| BL-123 | Caveman-style brevity token optimization | — | HIGH | /spec-refactor | open | 2026-04-06 |
 
 ## Dependency Graph
 
@@ -191,12 +193,13 @@ BL-120 → BL-079 (conditional rule loading enables language-aware pattern injec
 BL-120 → BL-093 (pattern search benefits from memory system infrastructure)
 BL-121 → BL-095 (token audit needs thinking budget baseline from effort tuning)
 BL-121 → BL-096 (token audit needs cost tracking baseline for before/after comparison)
+BL-123 → BL-121 (caveman brevity benefits from token audit findings but can proceed independently)
 ```
 
 ## Stats
 
-- **Total:** 120
-- **Open:** 12
+- **Total:** 123
+- **Open:** 14
 - **In-progress:** 0
 - **Implemented:** 104
 - **Archived:** 4
