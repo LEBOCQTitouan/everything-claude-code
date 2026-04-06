@@ -3,6 +3,7 @@
 use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
+use ecc_domain::metrics::{CommitGateKind, MetricEvent, MetricOutcome};
 use ecc_ports::env::Platform;
 use std::path::Path;
 
@@ -80,6 +81,67 @@ pub fn post_edit_typecheck(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     HookResult::passthrough(stdin)
 }
 
+/// Run the formatter for the given file and return (exit_code, gate_kind).
+///
+/// Returns `None` if the extension is not handled or no formatter ran.
+fn run_formatter(
+    file_path: &str,
+    ext: &str,
+    fix: bool,
+    strict: bool,
+    cwd: &std::path::Path,
+    ports: &HookPorts<'_>,
+) -> Option<(i32, CommitGateKind)> {
+    match ext {
+        "ts" | "tsx" | "js" | "jsx" | "json" | "md" => {
+            let biome_json = cwd.join("biome.json");
+            let biome_jsonc = cwd.join("biome.jsonc");
+            if ports.fs.exists(&biome_json) || ports.fs.exists(&biome_jsonc) {
+                let mut args = vec!["biome", "check", file_path];
+                if fix {
+                    args.push("--write");
+                }
+                let exit_code = ports
+                    .shell
+                    .run_command("npx", &args)
+                    .map(|o| o.exit_code)
+                    .unwrap_or(0);
+                return Some((exit_code, CommitGateKind::Lint));
+            }
+            // Fall back to prettier
+            let action = if fix { "--write" } else { "--check" };
+            let exit_code = ports
+                .shell
+                .run_command("npx", &["prettier", action, file_path])
+                .map(|o| o.exit_code)
+                .unwrap_or(0);
+            Some((exit_code, CommitGateKind::Lint))
+        }
+        "go" if fix => {
+            if let Err(e) = ports.shell.run_command("gofmt", &["-w", file_path]) {
+                let msg = format!("[QualityGate] gofmt error: {e}");
+                warn!("{}", msg);
+            }
+            // gofmt -w: non-zero only on parse error; treat as Lint
+            Some((0, CommitGateKind::Lint))
+        }
+        "py" => {
+            let mut args = vec!["format"];
+            if !fix {
+                args.push("--check");
+            }
+            args.push(file_path);
+            let exit_code = ports
+                .shell
+                .run_command("ruff", &args)
+                .map(|o| o.exit_code)
+                .unwrap_or(0);
+            Some((exit_code, CommitGateKind::Lint))
+        }
+        _ => None,
+    }
+}
+
 /// quality-gate: multi-language quality checks.
 pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "quality_gate", "executing handler");
@@ -107,68 +169,61 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .var("ECC_QUALITY_GATE_STRICT")
         .map(|v| v.to_lowercase() == "true")
         .unwrap_or(false);
+    let disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
 
     let cwd = ports
         .env
         .current_dir()
         .unwrap_or_else(|| std::path::PathBuf::from("."));
 
-    match ext.as_str() {
-        "ts" | "tsx" | "js" | "jsx" | "json" | "md" => {
-            // Check for biome
-            let biome_json = cwd.join("biome.json");
-            let biome_jsonc = cwd.join("biome.jsonc");
-            if ports.fs.exists(&biome_json) || ports.fs.exists(&biome_jsonc) {
-                let mut args = vec!["biome", "check", file_path.as_str()];
-                if fix {
-                    args.push("--write");
-                }
-                let result = ports.shell.run_command("npx", &args);
-                if let Ok(out) = result
-                    && out.exit_code != 0
-                    && strict
-                {
-                    let msg = format!("[QualityGate] Biome check failed for {}\n", file_path);
-                    return HookResult::warn(stdin, &msg);
-                }
-                return HookResult::passthrough(stdin);
-            }
+    let formatter_result = run_formatter(&file_path, ext.as_str(), fix, strict, &cwd, ports);
 
-            // Fall back to prettier
-            let action = if fix { "--write" } else { "--check" };
-            let result = ports
-                .shell
-                .run_command("npx", &["prettier", action, &file_path]);
-            if let Ok(out) = result
-                && out.exit_code != 0
-                && strict
-            {
-                let msg = format!("[QualityGate] Prettier check failed for {}\n", file_path);
-                return HookResult::warn(stdin, &msg);
-            }
+    // Record metric if a formatter ran
+    if let Some((exit_code, gate_kind)) = formatter_result {
+        let outcome = if exit_code == 0 {
+            MetricOutcome::Passed
+        } else {
+            MetricOutcome::Failure
+        };
+        let gates_failed = if exit_code != 0 {
+            vec![gate_kind]
+        } else {
+            vec![]
+        };
+        let session_id = crate::metrics_session::resolve_session_id(
+            ports.env.var("CLAUDE_SESSION_ID").as_deref(),
+        );
+        let timestamp = {
+            use std::time::{SystemTime, UNIX_EPOCH};
+            let secs = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            format!("{secs}")
+        };
+        if let Ok(event) = MetricEvent::commit_gate(session_id, timestamp, outcome, gates_failed) {
+            let _ = crate::metrics_mgmt::record_if_enabled(ports.metrics_store, &event, disabled);
         }
-        "go" if fix => {
-            if let Err(e) = ports.shell.run_command("gofmt", &["-w", &file_path]) {
-                let msg = format!("[QualityGate] gofmt error: {}", e);
-                warn!("{}", msg);
-            }
+
+        // Return warn for strict mode failures
+        if exit_code != 0 && strict {
+            let tool = match ext.as_str() {
+                "ts" | "tsx" | "js" | "jsx" | "json" | "md" => {
+                    let biome_json = cwd.join("biome.json");
+                    let biome_jsonc = cwd.join("biome.jsonc");
+                    if ports.fs.exists(&biome_json) || ports.fs.exists(&biome_jsonc) {
+                        "Biome"
+                    } else {
+                        "Prettier"
+                    }
+                }
+                "py" => "Ruff",
+                "go" => "gofmt",
+                _ => "Formatter",
+            };
+            let msg = format!("[QualityGate] {tool} check failed for {file_path}\n");
+            return HookResult::warn(stdin, &msg);
         }
-        "py" => {
-            let mut args = vec!["format"];
-            if !fix {
-                args.push("--check");
-            }
-            args.push(&file_path);
-            let result = ports.shell.run_command("ruff", &args);
-            if let Ok(out) = result
-                && out.exit_code != 0
-                && strict
-            {
-                let msg = format!("[QualityGate] Ruff check failed for {}\n", file_path);
-                return HookResult::warn(stdin, &msg);
-            }
-        }
-        _ => {}
     }
 
     HookResult::passthrough(stdin)
