@@ -178,8 +178,11 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
+    use ecc_domain::metrics::{CommitGateKind, MetricEventType, MetricOutcome};
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    use ecc_test_support::{
+        BufferedTerminal, InMemoryFileSystem, InMemoryMetricsStore, MockEnvironment, MockExecutor,
+    };
 
     fn make_ports<'a>(
         fs: &'a InMemoryFileSystem,
@@ -195,6 +198,24 @@ mod tests {
             cost_store: None,
             bypass_store: None,
             metrics_store: None,
+        }
+    }
+
+    fn make_ports_with_metrics<'a>(
+        fs: &'a InMemoryFileSystem,
+        shell: &'a MockExecutor,
+        env: &'a MockEnvironment,
+        term: &'a BufferedTerminal,
+        store: &'a InMemoryMetricsStore,
+    ) -> HookPorts<'a> {
+        HookPorts {
+            fs,
+            shell,
+            env,
+            terminal: term,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: Some(store),
         }
     }
 
@@ -297,5 +318,83 @@ mod tests {
         let stdin = r#"{"tool_input":{"file_path":"main.py"}}"#;
         let result = quality_gate(stdin, &ports);
         assert!(result.stderr.contains("QualityGate"));
+    }
+
+    // PC-014: quality_gate records CommitGate/Passed when formatter succeeds
+    #[test]
+    fn quality_gate_records_commit_gate_passed() {
+        let fs = InMemoryFileSystem::new().with_file("main.py", "import os");
+        let shell = MockExecutor::new().on(
+            "ruff",
+            CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let store = InMemoryMetricsStore::new();
+        let ports = make_ports_with_metrics(&fs, &shell, &env, &term, &store);
+
+        let stdin = r#"{"tool_input":{"file_path":"main.py"}}"#;
+        let _result = quality_gate(stdin, &ports);
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].event_type, MetricEventType::CommitGate);
+        assert_eq!(events[0].outcome, MetricOutcome::Passed);
+        assert!(events[0].gates_failed.is_empty());
+    }
+
+    // PC-015: quality_gate records CommitGate/Failure with gates_failed populated when formatter fails
+    #[test]
+    fn quality_gate_records_commit_gate_failure() {
+        let fs = InMemoryFileSystem::new().with_file("main.py", "import os");
+        let shell = MockExecutor::new().on(
+            "ruff",
+            CommandOutput {
+                stdout: String::new(),
+                stderr: "format error".to_string(),
+                exit_code: 1,
+            },
+        );
+        let env = MockEnvironment::new().with_var("ECC_QUALITY_GATE_STRICT", "true");
+        let term = BufferedTerminal::new();
+        let store = InMemoryMetricsStore::new();
+        let ports = make_ports_with_metrics(&fs, &shell, &env, &term, &store);
+
+        let stdin = r#"{"tool_input":{"file_path":"main.py"}}"#;
+        let _result = quality_gate(stdin, &ports);
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].event_type, MetricEventType::CommitGate);
+        assert_eq!(events[0].outcome, MetricOutcome::Failure);
+        assert_eq!(events[0].gates_failed, vec![CommitGateKind::Lint]);
+    }
+
+    // PC-016: quality_gate with ECC_METRICS_DISABLED=1 records zero events
+    #[test]
+    fn quality_gate_metrics_disabled() {
+        let fs = InMemoryFileSystem::new().with_file("main.py", "import os");
+        let shell = MockExecutor::new().on(
+            "ruff",
+            CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new().with_var("ECC_METRICS_DISABLED", "1");
+        let term = BufferedTerminal::new();
+        let store = InMemoryMetricsStore::new();
+        let ports = make_ports_with_metrics(&fs, &shell, &env, &term, &store);
+
+        let stdin = r#"{"tool_input":{"file_path":"main.py"}}"#;
+        let _result = quality_gate(stdin, &ports);
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 0);
     }
 }
