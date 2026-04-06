@@ -13,6 +13,7 @@ pub mod clock;
 pub mod config_store;
 /// Cost and token tracking store port.
 pub mod cost_store;
+pub mod bypass_store;
 /// Environment variable and platform access port.
 pub mod env;
 /// Tarball extraction port.
