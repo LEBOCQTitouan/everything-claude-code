@@ -22,6 +22,8 @@ cargo xtask mutants --in-diff  # Diff-scoped mutation testing
 cargo dist build        # Local release build test (cargo-dist, requires cargo-dist installed)
 ```
 
+Optional: install [sccache](https://github.com/mozilla/sccache) for 11-14% faster builds (`export RUSTC_WRAPPER=sccache`). See `docs/getting-started.md` § Build Acceleration for full setup.
+
 ## Architecture
 
 Hexagonal architecture: domain → ports → app → infra → CLI (9 crates). `ecc-workflow` is a standalone binary for workflow state management. `ecc-flock` is a shared POSIX flock utility. `workflow-templates/` contains installable GitHub Actions YAML templates. See `docs/ARCHITECTURE.md` for full structure.
