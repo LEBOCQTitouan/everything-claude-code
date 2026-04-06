@@ -484,6 +484,35 @@ mod tests {
         assert_eq!(r.exit_code, 0);
     }
 
+    /// PC-003: HookPorts with metrics_store None dispatches unknown hook correctly
+    #[test]
+    fn hook_ports_with_metrics_store_none() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: None,
+        };
+
+        let ctx = HookContext {
+            hook_id: "nonexistent:hook:for-pc003".to_string(),
+            stdin_payload: "data".to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(result.stdout, "data");
+        assert!(result.stderr.contains("Unknown hook ID"));
+        assert_eq!(result.exit_code, 0);
+    }
+
     /// PC-039: HookPorts with cost_store None dispatches unknown hook correctly
     #[test]
     fn hook_ports_with_cost_store_none() {
