@@ -152,14 +152,12 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     let start = std::time::Instant::now();
 
     // Deprecation warning for ECC_WORKFLOW_BYPASS=1 (AC-006.1, AC-006.2)
-    if let Some(bypass_val) = ports.env.var("ECC_WORKFLOW_BYPASS") {
-        if bypass_val == "1" {
+    if ports.env.var("ECC_WORKFLOW_BYPASS").as_deref() == Some("1") {
             ports.terminal.stderr_write(
                 "[Deprecated] ECC_WORKFLOW_BYPASS=1 is deprecated. Use 'ecc bypass grant' for granular, auditable bypasses. See ADR-0056.\n"
             );
             // Still allow passthrough for backward compat (AC-006.2)
             return HookResult::passthrough(stdin);
-        }
     }
 
     // Check if hook is enabled
@@ -258,6 +256,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     };
 
     // Check for bypass token when hook blocks
+    #[allow(clippy::collapsible_if)]
     let result = if result.exit_code == 2 {
         // Append bypass-available hint to stderr
         let mut stderr = result.stderr.clone();

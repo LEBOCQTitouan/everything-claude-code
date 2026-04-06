@@ -39,6 +39,7 @@ pub enum BypassAction {
     Gc,
 }
 
+#[allow(clippy::print_literal)]
 pub fn run(args: BypassArgs) -> anyhow::Result<()> {
     let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
     let db_path = home.join(".ecc").join("bypass.db");
@@ -66,7 +67,8 @@ pub fn run(args: BypassArgs) -> anyhow::Result<()> {
             } else {
                 println!("{:<5} {:<40} {:<10} {:<20} {}",
                     "ID", "Hook ID", "Verdict", "Timestamp", "Reason");
-                println!("{}", "-".repeat(100));
+                let sep = "-".repeat(100);
+                println!("{sep}");
                 for d in &decisions {
                     println!("{:<5} {:<40} {:<10} {:<20} {}",
                         d.id.unwrap_or(0), d.hook_id, d.verdict, d.timestamp,

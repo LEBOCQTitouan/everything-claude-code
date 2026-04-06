@@ -44,7 +44,7 @@ pub fn grant(
     // Record in audit trail
     store
         .record(&decision)
-        .map_err(|e| BypassMgmtError::Store(e))?;
+        .map_err(BypassMgmtError::Store)?;
 
     Ok(token)
 }
@@ -160,6 +160,7 @@ fn days_to_date(days: u64) -> (u64, u64, u64) {
     (y, (m + 1) as u64, remaining + 1)
 }
 
+#[allow(clippy::manual_is_multiple_of)]
 fn is_leap(y: u64) -> bool {
     (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0)
 }
