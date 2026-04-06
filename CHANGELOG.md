@@ -8,6 +8,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
+### Added
+
+- **Worktree auto-merge and cleanup enforcement**: After successful merge at session end, a 5-point safety check (uncommitted changes, untracked files, unmerged commits, stash, remote push) runs inside the merge lock. If all pass, worktree directory and branch are auto-deleted. If any check fails, worktree is preserved with a clear warning. New `WorktreeManager` port trait in `ecc-ports`, `OsWorktreeManager` adapter in `ecc-infra`, and `MockWorktreeManager` in `ecc-test-support`. GC refactored to use the port (skips unmerged worktrees, `--force` overrides). New `ecc worktree status` command shows all session worktrees with merge state, safety info, and age. ADR 0054.
+
 ### Refactored
 
 - **Cartography delta processing → /doc-suite pipeline**: Moved cartography delta processing from the broken `start:cartography` SessionStart hook to the doc-orchestrator pipeline via new `/doc-suite` command. The hook now prints a thin reminder (<100ms). Created `commands/doc-suite.md` wrapping the doc-orchestrator agent, `skills/cartography-processing/SKILL.md` with delta processing protocol, JSON envelope output for cartographer agent, Handler trait for hook dispatch. Decomposed 2728-line `cartography.rs` into focused modules (`delta_writer.rs`, `delta_reminder.rs`, `delta_helpers.rs`). Consolidated `detect_project_type` with detection framework, extracted `classify_file` to domain layer, wired `derive_slug`. 2 ADRs (0052-0053).
