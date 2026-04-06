@@ -241,6 +241,18 @@ Must include ADRs for decisions marked "ADR Needed? Yes".
 
 ## Rollback Plan
 <reverse dependency order of File Changes — if implementation fails, undo in this order>
+
+## Bounded Contexts Affected
+<Enumerate bounded contexts affected by this design. Only include modules listed in `docs/domain/bounded-contexts.md`. Utility files (ansi.rs, traits.rs, paths.rs, time.rs) and modules not in the bounded contexts registry are excluded. If a modified file's parent module is not in bounded-contexts.md, list it under "Other domain modules" separately.>
+
+| Context | Role | Files Modified |
+|---------|------|----------------|
+| <context name from bounded-contexts.md> | <entity/value object/service> | <file list> |
+
+Other domain modules (not registered as bounded contexts):
+- <module>: <files>
+
+(or "No bounded contexts affected" if no domain files are modified)
 ```
 
 The solution is output in conversation only — no file is written.
