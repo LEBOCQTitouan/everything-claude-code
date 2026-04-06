@@ -16,6 +16,7 @@ pub mod diff;
 pub mod hook_runtime;
 pub mod log;
 pub mod memory;
+pub mod metrics;
 pub mod paths;
 pub mod session;
 pub mod sources;
