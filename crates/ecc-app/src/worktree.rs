@@ -94,16 +94,6 @@ pub fn gc(
     project_dir: &Path,
     force: bool,
 ) -> Result<WorktreeGcResult, WorktreeError> {
-    gc_with_manager(worktree_mgr, executor, project_dir, force)
-}
-
-/// Inner implementation shared by `gc`.
-pub fn gc_with_manager(
-    worktree_mgr: &dyn WorktreeManager,
-    executor: &dyn ShellExecutor,
-    project_dir: &Path,
-    force: bool,
-) -> Result<WorktreeGcResult, WorktreeError> {
     let entries = worktree_mgr.list_worktrees(project_dir)?;
     let mut result = WorktreeGcResult::default();
     let now = now_secs();
@@ -353,7 +343,7 @@ mod tests {
         // Compile-time check: gc() accepts &dyn WorktreeManager.
         let mgr = MockWorktreeManager::new();
         let executor = MockExecutor::new();
-        let result = gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        let result = gc(&mgr, &executor, Path::new("/repo"), false).unwrap();
         assert!(result.removed.is_empty());
         assert!(result.skipped.is_empty());
         assert!(result.errors.is_empty());
@@ -366,7 +356,7 @@ mod tests {
         let executor = MockExecutor::new()
             .on_args("kill", &["-0", "99999"], err_output(1));
 
-        let result = gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        let result = gc(&mgr, &executor, Path::new("/repo"), false).unwrap();
         assert!(
             result.removed.contains(&STALE_SESSION.to_owned()),
             "stale session should be removed via list_worktrees, got removed={:?}",
@@ -383,7 +373,7 @@ mod tests {
         let executor = MockExecutor::new()
             .on_args("kill", &["-0", "99999"], err_output(1));
 
-        let result = gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        let result = gc(&mgr, &executor, Path::new("/repo"), false).unwrap();
         assert!(
             result.removed.contains(&STALE_SESSION.to_owned()),
             "port remove_worktree + delete_branch must be used, got removed={:?}",
@@ -399,7 +389,7 @@ mod tests {
         let executor = MockExecutor::new()
             .on_args("kill", &["-0", "99999"], ok(""));
 
-        let result = gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        let result = gc(&mgr, &executor, Path::new("/repo"), false).unwrap();
         assert!(
             result.skipped.contains(&FRESH_SESSION.to_owned()),
             "fresh session must be skipped, got: {:?}",
@@ -419,7 +409,7 @@ mod tests {
         let executor = MockExecutor::new()
             .on_args("kill", &["-0", "99999"], err_output(1));
 
-        let result = gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        let result = gc(&mgr, &executor, Path::new("/repo"), false).unwrap();
         assert!(
             result.skipped.contains(&STALE_SESSION.to_owned()),
             "unmerged stale worktree must be skipped with force=false, got: {:?}",
@@ -439,7 +429,7 @@ mod tests {
         let executor = MockExecutor::new()
             .on_args("kill", &["-0", "99999"], err_output(1));
 
-        let result = gc_with_manager(&mgr, &executor, Path::new("/repo"), true).unwrap();
+        let result = gc(&mgr, &executor, Path::new("/repo"), true).unwrap();
         assert!(
             result.removed.contains(&STALE_SESSION.to_owned()),
             "force=true must override merge check and remove the worktree, got: {:?}",
