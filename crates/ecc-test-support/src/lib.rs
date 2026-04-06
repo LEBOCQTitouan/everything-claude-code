@@ -36,3 +36,5 @@ pub use mock_extractor::MockExtractor;
 pub use mock_git::MockGitInfo;
 pub use mock_release_client::MockReleaseClient;
 pub use scripted_input::ScriptedInput;
+pub mod mock_worktree;
+pub use mock_worktree::MockWorktreeManager;

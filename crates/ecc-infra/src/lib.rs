@@ -26,3 +26,4 @@ pub mod sqlite_cost_store;
 pub mod sqlite_log_store;
 pub mod sqlite_memory;
 pub mod tarball_extractor;
+pub mod os_worktree;

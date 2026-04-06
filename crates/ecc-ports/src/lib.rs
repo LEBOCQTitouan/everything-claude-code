@@ -39,3 +39,5 @@ pub mod repl;
 pub mod shell;
 /// Terminal I/O port.
 pub mod terminal;
+/// Worktree management port.
+pub mod worktree;
