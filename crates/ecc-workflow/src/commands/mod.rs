@@ -9,6 +9,7 @@ pub mod grill_me_gate;
 pub mod init;
 pub mod memory_write;
 pub mod merge;
+pub mod merge_cleanup;
 pub mod pass_condition_check;
 pub mod phase_gate;
 pub mod reset;
