@@ -121,6 +121,50 @@ fn utc_timestamp_compact() -> String {
     )
 }
 
+/// Input data for the worktree safety assessment — all values gathered by the caller via I/O.
+#[derive(Debug, Clone)]
+pub struct WorktreeSafetyInput {
+    pub has_uncommitted_changes: bool,
+    pub has_untracked_files: bool,
+    pub unmerged_commit_count: u64,
+    pub has_stash: bool,
+    pub is_pushed_to_remote: bool,
+}
+
+/// Reasons a worktree is not safe to delete.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SafetyViolation {
+    UncommittedChanges,
+    UntrackedFiles,
+    UnmergedCommits { count: u64 },
+    StashedChanges,
+    UnpushedCommits,
+}
+
+/// Assess all safety violations for a worktree. Pure function — no I/O.
+/// Returns an empty vec if the worktree is safe to delete.
+pub fn assess_safety(input: &WorktreeSafetyInput) -> Vec<SafetyViolation> {
+    let mut violations = Vec::new();
+    if input.has_uncommitted_changes {
+        violations.push(SafetyViolation::UncommittedChanges);
+    }
+    if input.has_untracked_files {
+        violations.push(SafetyViolation::UntrackedFiles);
+    }
+    if input.unmerged_commit_count > 0 {
+        violations.push(SafetyViolation::UnmergedCommits {
+            count: input.unmerged_commit_count,
+        });
+    }
+    if input.has_stash {
+        violations.push(SafetyViolation::StashedChanges);
+    }
+    if !input.is_pushed_to_remote {
+        violations.push(SafetyViolation::UnpushedCommits);
+    }
+    violations
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,20 +253,21 @@ mod tests {
 
     #[test]
     fn assess_safety_is_pure() {
-        // Verify that the worktree module source does not import I/O libs
+        // Verify that the worktree module source does not import I/O libs.
+        // Check for `use std::process`, `use std::fs`, `use std::net` import patterns only.
         let source = include_str!("worktree.rs");
-        assert!(
-            !source.contains("std::process"),
-            "domain worktree must not import std::process"
-        );
-        assert!(
-            !source.contains("std::fs"),
-            "domain worktree must not import std::fs"
-        );
-        assert!(
-            !source.contains("std::net"),
-            "domain worktree must not import std::net"
-        );
+        for line in source.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("use ") || trimmed.starts_with("extern ") {
+                let has_io = trimmed.contains("::process")
+                    || trimmed.contains("::fs")
+                    || trimmed.contains("::net");
+                assert!(
+                    !has_io,
+                    "domain worktree must not import I/O modules, found: {trimmed}"
+                );
+            }
+        }
     }
 
     #[test]
