@@ -68,7 +68,12 @@ pub fn run(args: MetricsArgs) -> anyhow::Result<()> {
     };
 
     match args.action {
-        MetricsAction::Summary { since, session, json, trend } => {
+        MetricsAction::Summary {
+            since,
+            session,
+            json,
+            trend,
+        } => {
             if trend && session.is_some() {
                 return Err(anyhow::anyhow!("--trend is incompatible with --session"));
             }
@@ -77,8 +82,8 @@ pub fn run(args: MetricsArgs) -> anyhow::Result<()> {
                 session_id: session,
                 ..Default::default()
             };
-            let metrics = metrics_mgmt::summary(&store, &query)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let metrics =
+                metrics_mgmt::summary(&store, &query).map_err(|e| anyhow::anyhow!("{e}"))?;
 
             if json {
                 let obj = serde_json::json!({
@@ -93,9 +98,10 @@ pub fn run(args: MetricsArgs) -> anyhow::Result<()> {
             }
 
             if trend {
-                let dur = parse_duration(&since).unwrap_or(std::time::Duration::from_secs(7 * 86400));
-                let trend_data = metrics_mgmt::trend_summary(&store, dur)
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                let dur =
+                    parse_duration(&since).unwrap_or(std::time::Duration::from_secs(7 * 86400));
+                let trend_data =
+                    metrics_mgmt::trend_summary(&store, dur).map_err(|e| anyhow::anyhow!("{e}"))?;
                 use ecc_domain::metrics::TrendComparison;
                 println!("Harness Metrics Trend (last {since} vs previous {since})");
                 println!(
@@ -135,39 +141,52 @@ pub fn run(args: MetricsArgs) -> anyhow::Result<()> {
 
             let targets = ecc_domain::metrics::ReferenceTargets::default();
             println!("Harness Metrics (last {since})");
+            println!("  {:<35} {:>15} {:>15}", "Metric", "Value", "vs. Target");
             println!(
                 "  {:<35} {:>15} {:>15}",
-                "Metric", "Value", "vs. Target"
-            );
-            println!(
-                "  {:<35} {:>15} {:>15}",
-                slo_prefix(metrics.hook_success_rate, targets.hook_success, false) + "Hook success rate",
+                slo_prefix(metrics.hook_success_rate, targets.hook_success, false)
+                    + "Hook success rate",
                 format_rate(metrics.hook_success_rate),
                 format!("{:.0}%", targets.hook_success * 100.0)
             );
             println!(
                 "  {:<35} {:>15} {:>15}",
-                slo_prefix(metrics.phase_gate_violation_rate, targets.phase_gate_violation, true) + "Phase-gate violation rate",
+                slo_prefix(
+                    metrics.phase_gate_violation_rate,
+                    targets.phase_gate_violation,
+                    true
+                ) + "Phase-gate violation rate",
                 format_rate(metrics.phase_gate_violation_rate),
                 format!("{:.0}%", targets.phase_gate_violation * 100.0)
             );
             println!(
                 "  {:<35} {:>15} {:>15}",
-                slo_prefix(metrics.agent_failure_recovery_rate, targets.agent_recovery, false) + "Agent failure recovery rate",
+                slo_prefix(
+                    metrics.agent_failure_recovery_rate,
+                    targets.agent_recovery,
+                    false
+                ) + "Agent failure recovery rate",
                 format_rate(metrics.agent_failure_recovery_rate),
                 format!("{:.0}%", targets.agent_recovery * 100.0)
             );
             println!(
                 "  {:<35} {:>15} {:>15}",
-                slo_prefix(metrics.commit_atomicity_score, targets.commit_atomicity, false) + "Commit atomicity score",
+                slo_prefix(
+                    metrics.commit_atomicity_score,
+                    targets.commit_atomicity,
+                    false
+                ) + "Commit atomicity score",
                 format_rate(metrics.commit_atomicity_score),
                 format!("{:.0}%", targets.commit_atomicity * 100.0)
             );
             println!("  Total events: {}", metrics.total_events);
         }
         MetricsAction::RecordGate { kind, outcome } => {
-            let session_id = std::env::var("ECC_SESSION_ID").unwrap_or_else(|_| "unknown".to_string());
-            let disabled = std::env::var("ECC_METRICS_DISABLED").map(|v| v == "1").unwrap_or(false);
+            let session_id =
+                std::env::var("ECC_SESSION_ID").unwrap_or_else(|_| "unknown".to_string());
+            let disabled = std::env::var("ECC_METRICS_DISABLED")
+                .map(|v| v == "1")
+                .unwrap_or(false);
             metrics_mgmt::record_commit_gate(Some(&store), &session_id, &kind, &outcome, disabled)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("Recorded commit gate: kind={kind} outcome={outcome}");
@@ -176,21 +195,24 @@ pub fn run(args: MetricsArgs) -> anyhow::Result<()> {
             let fmt = match format.as_str() {
                 "json" => MetricsExportFormat::Json,
                 "csv" => MetricsExportFormat::Csv,
-                _ => return Err(anyhow::anyhow!("unsupported format: {format}. Use 'json' or 'csv'")),
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "unsupported format: {format}. Use 'json' or 'csv'"
+                    ));
+                }
             };
             let query = MetricsQuery {
                 since: parse_duration(&since),
                 ..Default::default()
             };
-            let output = metrics_mgmt::export(&store, &query, fmt)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let output =
+                metrics_mgmt::export(&store, &query, fmt).map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("{output}");
         }
         MetricsAction::Prune { older_than } => {
             let dur = parse_duration(&older_than)
                 .ok_or_else(|| anyhow::anyhow!("invalid duration: {older_than}"))?;
-            let removed = metrics_mgmt::prune(&store, dur)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let removed = metrics_mgmt::prune(&store, dur).map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("Pruned {removed} metric event(s)");
         }
     }
@@ -203,8 +225,16 @@ fn slo_prefix(value: Option<f64>, target: f64, higher_is_worse: bool) -> String 
     match value {
         None => String::new(),
         Some(v) => {
-            let below = if higher_is_worse { v > target } else { v < target };
-            if below { "[!] ".to_string() } else { String::new() }
+            let below = if higher_is_worse {
+                v > target
+            } else {
+                v < target
+            };
+            if below {
+                "[!] ".to_string()
+            } else {
+                String::new()
+            }
         }
     }
 }
@@ -249,13 +279,7 @@ mod tests {
     }
 
     fn commit_event(session: &str, ts: &str, outcome: MetricOutcome) -> MetricEvent {
-        MetricEvent::commit_gate(
-            session.to_owned(),
-            ts.to_owned(),
-            outcome,
-            vec![],
-        )
-        .unwrap()
+        MetricEvent::commit_gate(session.to_owned(), ts.to_owned(), outcome, vec![]).unwrap()
     }
 
     // PC-030: Summary parses args
@@ -297,8 +321,7 @@ mod tests {
     // PC-032: Prune parses args
     #[test]
     fn metrics_cli_prune_args() {
-        let cli =
-            MetricsCli::try_parse_from(["metrics", "prune", "--older-than", "180d"]).unwrap();
+        let cli = MetricsCli::try_parse_from(["metrics", "prune", "--older-than", "180d"]).unwrap();
         match cli.action {
             MetricsAction::Prune { older_than } => {
                 assert_eq!(older_than, "180d");
@@ -311,10 +334,9 @@ mod tests {
     #[test]
     fn trend_session_incompatible() {
         // Verify clap parses both flags OK (no clap-level conflict)
-        let cli = MetricsCli::try_parse_from([
-            "metrics", "summary", "--trend", "--session", "sess-1",
-        ])
-        .unwrap();
+        let cli =
+            MetricsCli::try_parse_from(["metrics", "summary", "--trend", "--session", "sess-1"])
+                .unwrap();
         // Now simulate the run logic check
         match cli.action {
             MetricsAction::Summary { trend, session, .. } => {
@@ -327,7 +349,12 @@ mod tests {
                     Ok(())
                 };
                 assert!(result.is_err());
-                assert!(result.unwrap_err().to_string().contains("--trend is incompatible with --session"));
+                assert!(
+                    result
+                        .unwrap_err()
+                        .to_string()
+                        .contains("--trend is incompatible with --session")
+                );
             }
             _ => panic!("expected Summary"),
         }
@@ -337,9 +364,27 @@ mod tests {
     #[test]
     fn summary_json_output() {
         let store = InMemoryMetricsStore::new();
-        store.record(&hook_event("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success)).unwrap();
-        store.record(&hook_event("s1", "2026-04-06T10:01:00Z", MetricOutcome::Failure)).unwrap();
-        store.record(&commit_event("s1", "2026-04-06T10:02:00Z", MetricOutcome::Passed)).unwrap();
+        store
+            .record(&hook_event(
+                "s1",
+                "2026-04-06T10:00:00Z",
+                MetricOutcome::Success,
+            ))
+            .unwrap();
+        store
+            .record(&hook_event(
+                "s1",
+                "2026-04-06T10:01:00Z",
+                MetricOutcome::Failure,
+            ))
+            .unwrap();
+        store
+            .record(&commit_event(
+                "s1",
+                "2026-04-06T10:02:00Z",
+                MetricOutcome::Passed,
+            ))
+            .unwrap();
 
         let query = ecc_ports::metrics_store::MetricsQuery::default();
         let metrics = ecc_app::metrics_mgmt::summary(&store, &query).unwrap();
@@ -411,18 +456,27 @@ mod tests {
 
         // Positive delta → "+" prefix
         let pos = TrendComparison::format_delta(Some(0.1));
-        assert!(pos.starts_with('+'), "positive delta must start with +: {pos}");
+        assert!(
+            pos.starts_with('+'),
+            "positive delta must start with +: {pos}"
+        );
 
         // Negative delta → "-" prefix
         let neg = TrendComparison::format_delta(Some(-0.05));
-        assert!(neg.starts_with('-'), "negative delta must start with -: {neg}");
+        assert!(
+            neg.starts_with('-'),
+            "negative delta must start with -: {neg}"
+        );
 
         // None → "N/A"
         let na = TrendComparison::format_delta(None);
         assert_eq!(na, "N/A");
 
         // Verify column headers in trend output
-        let header = format!("{:<35} {:>10} {:>10} {:>10}", "Metric", "Current", "Previous", "Delta");
+        let header = format!(
+            "{:<35} {:>10} {:>10} {:>10}",
+            "Metric", "Current", "Previous", "Delta"
+        );
         assert!(header.contains("Current"));
         assert!(header.contains("Previous"));
         assert!(header.contains("Delta"));
@@ -431,7 +485,15 @@ mod tests {
     // PC-030: record-gate subcommand parses and records CommitGate/Passed
     #[test]
     fn record_gate_subcommand() {
-        let cli = MetricsCli::try_parse_from(["metrics", "record-gate", "--kind", "build", "--outcome", "pass"]).unwrap();
+        let cli = MetricsCli::try_parse_from([
+            "metrics",
+            "record-gate",
+            "--kind",
+            "build",
+            "--outcome",
+            "pass",
+        ])
+        .unwrap();
         match cli.action {
             MetricsAction::RecordGate { kind, outcome } => {
                 assert_eq!(kind, "build");
@@ -442,10 +504,23 @@ mod tests {
 
         // Verify that record_commit_gate records the right event
         let store = InMemoryMetricsStore::new();
-        ecc_app::metrics_mgmt::record_commit_gate(Some(&store), "sess-gate", "build", "pass", false).unwrap();
+        ecc_app::metrics_mgmt::record_commit_gate(
+            Some(&store),
+            "sess-gate",
+            "build",
+            "pass",
+            false,
+        )
+        .unwrap();
         let events = store.snapshot();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, ecc_domain::metrics::MetricEventType::CommitGate);
-        assert_eq!(events[0].outcome, ecc_domain::metrics::MetricOutcome::Passed);
+        assert_eq!(
+            events[0].event_type,
+            ecc_domain::metrics::MetricEventType::CommitGate
+        );
+        assert_eq!(
+            events[0].outcome,
+            ecc_domain::metrics::MetricOutcome::Passed
+        );
     }
 }
