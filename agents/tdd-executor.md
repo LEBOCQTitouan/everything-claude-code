@@ -102,4 +102,5 @@ When complete, return these fields in your final message:
 - **refactor_result**: Description of REFACTOR outcome ("cleaned" or "skipped")
 - **commits**: List of commit SHAs (2-3 per PC)
 - **files_changed**: List of file paths modified
+- **test_names**: List of fully qualified test function names written during this PC (e.g., `["metrics::event::tests::hook_execution_event", "metrics::aggregate::tests::aggregator_computes_rates"]`). Fully qualified means `module::path::test_name` to avoid collisions across modules. Extract from `cargo test` output or the test function names in the source files you created/modified.
 - **error**: null on success, or error description on failure
