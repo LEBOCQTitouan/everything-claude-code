@@ -20,6 +20,7 @@ cargo mutants -p ecc-domain   # Mutation testing (domain crate)
 cargo xtask mutants            # Structured mutation testing (all scoped crates)
 cargo xtask mutants --in-diff  # Diff-scoped mutation testing
 cargo dist build        # Local release build test (cargo-dist, requires cargo-dist installed)
+cargo +nightly miri test -p ecc-flock  # Miri UB detection (nightly only; FFI tests auto-skipped)
 ```
 
 Optional: install [sccache](https://github.com/mozilla/sccache) for 11-14% faster builds (`export RUSTC_WRAPPER=sccache`). See `docs/getting-started.md` § Build Acceleration for full setup.
