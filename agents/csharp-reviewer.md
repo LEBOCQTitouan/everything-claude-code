@@ -4,7 +4,8 @@ description: Expert C# code reviewer specializing in modern .NET patterns, async
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 effort: medium
-skills: ["csharp-patterns", "csharp-testing"]
+skills: ["csharp-testing"]
+patterns: ["creational", "structural", "behavioral", "error-handling", "testing", "data-access"]
 ---
 
 You are a senior C# code reviewer ensuring high standards of modern .NET and best practices.
@@ -71,4 +72,4 @@ dotnet list package --vulnerable
 - **Warning**: MEDIUM issues only
 - **Block**: CRITICAL or HIGH issues found
 
-For detailed C# patterns, see `skill: csharp-patterns` and `skill: csharp-testing`.
+For detailed C# patterns, see `patterns library and `skill: csharp-testing`.

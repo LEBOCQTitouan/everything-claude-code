@@ -51,4 +51,4 @@ public:
 
 ## Reference
 
-See skill: `cpp-coding-standards` for comprehensive C++ patterns including templates, concurrency, and STL usage.
+See skill: the pattern library (`patterns/`) for comprehensive C++ patterns including templates, concurrency, and STL usage.

@@ -4,7 +4,8 @@ description: Expert Rust code reviewer specializing in ownership, error handling
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 effort: medium
-skills: ["rust-patterns", "rust-testing"]
+skills: ["rust-testing"]
+patterns: ["creational", "structural", "behavioral", "concurrency", "error-handling", "testing", "functional", "idioms"]
 ---
 
 You are a senior Rust code reviewer ensuring high standards of safe, idiomatic Rust and best practices.
@@ -72,4 +73,4 @@ miri test  # if installed
 - **Warning**: MEDIUM issues only
 - **Block**: CRITICAL or HIGH issues found
 
-For detailed Rust patterns, see `skill: rust-patterns` and `skill: rust-testing`.
+For detailed Rust patterns, see `patterns library and `skill: rust-testing`.

@@ -5,6 +5,7 @@ tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 effort: medium
 skills: ["e2e-testing", "visual-testing"]
+patterns: ["testing"]
 ---
 
 # E2E Test Runner

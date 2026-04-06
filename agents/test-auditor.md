@@ -5,6 +5,7 @@ tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
 effort: medium
 skills: ["test-architecture"]
+patterns: ["testing"]
 ---
 
 # Test Auditor

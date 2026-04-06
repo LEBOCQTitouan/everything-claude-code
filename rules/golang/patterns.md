@@ -43,4 +43,4 @@ func NewUserService(repo UserRepository, logger Logger) *UserService {
 
 ## Reference
 
-See skill: `golang-patterns` for comprehensive Go patterns including concurrency, error handling, and package organization.
+See skill: the pattern library (`patterns/idioms/go/`) for comprehensive Go patterns including concurrency, error handling, and package organization.

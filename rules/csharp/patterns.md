@@ -52,4 +52,4 @@ public interface IUserRepository
 
 ## Reference
 
-See skill: `csharp-patterns` for comprehensive C# patterns including async/await, LINQ, and middleware.
+See skill: the pattern library (`patterns/`) for comprehensive C# patterns including async/await, LINQ, and middleware.

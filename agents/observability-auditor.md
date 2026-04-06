@@ -5,6 +5,7 @@ tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
 effort: medium
 skills: ["observability-audit"]
+patterns: ["observability"]
 ---
 
 # Observability Auditor

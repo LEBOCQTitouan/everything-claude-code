@@ -4,7 +4,8 @@ description: Expert Go code reviewer specializing in idiomatic Go, concurrency p
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 effort: medium
-skills: ["golang-patterns", "golang-testing"]
+skills: ["golang-testing"]
+patterns: ["creational", "structural", "behavioral", "concurrency", "error-handling", "testing", "idioms"]
 ---
 
 You are a senior Go code reviewer ensuring high standards of idiomatic Go and best practices.
@@ -75,4 +76,4 @@ govulncheck ./...
 - **Warning**: MEDIUM issues only
 - **Block**: CRITICAL or HIGH issues found
 
-For detailed Go code examples and anti-patterns, see `skill: golang-patterns`.
+For detailed Go code examples and anti-patterns, see `patterns library.

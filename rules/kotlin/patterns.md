@@ -43,4 +43,4 @@ val appModule = module {
 
 ## Reference
 
-See skill: `kotlin-patterns` for comprehensive Kotlin patterns including coroutines, Flow, and DSL design.
+See skill: the pattern library (`patterns/idioms/kotlin/`) for comprehensive Kotlin patterns including coroutines, Flow, and DSL design.

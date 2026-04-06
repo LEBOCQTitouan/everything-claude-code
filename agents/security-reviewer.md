@@ -5,6 +5,7 @@ tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: opus
 effort: max
 skills: ["security-review"]
+patterns: ["security"]
 ---
 
 # Security Reviewer
