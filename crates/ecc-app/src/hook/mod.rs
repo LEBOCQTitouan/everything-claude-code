@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 use ecc_ports::bypass_store::BypassStore;
 use ecc_ports::cost_store::CostStore;
+use ecc_ports::metrics_store::MetricsStore;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
@@ -124,6 +125,7 @@ pub struct HookPorts<'a> {
     pub terminal: &'a dyn TerminalIO,
     pub cost_store: Option<&'a dyn CostStore>,
     pub bypass_store: Option<&'a dyn BypassStore>,
+    pub metrics_store: Option<&'a dyn MetricsStore>,
 }
 
 /// Truncate stdin payload to MAX_STDIN bytes.
@@ -335,6 +337,7 @@ mod tests {
             terminal: term,
             cost_store: None,
             bypass_store: None,
+            metrics_store: None,
         }
     }
 
@@ -527,6 +530,7 @@ mod tests {
             terminal: &term,
             cost_store: None,
             bypass_store: None,
+            metrics_store: None,
         };
 
         let ctx = HookContext {

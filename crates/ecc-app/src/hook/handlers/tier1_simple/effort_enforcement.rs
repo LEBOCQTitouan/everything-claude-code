@@ -145,6 +145,7 @@ mod tests {
             terminal: term,
             cost_store: None,
             bypass_store: None,
+            metrics_store: None,
         }
     }
 
