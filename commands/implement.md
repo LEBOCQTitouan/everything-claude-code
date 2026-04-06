@@ -218,6 +218,21 @@ Execute wave dispatch per the skill. Accumulate commit SHA hashes for the Phase 
 
 > **Shared**: See `skills/progress-tracking/SKILL.md` for the full progress tracking logic — TodoWrite, TaskUpdate, tasks.md status updates, and loop completion.
 
+### Post-TDD Coverage Measurement
+
+After all PCs pass and before Phase 4, measure test coverage delta:
+
+1. **Determine before-snapshot**: Use the `wave-1-start` git tag if wave dispatch was used. If no wave tag exists (sequential dispatch), use the commit SHA recorded at Phase 3 entry. If neither exists, skip with "No before-snapshot available".
+2. **Run coverage**: Execute `cargo llvm-cov --workspace --json` at the before-snapshot (via `git stash && git checkout <before> && cargo llvm-cov --workspace --json > /tmp/before.json && git checkout - && git stash pop`) and at current HEAD (`cargo llvm-cov --workspace --json > /tmp/after.json`).
+3. **Coverage data unavailable**: If `cargo llvm-cov` is not installed or fails (including partial failure — before succeeds but after fails), show "Coverage data unavailable — install cargo-llvm-cov" in the Phase Summary and continue. Partial data is discarded. This NEVER blocks the pipeline.
+4. **Render Coverage Delta table**: If both snapshots succeed, compute per-crate delta:
+
+| Crate | Before % | After % | Delta |
+|-------|----------|---------|-------|
+| ecc-domain | 85.2% | 87.1% | +1.9% |
+
+5. Store the coverage data for inclusion in implement-done.md `## Coverage Delta` section.
+
 ## Phase 4: E2E Tests
 
 Read the solution's `## E2E Activation Rules`:
@@ -337,10 +352,12 @@ Concern: <from state.json>, Feature: <from state.json>
 | 1 | ... | create/modify/delete | PC-001 | test_name | done |
 
 ## TDD Log
-| PC ID | RED | GREEN | REFACTOR | Notes |
-|-------|-----|-------|----------|-------|
-| PC-001 | ✅ fails as expected | ✅ passes, 0 regressions | ✅ cleaned | — |
-| PC-002 | ✅ fails as expected | ✅ passes, 1 previous PC passes | ⏭ no refactor needed | — |
+| PC ID | RED | GREEN | REFACTOR | Test Names | Notes |
+|-------|-----|-------|----------|------------|-------|
+| PC-001 | ✅ fails as expected | ✅ passes, 0 regressions | ✅ cleaned | `module::tests::test_name` | — |
+| PC-002 | ✅ fails as expected | ✅ passes, 1 previous PC passes | ⏭ no refactor needed | "--" | — |
+
+The Test Names column contains fully qualified test names from the tdd-executor's `test_names` output field. When `test_names` is absent (older tdd-executor invocations or inline execution), show "--" for graceful degradation. The `test_names` field was added in BL-050; type: list of strings, default when absent: "--".
 
 ## Pass Condition Results
 | PC ID | Command | Expected | Actual | Status |
@@ -364,6 +381,13 @@ All pass conditions: N/N ✅
 | # | File | Decision |
 |---|------|----------|
 (or "None required")
+
+## Coverage Delta
+| Crate | Before % | After % | Delta |
+|-------|----------|---------|-------|
+| ecc-domain | 85.2% | 87.1% | +1.9% |
+(or "Coverage data unavailable — install cargo-llvm-cov" if tool is missing/failed)
+(or "No before-snapshot available" if neither wave tag nor Phase 3 entry SHA exists)
 
 ## Supplemental Docs
 | Subagent | Status | Output File | Commit SHA | Notes |
