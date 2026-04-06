@@ -58,6 +58,135 @@ mod tests {
         std::fs::write(docs_dir.join("memory"), b"blocker").unwrap();
     }
 
+    // PC-031: try_record_transition() with success records PhaseTransition/Success event
+    #[test]
+    fn transition_records_success_metric() {
+        use ecc_domain::metrics::{MetricEventType, MetricOutcome};
+        use ecc_ports::metrics_store::MetricsStore;
+        use ecc_test_support::InMemoryMetricsStore;
+
+        let store = InMemoryMetricsStore::new();
+        super::try_record_transition(
+            Some(&store as &dyn MetricsStore),
+            "workflow-BL-068",
+            "plan",
+            "solution",
+            MetricOutcome::Success,
+            None,
+            false,
+        );
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1, "expected exactly 1 event");
+        assert_eq!(events[0].event_type, MetricEventType::PhaseTransition);
+        assert_eq!(events[0].outcome, MetricOutcome::Success);
+        assert_eq!(events[0].session_id, "workflow-BL-068");
+        assert_eq!(events[0].from_phase.as_deref(), Some("plan"));
+        assert_eq!(events[0].to_phase.as_deref(), Some("solution"));
+    }
+
+    // PC-032: try_record_transition() with rejection records PhaseTransition/Rejected event
+    #[test]
+    fn transition_records_rejected_metric() {
+        use ecc_domain::metrics::{MetricEventType, MetricOutcome};
+        use ecc_ports::metrics_store::MetricsStore;
+        use ecc_test_support::InMemoryMetricsStore;
+
+        let store = InMemoryMetricsStore::new();
+        super::try_record_transition(
+            Some(&store as &dyn MetricsStore),
+            "workflow-BL-068",
+            "plan",
+            "solution",
+            MetricOutcome::Rejected,
+            Some("Illegal transition".to_owned()),
+            false,
+        );
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1, "expected exactly 1 event");
+        assert_eq!(events[0].event_type, MetricEventType::PhaseTransition);
+        assert_eq!(events[0].outcome, MetricOutcome::Rejected);
+        assert_eq!(
+            events[0].rejection_reason.as_deref(),
+            Some("Illegal transition")
+        );
+    }
+
+    // PC-033: try_record_transition() with disabled=true records zero events
+    #[test]
+    fn transition_metrics_disabled() {
+        use ecc_domain::metrics::MetricOutcome;
+        use ecc_ports::metrics_store::MetricsStore;
+        use ecc_test_support::InMemoryMetricsStore;
+
+        let store = InMemoryMetricsStore::new();
+        super::try_record_transition(
+            Some(&store as &dyn MetricsStore),
+            "workflow-BL-068",
+            "plan",
+            "solution",
+            MetricOutcome::Success,
+            None,
+            true, // disabled
+        );
+        let events = store.snapshot();
+        assert_eq!(events.len(), 0, "expected zero events when disabled=true");
+    }
+
+    // PC-034: transition::run with store=None completes normally (fire-and-forget)
+    #[test]
+    fn transition_metrics_store_unavailable() {
+        let dir = TempDir::new().unwrap();
+        write_plan_state(&dir);
+        std::fs::create_dir_all(dir.path().join("docs/memory/work-items")).unwrap();
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(dir.path())
+            .output()
+            .expect("git init failed");
+        let state_dir = dir.path().join(".claude/workflow");
+
+        // Pass None store — should complete without panic
+        let output =
+            super::run_with_store("solution", Some("plan"), None, dir.path(), &state_dir, None);
+
+        assert!(
+            !matches!(output.status, crate::output::Status::Block),
+            "expected non-block status when store=None, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    // PC-035: When no state.json exists, transition::run records no PhaseTransition metric event
+    #[test]
+    fn transition_no_state_no_metric() {
+        use ecc_ports::metrics_store::MetricsStore;
+        use ecc_test_support::InMemoryMetricsStore;
+
+        let dir = TempDir::new().unwrap();
+        let state_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&state_dir).unwrap();
+        // No state.json written
+
+        let store = InMemoryMetricsStore::new();
+        let _output = super::run_with_store(
+            "solution",
+            Some("plan"),
+            None,
+            dir.path(),
+            &state_dir,
+            Some(&store as &dyn MetricsStore),
+        );
+
+        let events = store.snapshot();
+        assert_eq!(
+            events.len(),
+            0,
+            "expected zero metric events when no state.json, got: {}",
+            events.len()
+        );
+    }
+
     // PC-027: When memory writes fail, transition returns warn (exit 0), not block.
     #[test]
     fn transition_memory_fail_warns() {
