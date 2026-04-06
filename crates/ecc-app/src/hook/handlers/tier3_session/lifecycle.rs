@@ -114,7 +114,8 @@ fn best_effort_gc(ports: &HookPorts<'_>) {
 
     if let Some(dir) = toplevel {
         let project_dir = std::path::Path::new(&dir);
-        match crate::worktree::gc(ports.shell, project_dir, false) {
+        let shell_mgr = crate::worktree::ShellWorktreeManager::new(ports.shell);
+        match crate::worktree::gc(&shell_mgr, ports.shell, project_dir, false) {
             Ok(result) => {
                 let removed = result.removed.len();
                 let skipped = result.skipped.len();
