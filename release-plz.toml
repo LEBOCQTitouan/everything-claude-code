@@ -1,0 +1,27 @@
+# release-plz configuration for ECC workspace
+# See ADR-0057 for decision rationale
+
+[workspace]
+# Single changelog at workspace root
+changelog_path = "CHANGELOG.md"
+# Enable cargo-semver-checks for API compatibility
+semver_check = true
+# Do not publish to crates.io (ECC distributes via GitHub Releases)
+publish = false
+# Do not create GitHub Releases (cargo-dist handles this via release.yml)
+git_release_enable = false
+# Tag format matching release.yml trigger pattern
+git_tag_name = "v{{ version }}"
+
+# Exclude test and internal crates from release
+[[package]]
+name = "ecc-integration-tests"
+release = false
+
+[[package]]
+name = "ecc-test-support"
+release = false
+
+[[package]]
+name = "xtask"
+release = false
