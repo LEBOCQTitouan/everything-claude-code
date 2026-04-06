@@ -22,19 +22,39 @@ pub struct TrendComparison {
 impl TrendComparison {
     /// Compute a [`TrendComparison`] from current and previous snapshots.
     pub fn compute(current: HarnessMetrics, previous: HarnessMetrics) -> Self {
+        let hook_success_rate_delta =
+            subtract(current.hook_success_rate, previous.hook_success_rate);
+        let phase_gate_violation_rate_delta =
+            subtract(current.phase_gate_violation_rate, previous.phase_gate_violation_rate);
+        let agent_failure_recovery_rate_delta =
+            subtract(current.agent_failure_recovery_rate, previous.agent_failure_recovery_rate);
+        let commit_atomicity_score_delta =
+            subtract(current.commit_atomicity_score, previous.commit_atomicity_score);
+
         Self {
             current,
             previous,
-            hook_success_rate_delta: None,
-            phase_gate_violation_rate_delta: None,
-            agent_failure_recovery_rate_delta: None,
-            commit_atomicity_score_delta: None,
+            hook_success_rate_delta,
+            phase_gate_violation_rate_delta,
+            agent_failure_recovery_rate_delta,
+            commit_atomicity_score_delta,
         }
     }
 
     /// Format a delta value as "+X.X%", "-X.X%", or "N/A".
-    pub fn format_delta(_delta: Option<f64>) -> String {
-        "N/A".to_owned()
+    pub fn format_delta(delta: Option<f64>) -> String {
+        match delta {
+            None => "N/A".to_owned(),
+            Some(d) if d >= 0.0 => format!("+{:.1}%", d * 100.0),
+            Some(d) => format!("{:.1}%", d * 100.0),
+        }
+    }
+}
+
+fn subtract(current: Option<f64>, previous: Option<f64>) -> Option<f64> {
+    match (current, previous) {
+        (Some(c), Some(p)) => Some(c - p),
+        _ => None,
     }
 }
 
