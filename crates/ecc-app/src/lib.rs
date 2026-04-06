@@ -20,6 +20,8 @@ pub mod diagnostics;
 pub mod hook;
 pub mod install;
 pub mod log_mgmt;
+pub mod metrics_mgmt;
+pub mod metrics_session;
 pub mod memory;
 pub mod merge;
 pub mod session;

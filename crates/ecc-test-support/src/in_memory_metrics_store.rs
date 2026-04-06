@@ -3,9 +3,7 @@
 use std::sync::Mutex;
 use std::time::Duration;
 
-use ecc_domain::metrics::{
-    HarnessMetrics, MetricAggregator, MetricEvent, MetricEventType, MetricOutcome,
-};
+use ecc_domain::metrics::{HarnessMetrics, MetricAggregator, MetricEvent};
 use ecc_ports::metrics_store::{MetricsExportFormat, MetricsQuery, MetricsStore, MetricsStoreError};
 
 /// In-memory test double for [`MetricsStore`].
