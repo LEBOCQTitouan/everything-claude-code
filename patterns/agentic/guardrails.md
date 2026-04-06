@@ -72,7 +72,7 @@ const noPII: Rule = (output) =>
   /\b\d{3}-\d{2}-\d{4}\b/.test(output) ? "Output contains SSN-like pattern" : null;
 ```
 
-### ECC Integration
+**ECC Integration:**
 
 ECC implements guardrails through its hook system in `hooks/`. `PreToolUse` hooks validate tool calls before execution — `pre:write-edit:worktree-guard` prevents writes on protected branches. `PostToolUse` hooks run after execution for auto-formatting and checks. The `pre:edit-write:workflow-branch-guard` blocks workflow file edits on main. The `ECC_WORKFLOW_BYPASS` environment variable controls hook enforcement per `rules/ecc/development.md`. Security guardrails are codified in `rules/common/security.md` with mandatory pre-commit checks.
 

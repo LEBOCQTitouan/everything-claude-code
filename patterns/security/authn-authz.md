@@ -20,26 +20,8 @@ Authenticate via stateless JWT tokens or session-based tokens validated on every
 
 ## Language Implementations
 
-### JWT Validation (Framework-Agnostic)
 
-```
-fn authenticate(request):
-    token = extract_bearer_token(request.headers["Authorization"])
-    if token is None:
-        return 401 Unauthorized
-
-    claims = verify_jwt(token,
-        issuer="https://auth.example.com",
-        audience="api.example.com",
-        algorithms=["RS256"])
-
-    if claims is None or claims.exp < now():
-        return 401 Unauthorized
-
-    return claims  # { sub, roles, permissions, exp }
-```
-
-### Python (Django REST Framework)
+### Python
 
 ```python
 from rest_framework.permissions import BasePermission
@@ -58,7 +40,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(customer_id=self.request.user.id)
 ```
 
-### TypeScript (Express Middleware)
+### TypeScript
 
 ```typescript
 function requireRole(...roles: string[]) {
@@ -75,7 +57,7 @@ function requireRole(...roles: string[]) {
 app.delete("/orders/:id", requireRole("admin", "order_manager"), deleteOrder);
 ```
 
-### Java (Spring Security)
+### Java
 
 ```java
 @Configuration

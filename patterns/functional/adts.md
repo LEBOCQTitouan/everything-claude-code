@@ -2,7 +2,7 @@
 name: adts
 category: functional
 tags: [functional, algebraic-data-types, sum-type, product-type]
-languages: [rust, python, typescript, haskell, scala]
+languages: [rust, python, typescript]
 difficulty: intermediate
 ---
 
@@ -40,19 +40,6 @@ fn area(shape: &Shape) -> f64 {
 }
 ```
 
-### Haskell
-
-```haskell
-data Shape
-  = Circle Double
-  | Rectangle Double Double
-  | Triangle Double Double
-
-area :: Shape -> Double
-area (Circle r)      = pi * r * r
-area (Rectangle w h) = w * h
-area (Triangle b h)  = 0.5 * b * h
-```
 
 ### Typescript
 
@@ -71,20 +58,6 @@ function area(shape: Shape): number {
 }
 ```
 
-### Scala
-
-```scala
-sealed trait Shape
-case class Circle(radius: Double) extends Shape
-case class Rectangle(width: Double, height: Double) extends Shape
-case class Triangle(base: Double, height: Double) extends Shape
-
-def area(shape: Shape): Double = shape match {
-  case Circle(r)      => math.Pi * r * r
-  case Rectangle(w, h) => w * h
-  case Triangle(b, h)  => 0.5 * b * h
-}
-```
 
 ## When to Use
 

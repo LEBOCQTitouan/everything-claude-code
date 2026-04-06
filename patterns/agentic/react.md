@@ -65,7 +65,7 @@ async function reactLoop(
 }
 ```
 
-### ECC Integration
+**ECC Integration:**
 
 ECC agents follow the ReAct pattern in their core execution loop. The agent frontmatter in `agents/` defines available tools, and the Claude Code harness orchestrates the reason-act-observe cycle. The `allowedTools` field in agent frontmatter constrains which actions an agent can take, implementing a bounded action space. See `agents/planner.md` and `agents/tdd-guide.md` for agents that use multi-step ReAct loops with tool calls.
 

@@ -2,7 +2,7 @@
 name: metrics-collection
 category: observability
 tags: [observability, metrics, collection]
-languages: [rust, go, python, typescript, java]
+languages: [all]
 difficulty: intermediate
 ---
 
@@ -20,7 +20,7 @@ Instrument code with a metrics library exposing Prometheus-compatible endpoints.
 
 ## Language Implementations
 
-### All Languages
+### All
 OpenTelemetry provides unified APIs across Rust, Go, Python, TypeScript, and Java for metrics collection.
 
 ## When to Use

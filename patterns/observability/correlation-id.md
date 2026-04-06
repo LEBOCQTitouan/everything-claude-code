@@ -2,7 +2,7 @@
 name: correlation-id
 category: observability
 tags: [observability, correlation, id]
-languages: [rust, go, python, typescript]
+languages: [all]
 difficulty: intermediate
 ---
 
@@ -20,7 +20,7 @@ Generate a UUID at the ingress point (API gateway or first service). Pass it via
 
 ## Language Implementations
 
-### All Languages
+### All
 OpenTelemetry provides unified APIs across Rust, Go, Python, TypeScript, and Java for correlation id.
 
 ## When to Use

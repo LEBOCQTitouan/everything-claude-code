@@ -2,7 +2,7 @@
 name: immutable-data
 category: functional
 tags: [functional, immutability, pure, value-objects]
-languages: [rust, python, typescript, haskell, scala]
+languages: [rust, python, typescript]
 difficulty: beginner
 ---
 
@@ -79,18 +79,6 @@ function withTimeout(config: Config, timeoutMs: number): Config {
 }
 ```
 
-### Haskell
-
-```haskell
-data Config = Config
-  { host      :: String
-  , port      :: Int
-  , timeoutMs :: Int
-  } deriving (Show)
-
-withPort :: Int -> Config -> Config
-withPort p cfg = cfg { port = p }
-```
 
 ## When to Use
 

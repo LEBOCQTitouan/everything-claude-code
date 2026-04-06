@@ -69,7 +69,7 @@ async function orchestrate(
 }
 ```
 
-### ECC Integration
+**ECC Integration:**
 
 ECC is built around multi-agent orchestration. Commands like `/verify` run `code-reviewer`, `arch-reviewer`, and language-specific reviewers in parallel (see `commands/verify.md`). The `/audit-full` command launches all audit agents simultaneously. Each agent has constrained `tools` and `allowedTools` in its frontmatter per `rules/ecc/development.md`. The `agents/` directory contains 30+ specialists. Parallel execution is mandated in `rules/common/agents.md` for independent operations.
 

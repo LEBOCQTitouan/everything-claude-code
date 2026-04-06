@@ -2,7 +2,7 @@
 name: distributed-tracing
 category: observability
 tags: [observability, distributed, tracing]
-languages: [rust, go, python, typescript, java]
+languages: [all]
 difficulty: intermediate
 ---
 
@@ -20,7 +20,7 @@ Instrument services with OpenTelemetry to create spans that propagate trace IDs 
 
 ## Language Implementations
 
-### All Languages
+### All
 OpenTelemetry provides unified APIs across Rust, Go, Python, TypeScript, and Java for distributed tracing.
 
 ## When to Use

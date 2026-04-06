@@ -2,7 +2,7 @@
 name: currying
 category: functional
 tags: [functional, currying, partial-application, composition]
-languages: [rust, python, typescript, haskell, scala]
+languages: [rust, python, typescript]
 difficulty: intermediate
 ---
 
@@ -22,33 +22,7 @@ Curry a multi-argument function into a chain of single-argument functions. Apply
 
 **Relevance**: Rust (library — closures), Python (library — functools.partial), Typescript (library — manual), Haskell (native — all functions curried), Scala (native — multiple parameter lists)
 
-### Haskell
 
-```haskell
--- All functions are curried by default
-add :: Int -> Int -> Int
-add x y = x + y
-
-increment :: Int -> Int
-increment = add 1  -- partial application
-
-doubleAll :: [Int] -> [Int]
-doubleAll = map (* 2)  -- (* 2) is a partially applied operator
-```
-
-### Scala
-
-```scala
-def add(x: Int)(y: Int): Int = x + y
-
-val increment: Int => Int = add(1)
-val result = increment(5)  // 6
-
-def formatLog(level: String)(message: String): String =
-  s"[$level] $message"
-
-val warn: String => String = formatLog("WARN")
-```
 
 ### Python
 

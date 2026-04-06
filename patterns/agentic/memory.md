@@ -79,7 +79,7 @@ function promote(memory: Memory): Memory {
 }
 ```
 
-### ECC Integration
+**ECC Integration:**
 
 ECC implements a full memory system via the `ecc memory` CLI commands (add, search, list, promote, gc, migrate). Memories are stored in SQLite with FTS5 full-text search. The three tiers (episodic, semantic, procedural) map to `--type` flags. The `ecc memory promote` command moves episodic memories to semantic tier. Agent frontmatter supports `memory: project` for cross-session concerns per `rules/ecc/development.md`. The Claude Code MEMORY.md in `.claude/projects/` provides user-level persistent memory.
 

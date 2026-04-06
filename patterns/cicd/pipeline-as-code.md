@@ -69,7 +69,7 @@ jobs:
       - run: npm ci && npm test
 ```
 
-### Terraform (CI for IaC)
+### Terraform
 
 ```yaml
 jobs:

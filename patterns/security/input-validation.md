@@ -20,7 +20,7 @@ Apply schema-based validation at every system boundary using an allowlist approa
 
 ## Language Implementations
 
-### Python (Pydantic)
+### Python
 
 ```python
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -39,7 +39,7 @@ class CreateUserRequest(BaseModel):
         return v
 ```
 
-### TypeScript (Zod)
+### TypeScript
 
 ```typescript
 import { z } from "zod";
@@ -58,7 +58,7 @@ function handleRequest(raw: unknown): CreateUserRequest {
 }
 ```
 
-### Go (go-playground/validator)
+### Go
 
 ```go
 type CreateUserRequest struct {
@@ -72,7 +72,7 @@ func (r CreateUserRequest) Validate() error {
 }
 ```
 
-### Java (Jakarta Bean Validation)
+### Java
 
 ```java
 public record CreateUserRequest(

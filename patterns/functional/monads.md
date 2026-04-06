@@ -2,7 +2,7 @@
 name: monads
 category: functional
 tags: [functional, monad, composition, effects]
-languages: [rust, python, typescript, haskell, scala]
+languages: [rust, python, typescript]
 difficulty: advanced
 ---
 
@@ -39,15 +39,6 @@ fn find_user_email(db: &Db, id: u64) -> Option<String> {
 }
 ```
 
-### Haskell
-
-```haskell
-parseConfig :: FilePath -> IO (Either Error Config)
-parseConfig path = runExceptT $ do
-  content <- ExceptT $ readFileEither path
-  parsed  <- ExceptT $ pure (parseToml content)
-  ExceptT $ pure (fromToml parsed)
-```
 
 ### Python
 

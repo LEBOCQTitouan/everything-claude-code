@@ -2,7 +2,7 @@
 name: data-mapper
 category: data-access
 tags: [data-access, persistence, data, mapper]
-languages: [rust, go, java, typescript]
+languages: [rust, go, java, typescript, python]
 difficulty: intermediate
 ---
 

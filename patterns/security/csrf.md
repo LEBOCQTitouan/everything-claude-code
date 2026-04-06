@@ -20,7 +20,7 @@ Require a secret token in every state-changing request that the attacker cannot 
 
 ## Language Implementations
 
-### Django (Built-In CSRF Protection)
+### Python
 
 ```python
 # settings.py — enabled by default
@@ -40,7 +40,7 @@ def stripe_webhook(request):
     verify_stripe_signature(request)
 ```
 
-### Express (csurf / Double Submit)
+### TypeScript
 
 ```typescript
 import csrf from "csrf";
@@ -67,7 +67,7 @@ app.use((req, res, next) => {
 });
 ```
 
-### Spring Security (Built-In)
+### Java
 
 ```java
 @Configuration
@@ -86,16 +86,6 @@ public class SecurityConfig {
 // Client reads XSRF-TOKEN cookie, sends as X-XSRF-TOKEN header
 ```
 
-### SameSite Cookie Defense (All Frameworks)
-
-```
-Set-Cookie: session=abc123; HttpOnly; Secure; SameSite=Strict; Path=/
-
-# SameSite values:
-# Strict — cookie never sent on cross-site requests (strongest)
-# Lax    — sent on top-level GET navigations only (default in modern browsers)
-# None   — always sent (requires Secure flag, needed for cross-origin APIs)
-```
 
 ## When to Use
 

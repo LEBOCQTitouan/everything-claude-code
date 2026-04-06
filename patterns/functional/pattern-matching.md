@@ -2,7 +2,7 @@
 name: pattern-matching
 category: functional
 tags: [functional, pattern-matching, destructuring, exhaustive]
-languages: [rust, python, typescript, haskell, scala]
+languages: [rust, python, typescript]
 difficulty: beginner
 ---
 
@@ -40,16 +40,6 @@ fn execute(cmd: Command) -> String {
 }
 ```
 
-### Haskell
-
-```haskell
-data Command = Quit | Echo String | Move Int Int
-
-execute :: Command -> String
-execute Quit       = "Goodbye"
-execute (Echo msg) = msg
-execute (Move x y) = "Moving to (" ++ show x ++ ", " ++ show y ++ ")"
-```
 
 ### Python
 
@@ -78,20 +68,6 @@ def execute(cmd) -> str:
             return f"Moving to ({x}, {y})"
 ```
 
-### Scala
-
-```scala
-sealed trait Command
-case object Quit extends Command
-case class Echo(message: String) extends Command
-case class Move(x: Int, y: Int) extends Command
-
-def execute(cmd: Command): String = cmd match {
-  case Quit        => "Goodbye"
-  case Echo(msg)   => msg
-  case Move(x, y)  => s"Moving to ($x, $y)"
-}
-```
 
 ## When to Use
 

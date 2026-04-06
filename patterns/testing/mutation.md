@@ -4,6 +4,7 @@ category: testing
 tags: [testing, mutation-testing, test-quality, coverage]
 languages: [rust, go, python, typescript]
 difficulty: advanced
+unsafe-examples: true
 ---
 
 ## Intent

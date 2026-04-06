@@ -4,6 +4,7 @@ category: security
 tags: [security, sql-injection, parameterized-queries, owasp]
 languages: [python, typescript, go, java, rust]
 difficulty: beginner
+unsafe-examples: true
 ---
 
 ## Intent
@@ -20,7 +21,7 @@ Use parameterized queries (prepared statements) for all database interactions. T
 
 ## Language Implementations
 
-### Python (SQLAlchemy)
+### Python
 
 ```python
 # CORRECT — parameterized query
@@ -35,7 +36,7 @@ result = session.execute(
 # result = session.execute(f"SELECT * FROM users WHERE email = '{user_email}'")
 ```
 
-### TypeScript (Prisma / pg)
+### TypeScript
 
 ```typescript
 // CORRECT — Prisma (parameterized by default)
@@ -53,7 +54,7 @@ const result = await pool.query(
 // await pool.query(`SELECT * FROM users WHERE email = '${userEmail}'`);
 ```
 
-### Go (database/sql)
+### Go
 
 ```go
 // CORRECT — parameterized query
@@ -65,7 +66,7 @@ row := db.QueryRowContext(ctx,
 // query := fmt.Sprintf("SELECT * FROM users WHERE email = '%s'", userEmail)
 ```
 
-### Java (JPA / JDBC)
+### Java
 
 ```java
 // CORRECT — JPA named parameters
@@ -79,7 +80,7 @@ ps.setString(1, userEmail);
 ps.setString(2, "active");
 ```
 
-### Rust (sqlx)
+### Rust
 
 ```rust
 // CORRECT — compile-time checked query

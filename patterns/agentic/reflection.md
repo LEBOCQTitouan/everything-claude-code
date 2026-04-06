@@ -61,7 +61,7 @@ async function reflectLoop(agent: Agent, task: string, maxRounds = 3): Promise<s
 }
 ```
 
-### ECC Integration
+**ECC Integration:**
 
 ECC uses reflection extensively in its adversarial review pipeline. The `spec-adversary` and `solution-adversary` agents in `agents/` critique spec and design artifacts, producing PASS/FAIL verdicts with dimensional rationale. The `/verify` command runs `code-reviewer` and `arch-reviewer` as reflection agents that critique implementation quality. The adversary conventions in `rules/ecc/development.md` mandate rationale for every evaluated dimension.
 

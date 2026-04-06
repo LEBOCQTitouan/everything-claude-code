@@ -2,7 +2,7 @@
 name: active-record
 category: data-access
 tags: [data-access, persistence, active, record]
-languages: [python, ruby]
+languages: [python]
 difficulty: intermediate
 ---
 
@@ -20,12 +20,6 @@ Each model class inherits from a base that provides save(), delete(), and query 
 
 ## Language Implementations
 
-### Rust
-```rust
-// sqlx / diesel / sea-orm
-let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = ?", id)
-    .fetch_optional(&pool).await?;
-```
 
 ### Python
 ```python
@@ -33,11 +27,6 @@ let user = sqlx::query_as!(User, "SELECT * FROM users WHERE id = ?", id)
 user = session.query(User).filter_by(id=id).first()
 ```
 
-### Java
-```java
-// Hibernate / JPA / Spring Data
-Optional<User> user = userRepository.findById(id);
-```
 
 ## When to Use
 

@@ -67,7 +67,7 @@ async function dispatchTool(
 }
 ```
 
-### ECC Integration
+**ECC Integration:**
 
 ECC agent frontmatter defines available tools via the `tools` field (e.g., `tools: [Read, Grep, Glob, Bash]`). The Claude Code harness reads this list and constrains the agent's tool access. When spawning subagents, `allowedTools` must be specified per `rules/ecc/development.md`. The `hooks/` system uses `PreToolUse` and `PostToolUse` hooks to validate and post-process tool calls. See `hooks.json` for tool-gating examples like `pre:write-edit:worktree-guard`.
 

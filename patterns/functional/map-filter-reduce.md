@@ -2,7 +2,7 @@
 name: map-filter-reduce
 category: functional
 tags: [functional, collections, transformation, pipeline]
-languages: [rust, python, typescript, haskell, scala]
+languages: [rust, python, typescript]
 difficulty: beginner
 ---
 
@@ -32,12 +32,6 @@ let total_revenue: f64 = orders.iter()
     .sum();
 ```
 
-### Haskell
-
-```haskell
-totalRevenue :: [Order] -> Double
-totalRevenue = sum . map amount . filter ((== Completed) . status)
-```
 
 ### Python
 

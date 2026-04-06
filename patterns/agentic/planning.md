@@ -77,7 +77,7 @@ function nextExecutable(plan: Plan): SubTask | undefined {
 }
 ```
 
-### ECC Integration
+**ECC Integration:**
 
 ECC's `/spec` and `/design` commands implement the planning pattern as a mandatory first phase. The `planner` agent in `agents/planner.md` decomposes features into phases with test targets. The `ecc-workflow` binary enforces phase ordering (`spec` -> `design` -> `implement`) via state machine in `.claude/workflow/state.json`. The `/implement` command uses `TodoWrite` for progress tracking and `tasks.md` for persistent sub-task state, following the artifact schema in `skills/artifact-schemas/`.
 

@@ -2,7 +2,7 @@
 name: health-checks
 category: observability
 tags: [observability, health, checks]
-languages: [rust, go, python, typescript, java]
+languages: [all]
 difficulty: intermediate
 ---
 
@@ -20,7 +20,7 @@ Implement /healthz (liveness) and /readyz (readiness) endpoints. Liveness: proce
 
 ## Language Implementations
 
-### All Languages
+### All
 OpenTelemetry provides unified APIs across Rust, Go, Python, TypeScript, and Java for health checks.
 
 ## When to Use

@@ -2,7 +2,7 @@
 name: unit-of-work
 category: data-access
 tags: [data-access, persistence, unit, of, work]
-languages: [python, java, csharp]
+languages: [rust, python, java, csharp]
 difficulty: intermediate
 ---
 

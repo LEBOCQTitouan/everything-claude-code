@@ -71,7 +71,7 @@ async function humanGate(request: ApprovalRequest): Promise<Decision> {
 }
 ```
 
-### ECC Integration
+**ECC Integration:**
 
 ECC implements human-in-the-loop through Plan Mode. The `/spec`, `/design`, and `/implement` commands enter Plan Mode via `EnterPlanMode`/`ExitPlanMode` (required per `rules/ecc/development.md`), pausing for user review before execution. The `hooks/` system uses `PreToolUse` hooks to gate dangerous operations — `pre:write-edit:worktree-guard` blocks writes on main branch. The `grill-me` skill in `skills/grill-me/` uses `AskUserQuestion` for structured one-question-at-a-time interviews.
 
