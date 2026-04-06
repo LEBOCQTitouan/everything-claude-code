@@ -3,7 +3,7 @@ id: BL-123
 title: "Caveman-style brevity optimization — reduce token consumption across all ECC agents and commands"
 scope: HIGH
 target: "/spec-refactor"
-status: open
+status: implemented
 tags: [token-optimization, brevity, agents, commands, cost, output-reduction]
 created: 2026-04-06
 related: [BL-121, BL-094, BL-095]

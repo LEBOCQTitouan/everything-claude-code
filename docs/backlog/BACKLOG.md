@@ -123,7 +123,7 @@
 | BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | implemented | 2026-04-04 |
 | BL-121 | Token optimization audit — comprehensive spend reduction opportunity mapping | — | EPIC | /audit | open | 2026-04-05 |
 | BL-122 | Worktree auto-merge-cleanup enforcement | — | MEDIUM | /spec-dev | implemented | 2026-04-05 |
-| BL-123 | Caveman-style brevity token optimization | — | HIGH | /spec-refactor | open | 2026-04-06 |
+| BL-123 | Caveman-style brevity token optimization | — | HIGH | /spec-refactor | implemented | 2026-04-06 |
 
 ## Dependency Graph
 
