@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, teams, 
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (997 tests)
+cargo test              # Run all Rust tests (2449 tests)
 cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (22 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
@@ -77,6 +77,9 @@ ecc campaign init <spec-dir>    Create campaign.md for grill-me decision persist
 ecc campaign append-decision --question Q --answer A --source recommended|user  Append decision
 ecc campaign show              Output campaign.md as JSON
 ecc cost migrate  Import legacy JSONL data into SQLite
+ecc metrics summary [--since 7d] [--session S]  Aggregated harness reliability rates
+ecc metrics export --format json|csv [--since 7d]  Export raw metric events
+ecc metrics prune [--older-than 90d]  Delete old metric events
 ecc audit-web profile init    Generate suggested audit profile from codebase
 ecc audit-web profile show    Display current audit profile
 ecc audit-web profile validate  Check profile structural correctness
