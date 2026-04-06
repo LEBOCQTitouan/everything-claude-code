@@ -16,6 +16,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Worktree session CWD orphaning**: Defer worktree directory deletion from merge/hook paths to session-start gc to prevent Claude Code session paralysis when CWD points to a deleted worktree. Session-end merge now preserves the worktree directory; `session:start` runs best-effort `ecc worktree gc` for self-healing cleanup of stale worktrees.
 
+### Refactored
+
+- **Caveman-style brevity optimization (BL-123)**: Applied [caveman](https://github.com/JuliusBrussee/caveman) brevity principles across all ECC instruction files. 14,145 lines removed (37% reduction): commands 5,878→2,005 (66%), agents 7,928→4,982 (37%), skills 24,418→17,092 (30%). New `rules/common/brevity.md` global rule. No behavioral changes — same instructions, fewer words.
+
 ### Added
 
 - **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
