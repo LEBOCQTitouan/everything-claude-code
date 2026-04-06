@@ -217,3 +217,57 @@ cargo test                    # run all Rust tests
 cargo clippy -- -D warnings   # lint with zero warnings
 cargo build --release         # build release binary
 ```
+
+## Build Acceleration
+
+Optional tools to speed up Rust compilation during development. None are required — ECC builds without them.
+
+### sccache (11-14% faster repeated builds)
+
+[sccache](https://github.com/mozilla/sccache) caches compilation artifacts so unchanged crates skip recompilation across clean builds.
+
+```bash
+# Install
+cargo install sccache          # or: brew install sccache (macOS)
+
+# Enable per-shell session
+export RUSTC_WRAPPER=sccache
+
+# Or persist in your user-level cargo config (~/.cargo/config.toml):
+# [build]
+# rustc-wrapper = "sccache"
+
+# Verify it's working
+sccache --show-stats
+```
+
+Expected speedup: **11-14%** on repeated test builds (source: web-radar-2026-03-29).
+
+### mold linker (Linux only)
+
+[mold](https://github.com/rui314/mold) is a drop-in replacement linker that is significantly faster than the default `ld`. ECC's `.cargo/config.toml` already configures mold for Linux targets — just install it:
+
+```bash
+# Ubuntu/Debian
+sudo apt install mold
+
+# Fedora
+sudo dnf install mold
+```
+
+On macOS, the mold config sections are ignored (target-specific to `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu`).
+
+### Cranelift backend (30% faster compile, slower runtime)
+
+The Cranelift codegen backend trades runtime performance for significantly faster compilation. Useful for rapid iteration during development, but **not recommended for benchmarks or release builds**.
+
+```toml
+# Add to your ~/.cargo/config.toml (NOT the project config):
+# [unstable]
+# codegen-backend = true
+#
+# [profile.dev]
+# codegen-backend = "cranelift"
+```
+
+Expected speedup: **30%** faster compilation (source: web-radar-2026-03-29). Requires nightly Rust (`rustup default nightly`).
