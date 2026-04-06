@@ -18,6 +18,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Deferred pipeline summary tables (BL-050)**: Coverage delta table in /implement (cargo llvm-cov before/after with graceful skip), bounded context enumeration in /design output (references bounded-contexts.md), per-test-name inventory in TDD Log (test_names field in tdd-executor output with "--" backward compat).
+
 - **Harness reliability metrics (BL-106)**: New metrics subsystem tracking hook success rate, phase-gate violation rate, agent failure recovery rate, and commit atomicity score. Domain types in `ecc-domain::metrics`, `MetricsStore` port trait, SQLite adapter with WAL mode and schema versioning, in-memory test double, app orchestration with fire-and-forget recording and `ECC_METRICS_DISABLED` kill switch, CLI commands (`ecc metrics summary/export/prune`). 41 pass conditions, 36 new tests.
 
 - **TDD fix-loop budget cap (BL-080)**: Max 2 fix attempts per PC before asking the user for help via AskUserQuestion. Options: keep trying (+2 rounds), skip PC, abort, or provide guidance. Hard cap of 8 total rounds. Budget is parent-side (tdd-executor unchanged). Applied to Phase 3 (TDD) and Phase 4 (E2E). Inspired by Stripe's "at most two rounds of CI" pattern.
