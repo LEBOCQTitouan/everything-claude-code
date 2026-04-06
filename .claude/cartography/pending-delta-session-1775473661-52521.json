@@ -1,0 +1,175 @@
+{
+  "session_id": "session-1775473661-52521",
+  "timestamp": 1775473661,
+  "changed_files": [
+    {
+      "path": ".claude/cartography/pending-delta-session-1775382627-97298.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775382664-97665.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775382723-98772.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775382953-1056.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775383706-17741.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775384178-31363.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775384244-35194.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775384287-36553.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775384963-44495.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775385039-46201.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775385410-50298.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775386949-73515.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775386958-73939.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775423977-87362.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775423980-87697.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775424079-92427.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775424511-16681.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775425260-48504.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775425334-56905.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775425345-57607.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775425357-58744.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775425543-74799.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775426308-27278.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775426319-27973.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775426761-46085.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775427191-92942.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775427539-10259.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775427984-32087.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775428282-57742.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775428465-61921.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775428540-68432.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775428563-71007.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775428741-83494.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775429118-20184.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775429136-22119.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775429335-40549.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775429402-44183.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775429472-47584.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775429854-69092.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775430104-85412.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/cartography/pending-delta-session-1775467984-85077.json",
+      "classification": ".claude"
+    },
+    {
+      "path": ".gitignore",
+      "classification": ".gitignore"
+    }
+  ],
+  "project_type": "rust"
+}

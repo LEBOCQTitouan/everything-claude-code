@@ -80,3 +80,4 @@ docs/backlog/.locks/
 
 # Mutation testing output
 mutants.out/
+.claude/cartography/processed/
