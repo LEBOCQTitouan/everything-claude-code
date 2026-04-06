@@ -48,7 +48,7 @@ pub fn record_if_enabled(
     let store = match store {
         Some(s) => s,
         None => {
-            tracing::warn!("[metrics] store unavailable, skipping metric recording");
+            tracing::debug!("[metrics] store unavailable, skipping metric recording");
             return Ok(());
         }
     };
