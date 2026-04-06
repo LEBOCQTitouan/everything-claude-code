@@ -83,19 +83,132 @@ See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glo
 
 ### `ecc-infra`
 
-**Purpose:** Production adapters for I/O operations — implements concrete strategies for GitHub release fetching, tarball extraction, and artifact verification.
+**Purpose:** Production adapters for I/O operations — implements concrete strategies for GitHub release fetching, tarball extraction, artifact verification, and worktree management.
 
 **Key Functions / Types:**
 - `GithubReleaseClient` — Real ureq HTTP implementation for release downloads and metadata queries
 - `FlateExtractor` — Production tarball extractor using flate2 + tar crates
 - `verify_cosign()` — Execute local cosign binary for signature verification
+- `OsWorktreeManager` — Production adapter for git worktree queries via `git worktree` commands
 
-**Spec Cross-Link:** BL-088 (ecc-workflow update dual-mode deploy — infrastructure adapters)
+**Spec Cross-Link:** BL-088 (ecc-workflow update dual-mode deploy), BL-094 (worktree auto-merge and cleanup)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture), ADR-0052 (Cartography Hook-to-Orchestrator)
+
+**Design Rationale:** GithubReleaseClient uses ureq for synchronous HTTP; FlateExtractor provides Rust-native tarball decompression; verify_cosign() delegates to local cosign binary. OsWorktreeManager implements WorktreeManager trait to safely query and mutate git worktrees (uncommitted changes, untracked files, unmerged commits, stash status, push status) enabling worktree safety assessment before GC operations. All adapters implement ecc-ports traits, enabling test doubles per hexagonal architecture (D-3).
+
+**Modified in:** `BL-088` — 2026-03-31, `BL-094` (worktree-auto-merge-and-cleanup-enforcement) — 2026-04-06
+
+### `ecc-domain`
+
+**Purpose:** Pure business logic for ECC — zero I/O, focused on domain models and invariants for update workflows, platform detection, release artifacts, worktree naming, and safety assessment.
+
+**Key Functions / Types:**
+- `Platform` enum — Rust target triple representation
+- `UpdateArtifact` — Domain model for release artifact resolution
+- `UpdateError` — Comprehensive error domain for update orchestration
+- `WorktreeName` — Value object for ecc-session worktree naming with validation and parsing
+- `WorktreeSafetyInput` — Input object collecting worktree state queries (uncommitted, untracked, unmerged, stashed, unpushed)
+- `SafetyViolation` enum — Reasons a worktree is not safe to delete
+- `assess_safety()` — Pure function performing worktree deletion safety assessment (no I/O)
+
+**Spec Cross-Link:** BL-088 (update workflows), BL-094 (worktree safety assessment)
 
 **ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
 
-**Design Rationale:** GithubReleaseClient uses ureq for synchronous HTTP to match ECC's no-async philosophy and enable safe subprocess spawning. FlateExtractor provides fast Rust-native tarball decompression without external dependencies. verify_cosign() delegates to local cosign binary, supporting both local dev (key-based verification) and CI (identity provider tokens). All adapters implement ecc-ports traits, enabling swap-free test doubles.
+**Design Rationale:** WorktreeName encodes session isolation semantics (ecc-session-{TS}-{slug}-{pid} format) with strict validation against injection attacks (semicolons, backticks, pipes, redirects). WorktreeSafetyInput + assess_safety() separate I/O gathering from deletion logic, enabling pure domain assessment without git commands. SafetyViolation enum makes unsafe states explicit and detectable. All worktree domain logic remains dependency-free, supporting full in-memory testing per D-3 (hexagonal architecture).
 
-**Modified in:** `BL-088` — 2026-03-31
+**Modified in:** `BL-088` — 2026-03-31, `BL-094` (worktree-auto-merge-and-cleanup-enforcement) — 2026-04-06
+
+### `ecc-ports`
+
+**Purpose:** Trait definitions for I/O abstraction layer — encapsulates filesystem, environment, release client, artifact extraction, and worktree management behind mockable port contracts.
+
+**Key Functions / Types:**
+- `TarballExtractor` trait — Abstract tarball extraction (extract_tar → Result<PathBuf>)
+- `ReleaseClient` trait — Download and verify release artifacts
+- `OsEnvironment` trait — Query current executable path, environment variables
+- `WorktreeManager` trait — Query and mutate git worktrees (8 methods: has_uncommitted_changes, has_untracked_files, unmerged_commit_count, has_stash, is_pushed_to_remote, remove_worktree, delete_branch, list_worktrees)
+- `WorktreeInfo` struct — Metadata for a single git worktree (path, branch)
+- `WorktreeError` enum — Error type for worktree port failures
+
+**Spec Cross-Link:** BL-088 (update port contracts), BL-094 (worktree management port)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture), ADR-0052 (Cartography Hook-to-Orchestrator)
+
+**Design Rationale:** New WorktreeManager port abstracts all git worktree operations behind Send+Sync trait contract, enabling test doubles (MockWorktreeManager) and production adapters (OsWorktreeManager) without coupling domain/app layers to git command execution. WorktreeInfo and WorktreeError provide clean API boundaries. Eight methods cover safety assessment needs (detection of uncommitted changes, untracked files, unmerged commits, stashes, unpushed commits) and mutation needs (remove worktree, delete branch, list all worktrees). Port visibility and re-exports ensure clean app-layer dependencies per D-3.
+
+**Modified in:** `BL-088` — 2026-03-31, `BL-094` (worktree-auto-merge-and-cleanup-enforcement) — 2026-04-06
+
+### `ecc-test-support`
+
+**Purpose:** Test doubles and builders for in-memory testing — provides MockWorktreeManager, MockExecutor, InMemoryFileSystem, and other adapters enabling full test isolation.
+
+**Key Functions / Types:**
+- `MockWorktreeManager` — Builder-based mock WorktreeManager (configure worktree state, queries return mocked results)
+- `InMemoryFileSystem` — File operations without touching disk
+- `MockExecutor` — Shell command execution without spawning processes
+- `MockEnvironment` — Environment variable queries with preset values
+
+**Spec Cross-Link:** BL-094 (worktree-auto-merge-and-cleanup-enforcement test support)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
+
+**Design Rationale:** MockWorktreeManager builder pattern enables test composition — set up clean worktrees, unsafe worktrees with specific violations, edge cases (stashes, unpushed commits) without git commands. All test doubles implement ecc-ports traits, enabling unit tests to verify app orchestration logic in isolation from I/O. Builder pattern matches Rust idioms for test setup (fluent, composable, zero surprises).
+
+**Modified in:** `BL-094` (worktree-auto-merge-and-cleanup-enforcement) — 2026-04-06
+
+### `ecc-app`
+
+**Purpose:** Application use cases — orchestrates domain logic with port adapters for tarball extraction, release client, environment queries, and worktree management. Implements update orchestration and worktree GC workflows.
+
+**Key Functions / Types:**
+- `UpdateOrchestrator` — Wires platform detection → artifact download → signature verification → tarball extraction → atomic swap
+- `Swap` type — Atomic file replacement with rollback safeguards
+- `WorktreeGc` orchestrator — Coordinates safety assessment → removal → cleanup (via WorktreeManager port)
+
+**Spec Cross-Link:** BL-088 (update orchestration), BL-094 (worktree GC and safety enforcement)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture), ADR-0052 (Cartography Hook-to-Orchestrator)
+
+**Design Rationale:** UpdateOrchestrator implements dual-mode deploy workflow with rollback safeguards. New WorktreeGc orchestrator uses WorktreeManager port to assess safety (calling domain assess_safety() with gathered state), skip unsafe worktrees, and remove only clean ones. Separation of concerns: domain assessor (pure), port querier (I/O), app orchestrator (coordination) enables testing each layer independently per hexagonal architecture (D-3).
+
+**Modified in:** `BL-088` — 2026-03-31, `BL-094` (worktree-auto-merge-and-cleanup-enforcement) — 2026-04-06
+
+### `ecc-cli`
+
+**Purpose:** CLI binary entry point — wires infra adapters into app use cases, parses arguments, formats output, and delegates to orchestration logic.
+
+**Key Functions / Types:**
+- Command routing to app orchestrators
+- Argument parsing and validation
+- User-facing output formatting
+- OsWorktreeManager wiring for `ecc worktree` commands
+- Status subcommand for worktree information display
+
+**Spec Cross-Link:** BL-094 (worktree status and GC commands)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
+
+**Design Rationale:** CLI layer remains thin — routes commands to app orchestrators and formats results. New `ecc worktree status` command wires OsWorktreeManager to display worktree state without mutation (list, branch info). `ecc worktree gc` command delegates to app WorktreeGc orchestrator which enforces safety checks via domain assess_safety(). CLI never depends on infra directly; always goes through app orchestrators (D-3).
+
+**Modified in:** `BL-094` (worktree-auto-merge-and-cleanup-enforcement) — 2026-04-06
+
+### `ecc-workflow`
+
+**Purpose:** Standalone binary for workflow state management — direct I/O by design, handles session lifecycle, merge orchestration, and post-merge cleanup operations.
+
+**Key Functions / Types:**
+- Merge command orchestration with safety validation
+- Post-merge cleanup (branch deletion, worktree removal)
+- Session lifecycle state transitions
+
+**Spec Cross-Link:** BL-094 (worktree auto-merge and cleanup enforcement)
+
+**ADR Cross-Link:** ADR-0052 (Cartography Hook-to-Orchestrator), ADR-0053 (Handler Trait Dispatch)
+
+**Design Rationale:** ecc-workflow merge subcommand orchestrates post-merge cleanup with safety checks: verifies all changes pushed, removes local branch, removes worktree directory. New merge_cleanup module handles deletion sequencing and error reporting. Direct I/O is intentional per ecc-workflow ADR (decoupled from app layer). Safety assessment delegated to domain assess_safety() called from ecc-app orchestrator (separation of concerns).
+
+**Modified in:** `BL-094` (worktree-auto-merge-and-cleanup-enforcement) — 2026-04-06
 
 <!-- END IMPLEMENT-GENERATED -->
