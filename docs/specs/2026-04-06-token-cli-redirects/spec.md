@@ -145,3 +145,46 @@ Three agents (doc-generator, evolution-analyst, backlog-curator) reimplement log
 ## Open Questions
 
 None — all resolved during grill-me interview.
+
+## Phase Summary
+
+### Grill-Me Decisions
+
+| # | Question | Answer | Source |
+|---|----------|--------|--------|
+| 1 | Drop finding 4.6 (spec-dev parallel agents)? | Drop — architect depends on requirements-analyst output | Recommended |
+| 2 | Evolution-analyst: full redirect or partial? | Redirect 3 metrics, keep composite scoring | Recommended |
+| 3 | Ship independently or grouped? | 5 independent atomic commits | Recommended |
+| 4 | Accept conditional challenger trade-off? | Accept — <3 findings ≤MEDIUM skip challenger | Recommended |
+| 5 | All pure renames, no hot paths, no ADR? | Agree with all assessments | Recommended |
+| — | Smells addressed | CLI reimplementation ×3, boilerplate duplication, unconditional subagent | — |
+| — | Smells deferred | TodoWrite extraction (BL-125), CLAUDE.md trimming (BL-125) | — |
+
+### User Stories
+
+| ID | Title | AC Count | Dependencies |
+|----|-------|----------|--------------|
+| US-001 | Redirect doc-generator changelog to CLI | 4 | none |
+| US-002 | Redirect evolution-analyst to CLI | 4 | none |
+| US-003 | Redirect backlog-curator duplicate check to CLI | 4 | none |
+| US-004 | Standardize narrative-conventions one-liner | 2 | none |
+| US-005 | Make audit-challenger conditional | 3 | none |
+
+### Adversary Findings
+
+| Dimension | Round 1 | Round 2 | Verdict |
+|-----------|---------|---------|---------|
+| Ambiguity | 62 | 88 | PASS |
+| Edge Cases | 44 | 82 | PASS |
+| Scope | 72 | 92 | PASS |
+| Dependencies | 68 | 88 | PASS |
+| Testability | 55 | 88 | PASS |
+| Decisions | 78 | 88 | PASS |
+| Rollback | 80 | 90 | PASS |
+
+### Artifacts
+
+| File Path | Content |
+|-----------|---------|
+| docs/specs/2026-04-06-token-cli-redirects/spec.md | Full spec |
+| docs/specs/2026-04-06-token-cli-redirects/campaign.md | Campaign manifest |
