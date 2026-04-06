@@ -180,6 +180,7 @@ mod tests {
             env,
             terminal: term,
             cost_store: None,
+            bypass_store: None,
         }
     }
 

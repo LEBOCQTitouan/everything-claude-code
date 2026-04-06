@@ -18,7 +18,9 @@ pub mod system_clock;
 pub mod flock_lock;
 
 pub mod cost_schema;
+pub mod bypass_schema;
 pub mod metrics_schema;
+pub mod sqlite_bypass_store;
 pub mod sqlite_metrics_store;
 pub mod file_config_store;
 pub mod log_schema;

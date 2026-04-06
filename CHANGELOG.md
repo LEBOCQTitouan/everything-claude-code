@@ -8,10 +8,6 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
-### Added
-
-- **Worktree auto-merge and cleanup enforcement**: After successful merge at session end, a 5-point safety check (uncommitted changes, untracked files, unmerged commits, stash, remote push) runs inside the merge lock. If all pass, worktree directory and branch are auto-deleted. If any check fails, worktree is preserved with a clear warning. New `WorktreeManager` port trait in `ecc-ports`, `OsWorktreeManager` adapter in `ecc-infra`, and `MockWorktreeManager` in `ecc-test-support`. GC refactored to use the port (skips unmerged worktrees, `--force` overrides). New `ecc worktree status` command shows all session worktrees with merge state, safety info, and age. ADR 0054.
-
 ### Refactored
 
 - **Cartography delta processing → /doc-suite pipeline**: Moved cartography delta processing from the broken `start:cartography` SessionStart hook to the doc-orchestrator pipeline via new `/doc-suite` command. The hook now prints a thin reminder (<100ms). Created `commands/doc-suite.md` wrapping the doc-orchestrator agent, `skills/cartography-processing/SKILL.md` with delta processing protocol, JSON envelope output for cartographer agent, Handler trait for hook dispatch. Decomposed 2728-line `cartography.rs` into focused modules (`delta_writer.rs`, `delta_reminder.rs`, `delta_helpers.rs`). Consolidated `detect_project_type` with detection framework, extracted `classify_file` to domain layer, wired `derive_slug`. 2 ADRs (0052-0053).
@@ -22,13 +18,11 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
-- **sccache + mold build acceleration (BL-100)**: Added mold linker config for Linux targets in `.cargo/config.toml`, Build Acceleration section in `docs/getting-started.md` with sccache (11-14%), mold, and Cranelift (30%) setup instructions. Dev-only, no CI changes.
+- **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
-- **Deferred pipeline summary tables (BL-050)**: Coverage delta table in /implement (cargo llvm-cov before/after with graceful skip), bounded context enumeration in /design output (references bounded-contexts.md), per-test-name inventory in TDD Log (test_names field in tdd-executor output with "--" backward compat).
+### Deprecated
 
-- **Harness reliability metrics (BL-106)**: New metrics subsystem tracking hook success rate, phase-gate violation rate, agent failure recovery rate, and commit atomicity score. Domain types in `ecc-domain::metrics`, `MetricsStore` port trait, SQLite adapter with WAL mode and schema versioning, in-memory test double, app orchestration with fire-and-forget recording and `ECC_METRICS_DISABLED` kill switch, CLI commands (`ecc metrics summary/export/prune`). 41 pass conditions, 36 new tests.
-
-- **TDD fix-loop budget cap (BL-080)**: Max 2 fix attempts per PC before asking the user for help via AskUserQuestion. Options: keep trying (+2 rounds), skip PC, abort, or provide guidance. Hard cap of 8 total rounds. Budget is parent-side (tdd-executor unchanged). Applied to Phase 3 (TDD) and Phase 4 (E2E). Inspired by Stripe's "at most two rounds of CI" pattern.
+- **ECC_WORKFLOW_BYPASS=1**: Environment variable deprecated in favor of `ecc bypass grant`. Emits deprecation warning but still functions for backward compatibility. Handler-level bypass checks removed from worktree_guard and session_merge.
 
 - **Multi-agent team coordination (BL-104)**: Declarative team manifests (`teams/*.md`) with YAML frontmatter for agent team composition. `ecc validate teams` with agent cross-referencing and tool escalation warnings. Install pipeline merges teams to `~/.claude/teams/`. Commands (`/implement`, `/audit-full`) read team manifests with `ECC_LEGACY_DISPATCH=1` fallback. Pre-defined templates: implement-team (wave-dispatch), audit-team (parallel), review-team (sequential). Skills: shared-state-protocol, task-handoff.
 
@@ -77,6 +71,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
+
+### Deprecated
+
+- **ECC_WORKFLOW_BYPASS=1**: Environment variable deprecated in favor of `ecc bypass grant`. Emits deprecation warning but still functions for backward compatibility. Handler-level bypass checks removed from worktree_guard and session_merge.
+
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 - **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
@@ -102,6 +102,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
+
+### Deprecated
+
+- **ECC_WORKFLOW_BYPASS=1**: Environment variable deprecated in favor of `ecc bypass grant`. Emits deprecation warning but still functions for backward compatibility. Handler-level bypass checks removed from worktree_guard and session_merge.
+
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 - **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
@@ -120,6 +126,12 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
+
+### Deprecated
+
+- **ECC_WORKFLOW_BYPASS=1**: Environment variable deprecated in favor of `ecc bypass grant`. Emits deprecation warning but still functions for backward compatibility. Handler-level bypass checks removed from worktree_guard and session_merge.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
@@ -145,6 +157,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
+
+### Deprecated
+
+- **ECC_WORKFLOW_BYPASS=1**: Environment variable deprecated in favor of `ecc bypass grant`. Emits deprecation warning but still functions for backward compatibility. Handler-level bypass checks removed from worktree_guard and session_merge.
+
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 - **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
@@ -167,6 +185,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
+
+### Deprecated
+
+- **ECC_WORKFLOW_BYPASS=1**: Environment variable deprecated in favor of `ecc bypass grant`. Emits deprecation warning but still functions for backward compatibility. Handler-level bypass checks removed from worktree_guard and session_merge.
+
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 - **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
@@ -188,6 +212,12 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
+
+### Deprecated
+
+- **ECC_WORKFLOW_BYPASS=1**: Environment variable deprecated in favor of `ecc bypass grant`. Emits deprecation warning but still functions for backward compatibility. Handler-level bypass checks removed from worktree_guard and session_merge.
+
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.
 - **rusqlite 0.34 → 0.38 (BL-113)**: Dependency bump for SQLite adapters. No breaking changes — 4 known API changes between versions confirmed not to affect codebase. Brings SQLite 3.51.3 support.
@@ -205,6 +235,12 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
+
+### Deprecated
+
+- **ECC_WORKFLOW_BYPASS=1**: Environment variable deprecated in favor of `ecc bypass grant`. Emits deprecation warning but still functions for backward compatibility. Handler-level bypass checks removed from worktree_guard and session_merge.
 
 - **Context pre-hydration hook (BL-078)**: UserPromptSubmit hook that deterministically pre-fetches project context before ECC commands run. Per-command strategies (spec: git log + backlog, design: spec summary, implement: design + test paths). Tool subsetting recommendations. Inspired by Stripe Minions pre-hydration pattern.
 - **Conditional rule loading (BL-079)**: `applies-to` frontmatter field for rules declares stack applicability (languages, frameworks, files). `ecc install` detects project stack and filters rules at install time. OR semantics, fail-open fallbacks, `--all-rules` override. 67 language-specific rules annotated.

@@ -56,14 +56,9 @@ pub fn is_in_worktree(ports: &HookPorts<'_>) -> Result<bool, ()> {
 /// pre:write-edit:worktree-guard — block Write/Edit/MultiEdit outside a worktree.
 ///
 /// Forces Claude to call `EnterWorktree` before making file changes.
-/// Respects `ECC_WORKFLOW_BYPASS=1` and passes through for non-git directories.
+/// Passes through for non-git directories. Bypass via `ecc bypass grant`.
 pub fn pre_worktree_write_guard(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "pre_worktree_write_guard", "executing handler");
-
-    // Bypass check
-    if ports.env.var("ECC_WORKFLOW_BYPASS").as_deref() == Some("1") {
-        return HookResult::passthrough(stdin);
-    }
 
     match is_in_worktree(ports) {
         Ok(true) => {
@@ -75,7 +70,7 @@ pub fn pre_worktree_write_guard(stdin: &str, ports: &HookPorts<'_>) -> HookResul
             HookResult::block(
                 stdin,
                 "[Hook] BLOCKED: Not in a worktree. Call EnterWorktree before making changes.\n\
-                 If EnterWorktree is unavailable, set ECC_WORKFLOW_BYPASS=1 to proceed on main.\n",
+                 To bypass: ecc bypass grant --hook pre:edit:boundary-crossing --reason <reason>\n",
             )
         }
         Err(()) => {
@@ -104,6 +99,7 @@ mod tests {
             env,
             terminal: term,
             cost_store: None,
+            bypass_store: None,
         }
     }
 
@@ -176,7 +172,8 @@ mod tests {
     fn bypass_allows_write() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new(); // no git responses — shouldn't even be called
-        let env = MockEnvironment::new().with_var("ECC_WORKFLOW_BYPASS", "1");
+        // Handler no longer checks ECC_WORKFLOW_BYPASS — bypass is at dispatch level
+        let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
@@ -287,7 +284,7 @@ mod tests {
 
         let result = pre_worktree_write_guard(r#"{"file_path":"src/main.rs"}"#, &ports);
         assert_eq!(result.exit_code, 2);
-        assert!(result.stderr.contains("ECC_WORKFLOW_BYPASS=1"));
+        assert!(result.stderr.contains("ecc bypass grant"));
     }
 
     // PC-001i: coexists with branch guard (both can pass independently)

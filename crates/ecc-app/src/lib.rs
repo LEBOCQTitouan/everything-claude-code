@@ -13,6 +13,7 @@ pub mod claw;
 pub mod config;
 pub mod config_cmd;
 pub mod cost_mgmt;
+pub mod bypass_mgmt;
 pub mod detect;
 pub mod detection;
 pub mod dev;
