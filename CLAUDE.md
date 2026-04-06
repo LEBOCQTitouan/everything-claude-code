@@ -138,6 +138,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 
 ## Gotchas
 
+- Brevity rule (`rules/common/brevity.md`): all agents inherit output compression — no filler, no hedging, no pleasantries. Preserves code blocks and technical terms. See [caveman](https://github.com/JuliusBrussee/caveman).
 - Workflow state is worktree-scoped: `resolve_state_dir()` resolves to `<git-dir>/ecc-workflow/state.json` in git repos (per-worktree isolation), falling back to `.claude/workflow/` for non-git dirs. Run `ecc-workflow status` from a worktree to verify isolation. If a stale `state.json` exists at `<main-repo>/.claude/workflow/` from a pre-fix session, delete it manually. Old state at `.claude/workflow/state.json` is auto-migrated on first write.
 - `ecc workflow` mirrors `ecc-workflow` — use either during migration; `ecc-workflow` will become a thin wrapper
 - `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by hook)
