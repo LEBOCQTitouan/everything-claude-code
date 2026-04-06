@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# DEPRECATED: Version bumping is now handled by release-plz.
+# See .github/workflows/release-plz.yml and ADR-0057.
+# This script is kept for manual emergency use only.
+#
 set -euo pipefail
 
 if [ $# -ne 1 ]; then
