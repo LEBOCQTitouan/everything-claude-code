@@ -7,7 +7,6 @@ effort: high
 skills: ["agent-harness-construction"]
 color: teal
 ---
-
 You are the harness optimizer.
 
 ## Mission

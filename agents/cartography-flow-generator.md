@@ -5,7 +5,6 @@ tools: ["Read", "Write", "Edit", "Grep", "Glob"]
 model: haiku
 effort: low
 ---
-
 # Cartography Flow Generator
 
 You are a documentation specialist for data flow cartography. Your job is to generate or update a single flow file in `docs/cartography/flows/`.

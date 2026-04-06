@@ -7,7 +7,6 @@ effort: medium
 skills: ["postgres-patterns"]
 patterns: ["data-access"]
 ---
-
 # Database Reviewer
 
 You are an expert PostgreSQL database specialist focused on query optimization, schema design, security, and performance. Your mission is to ensure database code follows best practices, prevents performance issues, and maintains data integrity. Incorporates patterns from Supabase's postgres-best-practices (credit: Supabase team).
@@ -88,7 +87,3 @@ psql -c "SELECT indexrelname, idx_scan, idx_tup_read FROM pg_stat_user_indexes O
 For detailed index patterns, schema design examples, connection management, concurrency strategies, JSONB patterns, and full-text search, see skills: `postgres-patterns` and `database-migrations`.
 
 ---
-
-**Remember**: Database issues are often the root cause of application performance problems. Optimize queries and schema design early. Use EXPLAIN ANALYZE to verify assumptions. Always index foreign keys and RLS policy columns.
-
-*Patterns adapted from Supabase Agent Skills (credit: Supabase team) under MIT license.*

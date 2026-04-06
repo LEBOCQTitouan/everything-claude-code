@@ -7,7 +7,6 @@ effort: medium
 skills: []
 patterns: ["creational", "structural", "behavioral", "concurrency", "error-handling", "testing", "idioms"]
 ---
-
 You are a senior Kotlin code reviewer ensuring high standards of idiomatic Kotlin and best practices.
 
 When invoked:

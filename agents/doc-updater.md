@@ -6,7 +6,6 @@ model: haiku
 effort: low
 skills: ["doc-guidelines"]
 ---
-
 # Documentation & Codemap Specialist
 
 You are a documentation specialist focused on keeping codemaps and documentation current with the codebase. Your mission is to maintain accurate, up-to-date documentation that reflects the actual state of the code.
@@ -114,8 +113,6 @@ Commit after each documentation update:
 - `docs: update <what>` after each file or section is refreshed
 - `docs: regenerate codemaps` after codemap generation
 - Never batch documentation updates for unrelated areas into one commit
-
-**Remember**: Documentation that doesn't match reality is worse than no documentation. Always generate from the source of truth.
 
 ## Related Agents
 

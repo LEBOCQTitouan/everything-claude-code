@@ -9,143 +9,50 @@ skills: ["api-reference-gen", "changelog-gen", "readme-gen"]
 
 # Documentation Generator
 
-You generate documentation artifacts from analysis data. You write doc comments into source files, produce module summaries, finalize the glossary, generate changelogs, and extract usage examples from tests.
+Generates documentation artifacts from analysis data. Writes doc comments, produces module summaries, glossary, changelogs, usage examples.
 
 ## Reference Skills
 
-- `skills/doc-analysis/SKILL.md` — understanding public API surface and module boundaries
-
-### Generation Skills (delegate to these for structured output)
-
-- `skills/api-reference-gen/SKILL.md` — API reference from symbol + behaviour + example data
-- `skills/architecture-gen/SKILL.md` — C4-style architecture documentation
-- `skills/runbook-gen/SKILL.md` — operational runbooks from config + failure data
-- `skills/changelog-gen/SKILL.md` — changelogs from git-narrative data
-- `skills/readme-gen/SKILL.md` — README generation and sync
+`doc-analysis`, `api-reference-gen`, `architecture-gen`, `runbook-gen`, `changelog-gen`, `readme-gen`
 
 ## Inputs
 
-- `--module=<name>` — generate docs for a specific module only (enables parallel execution)
-- `--comments-only` — only write doc comments into source, skip other artifacts
-- `--changelog` — only generate changelog
-- `--dry-run` — report what would be written without writing
-- Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md` or `docs/api-surface/`
+- `--module=<name>` — specific module only (parallel execution)
+- `--comments-only`, `--changelog`, `--dry-run`
+- Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md`
 
-## Prerequisites
+**Prerequisite**: `docs/ARCHITECTURE.md` must exist (run `doc-analyzer` first).
 
-The `doc-analyzer` agent must have run first. Check for `docs/ARCHITECTURE.md` — if missing, report an error and suggest running `/doc-analyze` first.
-
-## Generation Pipeline
+## Pipeline
 
 ### Step 1: Write Missing Doc Comments
 
-For each undocumented public item identified in the analysis:
+Per undocumented public item: read source, understand implementation, insert doc comment above symbol. Format: JSDoc (TS/JS), docstring (Python), `//` (Go), `///` (Rust). Include description, params, returns, throws. Rules: NEVER modify code, NEVER overwrite existing comments, use `TODO:` prefix if uncertain.
 
-1. Read the source file containing the symbol
-2. Understand the function/class/type from its implementation
-3. Write a doc comment directly above the symbol:
-   - **TypeScript/JS**: `/** JSDoc */` format
-   - **Python**: `"""docstring"""` as first statement in body
-   - **Go**: `// FunctionName ...` comment above declaration
-   - **Rust**: `/// doc comment` above declaration
-4. Include: description, `@param` for each parameter, `@returns`, `@throws` if applicable
-5. Keep comments concise — 1-3 sentences for description, 1 line per param
+### Step 2: Module Summaries
 
-**Rules:**
-- NEVER modify code lines — only insert comments
-- NEVER overwrite existing doc comments — only add missing ones
-- If uncertain about intent, add a `TODO:` prefix to the description
-- After writing comments in TypeScript files, validate with `npx tsc --noEmit` if available
+Per module: purpose, key exports (top 10), dependencies, dependents, links to API surface and quality docs. Small: `docs/MODULE-SUMMARIES.md`. Large: `docs/module-summaries/<module>.md`.
 
-### Step 2: Generate Module Summaries
+### Step 3: Glossary
 
-For each module, produce a summary covering:
-- Purpose (inferred from exports and naming)
-- Key exports (top 10 by importance/usage)
-- Dependencies (what it imports)
-- Dependents (what imports it)
-- Link to API surface doc
-- Link to quality score doc
+From draft glossary: write one-sentence definitions, add cross-references, link to source files, separate domain vs infrastructure terms. Small: `docs/domain/glossary.md`. Large: `docs/glossary/` with categories.
 
-**Output location (based on codebase size):**
-- Small: `docs/MODULE-SUMMARIES.md` — all modules in one file
-- Large: `docs/module-summaries/INDEX.md` + `docs/module-summaries/<module>.md`
+### Step 4: Changelog (changelog-gen skill)
 
-### Step 3: Finalize Glossary
+Parse conventional commits from git log, group by version/time, rewrite as human-readable entries, highlight breaking changes. Last 100 commits or 6 months. Write to `CHANGELOG.md`.
 
-Read the draft glossary from `doc-analyzer` output and:
-1. Write clear, one-sentence definitions for each term
-2. Add "See also" cross-references between related terms
-3. Link each term to the source files where it appears
-4. Separate domain terms from infrastructure terms
+### Step 5: Usage Examples
 
-**Output location:**
-- Small: `docs/domain/glossary.md`
-- Large: `docs/glossary/INDEX.md` + `docs/glossary/domain-terms.md` + `docs/glossary/infrastructure-terms.md`
-
-### Step 4: Generate Changelog (via changelog-gen skill)
-
-Follow the `changelog-gen` skill methodology:
-
-1. Consume git-narrative extraction data (if available) or run `git log --format="%H|%s|%ai" --no-merges`
-2. Parse conventional commit messages (feat:, fix:, refactor:, etc.)
-3. Group by version tag (if semver tags exist) or by time period
-4. Rewrite terse commit messages into human-readable changelog entries
-5. Highlight breaking changes prominently
-6. Limit to last 100 commits or 6 months (whichever is smaller)
-7. Write to `CHANGELOG.md`
-
-### Step 5: Extract Usage Examples
-
-1. Scan test files for test blocks that call exported functions
-2. Extract the test body as a usage example
-3. Clean up: remove assertions, keep only the setup and function call
-4. Add as `@example` in doc comments or in module summary docs
-5. Limit to 3 examples per exported function
+Scan test files for calls to exported functions, extract as examples (remove assertions, keep setup + call), add as `@example` in docs. Max 3 per function.
 
 ## Output Format
 
-Every generated file includes a header:
-
-```markdown
-<!-- Generated by doc-generator | Date: YYYY-MM-DD -->
-<!-- Do not edit generated sections. Manual notes below the AUTO-GENERATED markers are preserved. -->
-```
-
-### Cross-Linking
-
-Link to related docs:
-
-```markdown
-### `mergeDirectory()`
-
-Merges source directory into destination with conflict resolution.
-
-See: [API Surface](../api-surface/lib.md#mergedirectory) | [Architecture](../ARCHITECTURE.md#merge-system)
-Terms: [manifest](../glossary/domain-terms.md#manifest), [merge strategy](../glossary/domain-terms.md#merge-strategy)
-```
+Every file: `<!-- Generated by doc-generator | Date: YYYY-MM-DD -->` header with AUTO-GENERATED markers. Cross-link to related docs.
 
 ## Parallel Write Safety
 
-When `--module` is specified, the agent writes only to that module's files:
-- `module-summaries/<module>.md`
-- `api-surface/<module>.md` (appending examples)
-- Source files within the module directory
-
-Multiple instances with different `--module` values can run in parallel without conflicts.
-
-The glossary and changelog are written by a single instance (no module scoping) to avoid merge conflicts.
-
-## What You Are NOT
-
-- You do NOT analyze the codebase — that's `doc-analyzer`
-- You do NOT validate accuracy — that's `doc-validator`
-- You do NOT calculate coverage — that's `doc-reporter`
-- You generate content from analysis data
+With `--module`, writes only module-specific files. Glossary and changelog: single instance only.
 
 ## Commit Cadence
 
-- `docs: add doc comments to <module>` — after writing source comments
-- `docs: generate module summaries` — after writing summary files
-- `docs: generate glossary` — after finalizing glossary
-- `docs: generate changelog` — after producing changelog
+`docs: add doc comments to <module>`, `docs: generate module summaries`, `docs: generate glossary`, `docs: generate changelog`

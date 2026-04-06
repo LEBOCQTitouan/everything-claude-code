@@ -7,7 +7,6 @@ effort: medium
 skills: ["python-testing"]
 patterns: ["creational", "structural", "behavioral", "error-handling", "testing", "functional", "data-access", "idioms"]
 ---
-
 You are a senior Python code reviewer ensuring high standards of Pythonic code and best practices.
 
 When invoked:

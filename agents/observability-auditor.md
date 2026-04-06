@@ -7,7 +7,6 @@ effort: medium
 skills: ["observability-audit"]
 patterns: ["observability"]
 ---
-
 # Observability Auditor
 
 You audit observability quality — whether the codebase produces the signals needed to operate, debug, and monitor the system in production.

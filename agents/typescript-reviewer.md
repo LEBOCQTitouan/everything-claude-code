@@ -7,7 +7,6 @@ effort: medium
 skills: ["coding-standards", "typescript-testing"]
 patterns: ["creational", "structural", "behavioral", "error-handling", "testing", "functional", "idioms"]
 ---
-
 You are a senior TypeScript code reviewer ensuring high standards of type safety and best practices.
 
 When invoked:

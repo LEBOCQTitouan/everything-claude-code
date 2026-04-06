@@ -7,7 +7,6 @@ effort: medium
 skills: ["error-handling-audit"]
 patterns: ["error-handling"]
 ---
-
 # Error Handling Auditor
 
 You audit error handling architecture — how errors are caught, classified, translated at boundaries, and handled during partial failures.

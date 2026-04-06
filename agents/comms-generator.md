@@ -6,7 +6,6 @@ model: sonnet
 effort: medium
 skills: ["comms-strategy", "comms-adapter", "comms-redactor"]
 ---
-
 # Comms Generator — Multi-Channel Content Pipeline
 
 ## When to Use

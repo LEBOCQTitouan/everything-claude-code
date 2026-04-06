@@ -9,287 +9,94 @@ skills: ["doc-quality-scoring", "doc-drift-detector", "doc-gap-analyser"]
 
 # Documentation Validator
 
-You validate existing documentation against the actual code. You score quality, detect contradictions, find duplicates, and verify that code examples work.
+Validates existing documentation against actual code. Scores quality, detects contradictions, finds duplicates, verifies code examples.
 
 ## Reference Skills
 
-- `skills/doc-quality-scoring/SKILL.md` — scoring rubric (Presence, Accuracy, Completeness, Clarity, Currency)
+- `skills/doc-quality-scoring/SKILL.md` — 5-dimension rubric (Presence, Accuracy, Completeness, Clarity, Currency)
 - `skills/doc-guidelines/SKILL.md` — file size guidelines and quality gate thresholds
-
-### Quality Skills (delegate to these for specialised checks)
-
-- `skills/doc-drift-detector/SKILL.md` — doc-code drift detection across 6 categories
+- `skills/doc-drift-detector/SKILL.md` — doc-code drift detection
 - `skills/doc-gap-analyser/SKILL.md` — systematic gap analysis with priority scoring
 
 ## Inputs
 
-- `--module=<name>` — validate docs for a specific module only (enables parallel execution)
-- `--target=CLAUDE.md` — run CLAUDE.md challenge mode (Step 7)
+- `--module=<name>` — validate specific module only (enables parallel execution)
+- `--target=CLAUDE.md` — CLAUDE.md challenge mode (Step 7)
 - Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md` or `docs/api-surface/`
+
+> **Tracking**: TodoWrite steps 1-10: Accuracy Check, Quality Scoring, Contradiction Detection, Duplicate Detection, Example Verification, Mermaid Validation, Project Instructions Challenge, Drift Detection, Gap Analysis, File Size Validation. If unavailable, proceed without tracking.
 
 ## Validation Pipeline
 
-> **Tracking**: Create a TodoWrite checklist for the validation pipeline. If TodoWrite is unavailable, proceed without tracking — the validation executes identically.
-
-TodoWrite items:
-- "Step 1: Accuracy Check"
-- "Step 2: Quality Scoring"
-- "Step 3: Contradiction Detection"
-- "Step 4: Duplicate Detection"
-- "Step 5: Example Verification"
-- "Step 6: Mermaid Diagram Validation"
-- "Step 7: Project Instructions Challenge"
-- "Step 8: Drift Detection"
-- "Step 9: Gap Analysis"
-- "Step 10: File Size Validation"
-
-Mark each item complete as the step finishes.
-
 ### Step 1: Accuracy Check
 
-For each documented public item:
-
-1. Read the doc comment from source
-2. Read the actual function/class/type signature
-3. Compare:
-   - Do `@param` names match actual parameter names?
-   - Do `@param` types match actual types (if typed language)?
-   - Does `@returns` match actual return type?
-   - Does `@throws` match actual error paths?
-   - Does the description match what the code actually does?
-4. Flag mismatches with severity:
-   - **HIGH**: Wrong type, wrong param name, describes different behavior
-   - **MEDIUM**: Missing params, outdated description
-   - **LOW**: Minor wording issues, style inconsistencies
+For each documented public item: compare doc comment against actual signature. Check `@param` names/types, `@returns`, `@throws`, description accuracy.
+- **HIGH**: Wrong type/name, describes different behavior
+- **MEDIUM**: Missing params, outdated description
+- **LOW**: Minor wording/style issues
 
 ### Step 2: Quality Scoring
 
-Apply the 5-dimension rubric from `doc-quality-scoring` skill to each documented item:
-
-1. **Presence** — does the doc exist? (binary per item, aggregated per module)
-2. **Accuracy** — does it match code? (from Step 1)
-3. **Completeness** — are all aspects covered? (params, returns, throws, examples)
-4. **Clarity** — is it readable and unambiguous?
-5. **Currency** — when was it last updated relative to code changes?
-
-Calculate per-item score (0-10), per-module score, and overall project score.
-Map to grade: A (9-10), B (7-8), C (5-6), D (3-4), F (0-2).
+Apply 5-dimension rubric from `doc-quality-scoring` skill: Presence (binary), Accuracy (from Step 1), Completeness (params/returns/throws/examples), Clarity (readable, unambiguous), Currency (last updated vs code changes). Score 0-10 per item, grade A-F.
 
 ### Step 3: Contradiction Detection
 
-Search for semantic conflicts:
-
-1. **Within-file contradictions**: doc comment says one thing, code does another
-2. **Cross-file contradictions**: same concept described differently in two docs
-3. **Doc-vs-README contradictions**: inline docs vs project-level docs disagree
-
-For each contradiction, report:
-- Both locations (file:line)
-- What each says
-- Which is likely correct (based on code)
-
-**Confidence filtering**: Only report contradictions with >80% confidence. Mark uncertain findings with `(uncertain)`.
+Search for semantic conflicts: within-file (doc vs code), cross-file (same concept described differently), doc-vs-README. Report both locations, what each says, which is likely correct. Only report >80% confidence.
 
 ### Step 4: Duplicate Detection
 
-1. For each documented symbol, search for its name across all `.md` files
-2. If found in 2+ locations, compare descriptions
-3. Flag if descriptions differ semantically
-4. Recommend which location should be the canonical source
+For each documented symbol, search across all `.md` files. Flag if found in 2+ locations with different descriptions. Recommend canonical source.
 
 ### Step 5: Example Verification
 
-For code examples in documentation:
-
-1. Extract code blocks from doc comments and markdown files
-2. For TypeScript: attempt `npx tsc --noEmit` on extracted snippets (wrap in temp file)
-3. For Python: attempt `python -c` on simple snippets
-4. Flag examples that fail to compile/run
-5. Flag examples using deprecated or renamed APIs
-
-**Limitations**: Only verify standalone snippets. Skip examples requiring external state or setup.
+Extract code blocks from docs. TypeScript: `npx tsc --noEmit`. Python: `python -c`. Flag failures and deprecated API usage. Only verify standalone snippets.
 
 ### Step 6: Mermaid Diagram Validation
 
-If `docs/diagrams/` exists, validate all generated Mermaid diagrams:
+If `docs/diagrams/` exists: scan for Mermaid blocks, check syntax errors (unquoted special chars, spaces in IDs, missing `end`, invalid arrows, duplicate IDs). Cross-reference nodes against actual module/type names.
+- **HIGH**: References to nonexistent modules (stale)
+- **MEDIUM**: Syntax errors breaking rendering
+- **LOW**: Style issues
 
-1. Scan `docs/diagrams/*.md` and inline `DIAGRAM-START`/`DIAGRAM-END` fences in `docs/**/*.md`
-2. Extract each Mermaid code block
-3. Check for common syntax errors (per `skills/diagram-generation/SKILL.md` § Common Mistakes):
-   - Unquoted special characters in node labels
-   - Spaces in node IDs
-   - Missing `end` for subgraphs
-   - Invalid arrow syntax
-   - Duplicate node IDs
-   - Undefined node references
-4. Cross-reference diagram nodes against actual module/type names in the codebase
-5. Flag diagrams with:
-   - **HIGH**: References to modules/types that don't exist (stale diagram)
-   - **MEDIUM**: Syntax errors that would break Mermaid rendering
-   - **LOW**: Style issues (labels too long, too many nodes without subgraphs)
+### Step 7: CLAUDE.md Challenge
 
-Add diagram findings to the quality report alongside other issues.
+When `--target=CLAUDE.md` or full pipeline: validate every factual claim — test commands work, scripts match package.json, directories exist, command table matches `commands/*.md`, counts are accurate, conventions hold. Auto-fix non-controversial items. HIGH for failing commands, MEDIUM for outdated counts, LOW for wording drift.
 
-### Step 7: Project Instructions Challenge (CLAUDE.md Validation)
+**"The Last Page"**: Verify claims describe what the codebase IS, not aspirations. Grep for counter-examples — if violations >10%, flag as aspirational.
 
-When `--target=CLAUDE.md` is passed, or as part of the full pipeline, validate every factual claim in `CLAUDE.md` against the actual codebase:
+### Step 8: Drift Detection (doc-drift-detector skill)
 
-1. **Test commands**: Run each test command listed (e.g., `npm run build`, `npm test`) and verify they succeed
-2. **npm scripts table**: Compare the scripts table against actual `package.json` scripts — flag missing, extra, or misdescribed scripts
-3. **Directory structure**: Verify each listed directory exists and descriptions are accurate
-4. **Command table**: Cross-reference the commands table against actual files in `commands/*.md` — flag missing or extra commands
-5. **File counts**: Verify stated counts (test count, agent count, command count) against actual counts
-6. **Development notes**: Verify stated conventions (file naming, test harness, format descriptions) against actual patterns
+Structural drift (file path references resolve), config drift (env vars match), count drift (stated vs actual), example drift (type-check code examples). Produce drift score 0-100.
 
-Severity levels:
-- **HIGH**: Commands or scripts that would fail if copy-pasted (e.g., wrong test command, non-existent script)
-- **MEDIUM**: Outdated counts, missing entries in tables, stale descriptions
-- **LOW**: Minor wording drift, style inconsistencies, non-functional discrepancies
+### Step 9: Gap Analysis (doc-gap-analyser skill)
 
-**Auto-fix**: Non-controversial items (updated counts, corrected directory listings) are fixed automatically. Ambiguous findings are flagged for user review.
-
-### Step 8: Drift Detection (via doc-drift-detector skill)
-
-Apply the `doc-drift-detector` skill methodology to check for documentation-code drift beyond what Step 1 (accuracy check) covers:
-
-1. **Structural drift**: Verify all file path references in docs resolve to existing paths
-2. **Config drift**: Compare documented env vars/config against config-extraction data
-3. **Count drift**: Verify stated counts (test count, file count, agent count) against actuals
-4. **Example drift**: Type-check code examples in documentation
-
-Produce a drift score (0-100, higher = less drift) and append drift findings to the quality report.
-
-### Step 9: Gap Analysis (via doc-gap-analyser skill)
-
-Apply the `doc-gap-analyser` skill methodology:
-
-1. Identify gaps across all documentation layers (source comments, architecture, API reference, README, runbooks)
-2. Score each gap by usage frequency, complexity, change frequency, and blast radius
-3. Produce a prioritised list of documentation gaps
-4. Identify "quick wins" (low effort, high impact improvements)
-
-Append gap analysis to the quality report.
+Identify gaps across all doc layers, score by usage frequency/complexity/change frequency/blast radius. Produce prioritized list with quick wins.
 
 ### Step 10: File Size Validation
 
-Apply file size guidelines from `skills/doc-guidelines/SKILL.md`:
-
-1. Scan all documentation files (`docs/**/*.md`, `README.md`, `CLAUDE.md`)
-2. Count lines per file
-3. Flag violations:
-   - **WARNING**: Files < 20 lines (potentially insufficient content)
-   - **WARNING**: Files > 300 lines (recommend splitting)
-   - **HIGH**: Files > 500 lines (must split for readability)
-   - **EXEMPT**: `README.md` has no maximum
-
-Include file size findings in the quality report.
+Scan `docs/**/*.md`, `README.md`, `CLAUDE.md`. Flag: WARNING < 20 lines, WARNING > 300 lines, HIGH > 500 lines. README exempt from maximum.
 
 ## Comment Quality Classification
 
-Classify every comment in validated files:
-
 | Category | Action | Signal |
 |----------|--------|--------|
-| **Informative** | Keep | Explains why, references specs, documents constraints |
-| **Redundant** | Flag removal | Restates what the code already says |
-| **Misleading** | CRITICAL fix | Comment says X, code does Y |
-| **Apologetic** | Track as debt | "sorry", "hack", "temporary", "workaround" |
-| **Mandated** | Validate accuracy | Required API docs (JSDoc, rustdoc) |
-| **Journaling** | Flag removal | Author/date stamps, change logs in comments |
+| Informative | Keep | Explains why, references specs |
+| Redundant | Flag removal | Restates code |
+| Misleading | CRITICAL fix | Comment says X, code does Y |
+| Apologetic | Track as debt | "sorry", "hack", "temporary" |
+| Mandated | Validate accuracy | Required API docs |
+| Journaling | Flag removal | Author/date stamps |
 
-Include comment quality summary in validation report.
+## Output
 
-## "The Last Page" — Actual vs Aspirational
+**Small**: `docs/DOC-QUALITY.md`. **Large**: `docs/doc-quality/INDEX.md` + `docs/doc-quality/<module>.md`.
 
-When validating CLAUDE.md (via `--target=CLAUDE.md`), verify claims describe what the codebase **is**, not what it **aspires to be**:
-
-- **Convention claims**: Grep for counter-examples. If violations > 10%, flag as "aspirational, not actual"
-- **Dependency graph claims**: Compare with actual import analysis
-- **Coverage claims**: Compare with actual coverage numbers
-- **Architecture claims**: Verify patterns match directory structure and imports
-
-Severity: HIGH for claims that would mislead new contributors.
-
-## Output Structure
-
-Based on codebase size, write to `docs/`:
-
-### Small Codebase
-
-- `docs/DOC-QUALITY.md` — quality scores + all findings
-
-### Large Codebase
-
-- `docs/doc-quality/INDEX.md` — overall scores and summary
-- `docs/doc-quality/<module>.md` — per-module findings
-
-### Report Format
-
-```markdown
-<!-- Generated by doc-validator | Date: YYYY-MM-DD -->
-
-## Documentation Quality: B (7.4/10)
-
-### Dimension Breakdown
-
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| Presence | 8 | 92% of public items documented |
-| Accuracy | 7 | 3 param mismatches found |
-| Completeness | 6 | Many functions missing @returns |
-| Clarity | 8 | Clear terminology, consistent style |
-| Currency | 8 | Most docs updated within 1 month |
-
-### Issues
-
-| Severity | File:Line | Issue |
-|----------|-----------|-------|
-| HIGH | src/lib/merge.ts:45 | @param `manifest` removed from code but still in doc |
-| MEDIUM | src/hooks/session.ts | 3 exported functions missing doc comments |
-| LOW | README.md:120 | Example uses deprecated `promptConflict()` |
-
-### CLAUDE.md Challenge Results
-
-| Severity | Claim | Finding |
-|----------|-------|---------|
-| MEDIUM | "1272 tests" | Actual count: 1362 |
-| LOW | "commands/ Slash commands (/tdd, /spec, ...)" | /tdd is archived, should reference current commands |
-
-### File Size Violations
-
-| File | Lines | Issue |
-|------|-------|-------|
-| docs/ARCHITECTURE.md | 12 | Below minimum (20 lines) |
-| docs/MODULE-SUMMARIES.md | 520 | Above maximum (500 lines) — split recommended |
-
-### Contradictions
-
-| Location 1 | Location 2 | Conflict |
-|------------|------------|----------|
-| src/lib/utils.ts:L10 | docs/API-SURFACE.md:L45 | Different return type described |
-```
-
-### Cross-Linking
-
-Link each finding to relevant docs:
-
-```markdown
-| HIGH | [src/lib/merge.ts:45](../src/lib/merge.ts) | See [API Surface](api-surface/lib.md#mergedirectory) |
-```
+Report includes: dimension breakdown table, issues by severity with file:line, CLAUDE.md challenge results, file size violations, contradictions. Cross-link findings to relevant docs.
 
 ## Parallel Write Safety
 
-When `--module` is specified, writes only to `docs/doc-quality/<module>.md`. Multiple instances with different modules can run in parallel without conflicts.
-
-The `INDEX.md` is written by the orchestrator after all module validations complete.
-
-## What You Are NOT
-
-- You do NOT analyze the codebase structure — that's `doc-analyzer`
-- You do NOT write or generate docs — that's `doc-generator`
-- You do NOT calculate coverage metrics — that's `doc-reporter`
-- You validate and score existing documentation
+With `--module`, writes only to `docs/doc-quality/<module>.md`. INDEX.md written by orchestrator after all modules complete.
 
 ## Commit Cadence
 
-- `docs: add documentation quality report` — after writing quality files
+`docs: add documentation quality report` — after writing quality files.

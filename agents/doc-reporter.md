@@ -9,166 +9,51 @@ skills: ["doc-quality-scoring"]
 
 # Documentation Coverage Reporter
 
-You calculate documentation coverage metrics, compare against baselines, detect regressions, and flag stale documentation.
+Calculates doc coverage metrics, compares against baselines, detects regressions, flags stale documentation.
 
 ## Inputs
 
-- `--base=<branch|commit>` — compare current coverage against a base (default: previous run)
-- `--module=<name>` — report on a specific module only
-- Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md` or `docs/api-surface/`
-- Quality data from `docs/DOC-QUALITY.md` or `docs/doc-quality/`
-- Manifest data from `docs/.doc-manifest.json` (if exists, for incremental comparison)
+- `--base=<branch|commit>` — compare against base (default: previous run)
+- `--module=<name>` — specific module only
+- Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md`
+- Quality data from `docs/DOC-QUALITY.md`
+- Manifest from `docs/.doc-manifest.json` (for incremental comparison)
 
-## Reporting Pipeline
+> **Tracking**: TodoWrite steps: Calculate Coverage, Compare Baseline, Staleness Analysis, Manifest Reporting, Summary. If unavailable, proceed without tracking.
 
-> **Tracking**: Create a TodoWrite checklist for the reporting pipeline. If TodoWrite is unavailable, proceed without tracking — the pipeline executes identically.
-
-TodoWrite items:
-- "Step 1: Calculate Coverage"
-- "Step 2: Compare Against Baseline"
-- "Step 3: Staleness Analysis"
-- "Step 4: Manifest-Based Incremental Reporting"
-- "Step 5: Summary Statistics"
-
-Mark each item complete as the step finishes.
+## Pipeline
 
 ### Step 1: Calculate Coverage
 
-For each module:
-
-1. Count total public items (from analysis data)
-2. Count documented public items (have doc comment)
-3. Calculate: `coverage = documented / total * 100`
-4. Break down by item type: functions, classes, types, constants
+Per module: count total/documented public items, `coverage = documented / total * 100`. Break down by type (functions, classes, types, constants).
 
 ### Step 2: Compare Against Baseline
 
-If previous coverage data exists (`docs/DOC-COVERAGE.md` or `docs/doc-coverage/`):
-
-1. Read previous per-module coverage percentages
-2. Calculate delta for each module
-3. Flag regressions (coverage decreased)
-4. Flag improvements (coverage increased)
-5. Show trend indicator: arrow-up, arrow-down, unchanged
-
-If `--base=<branch>` specified:
-
-1. Run `git diff <base>...HEAD -- '*.ts' '*.js' '*.py' '*.go' '*.rs' '*.java'` to find changed source files
-2. For each changed file, check if doc comments were also updated
-3. Flag files where code changed but docs didn't
+If previous coverage exists: calculate per-module delta, flag regressions/improvements with trend indicator.
+If `--base=<branch>`: diff source files, check if code changes have matching doc updates. Flag files where code changed but docs didn't.
 
 ### Step 3: Staleness Analysis
 
-For each documented item:
+Per documented item: compare code modification date vs doc date (git blame). Stale: >30 days. Very stale: >90 days. Ancient: >1 year.
 
-1. Use `git log -1 --format="%ai" -- <file>` to get last code modification date
-2. Compare doc comment age vs code age (approximate via git blame)
-3. Flag items where code changed more recently than docs:
-   - **Stale**: code changed >30 days after doc
-   - **Very stale**: code changed >90 days after doc
-   - **Ancient**: code changed >1 year after doc
+### Step 4: Manifest-Based Incremental
 
-### Step 4: Manifest-Based Incremental Reporting
-
-If `docs/.doc-manifest.json` exists:
-
-1. Read the manifest to get previous generation metadata
-2. Compare manifest's `gitSha` against current HEAD
-3. For each file in the manifest, check if `sourceDeps` have changed
-4. Mark stale files in the report
-5. Calculate incremental delta (what changed since last full pipeline run)
-
-This enables the reporter to show "since last generation" trends even without `--base`.
+If `docs/.doc-manifest.json` exists: compare `gitSha` against HEAD, check `sourceDeps` changes, mark stale files, calculate incremental delta.
 
 ### Step 5: Summary Statistics
 
-Calculate project-wide metrics:
-- Overall coverage percentage
-- Coverage by item type (functions, classes, types)
-- Number of stale docs
-- Trend vs previous run
-- Quality grade (from doc-validator data if available)
-- Manifest staleness (files whose source deps changed since last generation)
+Overall coverage %, coverage by item type, stale doc count, trend vs previous, quality grade, manifest staleness.
 
-## Output Structure
+## Output
 
-### Small Codebase
+**Small**: `docs/DOC-COVERAGE.md`. **Large**: `docs/doc-coverage/INDEX.md` + `by-module.md` + `staleness.md`.
 
-- `docs/DOC-COVERAGE.md` — all coverage data in one file
-
-### Large Codebase
-
-- `docs/doc-coverage/INDEX.md` — overall summary
-- `docs/doc-coverage/by-module.md` — per-module coverage table
-- `docs/doc-coverage/staleness.md` — staleness report
-
-### Report Format
-
-```markdown
-<!-- Generated by doc-reporter | Date: YYYY-MM-DD | Baseline: previous run -->
-
-## Documentation Coverage: 73% (B)
-
-### Overall
-
-| Metric | Value |
-|--------|-------|
-| Total public items | 142 |
-| Documented | 104 |
-| Coverage | 73.2% |
-| Quality grade | B (7.4/10) |
-| Stale docs | 8 |
-
-### Per-Module Coverage
-
-| Module | Total | Documented | Coverage | Trend | Quality |
-|--------|-------|------------|----------|-------|---------|
-| lib/ | 45 | 38 | 84% | +2% | B |
-| hooks/ | 22 | 14 | 64% | -3% | C |
-| ci/ | 15 | 12 | 80% | -- | B |
-
-### Coverage by Item Type
-
-| Type | Total | Documented | Coverage |
-|------|-------|------------|----------|
-| Functions | 89 | 72 | 81% |
-| Classes | 12 | 10 | 83% |
-| Types/Interfaces | 28 | 15 | 54% |
-| Constants | 13 | 7 | 54% |
-
-### Staleness Report
-
-| File | Last Code Change | Last Doc Change | Status |
-|------|-----------------|-----------------|--------|
-| src/lib/merge.ts | 2026-03-05 | 2025-12-01 | Stale (93 days) |
-| src/hooks/session.ts | 2026-02-28 | 2026-02-28 | Current |
-
-### Regressions (since last run)
-
-| Module | Previous | Current | Delta |
-|--------|----------|---------|-------|
-| hooks/ | 67% | 64% | -3% (2 new undocumented exports) |
-```
-
-### Cross-Linking
-
-```markdown
-| Module | Coverage | [Quality](doc-quality/lib.md) | [API Surface](api-surface/lib.md) | [Summary](module-summaries/lib.md) |
-```
+Report includes: overall metrics table, per-module coverage with trend, coverage by item type, staleness report, regressions. Cross-link to quality and API surface docs.
 
 ## Parallel Write Safety
 
-Coverage data is calculated from analysis outputs, not from parallel writes. The reporter reads completed analysis and quality data, so it runs after those phases.
-
-When `--module` is specified, writes only module-specific sections. The orchestrator assembles the index.
-
-## What You Are NOT
-
-- You do NOT analyze the codebase — that's `doc-analyzer`
-- You do NOT generate documentation — that's `doc-generator`
-- You do NOT validate accuracy — that's `doc-validator`
-- You report metrics and trends
+With `--module`, writes module-specific sections only. Orchestrator assembles index.
 
 ## Commit Cadence
 
-- `docs: update documentation coverage report` — after writing coverage files
+`docs: update documentation coverage report`

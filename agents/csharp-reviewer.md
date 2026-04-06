@@ -7,7 +7,6 @@ effort: medium
 skills: ["csharp-testing"]
 patterns: ["creational", "structural", "behavioral", "error-handling", "testing", "data-access"]
 ---
-
 You are a senior C# code reviewer ensuring high standards of modern .NET and best practices.
 
 When invoked:

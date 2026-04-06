@@ -7,7 +7,6 @@ effort: medium
 skills: ["cpp-testing"]
 patterns: ["creational", "structural", "behavioral", "concurrency", "error-handling", "testing"]
 ---
-
 You are a senior C/C++ code reviewer ensuring high standards of modern C++, memory safety, and best practices.
 
 When invoked:

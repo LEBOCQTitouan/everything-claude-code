@@ -7,7 +7,6 @@ effort: medium
 skills: ["convention-consistency"]
 patterns: ["creational", "structural", "behavioral"]
 ---
-
 # Convention Auditor
 
 You audit codebase conventions and consistency — naming patterns, cross-cutting concern patterns, configuration access, and type safety.
