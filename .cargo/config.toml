@@ -1,2 +1,13 @@
 [alias]
 xtask = "run --package xtask --"
+
+# --- Build Acceleration (BL-100) ---
+# mold linker for Linux targets (ignored on macOS/Windows)
+# Install: sudo apt install mold  OR  brew install mold (Linux only)
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+[target.aarch64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=mold"]
