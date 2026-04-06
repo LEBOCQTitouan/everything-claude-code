@@ -63,6 +63,26 @@ If the path is set and the tasks.md file exists, parse it to display a progress 
 
 Format the output as a concise progress table so the user can quickly see where the implementation stands.
 
+## Harness Metrics
+
+Display harness reliability metrics for the current session (if available).
+
+1. Run `ecc metrics summary --session "$CLAUDE_SESSION_ID" --json` via Bash. If `CLAUDE_SESSION_ID` is not set, use `ecc metrics summary --since 1d --json` as a fallback.
+2. If the command fails (non-zero exit, no output, or invalid JSON), skip this section silently — do not display an error.
+3. Parse the JSON output. The JSON object has fields: `hook_success_rate`, `phase_gate_violation_rate`, `agent_failure_recovery_rate`, `commit_atomicity_score` (each a number or `null`), and `total_events` (integer).
+4. If `total_events` is 0 or all rate fields are `null`, display: "No harness metrics recorded for this session."
+5. Otherwise, display a table:
+
+```
+Harness Metrics:
+  Hook success rate:           XX.X% (or N/A)
+  Phase-gate violation rate:   XX.X% (or N/A)
+  Agent failure recovery rate: XX.X% (or N/A)
+  Commit atomicity score:      XX.X% (or N/A)
+```
+
+Format each rate as a percentage (multiply by 100). Display "N/A" for `null` values.
+
 ## Git Status
 
 Run `git status --short` to detect uncommitted changes. Categorize and count the output lines:
