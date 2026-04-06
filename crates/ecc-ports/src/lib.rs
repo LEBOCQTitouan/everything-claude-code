@@ -27,6 +27,8 @@ pub mod git_log;
 pub mod lock;
 /// Structured log storage port.
 pub mod log_store;
+/// Harness reliability metrics store port.
+pub mod metrics_store;
 /// Three-tier memory store port.
 pub mod memory_store;
 /// Release artifact discovery and download port.
