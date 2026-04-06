@@ -145,7 +145,8 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - `session:end:worktree-merge` auto-merges worktree to main at session end via `ecc-workflow merge` (rebase + full verify + ff-only) — worktree directory is **not** deleted after merge (deferred to gc to avoid orphaning Claude Code's CWD); if merge fails, worktree preserved; retry with `ecc-workflow merge` or clean up with `ecc worktree gc`
 - `session:start` triggers `ecc worktree gc` automatically to clean stale worktrees from previous sessions (best-effort, non-blocking)
 - Claude Code's `EnterWorktree` prepends `worktree-` to branch names (e.g., `ecc-session-*` becomes `worktree-ecc-session-*`). ECC handles both forms — `WorktreeName::parse()` strips the prefix automatically
-- Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end
+- Fix-round budget: max 2 fix attempts per PC/E2E test before asking the user for help via AskUserQuestion (inspired by Stripe Minions CI budget pattern). User can grant more rounds, skip, abort, or provide guidance. Hard cap of 8 total rounds per PC.
+- Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end; **fix-round budget** = max 2 fix attempts per PC before user escalation
 
 ## Development Notes
 
