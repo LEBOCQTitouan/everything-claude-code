@@ -1,0 +1,11 @@
+{
+  "session_id": "session-1775427191-92942",
+  "timestamp": 1775427191,
+  "changed_files": [
+    {
+      "path": ".claude/workflow/state.json",
+      "classification": ".claude"
+    }
+  ],
+  "project_type": "rust"
+}

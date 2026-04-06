@@ -1,0 +1,15 @@
+{
+  "session_id": "session-1775428741-83494",
+  "timestamp": 1775428741,
+  "changed_files": [
+    {
+      "path": ".claude/workflow/implement-done.md",
+      "classification": ".claude"
+    },
+    {
+      "path": ".claude/workflow/state.json",
+      "classification": ".claude"
+    }
+  ],
+  "project_type": "rust"
+}
