@@ -18,6 +18,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Miri unsafe code verification (BL-101)**: Added `#[cfg_attr(miri, ignore)]` to ecc-flock FFI tests, enhanced SAFETY comments on all 3 unsafe blocks with invariant documentation. Miri verifies non-FFI tests; FFI calls (libc::flock) cannot be interpreted by Miri.
+
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
