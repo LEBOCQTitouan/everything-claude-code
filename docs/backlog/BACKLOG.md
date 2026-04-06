@@ -121,9 +121,14 @@
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
 | BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | implemented | 2026-04-04 |
-| BL-121 | Token optimization audit — comprehensive spend reduction opportunity mapping | — | EPIC | /audit | open | 2026-04-05 |
+| BL-121 | Token optimization audit — comprehensive spend reduction opportunity mapping | — | EPIC | /audit | implemented | 2026-04-05 |
 | BL-122 | Worktree auto-merge-cleanup enforcement | — | MEDIUM | /spec-dev | implemented | 2026-04-05 |
 | BL-123 | Caveman-style brevity token optimization | — | HIGH | /spec-refactor | implemented | 2026-04-06 |
+| BL-124 | Token optimization wave 1 — zero-cost CLI redirects | — | LOW | direct edit | open | 2026-04-06 |
+| BL-125 | Token optimization wave 2 — boilerplate extraction and context trimming | — | LOW | direct edit | open | 2026-04-06 |
+| BL-126 | Token optimization wave 3 — new CLI commands replacing agent work | — | HIGH | /spec-dev | open | 2026-04-06 |
+| BL-127 | Token optimization wave 4 — pipeline architecture changes | — | HIGH | /spec-dev | open | 2026-04-06 |
+| BL-128 | Token optimization wave 5 — local LLM offload | — | MEDIUM | /spec-dev | open | 2026-04-06 |
 
 ## Dependency Graph
 
@@ -194,14 +199,22 @@ BL-120 → BL-093 (pattern search benefits from memory system infrastructure)
 BL-121 → BL-095 (token audit needs thinking budget baseline from effort tuning)
 BL-121 → BL-096 (token audit needs cost tracking baseline for before/after comparison)
 BL-123 → BL-121 (caveman brevity benefits from token audit findings but can proceed independently)
+BL-124 → BL-121 (wave 1 CLI redirects derived from token audit findings)
+BL-125 → BL-121 (wave 2 boilerplate cleanup derived from token audit findings)
+BL-126 → BL-121 (wave 3 new CLI commands derived from token audit findings)
+BL-126 → BL-124 (wave 3 builds on wave 1 redirect patterns)
+BL-127 → BL-121 (wave 4 pipeline changes derived from token audit findings)
+BL-127 → BL-124 (wave 4 builds on wave 1 conditional patterns)
+BL-128 → BL-121 (wave 5 local LLM offload derived from token audit findings)
+BL-128 → BL-126 (wave 5 offloads agents not already replaced by CLI in wave 3)
 ```
 
 ## Stats
 
-- **Total:** 123
-- **Open:** 14
+- **Total:** 128
+- **Open:** 18
 - **In-progress:** 0
-- **Implemented:** 104
+- **Implemented:** 105
 - **Archived:** 4
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)

@@ -1,7 +1,7 @@
 ---
 id: BL-121
 title: Token optimization audit — comprehensive spend reduction opportunity mapping
-status: open
+status: implemented
 created: 2026-04-05
 promoted_to: ""
 tags: [token-optimization, cost, audit, agents, commands, skills, hooks, rust-cli]
