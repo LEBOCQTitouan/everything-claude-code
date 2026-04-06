@@ -1,3 +1,7 @@
+# RETIRED: This workflow has been replaced by release-plz (see .github/workflows/release-plz.yml)
+# and ADR-0057. Kept as .disabled for rollback. To restore: rename to cd.yml.
+#
+
 name: CD
 
 on:
