@@ -8,10 +8,10 @@
 /// If `env_value` is `Some`, use it directly.
 /// Otherwise, generate a deterministic fallback from the current timestamp and PID.
 pub fn resolve_session_id(env_value: Option<&str>) -> String {
-    if let Some(sid) = env_value {
-        if !sid.is_empty() {
-            return sid.to_owned();
-        }
+    if let Some(sid) = env_value
+        && !sid.is_empty()
+    {
+        return sid.to_owned();
     }
     // Deterministic fallback: timestamp + PID
     use std::time::{SystemTime, UNIX_EPOCH};

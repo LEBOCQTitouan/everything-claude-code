@@ -65,6 +65,8 @@ enum Command {
     Workflow(commands::workflow::WorkflowArgs),
     /// Manage session cost tracking
     Cost(commands::cost::CostArgs),
+    /// Harness reliability metrics
+    Metrics(commands::metrics::MetricsArgs),
 }
 
 /// Initialize tracing with layered subscriber: stderr + optional JSON file.
@@ -194,5 +196,6 @@ fn main() -> anyhow::Result<()> {
         Command::Update(args) => commands::update::run(&args),
         Command::Workflow(args) => commands::workflow::run(args),
         Command::Cost(args) => commands::cost::run(args),
+        Command::Metrics(args) => commands::metrics::run(args),
     }
 }

@@ -124,27 +124,26 @@ impl MetricsStore for InMemoryMetricsStore {
 }
 
 fn matches_query(event: &MetricEvent, query: &MetricsQuery) -> bool {
-    if let Some(ref sid) = query.session_id {
-        if event.session_id != *sid {
-            return false;
-        }
+    if let Some(ref sid) = query.session_id
+        && event.session_id != *sid
+    {
+        return false;
     }
-    if let Some(ref et) = query.event_type {
-        if event.event_type != *et {
-            return false;
-        }
+    if let Some(ref et) = query.event_type
+        && event.event_type != *et
+    {
+        return false;
     }
-    if let Some(ref outcome) = query.outcome {
-        if event.outcome != *outcome {
-            return false;
-        }
+    if let Some(ref outcome) = query.outcome
+        && event.outcome != *outcome
+    {
+        return false;
     }
-    if let Some((ref start, ref end)) = query.date_range {
-        if event.timestamp.as_str() < start.as_str()
-            || event.timestamp.as_str() > end.as_str()
-        {
-            return false;
-        }
+    if let Some((ref start, ref end)) = query.date_range
+        && (event.timestamp.as_str() < start.as_str()
+            || event.timestamp.as_str() > end.as_str())
+    {
+        return false;
     }
     if let Some(since) = query.since {
         use std::time::{SystemTime, UNIX_EPOCH};
