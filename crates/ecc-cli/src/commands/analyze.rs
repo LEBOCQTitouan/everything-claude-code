@@ -71,12 +71,8 @@ pub fn run(args: AnalyzeArgs) -> anyhow::Result<()> {
 
     match args.action {
         AnalyzeAction::Changelog { since } => {
-            let result = ecc_app::analyze::generate_changelog(
-                &adapter,
-                &repo,
-                since.as_deref(),
-            )
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let result = ecc_app::analyze::generate_changelog(&adapter, &repo, since.as_deref())
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
             print!("{result}");
         }
         AnalyzeAction::Hotspots {
@@ -137,20 +133,19 @@ pub fn run(args: AnalyzeArgs) -> anyhow::Result<()> {
         }
         AnalyzeAction::BusFactor { top, since } => {
             let since_val = since.as_deref().or(Some(default_since));
-            let factors = ecc_app::analyze::compute_bus_factor(
-                &adapter,
-                &repo,
-                since_val,
-                top,
-            )
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let factors = ecc_app::analyze::compute_bus_factor(&adapter, &repo, since_val, top)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
 
             if factors.is_empty() {
                 println!("No files found in the specified range.");
             } else {
                 println!("Bus Factor (top {top}, riskiest first):\n");
                 for (i, f) in factors.iter().enumerate() {
-                    let risk = if f.is_risk { " RISK: single author" } else { "" };
+                    let risk = if f.is_risk {
+                        " RISK: single author"
+                    } else {
+                        ""
+                    };
                     println!(
                         "  {:>3}. {:<60} {} authors, {} commits{}",
                         i + 1,

@@ -317,9 +317,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
             } => commands::backlog::run(&title, &scope, &target, &tags, &proj),
         },
         Commands::Campaign { subcmd } => match subcmd {
-            CampaignCmd::Init { spec_dir } => {
-                commands::campaign::run_init(&spec_dir, &sd)
-            }
+            CampaignCmd::Init { spec_dir } => commands::campaign::run_init(&spec_dir, &sd),
             CampaignCmd::AppendDecision {
                 question,
                 answer,

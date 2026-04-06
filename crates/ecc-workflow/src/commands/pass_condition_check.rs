@@ -68,7 +68,9 @@ mod tests {
 
         // Verify .claude/workflow/ was NOT consulted
         assert!(
-            !tmp.path().join(".claude/workflow/implement-done.md").exists(),
+            !tmp.path()
+                .join(".claude/workflow/implement-done.md")
+                .exists(),
             "implement-done.md must NOT be at .claude/workflow/ when using custom state_dir"
         );
     }

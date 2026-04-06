@@ -3,8 +3,8 @@
 use std::path::{Path, PathBuf};
 
 use ecc_domain::cartography::{
-    build_cross_reference_matrix, infer_element_type_from_path, ChangedFile, ElementEntry,
-    ProjectType, SessionDelta,
+    ChangedFile, ElementEntry, ProjectType, SessionDelta, build_cross_reference_matrix,
+    infer_element_type_from_path,
 };
 use serde::Serialize;
 use tracing::warn;
@@ -61,7 +61,8 @@ pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         "git",
         &["status", "--porcelain", "docs/cartography/"],
         &project_dir,
-    ) && !status_out.stdout.trim().is_empty() {
+    ) && !status_out.stdout.trim().is_empty()
+    {
         let _ = ports.shell.run_command_in_dir(
             "git",
             &["checkout", "--", "docs/cartography/"],
@@ -146,13 +147,13 @@ pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     // Step 7: Dispatch element generator if any element targets exist (AC-002.1, AC-002.4)
     if success {
         let has_element_targets = unprocessed.iter().any(|(_, delta)| {
-            delta
-                .changed_files
-                .iter()
-                .any(|f| {
-                    let et = infer_element_type_from_path(&f.path);
-                    !matches!(et, ecc_domain::cartography::element_types::ElementType::Unknown)
-                })
+            delta.changed_files.iter().any(|f| {
+                let et = infer_element_type_from_path(&f.path);
+                !matches!(
+                    et,
+                    ecc_domain::cartography::element_types::ElementType::Unknown
+                )
+            })
         });
 
         if has_element_targets {
@@ -219,7 +220,9 @@ fn invoke_agent_for_delta(
         .map(|f| f.classification.as_str())
         .unwrap_or("unknown");
 
-    let journey_path = docs_cartography.join("journeys").join(format!("{}.md", slug));
+    let journey_path = docs_cartography
+        .join("journeys")
+        .join(format!("{}.md", slug));
     let flow_path = docs_cartography.join("flows").join(format!("{}.md", slug));
 
     let context = AgentContext {
@@ -274,7 +277,12 @@ fn invoke_element_generator(
 
     match ports.shell.run_command_in_dir(
         "claude",
-        &["--print", "--agent", "cartography-element-generator", &prompt],
+        &[
+            "--print",
+            "--agent",
+            "cartography-element-generator",
+            &prompt,
+        ],
         project_dir,
     ) {
         Ok(out) if out.exit_code == 0 => {
@@ -311,8 +319,10 @@ fn collect_element_entries(ports: &HookPorts<'_>, elements_dir: &Path) -> Vec<El
             let slug = name[..name.len() - 3].to_string();
             let content = ports.fs.read_to_string(&path).ok()?;
             // Parse participating flows and journeys from markdown content
-            let participating_flows = extract_links_from_section(&content, "## Participating Flows");
-            let participating_journeys = extract_links_from_section(&content, "## Participating Journeys");
+            let participating_flows =
+                extract_links_from_section(&content, "## Participating Flows");
+            let participating_journeys =
+                extract_links_from_section(&content, "## Participating Journeys");
             Some(ElementEntry {
                 slug,
                 element_type: ecc_domain::cartography::element_types::ElementType::Unknown,
@@ -386,10 +396,7 @@ fn collect_pending_deltas(ports: &HookPorts<'_>, cartography_dir: &Path) -> Vec<
     entries
         .into_iter()
         .filter(|p| {
-            let name = p
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("");
+            let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
             name.starts_with("pending-delta-") && name.ends_with(".json")
         })
         .collect()
@@ -414,16 +421,17 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     };
 
     // Run git diff --name-only HEAD in the project dir
-    let git_output = match ports
-        .shell
-        .run_command_in_dir("git", &["diff", "--name-only", "HEAD"], &project_dir)
-    {
-        Ok(out) => out,
-        Err(e) => {
-            warn!("stop_cartography: git command error: {}", e);
-            return HookResult::passthrough(stdin);
-        }
-    };
+    let git_output =
+        match ports
+            .shell
+            .run_command_in_dir("git", &["diff", "--name-only", "HEAD"], &project_dir)
+        {
+            Ok(out) => out,
+            Err(e) => {
+                warn!("stop_cartography: git command error: {}", e);
+                return HookResult::passthrough(stdin);
+            }
+        };
 
     // Non-zero exit: check for "not a git repository"
     if git_output.exit_code != 0 {
@@ -734,8 +742,7 @@ mod tests {
     /// and crate classification.
     #[test]
     fn writes_delta_rust_project() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/Cargo.toml", "[workspace]");
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
         let shell = MockExecutor::new().on_args(
             "git",
             &["diff", "--name-only", "HEAD"],
@@ -756,13 +763,13 @@ mod tests {
         assert_eq!(result.exit_code, 0);
 
         // Delta file should exist
-        let delta_path =
-            std::path::Path::new("/project/.claude/cartography/pending-delta-rust-session-001.json");
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-rust-session-001.json",
+        );
         assert!(fs.exists(delta_path), "delta file should have been written");
 
         let content = fs.read_to_string(delta_path).expect("should read delta");
-        let delta: SessionDelta =
-            serde_json::from_str(&content).expect("should parse delta JSON");
+        let delta: SessionDelta = serde_json::from_str(&content).expect("should parse delta JSON");
 
         assert_eq!(delta.session_id, "rust-session-001");
         assert_eq!(delta.project_type, ProjectType::Rust);
@@ -817,8 +824,7 @@ mod tests {
         assert_eq!(delta_ts.project_type, ProjectType::Typescript);
 
         // --- javascript (package.json, no tsconfig) ---
-        let fs_js = InMemoryFileSystem::new()
-            .with_file("/jsproject/package.json", "{}");
+        let fs_js = InMemoryFileSystem::new().with_file("/jsproject/package.json", "{}");
         let shell_js = MockExecutor::new().on_args(
             "git",
             &["diff", "--name-only", "HEAD"],
@@ -853,8 +859,7 @@ mod tests {
                 exit_code: 0,
             },
         );
-        let env_unk = MockEnvironment::new()
-            .with_var("CLAUDE_PROJECT_DIR", "/unknown-project");
+        let env_unk = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/unknown-project");
         // CLAUDE_SESSION_ID NOT set → fallback ID
         let term_unk = BufferedTerminal::new();
         let ports_unk = make_ports(&fs_unk, &shell_unk, &env_unk, &term_unk);
@@ -1004,7 +1009,10 @@ mod tests {
         let journeys_dir = std::path::Path::new("/project/docs/cartography/journeys");
         let flows_dir = std::path::Path::new("/project/docs/cartography/flows");
         let readme = std::path::Path::new("/project/docs/cartography/README.md");
-        assert!(fs.exists(journeys_dir), "journeys/ should have been created");
+        assert!(
+            fs.exists(journeys_dir),
+            "journeys/ should have been created"
+        );
         assert!(fs.exists(flows_dir), "flows/ should have been created");
         assert!(fs.exists(readme), "README.md should have been created");
     }
@@ -1020,10 +1028,7 @@ mod tests {
             )
             .with_dir("/project/docs/cartography/journeys")
             .with_dir("/project/docs/cartography/flows")
-            .with_file(
-                "/project/docs/cartography/README.md",
-                "# Existing README\n",
-            );
+            .with_file("/project/docs/cartography/README.md", "# Existing README\n");
         let shell = MockExecutor::new()
             .on_args(
                 "git",
@@ -1068,9 +1073,7 @@ mod tests {
 
         // Existing README content preserved
         let readme_content = fs
-            .read_to_string(std::path::Path::new(
-                "/project/docs/cartography/README.md",
-            ))
+            .read_to_string(std::path::Path::new("/project/docs/cartography/README.md"))
             .expect("readme");
         assert_eq!(readme_content, "# Existing README\n");
     }
@@ -1252,11 +1255,14 @@ mod tests {
                     },
                 )
                 // Agent succeeds for all (command-only match)
-                .on("claude", CommandOutput {
-                    stdout: "ok".to_string(),
-                    stderr: String::new(),
-                    exit_code: 0,
-                })
+                .on(
+                    "claude",
+                    CommandOutput {
+                        stdout: "ok".to_string(),
+                        stderr: String::new(),
+                        exit_code: 0,
+                    },
+                )
                 .on_args(
                     "git",
                     &["add", "docs/cartography/"],
@@ -1288,13 +1294,9 @@ mod tests {
                 "pending-delta-session-100.json",
                 "pending-delta-session-200.json",
             ] {
-                let processed = std::path::Path::new("/project/.claude/cartography/processed")
-                    .join(name);
-                assert!(
-                    fs.exists(&processed),
-                    "delta {} should be archived",
-                    name
-                );
+                let processed =
+                    std::path::Path::new("/project/.claude/cartography/processed").join(name);
+                assert!(fs.exists(&processed), "delta {} should be archived", name);
             }
         }
     }
@@ -1359,9 +1361,8 @@ mod tests {
             );
             assert!(fs.exists(processed), "delta should be archived on success");
             // Original pending delta must be removed
-            let pending = std::path::Path::new(
-                "/project/.claude/cartography/pending-delta-session-ok.json",
-            );
+            let pending =
+                std::path::Path::new("/project/.claude/cartography/pending-delta-session-ok.json");
             assert!(
                 !fs.exists(pending),
                 "original pending delta should be gone after archive"
@@ -1466,7 +1467,10 @@ mod tests {
                             .starts_with("pending-delta-")
                     })
                     .collect();
-                assert!(delta_files.is_empty(), "no delta should be written for non-git repo");
+                assert!(
+                    delta_files.is_empty(),
+                    "no delta should be written for non-git repo"
+                );
             }
         }
 
@@ -1497,9 +1501,8 @@ mod tests {
             assert_eq!(result.exit_code, 0);
 
             // Corrupt file should have been deleted
-            let corrupt_path = std::path::Path::new(
-                "/project/.claude/cartography/pending-delta-old-session.json",
-            );
+            let corrupt_path =
+                std::path::Path::new("/project/.claude/cartography/pending-delta-old-session.json");
             assert!(
                 !fs.exists(corrupt_path),
                 "corrupt delta file should have been deleted"
@@ -1569,12 +1572,7 @@ mod tests {
             )
             .on_args(
                 "claude",
-                &[
-                    "--agent",
-                    "cartographer",
-                    "--input",
-                    enriched_input_json,
-                ],
+                &["--agent", "cartographer", "--input", enriched_input_json],
                 CommandOutput {
                     stdout: agent_output.to_string(),
                     stderr: String::new(),
@@ -1642,7 +1640,8 @@ mod tests {
             existing_flow: None,
             flow_files: vec![],
             external_io_patterns: vec![],
-        }).unwrap();
+        })
+        .unwrap();
 
         // New journey content returned by the agent (with step appended inside marker)
         let updated_journey = make_journey_content(
@@ -1657,7 +1656,10 @@ mod tests {
         let result = start_cartography("{}", &ports);
 
         // Handler should succeed (agent was called with enriched context matching mock)
-        assert_eq!(result.exit_code, 0, "handler should succeed when agent receives existing content");
+        assert_eq!(
+            result.exit_code, 0,
+            "handler should succeed when agent receives existing content"
+        );
         // Delta should be archived (successful run)
         assert!(
             fs.exists(std::path::Path::new(
@@ -1673,7 +1675,11 @@ mod tests {
     /// sections before persisting it.
     #[test]
     fn agent_output_validates_journey_schema() {
-        let delta = make_delta_with_file("session-validate-journey", 1000, "crates/ecc-app/src/handler.rs");
+        let delta = make_delta_with_file(
+            "session-validate-journey",
+            1000,
+            "crates/ecc-app/src/handler.rs",
+        );
         let delta_json = serde_json::to_string(&delta).unwrap();
 
         let fs = InMemoryFileSystem::new()
@@ -1692,7 +1698,8 @@ mod tests {
             existing_flow: None,
             flow_files: vec![],
             external_io_patterns: vec![],
-        }).unwrap();
+        })
+        .unwrap();
 
         let shell = make_shell_for_agent(&enriched_json, &valid_journey);
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
@@ -1704,7 +1711,10 @@ mod tests {
 
         // The written journey file must contain ## Mermaid Diagram and ## Steps
         let written_path = std::path::Path::new("/project/docs/cartography/journeys/ecc-app.md");
-        assert!(fs.exists(written_path), "journey file should have been written");
+        assert!(
+            fs.exists(written_path),
+            "journey file should have been written"
+        );
         let written = fs.read_to_string(written_path).expect("journey file");
         assert!(
             written.contains("## Mermaid Diagram"),
@@ -1745,10 +1755,12 @@ mod tests {
             existing_flow: None,
             flow_files: vec!["ecc-app-handler".to_string()],
             external_io_patterns: vec![],
-        }).unwrap();
+        })
+        .unwrap();
 
         // Agent returns journey with a relative link to the flow
-        let journey_with_link = make_journey_content("[ecc-app-handler](../flows/ecc-app-handler.md)\n");
+        let journey_with_link =
+            make_journey_content("[ecc-app-handler](../flows/ecc-app-handler.md)\n");
         let shell = make_shell_for_agent(&enriched_json, &journey_with_link);
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
@@ -1759,11 +1771,15 @@ mod tests {
 
         // The written journey file must contain relative links to the flow
         let written_path = std::path::Path::new("/project/docs/cartography/journeys/ecc-app.md");
-        assert!(fs.exists(written_path), "journey file should have been written");
+        assert!(
+            fs.exists(written_path),
+            "journey file should have been written"
+        );
         let written = fs.read_to_string(written_path).expect("journey file");
         assert!(
             written.contains("../flows/ecc-app-handler.md"),
-            "journey file must contain relative link to flow: {}", written
+            "journey file must contain relative link to flow: {}",
+            written
         );
     }
 
@@ -1773,7 +1789,8 @@ mod tests {
     /// files referenced in the current delta.
     #[test]
     fn no_backfill_on_first_run() {
-        let delta = make_delta_with_file("session-first-run", 1000, "crates/ecc-app/src/handler.rs");
+        let delta =
+            make_delta_with_file("session-first-run", 1000, "crates/ecc-app/src/handler.rs");
         let delta_json = serde_json::to_string(&delta).unwrap();
 
         // Fresh filesystem — no existing journeys
@@ -1791,7 +1808,8 @@ mod tests {
             existing_flow: None,
             flow_files: vec![],
             external_io_patterns: vec![],
-        }).unwrap();
+        })
+        .unwrap();
         let new_journey = make_journey_content("");
         let shell = make_shell_for_agent(&enriched_json, &new_journey);
 
@@ -1807,9 +1825,7 @@ mod tests {
         let journey_entries = fs.read_dir(journeys_dir).unwrap_or_default();
         let journey_files: Vec<_> = journey_entries
             .iter()
-            .filter(|p| {
-                p.extension().and_then(|e| e.to_str()) == Some("md")
-            })
+            .filter(|p| p.extension().and_then(|e| e.to_str()) == Some("md"))
             .collect();
         assert_eq!(
             journey_files.len(),
@@ -1842,7 +1858,8 @@ mod tests {
             existing_flow: None,
             flow_files: vec![],
             external_io_patterns: vec![],
-        }).unwrap();
+        })
+        .unwrap();
 
         // Agent returns journey with GAP marker for unknown actor
         let journey_with_gap = format!(
@@ -1858,11 +1875,15 @@ mod tests {
 
         // The written journey file must preserve GAP markers
         let written_path = std::path::Path::new("/project/docs/cartography/journeys/ecc-app.md");
-        assert!(fs.exists(written_path), "journey file should have been written");
+        assert!(
+            fs.exists(written_path),
+            "journey file should have been written"
+        );
         let written = fs.read_to_string(written_path).expect("journey file");
         assert!(
             written.contains("<!-- GAP:"),
-            "journey file must preserve GAP markers for unknown actors: {}", written
+            "journey file must preserve GAP markers for unknown actors: {}",
+            written
         );
     }
 
@@ -1904,7 +1925,8 @@ mod tests {
             existing_flow: None,
             flow_files: vec![],
             external_io_patterns: vec!["database".to_string(), "http".to_string()],
-        }).unwrap();
+        })
+        .unwrap();
 
         let flow_output = make_flow_content("");
         let shell = make_shell_for_agent(&enriched_json, &flow_output);
@@ -1915,7 +1937,10 @@ mod tests {
         let result = start_cartography("{}", &ports);
 
         // Handler must succeed — the agent was called with external_io_patterns in context
-        assert_eq!(result.exit_code, 0, "handler should succeed with external I/O patterns in enriched context");
+        assert_eq!(
+            result.exit_code, 0,
+            "handler should succeed with external I/O patterns in enriched context"
+        );
         // Delta should be archived — proves the agent was called with the correct enriched context
         // (if the handler passes plain delta_json instead of enriched context, the MockExecutor
         // won't find a matching registration and the agent call fails, leaving delta unarchived)
@@ -1932,7 +1957,11 @@ mod tests {
     /// The handler validates flow output before writing.
     #[test]
     fn agent_output_validates_flow_schema() {
-        let delta = make_delta_with_file("session-validate-flow", 1000, "crates/ecc-app/src/handler.rs");
+        let delta = make_delta_with_file(
+            "session-validate-flow",
+            1000,
+            "crates/ecc-app/src/handler.rs",
+        );
         let delta_json = serde_json::to_string(&delta).unwrap();
 
         let fs = InMemoryFileSystem::new()
@@ -1949,7 +1978,8 @@ mod tests {
             existing_flow: None,
             flow_files: vec![],
             external_io_patterns: vec![],
-        }).unwrap();
+        })
+        .unwrap();
 
         // Agent returns a valid flow file
         let valid_flow = make_flow_content("");
@@ -1963,7 +1993,10 @@ mod tests {
 
         // The written flow file must contain ## Mermaid Diagram and ## Transformation Steps
         let written_path = std::path::Path::new("/project/docs/cartography/flows/ecc-app.md");
-        assert!(fs.exists(written_path), "flow file should have been written");
+        assert!(
+            fs.exists(written_path),
+            "flow file should have been written"
+        );
         let written = fs.read_to_string(written_path).expect("flow file");
         assert!(
             written.contains("## Mermaid Diagram"),
@@ -1994,10 +2027,7 @@ mod tests {
                 &delta_json,
             )
             .with_dir("/project/docs/cartography/journeys")
-            .with_file(
-                "/project/docs/cartography/flows/ecc-app.md",
-                &existing_flow,
-            );
+            .with_file("/project/docs/cartography/flows/ecc-app.md", &existing_flow);
 
         let enriched_json = serde_json::to_string(&AgentContext {
             delta: &delta,
@@ -2005,7 +2035,8 @@ mod tests {
             existing_flow: Some(existing_flow.clone()),
             flow_files: vec!["ecc-app".to_string()],
             external_io_patterns: vec![],
-        }).unwrap();
+        })
+        .unwrap();
 
         // Agent returns a flow that only updates step-1, step-2 remains unchanged
         let updated_flow = format!(
@@ -2021,19 +2052,25 @@ mod tests {
 
         // The written flow file must have step-1 updated and step-2 preserved
         let written_path = std::path::Path::new("/project/docs/cartography/flows/ecc-app.md");
-        assert!(fs.exists(written_path), "flow file should have been written");
+        assert!(
+            fs.exists(written_path),
+            "flow file should have been written"
+        );
         let written = fs.read_to_string(written_path).expect("flow file");
         assert!(
             written.contains("Updated step 1 content."),
-            "step-1 should be updated: {}", written
+            "step-1 should be updated: {}",
+            written
         );
         assert!(
             written.contains("Unchanged step 2 content."),
-            "step-2 should be preserved: {}", written
+            "step-2 should be preserved: {}",
+            written
         );
         assert!(
             !written.contains("Old step 1 content."),
-            "old step-1 content should be replaced: {}", written
+            "old step-1 content should be replaced: {}",
+            written
         );
     }
 
@@ -2042,7 +2079,11 @@ mod tests {
     /// The handler must stage only docs/cartography/ and never use `git add .` or `git add -A`.
     #[test]
     fn commit_stages_only_cartography_dir() {
-        let delta = make_delta_with_file("session-commit-scope", 1000, "crates/ecc-app/src/handler.rs");
+        let delta = make_delta_with_file(
+            "session-commit-scope",
+            1000,
+            "crates/ecc-app/src/handler.rs",
+        );
         let delta_json = serde_json::to_string(&delta).unwrap();
 
         let fs = InMemoryFileSystem::new()
@@ -2059,7 +2100,8 @@ mod tests {
             existing_flow: None,
             flow_files: vec![],
             external_io_patterns: vec![],
-        }).unwrap();
+        })
+        .unwrap();
         let journey = make_journey_content("");
 
         // Register `git add docs/cartography/` as a known command that succeeds.
@@ -2210,8 +2252,7 @@ mod tests {
             "elements/ directory should have been created"
         );
 
-        let elements_readme =
-            std::path::Path::new("/project/docs/cartography/elements/README.md");
+        let elements_readme = std::path::Path::new("/project/docs/cartography/elements/README.md");
         assert!(
             fs.exists(elements_readme),
             "elements/README.md should have been created"
@@ -2600,10 +2641,7 @@ mod tests {
                 &delta_json,
             )
             .with_dir("/project/docs/cartography/elements")
-            .with_file(
-                "/project/docs/cartography/elements/INDEX.md",
-                old_index,
-            );
+            .with_file("/project/docs/cartography/elements/INDEX.md", old_index);
         let shell = MockExecutor::new()
             .on_args(
                 "git",
@@ -2648,9 +2686,11 @@ mod tests {
 
         assert_eq!(result.exit_code, 0);
 
-        let index_path =
-            std::path::Path::new("/project/docs/cartography/elements/INDEX.md");
-        assert!(fs.exists(index_path), "INDEX.md should exist after element dispatch");
+        let index_path = std::path::Path::new("/project/docs/cartography/elements/INDEX.md");
+        assert!(
+            fs.exists(index_path),
+            "INDEX.md should exist after element dispatch"
+        );
 
         let index_content = fs.read_to_string(index_path).expect("INDEX.md content");
         assert_ne!(
@@ -2711,8 +2751,7 @@ mod tests {
 
         assert_eq!(result.exit_code, 0);
         // INDEX.md should exist after the full run (written post-element-dispatch)
-        let index_path =
-            std::path::Path::new("/project/docs/cartography/elements/INDEX.md");
+        let index_path = std::path::Path::new("/project/docs/cartography/elements/INDEX.md");
         assert!(
             fs.exists(index_path),
             "INDEX.md should be written after elements complete"

@@ -186,8 +186,7 @@ mod tests {
 
     #[test]
     fn parses_prefixed_name() {
-        let parsed =
-            WorktreeName::parse("worktree-ecc-session-20260404-150000-my-feature-12345");
+        let parsed = WorktreeName::parse("worktree-ecc-session-20260404-150000-my-feature-12345");
         assert!(parsed.is_some(), "expected Some for worktree-prefixed name");
         let p = parsed.unwrap();
         assert_eq!(p.timestamp, "20260404-150000");
@@ -202,10 +201,10 @@ mod tests {
 
     #[test]
     fn rejects_double_prefix() {
-        assert!(WorktreeName::parse(
-            "worktree-worktree-ecc-session-20260404-150000-my-feature-12345"
-        )
-        .is_none());
+        assert!(
+            WorktreeName::parse("worktree-worktree-ecc-session-20260404-150000-my-feature-12345")
+                .is_none()
+        );
     }
 
     #[test]
@@ -218,8 +217,7 @@ mod tests {
         let unprefixed =
             WorktreeName::parse("ecc-session-20260404-150000-my-feature-12345").unwrap();
         let prefixed =
-            WorktreeName::parse("worktree-ecc-session-20260404-150000-my-feature-12345")
-                .unwrap();
+            WorktreeName::parse("worktree-ecc-session-20260404-150000-my-feature-12345").unwrap();
         assert_eq!(unprefixed.timestamp, prefixed.timestamp);
         assert_eq!(unprefixed.slug, prefixed.slug);
         assert_eq!(unprefixed.pid, prefixed.pid);

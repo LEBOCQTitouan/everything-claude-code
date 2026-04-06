@@ -51,15 +51,30 @@ fn status_parity() {
         .expect("ecc-workflow status failed");
 
     // Both should succeed
-    assert!(ecc_output.status.success(), "ecc workflow status should succeed");
-    assert!(wf_output.status.success(), "ecc-workflow status should succeed");
+    assert!(
+        ecc_output.status.success(),
+        "ecc workflow status should succeed"
+    );
+    assert!(
+        wf_output.status.success(),
+        "ecc-workflow status should succeed"
+    );
 
     // Both should contain the same phase and feature
     let ecc_stdout = String::from_utf8_lossy(&ecc_output.stdout);
     let wf_stdout = String::from_utf8_lossy(&wf_output.stdout);
-    assert!(ecc_stdout.contains("plan"), "ecc output should contain plan phase");
-    assert!(wf_stdout.contains("plan"), "wf output should contain plan phase");
-    assert!(ecc_stdout.contains("parity-test"), "ecc output should contain feature name");
+    assert!(
+        ecc_stdout.contains("plan"),
+        "ecc output should contain plan phase"
+    );
+    assert!(
+        wf_stdout.contains("plan"),
+        "wf output should contain plan phase"
+    );
+    assert!(
+        ecc_stdout.contains("parity-test"),
+        "ecc output should contain feature name"
+    );
 }
 
 /// PC-038: `ecc workflow transition` succeeds after init.
@@ -82,12 +97,28 @@ fn transition_parity() {
 #[test]
 fn all_subcommands_exist() {
     let subcommands = [
-        "init", "transition", "toolchain-persist", "memory-write",
-        "phase-gate", "stop-gate", "grill-me-gate", "tdd-enforcement",
-        "status", "artifact", "reset", "scope-check",
-        "doc-enforcement", "doc-level-check", "pass-condition-check",
-        "e2e-boundary-check", "worktree-name", "wave-plan", "merge",
-        "backlog", "tasks", "recover",
+        "init",
+        "transition",
+        "toolchain-persist",
+        "memory-write",
+        "phase-gate",
+        "stop-gate",
+        "grill-me-gate",
+        "tdd-enforcement",
+        "status",
+        "artifact",
+        "reset",
+        "scope-check",
+        "doc-enforcement",
+        "doc-level-check",
+        "pass-condition-check",
+        "e2e-boundary-check",
+        "worktree-name",
+        "wave-plan",
+        "merge",
+        "backlog",
+        "tasks",
+        "recover",
     ];
 
     for subcmd in subcommands {
@@ -120,10 +151,7 @@ fn verbose_tracing() {
         .output()
         .expect("failed to run verbose status");
 
-    assert!(
-        output.status.success(),
-        "verbose status should succeed"
-    );
+    assert!(output.status.success(), "verbose status should succeed");
     // Verbose mode should produce stderr output (tracing logs)
     // Note: may be empty if ecc-workflow doesn't log at info level for status
     // The key assertion is that -v flag is accepted without error

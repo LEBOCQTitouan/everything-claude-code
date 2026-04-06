@@ -381,8 +381,8 @@ fn version_not_found() {
     let env = MockEnvironment::new().with_architecture(Architecture::Amd64);
     let shell = MockExecutor::new();
     let terminal = BufferedTerminal::new();
-    let client = MockReleaseClient::new()
-        .with_error(MockError::NotFound("99.0.0 not found".to_string()));
+    let client =
+        MockReleaseClient::new().with_error(MockError::NotFound("99.0.0 not found".to_string()));
     let lock = InMemoryLock::new();
     let extractor = MockExtractor::new();
 

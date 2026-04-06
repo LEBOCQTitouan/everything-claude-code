@@ -122,7 +122,14 @@ pub fn run_update(
     let temp_dir = ctx.env.temp_dir().join("ecc-update");
     let tarball_path = temp_dir.join(format!("{}.tar.gz", artifact.as_str()));
 
-    download_and_verify(ctx, &target, &artifact, &temp_dir, &tarball_path, on_progress)?;
+    download_and_verify(
+        ctx,
+        &target,
+        &artifact,
+        &temp_dir,
+        &tarball_path,
+        on_progress,
+    )?;
 
     // 7. Extract and swap binaries
     let swapped = extract_and_swap(ctx, &tarball_path, &temp_dir, &install_dir)?;
@@ -232,11 +239,10 @@ fn download_and_verify(
 
     // Download cosign bundle and verify signature
     let bundle_path = PathBuf::from(format!("{}.bundle", tarball_path.display()));
-    if let Err(e) = ctx.release_client.download_cosign_bundle(
-        target.as_str(),
-        artifact.as_str(),
-        &bundle_path,
-    ) {
+    if let Err(e) =
+        ctx.release_client
+            .download_cosign_bundle(target.as_str(), artifact.as_str(), &bundle_path)
+    {
         let _ = ctx.fs.remove_dir_all(temp_dir);
         return Err(UpdateError::NetworkError {
             reason: format!("failed to download cosign bundle: {e}"),

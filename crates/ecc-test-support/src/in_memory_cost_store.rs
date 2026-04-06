@@ -92,10 +92,7 @@ impl CostStore for InMemoryCostStore {
 
         let mut guard = self.records.lock().expect("lock poisoned");
         let before = guard.len();
-        guard.retain(|r| {
-            parse_timestamp_secs(&r.timestamp)
-                .is_none_or(|ts| ts >= cutoff_secs)
-        });
+        guard.retain(|r| parse_timestamp_secs(&r.timestamp).is_none_or(|ts| ts >= cutoff_secs));
         Ok((before - guard.len()) as u64)
     }
 
@@ -167,8 +164,7 @@ fn matches_query(record: &TokenUsageRecord, query: &CostQuery) -> bool {
         return false;
     }
     if let Some((ref start, ref end)) = query.date_range
-        && (record.timestamp.as_str() < start.as_str()
-            || record.timestamp.as_str() > end.as_str())
+        && (record.timestamp.as_str() < start.as_str() || record.timestamp.as_str() > end.as_str())
     {
         return false;
     }
@@ -253,7 +249,9 @@ mod tests {
         let id = store.append(&record).expect("append should succeed");
         assert_eq!(id, RecordId(1));
 
-        let results = store.query(&CostQuery::default()).expect("query should succeed");
+        let results = store
+            .query(&CostQuery::default())
+            .expect("query should succeed");
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].record_id, Some(RecordId(1)));
         assert_eq!(results[0].model.as_str(), "claude-sonnet-4-6");

@@ -127,9 +127,8 @@ pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     // Try to persist via CostStore; fall back to JSONL otherwise.
     if let Some(store) = ports.cost_store {
         let table = PricingTable::default();
-        let model_id = ModelId::new(&model_str).unwrap_or_else(|_| {
-            ModelId::new("unknown").expect("'unknown' is a valid ModelId")
-        });
+        let model_id = ModelId::new(&model_str)
+            .unwrap_or_else(|_| ModelId::new("unknown").expect("'unknown' is a valid ModelId"));
         let cost = CostCalculator::estimate(
             &table,
             &model_id,
@@ -160,9 +159,8 @@ pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         }
 
         let table = PricingTable::default();
-        let model_id = ModelId::new(&model_str).unwrap_or_else(|_| {
-            ModelId::new("unknown").expect("'unknown' is a valid ModelId")
-        });
+        let model_id = ModelId::new(&model_str)
+            .unwrap_or_else(|_| ModelId::new("unknown").expect("'unknown' is a valid ModelId"));
         let cost = CostCalculator::estimate(
             &table,
             &model_id,

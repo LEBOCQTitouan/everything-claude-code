@@ -124,7 +124,10 @@ mod tests {
             ".tdd-state must exist at custom state_dir"
         );
         let content = std::fs::read_to_string(&state_file_path).unwrap();
-        assert_eq!(content, "RED", ".tdd-state must be readable from custom state_dir");
+        assert_eq!(
+            content, "RED",
+            ".tdd-state must be readable from custom state_dir"
+        );
 
         // .tdd-state must NOT exist at .claude/workflow/
         let default_path = tmp.path().join(".claude/workflow/.tdd-state");

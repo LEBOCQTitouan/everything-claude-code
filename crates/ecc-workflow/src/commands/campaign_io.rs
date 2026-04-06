@@ -4,17 +4,24 @@ use std::path::Path;
 
 /// Atomically write `content` to `path` using tempfile + rename.
 pub fn atomic_write(path: &Path, content: &str) -> Result<(), anyhow::Error> {
-    let parent = path.parent().ok_or_else(|| {
-        anyhow::anyhow!("Campaign path has no parent: {}", path.display())
+    let parent = path
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Campaign path has no parent: {}", path.display()))?;
+    let _guard = ecc_flock::acquire(parent, "campaign").map_err(|e| {
+        anyhow::anyhow!(
+            "Failed to acquire campaign lock at {}: {e}",
+            parent.display()
+        )
     })?;
-    let _guard = ecc_flock::acquire(parent, "campaign")
-        .map_err(|e| anyhow::anyhow!("Failed to acquire campaign lock at {}: {e}", parent.display()))?;
     let tmp_path = path.with_extension("md.tmp");
     std::fs::write(&tmp_path, content)
         .map_err(|e| anyhow::anyhow!("Failed to write tempfile at {}: {e}", tmp_path.display()))?;
     if let Err(e) = std::fs::rename(&tmp_path, path) {
         let _ = std::fs::remove_file(&tmp_path);
-        return Err(anyhow::anyhow!("Failed to rename tempfile to {}: {e}", path.display()));
+        return Err(anyhow::anyhow!(
+            "Failed to rename tempfile to {}: {e}",
+            path.display()
+        ));
     }
     Ok(())
 }
@@ -35,8 +42,8 @@ pub fn next_decision_number(content: &str) -> u32 {
         if trimmed.starts_with('|') {
             let parts: Vec<&str> = trimmed.split('|').collect();
             if parts.len() >= 3 {
-                    max = parts[1].trim().parse::<u32>().unwrap_or(0).max(max);
-                }
+                max = parts[1].trim().parse::<u32>().unwrap_or(0).max(max);
+            }
         }
     }
     max + 1
@@ -62,12 +69,23 @@ pub fn parse_decisions(content: &str) -> Vec<Decision> {
             past_separator = false;
             continue;
         }
-        if in_section && line.starts_with("## ") { break; }
-        if !in_section { continue; }
+        if in_section && line.starts_with("## ") {
+            break;
+        }
+        if !in_section {
+            continue;
+        }
         let trimmed = line.trim();
-        if trimmed.is_empty() || !trimmed.starts_with('|') { continue; }
-        if trimmed.contains("---") { past_separator = true; continue; }
-        if !past_separator { continue; }
+        if trimmed.is_empty() || !trimmed.starts_with('|') {
+            continue;
+        }
+        if trimmed.contains("---") {
+            past_separator = true;
+            continue;
+        }
+        if !past_separator {
+            continue;
+        }
         let parts: Vec<&str> = trimmed.split('|').collect();
         if parts.len() >= 5 {
             let n = parts[1].trim().parse::<u32>().unwrap_or(0);

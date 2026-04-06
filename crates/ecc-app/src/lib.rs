@@ -4,15 +4,15 @@
 //! boundaries. Each module corresponds to a CLI command or workflow
 //! (install, audit, merge, validate, etc.).
 
-pub mod analyze;
-pub mod cost_mgmt;
 pub mod act_ci;
+pub mod analyze;
 pub mod audit;
 pub mod audit_web;
 pub mod backlog;
 pub mod claw;
 pub mod config;
 pub mod config_cmd;
+pub mod cost_mgmt;
 pub mod detect;
 pub mod detection;
 pub mod dev;

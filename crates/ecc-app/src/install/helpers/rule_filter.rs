@@ -3,7 +3,7 @@
 //! Reads rule files, parses their `applies-to` frontmatter, and classifies
 //! each rule as included or skipped based on the detected project stack.
 
-use ecc_domain::config::applies_to::{evaluate_applicability, parse_applies_to, DetectedStack};
+use ecc_domain::config::applies_to::{DetectedStack, evaluate_applicability, parse_applies_to};
 use ecc_domain::config::validate::extract_frontmatter;
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
@@ -38,7 +38,11 @@ pub fn filter_rules_by_stack(
         let entries = match fs.read_dir(&group_dir) {
             Ok(e) => e,
             Err(e) => {
-                tracing::warn!("Cannot read rule group directory {}: {}", group_dir.display(), e);
+                tracing::warn!(
+                    "Cannot read rule group directory {}: {}",
+                    group_dir.display(),
+                    e
+                );
                 continue;
             }
         };
@@ -96,7 +100,10 @@ mod tests {
     fn filter_keeps_universal_rules_no_applies_to() {
         let fs = InMemoryFileSystem::new()
             .with_dir("/ecc/rules/common")
-            .with_file("/ecc/rules/common/coding-style.md", "---\nname: coding-style\n---\n# Rule");
+            .with_file(
+                "/ecc/rules/common/coding-style.md",
+                "---\nname: coding-style\n---\n# Rule",
+            );
 
         let groups = vec!["common".to_string()];
         let result = filter_rules_by_stack(&fs, Path::new("/ecc/rules"), &groups, &rust_stack());
@@ -147,7 +154,10 @@ mod tests {
                 "---\napplies-to: { languages: [rust] }\n---\n# Rust",
             )
             .with_dir("/ecc/rules/common")
-            .with_file("/ecc/rules/common/coding-style.md", "---\nname: coding-style\n---\n# Common");
+            .with_file(
+                "/ecc/rules/common/coding-style.md",
+                "---\nname: coding-style\n---\n# Common",
+            );
 
         let groups = vec!["rust".to_string(), "common".to_string()];
         let result = filter_rules_by_stack(&fs, Path::new("/ecc/rules"), &groups, &empty_stack());
@@ -177,8 +187,7 @@ mod tests {
     fn filter_missing_group_dir_does_not_crash() {
         let fs = InMemoryFileSystem::new().with_dir("/ecc/rules");
         let groups = vec!["nonexistent".to_string()];
-        let result =
-            filter_rules_by_stack(&fs, Path::new("/ecc/rules"), &groups, &rust_stack());
+        let result = filter_rules_by_stack(&fs, Path::new("/ecc/rules"), &groups, &rust_stack());
         assert_eq!(result.included.len(), 0);
         assert_eq!(result.skipped.len(), 0);
     }

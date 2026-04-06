@@ -1,20 +1,20 @@
 {
-  "phase": "idle",
+  "phase": "implement",
   "concern": "dev",
-  "feature": "",
-  "started_at": "2026-04-05T10:10:22Z",
+  "feature": "bl120-pattern-library",
+  "started_at": "2026-04-05T22:40:54Z",
   "toolchain": {
-    "test": null,
-    "lint": null,
-    "build": null
+    "test": "cargo test",
+    "lint": "cargo clippy -- -D warnings",
+    "build": "cargo build"
   },
   "artifacts": {
-    "plan": null,
-    "solution": null,
+    "plan": "2026-04-05T22:40:54Z",
+    "solution": "2026-04-05T22:40:54Z",
     "implement": null,
     "campaign_path": null,
-    "spec_path": null,
-    "design_path": null,
+    "spec_path": "docs/specs/2026-04-05-bl120-pattern-library/spec.md",
+    "design_path": "docs/specs/2026-04-05-bl120-pattern-library/design.md",
     "tasks_path": null
   },
   "completed": [],

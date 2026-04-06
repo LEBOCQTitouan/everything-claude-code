@@ -5,8 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 // Compile-time constants for cosign verification (PC-035)
-pub(crate) const COSIGN_CERTIFICATE_IDENTITY: &str =
-    "https://github.com/LEBOCQTitouan/everything-claude-code/.github/workflows/release.yml@refs/tags/v";
+pub(crate) const COSIGN_CERTIFICATE_IDENTITY: &str = "https://github.com/LEBOCQTitouan/everything-claude-code/.github/workflows/release.yml@refs/tags/v";
 pub(crate) const COSIGN_OIDC_ISSUER: &str = "https://token.actions.githubusercontent.com";
 
 const CHUNK_SIZE: usize = 8 * 1024; // 8 KiB
@@ -172,7 +171,9 @@ pub(crate) fn build_cosign_command(
 ///
 /// Returns `Some(bearer)` when a non-empty token is provided.
 pub(crate) fn make_auth_header(token: Option<&str>) -> Option<String> {
-    token.filter(|t| !t.is_empty()).map(|t| format!("Bearer {t}"))
+    token
+        .filter(|t| !t.is_empty())
+        .map(|t| format!("Bearer {t}"))
 }
 
 // ── ReleaseClient impl ────────────────────────────────────────────────────────
@@ -457,11 +458,16 @@ mod tests {
 
     #[test]
     fn network_error() {
-        let simulated_err: BoxError =
-            "network error: connection refused. Try again later.".into();
+        let simulated_err: BoxError = "network error: connection refused. Try again later.".into();
         let msg = simulated_err.to_string();
-        assert!(msg.contains("network error"), "error should mention 'network error'");
-        assert!(msg.contains("Try again later"), "error should contain retry guidance");
+        assert!(
+            msg.contains("network error"),
+            "error should mention 'network error'"
+        );
+        assert!(
+            msg.contains("Try again later"),
+            "error should contain retry guidance"
+        );
     }
 
     // ── PC-030: rate_limited ──────────────────────────────────────────────────
@@ -501,15 +507,25 @@ mod tests {
     fn cosign_verify_bundle() {
         let blob = PathBuf::from("/tmp/artifact.tar.gz");
         let bundle = PathBuf::from("/tmp/artifact.tar.gz.bundle");
-        let cmd =
-            build_cosign_command(&blob, &bundle, COSIGN_CERTIFICATE_IDENTITY, COSIGN_OIDC_ISSUER);
+        let cmd = build_cosign_command(
+            &blob,
+            &bundle,
+            COSIGN_CERTIFICATE_IDENTITY,
+            COSIGN_OIDC_ISSUER,
+        );
 
         assert_eq!(cmd.get_program(), "cosign");
 
         let args: Vec<&std::ffi::OsStr> = cmd.get_args().collect();
-        let args_str: Vec<&str> = args.iter().filter_map(|a: &&std::ffi::OsStr| a.to_str()).collect();
+        let args_str: Vec<&str> = args
+            .iter()
+            .filter_map(|a: &&std::ffi::OsStr| a.to_str())
+            .collect();
 
-        assert!(args_str.contains(&"verify-blob"), "must contain verify-blob");
+        assert!(
+            args_str.contains(&"verify-blob"),
+            "must contain verify-blob"
+        );
         assert!(args_str.contains(&"--bundle"), "must contain --bundle");
         assert!(
             args_str.contains(&"/tmp/artifact.tar.gz.bundle"),

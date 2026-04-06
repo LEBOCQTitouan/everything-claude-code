@@ -232,14 +232,8 @@ pub fn evaluate_applicability(applies_to: &Option<AppliesTo>, stack: &DetectedSt
         return true;
     }
 
-    let lang_match = at
-        .languages
-        .iter()
-        .any(|l| stack.languages.contains(l));
-    let fw_match = at
-        .frameworks
-        .iter()
-        .any(|f| stack.frameworks.contains(f));
+    let lang_match = at.languages.iter().any(|l| stack.languages.contains(l));
+    let fw_match = at.frameworks.iter().any(|f| stack.frameworks.contains(f));
     let file_match = at.files.iter().any(|f| stack.files.contains(f));
 
     lang_match || fw_match || file_match
@@ -272,7 +266,10 @@ mod tests {
     fn parse_languages_multiple() {
         let map = fm("applies-to", "{ languages: [rust, python] }");
         let result = parse_applies_to(&map).unwrap();
-        assert_eq!(result.languages, vec!["rust".to_string(), "python".to_string()]);
+        assert_eq!(
+            result.languages,
+            vec!["rust".to_string(), "python".to_string()]
+        );
     }
 
     #[test]
@@ -299,7 +296,10 @@ mod tests {
 
     #[test]
     fn parse_multiple_conditions() {
-        let map = fm("applies-to", "{ languages: [python], frameworks: [django] }");
+        let map = fm(
+            "applies-to",
+            "{ languages: [python], frameworks: [django] }",
+        );
         let result = parse_applies_to(&map).unwrap();
         assert_eq!(result.languages, vec!["python".to_string()]);
         assert_eq!(result.frameworks, vec!["django".to_string()]);
@@ -337,14 +337,20 @@ mod tests {
     fn parse_values_normalized_to_lowercase() {
         let map = fm("applies-to", "{ languages: [Rust, PYTHON] }");
         let result = parse_applies_to(&map).unwrap();
-        assert_eq!(result.languages, vec!["rust".to_string(), "python".to_string()]);
+        assert_eq!(
+            result.languages,
+            vec!["rust".to_string(), "python".to_string()]
+        );
     }
 
     #[test]
     fn parse_whitespace_variants() {
         let map = fm("applies-to", "{  languages:  [ rust ,  python ]  }");
         let result = parse_applies_to(&map).unwrap();
-        assert_eq!(result.languages, vec!["rust".to_string(), "python".to_string()]);
+        assert_eq!(
+            result.languages,
+            vec!["rust".to_string(), "python".to_string()]
+        );
     }
 
     #[test]

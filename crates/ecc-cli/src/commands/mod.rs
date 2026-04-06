@@ -1,11 +1,11 @@
 pub mod analyze;
-pub mod cost;
 pub mod audit;
 pub mod audit_web;
 pub mod backlog;
 pub mod claw;
 pub mod completion;
 pub mod config;
+pub mod cost;
 pub mod dev;
 pub mod hook;
 pub mod init;

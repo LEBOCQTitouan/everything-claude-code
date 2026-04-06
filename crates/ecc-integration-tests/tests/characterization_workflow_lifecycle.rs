@@ -16,8 +16,8 @@ fn wf_cmd(project_dir: &Path) -> Command {
 
 fn read_phase(project_dir: &Path) -> String {
     let path = project_dir.join(".claude/workflow/state.json");
-    let content = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read state.json: {e}"));
+    let content =
+        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read state.json: {e}"));
     let v: serde_json::Value = serde_json::from_str(&content).expect("invalid JSON");
     v["phase"].as_str().unwrap_or("unknown").to_owned()
 }
@@ -63,10 +63,7 @@ fn illegal_transition_rejected() {
     let tmp = TempDir::new().unwrap();
     let dir = tmp.path();
 
-    wf_cmd(dir)
-        .args(["init", "dev", "test"])
-        .assert()
-        .success();
+    wf_cmd(dir).args(["init", "dev", "test"]).assert().success();
 
     // plan -> done is illegal (must go through solution, implement)
     let output = wf_cmd(dir)

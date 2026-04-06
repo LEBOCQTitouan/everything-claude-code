@@ -306,7 +306,11 @@ mod tests {
 
         // Second "process": new state already exists, must be no-op
         let second = migrate_if_needed(&old_dir, &new_dir, &fs);
-        assert_eq!(second, Ok(false), "second call must be no-op (already migrated)");
+        assert_eq!(
+            second,
+            Ok(false),
+            "second call must be no-op (already migrated)"
+        );
 
         // Verify no corruption: content in new location matches original
         let new_state = new_dir.join("state.json");

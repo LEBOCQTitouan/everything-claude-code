@@ -7,9 +7,7 @@
 use std::time::Duration;
 
 use ecc_domain::cost::{
-    calculator::CostSummary,
-    record::TokenUsageRecord,
-    value_objects::RecordId,
+    calculator::CostSummary, record::TokenUsageRecord, value_objects::RecordId,
 };
 
 /// Query parameters for filtering token usage records.
@@ -66,7 +64,8 @@ pub trait CostStore: Send + Sync {
     /// Delete records older than `older_than` and return the count of removed rows.
     fn prune(&self, older_than: Duration) -> Result<u64, CostStoreError>;
     /// Export records matching `query` in the given `format`.
-    fn export(&self, query: &CostQuery, format: CostExportFormat) -> Result<String, CostStoreError>;
+    fn export(&self, query: &CostQuery, format: CostExportFormat)
+    -> Result<String, CostStoreError>;
 }
 
 #[cfg(test)]

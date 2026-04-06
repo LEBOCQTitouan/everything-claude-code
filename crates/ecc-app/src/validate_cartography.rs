@@ -4,11 +4,9 @@
 //! validates each file's schema, checks staleness via `git log`, and
 //! optionally outputs a coverage dashboard.
 
-use ecc_domain::cartography::{
-    calculate_coverage, check_staleness, parse_cartography_meta,
-};
 use ecc_domain::cartography::element_validation::validate_element;
 use ecc_domain::cartography::validation::{validate_flow, validate_journey};
+use ecc_domain::cartography::{calculate_coverage, check_staleness, parse_cartography_meta};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
@@ -187,9 +185,7 @@ fn report_staleness(
         if let Some(stale_marker) = check_staleness(content, &dates_ref) {
             // Parse the delta in days from last_updated and source_modified
             let delta_days = compute_staleness_days(&meta.last_updated, &source_dates);
-            terminal.stdout_write(&format!(
-                "STALE: {stale_marker} ({delta_days} days)\n"
-            ));
+            terminal.stdout_write(&format!("STALE: {stale_marker} ({delta_days} days)\n"));
         }
     }
 }
@@ -377,14 +373,20 @@ Source: A
 
     #[test]
     fn returns_false_when_journey_missing_sections() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/p/docs/cartography/journeys/j.md", "# Journey\n\n## Steps\n1. S\n");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/p/docs/cartography/journeys/j.md",
+            "# Journey\n\n## Steps\n1. S\n",
+        );
         let shell = MockExecutor::new();
         let terminal = BufferedTerminal::new();
         let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
         assert!(!result);
         let out = terminal.stdout_output().join("");
-        assert!(out.contains("Overview") || out.contains("Mermaid Diagram") || out.contains("Related Flows"));
+        assert!(
+            out.contains("Overview")
+                || out.contains("Mermaid Diagram")
+                || out.contains("Related Flows")
+        );
     }
 
     #[test]
@@ -418,14 +420,19 @@ The authentication service.
     #[test]
     fn invalid_element_exits_with_error() {
         // Element file missing required sections → validate returns false + prints ERROR
-        let fs = InMemoryFileSystem::new()
-            .with_file("/p/docs/cartography/elements/bad-element.md", "# Element: bad\n\n## Overview\nSome text.\n");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/p/docs/cartography/elements/bad-element.md",
+            "# Element: bad\n\n## Overview\nSome text.\n",
+        );
         let shell = MockExecutor::new();
         let terminal = BufferedTerminal::new();
         let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
         assert!(!result, "invalid element should cause false return");
         let out = terminal.stdout_output().join("");
-        assert!(out.contains("ERROR") && out.contains("element"), "expected element error in output, got: {out}");
+        assert!(
+            out.contains("ERROR") && out.contains("element"),
+            "expected element error in output, got: {out}"
+        );
     }
 
     // PC-010
@@ -439,8 +446,13 @@ The authentication service.
         let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
         assert!(result, "missing INDEX.md should not cause error");
         let out = terminal.stdout_output().join("");
-        assert!(out.contains("WARN") || out.contains("warn") || out.contains("index") || out.contains("INDEX"),
-            "expected warning about missing INDEX.md, got: {out}");
+        assert!(
+            out.contains("WARN")
+                || out.contains("warn")
+                || out.contains("index")
+                || out.contains("INDEX"),
+            "expected warning about missing INDEX.md, got: {out}"
+        );
     }
 
     // PC-011
@@ -462,8 +474,10 @@ The authentication service.
         let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
         assert!(result, "stale INDEX should not cause error");
         let out = terminal.stdout_output().join("");
-        assert!(out.contains("WARN") || out.contains("warn") || out.contains("auth"),
-            "expected warning about missing slug in INDEX, got: {out}");
+        assert!(
+            out.contains("WARN") || out.contains("warn") || out.contains("auth"),
+            "expected warning about missing slug in INDEX, got: {out}"
+        );
     }
 
     // PC-012
@@ -502,12 +516,18 @@ The authentication service.
 ";
         let fs = InMemoryFileSystem::new()
             .with_file("/p/docs/cartography/elements/auth.md", element_with_meta);
-        let shell = MockExecutor::new()
-            .on_args("git", &["log", "-1", "--format=%Y-%m-%d", "src/auth.rs"], git_date_output("2026-06-01"));
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["log", "-1", "--format=%Y-%m-%d", "src/auth.rs"],
+            git_date_output("2026-06-01"),
+        );
         let terminal = BufferedTerminal::new();
         run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), false);
         let out = terminal.stdout_output().join("");
-        assert!(out.contains("STALE"), "expected STALE output for element file, got: {out}");
+        assert!(
+            out.contains("STALE"),
+            "expected STALE output for element file, got: {out}"
+        );
     }
 
     // PC-014
@@ -537,9 +557,15 @@ The authentication service. See `src/auth.rs` for implementation.
         run_validate_cartography(&fs, &shell, &terminal, Path::new("/p"), true);
         let out = terminal.stdout_output().join("");
         // auth.rs is referenced in element and exists in src/ → referenced count >= 1
-        assert!(out.contains("Coverage:"), "expected coverage output, got: {out}");
+        assert!(
+            out.contains("Coverage:"),
+            "expected coverage output, got: {out}"
+        );
         // With 1 file and 1 referenced → 100%
-        assert!(out.contains("100") || out.contains("1/1"), "expected 100% coverage, got: {out}");
+        assert!(
+            out.contains("100") || out.contains("1/1"),
+            "expected 100% coverage, got: {out}"
+        );
     }
 
     // PC-015
@@ -573,7 +599,12 @@ See `src/a.rs`.
         let out = terminal.stdout_output().join("");
         assert!(out.contains("Coverage:"), "expected coverage output");
         // 1/4 = 25% < 50% → priority gaps shown
-        assert!(out.contains("Priority gaps") || out.contains("gap") || out.contains("src/b.rs") || out.contains("src/c.rs"),
-            "expected priority gaps output for low coverage, got: {out}");
+        assert!(
+            out.contains("Priority gaps")
+                || out.contains("gap")
+                || out.contains("src/b.rs")
+                || out.contains("src/c.rs"),
+            "expected priority gaps output for low coverage, got: {out}"
+        );
     }
 }

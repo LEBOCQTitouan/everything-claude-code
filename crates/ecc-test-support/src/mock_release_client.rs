@@ -244,7 +244,9 @@ mod tests {
         let path = PathBuf::from("/tmp/fake.tar.gz");
         let bundle_path = PathBuf::from("/tmp/fake.tar.gz.bundle");
         let client = MockReleaseClient::new().with_cosign_result(CosignResult::NotInstalled);
-        let result = client.verify_cosign("1.0.0", "ecc.tar.gz", &path, &bundle_path).unwrap();
+        let result = client
+            .verify_cosign("1.0.0", "ecc.tar.gz", &path, &bundle_path)
+            .unwrap();
         assert_eq!(result, CosignResult::NotInstalled);
     }
 }
