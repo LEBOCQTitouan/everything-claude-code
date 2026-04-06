@@ -3,7 +3,7 @@ id: BL-117
 title: "Evaluate release-plz for automated semver and changelog"
 scope: MEDIUM
 target: "/spec-dev"
-status: open
+status: implemented
 created: "2026-03-31"
 source: "docs/audits/web-radar-2026-03-31.md"
 ring: trial
