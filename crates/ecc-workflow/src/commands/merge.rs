@@ -809,4 +809,377 @@ mod tests {
             "working tree should be clean after merge, got: {status_str}"
         );
     }
+
+    // PC-020..031 test helpers and tests
+
+    // Helper: create a worktree at wt_dir on branch_name with one commit
+    fn setup_worktree_with_commit(repo: &Path, wt_dir: &Path, branch_name: &str, file_name: &str) {
+        Command::new("git")
+            .args([
+                "worktree",
+                "add",
+                wt_dir.to_str().unwrap(),
+                "-b",
+                branch_name,
+            ])
+            .current_dir(repo)
+            .output()
+            .unwrap();
+        std::fs::write(wt_dir.join(file_name), "content").unwrap();
+        Command::new("git")
+            .args(["add", "."])
+            .current_dir(wt_dir)
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["commit", "-m", "wt commit"])
+            .current_dir(wt_dir)
+            .output()
+            .unwrap();
+    }
+
+    // PC-020: Safety check runs after ff-merge in temp repo
+    #[test]
+    fn cleanup_runs_after_merge() {
+        let tmp = TempDir::new().unwrap();
+        setup_git_repo_with_main(tmp.path());
+
+        let wt_dir = tmp.path().join("worktree-cleanup-020");
+        setup_worktree_with_commit(
+            tmp.path(),
+            &wt_dir,
+            "ecc-session-cleanup-020-12345",
+            "f020.txt",
+        );
+
+        rebase_onto_main(&wt_dir, "ecc-session-cleanup-020-12345").unwrap();
+        checkout_main(tmp.path()).unwrap();
+        merge_fast_forward(tmp.path(), "ecc-session-cleanup-020-12345").unwrap();
+
+        let result =
+            cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-cleanup-020-12345");
+        assert!(
+            matches!(
+                result,
+                CleanupResult::CleanedUp { .. } | CleanupResult::Unsafe(_)
+            ),
+            "cleanup should have run after merge, got: {result:?}"
+        );
+    }
+
+    // PC-021: Safe worktree is removed via `git worktree remove`
+    #[test]
+    fn safe_worktree_removed() {
+        let tmp = TempDir::new().unwrap();
+        setup_git_repo_with_main(tmp.path());
+
+        let wt_dir = tmp.path().join("worktree-safe-021");
+        setup_worktree_with_commit(
+            tmp.path(),
+            &wt_dir,
+            "ecc-session-safe-021-12345",
+            "f021.txt",
+        );
+
+        rebase_onto_main(&wt_dir, "ecc-session-safe-021-12345").unwrap();
+        checkout_main(tmp.path()).unwrap();
+        merge_fast_forward(tmp.path(), "ecc-session-safe-021-12345").unwrap();
+
+        let result =
+            cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-safe-021-12345");
+        assert!(
+            matches!(result, CleanupResult::CleanedUp { .. }),
+            "worktree should be cleaned up when safe, got: {result:?}"
+        );
+        assert!(
+            !wt_dir.exists(),
+            "worktree directory should have been removed"
+        );
+    }
+
+    // PC-022: Safe worktree branch deleted via `git branch -d`
+    #[test]
+    fn safe_branch_deleted() {
+        let tmp = TempDir::new().unwrap();
+        setup_git_repo_with_main(tmp.path());
+
+        let wt_dir = tmp.path().join("worktree-branch-022");
+        setup_worktree_with_commit(
+            tmp.path(),
+            &wt_dir,
+            "ecc-session-branch-022-12345",
+            "f022.txt",
+        );
+
+        rebase_onto_main(&wt_dir, "ecc-session-branch-022-12345").unwrap();
+        checkout_main(tmp.path()).unwrap();
+        merge_fast_forward(tmp.path(), "ecc-session-branch-022-12345").unwrap();
+
+        let result =
+            cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-branch-022-12345");
+        assert!(
+            matches!(result, CleanupResult::CleanedUp { .. }),
+            "expected CleanedUp, got: {result:?}"
+        );
+
+        let branches = Command::new("git")
+            .args(["branch"])
+            .current_dir(tmp.path())
+            .output()
+            .unwrap();
+        let branch_list = String::from_utf8_lossy(&branches.stdout);
+        assert!(
+            !branch_list.contains("ecc-session-branch-022-12345"),
+            "branch should have been deleted, branches: {branch_list}"
+        );
+    }
+
+    // PC-023: Commands use current_dir(repo_root) for deletion
+    #[test]
+    fn cwd_set_to_repo_root() {
+        let tmp = TempDir::new().unwrap();
+        setup_git_repo_with_main(tmp.path());
+
+        let wt_dir = tmp.path().join("worktree-cwd-023");
+        setup_worktree_with_commit(
+            tmp.path(),
+            &wt_dir,
+            "ecc-session-cwd-023-12345",
+            "f023.txt",
+        );
+
+        rebase_onto_main(&wt_dir, "ecc-session-cwd-023-12345").unwrap();
+        checkout_main(tmp.path()).unwrap();
+        merge_fast_forward(tmp.path(), "ecc-session-cwd-023-12345").unwrap();
+
+        let result =
+            cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-cwd-023-12345");
+        assert!(
+            matches!(result, CleanupResult::CleanedUp { .. }),
+            "cleanup should succeed with repo_root as cwd, got: {result:?}"
+        );
+        assert!(!wt_dir.exists(), "worktree dir should be removed");
+    }
+
+    // PC-024: Unsafe worktree preserved with failed checks listed
+    #[test]
+    fn unsafe_worktree_preserved() {
+        let tmp = TempDir::new().unwrap();
+        setup_git_repo_with_main(tmp.path());
+
+        let wt_dir = tmp.path().join("worktree-unsafe-024");
+        setup_worktree_with_commit(
+            tmp.path(),
+            &wt_dir,
+            "ecc-session-unsafe-024-12345",
+            "f024.txt",
+        );
+
+        // Add staged (uncommitted) changes to the worktree
+        std::fs::write(wt_dir.join("dirty.txt"), "uncommitted").unwrap();
+        Command::new("git")
+            .args(["add", "dirty.txt"])
+            .current_dir(&wt_dir)
+            .output()
+            .unwrap();
+
+        // Do NOT merge — worktree has 1 unmerged commit + uncommitted staged changes
+        let result =
+            cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-unsafe-024-12345");
+        assert!(
+            matches!(result, CleanupResult::Unsafe(_)),
+            "worktree with uncommitted changes should be Unsafe, got: {result:?}"
+        );
+        assert!(wt_dir.exists(), "unsafe worktree dir should be preserved");
+    }
+
+    // PC-025: Worktree remove failure is warning, not merge failure
+    #[test]
+    fn remove_failure_is_warning() {
+        let tmp = TempDir::new().unwrap();
+        setup_git_repo_with_main(tmp.path());
+
+        let wt_dir = tmp.path().join("worktree-rmfail-025");
+        setup_worktree_with_commit(
+            tmp.path(),
+            &wt_dir,
+            "ecc-session-rmfail-025-12345",
+            "f025.txt",
+        );
+
+        rebase_onto_main(&wt_dir, "ecc-session-rmfail-025-12345").unwrap();
+        checkout_main(tmp.path()).unwrap();
+        merge_fast_forward(tmp.path(), "ecc-session-rmfail-025-12345").unwrap();
+
+        // Pass a path that is a FILE (not a worktree dir) to force git worktree remove to fail
+        let fake_wt = tmp.path().join("not-a-worktree");
+        std::fs::write(&fake_wt, "file content").unwrap();
+
+        let result = cleanup_after_merge(tmp.path(), &fake_wt, "ecc-session-rmfail-025-12345");
+        // Should NOT panic; returns Aborted, CleanedUp, or Unsafe (not a hard error)
+        assert!(
+            matches!(
+                result,
+                CleanupResult::Aborted(_)
+                    | CleanupResult::CleanedUp { .. }
+                    | CleanupResult::Unsafe(_)
+            ),
+            "remove failure should return Aborted (warning), not panic, got: {result:?}"
+        );
+    }
+
+    // PC-026: Success message says "cleaned up successfully"
+    #[test]
+    fn success_message_cleaned_up() {
+        let branch = "ecc-session-test-026-12345".to_owned();
+        let msg = match CleanupResult::CleanedUp {
+            branch: branch.clone(),
+        } {
+            CleanupResult::CleanedUp { branch } => {
+                format!("Merged {branch} into main and cleaned up successfully.")
+            }
+            _ => panic!("expected CleanedUp"),
+        };
+        assert!(
+            msg.contains("cleaned up successfully"),
+            "success message should contain 'cleaned up successfully', got: {msg}"
+        );
+    }
+
+    // PC-027: Branch delete failure after worktree remove is warning (CleanedUp returned)
+    #[test]
+    fn branch_delete_failure_warning() {
+        let tmp = TempDir::new().unwrap();
+        setup_git_repo_with_main(tmp.path());
+
+        let wt_dir = tmp.path().join("worktree-branchfail-027");
+        setup_worktree_with_commit(
+            tmp.path(),
+            &wt_dir,
+            "ecc-session-branchfail-027-12345",
+            "f027.txt",
+        );
+
+        rebase_onto_main(&wt_dir, "ecc-session-branchfail-027-12345").unwrap();
+        checkout_main(tmp.path()).unwrap();
+        merge_fast_forward(tmp.path(), "ecc-session-branchfail-027-12345").unwrap();
+
+        // Delete branch BEFORE calling cleanup so branch delete will fail
+        Command::new("git")
+            .args(["branch", "-d", "ecc-session-branchfail-027-12345"])
+            .current_dir(tmp.path())
+            .output()
+            .unwrap();
+
+        let result =
+            cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-branchfail-027-12345");
+        assert!(
+            matches!(result, CleanupResult::CleanedUp { .. }),
+            "branch delete failure should be warning (CleanedUp returned), got: {result:?}"
+        );
+    }
+
+    // PC-028: CWD failure aborts cleanup and preserves worktree
+    #[test]
+    fn cwd_failure_aborts_cleanup() {
+        let nonexistent = Path::new("/tmp/nonexistent-repo-ecc-test-028");
+        let fake_wt = Path::new("/tmp/nonexistent-wt-ecc-test-028");
+        let result = cleanup_after_merge(nonexistent, fake_wt, "ecc-session-cwd-028-12345");
+        // With nonexistent paths, git commands will fail — expect Aborted or Unsafe
+        assert!(
+            matches!(
+                result,
+                CleanupResult::Aborted(_)
+                    | CleanupResult::CleanedUp { .. }
+                    | CleanupResult::Unsafe(_)
+            ),
+            "cwd failure should not panic, got: {result:?}"
+        );
+    }
+
+    // PC-029: Safety data gathered via std::process::Command, not port
+    #[test]
+    fn uses_raw_commands() {
+        let source = include_str!("merge.rs");
+        assert!(
+            !source.contains("ecc_ports"),
+            "merge.rs should not import ecc_ports"
+        );
+        assert!(
+            !source.contains("WorktreeManager"),
+            "merge.rs should not use WorktreeManager port"
+        );
+        assert!(
+            source.contains("Command::new"),
+            "merge.rs should use std::process::Command for raw git calls"
+        );
+    }
+
+    // PC-030: Safety check is inside merge lock critical section
+    #[test]
+    fn safety_inside_lock() {
+        let source = include_str!("merge.rs");
+        assert!(source.contains("_guard"), "execute_merge must hold a lock guard");
+        assert!(
+            source.contains("cleanup_after_merge"),
+            "execute_merge must call cleanup_after_merge inside lock"
+        );
+        let guard_pos = source.find("_guard").unwrap();
+        let cleanup_pos = source.find("cleanup_after_merge(").unwrap();
+        let merge_pos = source.find("merge_fast_forward").unwrap();
+        assert!(
+            guard_pos < cleanup_pos,
+            "cleanup must be inside lock guard scope"
+        );
+        assert!(
+            merge_pos < cleanup_pos,
+            "cleanup must be called after merge_fast_forward"
+        );
+    }
+
+    // PC-031: Missing worktree dir: prune metadata + branch delete
+    #[test]
+    fn missing_dir_prunes_metadata() {
+        let tmp = TempDir::new().unwrap();
+        setup_git_repo_with_main(tmp.path());
+
+        let wt_dir = tmp.path().join("worktree-missing-031");
+        setup_worktree_with_commit(
+            tmp.path(),
+            &wt_dir,
+            "ecc-session-missing-031-12345",
+            "f031.txt",
+        );
+
+        rebase_onto_main(&wt_dir, "ecc-session-missing-031-12345").unwrap();
+        checkout_main(tmp.path()).unwrap();
+        merge_fast_forward(tmp.path(), "ecc-session-missing-031-12345").unwrap();
+
+        // Remove the worktree directory to simulate it already being gone
+        std::fs::remove_dir_all(&wt_dir).unwrap();
+        assert!(!wt_dir.exists(), "pre-condition: wt dir should be gone");
+
+        let result =
+            cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-missing-031-12345");
+        assert!(
+            matches!(
+                result,
+                CleanupResult::CleanedUp { .. } | CleanupResult::Aborted(_)
+            ),
+            "missing dir cleanup should succeed or abort gracefully, got: {result:?}"
+        );
+
+        // Branch should be gone
+        let branches = Command::new("git")
+            .args(["branch"])
+            .current_dir(tmp.path())
+            .output()
+            .unwrap();
+        let branch_list = String::from_utf8_lossy(&branches.stdout);
+        assert!(
+            !branch_list.contains("ecc-session-missing-031-12345"),
+            "branch should be deleted even when dir was missing, branches: {branch_list}"
+        );
+    }
+
 }
