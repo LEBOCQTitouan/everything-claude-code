@@ -3,8 +3,8 @@ use crate::hook::{HookPorts, HookResult};
 
 /// session:end:worktree-merge — merge worktree back to main at session end.
 ///
-/// Calls `ecc-workflow merge` which handles rebase + verify + ff-only merge.
-/// Worktree cleanup is deferred to `ecc worktree gc` at next session start.
+/// Calls `ecc-workflow merge` which handles rebase + verify + ff-only merge + cleanup.
+/// On success, reports whether cleanup completed or was blocked by safety checks.
 /// If the merge fails, the worktree is preserved and a recovery file is written.
 pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "session_end_merge", "executing handler");
@@ -47,13 +47,10 @@ pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let merge_result = ports.shell.run_command("ecc-workflow", &["merge"]);
 
     match merge_result {
-        Ok(output) if output.exit_code == 0 => HookResult::warn(
-            stdin,
-            &format!(
-                "[Session] Worktree merged to main successfully.\n{}",
-                output.stderr
-            ),
-        ),
+        Ok(output) if output.exit_code == 0 => {
+            let msg = parse_success_message(&output.stdout);
+            HookResult::warn(stdin, &msg)
+        }
         Ok(output) => {
             // Non-zero exit — preserve worktree, write recovery file, warn
             let cwd = ports
@@ -104,6 +101,24 @@ pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
                 ),
             )
         }
+    }
+}
+
+/// Parse the stdout from a successful ecc-workflow merge and produce a hook message.
+///
+/// - "cleaned up successfully" → "[Session] Worktree merged and cleaned up."
+/// - "Cleanup blocked: ..."    → "[Session] Worktree merged to main. Cleanup blocked: ..."
+/// - "Cleanup failed: ..."     → "[Session] Worktree merged to main. Cleanup failed: ..."
+/// - fallback                  → "[Session] Worktree merged to main."
+fn parse_success_message(stdout: &str) -> String {
+    if stdout.contains("cleaned up successfully") {
+        "[Session] Worktree merged and cleaned up.\n".to_string()
+    } else if let Some(line) = stdout.lines().find(|l| l.contains("Cleanup blocked:")) {
+        format!("[Session] Worktree merged to main. {line}\n")
+    } else if let Some(line) = stdout.lines().find(|l| l.contains("Cleanup failed:")) {
+        format!("[Session] Worktree merged to main. {line}\n")
+    } else {
+        format!("[Session] Worktree merged to main.\n{stdout}")
     }
 }
 
@@ -179,13 +194,16 @@ mod tests {
             )
     }
 
-    // PC-002a: calls merge in worktree
+    // PC-044: calls merge in worktree (mechanism unchanged, now reports "cleaned up")
     #[test]
     fn calls_merge_in_worktree() {
         let fs = InMemoryFileSystem::new();
         let shell = in_worktree_shell()
             .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("3\n"))
-            .on("ecc-workflow", ok("Merged successfully\n"))
+            .on(
+                "ecc-workflow",
+                ok("Merged ecc-session-123 into main and cleaned up successfully.\n"),
+            )
             .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
@@ -193,24 +211,38 @@ mod tests {
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
-        assert!(result.stderr.contains("merged to main"));
+        assert!(
+            result.stderr.contains("merged and cleaned up"),
+            "expected 'merged and cleaned up' in stderr, got: {}",
+            result.stderr
+        );
     }
 
-    // PC-002b: skips when not in worktree
+    // PC-045: success message says "merged and cleaned up"
     #[test]
-    fn skips_when_not_in_worktree() {
+    fn merge_success_cleaned_up() {
         let fs = InMemoryFileSystem::new();
-        let shell = not_in_worktree_shell();
+        let shell = in_worktree_shell()
+            .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("2\n"))
+            .on(
+                "ecc-workflow",
+                ok("Merged ecc-session-abc into main and cleaned up successfully.\n"),
+            )
+            .on("pwd", ok("/repo/.claude/worktrees/session-abc\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
-        assert!(result.stderr.is_empty());
+        assert!(
+            result.stderr.contains("merged and cleaned up"),
+            "expected 'merged and cleaned up' in stderr, got: {}",
+            result.stderr
+        );
     }
 
-    // PC-002c: rebase conflict preserves worktree
+    // PC-046: rebase conflict preserves worktree (failure behavior unchanged)
     #[test]
     fn rebase_conflict_preserves_worktree() {
         let fs = InMemoryFileSystem::new();
@@ -226,6 +258,63 @@ mod tests {
         assert_eq!(result.exit_code, 0); // warn, not block
         assert!(result.stderr.contains("merge failed"));
         assert!(result.stderr.contains("Worktree preserved"));
+    }
+
+    // PC-047: cleanup failure lists failed checks
+    #[test]
+    fn cleanup_failure_lists_checks() {
+        let fs = InMemoryFileSystem::new();
+        let shell = in_worktree_shell()
+            .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("1\n"))
+            .on(
+                "ecc-workflow",
+                ok("Merged ecc-session-xyz into main. Cleanup blocked: UncommittedChanges, UntrackedFiles\n"),
+            )
+            .on("pwd", ok("/repo/.claude/worktrees/session-xyz\n"));
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = session_end_merge("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+        assert!(
+            result.stderr.contains("Cleanup blocked"),
+            "expected 'Cleanup blocked' in stderr, got: {}",
+            result.stderr
+        );
+        assert!(
+            result.stderr.contains("UncommittedChanges"),
+            "expected 'UncommittedChanges' in stderr, got: {}",
+            result.stderr
+        );
+    }
+
+    // PC-048: bypass via ECC_WORKFLOW_BYPASS=1 works
+    #[test]
+    fn bypass_skips_merge() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("ECC_WORKFLOW_BYPASS", "1");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = session_end_merge("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+        assert!(result.stderr.is_empty());
+    }
+
+    // PC-002b: skips when not in worktree
+    #[test]
+    fn skips_when_not_in_worktree() {
+        let fs = InMemoryFileSystem::new();
+        let shell = not_in_worktree_shell();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let result = session_end_merge("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+        assert!(result.stderr.is_empty());
     }
 
     // PC-002d: verify failure preserves worktree
@@ -289,44 +378,6 @@ mod tests {
             result.stderr.contains("deferred"),
             "should mention deferred cleanup"
         );
-    }
-
-    // PC-002: merge success message has no "cleaned up" claim
-    #[test]
-    fn merge_success_message_no_cleanup_claim() {
-        let fs = InMemoryFileSystem::new();
-        let shell = in_worktree_shell()
-            .on_args("git", &["rev-list", "HEAD", "^main", "--count"], ok("3\n"))
-            .on("ecc-workflow", ok("Merged successfully\n"))
-            .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
-
-        let result = session_end_merge("{}", &ports);
-        assert_eq!(result.exit_code, 0);
-        assert!(
-            result.stderr.contains("merged"),
-            "should mention merge success"
-        );
-        assert!(
-            !result.stderr.contains("cleaned up"),
-            "should not claim 'cleaned up'"
-        );
-    }
-
-    // PC-002g: bypass skips merge
-    #[test]
-    fn bypass_skips_merge() {
-        let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new().with_var("ECC_WORKFLOW_BYPASS", "1");
-        let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
-
-        let result = session_end_merge("{}", &ports);
-        assert_eq!(result.exit_code, 0);
-        assert!(result.stderr.is_empty());
     }
 
     // PC-002h: writes recovery file on failure
