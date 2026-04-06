@@ -210,7 +210,6 @@ fn merge_fast_forward(repo_root: &Path, branch: &str) -> Result<(), MergeError> 
     Ok(())
 }
 
-
 /// Result of the post-merge cleanup operation.
 #[derive(Debug)]
 pub(crate) enum CleanupResult {
@@ -344,7 +343,7 @@ pub(crate) fn cleanup_after_merge(repo_root: &Path, worktree_dir: &Path, branch:
     }
     // If directory doesn't exist: skip safety checks — nothing to lose
 
-    // 3. Remove the worktree (prunes metadata even if dir is missing)
+    // 2. Remove the worktree (prunes metadata even if dir is missing)
     let worktree_str = worktree_dir.to_string_lossy();
     let remove_output = Command::new("git")
         .args(["worktree", "remove", "--force", "--", worktree_str.as_ref()])
@@ -365,7 +364,7 @@ pub(crate) fn cleanup_after_merge(repo_root: &Path, worktree_dir: &Path, branch:
         }
     }
 
-    // 4. Delete the branch (failure is warning only — still return CleanedUp)
+    // 3. Delete the branch (failure is warning only — still return CleanedUp)
     let _ = Command::new("git")
         .args(["branch", "-d", "--", branch])
         .current_dir(repo_root)
