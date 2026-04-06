@@ -12,3 +12,4 @@ pub mod trend;
 pub use aggregate::{HarnessMetrics, MetricAggregator};
 pub use error::MetricsError;
 pub use event::{CommitGateKind, MetricEvent, MetricEventType, MetricOutcome};
+pub use targets::ReferenceTargets;
