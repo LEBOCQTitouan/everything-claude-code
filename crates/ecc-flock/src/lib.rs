@@ -47,7 +47,13 @@ pub struct FlockGuard {
 impl Drop for FlockGuard {
     fn drop(&mut self) {
         if self.fd >= 0 {
-            // SAFETY: fd was obtained from a valid open File in acquire/acquire_with_timeout.
+            // SAFETY: `fd` was obtained from `File::as_raw_fd()` on a valid, open `File`
+            // in `do_acquire_at`. The `File` was leaked via `std::mem::forget` to keep
+            // the fd open. This Drop is the sole code path that closes it.
+            // Invariant: `fd >= 0` (checked above). After close, fd is invalid but the
+            // guard is being dropped so no further access occurs.
+            // Risk: double-close if fd were closed elsewhere. Mitigation: `into_raw_fd()`
+            // sets `fd = -1` before `forget(self)` to prevent this Drop from firing.
             unsafe {
                 libc::flock(self.fd, libc::LOCK_UN);
                 libc::close(self.fd);
@@ -178,7 +184,10 @@ fn do_acquire_at(
 
     match timeout {
         None => {
-            // SAFETY: raw_fd is valid, obtained from an open File.
+            // SAFETY: `raw_fd` is valid — obtained from `File::as_raw_fd()` on a
+            // successfully opened file (line above). The file remains open for the
+            // duration of this call. `LOCK_EX` is a valid flock operation.
+            // Risk: none beyond normal flock semantics (EINTR, EIO).
             let ret = unsafe { libc::flock(raw_fd, libc::LOCK_EX) };
             if ret != 0 {
                 return Err(FlockError::AcquireFailed {
@@ -190,7 +199,8 @@ fn do_acquire_at(
         Some(dur) => {
             let deadline = Instant::now() + dur;
             loop {
-                // SAFETY: raw_fd is valid, obtained from an open File.
+                // SAFETY: `raw_fd` is valid — same file as above, still open. `LOCK_NB`
+                // makes this non-blocking; returns EWOULDBLOCK if lock is held.
                 let ret = unsafe { libc::flock(raw_fd, libc::LOCK_EX | libc::LOCK_NB) };
                 if ret == 0 {
                     break;
@@ -254,6 +264,7 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri cannot interpret libc::flock FFI calls
     fn guard_drop_releases() {
         let tmp = TempDir::new().unwrap();
         let guard = acquire(tmp.path(), "drop-test").unwrap();
@@ -264,6 +275,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri cannot interpret libc::flock FFI calls
     fn acquire_creates_lock() {
         let tmp = TempDir::new().unwrap();
         let guard = acquire(tmp.path(), "test-create").unwrap();
@@ -276,6 +288,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri cannot interpret libc::flock FFI calls
     fn acquire_with_timeout_succeeds_when_free() {
         let tmp = TempDir::new().unwrap();
         let guard =
@@ -298,6 +311,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // Miri cannot interpret libc::flock FFI calls
     fn acquire_for_creates_lock() {
         let tmp = TempDir::new().unwrap();
         let guard = acquire_for(tmp.path(), "test-for").unwrap();
