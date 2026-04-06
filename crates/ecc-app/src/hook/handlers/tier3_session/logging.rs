@@ -120,8 +120,11 @@ pub fn config_change_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
+    use ecc_domain::metrics::{MetricEventType, MetricOutcome};
     use ecc_ports::fs::FileSystem;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    use ecc_test_support::{
+        BufferedTerminal, InMemoryFileSystem, InMemoryMetricsStore, MockEnvironment, MockExecutor,
+    };
 
     fn make_ports<'a>(
         fs: &'a InMemoryFileSystem,
@@ -138,6 +141,154 @@ mod tests {
             bypass_store: None,
             metrics_store: None,
         }
+    }
+
+    fn make_ports_with_metrics<'a>(
+        fs: &'a InMemoryFileSystem,
+        shell: &'a MockExecutor,
+        env: &'a MockEnvironment,
+        term: &'a BufferedTerminal,
+        store: &'a InMemoryMetricsStore,
+    ) -> HookPorts<'a> {
+        HookPorts {
+            fs,
+            shell,
+            env,
+            terminal: term,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: Some(store),
+        }
+    }
+
+    // --- PC-009: subagent_start_log records AgentSpawn/Success ---
+
+    #[test]
+    fn subagent_start_records_agent_spawn_success() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_home("/home/test")
+            .with_var("CLAUDE_SESSION_ID", "sess-pc009");
+        let term = BufferedTerminal::new();
+        let store = InMemoryMetricsStore::new();
+        let ports = make_ports_with_metrics(&fs, &shell, &env, &term, &store);
+
+        let stdin = r#"{"agent_type":"code-reviewer"}"#;
+        let result = subagent_start_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].event_type, MetricEventType::AgentSpawn);
+        assert_eq!(events[0].outcome, MetricOutcome::Success);
+        assert_eq!(events[0].agent_type.as_deref(), Some("code-reviewer"));
+    }
+
+    // --- PC-010: subagent_stop_log with $.error records AgentSpawn/Failure ---
+
+    #[test]
+    fn subagent_stop_records_agent_spawn_failure() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_home("/home/test")
+            .with_var("CLAUDE_SESSION_ID", "sess-pc010");
+        let term = BufferedTerminal::new();
+        let store = InMemoryMetricsStore::new();
+        let ports = make_ports_with_metrics(&fs, &shell, &env, &term, &store);
+
+        let stdin = r#"{"agent_type":"architect","error":"something went wrong"}"#;
+        let result = subagent_stop_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].event_type, MetricEventType::AgentSpawn);
+        assert_eq!(events[0].outcome, MetricOutcome::Failure);
+        assert_eq!(events[0].agent_type.as_deref(), Some("architect"));
+    }
+
+    // --- PC-011: subagent_stop_log with $.retry_count: 3 records retry_count=Some(3) ---
+
+    #[test]
+    fn subagent_stop_parses_retry_count() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_home("/home/test")
+            .with_var("CLAUDE_SESSION_ID", "sess-pc011");
+        let term = BufferedTerminal::new();
+        let store = InMemoryMetricsStore::new();
+        let ports = make_ports_with_metrics(&fs, &shell, &env, &term, &store);
+
+        let stdin = r#"{"agent_type":"tdd-guide","retry_count":3}"#;
+        let result = subagent_stop_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].retry_count, Some(3));
+    }
+
+    // --- PC-012: subagent_stop_log with no failure fields records Success and retry_count=None ---
+
+    #[test]
+    fn subagent_stop_defaults_success_none() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_home("/home/test")
+            .with_var("CLAUDE_SESSION_ID", "sess-pc012");
+        let term = BufferedTerminal::new();
+        let store = InMemoryMetricsStore::new();
+        let ports = make_ports_with_metrics(&fs, &shell, &env, &term, &store);
+
+        let stdin = r#"{"agent_type":"planner"}"#;
+        let result = subagent_stop_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].outcome, MetricOutcome::Success);
+        assert_eq!(events[0].retry_count, None);
+    }
+
+    // --- PC-013: subagent_start_log with ECC_METRICS_DISABLED=1 records zero events ---
+
+    #[test]
+    fn subagent_start_metrics_disabled() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/home/test/.claude/sessions/2026-01-01-abcd1234-session.tmp",
+            "# Session",
+        );
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_home("/home/test")
+            .with_var("CLAUDE_SESSION_ID", "sess-pc013")
+            .with_var("ECC_METRICS_DISABLED", "1");
+        let term = BufferedTerminal::new();
+        let store = InMemoryMetricsStore::new();
+        let ports = make_ports_with_metrics(&fs, &shell, &env, &term, &store);
+
+        let stdin = r#"{"agent_type":"security-reviewer"}"#;
+        let result = subagent_start_log(stdin, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 0, "no events when metrics disabled");
     }
 
     // --- subagent_start_log ---
