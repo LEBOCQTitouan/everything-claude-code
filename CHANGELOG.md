@@ -18,6 +18,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **TDD fix-loop budget cap (BL-080)**: Max 2 fix attempts per PC before asking the user for help via AskUserQuestion. Options: keep trying (+2 rounds), skip PC, abort, or provide guidance. Hard cap of 8 total rounds. Budget is parent-side (tdd-executor unchanged). Applied to Phase 3 (TDD) and Phase 4 (E2E). Inspired by Stripe's "at most two rounds of CI" pattern.
+
 - **Multi-agent team coordination (BL-104)**: Declarative team manifests (`teams/*.md`) with YAML frontmatter for agent team composition. `ecc validate teams` with agent cross-referencing and tool escalation warnings. Install pipeline merges teams to `~/.claude/teams/`. Commands (`/implement`, `/audit-full`) read team manifests with `ECC_LEGACY_DISPATCH=1` fallback. Pre-defined templates: implement-team (wave-dispatch), audit-team (parallel), review-team (sequential). Skills: shared-state-protocol, task-handoff.
 
 - **Grill-me decision persistence (BL-034)**: New `ecc-workflow campaign` subcommand group (init, append-decision, show) for atomic incremental persistence of grill-me interview decisions to campaign.md. `grill_me_gate` becomes blocking (exit 2) during plan/solution phases for version >= 2 states without campaign.md, forcing Claude to create the file. Version 1 states grandfathered. Spec commands updated with campaign init/append-decision calls.
