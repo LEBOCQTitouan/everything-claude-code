@@ -3,6 +3,9 @@
 use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
+use crate::metrics_mgmt::record_if_enabled;
+use crate::metrics_session::resolve_session_id;
+use ecc_domain::metrics::{MetricEvent, MetricOutcome};
 use ecc_domain::time::{datetime_from_epoch, format_datetime, format_time};
 
 use super::helpers::find_files_by_suffix;
@@ -10,7 +13,7 @@ use super::{epoch_secs, log_write_failure};
 
 /// subagent:start:log — Log subagent lifecycle start to session file.
 ///
-/// Parses `agent_type` from stdin JSON.
+/// Parses `agent_type` from stdin JSON. Records an AgentSpawn/Success metric event.
 pub fn subagent_start_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "subagent_start_log", "executing handler");
     let home = match ports.env.home_dir() {
@@ -18,8 +21,9 @@ pub fn subagent_start_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         None => return HookResult::passthrough(stdin),
     };
 
-    let agent_type = serde_json::from_str::<serde_json::Value>(stdin)
-        .ok()
+    let parsed = serde_json::from_str::<serde_json::Value>(stdin).ok();
+    let agent_type = parsed
+        .as_ref()
         .and_then(|v| v.get("agent_type")?.as_str().map(|s| s.to_string()))
         .unwrap_or_else(|| "unknown".to_string());
 
@@ -39,12 +43,30 @@ pub fn subagent_start_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         }
     }
 
+    // Record AgentSpawn/Success metric event.
+    let disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
+    if !disabled {
+        let session_id = resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
+        let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+        if let Ok(event) = MetricEvent::agent_spawn(
+            session_id,
+            timestamp,
+            agent_type,
+            MetricOutcome::Success,
+            None,
+        ) {
+            let _ = record_if_enabled(ports.metrics_store, &event, false);
+        }
+    }
+
     HookResult::passthrough(stdin)
 }
 
 /// subagent:stop:log — Log subagent lifecycle completion to session file.
 ///
-/// Parses `agent_type` from stdin JSON.
+/// Parses `agent_type`, `$.error`, `$.exit_code`, `$.retry_count` from stdin JSON.
+/// Records an AgentSpawn metric event: Failure if error is non-null or exit_code != 0,
+/// Success otherwise. retry_count is Some(n) if present, None otherwise.
 pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "subagent_stop_log", "executing handler");
     let home = match ports.env.home_dir() {
@@ -52,8 +74,9 @@ pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         None => return HookResult::passthrough(stdin),
     };
 
-    let agent_type = serde_json::from_str::<serde_json::Value>(stdin)
-        .ok()
+    let parsed = serde_json::from_str::<serde_json::Value>(stdin).ok();
+    let agent_type = parsed
+        .as_ref()
         .and_then(|v| v.get("agent_type")?.as_str().map(|s| s.to_string()))
         .unwrap_or_else(|| "unknown".to_string());
 
@@ -70,6 +93,48 @@ pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         );
         if let Err(e) = ports.fs.write(active, &updated) {
             log_write_failure(active, &e, None);
+        }
+    }
+
+    // Determine outcome: Failure if $.error is a non-null string or $.exit_code != 0.
+    let has_error = parsed
+        .as_ref()
+        .and_then(|v| v.get("error"))
+        .and_then(|e| e.as_str())
+        .map(|s| !s.is_empty())
+        .unwrap_or(false);
+    let bad_exit = parsed
+        .as_ref()
+        .and_then(|v| v.get("exit_code"))
+        .and_then(|c| c.as_i64())
+        .map(|c| c != 0)
+        .unwrap_or(false);
+    let outcome = if has_error || bad_exit {
+        MetricOutcome::Failure
+    } else {
+        MetricOutcome::Success
+    };
+
+    // Parse retry_count: Some(u32) if present and valid, None otherwise.
+    let retry_count: Option<u32> = parsed
+        .as_ref()
+        .and_then(|v| v.get("retry_count"))
+        .and_then(|r| r.as_u64())
+        .and_then(|r| u32::try_from(r).ok());
+
+    // Record AgentSpawn metric event.
+    let disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
+    if !disabled {
+        let session_id = resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
+        let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+        if let Ok(event) = MetricEvent::agent_spawn(
+            session_id,
+            timestamp,
+            agent_type,
+            outcome,
+            retry_count,
+        ) {
+            let _ = record_if_enabled(ports.metrics_store, &event, false);
         }
     }
 
