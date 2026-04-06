@@ -508,6 +508,7 @@ dependencies = [
  "ecc-domain",
  "ecc-infra",
  "ecc-ports",
+ "ecc-test-support",
  "regex",
  "serde_json",
  "tempfile",
