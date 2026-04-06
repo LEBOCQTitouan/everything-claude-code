@@ -5,359 +5,133 @@ allowed-tools: [Bash, Task, Read, Grep, Glob, LS, Write, TodoWrite, TodoRead, En
 
 # Design Command
 
-> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
->
-> **Do NOT directly edit `.claude/workflow/state.json`.** State transitions happen via hooks only.
->
-> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before each agent delegation, gate check, and phase transition, tell the user what is happening and why.
+> **MANDATORY**: Follow every phase exactly. Do NOT edit `state.json` directly — use hooks. Narrate per `skills/narrative-conventions/SKILL.md`.
 
 ## Phase 0: State Validation
 
 ### Worktree Isolation
 
-If not already in a worktree (check `git rev-parse --show-toplevel` vs `git rev-parse --git-common-dir`):
-1. Read `concern` and `feature` from `state.json`
-2. Run: `!ecc-workflow worktree-name <concern> "<feature>"` — capture the output name
-3. Call `EnterWorktree` with the generated name as the branch name
-4. If `EnterWorktree` fails, proceed without worktree and warn: "Worktree isolation failed. Proceeding on main tree."
+If not in a worktree:
+1. Read `concern`/`feature` from `state.json`
+2. Run `!ecc-workflow worktree-name <concern> "<feature>"` — capture output
+3. Call `EnterWorktree`. On failure, warn and proceed.
 
-If already in a worktree (from a prior `/spec-*` call in this session): skip — already isolated.
+If already in a worktree: skip.
 
 1. Read `.claude/workflow/state.json`
-2. Verify `phase` is `"plan"` or `"solution"` (re-entry allowed). If this gate blocks, explain what failed and provide specific remediation steps. If any other phase → error:
-   > "Current phase is `<phase>`. `/design` requires phase `plan`/`spec` or `solution`/`design`. Run the appropriate `/spec-*` command first."
-3. **Read spec from file if available**: If `artifacts.spec_path` exists in state.json, read the spec from that file path. If the file's modification time differs from the `artifacts.plan` timestamp, emit a warning: "Spec file was modified since the spec phase. Using file version." If the file does not exist, fall back to step 4.
-4. If the spec is not in conversation context AND not available from file → ask the user:
-   > "Spec not found in conversation context or on disk. Please re-run the `/spec-*` command or paste the spec output here."
-5. Extract `concern` and `feature` from `state.json` for the solution header
-6. **Re-entry**: If `phase` is `"solution"`, read existing TodoWrite items via TodoRead to resume progress
+2. Verify `phase` is `"plan"` or `"solution"` (re-entry). Other → error: "Run `/spec-*` first."
+3. **Read spec from file**: Use `artifacts.spec_path`. Warn if modified since spec phase. Fall back to step 4.
+4. If spec not in context or on disk → ask user to re-run `/spec-*` or paste.
+5. Extract `concern`/`feature`
+6. **Re-entry**: If `"solution"`, resume via TodoRead.
 
-> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+> **Tracking**: TodoWrite checklist below. If unavailable, proceed without tracking.
 
-TodoWrite items:
-- "Phase 0: State Validation"
-- "Phase 1: Implementation Design"
-- "Phase 2: SOLID Validation"
-- "Phase 3: Professional Conscience"
-- "Phase 4: Security Quick-Check"
-- "Phase 5: E2E Boundary Detection"
-- "Phase 6: Doc Update Plan"
-- "Phase 7: AC Coverage Verification"
-- "Phase 8: Output Solution"
-- "Phase 9: Adversarial Review"
-- "Phase 10: Present and STOP"
-
-Mark each item complete as the phase finishes.
+TodoWrite: Phase 0-10 items.
 
 ## Phase 0.5: Sources Consultation
 
-If `docs/sources.md` exists:
-1. Read `docs/sources.md` and find architectural sources matching the design subject or affected modules (via module mapping table)
-2. If matches found, reference them as "Consulted sources:" during design
-3. Update `last_checked` date on matched entries
-4. Write updated file back (atomic write)
-
-If `docs/sources.md` does not exist, skip this step silently.
+If `docs/sources.md` exists, find matching architectural sources, reference as "Consulted sources:", update `last_checked`, atomic write. Skip silently if absent.
 
 ## Phase 1: Implementation Design
 
-Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
+Launch `planner` (allowedTools: [Read, Grep, Glob, Bash]):
+- Design file changes in dependency order with rationale
+- Map each change to spec ref (US-NNN, AC-NNN.N)
+- Define PCs: type, description, AC coverage, literal bash command, expected result
+- Order PCs in TDD dependency order
+- Final PCs: lint + build checks
 
-- Pass the full spec content. If not in conversation context, read from `artifacts.spec_path` in state.json (disk fallback).
-- Instruct the agent to:
-  1. Design file changes in dependency order (what to create, modify, or delete)
-  2. Map each file change to its spec reference (US-NNN, AC-NNN.N)
-  3. For each change, provide a rationale explaining why the change is needed
-  4. Define pass conditions (PC-NNN) — each with:
-     - Type: unit, integration, e2e, lint, or build
-     - Description of what is verified
-     - Which AC(s) it verifies
-     - A literal bash command runnable verbatim
-     - Expected result (PASS, exit 0, or specific output)
-  5. Order PCs in TDD dependency order (what to implement first)
-  6. Final PCs must include lint and build checks
-- Collect the output: File Changes table + Pass Conditions table + TDD order
-
-> **Optional**: For specs involving new ports, adapters, or public interfaces, consider invoking the `interface-designer` agent (optional) to explore radically different interface shapes before committing to a design. This spawns parallel sub-agents with divergent constraints and produces a comparison matrix. See the `design-an-interface` skill for methodology.
-
-> **Preview for alternatives**: When the planner produces 2+ viable design approaches, use `AskUserQuestion` with the `preview` field to present each approach visually. Each option's preview should contain a Mermaid component diagram, file-change summary, or code structure comparison (under 15 lines per option). If only one viable approach exists, proceed directly without injecting a forced AskUserQuestion.
+> **Optional**: For new ports/adapters/interfaces, consider `interface-designer` for divergent exploration.
+> **Preview**: If 2+ viable approaches, use `AskUserQuestion` with `preview` (Mermaid/file-change/code comparison, <15 lines/option).
 
 ## Phase 2: SOLID Validation
 
-> Before dispatching, tell the user which validation agent is being launched (`uncle-bob`) and that it will evaluate the design against SOLID and Clean Architecture principles.
+> Dispatching `uncle-bob` for SOLID and Clean Architecture evaluation.
 
-Launch a Task with the `uncle-bob` agent (allowedTools: [Read, Grep, Glob]) with `context: "fork"` (summary output sufficient):
-
-- Pass the proposed file changes from Phase 1 as context
-- Instruct the agent to evaluate the design against:
-  - SOLID principles (SRP, OCP, LSP, ISP, DIP)
-  - Clean Architecture dependency rules
-  - Component principles (REP, CCP, CRP, ADP, SDP, SAP)
-- Collect the output: PASS or findings with file references and severity
+Launch `uncle-bob` (allowedTools: [Read, Grep, Glob], context: "fork"): SOLID, Clean Architecture, component principles. Returns PASS or findings.
 
 ## Phase 3: Professional Conscience
 
-Launch a Task with the `robert` agent (allowedTools: [Read, Grep, Glob, Bash]) with `context: "fork"` (summary output sufficient):
-
-- Pass the spec content from conversation AND the proposed design from Phase 1
-- Instruct the agent to evaluate the design against the Programmer's Oath
-- Focus on: no harmful code, no mess, proof (test coverage planned), small releases
-- Collect the output: CLEAN or warnings with oath references
+Launch `robert` (allowedTools: [Read, Grep, Glob, Bash], context: "fork"): Programmer's Oath evaluation. Returns CLEAN or warnings.
 
 ## Phase 4: Security Quick-Check
 
-Launch a Task with the `security-reviewer` agent (allowedTools: [Read, Grep, Glob, Bash]) with `context: "fork"` (summary output sufficient):
-
-- Pass the proposed file changes from Phase 1 as context
-- This is a quick design-level scan, NOT a full audit (that happens during `/verify`)
-- Focus on: input validation boundaries, auth concerns, secret handling, injection surfaces
-- Collect the output: CLEAR or findings with severity
+Launch `security-reviewer` (allowedTools: [Read, Grep, Glob, Bash], context: "fork"): design-level scan (not full audit). Returns CLEAR or findings.
 
 ## Phase 5: E2E Boundary Detection
 
-1. Read the spec's `## E2E Boundaries Affected` table. If not in conversation context, read from the spec file on disk via `artifacts.spec_path`
-2. Scan Phase 1 file changes for any port or adapter touches (files in `crates/ecc-ports/`, `crates/ecc-infra/`, or adapter-layer paths)
-3. Expand each boundary into concrete E2E test entries:
-
-| # | Boundary | Adapter | Port | Test Description | Default State | Run When |
-|---|----------|---------|------|------------------|---------------|----------|
-
-- **Default State**: `ignored` (E2E tests are ignored by default, un-ignored only when relevant)
-- **Run When**: condition that activates the test (e.g., "FileSystem adapter modified", "CLI output format changed")
-
-4. Produce E2E Activation Rules — which specific E2E tests to un-ignore for THIS implementation based on the file changes
+1. Read spec's `## E2E Boundaries Affected`
+2. Scan Phase 1 changes for port/adapter touches
+3. Expand into E2E test entries (boundary, adapter, port, description, default=ignored, activation condition)
+4. Produce E2E Activation Rules for THIS implementation
 
 ## Phase 6: Doc Update Plan
 
-1. Read the spec's `## Doc Impact Assessment` table. If not in conversation context, read from the spec file on disk via `artifacts.spec_path`
-2. Expand each entry into a concrete doc action:
-
-| # | Doc File | Level | Action | Content Summary | Spec Ref |
-|---|----------|-------|--------|-----------------|----------|
-
-3. MUST include a `CHANGELOG.md` entry (even if minimal)
-4. MUST include an ADR entry for any decision marked `ADR Needed? Yes` in the spec's `## Decisions Made` table
-5. Reference the spec's US/AC for each doc action
+1. Read spec's `## Doc Impact Assessment`
+2. Expand into concrete actions: Doc File, Level, Action, Content Summary, Spec Ref
+3. MUST include CHANGELOG.md entry
+4. MUST include ADR for decisions marked `ADR Needed? Yes`
 
 ## Phase 7: AC Coverage Verification
 
-> After computing the coverage result, summarize it conversationally: how many ACs are covered, how many are uncovered, and what action is needed.
+> Summarize AC coverage: covered count, uncovered count, needed actions.
 
-This is the critical gate — every acceptance criterion must be testable.
-
-1. Collect ALL `AC-NNN.N` identifiers from the spec. If not in conversation context, read from the spec file on disk via `artifacts.spec_path`
-2. Collect ALL `PC-NNN` pass conditions from the Phase 1 design
-3. For each AC, verify it appears in at least one PC's "Verifies AC" column
-4. List any uncovered ACs with an explanation
-5. If uncovered ACs exist, add PCs to cover them before proceeding
-6. The result SHOULD be zero uncovered ACs
+1. Collect all AC-NNN.N from spec
+2. Verify each appears in ≥1 PC's "Verifies AC" column
+3. Add PCs for uncovered ACs before proceeding
 
 ## Phase 8: Architecture Preview (Plan Mode)
 
-> **BLOCKING**: You MUST call `EnterPlanMode` here. NEVER skip this phase.
+> **BLOCKING**: MUST call `EnterPlanMode`. NEVER skip.
 
-1. Call `EnterPlanMode`
-2. Write the plan file with the following structure:
-
-```markdown
-# Design Preview: <title>
-
-## Design Summary
-
-<Brief summary of the technical design: file changes, key patterns, TDD order>
-
-## Architecture Preview
-
-Draft of implementation-level doc updates:
-
-### ARCHITECTURE.md changes
-<if applicable, show specific sections that will be updated with the new design>
-
-### Mermaid diagrams
-<outline any new or modified diagrams — show the Mermaid source>
-
-### Bounded context changes
-<if applicable, show updates to docs/domain/bounded-contexts.md>
-
-### Module summaries
-<if applicable, list new or modified module summary entries>
-
-## Pass Conditions Overview
-<table of PC IDs, descriptions, and commands — for user to review before approving>
-```
-
-3. Call `ExitPlanMode` — wait for user approval before proceeding
+1. `EnterPlanMode`
+2. Write plan: design summary, architecture preview (ARCHITECTURE.md changes, Mermaid diagrams, bounded contexts, module summaries), PC overview table
+3. `ExitPlanMode` — wait for approval
 
 ## Phase 9: Output Design
 
-Output the full design in conversation using the exact schema below. Do NOT write `.claude/workflow/solution.md`. Every section is mandatory.
+Output full design in conversation (exact schema). Sections: Spec Reference, File Changes table, Pass Conditions table, Coverage Check, E2E Test Plan, E2E Activation Rules, Test Strategy, Doc Update Plan, SOLID Assessment, Robert's Oath Check, Security Notes, Rollback Plan, Bounded Contexts Affected.
 
-```markdown
-# Solution: <title from spec>
-
-## Spec Reference
-Concern: <from state.json>, Feature: <from state.json>
-
-## File Changes (dependency order)
-| # | File | Action (create/modify/delete) | Rationale | Spec Ref (US/AC) |
-|---|------|-------------------------------|-----------|------------------|
-| 1 | ... | ... | ... | US-001, AC-001.1 |
-
-## Pass Conditions
-| ID | Type (unit/integration/e2e/lint/build) | Description | Verifies AC | Command | Expected |
-|----|----------------------------------------|-------------|-------------|---------|----------|
-| PC-001 | unit | ... | AC-001.1 | `cargo test ...` | PASS |
-
-### Coverage Check
-Every AC-NNN.N from the spec MUST appear in at least one PC's "Verifies AC" column.
-<list of ACs and their covering PCs, or "All ACs covered.">
-<list any uncovered ACs with explanation — should be zero>
-
-### E2E Test Plan
-| # | Boundary | Adapter | Port | Test Description | Default State | Run When |
-|---|----------|---------|------|------------------|---------------|----------|
-
-### E2E Activation Rules
-<which e2e tests to run un-ignored during THIS implementation>
-
-## Test Strategy
-TDD order: which PCs to implement first (dependency order).
-<ordered list of PC-NNN with rationale for ordering>
-
-## Doc Update Plan
-| # | Doc File | Level | Action | Content Summary | Spec Ref |
-|---|----------|-------|--------|-----------------|----------|
-Must include CHANGELOG.md.
-Must include ADRs for decisions marked "ADR Needed? Yes".
-
-## SOLID Assessment
-<from uncle-bob — PASS or findings with file references>
-
-## Robert's Oath Check
-<from robert — CLEAN or warnings>
-
-## Security Notes
-<from security-reviewer — CLEAR or findings>
-
-## Rollback Plan
-<reverse dependency order of File Changes — if implementation fails, undo in this order>
-
-## Bounded Contexts Affected
-<Enumerate bounded contexts affected by this design. Only include modules listed in `docs/domain/bounded-contexts.md`. Utility files (ansi.rs, traits.rs, paths.rs, time.rs) and modules not in the bounded contexts registry are excluded. If a modified file's parent module is not in bounded-contexts.md, list it under "Other domain modules" separately.>
-
-| Context | Role | Files Modified |
-|---------|------|----------------|
-| <context name from bounded-contexts.md> | <entity/value object/service> | <file list> |
-
-Other domain modules (not registered as bounded contexts):
-- <module>: <files>
-
-(or "No bounded contexts affected" if no domain files are modified)
-```
-
-The solution is output in conversation only — no file is written.
+The solution is output in conversation only — no file written.
 
 ## Phase 10: Adversarial Review
 
-Launch a Task with the `solution-adversary` agent (allowedTools: [Read, Bash, Grep, Glob]):
-
-- Pass the full spec AND solution. If not in conversation context, read spec from `artifacts.spec_path` and design from the current output on disk
-- The agent attacks the solution on 8 dimensions: coverage, order, fragility, rollback, architecture, blast radius, missing PCs, doc plan
-- The agent returns a verdict in conversation (no file writes)
+Launch `solution-adversary` (allowedTools: [Read, Bash, Grep, Glob]): 8 dimensions (coverage, order, fragility, rollback, architecture, blast radius, missing PCs, doc plan).
 
 ### Verdict Handling (max 3 rounds)
 
-Track the current round number (starting at 1):
+- **FAIL**: Present findings → redesign (Phases 1-8) → re-run. Increment.
+- **CONDITIONAL**: Add PCs/doc fixes → re-run. Increment.
+- **PASS**: Persist design. `!ecc-workflow transition implement --artifact solution --path <path>`.
 
-- **FAIL**: Present the adversary's findings to the user. Return to **Phase 1 (Implementation Design)** to redesign. Re-run Phases 2-8 with the updated design, then re-run the adversary (Phase 9). Increment round.
-- **CONDITIONAL**: The adversary has suggested specific PCs to add or doc plan fixes. Update the solution in conversation. Re-run the adversary. Increment round.
-- **PASS**: Note "Adversarial Review: PASS" in conversation output. Then persist the design (see below). Run: `!ecc-workflow transition implement --artifact solution --path <design_file_path>`. Proceed to Phase 11.
+After 3 FAILs: override or abandon.
 
-After 3 FAIL rounds, ask the user:
-> "The solution has failed adversarial review 3 times. Would you like to override and proceed anyway, or abandon?"
-- If override: note "Adversarial Review: PASS (user override)" in conversation, persist the design, run `!ecc-workflow transition implement --artifact solution --path <design_file_path>`, and proceed
-- If abandon: reset state to `"plan"` phase and exit
+### Persist Design
 
-### Persist Design to File
-
-After adversarial PASS (or user override), write the design to a versioned file:
-
-1. Read `artifacts.spec_path` from state.json to determine the spec directory (e.g., `docs/specs/2026-03-21-my-feature/`)
-2. Write the full design to `docs/specs/YYYY-MM-DD-<slug>/design.md` in the same directory as the spec
-3. If the file already exists (re-entry), append a `## Revision` block with timestamp instead of overwriting
-4. Pass the file path to the phase-transition command as the 3rd argument
-5. Update campaign.md: set Design row in `## Artifacts` table to the design file path with status `passed`.
-
-> **Shared**: See `skills/spec-pipeline-shared/SKILL.md` — Adversary History Tracking section for campaign.md verdict persistence during design adversarial review.
+Write to `docs/specs/YYYY-MM-DD-<slug>/design.md` (same dir as spec). Re-entry: append `## Revision`. Update campaign.md Artifacts table.
 
 ## Phase 11: Present and STOP
 
-### Full Artifact Display
-
-Read the full artifact from `artifacts.design_path` in state.json using the Read tool. Display the complete file content inline in conversation as the design document body — no truncation, no summary. If the path is null or the file does not exist, emit a warning ("Design artifact not found at the expected path; skipping inline display") and skip to the summary tables.
-
-Display a comprehensive Phase Summary using these tables:
-
-### Design Reviews
-
-| Review Type | Verdict | Finding Count |
-|-------------|---------|---------------|
-| SOLID | PASS/findings | <count> |
-| Robert | CLEAN/warnings | <count> |
-| Security | CLEAR/findings | <count> |
-
-### Adversary Findings
-
-| Dimension | Score | Verdict | Key Rationale |
-|-----------|-------|---------|---------------|
-| <dimension> | <0-100> | PASS/FAIL/CONDITIONAL | <rationale> |
-
-### File Changes Summary
-
-| # | File | Action | Spec Ref |
-|---|------|--------|----------|
-| 1 | <file> | create/modify/delete | US-NNN, AC-NNN.N |
-
-### Artifacts Persisted
-
-| File Path | Section Written |
-|-----------|-----------------|
-| docs/specs/YYYY-MM-DD-<slug>/design.md | Full design |
-
-### Phase Summary Persistence
-
-Append a `## Phase Summary` section containing all 4 tables above to the persisted design file (`docs/specs/YYYY-MM-DD-<slug>/design.md`). If `## Phase Summary` already exists in the design file, overwrite it (idempotent).
-
-> **Note:** If continuing in a new session, copy the spec and solution recaps above or re-run the commands.
-
-### Artifact File Path
-
-Display the persisted file path for future access:
+Read and display full design from `artifacts.design_path`. Display Phase Summary: Design Reviews, Adversary Findings, File Changes, Artifacts. Append `## Phase Summary` to design file.
 
 > **Design persisted at:** `docs/specs/YYYY-MM-DD-<slug>/design.md`
 
-Then STOP. Say:
-
-> **Run `/implement` to begin.**
-
-Do NOT proceed to implementation. Do NOT write any code.
+Then STOP. **Run `/implement` to begin.** Do NOT write code.
 
 ## Pass Condition Rules
 
-These rules govern all PCs written in the solution:
-
-1. **Format**: `PC-NNN` — three digits, sequential starting at 001
-2. **Command**: every PC has a literal `Command` column — a bash command runnable verbatim (no placeholders, no pseudo-commands)
-3. **Expected**: every PC has an `Expected` column — `PASS`, `exit 0`, or specific expected output
-4. **Coverage**: every AC from the spec is covered by >= 1 PC (enforced by Phase 7)
-5. **Final PCs**: the last PCs must include lint check (`cargo clippy -- -D warnings` or equivalent) and build check (`cargo build` or equivalent)
-6. **Deterministic**: PCs must be verifiable by running the command and checking the expected output — no subjective criteria
+1. Format: `PC-NNN` — three digits, sequential from 001
+2. Command: literal bash, runnable verbatim
+3. Expected: PASS, exit 0, or specific output
+4. Coverage: every AC covered by ≥1 PC
+5. Final PCs: lint + build checks
+6. Deterministic: verifiable by command + expected output
 
 ## Related Agents
 
-This command invokes:
-- `planner` — Implementation design, file changes, pass conditions, TDD order
-- `uncle-bob` — SOLID and Clean Architecture validation of proposed design
-- `robert` — Programmer's Oath evaluation of the design process
-- `security-reviewer` — Quick security scan of the design surface
-- `solution-adversary` — Adversarial solution review on 8 dimensions before phase transition
+- `planner` — file changes, PCs, TDD order
+- `uncle-bob` — SOLID/Clean Architecture
+- `robert` — Programmer's Oath
+- `security-reviewer` — design-level security
+- `solution-adversary` — 8-dimension review
