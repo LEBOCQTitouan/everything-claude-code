@@ -106,13 +106,8 @@ pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
         }
         CliValidateTarget::Patterns { fix } => {
             let env = ecc_infra::os_env::OsEnvironment;
-            if ecc_app::validate::run_validate_patterns(
-                &fs,
-                &terminal,
-                &env,
-                &args.ecc_root,
-                *fix,
-            ) {
+            if ecc_app::validate::run_validate_patterns(&fs, &terminal, &env, &args.ecc_root, *fix)
+            {
                 Ok(())
             } else {
                 std::process::exit(1);
@@ -147,7 +142,9 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         | CliValidateTarget::Spec { .. }
         | CliValidateTarget::Design { .. }
         | CliValidateTarget::Cartography { .. } => {
-            unreachable!("Patterns, Spec, Design, and Cartography are handled before map_target is called")
+            unreachable!(
+                "Patterns, Spec, Design, and Cartography are handled before map_target is called"
+            )
         }
     }
 }

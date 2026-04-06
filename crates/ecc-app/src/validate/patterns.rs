@@ -267,9 +267,8 @@ fn collect_work_items(
 /// Matches patterns like `/factory-method.md`, `(factory-method)`, or the stem
 /// preceded by a word boundary character and followed by `.md`, `)`, or whitespace.
 fn stem_in_index(index_content: &str, stem: &str) -> bool {
-    let boundary_before = |c: char| -> bool {
-        matches!(c, '/' | '(' | '[' | ' ' | '\t' | '\n' | '-') || c == '`'
-    };
+    let boundary_before =
+        |c: char| -> bool { matches!(c, '/' | '(' | '[' | ' ' | '\t' | '\n' | '-') || c == '`' };
     let boundary_after = |s: &str| -> bool {
         s.is_empty()
             || s.starts_with(".md")
@@ -390,11 +389,7 @@ fn validate_frontmatter_fields(
 }
 
 /// Validate the languages list and implementation heading matching.
-fn validate_languages(
-    fm: &HashMap<String, String>,
-    content: &str,
-    label: &str,
-) -> (String, bool) {
+fn validate_languages(fm: &HashMap<String, String>, content: &str, label: &str) -> (String, bool) {
     let mut errors = String::new();
     let mut has_errors = false;
 
@@ -542,7 +537,8 @@ fn extract_impl_headings(content: &str) -> Vec<String> {
         .lines()
         .filter_map(|line| {
             let line = line.trim();
-            line.strip_prefix("### ").map(|rest| rest.trim().to_string())
+            line.strip_prefix("### ")
+                .map(|rest| rest.trim().to_string())
         })
         .collect()
 }
@@ -1562,7 +1558,10 @@ Implementation.
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/patterns")
             .with_dir("/root/patterns/creational")
-            .with_file("/root/patterns/creational/factory-method.md", &valid_content)
+            .with_file(
+                "/root/patterns/creational/factory-method.md",
+                &valid_content,
+            )
             .with_file("/root/patterns/readme.md", "# Root level file\n")
             .with_file("/root/patterns/index.md", "factory-method\n");
         let t = term();
@@ -1848,7 +1847,10 @@ Generic.
         // Match when preceded by `(`
         assert!(super::stem_in_index("(factory-method)", "factory-method"));
         // No match when embedded in a longer word
-        assert!(!super::stem_in_index("abstract-factory-method-extra\n", "factory-method"));
+        assert!(!super::stem_in_index(
+            "abstract-factory-method-extra\n",
+            "factory-method"
+        ));
     }
 
     /// Build a valid idiom pattern file for a single language.
@@ -1944,13 +1946,17 @@ Use the {name} pattern.
     #[test]
     fn idiom_files_have_category_idioms_in_frontmatter() {
         // An idiom file with category != "idioms" should fail
-        let bad_content = valid_idiom_content("newtype", "rust").replace("category: idioms", "category: rust");
+        let bad_content =
+            valid_idiom_content("newtype", "rust").replace("category: idioms", "category: rust");
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/patterns")
             .with_dir("/root/patterns/idioms")
             .with_dir("/root/patterns/idioms/rust")
             .with_file("/root/patterns/idioms/rust/newtype.md", &bad_content)
-            .with_file("/root/patterns/index.md", "# Index\n- [Newtype](idioms/rust/newtype.md)\n");
+            .with_file(
+                "/root/patterns/index.md",
+                "# Index\n- [Newtype](idioms/rust/newtype.md)\n",
+            );
         let t = term();
         let result = run_validate(
             &fs,
@@ -1977,7 +1983,10 @@ Use the {name} pattern.
             .with_dir("/root/patterns")
             .with_dir("/root/patterns/creational")
             .with_file("/root/patterns/creational/factory-method.md", &content)
-            .with_file("/root/patterns/index.md", "# Index\n- [Factory Method](creational/factory-method.md)\n");
+            .with_file(
+                "/root/patterns/index.md",
+                "# Index\n- [Factory Method](creational/factory-method.md)\n",
+            );
         let t = term();
         let result = run_validate(
             &fs,
@@ -2013,7 +2022,10 @@ mod cross_ref_tests {
             "[ddd/repository]".to_string(),
         );
         let (errors, ok) = validate_cross_refs(&fm, "adapter", &all_stems, "test");
-        assert!(ok, "Category-prefixed cross-ref should resolve. Errors: {errors}");
+        assert!(
+            ok,
+            "Category-prefixed cross-ref should resolve. Errors: {errors}"
+        );
         assert!(errors.is_empty(), "No errors expected. Got: {errors}");
     }
 
@@ -2042,7 +2054,10 @@ mod cross_ref_tests {
         );
         let (errors, ok) = validate_cross_refs(&fm, "adapter", &all_stems, "test");
         assert!(!ok, "Non-existent prefixed ref should fail");
-        assert!(errors.contains("non-existent"), "Should mention non-existent: {errors}");
+        assert!(
+            errors.contains("non-existent"),
+            "Should mention non-existent: {errors}"
+        );
     }
 }
 
@@ -2052,11 +2067,7 @@ mod cross_ref_tests {
 /// Scans all pattern files, extracts frontmatter, and writes a structured index
 /// with category headers, pattern links, language coverage table,
 /// alphabetized tag list with occurrence counts, and total pattern count.
-pub(super) fn generate_index(
-    root: &Path,
-    fs: &dyn FileSystem,
-    terminal: &dyn TerminalIO,
-) {
+pub(super) fn generate_index(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) {
     use ecc_domain::config::validate::extract_frontmatter;
     use std::collections::BTreeMap;
 
@@ -2070,13 +2081,11 @@ pub(super) fn generate_index(
         Err(_) => return,
     };
 
-    let categories: Vec<_> = root_entries
-        .into_iter()
-        .filter(|p| fs.is_dir(p))
-        .collect();
+    let categories: Vec<_> = root_entries.into_iter().filter(|p| fs.is_dir(p)).collect();
 
     // Collect all pattern info grouped by category
-    let mut category_patterns: BTreeMap<String, Vec<(String, String, Vec<String>)>> = BTreeMap::new();
+    let mut category_patterns: BTreeMap<String, Vec<(String, String, Vec<String>)>> =
+        BTreeMap::new();
     let mut language_counts: BTreeMap<String, usize> = BTreeMap::new();
     let mut tag_counts: BTreeMap<String, usize> = BTreeMap::new();
     let mut total_count: usize = 0;
@@ -2157,11 +2166,7 @@ pub(super) fn generate_index(
             })
             .collect::<Vec<_>>()
             .join(" ");
-        index.push_str(&format!(
-            "### {} ({} patterns)\n\n",
-            title,
-            patterns.len()
-        ));
+        index.push_str(&format!("### {} ({} patterns)\n\n", title, patterns.len()));
         for (name, rel_path, _) in patterns {
             let display_name = name
                 .split('-')
@@ -2208,16 +2213,14 @@ pub(super) fn generate_index(
             ));
         }
         Err(e) => {
-            terminal.stderr_write(&format!(
-                "ERROR: Failed to write patterns/index.md: {e}\n"
-            ));
+            terminal.stderr_write(&format!("ERROR: Failed to write patterns/index.md: {e}\n"));
         }
     }
 }
 
 #[cfg(test)]
 mod fix_index_tests {
-    use super::super::{run_validate_patterns};
+    use super::super::run_validate_patterns;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment};
     use std::path::Path;
 
@@ -2291,16 +2294,36 @@ Test solution.
 
         // Check the generated index
         let dyn_fs: &dyn ecc_ports::fs::FileSystem = &fs;
-        let index = dyn_fs.read_to_string(Path::new("/root/patterns/index.md")).unwrap();
-        assert!(index.contains("# Pattern Library Index"), "Should have title");
-        assert!(index.contains("### Creational (2 patterns)"), "Should list creational with count");
-        assert!(index.contains("### Structural (1 patterns)"), "Should list structural with count");
-        assert!(index.contains("| rust |"), "Should have rust in language table");
-        assert!(index.contains("**Total patterns: 3**"), "Should show total count");
+        let index = dyn_fs
+            .read_to_string(Path::new("/root/patterns/index.md"))
+            .unwrap();
+        assert!(
+            index.contains("# Pattern Library Index"),
+            "Should have title"
+        );
+        assert!(
+            index.contains("### Creational (2 patterns)"),
+            "Should list creational with count"
+        );
+        assert!(
+            index.contains("### Structural (1 patterns)"),
+            "Should list structural with count"
+        );
+        assert!(
+            index.contains("| rust |"),
+            "Should have rust in language table"
+        );
+        assert!(
+            index.contains("**Total patterns: 3**"),
+            "Should show total count"
+        );
         assert!(index.contains("`gof`"), "Should list tags");
 
         let stdout = t.stdout_output().join("\n");
-        assert!(stdout.contains("Generated patterns/index.md"), "Should report generation");
+        assert!(
+            stdout.contains("Generated patterns/index.md"),
+            "Should report generation"
+        );
     }
 
     #[test]
@@ -2308,11 +2331,11 @@ Test solution.
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/patterns")
             .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/bad.md", "no frontmatter here\n")
             .with_file(
-                "/root/patterns/creational/bad.md",
-                "no frontmatter here\n",
-            )
-            .with_file("/root/patterns/index.md", "# Old index\n- [Bad](creational/bad.md)\n");
+                "/root/patterns/index.md",
+                "# Old index\n- [Bad](creational/bad.md)\n",
+            );
         let t = BufferedTerminal::new();
         let env = MockEnvironment::default();
 
@@ -2321,7 +2344,12 @@ Test solution.
 
         // Index should NOT be regenerated
         let dyn_fs: &dyn ecc_ports::fs::FileSystem = &fs;
-        let index = dyn_fs.read_to_string(Path::new("/root/patterns/index.md")).unwrap();
-        assert!(index.contains("Old index"), "Index should not be regenerated on failure");
+        let index = dyn_fs
+            .read_to_string(Path::new("/root/patterns/index.md"))
+            .unwrap();
+        assert!(
+            index.contains("Old index"),
+            "Index should not be regenerated on failure"
+        );
     }
 }

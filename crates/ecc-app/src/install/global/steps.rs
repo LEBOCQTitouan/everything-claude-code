@@ -117,7 +117,6 @@ pub(super) fn step_merge_artifacts(
         &mut merge_options,
     ));
 
-
     all_reports.push(merge::merge_patterns(
         &merge_ctx,
         &ecc_root.join("patterns"),
@@ -155,10 +154,8 @@ fn resolve_rule_skip_paths(
         return vec![];
     }
 
-    let stack = stack_detect::detect_project_stack(
-        ctx.fs,
-        &std::env::current_dir().unwrap_or_default(),
-    );
+    let stack =
+        stack_detect::detect_project_stack(ctx.fs, &std::env::current_dir().unwrap_or_default());
 
     if stack.languages.is_empty() && stack.frameworks.is_empty() {
         ctx.terminal
@@ -170,8 +167,7 @@ fn resolve_rule_skip_paths(
     ctx.terminal
         .stderr_write(&format!("Detected: [{lang_list}]\n"));
 
-    let filter_result =
-        rule_filter::filter_rules_by_stack(ctx.fs, rules_src, rule_groups, &stack);
+    let filter_result = rule_filter::filter_rules_by_stack(ctx.fs, rules_src, rule_groups, &stack);
 
     let skipped = filter_result.skipped.len();
     if skipped > 0 {
