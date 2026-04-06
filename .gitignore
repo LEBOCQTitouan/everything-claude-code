@@ -81,3 +81,5 @@ docs/backlog/.locks/
 # Mutation testing output
 mutants.out/
 .claude/cartography/processed/
+.claude/cartography/pending-delta-*.json
+.claude/cartography/cartography-merge.lock
