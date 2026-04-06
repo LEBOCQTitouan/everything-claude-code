@@ -3,7 +3,7 @@ id: BL-101
 title: "Miri unsafe code verification for ecc-flock"
 scope: LOW
 target: "direct edit"
-status: open
+status: implemented
 tags: [tooling, safety, testing, unsafe]
 created: 2026-03-29
 related: []

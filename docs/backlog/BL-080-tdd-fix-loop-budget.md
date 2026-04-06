@@ -3,7 +3,7 @@ id: BL-080
 title: TDD fix-loop budget cap at 2 rounds
 scope: LOW
 target: direct edit
-status: open
+status: implemented
 created: 2026-03-27
 origin: Stripe Minions blog post — CI round budget pattern
 ---

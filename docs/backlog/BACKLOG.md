@@ -50,7 +50,7 @@
 | BL-047 | Automatic session-to-memory persistence with daily files | — | HIGH | /spec dev | implemented | 2026-03-21 |
 | BL-048 | Comprehensive output summaries for spec → design → implement pipeline | — | MEDIUM | /spec-refactor | implemented | 2026-03-22 |
 | BL-049 | Offload web research phase to Task subagents in /spec-* commands | — | MEDIUM | /spec-refactor | implemented | 2026-03-22 |
-| BL-050 | Deferred summary tables: coverage delta, bounded contexts, per-test-name | — | MEDIUM | /spec-dev | open | 2026-03-22 |
+| BL-050 | Deferred summary tables: coverage delta, bounded contexts, per-test-name | — | MEDIUM | /spec-dev | implemented | 2026-03-22 |
 | BL-051 | Explanatory narrative audit — all commands and workflows | — | HIGH | /spec refactor | implemented | 2026-03-22 |
 | BL-052 | Replace .claude/hooks shell scripts with compiled Rust binaries | — | HIGH | /spec | implemented | 2026-03-22 |
 | BL-053 | Poweruser statusline — labels, usage bars, UX overhaul, install fix | — | HIGH | /spec dev | implemented | 2026-03-22 |
@@ -100,13 +100,13 @@
 | BL-097 | Spec backlog in-work filtering — hide entries claimed by other sessions | — | MEDIUM | /spec-dev | implemented | 2026-03-29 | 2026-03-29 |
 | BL-098 | Socratic grill-me upgrade — OARS, laddering, MECE, reflective rephrasing | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-099 | Migrate serde_yml to serde-yaml-ng — maintenance risk mitigation | — | MEDIUM | /spec-refactor | implemented | 2026-03-29 |
-| BL-100 | sccache + mold build acceleration for dev environment | — | LOW | direct edit | open | 2026-03-29 |
-| BL-101 | Miri unsafe code verification for ecc-flock | — | LOW | direct edit | open | 2026-03-29 |
+| BL-100 | sccache + mold build acceleration for dev environment | — | LOW | direct edit | implemented | 2026-03-29 |
+| BL-101 | Miri unsafe code verification for ecc-flock | — | LOW | direct edit | implemented | 2026-03-29 |
 | BL-102 | Promptware Engineering practices — prompt testing and monitoring | — | MEDIUM | /spec-dev | implemented | 2026-03-29 |
 | BL-103 | Autonomous visual testing integration — vision-based UI validation | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-104 | Multi-agent team coordination — shared state and task handoff | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-105 | Bump crossterm 0.28 → 0.29.0 | — | LOW | direct edit | implemented | 2026-03-29 | 2026-03-29 |
-| BL-106 | Harness reliability metrics — benchmark against reference patterns | — | MEDIUM | /spec-dev | open | 2026-03-29 |
+| BL-106 | Harness reliability metrics — benchmark against reference patterns | — | MEDIUM | /spec-dev | implemented | 2026-03-29 |
 | BL-107 | Audit-web guided profile — interactive setup, persisted dimensions, self-improvement | — | HIGH | /spec-dev | implemented | 2026-03-29 |
 | BL-108 | Smart stop notification — only notify on final stop or user input needed | — | MEDIUM | /spec-dev | implemented | 2026-03-29 |
 | BL-109 | Autonomous comms pipeline — multi-channel content generation from code | — | EPIC | /spec | implemented | 2026-03-30 |

@@ -3,7 +3,7 @@ id: BL-106
 title: "Harness reliability metrics — benchmark ECC against reference patterns"
 scope: MEDIUM
 target: "/spec-dev"
-status: open
+status: implemented
 tags: [harness, reliability, metrics, benchmarking, quality]
 created: 2026-03-29
 related: [BL-091, BL-092]

@@ -3,7 +3,7 @@ id: BL-100
 title: "sccache + mold build acceleration for dev environment"
 scope: LOW
 target: "direct edit"
-status: open
+status: implemented
 tags: [tooling, build, performance, dev-experience]
 created: 2026-03-29
 related: [BL-087]

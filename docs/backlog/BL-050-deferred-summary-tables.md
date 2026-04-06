@@ -1,7 +1,7 @@
 ---
 id: BL-050
 title: Deferred pipeline summary tables — coverage delta, bounded contexts, per-test-name
-status: open
+status: implemented
 created: 2026-03-22
 promoted_to: ""
 tags: [spec, design, implement, summary, deferred, coverage, bounded-contexts]
