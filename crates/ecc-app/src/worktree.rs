@@ -454,4 +454,221 @@ mod tests {
             result.errors
         );
     }
+
+    // ── Wave 4 new tests (RED: these reference new gc signature and new functions) ──
+
+    #[test]
+    fn gc_uses_worktree_manager() {
+        use ecc_ports::worktree::WorktreeManager;
+        use ecc_test_support::MockWorktreeManager;
+        // This test verifies gc() accepts &dyn WorktreeManager.
+        // Currently gc() only takes &dyn ShellExecutor — this WILL NOT COMPILE
+        // until gc() is refactored.
+        let mgr = MockWorktreeManager::new();
+        let executor = MockExecutor::new();
+        // Call the new gc signature (worktree_mgr first param)
+        let result = crate::worktree::gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        assert!(result.removed.is_empty());
+        assert!(result.skipped.is_empty());
+        assert!(result.errors.is_empty());
+    }
+
+    #[test]
+    fn gc_uses_list_worktrees() {
+        use ecc_ports::worktree::{WorktreeInfo, WorktreeManager};
+        use ecc_test_support::MockWorktreeManager;
+        let stale = WorktreeInfo {
+            path: format!("/repo/{STALE_SESSION}"),
+            branch: Some(STALE_SESSION.to_owned()),
+        };
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![stale]);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], err_output(1));
+
+        let result = crate::worktree::gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        assert!(
+            result.removed.contains(&STALE_SESSION.to_owned()),
+            "stale session should be removed via list_worktrees, got removed={:?}",
+            result.removed
+        );
+    }
+
+    #[test]
+    fn gc_uses_port_methods() {
+        use ecc_ports::worktree::{WorktreeInfo, WorktreeManager};
+        use ecc_test_support::MockWorktreeManager;
+        let stale = WorktreeInfo {
+            path: format!("/repo/{STALE_SESSION}"),
+            branch: Some(STALE_SESSION.to_owned()),
+        };
+        let mgr = MockWorktreeManager::new()
+            .with_worktrees(vec![stale])
+            .with_remove_succeeds(true)
+            .with_delete_succeeds(true);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], err_output(1));
+
+        let result = crate::worktree::gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        assert!(
+            result.removed.contains(&STALE_SESSION.to_owned()),
+            "port remove_worktree + delete_branch must be used, got removed={:?}",
+            result.removed
+        );
+        assert!(result.errors.is_empty(), "no errors expected: {:?}", result.errors);
+    }
+
+    #[test]
+    fn gc_staleness_unchanged() {
+        use ecc_ports::worktree::{WorktreeInfo, WorktreeManager};
+        use ecc_test_support::MockWorktreeManager;
+        let fresh = WorktreeInfo {
+            path: format!("/repo/{FRESH_SESSION}"),
+            branch: Some(FRESH_SESSION.to_owned()),
+        };
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![fresh]);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], ok(""));
+
+        let result = crate::worktree::gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        assert!(
+            result.skipped.contains(&FRESH_SESSION.to_owned()),
+            "fresh session must be skipped, got: {:?}",
+            result.skipped
+        );
+        assert!(
+            !result.removed.contains(&FRESH_SESSION.to_owned()),
+            "fresh session must NOT be removed"
+        );
+    }
+
+    #[test]
+    fn gc_skips_unmerged() {
+        use ecc_ports::worktree::{WorktreeInfo, WorktreeManager};
+        use ecc_test_support::MockWorktreeManager;
+        let stale = WorktreeInfo {
+            path: format!("/repo/{STALE_SESSION}"),
+            branch: Some(STALE_SESSION.to_owned()),
+        };
+        let mgr = MockWorktreeManager::new()
+            .with_worktrees(vec![stale])
+            .with_unmerged_commit_count(3);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], err_output(1));
+
+        let result = crate::worktree::gc_with_manager(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        assert!(
+            result.skipped.contains(&STALE_SESSION.to_owned()),
+            "unmerged stale worktree must be skipped with force=false, got: {:?}",
+            result
+        );
+        assert!(
+            !result.removed.contains(&STALE_SESSION.to_owned()),
+            "unmerged worktree must NOT be removed with force=false"
+        );
+    }
+
+    #[test]
+    fn gc_force_overrides_merge_check() {
+        use ecc_ports::worktree::{WorktreeInfo, WorktreeManager};
+        use ecc_test_support::MockWorktreeManager;
+        let stale = WorktreeInfo {
+            path: format!("/repo/{STALE_SESSION}"),
+            branch: Some(STALE_SESSION.to_owned()),
+        };
+        let mgr = MockWorktreeManager::new()
+            .with_worktrees(vec![stale])
+            .with_unmerged_commit_count(3);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], err_output(1));
+
+        let result = crate::worktree::gc_with_manager(&mgr, &executor, Path::new("/repo"), true).unwrap();
+        assert!(
+            result.removed.contains(&STALE_SESSION.to_owned()),
+            "force=true must override merge check and remove the worktree, got: {:?}",
+            result.removed
+        );
+    }
+
+    // ── Wave 5 tests (RED: status and format_status_table don't exist yet) ──
+
+    #[test]
+    fn status_returns_all_columns() {
+        use ecc_ports::worktree::{WorktreeInfo, WorktreeManager};
+        use ecc_test_support::MockWorktreeManager;
+        let fresh = WorktreeInfo {
+            path: format!("/repo/{FRESH_SESSION}"),
+            branch: Some(FRESH_SESSION.to_owned()),
+        };
+        let mgr = MockWorktreeManager::new()
+            .with_worktrees(vec![fresh])
+            .with_unmerged_commit_count(2)
+            .with_uncommitted_changes(true)
+            .with_stash(true)
+            .with_pushed(false);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], ok(""));
+
+        let entries = crate::worktree::status(&mgr, &executor, Path::new("/repo")).unwrap();
+        assert_eq!(entries.len(), 1);
+        let e = &entries[0];
+        assert_eq!(e.name, FRESH_SESSION);
+        assert_eq!(e.commits_ahead, 2);
+        assert!(!e.is_clean);
+        assert!(e.has_stash);
+        assert!(!e.is_pushed);
+        assert_eq!(e.status, crate::worktree::WorktreeStatus::Unmerged);
+    }
+
+    #[test]
+    fn status_excludes_non_session() {
+        use ecc_ports::worktree::WorktreeInfo;
+        use ecc_test_support::MockWorktreeManager;
+        let mgr = MockWorktreeManager::new()
+            .with_worktrees(vec![
+                WorktreeInfo { path: "/repo/main".to_owned(), branch: Some("main".to_owned()) },
+                WorktreeInfo { path: "/repo/feature-xyz".to_owned(), branch: Some("feature-xyz".to_owned()) },
+                WorktreeInfo { path: format!("/repo/{FRESH_SESSION}"), branch: Some(FRESH_SESSION.to_owned()) },
+            ]);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], ok(""));
+
+        let entries = crate::worktree::status(&mgr, &executor, Path::new("/repo")).unwrap();
+        assert_eq!(entries.len(), 1, "only session worktrees must appear");
+        assert_eq!(entries[0].name, FRESH_SESSION);
+    }
+
+    #[test]
+    fn status_table_format() {
+        use crate::worktree::{WorktreeStatus, WorktreeStatusEntry, format_status_table};
+        let entry = WorktreeStatusEntry {
+            name: "ecc-session-20990101-000000-feat-123".to_owned(),
+            branch: "feature-branch".to_owned(),
+            age_secs: 3600,
+            commits_ahead: 0,
+            is_clean: true,
+            has_stash: false,
+            is_pushed: true,
+            status: WorktreeStatus::Merged,
+        };
+        let table = format_status_table(&[entry]);
+        let lines: Vec<&str> = table.lines().collect();
+        assert_eq!(lines.len(), 2);
+        let header_cols: Vec<&str> = lines[0].split('\t').collect();
+        assert_eq!(header_cols.len(), 8);
+        assert_eq!(header_cols[0], "Name");
+        assert_eq!(header_cols[7], "Status");
+        let data_cols: Vec<&str> = lines[1].split('\t').collect();
+        assert_eq!(data_cols.len(), 8);
+    }
+
+    #[test]
+    fn status_snapshot() {
+        use crate::worktree::{WorktreeStatusEntry, format_status_table};
+        let entries: Vec<WorktreeStatusEntry> = vec![];
+        let table = format_status_table(&entries);
+        assert_eq!(
+            table,
+            "Name\tBranch\tAge\tAhead\tClean\tStash\tPushed\tStatus"
+        );
+    }
 }
