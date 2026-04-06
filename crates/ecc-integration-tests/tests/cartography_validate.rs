@@ -4,8 +4,8 @@
 //! PC-021 (coverage performance).
 
 use ecc_app::validate_cartography::run_validate_cartography;
-use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockExecutor};
 use ecc_ports::shell::CommandOutput;
+use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockExecutor};
 use std::path::Path;
 use std::time::Instant;
 
@@ -121,13 +121,7 @@ fn schema_errors_reported_for_all_files() {
     let shell = MockExecutor::new();
     let terminal = BufferedTerminal::new();
 
-    let result = run_validate_cartography(
-        &fs,
-        &shell,
-        &terminal,
-        Path::new("/project"),
-        false,
-    );
+    let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/project"), false);
 
     // Should return false because there are schema errors
     assert!(!result, "expected false when files have schema errors");
@@ -174,13 +168,7 @@ fn stale_entries_reported_with_delta_days() {
     );
     let terminal = BufferedTerminal::new();
 
-    let result = run_validate_cartography(
-        &fs,
-        &shell,
-        &terminal,
-        Path::new("/project"),
-        false,
-    );
+    let result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/project"), false);
 
     // Stale entries don't cause validation failure by themselves (only schema errors do)
     // But the staleness must be reported in output
@@ -207,10 +195,7 @@ fn stale_entries_reported_with_delta_days() {
 #[test]
 fn coverage_flag_outputs_dashboard() {
     // Journey referencing one source file
-    let journey_content = format!(
-        "{}\n\nReferenced file: `src/main.rs`",
-        valid_journey()
-    );
+    let journey_content = format!("{}\n\nReferenced file: `src/main.rs`", valid_journey());
 
     let fs = InMemoryFileSystem::new()
         .with_file(
@@ -251,7 +236,9 @@ fn coverage_flag_outputs_dashboard() {
 
     // Below 50% → must include Priority gaps section
     assert!(
-        stdout.contains("Priority gaps") || stdout.contains("priority gaps") || stdout.contains("gaps"),
+        stdout.contains("Priority gaps")
+            || stdout.contains("priority gaps")
+            || stdout.contains("gaps"),
         "expected priority gaps section (coverage below 50%), got: {stdout}"
     );
 
@@ -282,13 +269,7 @@ fn coverage_completes_within_timeout() {
     let terminal = BufferedTerminal::new();
 
     let start = Instant::now();
-    let _result = run_validate_cartography(
-        &fs,
-        &shell,
-        &terminal,
-        Path::new("/project"),
-        true,
-    );
+    let _result = run_validate_cartography(&fs, &shell, &terminal, Path::new("/project"), true);
     let elapsed = start.elapsed();
 
     assert!(

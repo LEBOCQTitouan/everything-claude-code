@@ -1,4 +1,6 @@
-use ecc_domain::config::validate::{VALID_EFFORT_LEVELS, VALID_MODELS, extract_frontmatter, parse_tool_list};
+use ecc_domain::config::validate::{
+    VALID_EFFORT_LEVELS, VALID_MODELS, extract_frontmatter, parse_tool_list,
+};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
@@ -37,7 +39,12 @@ pub(super) fn validate_agents(root: &Path, fs: &dyn FileSystem, terminal: &dyn T
     true
 }
 
-fn validate_agent_file(file: &Path, root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
+fn validate_agent_file(
+    file: &Path,
+    root: &Path,
+    fs: &dyn FileSystem,
+    terminal: &dyn TerminalIO,
+) -> bool {
     let required_fields = ["model", "tools"];
 
     let content = match fs.read_to_string(file) {
@@ -124,11 +131,7 @@ fn validate_agent_file(file: &Path, root: &Path, fs: &dyn FileSystem, terminal: 
                         name
                     ));
                 }
-                "sonnet"
-                    if effort != "medium"
-                        && effort != "high"
-                        && !effort.is_empty() =>
-                {
+                "sonnet" if effort != "medium" && effort != "high" && !effort.is_empty() => {
                     terminal.stdout_write(&format!(
                         "WARNING: {} - model/effort mismatch: sonnet should use medium or high\n",
                         name
@@ -352,11 +355,7 @@ mod tests {
             &ValidateTarget::Agents,
             Path::new("/root")
         ));
-        assert!(
-            !t.stdout_output()
-                .iter()
-                .any(|s| s.contains("WARNING"))
-        );
+        assert!(!t.stdout_output().iter().any(|s| s.contains("WARNING")));
     }
 
     #[test]

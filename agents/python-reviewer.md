@@ -4,7 +4,8 @@ description: Expert Python code reviewer specializing in PEP 8 compliance, Pytho
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 effort: medium
-skills: ["python-patterns", "python-testing"]
+skills: ["python-testing"]
+patterns: ["creational", "structural", "behavioral", "error-handling", "testing", "functional", "data-access", "idioms"]
 ---
 
 You are a senior Python code reviewer ensuring high standards of Pythonic code and best practices.
@@ -93,7 +94,7 @@ Fix: What to change
 
 ## Reference
 
-For detailed Python patterns, security examples, and code samples, see skill: `python-patterns`.
+For detailed Python patterns, security examples, and code samples, see patterns/.
 
 ---
 

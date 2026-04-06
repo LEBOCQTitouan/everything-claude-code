@@ -4,7 +4,8 @@ description: Expert Kotlin code reviewer specializing in idiomatic Kotlin, corou
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 effort: medium
-skills: ["kotlin-patterns"]
+skills: []
+patterns: ["creational", "structural", "behavioral", "concurrency", "error-handling", "testing", "idioms"]
 ---
 
 You are a senior Kotlin code reviewer ensuring high standards of idiomatic Kotlin and best practices.
@@ -70,4 +71,4 @@ When invoked:
 - **Warning**: MEDIUM issues only
 - **Block**: CRITICAL or HIGH issues found
 
-For detailed Kotlin patterns, see `skill: kotlin-patterns` and `skill: kotlin-testing`.
+For detailed Kotlin patterns, see `patterns library and `skill: kotlin-testing`.

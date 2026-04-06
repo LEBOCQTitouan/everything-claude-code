@@ -4,7 +4,8 @@ description: Go build, vet, and compilation error resolution specialist. Fixes b
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 effort: medium
-skills: ["golang-patterns"]
+skills: []
+patterns: ["error-handling", "concurrency", "idioms"]
 ---
 
 # Go Build Error Resolver
@@ -105,4 +106,4 @@ Remaining errors: 3
 
 Final: `Build Status: SUCCESS/FAILED | Errors Fixed: N | Files Modified: list`
 
-For detailed Go error patterns and code examples, see `skill: golang-patterns`.
+For detailed Go error patterns and code examples, see `patterns library.

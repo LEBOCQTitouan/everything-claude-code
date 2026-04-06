@@ -286,8 +286,7 @@ mod tests {
 
     #[test]
     fn effort_hook_rejects_path_traversal() {
-        let fs = InMemoryFileSystem::new()
-            .with_file("/project/agents/../../etc/passwd", "secret");
+        let fs = InMemoryFileSystem::new().with_file("/project/agents/../../etc/passwd", "secret");
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();

@@ -87,10 +87,7 @@ fn exits_zero_and_one_for_valid_and_invalid() {
             "/project/docs/cartography/journeys/ok-journey.md",
             valid_journey(),
         )
-        .with_file(
-            "/project/docs/cartography/flows/ok-flow.md",
-            valid_flow(),
-        );
+        .with_file("/project/docs/cartography/flows/ok-flow.md", valid_flow());
     let shell = MockExecutor::new();
     let terminal_valid = BufferedTerminal::new();
 

@@ -45,4 +45,4 @@ applies-to: { languages: [kotlin] }
 
 ## Reference
 
-See skill: `kotlin-patterns` for comprehensive Kotlin idioms and patterns.
+See skill: the pattern library (`patterns/idioms/kotlin/`) for comprehensive Kotlin idioms and patterns.

@@ -486,17 +486,18 @@ mod tests {
 
     #[test]
     fn accepts_prefixed_session_branch() {
-        let result = validate_session_branch(
-            "worktree-ecc-session-20260404-150000-my-feature-12345",
-        );
+        let result =
+            validate_session_branch("worktree-ecc-session-20260404-150000-my-feature-12345");
         assert!(result.is_ok(), "prefixed session branch should be accepted");
     }
 
     #[test]
     fn accepts_unprefixed_session_branch() {
-        let result =
-            validate_session_branch("ecc-session-20260404-150000-my-feature-12345");
-        assert!(result.is_ok(), "unprefixed session branch should be accepted");
+        let result = validate_session_branch("ecc-session-20260404-150000-my-feature-12345");
+        assert!(
+            result.is_ok(),
+            "unprefixed session branch should be accepted"
+        );
     }
 
     #[test]

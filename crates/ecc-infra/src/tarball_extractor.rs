@@ -298,14 +298,20 @@ mod tests {
             .iter()
             .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
             .collect();
-        assert!(names.contains(&"ecc".to_string()), "ecc binary must be extracted");
+        assert!(
+            names.contains(&"ecc".to_string()),
+            "ecc binary must be extracted"
+        );
         assert!(
             names.contains(&"ecc-workflow".to_string()),
             "ecc-workflow binary must be extracted"
         );
 
         // Content must be correct
-        let ecc_path = paths.iter().find(|p| p.file_name().unwrap() == "ecc").unwrap();
+        let ecc_path = paths
+            .iter()
+            .find(|p| p.file_name().unwrap() == "ecc")
+            .unwrap();
         let content = std::fs::read(ecc_path).unwrap();
         assert_eq!(content, b"ecc-binary-content");
     }

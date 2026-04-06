@@ -162,10 +162,7 @@ pub fn check_pattern_count(fs: &dyn FileSystem, patterns_dir: &Path) -> AuditChe
         }
     };
 
-    let categories: Vec<_> = category_entries
-        .iter()
-        .filter(|p| fs.is_dir(p))
-        .collect();
+    let categories: Vec<_> = category_entries.iter().filter(|p| fs.is_dir(p)).collect();
 
     let mut empty_categories: Vec<String> = Vec::new();
     for cat_path in &categories {
@@ -299,6 +296,9 @@ mod tests {
         // The check runs without panic, returns a valid result
         assert_eq!(result.name, "Pattern count");
         // With patterns present the check should pass (findings only on problems)
-        assert!(result.passed, "expected passed=true for populated patterns dir");
+        assert!(
+            result.passed,
+            "expected passed=true for populated patterns dir"
+        );
     }
 }

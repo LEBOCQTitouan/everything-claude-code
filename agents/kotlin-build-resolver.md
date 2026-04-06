@@ -4,7 +4,8 @@ description: Kotlin/Gradle build, compilation, and dependency error resolution s
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 effort: medium
-skills: ["kotlin-patterns"]
+skills: []
+patterns: ["error-handling", "idioms"]
 ---
 
 # Kotlin Build Error Resolver
@@ -128,4 +129,4 @@ Remaining errors: 2
 
 Final: `Build Status: SUCCESS/FAILED | Errors Fixed: N | Files Modified: list`
 
-For detailed Kotlin patterns and code examples, see `skill: kotlin-patterns`.
+For detailed Kotlin patterns and code examples, see `patterns library.

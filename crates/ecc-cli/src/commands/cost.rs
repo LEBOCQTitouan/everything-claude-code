@@ -75,18 +75,25 @@ pub fn run(args: CostArgs) -> anyhow::Result<()> {
                 model,
                 ..Default::default()
             };
-            let summary = cost_mgmt::summary(&store, &query)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let summary = cost_mgmt::summary(&store, &query).map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("Cost Summary (last {since})");
             println!("  Total cost:      ${:.6}", summary.total_cost.value());
             println!("  Input tokens:    {}", summary.total_input_tokens.value());
             println!("  Output tokens:   {}", summary.total_output_tokens.value());
-            println!("  Thinking tokens: {}", summary.total_thinking_tokens.value());
+            println!(
+                "  Thinking tokens: {}",
+                summary.total_thinking_tokens.value()
+            );
             println!("  Records:         {}", summary.record_count);
             if !summary.breakdowns.is_empty() {
                 println!("\n  By model:");
                 for b in &summary.breakdowns {
-                    println!("    {}: ${:.6} ({} records)", b.model.as_str(), b.cost.value(), b.record_count);
+                    println!(
+                        "    {}: ${:.6} ({} records)",
+                        b.model.as_str(),
+                        b.cost.value(),
+                        b.record_count
+                    );
                 }
             }
         }
@@ -103,10 +110,15 @@ pub fn run(args: CostArgs) -> anyhow::Result<()> {
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("Cost Breakdown by {by} (last {since})");
             for b in &breakdowns {
-                println!("  {}: ${:.6} (in:{} out:{} think:{}, {} records)",
-                    b.model.as_str(), b.cost.value(),
-                    b.input_tokens.value(), b.output_tokens.value(),
-                    b.thinking_tokens.value(), b.record_count);
+                println!(
+                    "  {}: ${:.6} (in:{} out:{} think:{}, {} records)",
+                    b.model.as_str(),
+                    b.cost.value(),
+                    b.input_tokens.value(),
+                    b.output_tokens.value(),
+                    b.thinking_tokens.value(),
+                    b.record_count
+                );
             }
             if breakdowns.is_empty() {
                 println!("  No data found.");
@@ -124,10 +136,16 @@ pub fn run(args: CostArgs) -> anyhow::Result<()> {
             let comparison = cost_mgmt::compare(&store, &before_q, &after_q)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("Cost Comparison");
-            println!("  Before ({before}): ${:.6} ({} records)",
-                comparison.before.total_cost.value(), comparison.before.record_count);
-            println!("  After  ({after}):  ${:.6} ({} records)",
-                comparison.after.total_cost.value(), comparison.after.record_count);
+            println!(
+                "  Before ({before}): ${:.6} ({} records)",
+                comparison.before.total_cost.value(),
+                comparison.before.record_count
+            );
+            println!(
+                "  After  ({after}):  ${:.6} ({} records)",
+                comparison.after.total_cost.value(),
+                comparison.after.record_count
+            );
         }
         CostAction::Export { format, since } => {
             let query = CostQuery {
@@ -138,14 +156,14 @@ pub fn run(args: CostArgs) -> anyhow::Result<()> {
                 "csv" => CostExportFormat::Csv,
                 _ => CostExportFormat::Json,
             };
-            let output = cost_mgmt::export(&store, &query, fmt)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let output =
+                cost_mgmt::export(&store, &query, fmt).map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("{output}");
         }
         CostAction::Prune { older_than } => {
-            let duration = parse_duration(&older_than).unwrap_or(std::time::Duration::from_secs(90 * 86400));
-            let count = cost_mgmt::prune(&store, duration)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let duration =
+                parse_duration(&older_than).unwrap_or(std::time::Duration::from_secs(90 * 86400));
+            let count = cost_mgmt::prune(&store, duration).map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("Pruned {count} records older than {older_than}.");
         }
         CostAction::Migrate => {
@@ -153,12 +171,15 @@ pub fn run(args: CostArgs) -> anyhow::Result<()> {
                 .unwrap_or_default()
                 .join(".claude/metrics/costs.jsonl");
             let fs = ecc_infra::os_fs::OsFileSystem;
-            let result = cost_mgmt::migrate(&store, &fs, &jsonl_path)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let result =
+                cost_mgmt::migrate(&store, &fs, &jsonl_path).map_err(|e| anyhow::anyhow!("{e}"))?;
             if result.not_found {
                 println!("No legacy data found at {}", jsonl_path.display());
             } else {
-                println!("Migrated {} records ({} skipped).", result.imported, result.skipped);
+                println!(
+                    "Migrated {} records ({} skipped).",
+                    result.imported, result.skipped
+                );
             }
         }
     }
@@ -239,9 +260,8 @@ mod tests {
     /// PC-032: CLI parse export args (AC-004.4)
     #[test]
     fn parse_export_args() {
-        let cli =
-            CostCli::try_parse_from(["cost", "export", "--format", "csv", "--since", "14d"])
-                .expect("should parse export args");
+        let cli = CostCli::try_parse_from(["cost", "export", "--format", "csv", "--since", "14d"])
+            .expect("should parse export args");
         match cli.action {
             CostAction::Export { format, since } => {
                 assert_eq!(format, "csv");
@@ -279,14 +299,16 @@ mod tests {
         // The test verifies the missing-DB path returns Ok (message is printed to stdout).
         // In CI, ~/.ecc/cost/cost.db will not exist, so this covers the missing-DB branch.
         let result = run(args);
-        assert!(result.is_ok(), "run() must succeed even when DB is missing: {result:?}");
+        assert!(
+            result.is_ok(),
+            "run() must succeed even when DB is missing: {result:?}"
+        );
     }
 
     /// PC-035: CLI parse migrate args (AC-005.1)
     #[test]
     fn parse_migrate_args() {
-        let cli =
-            CostCli::try_parse_from(["cost", "migrate"]).expect("should parse migrate args");
+        let cli = CostCli::try_parse_from(["cost", "migrate"]).expect("should parse migrate args");
         assert!(
             matches!(cli.action, CostAction::Migrate),
             "expected Migrate variant"

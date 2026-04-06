@@ -1,9 +1,14 @@
 use std::process::Command;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 
 /// Build cargo-mutants command arguments.
-fn build_args(packages: &[String], timeout: Option<u64>, in_diff: bool, nextest: bool) -> Vec<String> {
+fn build_args(
+    packages: &[String],
+    timeout: Option<u64>,
+    in_diff: bool,
+    nextest: bool,
+) -> Vec<String> {
     let mut args = vec!["mutants".to_string()];
 
     for pkg in packages {
@@ -65,10 +70,14 @@ mod tests {
             args,
             vec![
                 "mutants",
-                "--package", "ecc-domain",
-                "--package", "ecc-app",
-                "--timeout", "120",
-                "--test-tool", "nextest",
+                "--package",
+                "ecc-domain",
+                "--package",
+                "ecc-app",
+                "--timeout",
+                "120",
+                "--test-tool",
+                "nextest",
             ]
         );
     }
@@ -89,7 +98,10 @@ mod tests {
         unsafe { std::env::set_var("PATH", "/nonexistent") };
         let result = run(&["ecc-domain".to_string()], None, false, false);
         unsafe { std::env::set_var("PATH", &original_path) };
-        assert!(result.is_err(), "should error when cargo-mutants not in PATH");
+        assert!(
+            result.is_err(),
+            "should error when cargo-mutants not in PATH"
+        );
         let err_msg = result.unwrap_err().to_string();
         assert!(
             err_msg.contains("not installed"),

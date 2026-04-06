@@ -47,8 +47,17 @@ pub const VALID_TOOLS: &[&str] = &[
 ///
 /// 10 named languages plus the special value "all" for universal patterns.
 pub const VALID_PATTERN_LANGUAGES: &[&str] = &[
-    "rust", "go", "python", "typescript", "java",
-    "kotlin", "csharp", "cpp", "swift", "shell", "all",
+    "rust",
+    "go",
+    "python",
+    "typescript",
+    "java",
+    "kotlin",
+    "csharp",
+    "cpp",
+    "swift",
+    "shell",
+    "all",
 ];
 
 /// Canonical difficulty values for pattern frontmatter (AC-001.6).
@@ -69,13 +78,48 @@ pub const REQUIRED_PATTERN_SECTIONS: &[&str] = &[
 
 /// Known-unsafe code patterns to warn about in pattern file code blocks (AC-002.8).
 pub const UNSAFE_CODE_PATTERNS: &[&str] = &[
-    "eval(", "eval ",
-    "exec(", "exec ",
+    "eval(",
+    "eval ",
+    "exec(",
+    "exec ",
     "system(",
     "innerHTML",
-    "f\"SELECT", "f\"INSERT", "f\"UPDATE", "f\"DELETE",
-    "f'SELECT", "f'INSERT", "f'UPDATE", "f'DELETE",
+    "f\"SELECT",
+    "f\"INSERT",
+    "f\"UPDATE",
+    "f\"DELETE",
+    "f'SELECT",
+    "f'INSERT",
+    "f'UPDATE",
+    "f'DELETE",
 ];
+
+/// Canonical pattern category directory names for validation.
+pub const VALID_PATTERN_CATEGORIES: &[&str] = &[
+    "creational",
+    "architecture",
+    "structural",
+    "behavioral",
+    "concurrency",
+    "error-handling",
+    "resilience",
+    "testing",
+    "ddd",
+    "api-design",
+    "security",
+    "observability",
+    "cicd",
+    "agentic",
+    "functional",
+    "data-access",
+    "idioms",
+];
+
+/// Language subdirectories within the idioms category.
+pub const IDIOM_SUBCATEGORIES: &[&str] = &["rust", "go", "python", "typescript", "kotlin"];
+
+/// Pattern files exceeding this line count trigger a validation warning.
+pub const PATTERN_SIZE_WARNING_LINES: usize = 500;
 
 /// Check if a string matches kebab-case: `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`
 pub fn is_kebab_case(s: &str) -> bool {
@@ -379,10 +423,7 @@ mod tests {
 
     #[test]
     fn valid_effort_levels_defined() {
-        assert_eq!(
-            VALID_EFFORT_LEVELS,
-            &["low", "medium", "high", "max"]
-        );
+        assert_eq!(VALID_EFFORT_LEVELS, &["low", "medium", "high", "max"]);
     }
 
     #[test]
@@ -672,8 +713,17 @@ mod tests {
         // AC-001.5: 10 language identifiers + "all" = 11 entries
         assert_eq!(VALID_PATTERN_LANGUAGES.len(), 11);
         for lang in &[
-            "rust", "go", "python", "typescript", "java",
-            "kotlin", "csharp", "cpp", "swift", "shell", "all",
+            "rust",
+            "go",
+            "python",
+            "typescript",
+            "java",
+            "kotlin",
+            "csharp",
+            "cpp",
+            "swift",
+            "shell",
+            "all",
         ] {
             assert!(
                 VALID_PATTERN_LANGUAGES.contains(lang),

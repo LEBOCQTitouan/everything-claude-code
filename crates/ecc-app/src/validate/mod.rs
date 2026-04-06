@@ -47,3 +47,18 @@ pub fn run_validate(
         ValidateTarget::Teams => teams::validate_teams(root, fs, terminal),
     }
 }
+
+/// Run pattern validation with optional --fix (auto-regenerate index.md).
+pub fn run_validate_patterns(
+    fs: &dyn ecc_ports::fs::FileSystem,
+    terminal: &dyn ecc_ports::terminal::TerminalIO,
+    _env: &dyn ecc_ports::env::Environment,
+    root: &std::path::Path,
+    fix: bool,
+) -> bool {
+    let valid = patterns::validate_patterns(root, fs, terminal);
+    if fix && valid {
+        patterns::generate_index(root, fs, terminal);
+    }
+    valid
+}

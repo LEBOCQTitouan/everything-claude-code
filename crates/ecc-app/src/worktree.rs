@@ -317,16 +317,13 @@ mod tests {
     }
 
     /// A stale prefixed session name (worktree- prefix, year 2020).
-    const STALE_PREFIXED_SESSION: &str =
-        "worktree-ecc-session-20200101-000000-old-feature-99999";
+    const STALE_PREFIXED_SESSION: &str = "worktree-ecc-session-20200101-000000-old-feature-99999";
     /// A fresh prefixed session name (far-future timestamp).
-    const FRESH_PREFIXED_SESSION: &str =
-        "worktree-ecc-session-20990101-000000-new-feature-99999";
+    const FRESH_PREFIXED_SESSION: &str = "worktree-ecc-session-20990101-000000-new-feature-99999";
 
     #[test]
     fn removes_stale_prefixed_worktree() {
-        let list_output =
-            porcelain_with_session(STALE_PREFIXED_SESSION, STALE_PREFIXED_SESSION);
+        let list_output = porcelain_with_session(STALE_PREFIXED_SESSION, STALE_PREFIXED_SESSION);
 
         let executor = MockExecutor::new()
             .on_args(
@@ -362,8 +359,7 @@ mod tests {
 
     #[test]
     fn skips_fresh_prefixed_worktree() {
-        let list_output =
-            porcelain_with_session(FRESH_PREFIXED_SESSION, FRESH_PREFIXED_SESSION);
+        let list_output = porcelain_with_session(FRESH_PREFIXED_SESSION, FRESH_PREFIXED_SESSION);
 
         let executor = MockExecutor::new()
             .on_args(
@@ -386,8 +382,7 @@ mod tests {
         // This test verifies GC processes prefixed worktrees (they were
         // previously silently skipped). The tracing::info! log is verified
         // by the fact that the worktree enters the staleness check path.
-        let list_output =
-            porcelain_with_session(STALE_PREFIXED_SESSION, STALE_PREFIXED_SESSION);
+        let list_output = porcelain_with_session(STALE_PREFIXED_SESSION, STALE_PREFIXED_SESSION);
 
         let executor = MockExecutor::new()
             .on_args(

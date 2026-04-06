@@ -37,5 +37,4 @@ impl GitInfo for OsGitInfo {
             Ok(path)
         }
     }
-
 }

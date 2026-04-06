@@ -48,4 +48,4 @@ applies-to: { languages: [csharp] }
 
 ## Reference
 
-See skill: `csharp-patterns` for comprehensive C# patterns and .NET conventions.
+See skill: the pattern library (`patterns/`) for comprehensive C# patterns and .NET conventions.

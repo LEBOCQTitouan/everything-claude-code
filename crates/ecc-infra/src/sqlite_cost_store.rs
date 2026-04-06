@@ -21,8 +21,7 @@ impl SqliteCostStore {
     /// Open (or create) the SQLite database at `db_path`, setting WAL mode and ensuring the schema.
     pub fn new(db_path: &Path) -> Result<Self, CostStoreError> {
         if let Some(parent) = db_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| CostStoreError::Io(e.to_string()))?;
+            std::fs::create_dir_all(parent).map_err(|e| CostStoreError::Io(e.to_string()))?;
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
@@ -30,8 +29,8 @@ impl SqliteCostStore {
                     .map_err(|e| CostStoreError::Io(e.to_string()))?;
             }
         }
-        let conn = Connection::open(db_path)
-            .map_err(|e| CostStoreError::Database(e.to_string()))?;
+        let conn =
+            Connection::open(db_path).map_err(|e| CostStoreError::Database(e.to_string()))?;
         crate::cost_schema::ensure_schema(&conn)
             .map_err(|e| CostStoreError::Database(e.to_string()))?;
         Ok(Self {
@@ -41,8 +40,8 @@ impl SqliteCostStore {
 
     /// Create an in-memory store for testing.
     pub fn in_memory() -> Result<Self, CostStoreError> {
-        let conn = Connection::open_in_memory()
-            .map_err(|e| CostStoreError::Database(e.to_string()))?;
+        let conn =
+            Connection::open_in_memory().map_err(|e| CostStoreError::Database(e.to_string()))?;
         crate::cost_schema::ensure_schema(&conn)
             .map_err(|e| CostStoreError::Database(e.to_string()))?;
         Ok(Self {
@@ -271,7 +270,11 @@ impl CostStore for SqliteCostStore {
         Ok(removed)
     }
 
-    fn export(&self, query: &CostQuery, format: CostExportFormat) -> Result<String, CostStoreError> {
+    fn export(
+        &self,
+        query: &CostQuery,
+        format: CostExportFormat,
+    ) -> Result<String, CostStoreError> {
         let records = self.query(query)?;
         match format {
             CostExportFormat::Json => {
@@ -365,7 +368,14 @@ mod tests {
             crate::cost_schema::ensure_schema(&conn).expect("second schema call should succeed");
         }
         // Also verify the table exists and is usable
-        let record = make_record("s1", "2026-04-04T10:00:00Z", "claude-sonnet-4-6", 1000, 500, 0.0105);
+        let record = make_record(
+            "s1",
+            "2026-04-04T10:00:00Z",
+            "claude-sonnet-4-6",
+            1000,
+            500,
+            0.0105,
+        );
         let id = store1.append(&record).expect("append should succeed");
         assert!(id.0 > 0);
     }
@@ -376,18 +386,61 @@ mod tests {
         let store = SqliteCostStore::in_memory().unwrap();
 
         // Insert records at different timestamps
-        store.append(&make_record("s1", "2026-01-01T00:00:00Z", "claude-haiku-4-5", 100, 50, 0.001)).unwrap();
-        store.append(&make_record("s1", "2026-03-01T00:00:00Z", "claude-haiku-4-5", 200, 100, 0.002)).unwrap();
-        store.append(&make_record("s1", "2026-04-01T00:00:00Z", "claude-haiku-4-5", 300, 150, 0.003)).unwrap();
-        store.append(&make_record("s1", "2026-05-01T00:00:00Z", "claude-haiku-4-5", 400, 200, 0.004)).unwrap();
+        store
+            .append(&make_record(
+                "s1",
+                "2026-01-01T00:00:00Z",
+                "claude-haiku-4-5",
+                100,
+                50,
+                0.001,
+            ))
+            .unwrap();
+        store
+            .append(&make_record(
+                "s1",
+                "2026-03-01T00:00:00Z",
+                "claude-haiku-4-5",
+                200,
+                100,
+                0.002,
+            ))
+            .unwrap();
+        store
+            .append(&make_record(
+                "s1",
+                "2026-04-01T00:00:00Z",
+                "claude-haiku-4-5",
+                300,
+                150,
+                0.003,
+            ))
+            .unwrap();
+        store
+            .append(&make_record(
+                "s1",
+                "2026-05-01T00:00:00Z",
+                "claude-haiku-4-5",
+                400,
+                200,
+                0.004,
+            ))
+            .unwrap();
 
         // Query with date range: only March and April records
         let query = CostQuery {
-            date_range: Some(("2026-02-01T00:00:00Z".to_string(), "2026-04-30T00:00:00Z".to_string())),
+            date_range: Some((
+                "2026-02-01T00:00:00Z".to_string(),
+                "2026-04-30T00:00:00Z".to_string(),
+            )),
             ..CostQuery::default()
         };
         let results = store.query(&query).expect("query should succeed");
-        assert_eq!(results.len(), 2, "should return only March and April records");
+        assert_eq!(
+            results.len(),
+            2,
+            "should return only March and April records"
+        );
         assert_eq!(results[0].timestamp, "2026-03-01T00:00:00Z");
         assert_eq!(results[1].timestamp, "2026-04-01T00:00:00Z");
     }
@@ -398,7 +451,16 @@ mod tests {
         let store = SqliteCostStore::in_memory().unwrap();
 
         // Insert a record with a very old timestamp
-        store.append(&make_record("s1", "2020-01-01T00:00:00Z", "claude-sonnet-4-6", 100, 50, 0.001)).unwrap();
+        store
+            .append(&make_record(
+                "s1",
+                "2020-01-01T00:00:00Z",
+                "claude-sonnet-4-6",
+                100,
+                50,
+                0.001,
+            ))
+            .unwrap();
         // Insert a recent record
         use std::time::{SystemTime, UNIX_EPOCH};
         let now_secs = SystemTime::now()
@@ -406,13 +468,26 @@ mod tests {
             .unwrap()
             .as_secs();
         let recent_ts = format_iso8601(now_secs);
-        store.append(&make_record("s1", &recent_ts, "claude-sonnet-4-6", 200, 100, 0.002)).unwrap();
+        store
+            .append(&make_record(
+                "s1",
+                &recent_ts,
+                "claude-sonnet-4-6",
+                200,
+                100,
+                0.002,
+            ))
+            .unwrap();
 
         // Prune records older than 30 days
-        let removed = store.prune(Duration::from_secs(30 * 86400)).expect("prune should succeed");
+        let removed = store
+            .prune(Duration::from_secs(30 * 86400))
+            .expect("prune should succeed");
         assert_eq!(removed, 1, "should remove only the old record");
 
-        let results = store.query(&CostQuery::default()).expect("query should succeed");
+        let results = store
+            .query(&CostQuery::default())
+            .expect("query should succeed");
         assert_eq!(results.len(), 1, "only recent record should remain");
     }
 
@@ -420,7 +495,16 @@ mod tests {
     #[test]
     fn export_json_format() {
         let store = SqliteCostStore::in_memory().unwrap();
-        store.append(&make_record("sess-123", "2026-04-04T10:00:00Z", "claude-sonnet-4-6", 1000, 500, 0.0105)).unwrap();
+        store
+            .append(&make_record(
+                "sess-123",
+                "2026-04-04T10:00:00Z",
+                "claude-sonnet-4-6",
+                1000,
+                500,
+                0.0105,
+            ))
+            .unwrap();
 
         let output = store
             .export(&CostQuery::default(), CostExportFormat::Json)
@@ -428,10 +512,22 @@ mod tests {
 
         assert!(output.starts_with('['), "JSON should start with [");
         assert!(output.ends_with(']'), "JSON should end with ]");
-        assert!(output.contains("session_id"), "JSON should contain session_id key");
-        assert!(output.contains("sess-123"), "JSON should contain the session_id value");
-        assert!(output.contains("claude-sonnet-4-6"), "JSON should contain model name");
-        assert!(output.contains("estimated_cost"), "JSON should contain estimated_cost key");
+        assert!(
+            output.contains("session_id"),
+            "JSON should contain session_id key"
+        );
+        assert!(
+            output.contains("sess-123"),
+            "JSON should contain the session_id value"
+        );
+        assert!(
+            output.contains("claude-sonnet-4-6"),
+            "JSON should contain model name"
+        );
+        assert!(
+            output.contains("estimated_cost"),
+            "JSON should contain estimated_cost key"
+        );
     }
 
     // PC-018: 10 threads x 100 appends WAL (stress test — ignored by default)
@@ -475,7 +571,9 @@ mod tests {
                             agent_type: "main".to_string(),
                             parent_session_id: None,
                         };
-                        store.append(&record).expect("concurrent append should succeed");
+                        store
+                            .append(&record)
+                            .expect("concurrent append should succeed");
                     }
                 })
             })
@@ -490,7 +588,11 @@ mod tests {
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM token_usage", [], |r| r.get(0))
             .expect("count query");
-        assert_eq!(count, (thread_count * records_per_thread) as i64, "all 1000 records should be present");
+        assert_eq!(
+            count,
+            (thread_count * records_per_thread) as i64,
+            "all 1000 records should be present"
+        );
 
         // Verify records deserialize correctly by querying all
         drop(conn);

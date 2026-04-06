@@ -1,5 +1,7 @@
 pub mod artifact;
 pub mod backlog;
+pub mod campaign;
+pub mod campaign_io;
 pub mod doc_enforcement;
 pub mod doc_level_check;
 pub mod e2e_boundary_check;
@@ -19,5 +21,3 @@ pub mod toolchain_persist;
 pub mod transition;
 pub mod wave_plan;
 pub mod worktree_name;
-pub mod campaign;
-pub mod campaign_io;

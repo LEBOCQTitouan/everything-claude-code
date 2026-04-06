@@ -111,7 +111,12 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan", None, 2);
         let out = super::run(tmp.path());
-        assert!(matches!(out.status, Status::Block), "Expected Block, got {:?}: {}", out.status, out.message);
+        assert!(
+            matches!(out.status, Status::Block),
+            "Expected Block, got {:?}: {}",
+            out.status,
+            out.message
+        );
         assert!(out.message.contains("Campaign file not found"));
     }
 
@@ -121,7 +126,12 @@ mod tests {
         write_state(tmp.path(), "plan", None, 1);
         let out = super::run(tmp.path());
         // v1 grandfathered — should not block
-        assert!(!matches!(out.status, Status::Block), "v1 should not block, got {:?}: {}", out.status, out.message);
+        assert!(
+            !matches!(out.status, Status::Block),
+            "v1 should not block, got {:?}: {}",
+            out.status,
+            out.message
+        );
     }
 
     #[test]
@@ -130,7 +140,12 @@ mod tests {
             let tmp = TempDir::new().unwrap();
             write_state(tmp.path(), phase, None, 2);
             let out = super::run(tmp.path());
-            assert!(matches!(out.status, Status::Pass), "Phase {phase} should pass, got {:?}: {}", out.status, out.message);
+            assert!(
+                matches!(out.status, Status::Pass),
+                "Phase {phase} should pass, got {:?}: {}",
+                out.status,
+                out.message
+            );
         }
     }
 
@@ -141,7 +156,12 @@ mod tests {
         std::fs::write(&campaign, "## Grill-Me Decisions").unwrap();
         write_state(tmp.path(), "plan", Some(campaign.to_str().unwrap()), 2);
         let out = super::run(tmp.path());
-        assert!(matches!(out.status, Status::Pass), "Expected Pass when campaign exists, got {:?}: {}", out.status, out.message);
+        assert!(
+            matches!(out.status, Status::Pass),
+            "Expected Pass when campaign exists, got {:?}: {}",
+            out.status,
+            out.message
+        );
     }
 
     /// PC-038: grill_me_gate passes through for Idle phase (AC-001.1)

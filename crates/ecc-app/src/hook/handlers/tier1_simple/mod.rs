@@ -23,10 +23,10 @@ pub use dev_hooks::{
     pre_prompt_context_inject, suggest_compact,
 };
 pub use doc_hooks::{doc_coverage_reminder, doc_file_warning};
+pub use effort_enforcement::subagent_start_effort;
 pub use git_hooks::{
     check_console_log, post_edit_console_warn, pre_bash_git_push_reminder,
     stop_uncommitted_reminder,
 };
 pub use meta_hooks::{check_hook_enabled, session_end_marker};
-pub use effort_enforcement::subagent_start_effort;
 pub use worktree_guard::pre_worktree_write_guard;

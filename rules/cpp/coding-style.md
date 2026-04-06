@@ -48,4 +48,4 @@ applies-to: { languages: [cpp] }
 
 ## Reference
 
-See skill: `cpp-coding-standards` for comprehensive C++ idioms and patterns.
+See skill: the pattern library (`patterns/`) for comprehensive C++ idioms and patterns.

@@ -69,7 +69,11 @@ pub fn run(dry_run: bool, debug: bool) -> anyhow::Result<()> {
     // Step 1: Build
     let pkgs = packages_to_build();
     if dry_run {
-        let pkg_flags: String = pkgs.iter().map(|p| format!("-p {p}")).collect::<Vec<_>>().join(" ");
+        let pkg_flags: String = pkgs
+            .iter()
+            .map(|p| format!("-p {p}"))
+            .collect::<Vec<_>>()
+            .join(" ");
         let cmd = if debug {
             format!("Would run: cargo build {pkg_flags}")
         } else {
@@ -94,9 +98,7 @@ pub fn run(dry_run: bool, debug: bool) -> anyhow::Result<()> {
         }
         results.push(ActionResult {
             name: "Build".into(),
-            status: ActionStatus::Installed(format!(
-                "Built ecc + ecc-workflow ({profile})"
-            )),
+            status: ActionStatus::Installed(format!("Built ecc + ecc-workflow ({profile})")),
         });
     }
 
@@ -107,11 +109,7 @@ pub fn run(dry_run: bool, debug: bool) -> anyhow::Result<()> {
         let base_msg = dry_run_install_message();
         results.push(ActionResult {
             name: "Install".into(),
-            status: ActionStatus::DryRun(format!(
-                "{} (-> {})",
-                base_msg,
-                bin_dir.display()
-            )),
+            status: ActionStatus::DryRun(format!("{} (-> {})", base_msg, bin_dir.display())),
         });
     } else {
         std::fs::create_dir_all(&bin_dir)?;

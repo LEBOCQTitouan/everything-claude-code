@@ -51,7 +51,10 @@ mod tests {
             "current_exe() must return Some when running inside a test binary"
         );
         let path = exe.unwrap();
-        assert!(path.is_absolute(), "current_exe() must return an absolute path");
+        assert!(
+            path.is_absolute(),
+            "current_exe() must return an absolute path"
+        );
     }
 }
 

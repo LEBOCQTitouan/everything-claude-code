@@ -133,7 +133,10 @@ fn is_exception_with_state_dir(path: &str, state_dir: &Path) -> bool {
         return true;
     }
     // Also match relative git-dir paths (git diff returns relative paths like .git/ecc-workflow/)
-    if state_prefix.strip_prefix('/').is_some_and(|rel| path.starts_with(rel)) {
+    if state_prefix
+        .strip_prefix('/')
+        .is_some_and(|rel| path.starts_with(rel))
+    {
         return true;
     }
     // Match common .git/worktrees/*/ecc-workflow/ or .git/ecc-workflow/ patterns
@@ -160,7 +163,6 @@ fn is_exception_with_state_dir(path: &str, state_dir: &Path) -> bool {
     }
     false
 }
-
 
 /// Run the `scope-check` subcommand.
 pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
@@ -275,7 +277,10 @@ mod tests {
 
     #[test]
     fn is_exception_lock_files() {
-        assert!(is_exception_with_state_dir("Cargo.lock", Path::new(".claude/workflow")));
+        assert!(is_exception_with_state_dir(
+            "Cargo.lock",
+            Path::new(".claude/workflow")
+        ));
         assert!(is_exception_with_state_dir(
             "package-lock.json",
             Path::new(".claude/workflow")
@@ -284,8 +289,14 @@ mod tests {
 
     #[test]
     fn is_exception_test_files() {
-        assert!(is_exception_with_state_dir("src/foo_test.rs", Path::new(".claude/workflow")));
-        assert!(is_exception_with_state_dir("src/foo.test.ts", Path::new(".claude/workflow")));
+        assert!(is_exception_with_state_dir(
+            "src/foo_test.rs",
+            Path::new(".claude/workflow")
+        ));
+        assert!(is_exception_with_state_dir(
+            "src/foo.test.ts",
+            Path::new(".claude/workflow")
+        ));
     }
 
     #[test]
@@ -310,10 +321,7 @@ mod tests {
         let custom_state_dir = tmp.path().join(".git/ecc-workflow");
 
         // A path under the custom state_dir should be an exception
-        let path_under_state_dir = format!(
-            "{}/state.json",
-            custom_state_dir.to_string_lossy()
-        );
+        let path_under_state_dir = format!("{}/state.json", custom_state_dir.to_string_lossy());
         assert!(
             is_exception_with_state_dir(&path_under_state_dir, &custom_state_dir),
             "path under custom state_dir should be an exception"

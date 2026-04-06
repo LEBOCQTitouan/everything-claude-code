@@ -170,18 +170,38 @@ fn read_index_content(patterns_dir: &Path, fs: &dyn FileSystem) -> String {
 }
 
 /// Collect all pattern stems across all categories for cross-ref resolution.
+///
+/// For the `idioms` category, recurses one level into language subdirectories
+/// (e.g., `idioms/rust/`, `idioms/go/`) and collects stems from those subdirs.
+/// Stems include both bare names (`newtype`) and category-prefixed variants
+/// (`idioms/newtype`) for disambiguation.
 fn collect_pattern_stems(categories: &[std::path::PathBuf], fs: &dyn FileSystem) -> Vec<String> {
     let mut all_stems: Vec<String> = Vec::new();
     for category_path in categories {
-        if let Ok(files) = fs.read_dir(category_path) {
-            for file_path in files {
-                if file_path
-                    .extension()
-                    .map(|ext| ext.eq_ignore_ascii_case("md"))
-                    .unwrap_or(false)
-                    && let Some(stem) = file_path.file_stem()
-                {
-                    all_stems.push(stem.to_string_lossy().to_string());
+        let category_name = category_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let dirs_to_scan = if category_name == "idioms" {
+            collect_idiom_subdirs(category_path, fs)
+        } else {
+            vec![category_path.clone()]
+        };
+        for dir in &dirs_to_scan {
+            if let Ok(files) = fs.read_dir(dir) {
+                for file_path in files {
+                    if file_path
+                        .extension()
+                        .map(|ext| ext.eq_ignore_ascii_case("md"))
+                        .unwrap_or(false)
+                        && let Some(stem) = file_path.file_stem()
+                    {
+                        let stem_str = stem.to_string_lossy().to_string();
+                        // Add category-prefixed variant for disambiguation
+                        all_stems.push(format!("{category_name}/{stem_str}"));
+                        all_stems.push(stem_str);
+                    }
                 }
             }
         }
@@ -189,7 +209,26 @@ fn collect_pattern_stems(categories: &[std::path::PathBuf], fs: &dyn FileSystem)
     all_stems
 }
 
+/// Collect language subdirectories within the idioms category.
+fn collect_idiom_subdirs(
+    idioms_path: &std::path::Path,
+    fs: &dyn FileSystem,
+) -> Vec<std::path::PathBuf> {
+    let mut subdirs = Vec::new();
+    if let Ok(entries) = fs.read_dir(idioms_path) {
+        for entry in entries {
+            if fs.is_dir(&entry) {
+                subdirs.push(entry);
+            }
+        }
+    }
+    subdirs
+}
+
 /// Collect (category_name, file_path) pairs for all .md files in category dirs.
+///
+/// For the `idioms` category, recurses into language subdirectories and uses
+/// `idioms` as the category_name for all nested files (matching frontmatter convention).
 fn collect_work_items(
     categories: &[std::path::PathBuf],
     fs: &dyn FileSystem,
@@ -201,14 +240,21 @@ fn collect_work_items(
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        if let Ok(entries) = fs.read_dir(category_path) {
-            for file_path in entries {
-                if file_path
-                    .extension()
-                    .map(|ext| ext.eq_ignore_ascii_case("md"))
-                    .unwrap_or(false)
-                {
-                    items.push((category_name.clone(), file_path));
+        let dirs_to_scan = if category_name == "idioms" {
+            collect_idiom_subdirs(category_path, fs)
+        } else {
+            vec![category_path.clone()]
+        };
+        for dir in &dirs_to_scan {
+            if let Ok(entries) = fs.read_dir(dir) {
+                for file_path in entries {
+                    if file_path
+                        .extension()
+                        .map(|ext| ext.eq_ignore_ascii_case("md"))
+                        .unwrap_or(false)
+                    {
+                        items.push((category_name.clone(), file_path));
+                    }
                 }
             }
         }
@@ -221,9 +267,8 @@ fn collect_work_items(
 /// Matches patterns like `/factory-method.md`, `(factory-method)`, or the stem
 /// preceded by a word boundary character and followed by `.md`, `)`, or whitespace.
 fn stem_in_index(index_content: &str, stem: &str) -> bool {
-    let boundary_before = |c: char| -> bool {
-        matches!(c, '/' | '(' | '[' | ' ' | '\t' | '\n' | '-') || c == '`'
-    };
+    let boundary_before =
+        |c: char| -> bool { matches!(c, '/' | '(' | '[' | ' ' | '\t' | '\n' | '-') || c == '`' };
     let boundary_after = |s: &str| -> bool {
         s.is_empty()
             || s.starts_with(".md")
@@ -289,6 +334,17 @@ fn validate_pattern_file(ctx: &ValidationCtx<'_>) -> (String, bool) {
 
     errors.push_str(&scan_unsafe_code(&fm, ctx.content, ctx.label));
 
+    // Warn (but don't error) if file exceeds recommended size
+    let line_count = ctx.content.lines().count();
+    if line_count > ecc_domain::config::validate::PATTERN_SIZE_WARNING_LINES {
+        errors.push_str(&format!(
+            "WARN: {} - File has {} lines (exceeds {} recommended max)\n",
+            ctx.label,
+            line_count,
+            ecc_domain::config::validate::PATTERN_SIZE_WARNING_LINES,
+        ));
+    }
+
     let (sec_errs, sec_ok) = validate_sections(ctx.content, ctx.label);
     errors.push_str(&sec_errs);
     if !sec_ok {
@@ -333,11 +389,7 @@ fn validate_frontmatter_fields(
 }
 
 /// Validate the languages list and implementation heading matching.
-fn validate_languages(
-    fm: &HashMap<String, String>,
-    content: &str,
-    label: &str,
-) -> (String, bool) {
+fn validate_languages(fm: &HashMap<String, String>, content: &str, label: &str) -> (String, bool) {
     let mut errors = String::new();
     let mut has_errors = false;
 
@@ -485,7 +537,8 @@ fn extract_impl_headings(content: &str) -> Vec<String> {
         .lines()
         .filter_map(|line| {
             let line = line.trim();
-            line.strip_prefix("### ").map(|rest| rest.trim().to_string())
+            line.strip_prefix("### ")
+                .map(|rest| rest.trim().to_string())
         })
         .collect()
 }
@@ -1505,7 +1558,10 @@ Implementation.
         let fs = InMemoryFileSystem::new()
             .with_dir("/root/patterns")
             .with_dir("/root/patterns/creational")
-            .with_file("/root/patterns/creational/factory-method.md", &valid_content)
+            .with_file(
+                "/root/patterns/creational/factory-method.md",
+                &valid_content,
+            )
             .with_file("/root/patterns/readme.md", "# Root level file\n")
             .with_file("/root/patterns/index.md", "factory-method\n");
         let t = term();
@@ -1791,6 +1847,509 @@ Generic.
         // Match when preceded by `(`
         assert!(super::stem_in_index("(factory-method)", "factory-method"));
         // No match when embedded in a longer word
-        assert!(!super::stem_in_index("abstract-factory-method-extra\n", "factory-method"));
+        assert!(!super::stem_in_index(
+            "abstract-factory-method-extra\n",
+            "factory-method"
+        ));
+    }
+
+    /// Build a valid idiom pattern file for a single language.
+    fn valid_idiom_content(name: &str, language: &str) -> String {
+        format!(
+            r#"---
+name: {name}
+category: idioms
+tags: [idiom, {language}]
+languages: [{language}]
+difficulty: intermediate
+---
+
+## Intent
+Idiomatic {language} pattern for {name}.
+
+## Problem
+Non-idiomatic code reduces readability.
+
+## Solution
+Use the {name} pattern.
+
+## Language Implementations
+### {lang_title}
+```{language}
+// example
+```
+
+## When to Use
+- When writing idiomatic {language} code.
+
+## When NOT to Use
+- When the pattern adds unnecessary complexity.
+
+## Anti-Patterns
+- Over-applying the pattern.
+
+## Related Patterns
+- None.
+
+## References
+- {language} documentation.
+"#,
+            name = name,
+            language = language,
+            lang_title = match language {
+                "rust" => "Rust",
+                "go" => "Go",
+                "python" => "Python",
+                "typescript" => "TypeScript",
+                "kotlin" => "Kotlin",
+                _ => language,
+            }
+        )
+    }
+
+    #[test]
+    fn idiom_subdirectory_recursion_validates_nested_files() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/idioms")
+            .with_dir("/root/patterns/idioms/rust")
+            .with_dir("/root/patterns/idioms/go")
+            .with_file(
+                "/root/patterns/idioms/rust/newtype.md",
+                &valid_idiom_content("newtype", "rust"),
+            )
+            .with_file(
+                "/root/patterns/idioms/go/functional-options.md",
+                &valid_idiom_content("functional-options", "go"),
+            )
+            .with_file("/root/patterns/index.md", "# Index\n- [Newtype](idioms/rust/newtype.md)\n- [Functional Options](idioms/go/functional-options.md)\n");
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        let output = t.stdout_output().join("\n");
+        // Should find 2 files across the idioms category
+        assert!(
+            result,
+            "Validation should pass for valid idiom files in subdirectories. Output:\n{output}"
+        );
+        assert!(
+            output.contains("2 pattern files"),
+            "Should report 2 pattern files. Output:\n{output}"
+        );
+    }
+
+    #[test]
+    fn idiom_files_have_category_idioms_in_frontmatter() {
+        // An idiom file with category != "idioms" should fail
+        let bad_content =
+            valid_idiom_content("newtype", "rust").replace("category: idioms", "category: rust");
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/idioms")
+            .with_dir("/root/patterns/idioms/rust")
+            .with_file("/root/patterns/idioms/rust/newtype.md", &bad_content)
+            .with_file(
+                "/root/patterns/index.md",
+                "# Index\n- [Newtype](idioms/rust/newtype.md)\n",
+            );
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        assert!(
+            !result,
+            "Validation should fail when idiom file has wrong category"
+        );
+    }
+
+    #[test]
+    fn large_file_emits_size_warning() {
+        // Create a valid pattern that exceeds 500 lines
+        let mut content = valid_pattern_content();
+        // Pad the References section with extra lines to exceed threshold
+        for i in 0..500 {
+            content.push_str(&format!("- Reference line {i}\n"));
+        }
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/factory-method.md", &content)
+            .with_file(
+                "/root/patterns/index.md",
+                "# Index\n- [Factory Method](creational/factory-method.md)\n",
+            );
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Patterns,
+            Path::new("/root"),
+        );
+        // Should still pass (warning, not error)
+        assert!(result, "Large file should pass validation with warning");
+        let stderr = t.stderr_output().join("\n");
+        assert!(
+            stderr.contains("WARN") && stderr.contains("lines"),
+            "Should emit size warning on stderr. Stderr:\n{stderr}"
+        );
+    }
+}
+
+#[cfg(test)]
+mod cross_ref_tests {
+    use super::*;
+
+    #[test]
+    fn category_prefixed_cross_ref_resolves() {
+        let all_stems = vec![
+            "ddd/repository".to_string(),
+            "repository".to_string(),
+            "data-access/repository".to_string(),
+        ];
+        let mut fm = HashMap::new();
+        fm.insert(
+            "related-patterns".to_string(),
+            "[ddd/repository]".to_string(),
+        );
+        let (errors, ok) = validate_cross_refs(&fm, "adapter", &all_stems, "test");
+        assert!(
+            ok,
+            "Category-prefixed cross-ref should resolve. Errors: {errors}"
+        );
+        assert!(errors.is_empty(), "No errors expected. Got: {errors}");
+    }
+
+    #[test]
+    fn bare_cross_ref_still_resolves() {
+        let all_stems = vec![
+            "creational/factory-method".to_string(),
+            "factory-method".to_string(),
+        ];
+        let mut fm = HashMap::new();
+        fm.insert(
+            "related-patterns".to_string(),
+            "[factory-method]".to_string(),
+        );
+        let (errors, ok) = validate_cross_refs(&fm, "builder", &all_stems, "test");
+        assert!(ok, "Bare cross-ref should still resolve. Errors: {errors}");
+    }
+
+    #[test]
+    fn non_existent_prefixed_ref_fails() {
+        let all_stems = vec!["ddd/repository".to_string(), "repository".to_string()];
+        let mut fm = HashMap::new();
+        fm.insert(
+            "related-patterns".to_string(),
+            "[nonexistent/pattern]".to_string(),
+        );
+        let (errors, ok) = validate_cross_refs(&fm, "adapter", &all_stems, "test");
+        assert!(!ok, "Non-existent prefixed ref should fail");
+        assert!(
+            errors.contains("non-existent"),
+            "Should mention non-existent: {errors}"
+        );
+    }
+}
+
+/// Generate patterns/index.md from pattern file frontmatter.
+///
+/// Called when `--fix` is passed to `ecc validate patterns`.
+/// Scans all pattern files, extracts frontmatter, and writes a structured index
+/// with category headers, pattern links, language coverage table,
+/// alphabetized tag list with occurrence counts, and total pattern count.
+pub(super) fn generate_index(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) {
+    use ecc_domain::config::validate::extract_frontmatter;
+    use std::collections::BTreeMap;
+
+    let patterns_dir = root.join("patterns");
+    if !fs.exists(&patterns_dir) {
+        return;
+    }
+
+    let root_entries = match fs.read_dir(&patterns_dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    let categories: Vec<_> = root_entries.into_iter().filter(|p| fs.is_dir(p)).collect();
+
+    // Collect all pattern info grouped by category
+    let mut category_patterns: BTreeMap<String, Vec<(String, String, Vec<String>)>> =
+        BTreeMap::new();
+    let mut language_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut tag_counts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut total_count: usize = 0;
+
+    let work_items = collect_work_items(&categories, fs);
+
+    for (category_name, file_path) in &work_items {
+        let content = match fs.read_to_string(file_path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+
+        let fm = match extract_frontmatter(&content) {
+            Some(m) => m,
+            None => continue,
+        };
+
+        let name = fm.get("name").cloned().unwrap_or_default();
+        let languages: Vec<String> = fm
+            .get("languages")
+            .map(|l| {
+                ecc_domain::config::validate::parse_tool_list(l.trim())
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            })
+            .unwrap_or_default();
+        let tags: Vec<String> = fm
+            .get("tags")
+            .map(|t| {
+                ecc_domain::config::validate::parse_tool_list(t.trim())
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // Track language counts
+        for lang in &languages {
+            *language_counts.entry(lang.clone()).or_insert(0) += 1;
+        }
+
+        // Track tag counts
+        for tag in &tags {
+            *tag_counts.entry(tag.clone()).or_insert(0) += 1;
+        }
+
+        // Compute relative path from patterns/ to this file
+        let rel_path = file_path
+            .strip_prefix(&patterns_dir)
+            .unwrap_or(file_path)
+            .to_string_lossy()
+            .to_string();
+
+        category_patterns
+            .entry(category_name.clone())
+            .or_default()
+            .push((name, rel_path, languages));
+
+        total_count += 1;
+    }
+
+    // Generate index content
+    let mut index = String::new();
+    index.push_str("# Pattern Library Index\n\n");
+
+    // Categories with pattern links
+    index.push_str("## Categories\n\n");
+    for (category, patterns) in &category_patterns {
+        let title = category
+            .split('-')
+            .map(|w| {
+                let mut chars = w.chars();
+                match chars.next() {
+                    None => String::new(),
+                    Some(c) => c.to_uppercase().to_string() + chars.as_str(),
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
+        index.push_str(&format!("### {} ({} patterns)\n\n", title, patterns.len()));
+        for (name, rel_path, _) in patterns {
+            let display_name = name
+                .split('-')
+                .map(|w| {
+                    let mut chars = w.chars();
+                    match chars.next() {
+                        None => String::new(),
+                        Some(c) => c.to_uppercase().to_string() + chars.as_str(),
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            index.push_str(&format!("- [{display_name}]({rel_path})\n"));
+        }
+        index.push('\n');
+    }
+
+    // Language coverage table
+    index.push_str("## Language Coverage\n\n");
+    index.push_str("| Language | Pattern Count |\n");
+    index.push_str("|----------|---------------|\n");
+    for (lang, count) in &language_counts {
+        index.push_str(&format!("| {lang} | {count} |\n"));
+    }
+    index.push('\n');
+
+    // Tag list with counts
+    index.push_str("## Tags\n\n");
+    for (tag, count) in &tag_counts {
+        index.push_str(&format!("- `{tag}` ({count})\n"));
+    }
+    index.push('\n');
+
+    // Total count
+    index.push_str(&format!("**Total patterns: {total_count}**\n"));
+
+    // Write index
+    let index_path = patterns_dir.join("index.md");
+    match fs.write(&index_path, &index) {
+        Ok(()) => {
+            terminal.stdout_write(&format!(
+                "Generated patterns/index.md ({total_count} patterns across {} categories)\n",
+                category_patterns.len()
+            ));
+        }
+        Err(e) => {
+            terminal.stderr_write(&format!("ERROR: Failed to write patterns/index.md: {e}\n"));
+        }
+    }
+}
+
+#[cfg(test)]
+mod fix_index_tests {
+    use super::super::run_validate_patterns;
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment};
+    use std::path::Path;
+
+    fn valid_pattern(name: &str, category: &str, tags: &str, languages: &str) -> String {
+        format!(
+            r#"---
+name: {name}
+category: {category}
+tags: [{tags}]
+languages: [{languages}]
+difficulty: intermediate
+---
+
+## Intent
+Test pattern.
+
+## Problem
+Test problem.
+
+## Solution
+Test solution.
+
+## Language Implementations
+### Rust
+```rust
+// example
+```
+
+## When to Use
+- Test.
+
+## When NOT to Use
+- Test.
+
+## Anti-Patterns
+- Test.
+
+## Related Patterns
+- None.
+
+## References
+- Test.
+"#
+        )
+    }
+
+    #[test]
+    fn fix_generates_index_with_categories_and_counts() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_dir("/root/patterns/structural")
+            .with_file(
+                "/root/patterns/creational/factory-method.md",
+                &valid_pattern("factory-method", "creational", "gof, creational", "rust, go"),
+            )
+            .with_file(
+                "/root/patterns/creational/builder.md",
+                &valid_pattern("builder", "creational", "gof, creational", "rust, go, python"),
+            )
+            .with_file(
+                "/root/patterns/structural/adapter.md",
+                &valid_pattern("adapter", "structural", "gof, structural", "rust, typescript"),
+            )
+            .with_file("/root/patterns/index.md", "# Index\n- [Factory Method](creational/factory-method.md)\n- [Builder](creational/builder.md)\n- [Adapter](structural/adapter.md)\n");
+        let t = BufferedTerminal::new();
+        let env = MockEnvironment::default();
+
+        let result = run_validate_patterns(&fs, &t, &env, Path::new("/root"), true);
+        assert!(result, "Validation with --fix should pass");
+
+        // Check the generated index
+        let dyn_fs: &dyn ecc_ports::fs::FileSystem = &fs;
+        let index = dyn_fs
+            .read_to_string(Path::new("/root/patterns/index.md"))
+            .unwrap();
+        assert!(
+            index.contains("# Pattern Library Index"),
+            "Should have title"
+        );
+        assert!(
+            index.contains("### Creational (2 patterns)"),
+            "Should list creational with count"
+        );
+        assert!(
+            index.contains("### Structural (1 patterns)"),
+            "Should list structural with count"
+        );
+        assert!(
+            index.contains("| rust |"),
+            "Should have rust in language table"
+        );
+        assert!(
+            index.contains("**Total patterns: 3**"),
+            "Should show total count"
+        );
+        assert!(index.contains("`gof`"), "Should list tags");
+
+        let stdout = t.stdout_output().join("\n");
+        assert!(
+            stdout.contains("Generated patterns/index.md"),
+            "Should report generation"
+        );
+    }
+
+    #[test]
+    fn fix_does_not_generate_on_validation_failure() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/patterns")
+            .with_dir("/root/patterns/creational")
+            .with_file("/root/patterns/creational/bad.md", "no frontmatter here\n")
+            .with_file(
+                "/root/patterns/index.md",
+                "# Old index\n- [Bad](creational/bad.md)\n",
+            );
+        let t = BufferedTerminal::new();
+        let env = MockEnvironment::default();
+
+        let result = run_validate_patterns(&fs, &t, &env, Path::new("/root"), true);
+        assert!(!result, "Validation should fail for bad file");
+
+        // Index should NOT be regenerated
+        let dyn_fs: &dyn ecc_ports::fs::FileSystem = &fs;
+        let index = dyn_fs
+            .read_to_string(Path::new("/root/patterns/index.md"))
+            .unwrap();
+        assert!(
+            index.contains("Old index"),
+            "Index should not be regenerated on failure"
+        );
     }
 }

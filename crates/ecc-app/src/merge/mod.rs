@@ -592,7 +592,12 @@ mod tests {
         env: &'a dyn ecc_ports::env::Environment,
         shell: &'a dyn ecc_ports::shell::ShellExecutor,
     ) -> MergeContext<'a> {
-        MergeContext { fs, terminal, env, shell }
+        MergeContext {
+            fs,
+            terminal,
+            env,
+            shell,
+        }
     }
 
     #[test]

@@ -9,10 +9,10 @@
 
 /// Clock (time source) port.
 pub mod clock;
-/// Cost and token tracking store port.
-pub mod cost_store;
 /// Persistent ECC configuration port.
 pub mod config_store;
+/// Cost and token tracking store port.
+pub mod cost_store;
 /// Environment variable and platform access port.
 pub mod env;
 /// Tarball extraction port.

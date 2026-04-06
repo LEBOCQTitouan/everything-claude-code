@@ -53,7 +53,10 @@ fn init_campaign(spec_dir: &str, state_dir: &Path) -> Result<WorkflowOutput, any
     }
 
     std::fs::write(&campaign_path, CAMPAIGN_TEMPLATE).map_err(|e| {
-        anyhow::anyhow!("Failed to write campaign.md at {}: {e}", campaign_path.display())
+        anyhow::anyhow!(
+            "Failed to write campaign.md at {}: {e}",
+            campaign_path.display()
+        )
     })?;
 
     // Update state.json: set campaign_path and bump version to 2
@@ -101,14 +104,18 @@ fn append_decision(
 ) -> Result<WorkflowOutput, anyhow::Error> {
     let state = crate::io::read_state(state_dir)?
         .ok_or_else(|| anyhow::anyhow!("No workflow state found"))?;
-    let campaign_path_str = state
-        .artifacts
-        .campaign_path
-        .ok_or_else(|| anyhow::anyhow!("campaign_path not set in state.json. Run: ecc-workflow campaign init <spec-dir>"))?;
+    let campaign_path_str = state.artifacts.campaign_path.ok_or_else(|| {
+        anyhow::anyhow!(
+            "campaign_path not set in state.json. Run: ecc-workflow campaign init <spec-dir>"
+        )
+    })?;
     let campaign_path = Path::new(&campaign_path_str);
 
     let content = std::fs::read_to_string(campaign_path).map_err(|e| {
-        anyhow::anyhow!("Failed to read campaign at {}: {e}", campaign_path.display())
+        anyhow::anyhow!(
+            "Failed to read campaign at {}: {e}",
+            campaign_path.display()
+        )
     })?;
 
     if !content.contains("## Grill-Me Decisions") {
@@ -185,9 +192,8 @@ fn show_campaign(state_dir: &Path) -> Result<WorkflowOutput, anyhow::Error> {
         .campaign_path
         .ok_or_else(|| anyhow::anyhow!("campaign_path not set"))?;
 
-    let content = std::fs::read_to_string(&campaign_path_str).map_err(|e| {
-        anyhow::anyhow!("Failed to read campaign at {campaign_path_str}: {e}")
-    })?;
+    let content = std::fs::read_to_string(&campaign_path_str)
+        .map_err(|e| anyhow::anyhow!("Failed to read campaign at {campaign_path_str}: {e}"))?;
 
     let decisions = campaign_io::parse_decisions(&content);
 
@@ -239,7 +245,12 @@ mod tests {
         setup_state(&sd, None, 1);
         let spec_dir = tmp.path().join("specs/test");
         let out = run_init(spec_dir.to_str().unwrap(), &sd);
-        assert!(matches!(out.status, crate::output::Status::Pass), "got: {:?} {}", out.status, out.message);
+        assert!(
+            matches!(out.status, crate::output::Status::Pass),
+            "got: {:?} {}",
+            out.status,
+            out.message
+        );
         assert!(spec_dir.join("campaign.md").exists());
         let c = std::fs::read_to_string(spec_dir.join("campaign.md")).unwrap();
         assert!(c.contains("## Grill-Me Decisions"));
@@ -289,7 +300,12 @@ mod tests {
         std::fs::write(&campaign, CAMPAIGN_TEMPLATE).unwrap();
         setup_state(&sd, Some(campaign.to_str().unwrap()), 2);
         let out = run_append_decision("Q1", "A1", "recommended", &sd);
-        assert!(matches!(out.status, crate::output::Status::Pass), "got: {:?} {}", out.status, out.message);
+        assert!(
+            matches!(out.status, crate::output::Status::Pass),
+            "got: {:?} {}",
+            out.status,
+            out.message
+        );
         let c = std::fs::read_to_string(&campaign).unwrap();
         assert!(c.contains("| 1 | Q1 | A1 | recommended |"), "content: {c}");
     }
@@ -305,7 +321,10 @@ mod tests {
         run_append_decision("Q2", "A2", "user", &sd);
         run_append_decision("Q3", "A3", "recommended", &sd);
         let c = std::fs::read_to_string(&campaign).unwrap();
-        assert!(c.contains("| 1 |") && c.contains("| 2 |") && c.contains("| 3 |"), "content: {c}");
+        assert!(
+            c.contains("| 1 |") && c.contains("| 2 |") && c.contains("| 3 |"),
+            "content: {c}"
+        );
     }
 
     #[test]

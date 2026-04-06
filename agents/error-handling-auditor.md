@@ -5,6 +5,7 @@ tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
 effort: medium
 skills: ["error-handling-audit"]
+patterns: ["error-handling"]
 ---
 
 # Error Handling Auditor

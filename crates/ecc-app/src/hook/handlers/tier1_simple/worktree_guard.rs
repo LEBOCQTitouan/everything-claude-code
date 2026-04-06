@@ -58,10 +58,7 @@ pub fn is_in_worktree(ports: &HookPorts<'_>) -> Result<bool, ()> {
 /// Forces Claude to call `EnterWorktree` before making file changes.
 /// Respects `ECC_WORKFLOW_BYPASS=1` and passes through for non-git directories.
 pub fn pre_worktree_write_guard(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
-    tracing::debug!(
-        handler = "pre_worktree_write_guard",
-        "executing handler"
-    );
+    tracing::debug!(handler = "pre_worktree_write_guard", "executing handler");
 
     // Bypass check
     if ports.env.var("ECC_WORKFLOW_BYPASS").as_deref() == Some("1") {
@@ -191,11 +188,8 @@ mod tests {
     #[test]
     fn non_git_passthrough() {
         let fs = InMemoryFileSystem::new();
-        let shell = MockExecutor::new().on_args(
-            "git",
-            &["rev-parse", "--show-toplevel"],
-            git_failure(),
-        );
+        let shell =
+            MockExecutor::new().on_args("git", &["rev-parse", "--show-toplevel"], git_failure());
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
@@ -316,7 +310,8 @@ mod tests {
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
-        let result = pre_worktree_write_guard(r#"{"file_path":".github/workflows/ci.yml"}"#, &ports);
+        let result =
+            pre_worktree_write_guard(r#"{"file_path":".github/workflows/ci.yml"}"#, &ports);
         // Write-guard allows (we're in a worktree). Branch-guard is a separate hook.
         assert_eq!(result.exit_code, 0);
     }

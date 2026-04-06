@@ -128,10 +128,7 @@ pub fn migrate(
     })
 }
 
-fn aggregate_breakdowns(
-    records: &[TokenUsageRecord],
-    by: &BreakdownBy,
-) -> Vec<CostBreakdown> {
+fn aggregate_breakdowns(records: &[TokenUsageRecord], by: &BreakdownBy) -> Vec<CostBreakdown> {
     use ecc_domain::cost::calculator::CostCalculator;
     use std::collections::HashMap;
 
@@ -156,15 +153,11 @@ fn aggregate_breakdowns(
             let summary = CostCalculator::summarize(&group);
             // Return a CostBreakdown using the first record's model (for Model) or a
             // synthetic ModelId (for Agent). We reuse the first model as a proxy key.
-            let model = group
-                .first()
-                .map(|r| r.model.clone())
-                .unwrap_or_else(|| {
-                    ecc_domain::cost::value_objects::ModelId::new(&key)
-                        .unwrap_or_else(|_| {
-                            ecc_domain::cost::value_objects::ModelId::new("unknown").unwrap()
-                        })
-                });
+            let model = group.first().map(|r| r.model.clone()).unwrap_or_else(|| {
+                ecc_domain::cost::value_objects::ModelId::new(&key).unwrap_or_else(|_| {
+                    ecc_domain::cost::value_objects::ModelId::new("unknown").unwrap()
+                })
+            });
             CostBreakdown {
                 model,
                 cost: summary.total_cost,
@@ -222,7 +215,13 @@ mod tests {
     use ecc_domain::cost::value_objects::{ModelId, Money, TokenCount};
     use ecc_test_support::{InMemoryCostStore, InMemoryFileSystem};
 
-    fn make_record(model: &str, agent: &str, input: u64, output: u64, cost: f64) -> TokenUsageRecord {
+    fn make_record(
+        model: &str,
+        agent: &str,
+        input: u64,
+        output: u64,
+        cost: f64,
+    ) -> TokenUsageRecord {
         TokenUsageRecord {
             record_id: None,
             session_id: "sess-001".into(),
@@ -277,7 +276,14 @@ mod tests {
 "#,
         );
         let result = migrate(&store, &fs, Path::new("/data/records.jsonl")).unwrap();
-        assert_eq!(result, MigrateResult { imported: 3, skipped: 0, not_found: false });
+        assert_eq!(
+            result,
+            MigrateResult {
+                imported: 3,
+                skipped: 0,
+                not_found: false
+            }
+        );
         assert_eq!(store.snapshot().len(), 3);
     }
 
@@ -293,7 +299,14 @@ not valid json at all
 "#,
         );
         let result = migrate(&store, &fs, Path::new("/data/records.jsonl")).unwrap();
-        assert_eq!(result, MigrateResult { imported: 2, skipped: 1, not_found: false });
+        assert_eq!(
+            result,
+            MigrateResult {
+                imported: 2,
+                skipped: 1,
+                not_found: false
+            }
+        );
         assert_eq!(store.snapshot().len(), 2);
     }
 
@@ -303,7 +316,14 @@ not valid json at all
         let store = InMemoryCostStore::new();
         let fs = InMemoryFileSystem::new();
         let result = migrate(&store, &fs, Path::new("/nonexistent/file.jsonl")).unwrap();
-        assert_eq!(result, MigrateResult { imported: 0, skipped: 0, not_found: true });
+        assert_eq!(
+            result,
+            MigrateResult {
+                imported: 0,
+                skipped: 0,
+                not_found: true
+            }
+        );
     }
 
     // PC-036: breakdown delegates to store
@@ -344,7 +364,13 @@ not valid json at all
     #[test]
     fn export_delegates_to_store() {
         let store = InMemoryCostStore::new();
-        store.seed(vec![make_record("claude-sonnet-4-6", "main", 1000, 500, 0.0105)]);
+        store.seed(vec![make_record(
+            "claude-sonnet-4-6",
+            "main",
+            1000,
+            500,
+            0.0105,
+        )]);
         let output = export(&store, &CostQuery::default(), CostExportFormat::Json).unwrap();
         assert!(!output.is_empty());
         assert!(output.starts_with('['));

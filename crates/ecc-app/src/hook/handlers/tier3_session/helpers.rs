@@ -266,7 +266,6 @@ pub(super) fn to_u64(value: &serde_json::Value, key: &str) -> Option<u64> {
         .and_then(|v| v.as_u64().or_else(|| v.as_f64().map(|f| f as u64)))
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -511,7 +510,6 @@ mod tests {
         assert!(content.contains("sonnet"));
         assert!(content.contains("estimated_cost_usd"));
     }
-
 
     // --- extract_session_summary ---
 

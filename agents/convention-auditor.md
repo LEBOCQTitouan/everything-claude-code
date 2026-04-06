@@ -5,6 +5,7 @@ tools: ["Read", "Bash", "Grep", "Glob"]
 model: sonnet
 effort: medium
 skills: ["convention-consistency"]
+patterns: ["creational", "structural", "behavioral"]
 ---
 
 # Convention Auditor

@@ -79,7 +79,8 @@ mod tests {
         std::fs::write(custom_state_dir.join("state.json"), state_json).unwrap();
 
         // Write implement-done.md at custom state_dir
-        let implement_done = "## Docs Updated\n\n- updated CLAUDE.md\n\n## Supplemental Docs\n\n(none)\n";
+        let implement_done =
+            "## Docs Updated\n\n- updated CLAUDE.md\n\n## Supplemental Docs\n\n(none)\n";
         std::fs::write(custom_state_dir.join("implement-done.md"), implement_done).unwrap();
 
         // Run doc_enforcement with custom state_dir
@@ -93,7 +94,9 @@ mod tests {
 
         // Verify .claude/workflow/ was NOT consulted
         assert!(
-            !tmp.path().join(".claude/workflow/implement-done.md").exists(),
+            !tmp.path()
+                .join(".claude/workflow/implement-done.md")
+                .exists(),
             "implement-done.md must NOT exist at .claude/workflow/ when using custom state_dir"
         );
     }

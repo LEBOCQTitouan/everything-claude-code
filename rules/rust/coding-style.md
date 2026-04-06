@@ -69,4 +69,4 @@ struct OrderId(Uuid);
 
 ## Reference
 
-See skill: `rust-patterns` for comprehensive Rust patterns.
+See skill: the pattern library (`patterns/idioms/rust/`) for comprehensive Rust patterns.

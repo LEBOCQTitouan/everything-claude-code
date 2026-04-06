@@ -40,4 +40,4 @@ class Point(NamedTuple):
 
 ## Reference
 
-See skill: `python-patterns` for comprehensive Python idioms and patterns.
+See skill: the pattern library (`patterns/idioms/python/`) for comprehensive Python idioms and patterns.

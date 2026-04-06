@@ -20,8 +20,8 @@ pub use daily::daily_summary;
 pub use lifecycle::{session_end, session_start};
 pub use logging::{config_change_log, subagent_start_log, subagent_stop_log};
 pub use reflection::{craft_velocity, oath_reflection};
-pub use tracking::{cost_tracker, evaluate_session};
 pub use session_merge::session_end_merge;
+pub use tracking::{cost_tracker, evaluate_session};
 pub use worktree::post_enter_worktree_session_log;
 
 /// Log a write failure and append the warning to stderr_parts if provided.
@@ -112,7 +112,8 @@ mod tests {
         let term = BufferedTerminal::new();
         let ports = make_ports_no_store(&fs, &shell, &env, &term);
 
-        let stdin = r#"{"model":"claude-haiku-4-5","usage":{"input_tokens":5000,"output_tokens":1000}}"#;
+        let stdin =
+            r#"{"model":"claude-haiku-4-5","usage":{"input_tokens":5000,"output_tokens":1000}}"#;
         let result = cost_tracker(stdin, &ports);
         assert_eq!(result.exit_code, 0);
 
@@ -121,7 +122,10 @@ mod tests {
                 "/home/test/.claude/metrics/costs.jsonl",
             ))
             .expect("costs.jsonl must exist as JSONL fallback");
-        assert!(content.contains("claude-haiku-4-5"), "JSONL must contain model");
+        assert!(
+            content.contains("claude-haiku-4-5"),
+            "JSONL must contain model"
+        );
         assert!(
             content.contains("estimated_cost_usd"),
             "JSONL must contain cost field"

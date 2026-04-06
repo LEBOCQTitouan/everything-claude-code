@@ -28,7 +28,9 @@ pub fn detect_project_stack(fs: &dyn FileSystem, project_dir: &Path) -> Detected
     // Collect sentinel files found at project root (for `files:` condition matching)
     if let Ok(entries) = fs.read_dir(project_dir) {
         for entry in &entries {
-            if fs.is_file(entry) && let Some(name) = entry.file_name() {
+            if fs.is_file(entry)
+                && let Some(name) = entry.file_name()
+            {
                 sentinel_files.push(name.to_string_lossy().into_owned());
             }
         }
