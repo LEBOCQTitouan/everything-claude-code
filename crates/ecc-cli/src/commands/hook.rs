@@ -52,6 +52,7 @@ pub fn run(args: HookArgs) -> anyhow::Result<()> {
         terminal: &terminal,
         cost_store: None,
         bypass_store: None,
+        metrics_store: None,
     };
 
     // Parse rest args: supports 3 formats:

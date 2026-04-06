@@ -16,15 +16,9 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Worktree session CWD orphaning**: Defer worktree directory deletion from merge/hook paths to session-start gc to prevent Claude Code session paralysis when CWD points to a deleted worktree. Session-end merge now preserves the worktree directory; `session:start` runs best-effort `ecc worktree gc` for self-healing cleanup of stale worktrees.
 
-### Refactored
-
-- **Caveman-style brevity optimization (BL-123)**: Applied [caveman](https://github.com/JuliusBrussee/caveman) brevity principles across all ECC instruction files. 14,145 lines removed (37% reduction): commands 5,878→2,005 (66%), agents 7,928→4,982 (37%), skills 24,418→17,092 (30%). New `rules/common/brevity.md` global rule. No behavioral changes — same instructions, fewer words.
-
 ### Added
 
-- **BL-117 Phase 2: release-plz Integration**: Added release-plz workflow for automated semver version bumps and changelog generation from conventional commits. Created release-plz.toml for workspace-level versioning (publish=false, git_release_enable=false). Retired cd.yml auto-tag pipeline (renamed to cd.yml.disabled). Deprecated scripts/bump-version.sh. Rollout: dry-run mode first, live mode enabled separately.
-
-- **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
+- **Harness reliability metrics instrumentation (BL-106)**: Wired existing metrics infrastructure to 4 execution paths: hook dispatch (HookExecution events with duration, success/failure), workflow transitions (PhaseTransition events with from/to phases), agent spawns (AgentSpawn events with failure detection from $.error/$.exit_code, retry_count parsing), and commit gates (CommitGate events from quality_gate hook and `ecc metrics record-gate` CLI). Added `--json` and `--trend` flags to `ecc metrics summary`, cross-session trend reporting with mirror-window comparison, ECC aspirational SLO targets (hook>=99%, gate<=5%, agent>=80%, commit>=95%) with `[!]` below-target indicators. Kill switch via `ECC_METRICS_DISABLED=1`. Catchup command integration via `ecc metrics summary --session <id> --json`. Domain types: `ReferenceTargets`, `TrendComparison`. 39 pass conditions, 2508 tests pass.
 
 - **Miri unsafe code verification (BL-101)**: Added `#[cfg_attr(miri, ignore)]` to ecc-flock FFI tests, enhanced SAFETY comments on all 3 unsafe blocks with invariant documentation. Miri verifies non-FFI tests; FFI calls (libc::flock) cannot be interpreted by Miri.
 
@@ -81,10 +75,6 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
-- **BL-117 Phase 2: release-plz Integration**: Added release-plz workflow for automated semver version bumps and changelog generation from conventional commits. Created release-plz.toml for workspace-level versioning (publish=false, git_release_enable=false). Retired cd.yml auto-tag pipeline (renamed to cd.yml.disabled). Deprecated scripts/bump-version.sh. Rollout: dry-run mode first, live mode enabled separately.
-
-- **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
-
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -116,10 +106,6 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
-- **BL-117 Phase 2: release-plz Integration**: Added release-plz workflow for automated semver version bumps and changelog generation from conventional commits. Created release-plz.toml for workspace-level versioning (publish=false, git_release_enable=false). Retired cd.yml auto-tag pipeline (renamed to cd.yml.disabled). Deprecated scripts/bump-version.sh. Rollout: dry-run mode first, live mode enabled separately.
-
-- **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
-
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -144,10 +130,6 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
-
-- **BL-117 Phase 2: release-plz Integration**: Added release-plz workflow for automated semver version bumps and changelog generation from conventional commits. Created release-plz.toml for workspace-level versioning (publish=false, git_release_enable=false). Retired cd.yml auto-tag pipeline (renamed to cd.yml.disabled). Deprecated scripts/bump-version.sh. Rollout: dry-run mode first, live mode enabled separately.
-
-- **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
 
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
@@ -179,10 +161,6 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
-- **BL-117 Phase 2: release-plz Integration**: Added release-plz workflow for automated semver version bumps and changelog generation from conventional commits. Created release-plz.toml for workspace-level versioning (publish=false, git_release_enable=false). Retired cd.yml auto-tag pipeline (renamed to cd.yml.disabled). Deprecated scripts/bump-version.sh. Rollout: dry-run mode first, live mode enabled separately.
-
-- **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
-
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -211,10 +189,6 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
-- **BL-117 Phase 2: release-plz Integration**: Added release-plz workflow for automated semver version bumps and changelog generation from conventional commits. Created release-plz.toml for workspace-level versioning (publish=false, git_release_enable=false). Retired cd.yml auto-tag pipeline (renamed to cd.yml.disabled). Deprecated scripts/bump-version.sh. Rollout: dry-run mode first, live mode enabled separately.
-
-- **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
-
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -242,10 +216,6 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
-- **BL-117 Phase 2: release-plz Integration**: Added release-plz workflow for automated semver version bumps and changelog generation from conventional commits. Created release-plz.toml for workspace-level versioning (publish=false, git_release_enable=false). Retired cd.yml auto-tag pipeline (renamed to cd.yml.disabled). Deprecated scripts/bump-version.sh. Rollout: dry-run mode first, live mode enabled separately.
-
-- **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
-
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -269,10 +239,6 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
-
-- **BL-117 Phase 2: release-plz Integration**: Added release-plz workflow for automated semver version bumps and changelog generation from conventional commits. Created release-plz.toml for workspace-level versioning (publish=false, git_release_enable=false). Retired cd.yml auto-tag pipeline (renamed to cd.yml.disabled). Deprecated scripts/bump-version.sh. Rollout: dry-run mode first, live mode enabled separately.
-
-- **BL-117 Release Automation Evaluation**: Evaluated release-plz, cargo-release, knope, and enhanced-current-pipeline for automated semver versioning and changelog generation. Verdict: ADOPT release-plz (ADR-0057). Added conventional commit linting CI workflow using cocogitto.
 
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 

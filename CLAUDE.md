@@ -81,7 +81,8 @@ ecc campaign init <spec-dir>    Create campaign.md for grill-me decision persist
 ecc campaign append-decision --question Q --answer A --source recommended|user  Append decision
 ecc campaign show              Output campaign.md as JSON
 ecc cost migrate  Import legacy JSONL data into SQLite
-ecc metrics summary [--since 7d] [--session S]  Aggregated harness reliability rates
+ecc metrics summary [--since 7d] [--session S] [--json] [--trend]  Aggregated harness reliability rates
+ecc metrics record-gate --kind build|test|lint --outcome pass|fail  Record commit gate event
 ecc metrics export --format json|csv [--since 7d]  Export raw metric events
 ecc metrics prune [--older-than 90d]  Delete old metric events
 ecc audit-web profile init    Generate suggested audit profile from codebase
@@ -155,7 +156,8 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Claude Code's `EnterWorktree` prepends `worktree-` to branch names (e.g., `ecc-session-*` becomes `worktree-ecc-session-*`). ECC handles both forms — `WorktreeName::parse()` strips the prefix automatically
 - Fix-round budget: max 2 fix attempts per PC/E2E test before asking the user for help via AskUserQuestion (inspired by Stripe Minions CI budget pattern). User can grant more rounds, skip, abort, or provide guidance. Hard cap of 8 total rounds per PC.
 - `test_names` field in tdd-executor output (BL-050): list of fully qualified test function names. When absent (older invocations), TDD Log shows "--". Type: list of strings. Backward compat: column degrades gracefully.
-- Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end; **fix-round budget** = max 2 fix attempts per PC before user escalation; **coverage delta** = before/after test coverage % comparison across TDD loop; **bounded context enumeration** = listing affected DDD contexts in /design output; **per-test-name inventory** = individual test function names from TDD cycles
+- `ECC_METRICS_DISABLED=1` disables all harness metrics recording (fire-and-forget kill switch). Reads remain functional. Set in environment to opt out of metrics overhead.
+- Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end; **fix-round budget** = max 2 fix attempts per PC before user escalation; **coverage delta** = before/after test coverage % comparison across TDD loop; **bounded context enumeration** = listing affected DDD contexts in /design output; **per-test-name inventory** = individual test function names from TDD cycles; **harness metrics** = hook success rate, phase-gate violation rate, agent recovery rate, commit atomicity score (SLO targets: 99%/5%/80%/95%)
 
 ## Development Notes
 

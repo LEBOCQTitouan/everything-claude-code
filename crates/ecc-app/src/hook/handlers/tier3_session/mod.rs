@@ -67,6 +67,7 @@ mod tests {
             terminal: term,
             cost_store: None,
             bypass_store: None,
+            metrics_store: None,
         }
     }
 
@@ -88,6 +89,7 @@ mod tests {
             terminal: &term,
             cost_store: Some(&store),
             bypass_store: None,
+            metrics_store: None,
         };
 
         let stdin = r#"{"model":"claude-sonnet-4-6","usage":{"input_tokens":12500,"output_tokens":3200,"thinking_tokens":0}}"#;
@@ -152,6 +154,7 @@ mod tests {
             terminal: &term,
             cost_store: Some(&store),
             bypass_store: None,
+            metrics_store: None,
         };
 
         let stdin = r#"{"model":"claude-sonnet-4-6","usage":{"input_tokens":1000,"output_tokens":500},"agent_type":"code-reviewer"}"#;
@@ -180,6 +183,7 @@ mod tests {
             terminal: &term,
             cost_store: Some(&store),
             bypass_store: None,
+            metrics_store: None,
         };
 
         let stdin = r#"{"model":"claude-sonnet-4-6","usage":{"input_tokens":12500,"output_tokens":3200,"thinking_tokens":8000}}"#;

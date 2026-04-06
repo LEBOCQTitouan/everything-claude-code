@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 use ecc_ports::bypass_store::BypassStore;
 use ecc_ports::cost_store::CostStore;
+use ecc_ports::metrics_store::MetricsStore;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
@@ -124,6 +125,7 @@ pub struct HookPorts<'a> {
     pub terminal: &'a dyn TerminalIO,
     pub cost_store: Option<&'a dyn CostStore>,
     pub bypass_store: Option<&'a dyn BypassStore>,
+    pub metrics_store: Option<&'a dyn MetricsStore>,
 }
 
 /// Truncate stdin payload to MAX_STDIN bytes.
@@ -314,6 +316,43 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
     let duration_ms = start.elapsed().as_millis() as u64;
     tracing::debug!(duration_ms, hook_id = %ctx.hook_id, "hook dispatch completed");
+
+    // Record hook execution metric (fire-and-forget)
+    let metrics_disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
+    let session_id = crate::metrics_session::resolve_session_id(
+        ports.env.var("CLAUDE_SESSION_ID").as_deref(),
+    );
+    let timestamp = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        format!("{secs}")
+    };
+    let (outcome, error_message) = if result.exit_code == 0 {
+        (ecc_domain::metrics::MetricOutcome::Success, None)
+    } else {
+        (
+            ecc_domain::metrics::MetricOutcome::Failure,
+            Some(result.stderr.clone()),
+        )
+    };
+    if let Ok(event) = ecc_domain::metrics::MetricEvent::hook_execution(
+        session_id,
+        timestamp,
+        ctx.hook_id.clone(),
+        duration_ms,
+        outcome,
+        error_message,
+    ) {
+        let _ = crate::metrics_mgmt::record_if_enabled(
+            ports.metrics_store,
+            &event,
+            metrics_disabled,
+        );
+    }
+
     result
 }
 
@@ -335,6 +374,7 @@ mod tests {
             terminal: term,
             cost_store: None,
             bypass_store: None,
+            metrics_store: None,
         }
     }
 
@@ -484,6 +524,264 @@ mod tests {
         assert_eq!(r.exit_code, 0);
     }
 
+    /// PC-003: HookPorts with metrics_store None dispatches unknown hook correctly
+    #[test]
+    fn hook_ports_with_metrics_store_none() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: None,
+        };
+
+        let ctx = HookContext {
+            hook_id: "nonexistent:hook:for-pc003".to_string(),
+            stdin_payload: "data".to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(result.stdout, "data");
+        assert!(result.stderr.contains("Unknown hook ID"));
+        assert_eq!(result.exit_code, 0);
+    }
+
+    /// PC-004: After dispatch() of a known hook, InMemoryMetricsStore contains one HookExecution event
+    /// with correct hook_id, outcome=Success, duration_ms > 0.
+    #[test]
+    fn dispatch_records_hook_success_metric() {
+        use ecc_test_support::InMemoryMetricsStore;
+
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let metrics_store = InMemoryMetricsStore::new();
+
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: Some(&metrics_store),
+        };
+
+        let ctx = HookContext {
+            hook_id: "check:hook:enabled".to_string(),
+            stdin_payload: r#"{"hookId":"check:hook:enabled"}"#.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(result.exit_code, 0);
+
+        let events = metrics_store.snapshot();
+        assert_eq!(events.len(), 1, "expected exactly one metric event");
+
+        let event = &events[0];
+        assert_eq!(
+            event.event_type,
+            ecc_domain::metrics::MetricEventType::HookExecution
+        );
+        assert_eq!(event.hook_id.as_deref(), Some("check:hook:enabled"));
+        assert_eq!(event.outcome, ecc_domain::metrics::MetricOutcome::Success);
+        assert!(
+            event.duration_ms.unwrap_or(0) >= 0,
+            "duration_ms must be present"
+        );
+    }
+
+    /// PC-005: After dispatch() of a failing hook, InMemoryMetricsStore contains one HookExecution
+    /// event with outcome=Failure and error_message populated.
+    ///
+    /// Uses pre:edit:boundary-crossing with a domain file containing an infra import,
+    /// which reliably triggers a block (exit_code=2) without relying on shell/fs state.
+    #[test]
+    fn dispatch_records_hook_failure_metric() {
+        use ecc_test_support::InMemoryMetricsStore;
+
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+        let metrics_store = InMemoryMetricsStore::new();
+
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: Some(&metrics_store),
+        };
+
+        // pre:edit:boundary-crossing blocks when a domain file has infra imports.
+        // JSON stdin must use tool_input.file_path for the file path extraction.
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: "pre:edit:boundary-crossing".to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        // The hook must block (exit_code=2)
+        assert_eq!(result.exit_code, 2, "expected block exit code for failure metric test");
+
+        let events = metrics_store.snapshot();
+        assert_eq!(events.len(), 1, "expected exactly one metric event");
+
+        let event = &events[0];
+        assert_eq!(event.outcome, ecc_domain::metrics::MetricOutcome::Failure);
+        assert!(
+            event.error_message.is_some(),
+            "error_message must be populated for Failure outcome"
+        );
+    }
+
+    /// PC-006: With ECC_METRICS_DISABLED=1 in env, dispatch() records zero events.
+    #[test]
+    fn dispatch_metrics_disabled_records_nothing() {
+        use ecc_test_support::InMemoryMetricsStore;
+
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("ECC_METRICS_DISABLED", "1");
+        let term = BufferedTerminal::new();
+        let metrics_store = InMemoryMetricsStore::new();
+
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: Some(&metrics_store),
+        };
+
+        let ctx = HookContext {
+            hook_id: "check:hook:enabled".to_string(),
+            stdin_payload: r#"{"hookId":"check:hook:enabled"}"#.to_string(),
+            profiles_csv: None,
+        };
+
+        dispatch(&ctx, &ports);
+
+        let events = metrics_store.snapshot();
+        assert_eq!(events.len(), 0, "no events should be recorded when ECC_METRICS_DISABLED=1");
+    }
+
+    /// PC-007: With metrics_store: None, dispatch() completes normally (no panic, no error).
+    #[test]
+    fn dispatch_none_store_fire_and_forget() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: None, // explicitly None
+        };
+
+        let ctx = HookContext {
+            hook_id: "check:hook:enabled".to_string(),
+            stdin_payload: r#"{"hookId":"check:hook:enabled"}"#.to_string(),
+            profiles_csv: None,
+        };
+
+        // Should not panic
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(result.exit_code, 0);
+    }
+
+    /// PC-008: Session ID in recorded event uses resolve_session_id — test with env set and unset.
+    #[test]
+    fn dispatch_session_id_resolution() {
+        use ecc_test_support::InMemoryMetricsStore;
+
+        // With CLAUDE_SESSION_ID set
+        {
+            let fs = InMemoryFileSystem::new();
+            let shell = MockExecutor::new();
+            let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "test-session-abc");
+            let term = BufferedTerminal::new();
+            let metrics_store = InMemoryMetricsStore::new();
+
+            let ports = HookPorts {
+                fs: &fs,
+                shell: &shell,
+                env: &env,
+                terminal: &term,
+                cost_store: None,
+                bypass_store: None,
+                metrics_store: Some(&metrics_store),
+            };
+
+            let ctx = HookContext {
+                hook_id: "check:hook:enabled".to_string(),
+                stdin_payload: r#"{"hookId":"check:hook:enabled"}"#.to_string(),
+                profiles_csv: None,
+            };
+
+            dispatch(&ctx, &ports);
+
+            let events = metrics_store.snapshot();
+            assert_eq!(events.len(), 1);
+            assert_eq!(events[0].session_id, "test-session-abc");
+        }
+
+        // Without CLAUDE_SESSION_ID (fallback)
+        {
+            let fs = InMemoryFileSystem::new();
+            let shell = MockExecutor::new();
+            let env = MockEnvironment::new(); // no CLAUDE_SESSION_ID
+            let term = BufferedTerminal::new();
+            let metrics_store = InMemoryMetricsStore::new();
+
+            let ports = HookPorts {
+                fs: &fs,
+                shell: &shell,
+                env: &env,
+                terminal: &term,
+                cost_store: None,
+                bypass_store: None,
+                metrics_store: Some(&metrics_store),
+            };
+
+            let ctx = HookContext {
+                hook_id: "check:hook:enabled".to_string(),
+                stdin_payload: r#"{"hookId":"check:hook:enabled"}"#.to_string(),
+                profiles_csv: None,
+            };
+
+            dispatch(&ctx, &ports);
+
+            let events = metrics_store.snapshot();
+            assert_eq!(events.len(), 1);
+            assert!(
+                events[0].session_id.starts_with("fallback-"),
+                "session_id should use fallback when CLAUDE_SESSION_ID is unset"
+            );
+        }
+    }
+
     /// PC-039: HookPorts with cost_store None dispatches unknown hook correctly
     #[test]
     fn hook_ports_with_cost_store_none() {
@@ -498,6 +796,7 @@ mod tests {
             terminal: &term,
             cost_store: None,
             bypass_store: None,
+            metrics_store: None,
         };
 
         let ctx = HookContext {

@@ -1,69 +1,47 @@
-# Implementation Complete: BL-117 Phase 2 — release-plz Integration
+# Implementation Complete: BL-106 Harness Reliability Metrics
 
 ## Spec Reference
-Concern: dev, Feature: bl117-release-plz-phase2
+Concern: dev, Feature: harness-reliability-metrics
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
-| 1 | release-plz.toml | create | PC-001-005 | grep checks | done |
-| 2 | .github/workflows/release-plz.yml | create | PC-006-010 | grep checks | done |
-| 3 | .github/workflows/cd.yml.disabled | rename | PC-011-012 | file exists | done |
-| 4 | scripts/bump-version.sh | modify | PC-013-014 | grep deprecated | done |
-| 5 | CHANGELOG.md | modify | doc plan | -- | done |
-
-## TDD Log
-| PC ID | RED | GREEN | REFACTOR | Notes |
-|-------|-----|-------|----------|-------|
-| PC-001-005 | N/A (config) | ✅ config created | ⏭ | release-plz.toml |
-| PC-006-010 | N/A (workflow) | ✅ workflow created | ⏭ | Dry-run mode |
-| PC-011-012 | N/A (rename) | ✅ cd.yml retired | ⏭ | Separate commit |
-| PC-013-014 | N/A (header) | ✅ deprecation added | ⏭ | Script still works |
+| 1 | crates/ecc-domain/src/metrics/targets.rs | create | PC-001 | default_slo_values | done |
+| 2 | crates/ecc-domain/src/metrics/trend.rs | create | PC-002 | 6 tests | done |
+| 3 | crates/ecc-domain/src/metrics/mod.rs | modify | PC-001,002 | -- | done |
+| 4 | crates/ecc-app/src/hook/mod.rs | modify | PC-003-008 | 6 tests | done |
+| 5 | crates/ecc-app/src/hook/handlers/tier3_session/logging.rs | modify | PC-009-013 | 5 tests | done |
+| 6 | crates/ecc-app/src/hook/handlers/tier2_tools/quality.rs | modify | PC-014-016 | 3 tests | done |
+| 7 | crates/ecc-app/src/metrics_mgmt.rs | modify | PC-017-024 | 6 tests | done |
+| 8 | crates/ecc-workflow/src/commands/transition.rs | modify | PC-031-035 | 5 tests | done |
+| 9 | crates/ecc-cli/src/commands/metrics.rs | modify | PC-025-030 | 6 tests | done |
+| 10 | commands/catchup.md | modify | PC-039 | content check | done |
+| 11 | 28 HookPorts test sites | modify | PC-003 | build fix | done |
 
 ## Pass Condition Results
-| PC ID | Command | Expected | Actual | Status |
-|-------|---------|----------|--------|--------|
-| PC-001 | grep 'publish = false' release-plz.toml | match | match | ✅ |
-| PC-002 | grep 'git_release_enable = false' release-plz.toml | match | match | ✅ |
-| PC-003 | grep 'changelog_path' release-plz.toml | match | match | ✅ |
-| PC-004 | grep -c 'release = false' release-plz.toml | >=3 | 3 | ✅ |
-| PC-005 | grep 'semver_check = true' release-plz.toml | match | match | ✅ |
-| PC-006 | grep 'release-plz-action@v0.5' release-plz.yml | match | match | ✅ |
-| PC-007 | grep 'concurrency' release-plz.yml | match | match | ✅ |
-| PC-008 | grep 'RELEASE_PAT' release-plz.yml | match | match | ✅ |
-| PC-009 | grep 'github-actions' release-plz.yml | match | match | ✅ |
-| PC-010 | grep 'timeout-minutes' release-plz.yml | match | match | ✅ |
-| PC-011 | test -f cd.yml.disabled | exists | exists | ✅ |
-| PC-012 | grep 'RETIRED' cd.yml.disabled | match | match | ✅ |
-| PC-013 | head -3 bump-version.sh | DEPRECATED | DEPRECATED | ✅ |
-| PC-015 | wc -l CHANGELOG.md | >10 | >10 | ✅ |
-| PC-016 | git diff release.yml | 0 lines | 0 | ✅ |
-| PC-017 | git diff dist.toml | 0 lines | 0 | ✅ |
-
-All pass conditions: 16/18 ✅ (PC-014 bump-version.sh execution, PC-018 yamllint deferred to CI)
+All pass conditions: 39/39 ✅
 
 ## E2E Tests
-No E2E tests required — CI/CD config only.
+No E2E tests required by solution
 
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | CHANGELOG.md | project | Added BL-117 Phase 2 entry |
+| 1 | CLAUDE.md | project | --json, --trend, record-gate flags; ECC_METRICS_DISABLED; harness metrics glossary |
+| 2 | CHANGELOG.md | project | BL-106 entry |
+| 3 | commands/catchup.md | command | Harness Metrics section |
 
 ## ADRs Created
-None required — ADR-0057 was created in Phase 1.
+None required
 
 ## Coverage Delta
-N/A — no Rust code changes.
+Coverage data unavailable — cargo-llvm-cov not installed
 
 ## Supplemental Docs
-No supplemental docs — no Rust crate modifications.
-
-## Subagent Execution
-Inline execution — subagent dispatch not used.
+Deferred to reduce context pressure.
 
 ## Code Review
-PASS — YAML and TOML config only.
+Uncle-bob findings addressed during design: DIP fix, SRP fix, eprintln→tracing. Full test suite: 2508 tests, 0 failures.
 
 ## Suggested Commit
-feat(ci): BL-117 Phase 2 — release-plz integration with dry-run mode
+feat(metrics): wire harness reliability metrics to hook dispatch, transitions, agents, and commit gates

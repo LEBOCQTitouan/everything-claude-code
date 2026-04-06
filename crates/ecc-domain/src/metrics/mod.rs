@@ -6,7 +6,11 @@
 pub mod aggregate;
 pub mod error;
 pub mod event;
+pub mod targets;
+pub mod trend;
 
 pub use aggregate::{HarnessMetrics, MetricAggregator};
 pub use error::MetricsError;
 pub use event::{CommitGateKind, MetricEvent, MetricEventType, MetricOutcome};
+pub use targets::ReferenceTargets;
+pub use trend::TrendComparison;
