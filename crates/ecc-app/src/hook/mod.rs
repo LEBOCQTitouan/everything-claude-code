@@ -151,6 +151,17 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     let stdin = truncate_stdin(&ctx.stdin_payload);
     let start = std::time::Instant::now();
 
+    // Deprecation warning for ECC_WORKFLOW_BYPASS=1 (AC-006.1, AC-006.2)
+    if let Some(bypass_val) = ports.env.var("ECC_WORKFLOW_BYPASS") {
+        if bypass_val == "1" {
+            ports.terminal.stderr_write(
+                "[Deprecated] ECC_WORKFLOW_BYPASS=1 is deprecated. Use 'ecc bypass grant' for granular, auditable bypasses. See ADR-0056.\n"
+            );
+            // Still allow passthrough for backward compat (AC-006.2)
+            return HookResult::passthrough(stdin);
+        }
+    }
+
     // Check if hook is enabled
     let profile_env = ports.env.var("ECC_HOOK_PROFILE");
     let disabled_env = ports.env.var("ECC_DISABLED_HOOKS");

@@ -9,11 +9,6 @@ use crate::hook::{HookPorts, HookResult};
 pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "session_end_merge", "executing handler");
 
-    // Bypass check
-    if ports.env.var("ECC_WORKFLOW_BYPASS").as_deref() == Some("1") {
-        return HookResult::passthrough(stdin);
-    }
-
     // Check if we're in a worktree
     let in_worktree = match is_in_worktree(ports) {
         Ok(true) => true,
@@ -321,7 +316,8 @@ mod tests {
     fn bypass_skips_merge() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
-        let env = MockEnvironment::new().with_var("ECC_WORKFLOW_BYPASS", "1");
+        // Handler no longer checks ECC_WORKFLOW_BYPASS — bypass is at dispatch level
+        let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = make_ports(&fs, &shell, &env, &term);
 
