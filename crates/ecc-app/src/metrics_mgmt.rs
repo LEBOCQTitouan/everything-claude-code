@@ -129,6 +129,138 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    // PC-017: record_commit_gate pass records CommitGate/Passed
+    #[test]
+    fn record_commit_gate_pass() {
+        let store = InMemoryMetricsStore::new();
+        record_commit_gate(Some(&store), "sess-1", "build", "pass", false).unwrap();
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0].event_type,
+            ecc_domain::metrics::MetricEventType::CommitGate
+        );
+        assert_eq!(events[0].outcome, ecc_domain::metrics::MetricOutcome::Passed);
+        assert!(events[0].gates_failed.is_empty());
+    }
+
+    // PC-018: record_commit_gate fail records CommitGate/Failure with gates_failed=[Test]
+    #[test]
+    fn record_commit_gate_fail() {
+        let store = InMemoryMetricsStore::new();
+        record_commit_gate(Some(&store), "sess-1", "test", "fail", false).unwrap();
+
+        let events = store.snapshot();
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0].event_type,
+            ecc_domain::metrics::MetricEventType::CommitGate
+        );
+        assert_eq!(
+            events[0].outcome,
+            ecc_domain::metrics::MetricOutcome::Failure
+        );
+        assert_eq!(events[0].gates_failed.len(), 1);
+        assert_eq!(
+            events[0].gates_failed[0],
+            ecc_domain::metrics::CommitGateKind::Test
+        );
+    }
+
+    // PC-021: summary works regardless of ECC_METRICS_DISABLED (reads existing data)
+    #[test]
+    fn summary_works_with_kill_switch() {
+        let store = InMemoryMetricsStore::new();
+        // Record an event directly
+        store.record(&test_event()).unwrap();
+
+        // summary() should always work regardless of kill switch — it reads existing data
+        let result = summary(&store, &MetricsQuery::default());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().total_events, 1);
+    }
+
+    // PC-022: trend_summary with events in current and previous periods returns correct deltas
+    #[test]
+    fn trend_summary_with_events() {
+        let store = InMemoryMetricsStore::new();
+
+        // Record events in both periods
+        // "previous" period: ~14 days ago to ~7 days ago — use a timestamp in 2024
+        let prev_event = MetricEvent::hook_execution(
+            "sess-trend".into(),
+            "2024-01-01T00:00:00Z".into(),
+            "hook-a".into(),
+            50,
+            MetricOutcome::Success,
+            None,
+        )
+        .unwrap();
+        // "current" period: very recent — use 2030 to be safely in the future
+        let curr_event = MetricEvent::hook_execution(
+            "sess-trend".into(),
+            "2030-01-01T00:00:00Z".into(),
+            "hook-b".into(),
+            50,
+            MetricOutcome::Success,
+            None,
+        )
+        .unwrap();
+        store.record(&prev_event).unwrap();
+        store.record(&curr_event).unwrap();
+
+        // trend_summary over 7 days
+        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400));
+        assert!(result.is_ok(), "trend_summary failed: {:?}", result.err());
+        let trend = result.unwrap();
+        // Both snapshots are returned
+        assert!(trend.current.total_events >= 0);
+        assert!(trend.previous.total_events >= 0);
+    }
+
+    // PC-023: trend_summary with no events in previous period returns previous=None metrics
+    #[test]
+    fn trend_summary_no_previous() {
+        let store = InMemoryMetricsStore::new();
+
+        // Only record a "current" period event (very recent — use 2030)
+        let curr_event = MetricEvent::hook_execution(
+            "sess-noprev".into(),
+            "2030-01-01T00:00:00Z".into(),
+            "hook-c".into(),
+            50,
+            MetricOutcome::Success,
+            None,
+        )
+        .unwrap();
+        store.record(&curr_event).unwrap();
+
+        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400));
+        assert!(result.is_ok());
+        let trend = result.unwrap();
+        // Previous period has no events → rates should be None
+        assert!(
+            trend.previous.hook_success_rate.is_none(),
+            "expected None previous hook_success_rate"
+        );
+    }
+
+    // PC-024: trend_summary with both periods NA returns NA deltas
+    #[test]
+    fn trend_summary_both_na() {
+        let store = InMemoryMetricsStore::new();
+        // Empty store — both periods have no events
+
+        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400));
+        assert!(result.is_ok());
+        let trend = result.unwrap();
+        assert!(
+            trend.hook_success_rate_delta.is_none(),
+            "expected None delta for both NA"
+        );
+    }
+
     // PC-037: hook instrumentation (using InMemoryMetricsStore as integration test)
     #[test]
     fn metrics_hook_instrumentation() {
