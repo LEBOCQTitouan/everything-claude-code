@@ -22,6 +22,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **sccache + mold build acceleration (BL-100)**: Added mold linker config for Linux targets in `.cargo/config.toml`, Build Acceleration section in `docs/getting-started.md` with sccache (11-14%), mold, and Cranelift (30%) setup instructions. Dev-only, no CI changes.
+
 - **Deferred pipeline summary tables (BL-050)**: Coverage delta table in /implement (cargo llvm-cov before/after with graceful skip), bounded context enumeration in /design output (references bounded-contexts.md), per-test-name inventory in TDD Log (test_names field in tdd-executor output with "--" backward compat).
 
 - **Harness reliability metrics (BL-106)**: New metrics subsystem tracking hook success rate, phase-gate violation rate, agent failure recovery rate, and commit atomicity score. Domain types in `ecc-domain::metrics`, `MetricsStore` port trait, SQLite adapter with WAL mode and schema versioning, in-memory test double, app orchestration with fire-and-forget recording and `ECC_METRICS_DISABLED` kill switch, CLI commands (`ecc metrics summary/export/prune`). 41 pass conditions, 36 new tests.
