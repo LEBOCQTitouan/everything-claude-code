@@ -207,7 +207,7 @@ fn csv_escape(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ecc_domain::metrics::{CommitGateKind, MetricEvent, MetricOutcome};
+    use ecc_domain::metrics::{CommitGateKind, MetricEvent, MetricEventType, MetricOutcome};
 
     fn hook(session: &str, ts: &str, outcome: MetricOutcome) -> MetricEvent {
         MetricEvent::hook_execution(session.into(), ts.into(), "h".into(), 100, outcome, None)
