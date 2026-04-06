@@ -45,6 +45,8 @@ enum Command {
     Dev(commands::dev::DevArgs),
     /// Deterministic backlog management
     Backlog(commands::backlog::BacklogArgs),
+    /// Manage workflow bypass tokens and audit trail
+    Bypass(commands::bypass::BypassArgs),
     /// Manage git worktrees for ECC sessions
     Worktree(commands::worktree::WorktreeArgs),
     /// Manage knowledge sources registry
@@ -184,6 +186,7 @@ fn main() -> anyhow::Result<()> {
         Command::Claw(args) => commands::claw::run(args),
         Command::Dev(args) => commands::dev::run(args),
         Command::Backlog(args) => commands::backlog::run(args),
+        Command::Bypass(args) => commands::bypass::run(args),
         Command::Worktree(args) => commands::worktree::run(args),
         Command::Sources(args) => commands::sources::run(args),
         Command::Log(args) => commands::log::run(args),
