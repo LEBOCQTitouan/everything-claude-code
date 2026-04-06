@@ -150,8 +150,10 @@ List of files this PC should modify, filtered from the solution's File Changes t
 
 Summary table of all previously completed PCs (max 5 lines per PC):
 
-| PC ID | Status | Files Changed |
-|-------|--------|---------------|
+| PC ID | Status | Files Changed | test_names |
+|-------|--------|---------------|------------|
+
+Include the `test_names` list from prior PCs' results (for awareness — helps identify which tests already exist). If a prior PC did not return `test_names`, show "--".
 
 #### ## Commit Rules
 
