@@ -88,7 +88,7 @@ fn run_formatter(
     file_path: &str,
     ext: &str,
     fix: bool,
-    strict: bool,
+    _strict: bool,
     cwd: &std::path::Path,
     ports: &HookPorts<'_>,
 ) -> Option<(i32, CommitGateKind)> {
