@@ -55,7 +55,8 @@ ecc log export --format json|csv [--since 7d]  Export filtered logs
 ecc backlog next-id       Next sequential BL-NNN ID
 ecc backlog check-duplicates <title> [--tags t1,t2]  Check for duplicate entries
 ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
-ecc worktree gc [--force]  Clean up stale session worktrees
+ecc worktree gc [--force]  Clean up stale session worktrees (--force overrides merge-status safety)
+ecc worktree status        Show all session worktrees with merge state, safety info, and age
 ecc sources list          List all configured knowledge sources
 ecc sources add <url>     Add a new knowledge source
 ecc sources check         Check status of configured sources
@@ -145,8 +146,8 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - `pre:edit-write:workflow-branch-guard` blocks `.github/workflows/` edits on main/master/production — create a feature branch first
 - ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
 - `pre:write-edit:worktree-guard` blocks Write/Edit/MultiEdit on main branch — Claude must call EnterWorktree first; bypass with `ECC_WORKFLOW_BYPASS=1` (lazy worktree: created on first write, not session start)
-- `session:end:worktree-merge` auto-merges worktree to main at session end via `ecc-workflow merge` (rebase + full verify + ff-only) — worktree directory is **not** deleted after merge (deferred to gc to avoid orphaning Claude Code's CWD); if merge fails, worktree preserved; retry with `ecc-workflow merge` or clean up with `ecc worktree gc`
-- `session:start` triggers `ecc worktree gc` automatically to clean stale worktrees from previous sessions (best-effort, non-blocking)
+- `session:end:worktree-merge` auto-merges worktree to main at session end via `ecc-workflow merge` (rebase + full verify + ff-only + safety-checked auto-cleanup). After successful merge, 5-point safety check (uncommitted changes, untracked files, unmerged commits, stash, remote push) runs inside the merge lock. If all pass, worktree directory + branch are deleted automatically. If any check fails, worktree is preserved with a warning listing which checks failed. If merge fails, worktree preserved; retry with `ecc-workflow merge`
+- `session:start` triggers `ecc worktree gc` automatically to clean stale worktrees from previous sessions (best-effort, non-blocking). GC now skips unmerged worktrees unless `--force` is passed
 - Claude Code's `EnterWorktree` prepends `worktree-` to branch names (e.g., `ecc-session-*` becomes `worktree-ecc-session-*`). ECC handles both forms — `WorktreeName::parse()` strips the prefix automatically
 - Fix-round budget: max 2 fix attempts per PC/E2E test before asking the user for help via AskUserQuestion (inspired by Stripe Minions CI budget pattern). User can grant more rounds, skip, abort, or provide guidance. Hard cap of 8 total rounds per PC.
 - `test_names` field in tdd-executor output (BL-050): list of fully qualified test function names. When absent (older invocations), TDD Log shows "--". Type: list of strings. Backward compat: column degrades gracefully.
