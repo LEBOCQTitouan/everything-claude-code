@@ -125,6 +125,125 @@ fn utc_timestamp_compact() -> String {
 mod tests {
     use super::*;
 
+    fn clean_input() -> WorktreeSafetyInput {
+        WorktreeSafetyInput {
+            has_uncommitted_changes: false,
+            has_untracked_files: false,
+            unmerged_commit_count: 0,
+            has_stash: false,
+            is_pushed_to_remote: true,
+        }
+    }
+
+    #[test]
+    fn assess_uncommitted_changes() {
+        let input = WorktreeSafetyInput {
+            has_uncommitted_changes: true,
+            ..clean_input()
+        };
+        let result = assess_safety(&input);
+        assert!(
+            result.contains(&SafetyViolation::UncommittedChanges),
+            "expected UncommittedChanges violation"
+        );
+    }
+
+    #[test]
+    fn assess_untracked_files() {
+        let input = WorktreeSafetyInput {
+            has_untracked_files: true,
+            ..clean_input()
+        };
+        let result = assess_safety(&input);
+        assert!(
+            result.contains(&SafetyViolation::UntrackedFiles),
+            "expected UntrackedFiles violation"
+        );
+    }
+
+    #[test]
+    fn assess_unmerged_commits() {
+        let input = WorktreeSafetyInput {
+            unmerged_commit_count: 3,
+            ..clean_input()
+        };
+        let result = assess_safety(&input);
+        assert!(
+            result.contains(&SafetyViolation::UnmergedCommits { count: 3 }),
+            "expected UnmergedCommits violation with count=3"
+        );
+    }
+
+    #[test]
+    fn assess_stashed_changes() {
+        let input = WorktreeSafetyInput {
+            has_stash: true,
+            ..clean_input()
+        };
+        let result = assess_safety(&input);
+        assert!(
+            result.contains(&SafetyViolation::StashedChanges),
+            "expected StashedChanges violation"
+        );
+    }
+
+    #[test]
+    fn assess_unpushed_commits() {
+        let input = WorktreeSafetyInput {
+            is_pushed_to_remote: false,
+            ..clean_input()
+        };
+        let result = assess_safety(&input);
+        assert!(
+            result.contains(&SafetyViolation::UnpushedCommits),
+            "expected UnpushedCommits violation"
+        );
+    }
+
+    #[test]
+    fn assess_all_clean() {
+        let input = clean_input();
+        let result = assess_safety(&input);
+        assert!(result.is_empty(), "expected no violations, got: {result:?}");
+    }
+
+    #[test]
+    fn assess_safety_is_pure() {
+        // Verify that the worktree module source does not import I/O libs
+        let source = include_str!("worktree.rs");
+        assert!(
+            !source.contains("std::process"),
+            "domain worktree must not import std::process"
+        );
+        assert!(
+            !source.contains("std::fs"),
+            "domain worktree must not import std::fs"
+        );
+        assert!(
+            !source.contains("std::net"),
+            "domain worktree must not import std::net"
+        );
+    }
+
+    #[test]
+    fn assess_collects_all_failures() {
+        // All 5 unsafe conditions simultaneously
+        let input = WorktreeSafetyInput {
+            has_uncommitted_changes: true,
+            has_untracked_files: true,
+            unmerged_commit_count: 2,
+            has_stash: true,
+            is_pushed_to_remote: false,
+        };
+        let result = assess_safety(&input);
+        assert_eq!(result.len(), 5, "expected all 5 violations, got: {result:?}");
+        assert!(result.contains(&SafetyViolation::UncommittedChanges));
+        assert!(result.contains(&SafetyViolation::UntrackedFiles));
+        assert!(result.contains(&SafetyViolation::UnmergedCommits { count: 2 }));
+        assert!(result.contains(&SafetyViolation::StashedChanges));
+        assert!(result.contains(&SafetyViolation::UnpushedCommits));
+    }
+
     #[test]
     fn rejects_injection() {
         // semicolon
