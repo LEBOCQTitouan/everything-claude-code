@@ -108,7 +108,6 @@ For complex diagnostic scenarios, generate decision trees:
 ## Troubleshooting: [Symptom]
 
 **Symptom:** [What the user/operator observes]
-
 ```
 Is the service responding?
 ├── No → Check process status (`systemctl status app`)

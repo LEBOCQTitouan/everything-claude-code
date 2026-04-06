@@ -86,7 +86,6 @@ const result = mergeDirectory('src', 'dest', { strategy: 'skip' });
 ### Examples
 
 #### Basic Usage
-
 ```typescript
 import { mergeDirectory } from './lib/merge';
 
@@ -95,7 +94,6 @@ console.log(`Merged ${result.filesCopied} files`);
 ```
 
 #### Error Handling
-
 ```typescript
 try {
   mergeDirectory('nonexistent', 'dest');

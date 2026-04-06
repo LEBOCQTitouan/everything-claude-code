@@ -6,55 +6,18 @@ origin: ECC
 
 # Project Guidelines Skill (Example)
 
-This is an example of a project-specific skill. Use this as a template for your own projects.
+Example project-specific skill template. Use as a starting point for your own projects.
 
-Based on a real production application: [Zenith](https://zenith.chat) - AI-powered customer discovery platform.
+Based on: [Zenith](https://zenith.chat) - AI-powered customer discovery platform.
 
-## When to Use
+## Architecture
 
-Reference this skill when working on the specific project it's designed for. Project skills contain:
-- Architecture overview
-- File structure
-- Code patterns
-- Testing requirements
-- Deployment workflow
-
----
-
-## Architecture Overview
-
-**Tech Stack:**
-- **Frontend**: Next.js 15 (App Router), TypeScript, React
-- **Backend**: FastAPI (Python), Pydantic models
+- **Frontend**: Next.js 15 (App Router), TypeScript, React, TailwindCSS
+- **Backend**: FastAPI (Python 3.11), Pydantic
 - **Database**: Supabase (PostgreSQL)
-- **AI**: Claude API with tool calling and structured output
-- **Deployment**: Google Cloud Run
+- **AI**: Claude API
+- **Deploy**: Google Cloud Run
 - **Testing**: Playwright (E2E), pytest (backend), React Testing Library
-
-**Services:**
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Frontend                            │
-│  Next.js 15 + TypeScript + TailwindCSS                     │
-│  Deployed: Vercel / Cloud Run                              │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                         Backend                             │
-│  FastAPI + Python 3.11 + Pydantic                          │
-│  Deployed: Cloud Run                                       │
-└─────────────────────────────────────────────────────────────┘
-                              │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-        ┌──────────┐   ┌──────────┐   ┌──────────┐
-        │ Supabase │   │  Claude  │   │  Redis   │
-        │ Database │   │   API    │   │  Cache   │
-        └──────────┘   └──────────┘   └──────────┘
-```
-
----
 
 ## File Structure
 
@@ -226,13 +189,10 @@ export function useApi<T>(
 ### Backend (pytest)
 
 ```bash
-# Run all tests
 poetry run pytest tests/
 
-# Run with coverage
 poetry run pytest tests/ --cov=. --cov-report=html
 
-# Run specific test file
 poetry run pytest tests/test_auth.py -v
 ```
 
@@ -257,13 +217,10 @@ async def test_health_check(client: AsyncClient):
 ### Frontend (React Testing Library)
 
 ```bash
-# Run tests
 npm run test
 
-# Run with coverage
 npm run test -- --coverage
 
-# Run E2E tests
 npm run test:e2e
 ```
 
@@ -302,11 +259,9 @@ describe('WorkspacePanel', () => {
 ### Deployment Commands
 
 ```bash
-# Build and deploy frontend
 cd frontend && npm run build
 gcloud run deploy frontend --source .
 
-# Build and deploy backend
 cd backend
 gcloud run deploy backend --source .
 ```

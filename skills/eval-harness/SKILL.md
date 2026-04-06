@@ -56,13 +56,10 @@ Result: X/Y passed (previously Y/Y)
 ### 1. Code-Based Grader
 Deterministic checks using code:
 ```bash
-# Check if file contains expected pattern
 grep -q "export function handleAuth" src/auth.ts && echo "PASS" || echo "FAIL"
 
-# Check if tests pass
 npm test -- --testPathPattern="auth" && echo "PASS" || echo "FAIL"
 
-# Check if build succeeds
 npm run build && echo "PASS" || echo "FAIL"
 ```
 
@@ -129,10 +126,8 @@ Write code to pass the defined evals.
 
 ### 3. Evaluate
 ```bash
-# Run capability evals
 [Run each capability eval, record PASS/FAIL]
 
-# Run regression evals
 npm test -- --testPathPattern="existing"
 
 # Generate report

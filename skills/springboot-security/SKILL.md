@@ -268,5 +268,3 @@ public class RateLimitFilter extends OncePerRequestFilter {
 - [ ] Rate limiting on APIs
 - [ ] Dependencies scanned and up to date
 - [ ] Logs free of sensitive data
-
-**Remember**: Deny by default, validate inputs, least privilege, and secure-by-configuration first.

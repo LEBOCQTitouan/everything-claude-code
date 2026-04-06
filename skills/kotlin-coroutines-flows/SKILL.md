@@ -277,8 +277,3 @@ class FakeItemRepository : ItemRepository {
 - Catching `CancellationException` — let it propagate for proper cancellation
 - Using `flowOn(Dispatchers.Main)` to collect — collection dispatcher is the caller's dispatcher
 - Creating `Flow` in `@Composable` without `remember` — recreates the flow every recomposition
-
-## References
-
-See skill: `compose-multiplatform-patterns` for UI consumption of Flows.
-See skill: `android-clean-architecture` for where coroutines fit in layers.

@@ -110,7 +110,6 @@ Config: LOG_LEVEL
 Structured configuration inventory:
 
 ```
-# Configuration Surface
 
 ## Environment Variables (12 total, 4 required, 3 secret)
 

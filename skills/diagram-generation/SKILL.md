@@ -181,20 +181,6 @@ Use these rules to decide which diagrams to generate:
 - **Max participants:** 10 per sequence diagram
 - **Legend:** Include a Key section when diagram has 5+ nodes with mixed shapes
 
-## Common Mistakes
-
-1. **Unquoted special characters in labels:** Node labels containing `(`, `)`, `[`, `]`, `{`, `}` must be quoted: `A["merge()"]` not `A[merge()]`
-2. **Spaces in node IDs:** Node IDs cannot contain spaces. Use camelCase or hyphens: `installFlow` not `install flow`
-3. **Missing `end` for subgraphs:** Every `subgraph` must have a matching `end`
-4. **Invalid arrow syntax:** Use `-->` (solid), `-.->` (dotted), `==>` (thick). Not `->` or `-->`
-5. **Duplicate node IDs:** Each ID must be unique within the diagram. Use prefixes for disambiguation
-6. **Long labels:** Keep labels under 40 characters. Use `<br/>` for line breaks in node labels (`\n` does NOT work in Mermaid)
-7. **Undefined references:** Every node referenced in an arrow must be defined somewhere in the diagram
-8. **classDiagram methods:** Use `+method()` for public, `-method()` for private, `#method()` for protected
-9. **Reserved word `end` as node ID:** `end` is a Mermaid keyword. Never use it as a node ID — use `finish`, `done`, or `End` instead.
-10. **Unquoted edge labels:** Edge labels with special characters must be quoted: `A -->|"label text"| B`
-11. **Missing `end` in sequence diagram blocks:** Every `alt`, `opt`, `loop`, `par` block MUST have a matching `end`
-
 ## Pitfall Examples
 
 ### Unquoted labels with special characters

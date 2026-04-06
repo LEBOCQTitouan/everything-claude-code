@@ -129,7 +129,6 @@ END $$;
 ### Workflow
 
 ```bash
-# Create migration from schema changes
 npx prisma migrate dev --name add_user_avatar
 
 # Apply pending migrations in production
@@ -269,7 +268,6 @@ class Migration(migrations.Migration):
 ### Workflow
 
 ```bash
-# Create migration pair
 migrate create -ext sql -dir migrations -seq add_user_avatar
 
 # Apply all pending migrations

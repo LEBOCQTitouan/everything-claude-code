@@ -78,13 +78,10 @@ A PreToolUse hook on Bash blocks legacy package managers:
 git clone https://github.com/alexfazio/plankton.git
 cd plankton
 
-# Install core dependencies
 brew install jaq ruff uv
 
-# Install Python linters
 uv sync --all-extras
 
-# Start Claude Code — hooks activate automatically
 claude
 ```
 
@@ -188,9 +185,3 @@ Plankton's `.claude/hooks/config.json` controls all behavior:
 | `HOOK_SUBPROCESS_TIMEOUT=N` | Override tier timeout |
 | `HOOK_DEBUG_MODEL=1` | Log model selection decisions |
 | `HOOK_SKIP_PM=1` | Bypass package manager enforcement |
-
-## References
-
-- Plankton (credit: @alxfazio)
-- Plankton REFERENCE.md — Full architecture documentation (credit: @alxfazio)
-- Plankton SETUP.md — Detailed installation guide (credit: @alxfazio)

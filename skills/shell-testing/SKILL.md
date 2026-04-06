@@ -34,7 +34,6 @@ cd bats-core && ./install.sh /usr/local
 ### Helper Libraries
 
 ```bash
-# Install common helpers
 git submodule add https://github.com/bats-core/bats-support test/test_helper/bats-support
 git submodule add https://github.com/bats-core/bats-assert test/test_helper/bats-assert
 git submodule add https://github.com/bats-core/bats-file test/test_helper/bats-file
@@ -49,7 +48,6 @@ setup() {
     load 'test_helper/bats-support/load'
     load 'test_helper/bats-assert/load'
 
-    # Create temp directory for test isolation
     TEST_TEMP_DIR="$(mktemp -d)"
 }
 
@@ -98,13 +96,10 @@ setup() {
 ## Running Tests
 
 ```bash
-# Run all tests
 bats tests/
 
-# Run with TAP output for CI
 bats --formatter tap tests/
 
-# Run specific test file
 bats tests/my-script.bats
 
 # Parallel execution

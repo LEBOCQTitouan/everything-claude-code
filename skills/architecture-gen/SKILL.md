@@ -48,7 +48,6 @@ External dependencies:
 - **Redis** — session cache and rate limiting
 - **Stripe API** — payment processing
 - **SendGrid** — transactional email
-
 ```mermaid
 graph TB
     User([User]) --> System[System Name]

@@ -253,8 +253,3 @@ Use `#Preview` macro with inline mock data for fast iteration:
 - Creating view models as `@State` inside child views that don't own the data — pass from parent instead
 - Using `AnyView` type erasure — prefer `@ViewBuilder` or `Group` for conditional views
 - Ignoring `Sendable` requirements when passing data to/from actors
-
-## References
-
-See skill: `swift-actor-persistence` for actor-based persistence patterns.
-See skill: `swift-protocol-di-testing` for protocol-based DI and testing with Swift Testing.
