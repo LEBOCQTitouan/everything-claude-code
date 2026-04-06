@@ -1,7 +1,7 @@
 ---
 id: BL-122
 title: Worktree Auto-Merge and Cleanup Enforcement
-status: open
+status: implemented
 scope: workflow
 target: ecc-workflow
 tags: [worktree, merge, cleanup, workflow]
