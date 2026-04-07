@@ -53,7 +53,7 @@ sha2 = "0.10"
 libc = "0.2"
 
 # Interactive
-rustyline = "15"
+rustyline = "17"
 crossterm = "0.29"
 
 # Workspace crates
