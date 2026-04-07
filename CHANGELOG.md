@@ -18,6 +18,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -81,6 +83,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -116,6 +120,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -144,6 +150,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
 
 ### Refactored
 
@@ -179,6 +187,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -211,6 +221,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -242,6 +254,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -269,6 +283,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
 
 ### Refactored
 
