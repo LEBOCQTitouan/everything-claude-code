@@ -297,7 +297,7 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::TddEnforcement => commands::tdd_enforcement::run(&sd),
         Commands::Status => commands::status::run(&sd),
         Commands::Artifact { artifact_type } => commands::artifact::run(&artifact_type, &proj, &sd),
-        Commands::Reset { force } => commands::reset::run(force, &sd),
+        Commands::Reset { force } => commands::reset::run(force, &proj, &sd),
         Commands::ScopeCheck => commands::scope_check::run(&proj, &sd),
         Commands::DocEnforcement => commands::doc_enforcement::run(&sd),
         Commands::DocLevelCheck => commands::doc_level_check::run(&proj, &sd),

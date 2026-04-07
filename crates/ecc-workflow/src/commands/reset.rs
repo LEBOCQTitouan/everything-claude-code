@@ -12,7 +12,7 @@ use crate::io::{archive_state, with_state_lock, write_state_atomic};
 use crate::output::WorkflowOutput;
 use crate::time::utc_now_iso8601;
 
-pub fn run(force: bool, state_dir: &Path) -> WorkflowOutput {
+pub fn run(force: bool, project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
     if !force {
         return WorkflowOutput::block(
             "Reset requires --force flag to prevent accidental state loss. \
@@ -29,6 +29,14 @@ pub fn run(force: bool, state_dir: &Path) -> WorkflowOutput {
         // Archive state (include done states, unlike init)
         if let Err(e) = archive_state(state_dir, true) {
             return WorkflowOutput::block(format!("Failed to archive state: {e}"));
+        }
+
+        // Best-effort: delete .state-dir anchor (AC-001.4, AC-001.9)
+        let anchor_path = project_dir.join(".claude/workflow/.state-dir");
+        if let Err(e) = std::fs::remove_file(&anchor_path) {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                tracing::warn!("Failed to delete .state-dir anchor: {e}");
+            }
         }
 
         // Write minimal Idle state
@@ -111,7 +119,7 @@ pub mod tests {
         std::fs::write(wf_dir.join("state.json"), "{}").unwrap();
         assert!(wf_dir.join("state.json").exists());
 
-        let output = run(true, &wf_dir);
+        let output = run(true, dir.path(), &wf_dir);
         assert!(output.message.contains("reset"));
         // After rewrite: state.json should contain idle state, not be deleted
         assert!(
@@ -124,7 +132,7 @@ pub mod tests {
     fn reset_no_force_errors() {
         let dir = tempfile::tempdir().unwrap();
         let wf_dir = dir.path().join(".claude/workflow");
-        let output = run(false, &wf_dir);
+        let output = run(false, dir.path(), &wf_dir);
         assert!(output.message.contains("--force"));
     }
 
@@ -132,7 +140,7 @@ pub mod tests {
     fn reset_no_state_clean() {
         let dir = tempfile::tempdir().unwrap();
         let wf_dir = dir.path().join(".claude/workflow");
-        let output = run(true, &wf_dir);
+        let output = run(true, dir.path(), &wf_dir);
         assert!(output.message.contains("No active workflow"));
     }
 
@@ -144,7 +152,7 @@ pub mod tests {
         std::fs::create_dir_all(&wf_dir).unwrap();
         std::fs::write(wf_dir.join("state.json"), make_state_json(Phase::Implement)).unwrap();
 
-        let output = run(true, &wf_dir);
+        let output = run(true, dir.path(), &wf_dir);
 
         // Output must be pass
         assert!(
@@ -174,7 +182,7 @@ pub mod tests {
         std::fs::create_dir_all(&wf_dir).unwrap();
         std::fs::write(wf_dir.join("state.json"), make_state_json(Phase::Done)).unwrap();
 
-        let output = run(true, &wf_dir);
+        let output = run(true, dir.path(), &wf_dir);
 
         assert!(
             matches!(output.status, crate::output::Status::Pass),
@@ -206,7 +214,7 @@ pub mod tests {
             "archive dir should not exist before reset"
         );
 
-        run(true, &wf_dir);
+        run(true, dir.path(), &wf_dir);
 
         assert!(
             archive_dir.exists(),
@@ -219,7 +227,7 @@ pub mod tests {
     fn reset_no_state_passes() {
         let dir = tempfile::tempdir().unwrap();
         let wf_dir = dir.path().join(".claude/workflow");
-        let output = run(true, &wf_dir);
+        let output = run(true, dir.path(), &wf_dir);
         assert!(
             matches!(output.status, crate::output::Status::Pass),
             "reset with no state should pass: {:?}",
@@ -239,7 +247,7 @@ pub mod tests {
         std::fs::create_dir_all(&wf_dir).unwrap();
         std::fs::write(wf_dir.join("state.json"), make_state_json(Phase::Implement)).unwrap();
 
-        run(true, &wf_dir);
+        run(true, dir.path(), &wf_dir);
 
         // The lock file must exist (proves flock was acquired during reset)
         let lock_file = ecc_flock::lock_dir_for(&wf_dir).join("state.lock");
@@ -263,7 +271,7 @@ pub mod tests {
         )
         .unwrap();
 
-        let output = run(true, &custom_state_dir);
+        let output = run(true, dir.path(), &custom_state_dir);
 
         assert!(
             matches!(output.status, crate::output::Status::Pass),
@@ -308,7 +316,7 @@ pub mod tests {
         let archive_path = wf_dir.join("archive");
         std::fs::write(&archive_path, b"blocker").unwrap();
 
-        let output = run(true, &wf_dir);
+        let output = run(true, dir.path(), &wf_dir);
 
         assert!(
             matches!(output.status, crate::output::Status::Block),
@@ -323,9 +331,42 @@ pub mod tests {
         let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
         let state = WorkflowState::from_json(&content).unwrap();
         assert_eq!(
-            state.phase,
-            Phase::Implement,
+            state.phase, Phase::Implement,
             "state.json phase must be unchanged"
+        );
+    }
+
+    /// PC-007: reset --force deletes .state-dir anchor (AC-001.4)
+    #[test]
+    fn reset_deletes_state_dir_anchor() {
+        let dir = tempfile::tempdir().unwrap();
+        let project_dir = dir.path();
+        let state_dir = dir.path().join(".git/ecc-workflow");
+        std::fs::create_dir_all(&state_dir).unwrap();
+        std::fs::write(
+            state_dir.join("state.json"),
+            make_state_json(Phase::Implement),
+        )
+        .unwrap();
+
+        // Create anchor file
+        let anchor_dir = project_dir.join(".claude/workflow");
+        std::fs::create_dir_all(&anchor_dir).unwrap();
+        let anchor_path = anchor_dir.join(".state-dir");
+        std::fs::write(&anchor_path, state_dir.to_string_lossy().as_ref()).unwrap();
+        assert!(anchor_path.exists(), "anchor should exist before reset");
+
+        let output = run(true, project_dir, &state_dir);
+        assert!(
+            matches!(output.status, crate::output::Status::Pass),
+            "reset should succeed: {:?}",
+            output.message
+        );
+
+        // Anchor must be deleted
+        assert!(
+            !anchor_path.exists(),
+            "anchor must be deleted after reset --force"
         );
     }
 }
