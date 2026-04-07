@@ -53,6 +53,15 @@ Computes instability (I), abstractness (A), and main sequence distance (D) per c
 
 ## Adversarial Challenge
 
+
+### Adversary Gate
+
+If the aggregate finding count from the analysis phase is <3 AND all findings are MEDIUM severity or lower (threshold rationale: low-signal audits provide insufficient material for meaningful adversarial review — see BL-121 finding 4.5), skip the adversary challenge:
+
+> "Adversary challenge skipped: N findings, all ≤MEDIUM severity."
+
+Otherwise, proceed with the challenger launch below.
+
 > After the analysis phase completes, launch an independent adversary to challenge the findings.
 
 Launch a Task with the `audit-challenger` agent (allowedTools: [Read, Grep, Glob, Bash, WebSearch]):
