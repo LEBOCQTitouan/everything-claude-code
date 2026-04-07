@@ -360,7 +360,7 @@ Display the persisted file path for future access:
 
 > **Spec persisted at:** `docs/specs/YYYY-MM-DD-<slug>/spec.md`
 
-Then STOP. Say:
+If `continue_to_design` is true AND verdict was PASS: invoke `Skill("design")` to continue. Otherwise: STOP. Say:
 
 > **Run `/design` to continue.**
 

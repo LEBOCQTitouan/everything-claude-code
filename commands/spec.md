@@ -18,6 +18,9 @@ allowed-tools: [Read, Grep, Glob, Bash, Skill, AskUserQuestion]
 
 If `$ARGUMENTS` contains `--show-all`, strip the flag and skip all in-work filtering below (show all open items regardless of worktree or lock status). This is an escape hatch for false-positive filtering.
 
+### `--continue` flag
+Strip flag, preserve it. Pass `--continue` through to the delegated `/spec-*` command unchanged. This flag causes `/spec-*` to invoke `/design` automatically after spec PASS.
+
 ### Active Session Detection
 
 Before presenting the backlog picker, detect which items are currently being worked on:
