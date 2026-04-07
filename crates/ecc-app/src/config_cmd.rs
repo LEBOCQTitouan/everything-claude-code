@@ -177,3 +177,53 @@ mod tests {
         assert_eq!(level, LogLevel::Trace, "-vvv should resolve to Trace");
     }
 }
+
+/// Set a local-llm configuration key in the config store.
+///
+/// Supported keys: `local-llm.enabled`, `local-llm.provider`, `local-llm.base-url`,
+/// `local-llm.model-small`, `local-llm.model-medium`.
+pub fn set_local_llm(
+    store: &dyn ConfigStore,
+    key: &str,
+    value: &str,
+) -> Result<(), ConfigCmdError> {
+    let mut config = store
+        .load_global()
+        .map_err(|e| ConfigCmdError::Store(e.to_string()))?;
+
+    let llm = config
+        .local_llm
+        .get_or_insert_with(Default::default);
+
+    match key {
+        "local-llm.enabled" => {
+            let b = value
+                .parse::<bool>()
+                .map_err(|e| ConfigCmdError::InvalidLevel(format!("invalid bool: {e}")))?;
+            llm.enabled = Some(b);
+        }
+        "local-llm.provider" => {
+            llm.provider = Some(value.to_owned());
+        }
+        "local-llm.base-url" => {
+            llm.base_url = Some(value.to_owned());
+        }
+        "local-llm.model-small" => {
+            llm.model_small = Some(value.to_owned());
+        }
+        "local-llm.model-medium" => {
+            llm.model_medium = Some(value.to_owned());
+        }
+        other => {
+            return Err(ConfigCmdError::InvalidLevel(format!(
+                "Unknown local-llm key '{other}'. Valid keys: enabled, provider, base-url, model-small, model-medium"
+            )));
+        }
+    }
+
+    store
+        .save_global(&config)
+        .map_err(|e| ConfigCmdError::Store(e.to_string()))?;
+
+    Ok(())
+}
