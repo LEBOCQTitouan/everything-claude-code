@@ -21,6 +21,26 @@ pub enum ConfigError {
     Parse(String),
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn local_llm_config_defaults_to_none() {
+        let config = RawEccConfig::default();
+        assert_eq!(config.local_llm, None);
+    }
+
+    #[test]
+    fn local_llm_config_enabled_field() {
+        let config = LocalLlmConfig {
+            enabled: Some(true),
+            ..Default::default()
+        };
+        assert_eq!(config.enabled, Some(true));
+    }
+}
+
 /// Port trait for reading and writing ECC configuration.
 ///
 /// Production adapter: `FileConfigStore` in ecc-infra.
