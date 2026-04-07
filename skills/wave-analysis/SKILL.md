@@ -27,3 +27,26 @@ Before proceeding to Phase 3, display the wave plan to the user:
 - **All PCs overlap** (same file): each PC gets its own wave — fully sequential. Wave machinery is skipped.
 - **All PCs independent**: one wave containing all PCs (split into sub-batches of 4 if > 4).
 - **Single-PC implementation**: one wave with one PC — no overhead.
+
+## Same-File Batching
+
+After wave grouping, within each wave, identify PCs that share the same primary target file AND have no inter-PC dependency. These are candidates for **batched dispatch** — multiple PCs sent to a single tdd-executor invocation.
+
+### Independence Definition
+
+Two PCs are "independent" if neither references output artifacts (test files, implementation files, types) created by the other. Specifically:
+- PC-A's test file must not import or reference anything created by PC-B
+- PC-A's implementation must not depend on PC-B's implementation existing first
+- No shared mutable state between the two PCs' test or implementation files
+
+### Batch Identification
+
+For each wave:
+1. Group PCs by their primary `## Files to Modify` target
+2. Within each group, check pairwise independence
+3. Mark fully independent same-file groups as "batchable"
+4. Non-independent groups stay as separate sequential dispatches within the wave
+
+### Batch Limits
+
+Maximum 4 PCs per batch (same as wave concurrency cap). Larger groups are split into sub-batches.
