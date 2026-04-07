@@ -37,9 +37,9 @@ Per module: purpose, key exports (top 10), dependencies, dependents, links to AP
 
 From draft glossary: write one-sentence definitions, add cross-references, link to source files, separate domain vs infrastructure terms. Small: `docs/domain/glossary.md`. Large: `docs/glossary/` with categories.
 
-### Step 4: Changelog (changelog-gen skill)
+### Step 4: Changelog (via CLI + changelog-gen skill)
 
-Parse conventional commits from git log, group by version/time, rewrite as human-readable entries, highlight breaking changes. Last 100 commits or 6 months. Write to `CHANGELOG.md`.
+Run `ecc analyze changelog --since 6m` via Bash tool. If exit non-zero, emit error and abort step. Parse CLI output, apply `changelog-gen` skill: group by version/time, rewrite as human-readable entries, highlight breaking changes. Write to `CHANGELOG.md`.
 
 ### Step 5: Usage Examples
 
