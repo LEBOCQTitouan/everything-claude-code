@@ -187,6 +187,31 @@ mod tests {
     }
 
     #[test]
+    fn cache_hash_invalidation_returns_none_on_mismatch() {
+        let tmp = TempDir::new().unwrap();
+        let store = FileCacheStore::new(tmp.path().to_path_buf());
+
+        store.write("my-key", "audit findings", 3600, "abc123").unwrap();
+
+        let result = store.check_with_hash("my-key", "different_hash").unwrap();
+        assert!(result.is_none(), "expected None when hash does not match");
+    }
+
+    #[test]
+    fn cache_hash_match_returns_entry() {
+        let tmp = TempDir::new().unwrap();
+        let store = FileCacheStore::new(tmp.path().to_path_buf());
+
+        store.write("my-key", "audit findings", 3600, "abc123").unwrap();
+
+        let result = store.check_with_hash("my-key", "abc123").unwrap();
+        assert!(result.is_some(), "expected Some(entry) when hash matches");
+        let entry = result.unwrap();
+        assert_eq!(entry.value, "audit findings");
+        assert_eq!(entry.content_hash, "abc123");
+    }
+
+    #[test]
     fn write_failure_returns_error() {
         // Create a regular file where the cache_dir should be — create_dir_all will fail.
         let tmp = TempDir::new().unwrap();
