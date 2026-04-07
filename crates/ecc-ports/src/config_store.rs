@@ -1,5 +1,20 @@
 //! Port trait for persistent ECC configuration.
 
+/// Configuration for local LLM offloading via Ollama MCP.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct LocalLlmConfig {
+    /// Whether local LLM delegation is enabled (kill switch).
+    pub enabled: Option<bool>,
+    /// Provider name (e.g., "ollama").
+    pub provider: Option<String>,
+    /// Base URL for the local LLM API (e.g., "http://localhost:11434").
+    pub base_url: Option<String>,
+    /// Model identifier for small (7B) tasks.
+    pub model_small: Option<String>,
+    /// Model identifier for medium (13B) tasks.
+    pub model_medium: Option<String>,
+}
+
 /// Raw configuration values as stored in config.toml.
 ///
 /// Uses `Option<String>` for log_level so that ecc-ports remains
@@ -8,6 +23,8 @@
 pub struct RawEccConfig {
     /// Raw log level string (e.g. "info", "debug").
     pub log_level: Option<String>,
+    /// Local LLM offloading configuration.
+    pub local_llm: Option<LocalLlmConfig>,
 }
 
 /// Errors that can occur when loading or saving configuration.
