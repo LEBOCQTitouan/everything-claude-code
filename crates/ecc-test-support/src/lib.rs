@@ -5,6 +5,7 @@
 //! [`BufferedTerminal`], [`ScriptedInput`]) enabling fully deterministic,
 //! I/O-free testing of application use cases.
 
+pub mod in_memory_cache_store;
 pub mod buffered_terminal;
 pub mod in_memory_config_store;
 pub mod in_memory_cost_store;
