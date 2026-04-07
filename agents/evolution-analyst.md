@@ -24,8 +24,8 @@ Mines git history for evolutionary health risks: hotspots, co-change coupling, b
 ### 1. Detect Codebase Size
 Glob source files (exclude node_modules/vendor/dist/build/.git). <5: skip ("too small"), 5-50: top 5, 50-500: top 20, 500+: top 50 or prompt.
 
-### 2. Change Frequency
-`git log --since="<window> days ago" --format='%H' --name-only -- <scope>`. Count per file, normalize 0-1.
+### 2. Change Frequency (via CLI)
+Run `ecc analyze hotspots --top N --since <window>d` via Bash tool. If exit non-zero, report as `[EVOLUTION-ERR]` finding and continue. Parse output for per-file change counts, normalize 0-1.
 
 ### 3. Complexity Approximation
 Top changed files: count branching keywords (`if|else|switch|case|for|while|catch|&&|||`). `density = keywords / total_lines`.
@@ -33,11 +33,11 @@ Top changed files: count branching keywords (`if|else|switch|case|for|while|catc
 ### 4. Hotspot Scoring
 `hotspot = complexity_density * change_ratio`. Sort descending, take top N.
 
-### 5. Co-Change Coupling
-From commit→files mapping: compute co-change ratio per file pair. Filter >0.3. Flag cross-module pairs higher.
+### 5. Co-Change Coupling (via CLI)
+Run `ecc analyze coupling --threshold 0.3 --since <window>d` via Bash tool. If exit non-zero, report as `[EVOLUTION-ERR]` finding and continue. Parse output for file pairs and ratios. Flag cross-module pairs higher.
 
-### 6. Bus Factor
-`git shortlog -sn --since="<window> days ago" -- <file>`. Flag files/modules with ≤1 active contributor.
+### 6. Bus Factor (via CLI)
+Run `ecc analyze bus-factor --top N --since <window>d` via Bash tool. If exit non-zero, report as `[EVOLUTION-ERR]` finding and continue. Flag files/modules with ≤1 active contributor.
 
 ### 7. Complexity Trends
 Top 5 hotspots: last 10 commits, compute complexity at each, determine trend (growing/stable/shrinking).
