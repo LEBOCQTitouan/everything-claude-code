@@ -17,7 +17,7 @@ Run a single-shot quality gate on the current codebase.
 - `--fix` — auto-fix lint/format issues
 - `--mutation` — include diff-scoped mutation testing (opt-in, slow)
 
-> **Tracking**: Create a TodoWrite checklist for this command's steps. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+> **Tracking**: Create a TodoWrite checklist for this command's steps.
 
 TodoWrite items:
 - "Step 1: Build"

@@ -15,7 +15,7 @@ Comprehensive audit across all domains with cross-domain correlation. Delegates 
 
 Scope: $ARGUMENTS (or full codebase if none provided)
 
-> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+> **Tracking**: Create a TodoWrite checklist for this command's phases.
 
 TodoWrite items:
 - "Parse arguments"

@@ -32,7 +32,7 @@ If already in a worktree (from a prior `/spec-*` call in this session): skip —
 5. Extract `concern` and `feature` from `state.json` for the solution header
 6. **Re-entry**: If `phase` is `"solution"`, read existing TodoWrite items via TodoRead to resume progress
 
-> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+> **Tracking**: Create a TodoWrite checklist for this command's phases.
 
 TodoWrite items:
 - "Phase 0: State Validation"

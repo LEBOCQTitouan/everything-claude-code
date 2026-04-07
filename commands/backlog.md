@@ -25,7 +25,7 @@ If no subcommand is given, treat the input as `add`.
 
 ## What This Command Does
 
-> **Tracking**: Create a TodoWrite checklist for the backlog add workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+> **Tracking**: Create a TodoWrite checklist for the backlog add workflow.
 
 TodoWrite items:
 - "Challenge idea"

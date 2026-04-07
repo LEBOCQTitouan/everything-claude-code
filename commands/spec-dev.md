@@ -38,7 +38,7 @@ Persist detected commands to state.json and create campaign manifest:
 
 4. **Campaign init**: Run `!ecc-workflow campaign init docs/specs/<spec-dir>` to create campaign.md for incremental grill-me decision persistence.
 
-> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+> **Tracking**: Create a TodoWrite checklist for this command's phases.
 
 TodoWrite items:
 - "Phase 0: Project Detection"

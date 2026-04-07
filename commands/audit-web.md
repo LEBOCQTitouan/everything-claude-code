@@ -15,7 +15,7 @@ Scope: $ARGUMENTS (or all dimensions if none provided)
 
 **STOP. DO NOT modify source code.** This is a read-only audit.
 
-> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+> **Tracking**: Create a TodoWrite checklist for this command's phases.
 
 TodoWrite items:
 - "Phase 0: GUIDED SETUP — load or create audit profile"

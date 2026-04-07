@@ -40,7 +40,6 @@ Create a TodoWrite checklist for the 8 interview stages:
 7. Prior Art
 8. Failure Modes
 
-If TodoWrite is unavailable, graceful degradation applies — proceed without tracking. Do not block.
 
 ## Phase 4: Interview Loop
 

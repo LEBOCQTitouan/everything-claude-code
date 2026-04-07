@@ -4,7 +4,7 @@ Meta-steering for how ECC agents, commands, skills, and hooks should be built. W
 
 ## Agent Conventions
 
-- All agents with 4+ step workflows MUST include TodoWrite with graceful degradation: "If TodoWrite is unavailable, proceed without tracking"
+- All agents with 4+ step workflows SHOULD use TodoWrite for tracking. Graceful degradation is implicit — if unavailable, proceed without tracking (do not repeat this inline)
 - All agents that spawn subagents MUST specify `allowedTools` on every spawn
 - All agents MUST have frontmatter: `name`, `description`, `tools`, `model`, `effort`
 - Agent `effort` field (low, medium, high, max) should match model tier: haiku=low, sonnet=medium/high, opus=high/max

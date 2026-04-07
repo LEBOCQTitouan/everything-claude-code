@@ -27,7 +27,6 @@ If multiple language markers are found, ask the user which language to use ("Whi
 
 ## Phase 3: Progress Tracking
 
-Create a TodoWrite checklist to track progress through each phase of the workflow. If TodoWrite is unavailable, proceed without tracking — do not block on it.
 
 ## Phase 4: Parallel Sub-Agent Dispatch
 

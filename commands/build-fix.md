@@ -10,7 +10,7 @@ description: Incrementally fix build and type errors with minimal, safe changes.
 
 Incrementally fix build and type errors with minimal, safe changes.
 
-> **Tracking**: Create a TodoWrite checklist for the build-fix workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+> **Tracking**: Create a TodoWrite checklist for the build-fix workflow.
 
 TodoWrite items:
 - "Step 0: Prompt Refinement"
