@@ -15,9 +15,9 @@ pub struct RustylineInput {
 
 impl RustylineInput {
     /// Create a new RustylineInput with optional history file path.
-    pub fn new(history_path: Option<PathBuf>) -> Result<Self, String> {
-        let mut editor =
-            DefaultEditor::new().map_err(|e| format!("Failed to create editor: {e}"))?;
+    pub fn new(history_path: Option<PathBuf>) -> Result<Self, TerminalError> {
+        let mut editor = DefaultEditor::new()
+            .map_err(|e| TerminalError::Io(format!("Failed to create editor: {e}")))?;
 
         if let Some(ref path) = history_path {
             // Ensure parent dir exists
