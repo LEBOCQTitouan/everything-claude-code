@@ -4,6 +4,7 @@ description: Generates or updates flow markdown files in docs/cartography/flows/
 tools: ["Read", "Write", "Edit", "Grep", "Glob"]
 model: haiku
 effort: low
+local-eligible: true
 ---
 # Cartography Flow Generator
 
@@ -100,3 +101,11 @@ Write the resulting content to `docs/cartography/flows/<slug>.md`.
 - Preserve manual content outside section markers exactly
 - The Mermaid diagram MUST be syntactically valid (use `flowchart` diagram type)
 - Update `CARTOGRAPHY-META` last_updated to today's date on every write
+
+## Local LLM Delegation
+
+> See `skills/local-llm-delegation/SKILL.md` for the full pattern.
+
+**Delegated subtask**: schema-fill of flow markdown sections
+
+If `ollama_generate` MCP tool is available, delegate the schema-fill of flow markdown sections to the local model (`model_small` / 7B). Validate the output matches the expected schema. If validation fails after 2 retries, fall back to executing the task directly on the hosted model. If the tool is unavailable, execute directly — no error.

@@ -5,6 +5,7 @@ tools: ["Read", "Write", "Edit", "Grep", "Glob", "Bash"]
 model: haiku
 effort: low
 skills: ["cartography-processing"]
+local-eligible: true
 ---
 # Cartographer
 
@@ -65,3 +66,11 @@ The doc-orchestrator handles committing and delta archiving — do NOT run git o
 - Log failures to stderr but never block session continuation
 - If no targets found, return a success envelope with empty content
 - All file paths must be relative to `docs/cartography/`, never `..` traversal
+
+## Local LLM Delegation
+
+> See `skills/local-llm-delegation/SKILL.md` for the full pattern.
+
+**Delegated subtask**: routing/dispatch decision from delta JSON
+
+If `ollama_generate` MCP tool is available, delegate the routing/dispatch decision from delta JSON to the local model (`model_small` / 7B). Validate the output matches the expected schema. If validation fails after 2 retries, fall back to executing the task directly on the hosted model. If the tool is unavailable, execute directly — no error.

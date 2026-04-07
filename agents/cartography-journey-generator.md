@@ -4,6 +4,7 @@ description: Generates or updates journey markdown files in docs/cartography/jou
 tools: ["Read", "Write", "Edit", "Grep", "Glob"]
 model: haiku
 effort: low
+local-eligible: true
 ---
 # Cartography Journey Generator
 
@@ -90,3 +91,11 @@ Write the resulting content to `docs/cartography/journeys/<slug>.md`.
 - Preserve manual content outside section markers exactly
 - The Mermaid diagram MUST be syntactically valid (use `journey` diagram type)
 - Update `CARTOGRAPHY-META` last_updated to today's date on every write
+
+## Local LLM Delegation
+
+> See `skills/local-llm-delegation/SKILL.md` for the full pattern.
+
+**Delegated subtask**: schema-fill of journey markdown sections
+
+If `ollama_generate` MCP tool is available, delegate the schema-fill of journey markdown sections to the local model (`model_small` / 7B). Validate the output matches the expected schema. If validation fails after 2 retries, fall back to executing the task directly on the hosted model. If the tool is unavailable, execute directly — no error.
