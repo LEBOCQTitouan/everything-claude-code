@@ -205,7 +205,7 @@ fn expand_tracking_field(
     }
 
     // Find insertion point: before first "TodoWrite items:" line
-    let mut lines: Vec<&str> = content.lines().collect();
+    let lines: Vec<&str> = content.lines().collect();
     let insert_idx = lines
         .iter()
         .position(|l| l.trim().starts_with("TodoWrite items:"));
