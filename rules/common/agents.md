@@ -1,14 +1,7 @@
 # Agent Orchestration
 
-Use `Agent` tool to spawn subagents. Always specify `allowedTools`.
-Run independent agents in parallel — never sequentially without cause.
+Spawn via `Agent` tool. Always set `allowedTools`. Run independent agents in parallel.
 
-| Command | Agents Used |
-|---------|------------|
-| `/spec` | planner, tdd-guide, architect, security-reviewer |
-| `/build-fix` | build-error-resolver |
-| `/verify` | code-reviewer, arch-reviewer, language reviewers |
-| `/e2e` | e2e-runner |
-| `/doc-suite` | doc-orchestrator pipeline |
+Key commands → agents: `/spec` (planner, architect), `/verify` (code-reviewer, arch-reviewer), `/build-fix` (build-error-resolver), `/doc-suite` (doc-orchestrator).
 
-Full agent listing: `~/.claude/agents/`
+Full listing: system-reminder or `~/.claude/agents/`.
