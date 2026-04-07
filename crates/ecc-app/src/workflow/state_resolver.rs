@@ -349,6 +349,90 @@ mod tests {
 
     // --- PC-034: Concurrent migration serialization test ---
 
+    /// PC-001: Anchor file at `.claude/workflow/.state-dir` with valid absolute path
+    /// that exists — resolve_state_dir() returns that path directly, no warnings.
+    #[test]
+    fn anchor_file_overrides_git_resolution() {
+        let env = make_env(Some("/project"), None);
+        let git = MockGitInfo::worktree("/project/.git/worktrees/feature-x");
+        let fs = InMemoryFileSystem::new();
+
+        // The anchor directory must exist in the FS
+        let anchor_dir = PathBuf::from("/project/.git/worktrees/feature-x/ecc-workflow");
+        fs.create_dir_all(&anchor_dir).unwrap();
+
+        // Write the anchor file
+        fs.write(
+            &PathBuf::from("/project/.claude/workflow/.state-dir"),
+            "/project/.git/worktrees/feature-x/ecc-workflow\n",
+        )
+        .unwrap();
+
+        let (dir, warnings) = resolve_state_dir(&env, &git, &fs);
+
+        assert_eq!(dir, anchor_dir, "anchor should override git resolution");
+        assert!(warnings.is_empty(), "no warnings expected: {warnings:?}");
+    }
+
+    /// PC-003: Anchor file exists but contains a relative path — invalid.
+    /// resolve_state_dir() must fall back to git resolution and emit a warning
+    /// containing ".state-dir".
+    #[test]
+    fn corrupt_anchor_falls_back() {
+        let env = make_env(Some("/project"), None);
+        let git = MockGitInfo::repo("/project/.git");
+        let fs = InMemoryFileSystem::new();
+
+        // Write anchor with relative (invalid) path
+        fs.write(
+            &PathBuf::from("/project/.claude/workflow/.state-dir"),
+            "not-absolute-path\n",
+        )
+        .unwrap();
+
+        let (dir, warnings) = resolve_state_dir(&env, &git, &fs);
+
+        // Must fall back to git resolution
+        assert_eq!(
+            dir,
+            PathBuf::from("/project/.git/ecc-workflow"),
+            "should fall back to git resolution"
+        );
+        assert!(
+            warnings.iter().any(|w| w.message.contains(".state-dir")),
+            "expected warning mentioning .state-dir, got: {warnings:?}"
+        );
+    }
+
+    /// PC-004: Anchor file contains an absolute path that does not exist on disk.
+    /// resolve_state_dir() must fall back to git resolution and emit a warning.
+    #[test]
+    fn stale_anchor_falls_back() {
+        let env = make_env(Some("/project"), None);
+        let git = MockGitInfo::repo("/project/.git");
+        let fs = InMemoryFileSystem::new();
+
+        // Write anchor with nonexistent absolute path
+        fs.write(
+            &PathBuf::from("/project/.claude/workflow/.state-dir"),
+            "/nonexistent/path/ecc-workflow\n",
+        )
+        .unwrap();
+
+        let (dir, warnings) = resolve_state_dir(&env, &git, &fs);
+
+        // Must fall back to git resolution
+        assert_eq!(
+            dir,
+            PathBuf::from("/project/.git/ecc-workflow"),
+            "should fall back to git resolution"
+        );
+        assert!(
+            !warnings.is_empty(),
+            "expected at least one warning for stale anchor"
+        );
+    }
+
     /// PC-034: Two processes race on old→new migration; exactly one copy
     /// occurs, no corruption. Simulated sequentially since InMemoryFileSystem
     /// is single-threaded, but validates the re-check logic:
