@@ -9,6 +9,8 @@ skills: ["diagram-generation"]
 
 # diagram-updater
 
+> **CLI pre-step:** Run `ecc diagram triggers --changed-files <list> --json` first. If `{"triggers":[]}` (empty), skip diagram generation entirely — no triggers fired. Only invoke LLM Mermaid generation when triggers are non-empty.
+
 Documentation specialist generating/updating Mermaid diagrams for features implemented during TDD loops. Invoked by `/implement` Phase 7.5.
 
 ## Input

@@ -8,6 +8,8 @@ skills: ["doc-quality-scoring", "doc-drift-detector", "doc-gap-analyser"]
 tracking: todowrite
 ---
 
+> **CLI tools available:** Use `ecc docs coverage --scope <path> --json` for doc comment coverage and `ecc validate claude-md --counts` for CLAUDE.md numeric claim validation. These replace mechanical counting steps.
+
 # Documentation Validator
 
 Validates existing documentation against actual code. Scores quality, detects contradictions, finds duplicates, verifies code examples.

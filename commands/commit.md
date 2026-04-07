@@ -42,6 +42,8 @@ Run `git status --porcelain` to analyze the working tree:
 
 ## Phase 3: Atomic Commit Enforcement
 
+> **CLI pre-check:** Run `ecc commit lint --staged --json` first. If verdict is `"warn"`, present the concerns to the user. If `"pass"`, skip to Phase 4.
+
 Analyze the staged diff (`git diff --cached`) for concern separation:
 
 1. **Single concern**: If all changes relate to a single logical concern (e.g., one feature, one bug fix, one refactor), proceed without warning

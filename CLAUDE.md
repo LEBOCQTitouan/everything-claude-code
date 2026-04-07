@@ -37,6 +37,12 @@ cargo clippy -- -D warnings          Lint with zero warnings
 cargo build --release                Build release binary
 ecc workflow init|transition|status  Workflow state machine
 ecc validate <target>                Validate agents|commands|hooks|skills|rules|teams
+ecc validate claude-md --counts      Cross-check CLAUDE.md numeric claims
+ecc drift check [--json]             Compute spec-vs-implementation drift
+ecc docs update-module-summary       Update MODULE-SUMMARIES.md entries
+ecc docs coverage --scope <path>     Doc comment coverage per module
+ecc diagram triggers --changed-files Evaluate diagram generation heuristics
+ecc commit lint --staged             Validate atomic commit concerns
 ecc hook <id> [profiles]             Run a hook by ID
 ecc backlog next-id|reindex          Backlog operations
 ecc worktree gc|status               Worktree lifecycle
