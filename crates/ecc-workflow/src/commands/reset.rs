@@ -33,10 +33,10 @@ pub fn run(force: bool, project_dir: &Path, state_dir: &Path) -> WorkflowOutput 
 
         // Best-effort: delete .state-dir anchor (AC-001.4, AC-001.9)
         let anchor_path = project_dir.join(".claude/workflow/.state-dir");
-        if let Err(e) = std::fs::remove_file(&anchor_path) {
-            if e.kind() != std::io::ErrorKind::NotFound {
-                tracing::warn!("Failed to delete .state-dir anchor: {e}");
-            }
+        if let Err(e) = std::fs::remove_file(&anchor_path)
+            && e.kind() != std::io::ErrorKind::NotFound
+        {
+            tracing::warn!("Failed to delete .state-dir anchor: {e}");
         }
 
         // Write minimal Idle state
