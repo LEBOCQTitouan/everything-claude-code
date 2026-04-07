@@ -41,6 +41,7 @@ impl From<ConfigToml> for RawEccConfig {
     fn from(t: ConfigToml) -> Self {
         RawEccConfig {
             log_level: t.log_level,
+            local_llm: None,
         }
     }
 }
@@ -119,6 +120,7 @@ mod tests {
         let store = store_with_tmp(&tmp);
         let expected = RawEccConfig {
             log_level: Some("debug".to_string()),
+            local_llm: None,
         };
         store.save_global(&expected).unwrap();
         let loaded = store.load_global().unwrap();
@@ -142,6 +144,7 @@ mod tests {
         let store = FileConfigStore::new(global_dir.clone(), None);
         let config = RawEccConfig {
             log_level: Some("info".to_string()),
+            local_llm: None,
         };
         store.save_global(&config).unwrap();
         assert!(global_dir.exists());
@@ -155,5 +158,52 @@ mod tests {
         let store = store_with_tmp(&tmp);
         let result = store.load_global();
         assert!(matches!(result, Err(ConfigError::Parse(_))));
+    }
+
+    #[test]
+    fn parses_local_llm_section() {
+        let tmp = TempDir::new().unwrap();
+        let config_path = tmp.path().join("config.toml");
+        let toml_content = "[local_llm]\nenabled = true\nprovider = \"ollama\"\nbase_url = \"http://localhost:11434\"\nmodel_small = \"mistral:7b\"\nmodel_medium = \"qwen2.5:14b\"\n";
+        std::fs::write(&config_path, toml_content.as_bytes()).unwrap();
+        let store = store_with_tmp(&tmp);
+        let cfg = store.load_global().unwrap();
+        let llm = cfg.local_llm.expect("local_llm must be Some");
+        assert_eq!(llm.enabled, Some(true));
+        assert_eq!(llm.provider, Some("ollama".to_string()));
+        assert_eq!(llm.base_url, Some("http://localhost:11434".to_string()));
+        assert_eq!(llm.model_small, Some("mistral:7b".to_string()));
+        assert_eq!(llm.model_medium, Some("qwen2.5:14b".to_string()));
+    }
+
+    #[test]
+    fn round_trips_local_llm_config() {
+        use ecc_ports::config_store::LocalLlmConfig;
+        let tmp = TempDir::new().unwrap();
+        let store = store_with_tmp(&tmp);
+        let expected = RawEccConfig {
+            log_level: Some("info".to_string()),
+            local_llm: Some(LocalLlmConfig {
+                enabled: Some(true),
+                provider: Some("ollama".to_string()),
+                base_url: Some("http://localhost:11434".to_string()),
+                model_small: Some("mistral:7b".to_string()),
+                model_medium: Some("qwen2.5:14b".to_string()),
+            }),
+        };
+        store.save_global(&expected).unwrap();
+        let loaded = store.load_global().unwrap();
+        assert_eq!(loaded, expected);
+    }
+
+    #[test]
+    fn missing_local_llm_section_defaults_to_none() {
+        let tmp = TempDir::new().unwrap();
+        let config_path = tmp.path().join("config.toml");
+        std::fs::write(&config_path, "log_level = \"warn\"\n".as_bytes()).unwrap();
+        let store = store_with_tmp(&tmp);
+        let cfg = store.load_global().unwrap();
+        assert_eq!(cfg.log_level, Some("warn".to_string()));
+        assert!(cfg.local_llm.is_none());
     }
 }
