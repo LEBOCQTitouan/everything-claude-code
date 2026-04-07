@@ -13,7 +13,7 @@
 | BL-009 | Add negative examples to planner agent | 2 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-010 | Create ubiquitous-language skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-011 | Create grill-me skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
-| BL-012 | Create write-a-prd skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-012 | Create write-a-prd skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-013 | Create interview-me skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-014 | Create design-an-interface skill | 3 | HIGH | /spec dev | implemented | 2026-03-20 |
 | BL-015 | Create request-refactor-plan skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
