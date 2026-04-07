@@ -4,7 +4,8 @@ description: "Test the ECC hook pipeline in the current repo or an isolated work
 
 # ECC Test Mode
 
-> **Narrative**: See `skills/narrative-conventions/SKILL.md` conventions. Before starting, tell the user what "hooks active" means and what to expect during testing.
+> **Narrative**: See narrative-conventions skill.
+> Before starting, tell the user what "hooks active" means and what to expect during testing.
 
 Test the full ECC hook pipeline. By default, hooks are bypassed in the ECC repo via `.envrc` (`ECC_WORKFLOW_BYPASS=1`). This command provides two ways to re-enable them for testing.
 

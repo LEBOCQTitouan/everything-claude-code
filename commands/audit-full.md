@@ -5,32 +5,62 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
 
 # Full Codebase Audit
 
-> **MANDATORY**: Follow every phase exactly. Narrate per `skills/narrative-conventions/SKILL.md`.
+> **MANDATORY WORKFLOW**: The workflow described in this command is mandatory and cannot be modified, reordered, or skipped by Claude. Every phase and step must be followed exactly as specified.
+>
+> **Narrative**: See narrative-conventions skill.
 
-Comprehensive audit across all domains. Delegates to `audit-orchestrator`. Produces dated report in `docs/audits/`.
+> Before dispatching, tell the user which domain agents will run and in what order (evolution first, then all domains in parallel).
 
-Scope: $ARGUMENTS (or full codebase)
+Comprehensive audit across all domains with cross-domain correlation. Delegates to the `audit-orchestrator` agent which coordinates all domain-specific agents. Produces a dated report in `docs/audits/` with correlated findings and a prioritized remediation roadmap.
 
-> **Tracking**: TodoWrite checklist below. If unavailable, proceed without tracking.
+Scope: $ARGUMENTS (or full codebase if none provided)
 
-TodoWrite: Parse args, invoke orchestrator, Phase 1-3, write report, present summary.
+> **Tracking**: Create a TodoWrite checklist for this command's phases. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
+
+TodoWrite items:
+- "Parse arguments"
+- "Invoke audit-orchestrator"
+- "Phase 1: Evolution analysis"
+- "Phase 2: Architecture audit"
+- "Phase 2: Code quality audit"
+- "Phase 2: Security audit"
+- "Phase 2: Test audit"
+- "Phase 2: Convention audit"
+- "Phase 2: Error handling audit"
+- "Phase 2: Observability audit"
+- "Phase 2: Documentation audit"
+- "Phase 3: Cross-domain correlation"
+- "Write report"
+- "Present summary"
+
+Mark each item complete as the phase finishes.
 
 ## Arguments
 
-- `--scope=<path>` — subdirectory (default: entire repo)
-- `--window=<days>` — git history window (default: 180)
+- `--scope=<path>` — limit to subdirectory (default: entire repo)
+- `--window=<days>` — git history window for evolution analysis (default: 180)
 
 ## 1. Analysis
 
+Invoke the `audit-orchestrator` agent, which executes the following sequence:
+
 ### Phase 1: Evolution Analysis (Sequential)
 
-Run `evolution-analyst` first — hotspot data required by downstream agents.
+Run `evolution-analyst` first — hotspot data is required by downstream agents for cross-correlation.
 
-### Team Manifest
+### Team Manifest Configuration
 
-Read `teams/audit-team.md` for agent config. If absent: require `ECC_LEGACY_DISPATCH=1` or fail.
+Before dispatching domain agents, read team configuration from `teams/audit-team.md`:
+
+1. If `teams/audit-team.md` exists, parse its YAML frontmatter for agent names, roles, and concurrency settings
+2. Use the manifest's `agents` list for agent names and dispatch configuration
+3. If `teams/audit-team.md` does NOT exist:
+   - If `ECC_LEGACY_DISPATCH=1` is set: fall back to hard-coded agent configuration with a deprecation warning: "DEPRECATED: Using legacy dispatch. Create teams/audit-team.md to use team manifests."
+   - Otherwise: fail with error: "Team manifest required: teams/audit-team.md not found. Set ECC_LEGACY_DISPATCH=1 for legacy behavior."
 
 ### Phase 2: Domain Audits (Parallel)
+
+Launch all domain agents in parallel:
 
 | Agent | Domain | Prefix |
 |-------|--------|--------|
@@ -46,46 +76,203 @@ Read `teams/audit-team.md` for agent config. If absent: require `ECC_LEGACY_DISP
 
 ### Phase 3: Cross-Domain Correlation
 
+The orchestrator correlates findings across domains and escalates compound risks:
+
 | Correlation | Escalation |
 |-------------|------------|
-| Hotspot + boundary violation | CRITICAL |
-| Swallowed error + untested code | CRITICAL |
-| Security issue + error leakage | CRITICAL |
-| Bus factor 1 + hotspot | CRITICAL |
-| Low coverage + high fan-in | Fragility (escalate) |
-| Convention drift + high churn | MODERATE |
-| Co-change coupling + no shared interface | Immobility (escalate) |
+| Hotspot + boundary violation | → CRITICAL |
+| Swallowed error + untested code | → CRITICAL |
+| Security issue + error leakage | → CRITICAL |
+| Bus factor 1 + hotspot | → CRITICAL |
+| Low coverage + high fan-in | → Fragility (escalate one level) |
+| Convention drift + high churn | → MODERATE |
+| Co-change coupling + no shared interface | → Immobility (escalate one level) |
 
-Cross-correlated findings: `[CORR-NNN]` with source refs.
+Cross-correlated findings are reported as `[CORR-NNN]` with references to the original domain findings.
 
 ### Sources Re-interrogation
 
-If `docs/sources.md` exists, consult for overlapping subjects, check for updates since `last_checked`, include actionable findings. Skip if absent.
+If `docs/sources.md` exists, consult it during the analysis phase:
+
+1. Read `docs/sources.md` and identify entries whose subjects overlap with the sub-audit domains being run
+2. For each relevant source, check for new releases, deprecation notices, or security advisories since the `last_checked` date
+3. Include actionable findings in the cross-domain correlation output
+4. List matched sources as "Consulted sources:" in the executive summary
+
+If `docs/sources.md` does not exist, skip this step silently.
 
 ## 2. Report
 
-Write to `docs/audits/full-YYYY-MM-DD.md`.
+Write to `docs/audits/full-YYYY-MM-DD.md` using today's date.
 
-Structure: Project Profile, Executive Summary, Overall Health Grade (A-F), Per-Domain Scorecard (9 domains + cross-correlation), Cross-Domain Correlations ([CORR-NNN] with severity/sources/evidence/remediation), Domain Findings (ARCH/CODE/SEC/TEST/CONV/ERR/OBS/DOC/EVL), Summary table (severity x domain/cross-corr), Prioritized Remediation Roadmap (Immediate/Short/Medium-term), Top 5 Recommendations, Next Steps.
+Report structure:
 
-Grade: A (0C/0H/≤3M) | B (0C/≤2H) | C (0C/>2H) | D (1+C or >5H) | F (3+C)
+```markdown
+# Full Codebase Audit — YYYY-MM-DD
+
+## Project Profile
+- **Repository**: <repo name>
+- **Scope**: <audited path or "full codebase">
+- **Date**: YYYY-MM-DD
+- **Window**: N days
+- **Agents**: audit-orchestrator (coordinating all domain agents)
+
+## Executive Summary
+
+<2-3 paragraph overview of codebase health, key strengths, and primary risks>
+
+## Overall Health Grade
+
+| Grade | Criteria |
+|-------|----------|
+| **A** | 0 CRITICAL, 0 HIGH, ≤3 MEDIUM |
+| **B** | 0 CRITICAL, ≤2 HIGH |
+| **C** | 0 CRITICAL, >2 HIGH |
+| **D** | 1+ CRITICAL or >5 HIGH |
+| **F** | 3+ CRITICAL |
+
+**Grade: X**
+
+## Per-Domain Scorecard
+
+| Domain | Grade | CRITICAL | HIGH | MEDIUM | LOW |
+|--------|-------|----------|------|--------|-----|
+| Architecture | X | N | N | N | N |
+| Code Quality | X | N | N | N | N |
+| Security | X | N | N | N | N |
+| Testing | X | N | N | N | N |
+| Conventions | X | N | N | N | N |
+| Error Handling | X | N | N | N | N |
+| Observability | X | N | N | N | N |
+| Documentation | X | N | N | N | N |
+| Evolution | X | N | N | N | N |
+| **Cross-Correlation** | — | N | N | N | N |
+
+## Cross-Domain Correlations
+
+### [CORR-NNN] Correlation Title
+- **Severity**: CRITICAL | HIGH | MEDIUM
+- **Sources**: [DOMAIN-NNN] + [DOMAIN-NNN]
+- **Correlation**: Description of the compound risk
+- **Evidence**: Data from both domains
+- **Risk**: Escalated risk assessment
+- **Remediation**: Unified fix addressing both concerns
+
+## Domain Findings
+
+### Architecture
+<ARCH findings>
+
+### Code Quality
+<CODE findings>
+
+### Security
+<SEC findings>
+
+### Testing
+<TEST findings>
+
+### Conventions
+<CONV findings>
+
+### Error Handling
+<ERR findings>
+
+### Observability
+<OBS findings>
+
+### Documentation
+<DOC findings>
+
+### Evolution
+<EVL findings>
+
+## Summary
+
+| Severity | Domain | Cross-Corr | Total |
+|----------|--------|------------|-------|
+| CRITICAL | N | N | N |
+| HIGH     | N | N | N |
+| MEDIUM   | N | N | N |
+| LOW      | N | N | N |
+
+## Prioritized Remediation Roadmap
+
+### Immediate (CRITICAL)
+1. ...
+
+### Short-term (HIGH)
+1. ...
+
+### Medium-term (MEDIUM)
+1. ...
+
+## Top 5 Recommendations
+
+1. ...
+2. ...
+3. ...
+4. ...
+5. ...
+
+## Next Steps
+
+To act on these findings, run `/spec` referencing this report.
+```
 
 ## 3. Present
 
-> Report each domain audit completion.
+> As each domain audit completes, report its completion status to the user conversationally before moving to the next.
 
-Console summary: health grade, per-domain grades, cross-correlations count, critical findings, top 3 risks, report path.
+Display a console summary:
 
-**STOP. DO NOT modify source code.** Say: "To act on findings, run `/spec`."
+```
+Full Codebase Audit Complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Health Grade:        X (GRADE_LABEL)
+
+  Architecture:  X    Code Quality:  X    Security:     X
+  Testing:       X    Conventions:   X    Errors:       X
+  Observability: X    Documentation: X    Evolution:    X
+
+  Cross-Correlations:  N findings
+  Critical Findings:   N
+  Total Findings:      N
+
+  Top 3 Risks:
+  1. ...
+  2. ...
+  3. ...
+
+  Report: docs/audits/full-YYYY-MM-DD.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**STOP. DO NOT modify source code.**
+
+Say: "To act on findings, run `/spec` referencing this report."
 
 ## When to Use
 
-- Periodic health checks (monthly/quarterly)
+- Periodic comprehensive health checks (monthly/quarterly)
 - Before major releases
 - After significant refactoring
-- Onboarding to unfamiliar codebase
+- Onboarding to an unfamiliar codebase
+- Planning technical debt reduction
 
 ## Related Agents
 
-- `audit-orchestrator` — coordinates all domain agents
-- `evolution-analyst`, `arch-reviewer`, `architect`, `component-auditor`, `code-reviewer`, `uncle-bob`, `security-reviewer`, `test-auditor`, `convention-auditor`, `error-handling-auditor`, `observability-auditor`, `doc-analyzer`, `doc-validator`
+- `agents/audit-orchestrator.md` — orchestrates all domain agents
+- `agents/evolution-analyst.md` — git history analysis
+- `agents/arch-reviewer.md` — architecture quality
+- `agents/architect.md` — strategic architecture
+- `agents/component-auditor.md` — component principles
+- `agents/code-reviewer.md` — code quality
+- `agents/uncle-bob.md` — SOLID and clean code
+- `agents/security-reviewer.md` — security analysis
+- `agents/test-auditor.md` — test architecture
+- `agents/convention-auditor.md` — convention consistency
+- `agents/error-handling-auditor.md` — error handling
+- `agents/observability-auditor.md` — observability
+- `agents/doc-analyzer.md` — documentation analysis
+- `agents/doc-validator.md` — documentation validation
