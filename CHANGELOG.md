@@ -20,6 +20,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-126 Token Optimization Wave 3 — 6 CLI Commands**: Added `ecc drift check`, `ecc docs update-module-summary`, `ecc docs coverage`, `ecc diagram triggers`, `ecc commit lint --staged`, `ecc validate claude-md --counts`. Each replaces mechanical agent work with compiled binary. 33 domain tests + 11 app tests. New domain modules: drift/, docs/ (coverage, module_summary, diagram_triggers, claude_md, commit_lint).
+
 - **Harness reliability metrics instrumentation (BL-106)**: Wired existing metrics infrastructure to 4 execution paths: hook dispatch (HookExecution events with duration, success/failure), workflow transitions (PhaseTransition events with from/to phases), agent spawns (AgentSpawn events with failure detection from $.error/$.exit_code, retry_count parsing), and commit gates (CommitGate events from quality_gate hook and `ecc metrics record-gate` CLI). Added `--json` and `--trend` flags to `ecc metrics summary`, cross-session trend reporting with mirror-window comparison, ECC aspirational SLO targets (hook>=99%, gate<=5%, agent>=80%, commit>=95%) with `[!]` below-target indicators. Kill switch via `ECC_METRICS_DISABLED=1`. Catchup command integration via `ecc metrics summary --session <id> --json`. Domain types: `ReferenceTargets`, `TrendComparison`. 39 pass conditions, 2508 tests pass.
 
 - **Miri unsafe code verification (BL-101)**: Added `#[cfg_attr(miri, ignore)]` to ecc-flock FFI tests, enhanced SAFETY comments on all 3 unsafe blocks with invariant documentation. Miri verifies non-FFI tests; FFI calls (libc::flock) cannot be interpreted by Miri.
@@ -77,6 +79,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-126 Token Optimization Wave 3 — 6 CLI Commands**: Added `ecc drift check`, `ecc docs update-module-summary`, `ecc docs coverage`, `ecc diagram triggers`, `ecc commit lint --staged`, `ecc validate claude-md --counts`. Each replaces mechanical agent work with compiled binary. 33 domain tests + 11 app tests. New domain modules: drift/, docs/ (coverage, module_summary, diagram_triggers, claude_md, commit_lint).
+
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -108,6 +112,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-126 Token Optimization Wave 3 — 6 CLI Commands**: Added `ecc drift check`, `ecc docs update-module-summary`, `ecc docs coverage`, `ecc diagram triggers`, `ecc commit lint --staged`, `ecc validate claude-md --counts`. Each replaces mechanical agent work with compiled binary. 33 domain tests + 11 app tests. New domain modules: drift/, docs/ (coverage, module_summary, diagram_triggers, claude_md, commit_lint).
+
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -132,6 +138,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **BL-126 Token Optimization Wave 3 — 6 CLI Commands**: Added `ecc drift check`, `ecc docs update-module-summary`, `ecc docs coverage`, `ecc diagram triggers`, `ecc commit lint --staged`, `ecc validate claude-md --counts`. Each replaces mechanical agent work with compiled binary. 33 domain tests + 11 app tests. New domain modules: drift/, docs/ (coverage, module_summary, diagram_triggers, claude_md, commit_lint).
 
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
@@ -163,6 +171,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-126 Token Optimization Wave 3 — 6 CLI Commands**: Added `ecc drift check`, `ecc docs update-module-summary`, `ecc docs coverage`, `ecc diagram triggers`, `ecc commit lint --staged`, `ecc validate claude-md --counts`. Each replaces mechanical agent work with compiled binary. 33 domain tests + 11 app tests. New domain modules: drift/, docs/ (coverage, module_summary, diagram_triggers, claude_md, commit_lint).
+
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -191,6 +201,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-126 Token Optimization Wave 3 — 6 CLI Commands**: Added `ecc drift check`, `ecc docs update-module-summary`, `ecc docs coverage`, `ecc diagram triggers`, `ecc commit lint --staged`, `ecc validate claude-md --counts`. Each replaces mechanical agent work with compiled binary. 33 domain tests + 11 app tests. New domain modules: drift/, docs/ (coverage, module_summary, diagram_triggers, claude_md, commit_lint).
+
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -218,6 +230,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **BL-126 Token Optimization Wave 3 — 6 CLI Commands**: Added `ecc drift check`, `ecc docs update-module-summary`, `ecc docs coverage`, `ecc diagram triggers`, `ecc commit lint --staged`, `ecc validate claude-md --counts`. Each replaces mechanical agent work with compiled binary. 33 domain tests + 11 app tests. New domain modules: drift/, docs/ (coverage, module_summary, diagram_triggers, claude_md, commit_lint).
+
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
 ### Deprecated
@@ -241,6 +255,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **BL-126 Token Optimization Wave 3 — 6 CLI Commands**: Added `ecc drift check`, `ecc docs update-module-summary`, `ecc docs coverage`, `ecc diagram triggers`, `ecc commit lint --staged`, `ecc validate claude-md --counts`. Each replaces mechanical agent work with compiled binary. 33 domain tests + 11 app tests. New domain modules: drift/, docs/ (coverage, module_summary, diagram_triggers, claude_md, commit_lint).
 
 - **Auditable Workflow Bypass**: Per-hook bypass with user consent via AskUserQuestion, session-scoped token files at ~/.ecc/bypass-tokens/, SQLite audit trail at ~/.ecc/bypass.db. CLI commands: `ecc bypass grant|list|summary|prune|gc`. Centralized bypass check in hook dispatch replacing scattered handler-level checks. BypassDecision/BypassToken domain value objects with validation. BypassStore port trait following CostStore pattern. 2 ADRs (0055-0056).
 
