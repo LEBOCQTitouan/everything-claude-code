@@ -8,6 +8,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
+### Upgraded
+
+- **rustyline 15 → 17 (BL-114)**: Bumped rustyline dependency from v15 to v17. No breaking API changes. Replaced `Result<Self, String>` with `Result<Self, TerminalError>` in `RustylineInput::new()`, cleaned up `claw.rs` caller to use `?` directly.
+
 ### Refactored
 - **Pipeline architecture improvements (BL-127)**: Added `--continue` flag for spec→design flow, composite `design-reviewer` agent (ADR 0058), batched tdd-executor for same-file PCs, per-domain audit caching with `ecc audit cache` CLI. Reduces session count and subagent overhead.
 
