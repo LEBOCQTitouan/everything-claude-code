@@ -72,7 +72,12 @@ fn resolve_worktree_state_dir(file_path: &str) -> Option<std::path::PathBuf> {
         if git_entry.exists() {
             if git_entry.is_file() {
                 // Worktree: .git is a file containing "gitdir: <path>"
-                let content = std::fs::read_to_string(&git_entry).ok()?;
+                use std::io::Read;
+                let file = std::fs::File::open(&git_entry).ok()?;
+                let mut content = String::new();
+                file.take(GIT_FILE_MAX_BYTES as u64 + 1)
+                    .read_to_string(&mut content)
+                    .ok()?;
                 if content.len() > GIT_FILE_MAX_BYTES {
                     return None;
                 }
@@ -130,9 +135,11 @@ pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
 pub fn run_with_input(project_dir: &Path, state_dir: &Path, input: &str) -> WorkflowOutput {
     let _ = project_dir; // kept for future use
 
+    // Parse hook input once — reused for both worktree resolution and gate check.
+    let (tool_name, file_path, command) = parse_hook_input(input);
+
     // BL-131: Override state_dir when the gated file path reveals we're in a worktree.
-    let (_, ref_file_path, _) = parse_hook_input(input);
-    let effective_state_dir = ref_file_path
+    let effective_state_dir = file_path
         .as_deref()
         .and_then(resolve_worktree_state_dir)
         .unwrap_or_else(|| state_dir.to_path_buf());
@@ -164,7 +171,6 @@ pub fn run_with_input(project_dir: &Path, state_dir: &Path, input: &str) -> Work
 
     tracing::info!(phase = %phase, "phase-gate: evaluating gate for current phase");
     let phase_str = phase.to_string();
-    let (tool_name, file_path, command) = parse_hook_input(input);
 
     let prefixes = allowed_prefixes(state_dir);
     let result = match tool_name.as_deref() {
@@ -825,6 +831,39 @@ mod tests {
         assert_eq!(
             result, None,
             "should return None after exceeding depth limit"
+        );
+    }
+
+
+    /// PC-003b: resolve_worktree_state_dir handles relative gitdir: paths.
+    #[test]
+    fn resolve_worktree_from_relative_gitdir() {
+        let tmp = TempDir::new().unwrap();
+
+        // Create worktree structure with a relative gitdir path
+        let worktree_root = tmp.path().join("checkouts/my-feature");
+        std::fs::create_dir_all(worktree_root.join("src")).unwrap();
+
+        let gitdir = tmp.path().join("repo.git/worktrees/my-feature");
+        // Create both the gitdir AND ecc-workflow subdir (for canonicalize)
+        std::fs::create_dir_all(gitdir.join("ecc-workflow")).unwrap();
+
+        // Write .git file with RELATIVE path
+        std::fs::write(
+            worktree_root.join(".git"),
+            "gitdir: ../../repo.git/worktrees/my-feature\n",
+        )
+        .unwrap();
+
+        let result = super::resolve_worktree_state_dir(
+            &worktree_root.join("src/lib.rs").to_string_lossy(),
+        );
+        let resolved = result.expect("should resolve relative gitdir");
+        let canonical_expected = gitdir.join("ecc-workflow").canonicalize().unwrap();
+        let canonical_actual = resolved.canonicalize().unwrap();
+        assert_eq!(
+            canonical_actual, canonical_expected,
+            "relative gitdir should resolve to the same absolute path"
         );
     }
 
