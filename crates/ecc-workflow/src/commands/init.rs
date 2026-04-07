@@ -59,17 +59,48 @@ pub fn run(concern: &str, feature: &str, project_dir: &Path, state_dir: &Path) -
         };
 
         match write_state_atomic(state_dir, &state) {
-            Ok(()) => WorkflowOutput::pass(format!(
-                "Workflow initialized: concern={concern}, feature=\"{feature}\""
-            )),
+            Ok(()) => {
+                // Best-effort: write .state-dir anchor (AC-001.1, AC-001.8)
+                write_anchor(project_dir, state_dir);
+                WorkflowOutput::pass(format!(
+                    "Workflow initialized: concern={concern}, feature=\"{feature}\""
+                ))
+            }
             Err(e) => WorkflowOutput::block(format!("Failed to write state.json: {e}")),
         }
     });
 
-    let _ = project_dir; // kept for future use (Wave 4)
     match result {
         Ok(output) => output,
         Err(e) => WorkflowOutput::block(format!("Failed to acquire state lock: {e}")),
+    }
+}
+
+/// Best-effort write of `.claude/workflow/.state-dir` anchor file.
+///
+/// The anchor contains the absolute path to the state directory so that
+/// hook subprocesses can resolve state without depending on CWD-based git
+/// resolution. Written atomically via temp + rename. Failures are logged
+/// but never cause init to fail (AC-001.8).
+fn write_anchor(project_dir: &Path, state_dir: &Path) {
+    let anchor_dir = project_dir.join(".claude/workflow");
+    if let Err(e) = std::fs::create_dir_all(&anchor_dir) {
+        tracing::warn!("Failed to create anchor dir {}: {e}", anchor_dir.display());
+        return;
+    }
+    let anchor_path = anchor_dir.join(".state-dir");
+    let content = format!("{}\n", state_dir.display());
+    let tmp_path = anchor_dir.join(".state-dir.tmp");
+    match std::fs::write(&tmp_path, &content) {
+        Ok(()) => {
+            if let Err(e) = std::fs::rename(&tmp_path, &anchor_path) {
+                tracing::warn!("Failed to rename anchor file: {e}");
+                let _ = std::fs::remove_file(&tmp_path);
+            }
+        }
+        Err(e) => {
+            tracing::warn!("Failed to write anchor file: {e}");
+        }
     }
 }
 
@@ -108,6 +139,60 @@ mod tests {
         assert!(
             !project_dir.join(".claude/workflow/state.json").exists(),
             "state.json must NOT be at .claude/workflow/ when using custom state_dir"
+        );
+    }
+
+    /// PC-005: init writes .claude/workflow/.state-dir with state_dir path (AC-001.1, AC-001.8)
+    #[test]
+    fn init_writes_state_dir_anchor() {
+        let tmp = TempDir::new().unwrap();
+        let project_dir = tmp.path();
+        let state_dir = tmp.path().join(".git/ecc-workflow");
+
+        let result = super::run("dev", "test-feature", project_dir, &state_dir);
+        assert!(matches!(result.status, Status::Pass));
+
+        // Anchor must exist
+        let anchor_path = project_dir.join(".claude/workflow/.state-dir");
+        assert!(anchor_path.exists(), "anchor file must be created");
+
+        // Content must be the state_dir path
+        let content = std::fs::read_to_string(&anchor_path).unwrap();
+        let trimmed = content.trim();
+        assert_eq!(
+            trimmed,
+            state_dir.to_string_lossy(),
+            "anchor must contain the state_dir path"
+        );
+
+        // state.json must also exist (written before anchor)
+        assert!(state_dir.join("state.json").exists());
+    }
+
+    /// PC-006: init succeeds even when anchor write fails (AC-001.8)
+    #[test]
+    fn init_succeeds_without_anchor() {
+        let tmp = TempDir::new().unwrap();
+        // Use a project_dir that doesn't exist — anchor write will fail
+        let project_dir = std::path::Path::new("/nonexistent/project");
+        let state_dir = tmp.path().join(".git/ecc-workflow");
+
+        let result = super::run("dev", "test-feature", project_dir, &state_dir);
+
+        // Init must succeed despite anchor failure
+        assert!(
+            matches!(result.status, Status::Pass),
+            "init must succeed even when anchor write fails: {:?}",
+            result.message
+        );
+
+        // state.json must exist
+        assert!(state_dir.join("state.json").exists());
+
+        // Anchor must NOT exist (write failed)
+        assert!(
+            !project_dir.join(".claude/workflow/.state-dir").exists(),
+            "anchor should not exist when project_dir is invalid"
         );
     }
 
