@@ -1,9 +1,12 @@
-//! FileCacheStore — disk-backed cache adapter implementing `CachePort`.
+//! FileCacheStore — disk-backed cache adapter implementing `CacheStore`.
 //!
 //! Stores cache entries as JSON files under `<cache_dir>/<sanitized_key>.json`.
+//! Key sanitization: replace non-alphanumeric characters with `_`.
+//! Writes are atomic: write to a tempfile then rename.
 
 use ecc_ports::cache_store::{CacheError, CacheEntry, CacheStore};
 use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Disk-backed cache store.
 pub struct FileCacheStore {
@@ -17,38 +20,109 @@ impl FileCacheStore {
     }
 }
 
+/// Local JSON-serializable mirror of `CacheEntry`.
+#[derive(serde::Serialize, serde::Deserialize)]
+struct CacheEntryJson {
+    value: String,
+    created_at: u64,
+    ttl_secs: u64,
+    content_hash: String,
+}
+
+impl From<CacheEntryJson> for CacheEntry {
+    fn from(j: CacheEntryJson) -> Self {
+        CacheEntry {
+            value: j.value,
+            created_at: j.created_at,
+            ttl_secs: j.ttl_secs,
+            content_hash: j.content_hash,
+        }
+    }
+}
+
+/// Replace non-alphanumeric characters in a cache key with `_`.
+fn sanitize_key(key: &str) -> String {
+    key.chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect()
+}
+
+fn now_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
 impl CacheStore for FileCacheStore {
-    fn check(&self, _key: &str) -> Result<Option<CacheEntry>, CacheError> {
-        unimplemented!("FileCacheStore::check not yet implemented")
+    fn check(&self, key: &str) -> Result<Option<CacheEntry>, CacheError> {
+        let path = self.cache_dir.join(format!("{}.json", sanitize_key(key)));
+        if !path.exists() {
+            return Ok(None);
+        }
+        let contents =
+            std::fs::read_to_string(&path).map_err(|e| CacheError::Io(e.to_string()))?;
+        let entry: CacheEntryJson =
+            serde_json::from_str(&contents).map_err(|e| CacheError::Parse(e.to_string()))?;
+
+        // Check TTL expiry.
+        let expiry = entry.created_at.saturating_add(entry.ttl_secs);
+        if now_secs() >= expiry {
+            return Ok(None);
+        }
+
+        Ok(Some(entry.into()))
     }
 
     fn write(
         &self,
-        _key: &str,
-        _value: &str,
-        _ttl_secs: u64,
-        _content_hash: &str,
+        key: &str,
+        value: &str,
+        ttl_secs: u64,
+        content_hash: &str,
     ) -> Result<(), CacheError> {
-        unimplemented!("FileCacheStore::write not yet implemented")
+        std::fs::create_dir_all(&self.cache_dir)
+            .map_err(|e| CacheError::Io(e.to_string()))?;
+
+        let entry = CacheEntryJson {
+            value: value.to_owned(),
+            created_at: now_secs(),
+            ttl_secs,
+            content_hash: content_hash.to_owned(),
+        };
+        let serialized =
+            serde_json::to_string(&entry).map_err(|e| CacheError::Io(e.to_string()))?;
+
+        // Atomic write: write to tempfile then rename.
+        let final_path = self.cache_dir.join(format!("{}.json", sanitize_key(key)));
+        let tmp_path = self.cache_dir.join(format!(".{}.json.tmp", sanitize_key(key)));
+        std::fs::write(&tmp_path, &serialized).map_err(|e| CacheError::Io(e.to_string()))?;
+        std::fs::rename(&tmp_path, &final_path).map_err(|e| CacheError::Io(e.to_string()))?;
+
+        Ok(())
     }
 
     fn clear(&self) -> Result<(), CacheError> {
-        unimplemented!("FileCacheStore::clear not yet implemented")
+        if !self.cache_dir.exists() {
+            return Ok(());
+        }
+        let entries =
+            std::fs::read_dir(&self.cache_dir).map_err(|e| CacheError::Io(e.to_string()))?;
+        for entry in entries {
+            let entry = entry.map_err(|e| CacheError::Io(e.to_string()))?;
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("json") {
+                std::fs::remove_file(&path).map_err(|e| CacheError::Io(e.to_string()))?;
+            }
+        }
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{SystemTime, UNIX_EPOCH};
     use tempfile::TempDir;
-
-    fn now_secs() -> u64 {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
-    }
 
     #[test]
     fn write_and_check_round_trip() {
@@ -74,7 +148,6 @@ mod tests {
         let store = FileCacheStore::new(tmp.path().to_path_buf());
 
         // Write entry that expired long ago: created_at = 1, ttl = 1 => expired at t=2
-        // We do this by directly writing a JSON file with a past created_at.
         let key = "expired-key";
         let sanitized = sanitize_key(key);
         let path = tmp.path().join(format!("{sanitized}.json"));
@@ -115,9 +188,8 @@ mod tests {
 
     #[test]
     fn write_failure_returns_error() {
-        // Use a path that does not exist and cannot be created (points to a file as dir)
+        // Create a regular file where the cache_dir should be — create_dir_all will fail.
         let tmp = TempDir::new().unwrap();
-        // Create a regular file where the cache_dir should be
         let blocker = tmp.path().join("blocker");
         std::fs::write(&blocker, b"not a dir").unwrap();
         let store = FileCacheStore::new(blocker.clone());
@@ -127,12 +199,5 @@ mod tests {
             matches!(result, Err(CacheError::Io(_))),
             "expected Io error when cache_dir is a file, got: {result:?}"
         );
-    }
-
-    /// Mirror of the key sanitization logic used in the implementation.
-    fn sanitize_key(key: &str) -> String {
-        key.chars()
-            .map(|c| if c.is_alphanumeric() { c } else { '_' })
-            .collect()
     }
 }
