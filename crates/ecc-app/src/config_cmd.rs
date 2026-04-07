@@ -122,6 +122,7 @@ mod tests {
     fn resolve_precedence_cli_flag_wins() {
         let store = InMemoryConfigStore::new().with_global(RawEccConfig {
             log_level: Some("error".to_owned()),
+            ..RawEccConfig::default()
         });
         // -v (verbosity=1 => Info) overrides config=error and ECC_LOG=debug
         let level = resolve_log_level(1, false, Some("debug"), None, &store);
@@ -132,6 +133,7 @@ mod tests {
     fn resolve_precedence_ecc_log_wins_over_config() {
         let store = InMemoryConfigStore::new().with_global(RawEccConfig {
             log_level: Some("warn".to_owned()),
+            ..RawEccConfig::default()
         });
         // ECC_LOG=debug overrides config=warn, no CLI flag
         let level = resolve_log_level(0, false, Some("debug"), None, &store);
@@ -150,6 +152,7 @@ mod tests {
     fn resolve_precedence_config_wins_over_default() {
         let store = InMemoryConfigStore::new().with_global(RawEccConfig {
             log_level: Some("info".to_owned()),
+            ..RawEccConfig::default()
         });
         // No CLI flags or env vars — config should win over default(warn)
         let level = resolve_log_level(0, false, None, None, &store);
