@@ -38,12 +38,12 @@
 | BL-035 | Campaign file manifest for amnesiac agents | 9 | MEDIUM | /spec refactor | implemented | 2026-03-21 |
 | BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | implemented | 2026-03-21 |
 | BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | implemented | 2026-03-21 |
-| BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | open | 2026-03-21 |
+| BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | implemented | 2026-03-21 |
 | BL-039 | CronCreate suggestion for periodic commands | 9 | LOW | audit/review/verify | open | 2026-03-21 |
 | BL-040 | Meta-steering rules for ECC development | 9 | LOW | rules/ecc/ (new) | implemented | 2026-03-21 |
 | BL-041 | CLAUDE_CODE_TASK_LIST_ID for cross-session persistence | 9 | LOW | workflow-init.sh | implemented | 2026-03-21 |
 | BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | open | 2026-03-21 |
-| BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | open | 2026-03-21 |
+| BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | implemented | 2026-03-21 |
 | BL-044 | Add grill-me interview step to /backlog add workflow | — | LOW | direct edit | archived | 2026-03-21 |
 | BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | implemented | 2026-03-21 |
 | BL-046 | Phase-gate hook blocks spec/plan/design file writes during active workflow phases | — | LOW | direct edit | implemented | 2026-03-21 |
@@ -117,7 +117,7 @@
 | BL-114 | Upgrade rustyline 15 to 17 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | open | 2026-03-31 |
 | BL-116 | Add cargo-mutants mutation testing | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
-| BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | open | 2026-03-31 |
+| BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-119 | Create GitHub workflow templates for Claude Code integration | — | HIGH | /spec-dev | implemented | 2026-03-31 | 2026-03-31 |
 | BL-120 | Pattern Library for Agent-Assisted Development | — | EPIC | /spec-dev | implemented | 2026-04-04 |
@@ -125,8 +125,8 @@
 | BL-122 | Worktree auto-merge-cleanup enforcement | — | MEDIUM | /spec-dev | implemented | 2026-04-05 |
 | BL-123 | Caveman-style brevity token optimization | — | HIGH | /spec-refactor | implemented | 2026-04-06 |
 | BL-124 | Token optimization wave 1 — zero-cost CLI redirects | — | LOW | direct edit | implemented | 2026-04-06 | 2026-04-06 |
-| BL-125 | Token optimization wave 2 — boilerplate extraction and context trimming | — | LOW | direct edit | open | 2026-04-06 |
-| BL-126 | Token optimization wave 3 — new CLI commands replacing agent work | — | HIGH | /spec-dev | open | 2026-04-06 |
+| BL-125 | Token optimization wave 2 — boilerplate extraction and context trimming | — | LOW | direct edit | implemented | 2026-04-06 |
+| BL-126 | Token optimization wave 3 — new CLI commands replacing agent work | — | HIGH | /spec-dev | implemented | 2026-04-06 |
 | BL-127 | Token optimization wave 4 — pipeline architecture changes | — | HIGH | /spec-dev | open | 2026-04-06 |
 | BL-128 | Token optimization wave 5 — local LLM offload | — | MEDIUM | /spec-dev | open | 2026-04-06 |
 
