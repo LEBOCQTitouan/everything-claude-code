@@ -3,7 +3,7 @@ id: BL-114
 title: "Upgrade rustyline 15 to 17"
 scope: LOW
 target: "direct edit"
-status: open
+status: implemented
 created: "2026-03-31"
 source: "docs/audits/web-radar-2026-03-31.md"
 ring: trial
