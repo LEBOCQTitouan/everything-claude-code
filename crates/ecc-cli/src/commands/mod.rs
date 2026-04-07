@@ -1,5 +1,6 @@
 pub mod analyze;
 pub mod audit;
+pub mod audit_cache;
 pub mod audit_web;
 pub mod backlog;
 pub mod bypass;
