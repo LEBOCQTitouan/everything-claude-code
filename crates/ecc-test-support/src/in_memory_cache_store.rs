@@ -25,23 +25,46 @@ impl Default for InMemoryCacheStore {
 }
 
 impl CacheStore for InMemoryCacheStore {
-    fn check(&self, _key: &str) -> Result<Option<CacheEntry>, CacheError> {
-        // STUB: always returns None — tests will fail
-        Ok(None)
+    fn check(&self, key: &str) -> Result<Option<CacheEntry>, CacheError> {
+        let guard = self.entries.lock().expect("lock poisoned");
+        let Some(entry) = guard.get(key) else {
+            return Ok(None);
+        };
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        if now >= entry.created_at + entry.ttl_secs {
+            return Ok(None);
+        }
+        Ok(Some(entry.clone()))
     }
 
     fn write(
         &self,
-        _key: &str,
-        _value: &str,
-        _ttl_secs: u64,
-        _content_hash: &str,
+        key: &str,
+        value: &str,
+        ttl_secs: u64,
+        content_hash: &str,
     ) -> Result<(), CacheError> {
-        // STUB: no-op
+        let created_at = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let entry = CacheEntry {
+            value: value.to_owned(),
+            created_at,
+            ttl_secs,
+            content_hash: content_hash.to_owned(),
+        };
+        let mut guard = self.entries.lock().expect("lock poisoned");
+        guard.insert(key.to_owned(), entry);
         Ok(())
     }
 
     fn clear(&self) -> Result<(), CacheError> {
+        let mut guard = self.entries.lock().expect("lock poisoned");
+        guard.clear();
         Ok(())
     }
 }
@@ -78,6 +101,7 @@ mod tests {
     #[test]
     fn expired_entry_returns_none() {
         let store = InMemoryCacheStore::new();
+        // ttl_secs = 0 means entry expires immediately
         store.write("expired", "val", 0, "hash").unwrap();
         let result = store.check("expired").unwrap();
         assert!(result.is_none());

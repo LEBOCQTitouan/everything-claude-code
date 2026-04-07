@@ -27,6 +27,7 @@ pub use in_memory_config_store::InMemoryConfigStore;
 pub use in_memory_cost_store::InMemoryCostStore;
 pub mod in_memory_bypass_store;
 pub use in_memory_bypass_store::InMemoryBypassStore;
+pub use in_memory_cache_store::InMemoryCacheStore;
 pub use in_memory_fs::InMemoryFileSystem;
 pub use in_memory_lock::InMemoryLock;
 pub use in_memory_log_store::InMemoryLogStore;
