@@ -9,6 +9,8 @@
 
 /// Clock (time source) port.
 pub mod clock;
+/// Audit result caching port.
+pub mod cache_store;
 /// Persistent ECC configuration port.
 pub mod config_store;
 /// Cost and token tracking store port.
