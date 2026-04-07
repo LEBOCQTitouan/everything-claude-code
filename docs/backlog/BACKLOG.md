@@ -127,8 +127,8 @@
 | BL-124 | Token optimization wave 1 — zero-cost CLI redirects | — | LOW | direct edit | implemented | 2026-04-06 | 2026-04-06 |
 | BL-125 | Token optimization wave 2 — boilerplate extraction and context trimming | — | LOW | direct edit | implemented | 2026-04-06 |
 | BL-126 | Token optimization wave 3 — new CLI commands replacing agent work | — | HIGH | /spec-dev | implemented | 2026-04-06 |
-| BL-127 | Token optimization wave 4 — pipeline architecture changes | — | HIGH | /spec-dev | open | 2026-04-06 |
-| BL-128 | Token optimization wave 5 — local LLM offload | — | MEDIUM | /spec-dev | open | 2026-04-06 |
+| BL-127 | Token optimization wave 4 — pipeline architecture changes | — | HIGH | /spec-dev | implemented | 2026-04-06 |
+| BL-128 | Token optimization wave 5 — local LLM offload | — | MEDIUM | /spec-dev | implemented | 2026-04-06 |
 
 ## Dependency Graph
 

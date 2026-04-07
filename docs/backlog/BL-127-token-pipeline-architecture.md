@@ -1,7 +1,7 @@
 ---
 id: BL-127
 title: "Token optimization wave 4 — pipeline architecture for session and subagent reduction"
-status: open
+status: implemented
 created: 2026-04-06
 promoted_to: ""
 tags: [token-optimization, pipeline, sessions, subagents]
