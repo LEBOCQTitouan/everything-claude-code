@@ -7,6 +7,7 @@ effort: medium
 skills: ["convention-consistency"]
 patterns: ["creational", "structural", "behavioral"]
 tracking: todowrite
+local-eligible: true
 ---
 # Convention Auditor
 
@@ -92,3 +93,11 @@ Use the standardized finding format:
 - You do NOT enforce a specific coding style — you detect inconsistencies within the codebase's own conventions
 - You do NOT reformat or rename — you identify where conventions diverge
 - You provide findings that inform convention standardization
+
+## Local LLM Delegation
+
+> See `skills/local-llm-delegation/SKILL.md` for the full pattern.
+
+**Delegated subtask**: finding aggregation from grep output
+
+If `ollama_generate` MCP tool is available, delegate finding aggregation (threshold application, count summarization) to the local model (`model_medium` / 13B). Validate output matches `[CONV-NNN]` finding format. If validation fails after 2 retries or tool is unavailable, fall back to Sonnet self-execution (not Haiku — convention audit requires mid-tier reasoning).
