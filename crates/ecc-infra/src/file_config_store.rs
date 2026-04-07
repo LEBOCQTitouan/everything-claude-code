@@ -3,7 +3,7 @@
 //! Global config: `~/.ecc/config.toml`
 //! Local config:  `<project_dir>/.ecc/config.toml`
 
-use ecc_ports::config_store::{ConfigError, ConfigStore, RawEccConfig};
+use ecc_ports::config_store::{ConfigError, ConfigStore, LocalLlmConfig, RawEccConfig};
 use std::path::PathBuf;
 
 /// TOML-backed config store.
@@ -30,18 +30,59 @@ impl FileConfigStore {
     }
 }
 
+/// TOML representation of the `[local_llm]` section.
+#[derive(serde::Serialize, serde::Deserialize, Default)]
+struct LocalLlmToml {
+    #[serde(default)]
+    enabled: Option<bool>,
+    #[serde(default)]
+    provider: Option<String>,
+    #[serde(default)]
+    base_url: Option<String>,
+    #[serde(default)]
+    model_small: Option<String>,
+    #[serde(default)]
+    model_medium: Option<String>,
+}
+
+impl From<LocalLlmToml> for LocalLlmConfig {
+    fn from(t: LocalLlmToml) -> Self {
+        LocalLlmConfig {
+            enabled: t.enabled,
+            provider: t.provider,
+            base_url: t.base_url,
+            model_small: t.model_small,
+            model_medium: t.model_medium,
+        }
+    }
+}
+
+impl From<&LocalLlmConfig> for LocalLlmToml {
+    fn from(c: &LocalLlmConfig) -> Self {
+        LocalLlmToml {
+            enabled: c.enabled,
+            provider: c.provider.clone(),
+            base_url: c.base_url.clone(),
+            model_small: c.model_small.clone(),
+            model_medium: c.model_medium.clone(),
+        }
+    }
+}
+
 // Internal TOML representation with serde derives.
 #[derive(serde::Serialize, serde::Deserialize, Default)]
 struct ConfigToml {
     #[serde(default)]
     log_level: Option<String>,
+    #[serde(default)]
+    local_llm: Option<LocalLlmToml>,
 }
 
 impl From<ConfigToml> for RawEccConfig {
     fn from(t: ConfigToml) -> Self {
         RawEccConfig {
             log_level: t.log_level,
-            local_llm: None,
+            local_llm: t.local_llm.map(LocalLlmConfig::from),
         }
     }
 }
@@ -50,6 +91,7 @@ impl From<&RawEccConfig> for ConfigToml {
     fn from(c: &RawEccConfig) -> Self {
         ConfigToml {
             log_level: c.log_level.clone(),
+            local_llm: c.local_llm.as_ref().map(LocalLlmToml::from),
         }
     }
 }
