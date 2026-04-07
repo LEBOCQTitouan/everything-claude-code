@@ -5,6 +5,7 @@ tools: ["Read", "Write", "Edit", "Grep", "Glob"]
 model: haiku
 effort: low
 skills: ["diagram-generation"]
+local-eligible: true
 ---
 
 # diagram-updater
@@ -43,3 +44,11 @@ If none fire, output "No diagram warranted" and exit.
 - INDEX entries under `## Feature Implementation Diagrams` only
 - Generator comment header mandatory
 - Do not read Rust source — derive from session context provided by parent
+
+## Local LLM Delegation
+
+> See `skills/local-llm-delegation/SKILL.md` for the full pattern.
+
+**Delegated subtask**: Mermaid diagram block generation
+
+If `ollama_generate` MCP tool is available, delegate Mermaid diagram generation to the local model (`model_medium` / 13B). The mmdc validation step (max 3 retries) runs regardless of generation source. If validation fails after 2 retries, fall back to executing the task directly on the hosted model. If the tool is unavailable, execute directly — no error.
