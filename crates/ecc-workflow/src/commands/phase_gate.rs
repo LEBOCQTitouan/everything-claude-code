@@ -45,6 +45,56 @@ fn contains_encoded_traversal(path: &str) -> bool {
     lower.contains("%2e%2e") || lower.contains("%2f") || lower.contains("%5c")
 }
 
+/// Maximum bytes to read from a `.git` file when detecting worktree gitdir.
+const GIT_FILE_MAX_BYTES: usize = 4096;
+
+/// Maximum parent directory traversal depth for worktree detection.
+const WORKTREE_DEPTH_LIMIT: usize = 50;
+
+/// Derive the worktree-scoped state directory from a gated file path.
+///
+/// When Claude Code's hook subprocess sets `CLAUDE_PROJECT_DIR` to the main repo
+/// root, `resolve_state_dir()` reads the wrong `.state-dir` anchor. This function
+/// bypasses that by walking the gated file path's parents to find the worktree's
+/// `.git` file, then reading its `gitdir:` line to find the correct git-dir.
+///
+/// Returns `Some(state_dir)` if the file is inside a worktree checkout.
+/// Returns `None` if the file is in a main repo, not absolute, or detection fails.
+fn resolve_worktree_state_dir(file_path: &str) -> Option<std::path::PathBuf> {
+    let path = std::path::Path::new(file_path);
+    if !path.is_absolute() {
+        return None;
+    }
+
+    let mut current = path.parent()?;
+    for _ in 0..WORKTREE_DEPTH_LIMIT {
+        let git_entry = current.join(".git");
+        if git_entry.exists() {
+            if git_entry.is_file() {
+                // Worktree: .git is a file containing "gitdir: <path>"
+                let content = std::fs::read_to_string(&git_entry).ok()?;
+                if content.len() > GIT_FILE_MAX_BYTES {
+                    return None;
+                }
+                let gitdir_line = content
+                    .lines()
+                    .find(|l| l.starts_with("gitdir:"))?;
+                let raw_path = gitdir_line.strip_prefix("gitdir:")?.trim();
+                let gitdir = if std::path::Path::new(raw_path).is_absolute() {
+                    std::path::PathBuf::from(raw_path)
+                } else {
+                    current.join(raw_path)
+                };
+                return Some(gitdir.join("ecc-workflow"));
+            }
+            // .git is a directory — main repo checkout, not a worktree
+            return None;
+        }
+        current = current.parent()?;
+    }
+    None
+}
+
 /// Destructive Bash command patterns that are blocked during plan/solution phases.
 const BLOCKED_BASH_PATTERNS: &[&str] = &[
     "rm -rf",
@@ -78,7 +128,15 @@ pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
 
 /// Testable entry point: same as `run` but accepts hook input directly.
 pub fn run_with_input(project_dir: &Path, state_dir: &Path, input: &str) -> WorkflowOutput {
-    let _ = project_dir; // kept for future use (Wave 4)
+    let _ = project_dir; // kept for future use
+
+    // BL-131: Override state_dir when the gated file path reveals we're in a worktree.
+    let (_, ref_file_path, _) = parse_hook_input(input);
+    let effective_state_dir = ref_file_path
+        .as_deref()
+        .and_then(resolve_worktree_state_dir)
+        .unwrap_or_else(|| state_dir.to_path_buf());
+    let state_dir = &effective_state_dir;
     // Fast path: if state.json does not exist, skip locking entirely.
     let state_path = state_dir.join("state.json");
     if !state_path.exists() {
@@ -589,4 +647,185 @@ mod tests {
             output.message
         );
     }
+
+    // ----------------------------------------------------------------
+    // BL-131 Wave 1: File-path-based worktree state resolution
+    // ----------------------------------------------------------------
+
+    /// PC-001: When gated file path is inside a worktree checkout (with .git file),
+    /// phase_gate resolves state from that worktree's git-dir, not from the
+    /// dispatch state_dir (which may point to the main repo's state).
+    #[test]
+    fn phase_gate_worktree_file_path_overrides_state_dir() {
+        let tmp = TempDir::new().unwrap();
+
+        // Simulate a worktree checkout: create a .git FILE (not dir) pointing to a gitdir
+        let worktree_root = tmp.path().join("worktrees/my-feature");
+        std::fs::create_dir_all(&worktree_root).unwrap();
+
+        let gitdir_path = tmp.path().join(".git/worktrees/my-feature");
+        std::fs::create_dir_all(&gitdir_path).unwrap();
+
+        // Write .git file in worktree root
+        std::fs::write(
+            worktree_root.join(".git"),
+            format!("gitdir: {}
+", gitdir_path.display()),
+        )
+        .unwrap();
+
+        // Write state.json in the worktree's git-dir with phase=implement
+        let worktree_state_dir = gitdir_path.join("ecc-workflow");
+        std::fs::create_dir_all(&worktree_state_dir).unwrap();
+        let implement_json = r#"{"phase":"implement","concern":"dev","feature":"feat","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(worktree_state_dir.join("state.json"), implement_json).unwrap();
+
+        // Dispatch state_dir points to a DIFFERENT location with phase=plan (simulating BL-131 bug)
+        let wrong_state_dir = tmp.path().join("main-repo-state");
+        std::fs::create_dir_all(&wrong_state_dir).unwrap();
+        let plan_json = r#"{"phase":"plan","concern":"dev","feature":"other","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(wrong_state_dir.join("state.json"), plan_json).unwrap();
+
+        // Gated file is inside the worktree checkout
+        let file_in_worktree = worktree_root.join("src/main.rs");
+        let file_path_str = file_in_worktree.to_string_lossy();
+        let hook_input = format!(
+            r#"{{"tool_name":"Write","tool_input":{{"file_path":"{file_path_str}"}}}}"#
+        );
+
+        // run_with_input uses the wrong_state_dir (plan phase → would block),
+        // but the file path should cause override to worktree state (implement → pass)
+        let output = super::run_with_input(tmp.path(), &wrong_state_dir, &hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass (implement phase from worktree), got {:?}: {}.              The file path should have overridden the dispatch state_dir.",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-002: When gated file path is relative, falls back to dispatch state_dir.
+    #[test]
+    fn phase_gate_relative_path_uses_dispatch_state_dir() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        // Relative path — cannot walk parents to find .git
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"src/main.rs"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Block),
+            "Expected Block for relative path (falls back to dispatch state_dir with plan phase), got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-003: resolve_worktree_state_dir correctly parses a .git file and returns the state dir.
+    #[test]
+    fn resolve_worktree_from_git_file() {
+        let tmp = TempDir::new().unwrap();
+
+        // Create worktree structure
+        let worktree_root = tmp.path().join("checkout");
+        std::fs::create_dir_all(worktree_root.join("src")).unwrap();
+
+        let gitdir = tmp.path().join("repo.git/worktrees/my-branch");
+        std::fs::create_dir_all(&gitdir).unwrap();
+
+        std::fs::write(
+            worktree_root.join(".git"),
+            format!("gitdir: {}
+", gitdir.display()),
+        )
+        .unwrap();
+
+        let result = super::resolve_worktree_state_dir(
+            &worktree_root.join("src/lib.rs").to_string_lossy(),
+        );
+        assert_eq!(
+            result,
+            Some(gitdir.join("ecc-workflow")),
+            "should resolve to gitdir/ecc-workflow"
+        );
+    }
+
+    /// PC-004: When the worktree's state dir has no state.json, phase_gate passes.
+    #[test]
+    fn worktree_no_state_json_passes() {
+        let tmp = TempDir::new().unwrap();
+
+        // Worktree checkout with .git file
+        let worktree_root = tmp.path().join("wt");
+        std::fs::create_dir_all(&worktree_root).unwrap();
+        let gitdir = tmp.path().join(".git/worktrees/wt");
+        std::fs::create_dir_all(&gitdir).unwrap();
+        std::fs::write(
+            worktree_root.join(".git"),
+            format!("gitdir: {}
+", gitdir.display()),
+        )
+        .unwrap();
+
+        // Do NOT create state.json in the worktree's ecc-workflow dir
+        // (create the dir but leave it empty)
+        std::fs::create_dir_all(gitdir.join("ecc-workflow")).unwrap();
+
+        // Dispatch state_dir has plan phase (would block if used)
+        let wrong_state_dir = tmp.path().join("wrong");
+        std::fs::create_dir_all(&wrong_state_dir).unwrap();
+        let plan_json = r#"{"phase":"plan","concern":"dev","feature":"other","started_at":"2026-01-01T00:00:00Z","toolchain":{"test":null,"lint":null,"build":null},"artifacts":{"plan":null,"solution":null,"implement":null,"campaign_path":null,"spec_path":null,"design_path":null,"tasks_path":null},"completed":[]}"#;
+        std::fs::write(wrong_state_dir.join("state.json"), plan_json).unwrap();
+
+        let file_path = worktree_root.join("src/main.rs");
+        let hook_input = format!(
+            r#"{{"tool_name":"Write","tool_input":{{"file_path":"{}"}}}}"#,
+            file_path.display()
+        );
+
+        let output = super::run_with_input(tmp.path(), &wrong_state_dir, &hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass (no state.json in worktree → no workflow active), got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-005: When .git is a directory (main repo), resolve_worktree_state_dir returns None.
+    #[test]
+    fn resolve_worktree_stops_at_git_dir() {
+        let tmp = TempDir::new().unwrap();
+
+        // Main repo: .git is a DIRECTORY
+        let repo_root = tmp.path().join("repo");
+        std::fs::create_dir_all(repo_root.join(".git")).unwrap();
+        std::fs::create_dir_all(repo_root.join("src")).unwrap();
+
+        let result = super::resolve_worktree_state_dir(
+            &repo_root.join("src/main.rs").to_string_lossy(),
+        );
+        assert_eq!(
+            result, None,
+            "should return None for main repo (.git is a directory)"
+        );
+    }
+
+    /// PC-006: resolve_worktree_state_dir stops after WORKTREE_DEPTH_LIMIT iterations.
+    #[test]
+    fn resolve_worktree_depth_limit() {
+        // Create a deeply nested path with no .git anywhere
+        let mut deep_path = String::from("/tmp/bl131-depth-test");
+        for i in 0..60 {
+            deep_path.push_str(&format!("/d{i}"));
+        }
+        deep_path.push_str("/file.rs");
+
+        let result = super::resolve_worktree_state_dir(&deep_path);
+        assert_eq!(
+            result, None,
+            "should return None after exceeding depth limit"
+        );
+    }
+
 }
