@@ -22,6 +22,7 @@ fn allowed_prefixes(state_dir: &Path) -> Vec<String> {
         "docs/plans/".to_owned(),
         "docs/designs/".to_owned(),
         "docs/adr/".to_owned(),
+        "docs/prds/".to_owned(),
     ];
     let state_str = state_dir.to_string_lossy();
     let with_slash = if state_str.ends_with('/') {
@@ -567,6 +568,23 @@ mod tests {
         assert!(
             matches!(output.status, Status::Block),
             "Expected Block for absolute path /etc/passwd during plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// PC-006: phase_gate allows writes to docs/prds/ during plan phase (AC-004.1, AC-004.3)
+    #[test]
+    fn phase_gate_allows_prds_dir() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/prds/my-feature-prd.md"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for docs/prds/ during plan phase, got {:?}: {}",
             output.status,
             output.message
         );
