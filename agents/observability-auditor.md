@@ -6,6 +6,7 @@ model: sonnet
 effort: medium
 skills: ["observability-audit"]
 patterns: ["observability"]
+tracking: todowrite
 ---
 # Observability Auditor
 
@@ -22,8 +23,6 @@ You audit observability quality — whether the codebase produces the signals ne
 
 ## Execution Steps
 
-> **Tracking**: Create a TodoWrite checklist for the observability audit pipeline. If TodoWrite is unavailable, proceed without tracking — the audit executes identically.
-
 TodoWrite items:
 - "Step 1: Scan Log Calls"
 - "Step 2: Check Log Level Consistency"
@@ -33,7 +32,6 @@ TodoWrite items:
 - "Step 6: Evaluate Health Endpoints"
 - "Step 7: Output Findings"
 
-Mark each item complete as the step finishes.
 
 ### Step 1: Scan Log Calls
 

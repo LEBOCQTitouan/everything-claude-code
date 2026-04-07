@@ -5,6 +5,7 @@ tools: ["Read", "Bash", "Grep", "Glob"]
 model: opus
 effort: high
 skills: ["evolutionary-analysis"]
+tracking: todowrite
 ---
 
 # Evolution Analyst
@@ -16,8 +17,6 @@ Mines git history for evolutionary health risks: hotspots, co-change coupling, b
 ## Inputs
 
 `--scope=<path>` (default: root), `--window=<days>` (default: 180), `--top=<N>` (per scaling rules)
-
-> **Tracking**: TodoWrite steps: Detect Size, Change Frequency, Complexity, Hotspot Scoring, Co-Change Coupling, Bus Factor, Complexity Trends, Output. If unavailable, proceed without tracking.
 
 ## Steps
 

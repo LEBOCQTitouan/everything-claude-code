@@ -5,13 +5,12 @@ tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet
 effort: medium
 skills: ["coding-standards"]
+tracking: todowrite
 ---
 
 # Build Error Resolver
 
 Expert build error resolution. Gets builds passing with minimal changes — no refactoring, no architecture changes, no improvements.
-
-> **Tracking**: TodoWrite: Collect All Errors, Fix Strategy, Common Fixes. If unavailable, proceed without tracking.
 
 ## Workflow
 

@@ -5,6 +5,7 @@ tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 effort: medium
 skills: ["doc-quality-scoring", "doc-drift-detector", "doc-gap-analyser"]
+tracking: todowrite
 ---
 
 # Documentation Validator
@@ -23,8 +24,6 @@ Validates existing documentation against actual code. Scores quality, detects co
 - `--module=<name>` — validate specific module only (enables parallel execution)
 - `--target=CLAUDE.md` — CLAUDE.md challenge mode (Step 7)
 - Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md` or `docs/api-surface/`
-
-> **Tracking**: TodoWrite steps 1-10: Accuracy Check, Quality Scoring, Contradiction Detection, Duplicate Detection, Example Verification, Mermaid Validation, Project Instructions Challenge, Drift Detection, Gap Analysis, File Size Validation. If unavailable, proceed without tracking.
 
 ## Validation Pipeline
 

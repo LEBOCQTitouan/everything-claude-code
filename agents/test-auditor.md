@@ -6,6 +6,7 @@ model: sonnet
 effort: medium
 skills: ["test-architecture"]
 patterns: ["testing"]
+tracking: todowrite
 ---
 # Test Auditor
 
@@ -22,8 +23,6 @@ You audit test architecture quality — how tests are structured, what they actu
 
 ## Execution Steps
 
-> **Tracking**: Create a TodoWrite checklist for the test audit pipeline. If TodoWrite is unavailable, proceed without tracking — the audit executes identically.
-
 TodoWrite items:
 - "Step 1: Discover Test Files"
 - "Step 2: Classify Tests"
@@ -33,7 +32,6 @@ TodoWrite items:
 - "Step 6: Map Coverage Gaps"
 - "Step 7: Output Findings"
 
-Mark each item complete as the step finishes.
 
 ### Step 1: Discover Test Files
 

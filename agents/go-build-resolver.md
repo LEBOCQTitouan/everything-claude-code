@@ -6,6 +6,7 @@ model: sonnet
 effort: medium
 skills: []
 patterns: ["error-handling", "concurrency", "idioms"]
+tracking: todowrite
 ---
 # Go Build Error Resolver
 
@@ -34,8 +35,6 @@ go mod tidy -v
 
 ## Resolution Workflow
 
-> **Tracking**: Create a TodoWrite checklist for the resolution workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
-
 TodoWrite items:
 - "Step 1: Parse build errors"
 - "Step 2: Read affected files"
@@ -44,7 +43,6 @@ TodoWrite items:
 - "Step 5: Run vet"
 - "Step 6: Run tests"
 
-Mark each item complete as the step finishes.
 
 ```text
 1. go build ./...     -> Parse error message

@@ -5,6 +5,7 @@ model: opus
 effort: high
 tools: ["Read", "Grep", "Glob", "Agent", "Write", "AskUserQuestion", "TodoWrite", "TodoRead"]
 skills: ["interview-me"]
+tracking: todowrite
 ---
 # Interviewer Agent
 

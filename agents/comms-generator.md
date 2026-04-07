@@ -5,6 +5,7 @@ tools: Read, Write, Edit, Bash, Grep, Glob, Agent, AskUserQuestion
 model: sonnet
 effort: medium
 skills: ["comms-strategy", "comms-adapter", "comms-redactor"]
+tracking: todowrite
 ---
 # Comms Generator — Multi-Channel Content Pipeline
 
@@ -15,8 +16,6 @@ skills: ["comms-strategy", "comms-adapter", "comms-redactor"]
 - When preparing DevRel content for multiple platforms
 
 ## Workflow
-
-> **Tracking**: Create a TodoWrite checklist. If TodoWrite is unavailable, proceed without tracking.
 
 TodoWrite items:
 - "Scaffold comms repo (if needed)"

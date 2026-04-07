@@ -6,6 +6,7 @@ model: sonnet
 effort: medium
 skills: ["convention-consistency"]
 patterns: ["creational", "structural", "behavioral"]
+tracking: todowrite
 ---
 # Convention Auditor
 
@@ -21,8 +22,6 @@ You audit codebase conventions and consistency — naming patterns, cross-cuttin
 
 ## Execution Steps
 
-> **Tracking**: Create a TodoWrite checklist for the convention audit pipeline. If TodoWrite is unavailable, proceed without tracking — the audit executes identically.
-
 TodoWrite items:
 - "Step 1: Analyze Naming Conventions"
 - "Step 2: Measure Naming Entropy"
@@ -31,7 +30,6 @@ TodoWrite items:
 - "Step 5: Detect Primitive Obsession"
 - "Step 6: Output Findings"
 
-Mark each item complete as the step finishes.
 
 ### Step 1: Analyze Naming Conventions
 

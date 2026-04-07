@@ -5,6 +5,7 @@ tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuesti
 model: opus
 effort: max
 skills: ["architecture-review"]
+tracking: todowrite
 ---
 
 # Audit Orchestrator
@@ -14,8 +15,6 @@ Coordinates the full codebase health audit: discovery, evolutionary analysis, do
 ## Reference Skills
 
 `architecture-review`, `evolutionary-analysis`, `test-architecture`, `observability-audit`, `error-handling-audit`, `convention-consistency`
-
-> **Tracking**: TodoWrite phases: Discovery, Evolutionary Analysis, Domain Audits, Cross-Domain Correlation, Report Generation, Console Summary. If unavailable, proceed without tracking.
 
 ## Arguments
 

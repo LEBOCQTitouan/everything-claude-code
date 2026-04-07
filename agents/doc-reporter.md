@@ -5,6 +5,7 @@ tools: ["Read", "Bash", "Grep", "Glob"]
 model: haiku
 effort: low
 skills: ["doc-quality-scoring"]
+tracking: todowrite
 ---
 
 # Documentation Coverage Reporter
@@ -18,8 +19,6 @@ Calculates doc coverage metrics, compares against baselines, detects regressions
 - Analysis data from `docs/ARCHITECTURE.md`, `docs/API-SURFACE.md`
 - Quality data from `docs/DOC-QUALITY.md`
 - Manifest from `docs/.doc-manifest.json` (for incremental comparison)
-
-> **Tracking**: TodoWrite steps: Calculate Coverage, Compare Baseline, Staleness Analysis, Manifest Reporting, Summary. If unavailable, proceed without tracking.
 
 ## Pipeline
 

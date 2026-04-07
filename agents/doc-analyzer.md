@@ -5,6 +5,7 @@ tools: ["Read", "Grep", "Glob", "Bash"]
 model: opus
 effort: high
 skills: ["doc-analysis", "symbol-extraction", "behaviour-extraction"]
+tracking: todowrite
 ---
 
 # Documentation Analyzer
@@ -20,8 +21,6 @@ Analyzes codebases to understand documentation needs. Produces structured analys
 
 - `--scope=<path>` — directory to analyze (default: project root)
 - Project root detected from `package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`, or `pom.xml`
-
-> **Tracking**: TodoWrite steps: Project Profile, Module Inventory, Domain Concepts, Dependency Graph, Doc Inventory, Enrichment, Diagram Detection. If unavailable, proceed without tracking.
 
 ## Pipeline
 
