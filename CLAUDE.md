@@ -105,6 +105,10 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - CLI-redirected agents (doc-generator, evolution-analyst, backlog-curator) call `ecc analyze` and `ecc backlog` commands for raw data — agent still interprets results
 - Audit-challenger is conditional: skipped when <3 findings AND all ≤MEDIUM (see BL-124)
 - Local LLM offload (BL-128): agents with `local-eligible: true` call Ollama via MCP for mechanical tasks. Requires `ollama-mcp` bridge. Without Ollama, agents fall back to hosted model. Kill switch: `ecc config set local-llm.enabled false`
+- `--continue` flag on /spec-* commands auto-invokes /design after spec PASS (BL-127). Opt-in only, never default.
+- `design-reviewer` agent replaces sequential uncle-bob/robert/security-reviewer in /design (ADR 0058, BL-127). Old agents remain for standalone use.
+- `ecc audit cache check/clear` — per-domain audit caching with content-hash + TTL invalidation (BL-127). `--force` bypasses cache.
+- Batched tdd-executor: independent same-file PCs dispatch as single batch to reduce subagent overhead (BL-127)
 - Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end; **fix-round budget** = max 2 fix attempts per PC before user escalation; **coverage delta** = before/after test coverage % comparison across TDD loop; **bounded context enumeration** = listing affected DDD contexts in /design output; **per-test-name inventory** = individual test function names from TDD cycles; **harness metrics** = hook success rate, phase-gate violation rate, agent recovery rate, commit atomicity score (SLO targets: 99%/5%/80%/95%)
 
 ## Development Notes

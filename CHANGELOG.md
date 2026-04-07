@@ -9,6 +9,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## Unreleased
 
 ### Refactored
+- **Pipeline architecture improvements (BL-127)**: Added `--continue` flag for spec→design flow, composite `design-reviewer` agent (ADR 0058), batched tdd-executor for same-file PCs, per-domain audit caching with `ecc audit cache` CLI. Reduces session count and subagent overhead.
+
 
 - **Local LLM offload via Ollama MCP (BL-128)**: Added optional local model delegation for 6 mechanical agents (cartography trio on 7B, diagram agents + convention auditor on 13B). MCP delegation pattern with graceful fallback. Added `ecc config local-llm.*` and setup guide.
 
