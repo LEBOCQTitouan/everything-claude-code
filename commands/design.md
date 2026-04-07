@@ -82,7 +82,7 @@ Launch a Task with the `planner` agent (allowedTools: [Read, Grep, Glob, Bash]):
 
 > **Preview for alternatives**: When the planner produces 2+ viable design approaches, use `AskUserQuestion` with the `preview` field to present each approach visually. Each option's preview should contain a Mermaid component diagram, file-change summary, or code structure comparison (under 15 lines per option). If only one viable approach exists, proceed directly without injecting a forced AskUserQuestion.
 
-## Phase 2: SOLID Validation
+## Phase 2: Design Review (SOLID + Oath + Security)
 
 > Before dispatching, tell the user which validation agent is being launched (`uncle-bob`) and that it will evaluate the design against SOLID and Clean Architecture principles.
 
