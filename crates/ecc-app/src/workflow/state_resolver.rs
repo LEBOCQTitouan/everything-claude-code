@@ -19,6 +19,76 @@ pub struct Warning {
     pub message: String,
 }
 
+/// Maximum anchor file size to prevent DoS from corrupted files.
+const ANCHOR_MAX_BYTES: usize = 4096;
+
+/// Anchor file name for pinning state directory resolution.
+const ANCHOR_FILE_NAME: &str = ".state-dir";
+
+/// Read the `.state-dir` anchor file from `<project_dir>/.claude/workflow/`.
+///
+/// Returns `(Some(dir), warnings)` if the anchor is valid and the directory exists.
+/// Returns `(None, warnings)` to signal "fall through to git resolution".
+fn read_anchor(
+    fs: &dyn FileSystem,
+    project_dir: &Path,
+) -> (Option<PathBuf>, Vec<Warning>) {
+    let anchor_path = project_dir
+        .join(".claude/workflow")
+        .join(ANCHOR_FILE_NAME);
+    let content = match fs.read_to_string(&anchor_path) {
+        Ok(c) => c,
+        Err(_) => return (None, vec![]),
+    };
+    if content.len() > ANCHOR_MAX_BYTES {
+        return (
+            None,
+            vec![Warning {
+                message: format!(
+                    ".state-dir anchor exceeds {} bytes — ignoring",
+                    ANCHOR_MAX_BYTES
+                ),
+            }],
+        );
+    }
+    let trimmed = content.trim();
+    if trimmed.is_empty() {
+        return (
+            None,
+            vec![Warning {
+                message: format!(
+                    ".state-dir anchor at {} has invalid content — falling back to git resolution",
+                    anchor_path.display()
+                ),
+            }],
+        );
+    }
+    let anchor_dir = PathBuf::from(trimmed);
+    if !anchor_dir.is_absolute() {
+        return (
+            None,
+            vec![Warning {
+                message: format!(
+                    ".state-dir anchor at {} has invalid content — falling back to git resolution",
+                    anchor_path.display()
+                ),
+            }],
+        );
+    }
+    if !fs.exists(&anchor_dir) {
+        return (
+            None,
+            vec![Warning {
+                message: format!(
+                    ".state-dir anchor points to nonexistent {} — falling back to git resolution",
+                    anchor_dir.display()
+                ),
+            }],
+        );
+    }
+    (Some(anchor_dir), vec![])
+}
+
 /// Resolve the state directory for the current context.
 ///
 /// Returns `(state_dir, warnings)` where `state_dir` is the absolute path to
@@ -38,7 +108,14 @@ pub fn resolve_state_dir(
         .or_else(|| env.current_dir())
         .unwrap_or_else(|| PathBuf::from("."));
 
-    // Step 2: Try git-dir resolution
+    // Step 1.5: Check .state-dir anchor file — overrides git resolution when valid
+    let (anchor_result, anchor_warnings) = read_anchor(fs, &project_dir);
+    warnings.extend(anchor_warnings);
+    if let Some(dir) = anchor_result {
+        return (dir, warnings);
+    }
+
+        // Step 2: Try git-dir resolution
     let state_dir = match git.git_dir(&project_dir) {
         Ok(git_dir) => git_dir.join("ecc-workflow"),
         Err(GitError::NotARepo) => {
