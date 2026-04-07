@@ -52,19 +52,8 @@ fn read_anchor(
         );
     }
     let trimmed = content.trim();
-    if trimmed.is_empty() {
-        return (
-            None,
-            vec![Warning {
-                message: format!(
-                    ".state-dir anchor at {} has invalid content — falling back to git resolution",
-                    anchor_path.display()
-                ),
-            }],
-        );
-    }
     let anchor_dir = PathBuf::from(trimmed);
-    if !anchor_dir.is_absolute() {
+    if trimmed.is_empty() || !anchor_dir.is_absolute() {
         return (
             None,
             vec![Warning {
@@ -115,7 +104,7 @@ pub fn resolve_state_dir(
         return (dir, warnings);
     }
 
-        // Step 2: Try git-dir resolution
+    // Step 2: Try git-dir resolution
     let state_dir = match git.git_dir(&project_dir) {
         Ok(git_dir) => git_dir.join("ecc-workflow"),
         Err(GitError::NotARepo) => {
