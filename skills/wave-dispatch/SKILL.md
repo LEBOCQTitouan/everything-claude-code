@@ -65,3 +65,23 @@ If one or more PCs in a wave fail:
 2. Merge successful PCs' branches. Discard failed PCs' branches.
 3. For each failed PC, apply Fix-Round Budget (see implement.md § Fix-Round Budget). If budget not exceeded, re-dispatch the failed PC. If budget exceeded, present diagnostic report and AskUserQuestion per the budget protocol. If user selects "Skip this PC", mark as failed and proceed. If "Abort", stop the pipeline. If "Keep trying", grant 2 more rounds and re-dispatch. Merge conflicts, worktree failures, and regression failures remain immediate STOPs — budget logic applies ONLY to subagent test failures.
 4. On re-entry, re-derive the wave plan from tasks.md. Skip completed PCs. Re-dispatch only failed/incomplete PCs in the first incomplete wave.
+
+## Batched Dispatch
+
+When wave-analysis marks a group of PCs as "batchable" (same primary file, independent):
+
+1. Build a **combined context brief** containing all batched PCs' specs under separate `## PC Spec` headings
+2. Launch a single Task with `tdd-executor` for the entire batch
+3. The tdd-executor executes each PC's RED-GREEN-REFACTOR cycle sequentially within one invocation
+4. Commits are per-PC (not per-batch) — each PC gets its own commit(s)
+
+### Fix-Round Budget in Batches
+
+- Fix-round budget is tracked per-PC, not per-batch
+- If one PC in the batch fails its fix-round budget, sibling PCs continue execution
+- The failed PC is reported individually; successful PCs are committed normally
+- On re-entry, only the failed PC is re-dispatched (not the whole batch)
+
+### Fallback
+
+If batched dispatch fails (subagent crash), fall back to sequential single-PC dispatch for each PC in the batch. This preserves existing behavior.
