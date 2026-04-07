@@ -54,6 +54,21 @@ fn now_secs() -> u64 {
         .as_secs()
 }
 
+impl FileCacheStore {
+    /// Return a cached entry only if it exists, is not expired, and its stored
+    /// `content_hash` matches `expected_hash`.  Returns `None` on any mismatch.
+    pub fn check_with_hash(
+        &self,
+        key: &str,
+        expected_hash: &str,
+    ) -> Result<Option<CacheEntry>, CacheError> {
+        match self.check(key)? {
+            Some(entry) if entry.content_hash == expected_hash => Ok(Some(entry)),
+            _ => Ok(None),
+        }
+    }
+}
+
 impl CacheStore for FileCacheStore {
     fn check(&self, key: &str) -> Result<Option<CacheEntry>, CacheError> {
         let path = self.cache_dir.join(format!("{}.json", sanitize_key(key)));
