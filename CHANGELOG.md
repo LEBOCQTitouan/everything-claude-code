@@ -28,6 +28,9 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Write-a-PRD skill (BL-012)**: Interactive PRD generation skill. 6-step flow: problem interview, codebase exploration, alternatives, scope hammering, module sketch, file output to `docs/prds/`. Added `docs/prds/` to phase-gate allowlist.
+
+
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
