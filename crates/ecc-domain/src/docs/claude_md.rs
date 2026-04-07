@@ -29,7 +29,7 @@ pub fn extract_claims(content: &str) -> Vec<CountClaim> {
 
         for cap in re.captures_iter(line) {
             let num: u64 = cap[1].parse().unwrap_or(0);
-            let label = &cap[2];
+            let _label = &cap[2];
             let text = cap[0].to_string();
             // Avoid duplicates
             if !claims.iter().any(|c: &CountClaim| c.text == text) {

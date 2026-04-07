@@ -64,15 +64,15 @@ pub fn extract_pc_ids(content: &str) -> Vec<String> {
 pub fn extract_pc_ac_coverage(content: &str) -> Vec<(String, Vec<String>)> {
     let mut mappings = Vec::new();
     for line in content.lines() {
-        if let Some(pc) = line.find("PC-").and_then(|start| {
-            let end = line[start..].find('|').map(|e| start + e).unwrap_or(line.len());
-            Some(line[start..end].trim().to_string())
-        }) {
-            if pc.starts_with("PC-") {
-                let acs: Vec<String> = extract_ac_ids(line);
-                if !acs.is_empty() {
-                    mappings.push((pc, acs));
-                }
+        let Some(start) = line.find("PC-") else {
+            continue;
+        };
+        let end = line[start..].find('|').map_or(line.len(), |e| start + e);
+        let pc = line[start..end].trim().to_string();
+        if pc.starts_with("PC-") {
+            let acs: Vec<String> = extract_ac_ids(line);
+            if !acs.is_empty() {
+                mappings.push((pc, acs));
             }
         }
     }

@@ -69,13 +69,11 @@ pub fn run_validate_claude_md(
         terminal.stdout_write("All counts valid\n");
     } else {
         for c in &claims {
-            if !c.matches {
-                if let Some(actual) = c.actual {
+            if !c.matches && let Some(actual) = c.actual {
                     terminal.stderr_write(&format!(
                         "MISMATCH: \"{}\" — claimed {}, actual {}\n",
                         c.text, c.claimed, actual
                     ));
-                }
             }
         }
     }

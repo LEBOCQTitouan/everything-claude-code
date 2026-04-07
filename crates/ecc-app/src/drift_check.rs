@@ -16,7 +16,7 @@ pub fn run_drift_check(
     let spec_content = read_first_existing(fs, spec_dir, &["spec.md", "plan.md"]);
     let design_content = read_first_existing(fs, spec_dir, &["design.md", "solution.md"]);
     let done_path = Path::new(".claude/workflow/implement-done.md");
-    let done_content = fs.read_to_string(done_path).ok();
+    let _done_content = fs.read_to_string(done_path).ok();
 
     if spec_content.is_none() {
         terminal.stderr_write("ERROR: No spec.md or plan.md found\n");
