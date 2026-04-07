@@ -38,7 +38,15 @@ Mark each item complete as the phase finishes.
 ## Arguments
 
 - `--scope=<path>` — limit to subdirectory (default: entire repo)
-- `--window=<days>` — git history window for evolution analysis (default: 180)
+- `--window=<days>`
+- `--force` — bypass audit cache, re-run all domain audits from scratch — git history window for evolution analysis (default: 180)
+
+## 0.5. Cache Check
+
+Before launching domain audits, check audit cache per domain:
+1. `ecc audit cache check <domain>` — if hit AND no `--force`: skip, reuse cached section
+2. Cache miss OR `--force`: run normally
+3. After each audit: `ecc audit cache write`. On write failure: WARN, proceed uncached.
 
 ## 1. Analysis
 
