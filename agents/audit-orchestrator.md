@@ -143,3 +143,13 @@ After subagents complete, run `ecc cost breakdown --by agent --since 1h`. Includ
 ## Commit Cadence
 
 Single commit: `docs: generate codebase health audit report`
+
+## Audit Cache Integration
+
+Before launching each domain analysis agent:
+
+1. Check `ecc audit cache check <domain-name>` — if hit, reuse cached findings
+2. After domain agent completes: `ecc audit cache write <domain-name>` with findings as value
+3. On cache write failure: log WARN (`Audit cache write failed for <domain>: <error>`), proceed uncached — cache failure must never block the audit pipeline
+4. `--force` flag from audit-full.md bypasses all cache checks
+
