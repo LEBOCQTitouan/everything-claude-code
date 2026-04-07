@@ -1,7 +1,7 @@
 ---
 name: doc-orchestrator
 description: Documentation suite orchestrator. Coordinates doc-analyzer, doc-generator, doc-validator, doc-reporter, and diagram-generator agents in a phased pipeline with parallel module-level execution.
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuestion"]
+tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuestion", "TaskCreate", "TaskUpdate"]
 model: sonnet
 effort: medium
 skills: ["doc-guidelines"]
@@ -12,6 +12,19 @@ tracking: todowrite
 # Documentation Suite Orchestrator
 
 Coordinates the full documentation pipeline: planning, analysis, generation, validation, coverage, diagrams, README sync, and CLAUDE.md challenge. Delegates to specialized agents, maximizes parallelism.
+
+## Task Tracking
+
+Create one TaskCreate per pipeline phase:
+- "Doc analysis" (doc-analyzer)
+- "Doc generation" (doc-generator)
+- "Doc validation" (doc-validator)
+- "Coverage reporting" (doc-reporter)
+- "Diagram generation" (diagram-generator)
+- "README sync"
+- "CLAUDE.md challenge"
+
+Mark each `in_progress` when starting, `completed` when done.
 
 ## Reference Skills
 

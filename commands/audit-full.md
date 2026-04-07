@@ -1,6 +1,6 @@
 ---
 description: Full codebase audit — all domains in parallel with cross-domain correlation, executive summary, per-domain scorecard, and prioritized remediation roadmap.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, TaskCreate, TaskUpdate, TaskGet, TaskList]
 ---
 
 # Full Codebase Audit

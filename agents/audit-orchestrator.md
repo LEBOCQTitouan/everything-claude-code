@@ -1,7 +1,7 @@
 ---
 name: audit-orchestrator
 description: Codebase health audit orchestrator. Delegates to domain-specific audit agents in parallel, correlates cross-domain findings, and generates a comprehensive audit report.
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuestion"]
+tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "AskUserQuestion", "TaskCreate", "TaskUpdate"]
 model: opus
 effort: max
 skills: ["architecture-review"]
@@ -11,6 +11,21 @@ tracking: todowrite
 # Audit Orchestrator
 
 Coordinates the full codebase health audit: discovery, evolutionary analysis, domain-specific audits, cross-domain correlation, report generation, console summary. Delegates to specialized agents, maximizes parallelism.
+
+## Task Tracking
+
+Create one TaskCreate per audit domain at the start of Phase 2 (parallel dispatch):
+- "Architecture audit" (arch-reviewer)
+- "Code quality audit" (uncle-bob)
+- "Convention audit" (convention-auditor)
+- "Documentation audit" (doc-validator)
+- "Error handling audit" (error-handling-auditor)
+- "Evolution audit" (evolution-analyst)
+- "Observability audit" (observability-auditor)
+- "Security audit" (security-reviewer)
+- "Test architecture audit" (test-auditor)
+
+Mark each `in_progress` when dispatching the agent, `completed` when the agent returns. This provides spinner UX during the 5-10 minute audit.
 
 ## Reference Skills
 
