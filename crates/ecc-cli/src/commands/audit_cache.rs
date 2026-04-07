@@ -21,13 +21,20 @@ pub enum AuditCacheAction {
 }
 
 /// Execute the check action against the given store; returns the output string.
-pub fn run_check(_store: &dyn CacheStore, _domain: &str) -> anyhow::Result<String> {
-    todo!("not yet implemented")
+pub fn run_check(store: &dyn CacheStore, domain: &str) -> anyhow::Result<String> {
+    match store.check(domain).map_err(|e| anyhow::anyhow!("{e}"))? {
+        None => Ok(format!("miss: no valid cache entry for '{}'", domain)),
+        Some(entry) => Ok(format!(
+            "hit: domain='{}' created_at={} ttl={} hash={}",
+            domain, entry.created_at, entry.ttl_secs, entry.content_hash
+        )),
+    }
 }
 
 /// Execute the clear action against the given store; returns a confirmation string.
-pub fn run_clear(_store: &dyn CacheStore) -> anyhow::Result<String> {
-    todo!("not yet implemented")
+pub fn run_clear(store: &dyn CacheStore) -> anyhow::Result<String> {
+    store.clear().map_err(|e| anyhow::anyhow!("{e}"))?;
+    Ok("cache cleared".to_string())
 }
 
 pub fn run(args: AuditCacheArgs) -> anyhow::Result<()> {
