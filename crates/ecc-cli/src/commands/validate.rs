@@ -57,6 +57,12 @@ pub enum CliValidateTarget {
         #[arg(long)]
         spec: Option<PathBuf>,
     },
+    /// Validate CLAUDE.md numeric claims against actual counts
+    ClaudeMd {
+        /// Cross-check numeric counts
+        #[arg(long)]
+        counts: bool,
+    },
     /// Validate cartography journey and flow files, check staleness and optionally show coverage
     Cartography {
         /// Show coverage dashboard (total files, referenced, percentage, priority gaps)
@@ -87,6 +93,19 @@ pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
                 Ok(true) => Ok(()),
                 Ok(false) => std::process::exit(1),
                 Err(e) => Err(anyhow::anyhow!("{e}")),
+            }
+        }
+        CliValidateTarget::ClaudeMd { counts } => {
+            if *counts {
+                let shell = ecc_infra::process_executor::ProcessExecutor;
+                let project_root = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+                if ecc_app::validate_claude_md::run_validate_claude_md(&fs, &shell, &terminal, &project_root, false) {
+                    Ok(())
+                } else {
+                    std::process::exit(1);
+                }
+            } else {
+                Ok(()) // --counts is the only mode for now
             }
         }
         CliValidateTarget::Cartography { coverage } => {
@@ -138,7 +157,8 @@ fn map_target(cli: &CliValidateTarget) -> ecc_app::validate::ValidateTarget {
         CliValidateTarget::Teams => ecc_app::validate::ValidateTarget::Teams,
 
         // Spec, Design, and Cartography are handled directly in run() — unreachable here
-        CliValidateTarget::Patterns { .. }
+        CliValidateTarget::ClaudeMd { .. }
+        | CliValidateTarget::Patterns { .. }
         | CliValidateTarget::Spec { .. }
         | CliValidateTarget::Design { .. }
         | CliValidateTarget::Cartography { .. } => {

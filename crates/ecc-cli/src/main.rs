@@ -45,6 +45,14 @@ enum Command {
     Dev(commands::dev::DevArgs),
     /// Deterministic backlog management
     Backlog(commands::backlog::BacklogArgs),
+    /// Drift commands
+    Drift(commands::drift::DriftArgs),
+    /// Docs commands
+    Docs(commands::docs::DocsArgs),
+    /// Diagram commands
+    Diagram(commands::diagram::DiagramArgs),
+    /// CommitCmd commands
+    CommitCmd(commands::commit_cmd::CommitCmdArgs),
     /// Manage workflow bypass tokens and audit trail
     Bypass(commands::bypass::BypassArgs),
     /// Manage git worktrees for ECC sessions
@@ -188,6 +196,10 @@ fn main() -> anyhow::Result<()> {
         Command::Claw(args) => commands::claw::run(args),
         Command::Dev(args) => commands::dev::run(args),
         Command::Backlog(args) => commands::backlog::run(args),
+        Command::Drift(args) => commands::drift::run(args),
+        Command::Docs(args) => commands::docs::run(args),
+        Command::Diagram(args) => commands::diagram::run(args),
+        Command::CommitCmd(args) => commands::commit_cmd::run(args),
         Command::Bypass(args) => commands::bypass::run(args),
         Command::Worktree(args) => commands::worktree::run(args),
         Command::Sources(args) => commands::sources::run(args),
