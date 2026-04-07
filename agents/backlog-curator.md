@@ -1,7 +1,7 @@
 ---
 name: backlog-curator
 description: Lightweight curation agent for the /backlog command. Challenges inputs, optimizes ideas into ready-to-execute prompts, and manages the persistent backlog index.
-tools: ["Read", "Grep", "Glob", "Write", "Edit", "AskUserQuestion"]
+tools: ["Read", "Grep", "Glob", "Write", "Edit", "Bash", "AskUserQuestion"]
 model: sonnet
 effort: medium
 skills: ["backlog-management", "prompt-optimizer", "grill-me"]
@@ -43,10 +43,10 @@ Full curation flow:
    - Follow the optimization rules from the `backlog-management` skill
    - Include: context, acceptance criteria, scope boundaries, verification steps
 
-5. **Check duplicates**
-   - Read `docs/backlog/BACKLOG.md` if it exists
-   - Compare title keywords and tags against open entries
-   - If match found, ask: merge into existing, replace existing, or add separately
+5. **Check duplicates** (via CLI)
+   - Run `ecc backlog check-duplicates "<title>" --tags <tags>` via Bash tool
+   - If CLI returns empty output (no matches): treat as "no duplicates found", proceed to Step 6
+   - If CLI returns matches: present merge/replace/add-separately options via AskUserQuestion
 
 6. **Persist entry**
    - Generate next sequential ID (read index for highest existing)
