@@ -420,23 +420,29 @@ mod tests {
     #[test]
     fn anchor_file_overrides_git_resolution() {
         let env = make_env(Some("/project"), None);
+        // Git would resolve to feature-x, but anchor points to OTHER-SESSION
         let git = MockGitInfo::worktree("/project/.git/worktrees/feature-x");
         let fs = InMemoryFileSystem::new();
 
-        // The anchor directory must exist in the FS
-        let anchor_dir = PathBuf::from("/project/.git/worktrees/feature-x/ecc-workflow");
+        // Anchor points to a DIFFERENT worktree than git would resolve
+        let anchor_dir = PathBuf::from("/project/.git/worktrees/OTHER-SESSION/ecc-workflow");
         fs.create_dir_all(&anchor_dir).unwrap();
 
-        // Write the anchor file
         fs.write(
             &PathBuf::from("/project/.claude/workflow/.state-dir"),
-            "/project/.git/worktrees/feature-x/ecc-workflow\n",
+            "/project/.git/worktrees/OTHER-SESSION/ecc-workflow\n",
         )
         .unwrap();
 
         let (dir, warnings) = resolve_state_dir(&env, &git, &fs);
 
+        // Must return anchor path, NOT git-resolved path
         assert_eq!(dir, anchor_dir, "anchor should override git resolution");
+        assert_ne!(
+            dir,
+            PathBuf::from("/project/.git/worktrees/feature-x/ecc-workflow"),
+            "must NOT return git-resolved path when anchor exists"
+        );
         assert!(warnings.is_empty(), "no warnings expected: {warnings:?}");
     }
 
