@@ -33,6 +33,8 @@ enum Command {
     Init(commands::init::InitArgs),
     /// Audit ECC configuration health
     Audit(commands::audit::AuditArgs),
+    /// Manage audit cache (check/clear)
+    AuditCache(commands::audit_cache::AuditCacheArgs),
     /// Generate shell completions
     Completion(commands::completion::CompletionArgs),
     /// Run a hook by ID
@@ -190,6 +192,7 @@ fn main() -> anyhow::Result<()> {
         Command::Install(args) => commands::install::run(args),
         Command::Init(args) => commands::init::run(args),
         Command::Audit(args) => commands::audit::run(args),
+        Command::AuditCache(args) => commands::audit_cache::run(args),
         Command::Completion(args) => commands::completion::run(args),
         Command::Hook(args) => commands::hook::run(args),
         Command::Validate(args) => commands::validate::run(args),
