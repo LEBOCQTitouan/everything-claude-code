@@ -10,6 +10,8 @@ pub mod backlog;
 pub mod cartography;
 pub mod claw;
 pub mod config;
+pub mod docs;
+pub mod drift;
 pub mod cost;
 pub mod detection;
 pub mod diff;
