@@ -18,6 +18,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Token optimization wave 2 (BL-125)**: Extracted TodoWrite boilerplate from 25 agents to `tracking: todowrite` frontmatter with install-time expansion via `expand_tracking_field()`. Trimmed CLAUDE.md CLI section from 77 to 13 lines (top-10 commands + pointer). Trimmed `rules/common/performance.md` from 82 to 45 lines and `rules/common/agents.md` from 53 to 14 lines. ~130 lines removed across instruction files.
+
 - **Harness reliability metrics instrumentation (BL-106)**: Wired existing metrics infrastructure to 4 execution paths: hook dispatch (HookExecution events with duration, success/failure), workflow transitions (PhaseTransition events with from/to phases), agent spawns (AgentSpawn events with failure detection from $.error/$.exit_code, retry_count parsing), and commit gates (CommitGate events from quality_gate hook and `ecc metrics record-gate` CLI). Added `--json` and `--trend` flags to `ecc metrics summary`, cross-session trend reporting with mirror-window comparison, ECC aspirational SLO targets (hook>=99%, gate<=5%, agent>=80%, commit>=95%) with `[!]` below-target indicators. Kill switch via `ECC_METRICS_DISABLED=1`. Catchup command integration via `ecc metrics summary --session <id> --json`. Domain types: `ReferenceTargets`, `TrendComparison`. 39 pass conditions, 2508 tests pass.
 
 - **Miri unsafe code verification (BL-101)**: Added `#[cfg_attr(miri, ignore)]` to ecc-flock FFI tests, enhanced SAFETY comments on all 3 unsafe blocks with invariant documentation. Miri verifies non-FFI tests; FFI calls (libc::flock) cannot be interpreted by Miri.
