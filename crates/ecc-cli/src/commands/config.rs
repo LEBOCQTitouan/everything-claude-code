@@ -17,7 +17,7 @@ pub enum ConfigSubcommand {
 
 #[derive(Args)]
 pub struct SetArgs {
-    /// Configuration key (only `log-level` is supported in v1)
+    /// Configuration key (e.g. `log-level`, `local-llm.enabled`)
     pub key: String,
     /// Configuration value
     pub value: String,
@@ -29,25 +29,35 @@ pub fn run(args: ConfigArgs) -> anyhow::Result<()> {
     }
 }
 
+fn build_store() -> anyhow::Result<FileConfigStore> {
+    Ok(FileConfigStore::new(
+        dirs::home_dir()
+            .ok_or_else(|| anyhow::anyhow!("Cannot determine home directory"))?
+            .join(".ecc"),
+        std::env::current_dir().ok().map(|d| d.join(".ecc")),
+    ))
+}
+
 fn run_set(args: SetArgs) -> anyhow::Result<()> {
-    match args.key.as_str() {
-        "log-level" => {
-            let store = FileConfigStore::new(
-                dirs::home_dir()
-                    .ok_or_else(|| anyhow::anyhow!("Cannot determine home directory"))?
-                    .join(".ecc"),
-                std::env::current_dir().ok().map(|d| d.join(".ecc")),
-            );
-            ecc_app::config_cmd::set_log_level(&store, &args.value)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-            println!("Config updated: log-level = {}", args.value);
-            Ok(())
-        }
-        other => Err(anyhow::anyhow!(
-            "Unknown config key '{}'. Valid keys: log-level",
-            other
-        )),
+    let key = args.key.as_str();
+    if key == "log-level" {
+        let store = build_store()?;
+        ecc_app::config_cmd::set_log_level(&store, &args.value)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        println!("Config updated: log-level = {}", args.value);
+        return Ok(());
     }
+    if key.starts_with("local-llm.") {
+        let store = build_store()?;
+        ecc_app::config_cmd::set_local_llm(&store, key, &args.value)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        println!("Config updated: {} = {}", key, args.value);
+        return Ok(());
+    }
+    Err(anyhow::anyhow!(
+        "Unknown config key '{}'. Valid keys: log-level, local-llm.*",
+        key
+    ))
 }
 
 #[cfg(test)]
