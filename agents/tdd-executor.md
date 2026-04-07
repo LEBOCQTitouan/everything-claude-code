@@ -103,3 +103,25 @@ When complete, return these fields in your final message:
 - **files_changed**: List of file paths modified
 - **test_names**: List of fully qualified test function names written during this PC (e.g., `["metrics::event::tests::hook_execution_event", "metrics::aggregate::tests::aggregator_computes_rates"]`). Fully qualified means `module::path::test_name` to avoid collisions across modules. Extract from `cargo test` output or the test function names in the source files you created/modified.
 - **error**: null on success, or error description on failure
+
+## Multi-PC Mode
+
+When the context brief contains multiple `## PC Spec` blocks (batched dispatch from wave-dispatch):
+
+1. Execute each PC's RED-GREEN-REFACTOR cycle **sequentially** within this single invocation
+2. Commit after each PC's cycle (not after the whole batch)
+3. If one PC fails its fix-round budget, continue executing remaining PCs — do not abort the batch
+4. Report status **per-PC** in the final output: one set of fields (pc_id, status, commits, etc.) per PC
+
+### Multi-PC Output Format
+
+Return a JSON array of result objects, one per PC:
+
+```json
+[
+  {"pc_id": "PC-003", "status": "success", ...},
+  {"pc_id": "PC-004", "status": "success", ...}
+]
+```
+
+If any PC fails, its status is `failure` but other PCs retain their individual `success` status.
