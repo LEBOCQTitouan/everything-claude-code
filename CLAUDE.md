@@ -157,6 +157,8 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Fix-round budget: max 2 fix attempts per PC/E2E test before asking the user for help via AskUserQuestion (inspired by Stripe Minions CI budget pattern). User can grant more rounds, skip, abort, or provide guidance. Hard cap of 8 total rounds per PC.
 - `test_names` field in tdd-executor output (BL-050): list of fully qualified test function names. When absent (older invocations), TDD Log shows "--". Type: list of strings. Backward compat: column degrades gracefully.
 - `ECC_METRICS_DISABLED=1` disables all harness metrics recording (fire-and-forget kill switch). Reads remain functional. Set in environment to opt out of metrics overhead.
+- CLI-redirected agents (doc-generator, evolution-analyst, backlog-curator) call `ecc analyze` and `ecc backlog` commands for raw data — agent still interprets results
+- Audit-challenger is conditional: skipped when <3 findings AND all ≤MEDIUM (see BL-124)
 - Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end; **fix-round budget** = max 2 fix attempts per PC before user escalation; **coverage delta** = before/after test coverage % comparison across TDD loop; **bounded context enumeration** = listing affected DDD contexts in /design output; **per-test-name inventory** = individual test function names from TDD cycles; **harness metrics** = hook success rate, phase-gate violation rate, agent recovery rate, commit atomicity score (SLO targets: 99%/5%/80%/95%)
 
 ## Development Notes
