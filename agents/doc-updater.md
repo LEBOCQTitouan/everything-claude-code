@@ -5,6 +5,7 @@ tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: haiku
 effort: low
 skills: ["doc-guidelines"]
+tracking: todowrite
 ---
 # Documentation & Codemap Specialist
 
@@ -20,15 +21,12 @@ You are a documentation specialist focused on keeping codemaps and documentation
 
 ## Codemap Workflow
 
-> **Tracking**: Create a TodoWrite checklist for the codemap workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
-
 TodoWrite items:
 - "Step 1: Analyze Repository"
 - "Step 2: Analyze Modules"
 - "Step 3: Generate Codemaps"
 - "Step 4: Codemap Format"
 
-Mark each item complete as the step finishes.
 
 ### 1. Analyze Repository
 - Identify workspaces/packages

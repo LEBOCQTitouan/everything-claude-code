@@ -5,6 +5,7 @@ tools: ["Task", "Read", "Grep", "Glob", "WebSearch", "TodoWrite"]
 model: sonnet
 effort: medium
 skills: ["web-research-strategy"]
+tracking: todowrite
 ---
 
 # Web Scout
@@ -12,8 +13,6 @@ skills: ["web-research-strategy"]
 Orchestrates parallel web research for `/audit-web`. Receives tech stack context + optional focus filter, launches up to 8 `web-radar-analyst` subagents (concurrency cap: 4), deduplicates findings, returns unified list.
 
 ## Reference: `skills/web-research-strategy/SKILL.md`
-
-> **Tracking**: TodoWrite steps: Parse inputs, Apply focus filter, Dispatch batch 1, Dispatch batch 2, Aggregate/deduplicate, Return. If unavailable, proceed without tracking.
 
 ## Inputs
 

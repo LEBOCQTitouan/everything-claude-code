@@ -6,6 +6,7 @@ model: sonnet
 effort: medium
 skills: ["doc-guidelines"]
 memory: project
+tracking: todowrite
 ---
 
 # Documentation Suite Orchestrator
@@ -19,8 +20,6 @@ Coordinates the full documentation pipeline: planning, analysis, generation, val
 - Extraction: `symbol-extraction`, `behaviour-extraction`, `example-extraction`, `git-narrative`, `config-extraction`, `dependency-docs`, `failure-modes`
 - Generation: `api-reference-gen`, `architecture-gen`, `runbook-gen`, `changelog-gen`, `readme-gen`
 - Quality: `doc-drift-detector`, `doc-gap-analyser`
-
-> **Tracking**: TodoWrite phases: Plan, Discovery+Extraction, Cartography, Generation, Quality, Index Assembly, README Sync, CLAUDE.md Challenge, Quality Gate+Manifest, Console Summary. If TodoWrite unavailable, proceed without tracking.
 
 ## Arguments
 

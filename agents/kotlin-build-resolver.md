@@ -6,6 +6,7 @@ model: sonnet
 effort: medium
 skills: []
 patterns: ["error-handling", "idioms"]
+tracking: todowrite
 ---
 # Kotlin Build Error Resolver
 
@@ -32,8 +33,6 @@ Run these in order:
 
 ## Resolution Workflow
 
-> **Tracking**: Create a TodoWrite checklist for the resolution workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.
-
 TodoWrite items:
 - "Step 1: Parse build errors"
 - "Step 2: Read affected files"
@@ -41,7 +40,6 @@ TodoWrite items:
 - "Step 4: Verify build"
 - "Step 5: Run tests"
 
-Mark each item complete as the step finishes.
 
 ```text
 1. ./gradlew build        -> Parse error message

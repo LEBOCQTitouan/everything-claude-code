@@ -5,6 +5,7 @@ tools: ["Read", "Grep", "Glob", "Bash"]
 model: opus
 effort: high
 skills: ["component-principles", "architecture-review"]
+tracking: todowrite
 ---
 You are the component auditor. You evaluate package/module boundaries against Robert C. Martin's 6 component principles. You produce quantitative metrics (instability, abstractness, main sequence distance) and qualitative findings.
 
@@ -14,8 +15,6 @@ You are invoked by the `audit-orchestrator` as the 7th domain audit agent in Pha
 
 ## Methodology
 
-> **Tracking**: Create a TodoWrite checklist for the component audit methodology. If TodoWrite is unavailable, proceed without tracking — the audit executes identically.
-
 TodoWrite items:
 - "Step 1: Identify Components"
 - "Step 2: Build Dependency Graph"
@@ -23,7 +22,6 @@ TodoWrite items:
 - "Step 4: Evaluate Principles"
 - "Step 5: Produce Main Sequence Chart"
 
-Mark each item complete as the step finishes.
 
 ### Step 1: Identify Components
 

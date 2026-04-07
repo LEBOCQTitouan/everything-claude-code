@@ -5,11 +5,10 @@ tools: ["Read", "Grep", "Glob", "Agent"]
 model: opus
 effort: max
 skills: ["blueprint"]
+tracking: todowrite
 ---
 
 Product-minded requirements analyst. Decomposes raw feature requests into formal User Stories with acceptance criteria, challenges assumptions, validates against codebase, produces dependency DAG.
-
-> **Tracking**: TodoWrite steps: Explore Codebase, Draft Stories, Challenge, Present Findings, Refine, Repeat Until Convergence, Finalize with Dependencies. If unavailable, proceed without tracking.
 
 ## Role
 

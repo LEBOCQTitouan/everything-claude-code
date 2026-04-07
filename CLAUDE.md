@@ -29,83 +29,22 @@ Optional: install [sccache](https://github.com/mozilla/sccache) for 11-14% faste
 
 Hexagonal architecture: domain → ports → app → infra → CLI (9 crates). `ecc-workflow` is a standalone binary for workflow state management. `ecc-flock` is a shared POSIX flock utility. `workflow-templates/` contains installable GitHub Actions YAML templates. See `docs/ARCHITECTURE.md` for full structure.
 
-## CLI Commands
+## CLI Commands (top 10)
 
 ```
-ecc analyze changelog [--since <tag|date>]  Generate conventional commit changelog
-ecc analyze hotspots [--top N] [--since <tag|date>]  Show most frequently changed files
-ecc analyze coupling [--threshold 0.7] [--since <tag|date>]  Show co-change file pairs
-ecc analyze bus-factor [--top N] [--since <tag|date>]  Show files with single-author risk
-ecc version          Show version
-ecc install          Install ECC config to ~/.claude/
-ecc init             Initialize ECC in current project
-ecc audit            Audit ECC configuration health
-ecc hook <id> [profiles]  Run a hook by ID
-ecc validate <target>     Validate content files (agents|commands|hooks|skills|rules|paths|patterns|teams)
-ecc validate spec <path>  Validate spec artifact (AC numbering, sequential IDs, no gaps)
-ecc validate design <path> [--spec <spec-path>]  Validate design artifact (PC table, AC coverage, dependency order)
-ecc dev on|off|status     Toggle ECC config on/off
-ecc dev switch dev|default [--dry-run]  Instant config switching via symlinks
-ecc validate statusline   Verify statusline installation
-ecc validate conventions  Validate naming, values, placement, and cross-references
-ecc validate cartography [--coverage]  Validate cartography schema, staleness, and coverage
-ecc status               Show workflow state, versions, component counts
-ecc config set <key> <value>  Persist CLI preferences (~/.ecc/config.toml)
-ecc log tail [--session <id>]  Live-tail current session logs
-ecc log search <query> [--session <id>] [--since 2d] [--level warn]  FTS5 search
-ecc log prune [--older-than 30d]  Clean up old logs
-ecc log export --format json|csv [--since 7d]  Export filtered logs
-ecc backlog next-id       Next sequential BL-NNN ID
-ecc backlog check-duplicates <title> [--tags t1,t2]  Check for duplicate entries
-ecc backlog reindex [--dry-run]  Regenerate BACKLOG.md from files
-ecc worktree gc [--force]  Clean up stale session worktrees (--force overrides merge-status safety)
-ecc worktree status        Show all session worktrees with merge state, safety info, and age
-ecc sources list          List all configured knowledge sources
-ecc sources add <url>     Add a new knowledge source
-ecc sources check         Check status of configured sources
-ecc sources reindex       Reindex sources for search
-ecc memory add --type <tier> --title <t> [--tags t1,t2]  Add memory entry
-ecc memory search <query> [--type T] [--tag T]  Search memories (FTS5)
-ecc memory list [--type T] [--tag T]  List memory entries
-ecc memory delete <id>     Delete a memory entry
-ecc memory promote <id>    Promote episodic to semantic
-ecc memory migrate         Migrate legacy docs/memory/ to SQLite
-ecc memory gc [--dry-run]  Garbage-collect stale memories
-ecc memory stats           Show memory store statistics
-ecc cost summary [--since 7d] [--model M]  Aggregated cost breakdown by model
-ecc cost breakdown --by agent|model [--since 7d]  Per-agent or per-model breakdown
-ecc cost compare --before DATE --after DATE  Before/after cost comparison
-ecc cost export --format json|csv [--since 7d]  Export cost data
-ecc cost prune [--older-than 90d]  Delete old cost records
-ecc campaign init <spec-dir>    Create campaign.md for grill-me decision persistence
-ecc campaign append-decision --question Q --answer A --source recommended|user  Append decision
-ecc campaign show              Output campaign.md as JSON
-ecc cost migrate  Import legacy JSONL data into SQLite
-ecc metrics summary [--since 7d] [--session S] [--json] [--trend]  Aggregated harness reliability rates
-ecc metrics record-gate --kind build|test|lint --outcome pass|fail  Record commit gate event
-ecc metrics export --format json|csv [--since 7d]  Export raw metric events
-ecc metrics prune [--older-than 90d]  Delete old metric events
-ecc audit-web profile init    Generate suggested audit profile from codebase
-ecc audit-web profile show    Display current audit profile
-ecc audit-web profile validate  Check profile structural correctness
-ecc audit-web profile reset   Delete the audit profile
-ecc audit-web validate-report <path>  Validate radar report structure
-ecc claw                  NanoClaw interactive REPL
-ecc completion <shell>    Generate shell completions
-ecc status [--json]      Show diagnostic snapshot (versions, phase, components)
-ecc update [--version <ver>] [--dry-run] [--pre]  Self-update from GitHub Releases
-ecc config set <key> <value>  Set persistent config (e.g., log-level info)
-ecc workflow init <concern> <feature>  Initialize workflow state
-ecc workflow transition <target>      Advance workflow phase
-ecc workflow status                   Show current workflow state
-ecc workflow recover                  Archive stuck state and reset to idle
-ecc workflow phase-gate               Gate writes during plan/solution phases
-ecc workflow tasks sync <path>        Parse tasks.md, output JSON summary
-ecc workflow tasks update <path> <id> <status>  Atomically update PC status
-ecc workflow tasks init <design> --output <path>  Generate tasks.md from design PCs
-ecc-workflow <subcommand>             Legacy alias (thin wrapper for ecc workflow)
-cargo xtask deploy [--dry-run]  Full local machine deploy (build, install, completions, RC)
+cargo test / cargo nextest run       Run all tests
+cargo clippy -- -D warnings          Lint with zero warnings
+cargo build --release                Build release binary
+ecc workflow init|transition|status  Workflow state machine
+ecc validate <target>                Validate agents|commands|hooks|skills|rules|teams
+ecc hook <id> [profiles]             Run a hook by ID
+ecc backlog next-id|reindex          Backlog operations
+ecc worktree gc|status               Worktree lifecycle
+ecc status [--json]                  Diagnostic snapshot (versions, phase, components)
+ecc dev on|off|switch                Toggle/switch ECC config
 ```
+
+Full CLI reference: `docs/commands-reference.md`
 
 ## Slash Commands
 

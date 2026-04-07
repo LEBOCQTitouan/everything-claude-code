@@ -145,7 +145,104 @@ pub(super) fn step_merge_artifacts(
         &mut merge_options,
     ));
 
+    // Expand tracking: todowrite frontmatter in installed agents
+    expand_agents_tracking(ctx.fs, ecc_root, &claude_dir.join("agents"));
+
     domain_merge::combine_reports(&all_reports)
+}
+
+/// Expand `tracking: todowrite` frontmatter in all agent files at `dest_dir`.
+///
+/// Reads the canonical template from `ecc_root/agents/.templates/todowrite-block.md`
+/// and inserts it before the first `TodoWrite items:` line (or at end) in each
+/// agent file that has `tracking: todowrite` in its YAML frontmatter.
+fn expand_agents_tracking(
+    fs: &dyn ecc_ports::fs::FileSystem,
+    ecc_root: &Path,
+    dest_dir: &Path,
+) {
+    let template_path = ecc_root
+        .join("agents")
+        .join(".templates")
+        .join("todowrite-block.md");
+    let Ok(template) = fs.read_to_string(&template_path) else {
+        tracing::debug!("todowrite template not found, skipping expansion");
+        return;
+    };
+    let template = template.trim();
+    if template.is_empty() {
+        return;
+    }
+
+    let Ok(entries) = fs.read_dir(dest_dir) else {
+        return;
+    };
+    for entry in entries {
+        if entry.extension().and_then(|e| e.to_str()) == Some("md") {
+            expand_tracking_field(fs, &entry, template);
+        }
+    }
+}
+
+/// Expand a single agent file's `tracking: todowrite` into the canonical block.
+fn expand_tracking_field(
+    fs: &dyn ecc_ports::fs::FileSystem,
+    agent_path: &Path,
+    template: &str,
+) {
+    let Ok(content) = fs.read_to_string(agent_path) else {
+        return;
+    };
+
+    // Check frontmatter for tracking: todowrite
+    if !has_tracking_todowrite(&content) {
+        return;
+    }
+
+    // Idempotency: skip if template already present
+    if content.contains(template) {
+        return;
+    }
+
+    // Find insertion point: before first "TodoWrite items:" line
+    let lines: Vec<&str> = content.lines().collect();
+    let insert_idx = lines
+        .iter()
+        .position(|l| l.trim().starts_with("TodoWrite items:"));
+
+    let new_content = if let Some(idx) = insert_idx {
+        let mut result = lines[..idx].join("\n");
+        result.push('\n');
+        result.push_str(template);
+        result.push_str("\n\n");
+        result.push_str(&lines[idx..].join("\n"));
+        result.push('\n');
+        result
+    } else {
+        let mut result = content.clone();
+        if !result.ends_with('\n') {
+            result.push('\n');
+        }
+        result.push('\n');
+        result.push_str(template);
+        result.push('\n');
+        result
+    };
+
+    let _ = fs.write(agent_path, &new_content);
+}
+
+/// Check if content has `tracking: todowrite` in YAML frontmatter.
+fn has_tracking_todowrite(content: &str) -> bool {
+    let Some(fm_end) = content.strip_prefix("---\n").and_then(|rest| {
+        rest.find("\n---").map(|i| i + 4 + 4) // +4 for "---\n" prefix, +4 for "\n---"
+    }) else {
+        return false;
+    };
+    let frontmatter = &content[..fm_end];
+    frontmatter
+        .lines()
+        .any(|l| l.trim() == "tracking: todowrite")
 }
 
 /// Determine which rule files to skip based on detected project stack.
@@ -280,5 +377,90 @@ pub(super) fn step_write_manifest(
                 .errors
                 .push(format!("Failed to write manifest: {e}"));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ecc_ports::fs::FileSystem;
+    use ecc_test_support::InMemoryFileSystem;
+
+    const TEMPLATE: &str = "> **Tracking**: Create a TodoWrite checklist for this workflow. If TodoWrite is unavailable, proceed without tracking — the workflow executes identically.\n\nMark each item complete as the step finishes.";
+
+    // PC-001: expand inserts block before TodoWrite items line
+    #[test]
+    fn expand_tracking_inserts_before_items() {
+        let fs = InMemoryFileSystem::new();
+        let agent = "---\nname: test\ntracking: todowrite\n---\n\nSome intro.\n\nTodoWrite items:\n- \"Step 1\"\n- \"Step 2\"\n";
+        fs.write(std::path::Path::new("/agent.md"), agent).unwrap();
+
+        expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
+
+        let result = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+        assert!(result.contains(TEMPLATE), "template should be inserted");
+        let template_pos = result.find(TEMPLATE).unwrap();
+        let items_pos = result.find("TodoWrite items:").unwrap();
+        assert!(template_pos < items_pos, "template must come before items");
+    }
+
+    // PC-002: expand appends at end when no items line
+    #[test]
+    fn expand_tracking_appends_at_end() {
+        let fs = InMemoryFileSystem::new();
+        let agent = "---\nname: test\ntracking: todowrite\n---\n\nSome content without items.\n";
+        fs.write(std::path::Path::new("/agent.md"), agent).unwrap();
+
+        expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
+
+        let result = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+        assert!(result.contains(TEMPLATE), "template should be appended");
+        assert!(result.trim_end().ends_with("step finishes."), "should end with template");
+    }
+
+    // PC-003: expand no-ops without tracking frontmatter
+    #[test]
+    fn expand_tracking_noop_no_frontmatter() {
+        let fs = InMemoryFileSystem::new();
+        let agent = "---\nname: test\n---\n\nNo tracking field.\n";
+        fs.write(std::path::Path::new("/agent.md"), agent).unwrap();
+
+        expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
+
+        let result = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+        assert_eq!(result, agent, "content should be unchanged");
+    }
+
+    // PC-004: expand no-ops when template missing
+    #[test]
+    fn expand_tracking_noop_missing_template() {
+        let fs = InMemoryFileSystem::new();
+        let agent = "---\nname: test\ntracking: todowrite\n---\n\nContent.\n";
+        fs.write(std::path::Path::new("/dest/agent.md"), agent).unwrap();
+
+        expand_agents_tracking(
+            &fs,
+            std::path::Path::new("/ecc_root"),
+            std::path::Path::new("/dest"),
+        );
+
+        let result = fs.read_to_string(std::path::Path::new("/dest/agent.md")).unwrap();
+        assert_eq!(result, agent, "content should be unchanged when template missing");
+    }
+
+    // PC-005: expand is idempotent
+    #[test]
+    fn expand_tracking_idempotent() {
+        let fs = InMemoryFileSystem::new();
+        let agent = "---\nname: test\ntracking: todowrite\n---\n\nSome content.\n";
+        fs.write(std::path::Path::new("/agent.md"), agent).unwrap();
+
+        expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
+        let after_first = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+
+        expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
+        let after_second = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+
+        assert_eq!(after_first, after_second, "second expansion should be no-op");
     }
 }

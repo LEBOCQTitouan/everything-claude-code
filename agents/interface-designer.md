@@ -5,6 +5,7 @@ model: opus
 effort: high
 tools: ["Read", "Grep", "Glob", "Agent", "Write", "TodoWrite", "TodoRead", "AskUserQuestion"]
 skills: ["design-an-interface"]
+tracking: todowrite
 ---
 # Interface Designer Agent
 
