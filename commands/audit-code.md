@@ -185,3 +185,11 @@ Say: "To act on findings, run `/spec` referencing this report."
 
 - `agents/code-reviewer.md` — code quality and security reviewer
 - `agents/uncle-bob.md` — Clean Architecture and SOLID consultant
+
+## ASCII Doc-Comment Convention Check
+
+Per `ascii-doc-diagrams` skill: check changed files (git diff scope) for missing ASCII diagrams and pattern annotations. Report as MEDIUM findings.
+
+Eligibility criteria per AC-001.4: public functions with 3+ decision branches, enums with 3+ state-machine variants, structs composing 3+ domain types, items referenced in ARCHITECTURE.md, or items with 5+ callers.
+
+Only audit changed files — not the full codebase. A separate backlog item exists for a full sweep.
