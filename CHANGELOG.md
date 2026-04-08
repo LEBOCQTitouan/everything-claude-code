@@ -22,7 +22,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
-- **Phase-gate hook worktree state resolution (BL-131)**: Added `.state-dir` anchor file at `.claude/workflow/.state-dir` containing the absolute state directory path. `resolve_state_dir()` reads this anchor before git-based resolution, ensuring hook subprocesses find the correct `state.json` regardless of CWD. Written atomically by `ecc-workflow init`, deleted by `ecc-workflow reset --force`. Fail-open: corrupt/stale/missing anchor falls back to git resolution with warning. Also untracked `implement-done.md` from git index.
+- **Phase-gate hook worktree state resolution (BL-131)**: Fixed phase-gate hook reading wrong `state.json` in worktrees when `CLAUDE_PROJECT_DIR` points to the main repo. The hook now derives the correct worktree from the gated file path (passed via stdin) by walking parent directories to find the `.git` file and reading its `gitdir:` line. Falls back to existing dispatch resolution for non-worktree paths. Bounded to 4096 bytes and 50 directory traversals. Also untracked `implement-done.md` from git index.
 
 - **Worktree session CWD orphaning**: Defer worktree directory deletion from merge/hook paths to session-start gc to prevent Claude Code session paralysis when CWD points to a deleted worktree. Session-end merge now preserves the worktree directory; `session:start` runs best-effort `ecc worktree gc` for self-healing cleanup of stale worktrees.
 
