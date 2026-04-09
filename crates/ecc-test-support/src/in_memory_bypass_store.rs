@@ -3,16 +3,18 @@
 use std::sync::Mutex;
 
 use ecc_domain::hook_runtime::bypass::{
-    BypassDecision, BypassSummary, HookBypassCount, Verdict,
+    BypassDecision, BypassSummary, BypassToken, HookBypassCount, Verdict,
 };
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
 
 /// In-memory test double for [`BypassStore`].
 ///
 /// All writes held in `Mutex<Vec<_>>`. Thread-safe and deterministic.
+/// Pre-configured bypass tokens can be added via [`with_token()`].
 pub struct InMemoryBypassStore {
     records: Mutex<Vec<BypassDecision>>,
     next_id: Mutex<i64>,
+    tokens: Mutex<Vec<BypassToken>>,
 }
 
 impl InMemoryBypassStore {
@@ -20,7 +22,14 @@ impl InMemoryBypassStore {
         Self {
             records: Mutex::new(Vec::new()),
             next_id: Mutex::new(1),
+            tokens: Mutex::new(Vec::new()),
         }
+    }
+
+    /// Add a pre-configured bypass token. Builder pattern — returns self.
+    pub fn with_token(self, token: BypassToken) -> Self {
+        self.tokens.lock().expect("lock poisoned").push(token);
+        self
     }
 
     pub fn snapshot(&self) -> Vec<BypassDecision> {
@@ -104,6 +113,14 @@ impl BypassStore for InMemoryBypassStore {
     fn prune(&self, _older_than_days: u64) -> Result<u64, BypassStoreError> {
         // InMemory doesn't track timestamps for pruning; just return 0
         Ok(0)
+    }
+
+    fn check_token(&self, hook_id: &str, session_id: &str) -> Option<BypassToken> {
+        let guard = self.tokens.lock().expect("lock poisoned");
+        guard
+            .iter()
+            .find(|t| t.hook_id == hook_id && t.session_id == session_id)
+            .cloned()
     }
 }
 
