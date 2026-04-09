@@ -1,10 +1,10 @@
 //! SQLite-backed implementation of [`BypassStore`].
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use ecc_domain::hook_runtime::bypass::{
-    BypassDecision, BypassSummary, HookBypassCount, Verdict,
+    BypassDecision, BypassSummary, BypassToken, HookBypassCount, Verdict,
 };
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
 use rusqlite::{Connection, params};
@@ -12,11 +12,20 @@ use rusqlite::{Connection, params};
 /// SQLite-backed bypass audit trail store.
 pub struct SqliteBypassStore {
     conn: Mutex<Connection>,
+    home_dir: Option<PathBuf>,
 }
 
 impl SqliteBypassStore {
     /// Open (or create) the database at `db_path`.
     pub fn new(db_path: &Path) -> Result<Self, BypassStoreError> {
+        Self::new_with_home(db_path, None)
+    }
+
+    /// Open (or create) the database at `db_path` with a custom home directory for token lookup.
+    pub fn new_with_home(
+        db_path: &Path,
+        home_dir: Option<PathBuf>,
+    ) -> Result<Self, BypassStoreError> {
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| BypassStoreError::Io(e.to_string()))?;
             #[cfg(unix)]
@@ -32,6 +41,7 @@ impl SqliteBypassStore {
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(Self {
             conn: Mutex::new(conn),
+            home_dir,
         })
     }
 
@@ -43,6 +53,7 @@ impl SqliteBypassStore {
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(Self {
             conn: Mutex::new(conn),
+            home_dir: None,
         })
     }
 }
@@ -162,6 +173,24 @@ impl BypassStore for SqliteBypassStore {
             )
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(deleted as u64)
+    }
+
+    fn check_token(&self, hook_id: &str, session_id: &str) -> Option<BypassToken> {
+        let home = self.home_dir.as_ref()?;
+        let encoded_hook_id = hook_id.replace(':', "__");
+        let token_path = home
+            .join(".ecc")
+            .join("bypass-tokens")
+            .join(session_id)
+            .join(format!("{encoded_hook_id}.json"));
+        tracing::debug!("check_token: looking for token at {}", token_path.display());
+        let contents = std::fs::read_to_string(&token_path).ok()?;
+        let token: BypassToken = serde_json::from_str(&contents).ok()?;
+        if token.hook_id == hook_id && token.session_id == session_id {
+            Some(token)
+        } else {
+            None
+        }
     }
 }
 
