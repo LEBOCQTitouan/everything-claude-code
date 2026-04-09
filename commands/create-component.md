@@ -127,7 +127,6 @@ Also create the script file at `hooks/<name>.sh` with boilerplate:
 ```bash
 #!/usr/bin/env bash
 set -uo pipefail
-[ "${ECC_WORKFLOW_BYPASS:-}" = "1" ] && exit 0
 
 # <purpose>
 ```

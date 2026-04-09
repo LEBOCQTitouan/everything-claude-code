@@ -298,7 +298,6 @@ mod tests {
     fn bypass_skips_merge() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
-        // Handler no longer checks ECC_WORKFLOW_BYPASS — bypass is at dispatch level
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
         let ports = HookPorts::test_default(&fs, &shell, &env, &term);

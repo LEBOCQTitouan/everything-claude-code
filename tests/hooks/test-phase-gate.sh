@@ -32,7 +32,7 @@ run_hook() {
   local file_path="${2:-}"
   local json
   json=$(printf '{"tool_name": "%s", "tool_input": {"file_path": "%s"}}' "$tool_name" "$file_path")
-  echo "$json" | CLAUDE_PROJECT_DIR="$TEMP_DIR" ECC_WORKFLOW_BYPASS="" bash "$HOOK" 2>/dev/null
+  echo "$json" | CLAUDE_PROJECT_DIR="$TEMP_DIR" bash "$HOOK" 2>/dev/null
 }
 
 assert_exit() {
@@ -62,7 +62,7 @@ assert_stderr_contains() {
   local json
   json=$(printf '{"tool_name": "%s", "tool_input": {"file_path": "%s"}}' "$tool_name" "$file_path")
   local stderr_output
-  stderr_output=$(echo "$json" | CLAUDE_PROJECT_DIR="$TEMP_DIR" ECC_WORKFLOW_BYPASS="" bash "$HOOK" 2>&1 >/dev/null || true)
+  stderr_output=$(echo "$json" | CLAUDE_PROJECT_DIR="$TEMP_DIR" bash "$HOOK" 2>&1 >/dev/null || true)
 
   if echo "$stderr_output" | grep -q "$pattern"; then
     echo "PASS  $test_name"
@@ -172,22 +172,7 @@ test_done_ungated() {
   teardown
 }
 
-# Test: ECC_WORKFLOW_BYPASS=1 allows everything
-test_bypass() {
-  setup
-  write_state "plan"
-  local json='{"tool_name": "Write", "tool_input": {"file_path": "crates/ecc-domain/src/lib.rs"}}'
-  echo "$json" | CLAUDE_PROJECT_DIR="$TEMP_DIR" ECC_WORKFLOW_BYPASS="1" bash "$HOOK" 2>/dev/null
-  local exit_code=$?
-  if [ "$exit_code" -eq 0 ]; then
-    echo "PASS  bypass"
-    PASS_COUNT=$((PASS_COUNT + 1))
-  else
-    echo "FAIL  bypass (expected exit 0, got $exit_code)"
-    FAIL_COUNT=$((FAIL_COUNT + 1))
-  fi
-  teardown
-}
+# (test_bypass removed — ECC_WORKFLOW_BYPASS=1 bypass eliminated per ADR-0056)
 
 # Test: Missing state.json exits 0
 test_no_state() {
@@ -282,7 +267,6 @@ test_error_message
 test_absolute_path
 test_implement_ungated
 test_done_ungated
-test_bypass
 test_no_state
 test_malformed_json
 test_audits_existing
