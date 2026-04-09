@@ -7,14 +7,12 @@ use tempfile::TempDir;
 fn ecc_cmd(project_dir: &Path) -> Command {
     let mut cmd = Command::cargo_bin("ecc").expect("ecc binary not found");
     cmd.env("CLAUDE_PROJECT_DIR", project_dir);
-    cmd.env("ECC_WORKFLOW_BYPASS", "0");
     cmd
 }
 
 fn wf_cmd(project_dir: &Path) -> Command {
     let mut cmd = Command::cargo_bin("ecc-workflow").expect("ecc-workflow binary not found");
     cmd.env("CLAUDE_PROJECT_DIR", project_dir);
-    cmd.env("ECC_WORKFLOW_BYPASS", "0");
     cmd
 }
 
