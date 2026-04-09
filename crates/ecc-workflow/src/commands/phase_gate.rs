@@ -23,6 +23,7 @@ fn allowed_prefixes(state_dir: &Path) -> Vec<String> {
         "docs/designs/".to_owned(),
         "docs/adr/".to_owned(),
         "docs/prds/".to_owned(),
+        "docs/refactors/".to_owned(),
     ];
     let state_str = state_dir.to_string_lossy();
     let with_slash = if state_str.ends_with('/') {
@@ -864,6 +865,24 @@ mod tests {
         assert_eq!(
             canonical_actual, canonical_expected,
             "relative gitdir should resolve to the same absolute path"
+        );
+    }
+
+
+    /// phase_gate allows writes to docs/refactors/ during plan phase (AC-004.3)
+    #[test]
+    fn phase_gate_allows_refactors_dir() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/refactors/my-refactor-plan.md"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for docs/refactors/ during plan phase, got {:?}: {}",
+            output.status,
+            output.message
         );
     }
 
