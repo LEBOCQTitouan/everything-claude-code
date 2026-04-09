@@ -464,6 +464,13 @@ mod tests {
         assert!(result.stderr.contains("Unknown hook ID"));
     }
 
+    #[test]
+    fn always_deny_policy_returns_false() {
+        let policy = AlwaysDenyPolicy;
+        assert!(!policy.should_bypass("pre:edit:guard", "session-123"));
+        assert!(!policy.should_bypass("stop:notify", "session-456"));
+    }
+
     /// PC-017: dispatch routes "stop:cartography" and "start:cartography" to correct handlers.
     #[test]
     fn dispatches_cartography_hooks() {
