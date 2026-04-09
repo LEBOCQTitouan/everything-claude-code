@@ -18,9 +18,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **Backlog in-progress status sync**: Promoted backlog to full hexagonal concern with 3 ISP-compliant port traits (`BacklogEntryStore`, `BacklogLockStore`, `BacklogIndexStore`). New `ecc backlog list --available` CLI command derives in-progress status from worktree existence. `ecc backlog reindex` now reconciles status from active worktrees and lock files. Consolidated duplicated logic from `ecc-workflow`. Structural cleanup: moved `ShellWorktreeManager` to ecc-infra, split oversized `worktree.rs` and `merge.rs`. (ADR 0059)
 
-### Added
-
 - **Agent Teams API assessment (BL-139)**: Evaluated Claude Code Agent Teams for ECC integration. Verdict: wait. Assessment at docs/audits/agent-teams-api-assessment-2026-04-09.md.
+
+### CI
+- **Coverage gate (BL-135)**: Added `cargo-llvm-cov` coverage job to CI pipeline. Enforces ≥80% workspace function coverage via `--fail-under-functions 80`. Path-filtered to skip docs-only PRs, separate cache key for instrumented builds, LCOV artifact upload.
 
 ### Upgraded
 
