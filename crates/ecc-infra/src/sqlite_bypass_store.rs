@@ -218,6 +218,40 @@ mod tests {
     }
 
     #[test]
+    fn sqlite_bypass_store_check_token_found() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home_dir = tmp.path().to_path_buf();
+        let session_id = "session-abc";
+        let hook_id = "pre:write-edit:worktree-guard";
+        let encoded_hook_id = hook_id.replace(':', "__");
+
+        // Write a valid token JSON file at the expected path
+        let token_dir = home_dir
+            .join(".ecc")
+            .join("bypass-tokens")
+            .join(session_id);
+        std::fs::create_dir_all(&token_dir).unwrap();
+        let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
+            hook_id,
+            session_id,
+            "2026-04-07T10:00:00Z",
+            "test bypass",
+        )
+        .unwrap();
+        let json = serde_json::to_string(&token).unwrap();
+        std::fs::write(token_dir.join(format!("{encoded_hook_id}.json")), json).unwrap();
+
+        // Create store with home_dir, check_token should find it
+        let db_path = home_dir.join("bypass.db");
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
+        assert!(result.is_some());
+        let found = result.unwrap();
+        assert_eq!(found.hook_id, hook_id);
+        assert_eq!(found.session_id, session_id);
+    }
+
+    #[test]
     fn bypass_prune_removes_old() {
         let store = SqliteBypassStore::in_memory().unwrap();
         // Insert old record
