@@ -42,3 +42,5 @@ pub use mock_release_client::MockReleaseClient;
 pub use scripted_input::ScriptedInput;
 pub mod mock_worktree;
 pub use mock_worktree::MockWorktreeManager;
+pub mod in_memory_backlog;
+pub use in_memory_backlog::InMemoryBacklogRepository;

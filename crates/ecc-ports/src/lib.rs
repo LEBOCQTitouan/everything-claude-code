@@ -44,3 +44,5 @@ pub mod shell;
 pub mod terminal;
 /// Worktree management port.
 pub mod worktree;
+/// Backlog entry, lock, and index store ports.
+pub mod backlog;
