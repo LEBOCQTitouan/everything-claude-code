@@ -219,6 +219,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         outcome,
         error_message,
     ) {
+        // Intentional fire-and-forget: metrics recording is best-effort
         let _ = crate::metrics_mgmt::record_if_enabled(
             ports.metrics_store,
             &event,

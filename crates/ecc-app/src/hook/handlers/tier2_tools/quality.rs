@@ -202,6 +202,7 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
             format!("{secs}")
         };
         if let Ok(event) = MetricEvent::commit_gate(session_id, timestamp, outcome, gates_failed) {
+            // Intentional fire-and-forget: metrics recording is best-effort
             let _ = crate::metrics_mgmt::record_if_enabled(ports.metrics_store, &event, disabled);
         }
 
