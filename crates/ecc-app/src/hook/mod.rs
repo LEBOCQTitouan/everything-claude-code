@@ -985,6 +985,78 @@ mod tests {
         assert!(ports.metrics_store.is_none());
     }
 
+    /// PC-023: dispatch() with ECC_WORKFLOW_BYPASS=1 does NOT passthrough (env var ignored).
+    #[test]
+    fn env_bypass_ignored() {
+        // hook id that produces a known block: pre:edit:boundary-crossing with domain+infra import
+        let hook_id = "pre:edit:boundary-crossing";
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        // ECC_WORKFLOW_BYPASS=1 set — must be ignored
+        let env = MockEnvironment::new().with_var("ECC_WORKFLOW_BYPASS", "1");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(
+            result.exit_code, 2,
+            "ECC_WORKFLOW_BYPASS=1 must be ignored — hook must still block"
+        );
+    }
+
+    /// PC-024: dispatch() delegates to bypass_interceptor when exit_code=2.
+    #[test]
+    fn dispatch_delegates_to_interceptor() {
+        use ecc_test_support::InMemoryBypassStore;
+
+        let hook_id = "pre:edit:boundary-crossing";
+        let session_id = "sess-024";
+
+        let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
+            hook_id,
+            session_id,
+            "2026-04-07T12:00:00Z",
+            "test bypass",
+        )
+        .expect("valid token");
+
+        let bypass_store = InMemoryBypassStore::new().with_token(token);
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", session_id);
+        let term = BufferedTerminal::new();
+
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: Some(&bypass_store),
+            metrics_store: None,
+        };
+
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(
+            result.exit_code, 0,
+            "dispatch() must delegate to bypass_interceptor — valid token must grant passthrough"
+        );
+    }
+
     /// PC-031: Handler impl dispatches to cartography handler via registry.
     #[test]
     fn handler_trait_dispatch() {
