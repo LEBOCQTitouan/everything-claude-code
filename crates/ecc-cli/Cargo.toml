@@ -9,6 +9,10 @@ license.workspace = true
 name = "ecc"
 path = "src/main.rs"
 
+[lib]
+name = "ecc_cli"
+path = "src/lib.rs"
+
 [dependencies]
 ecc-domain = { workspace = true }
 ecc-ports = { workspace = true }
