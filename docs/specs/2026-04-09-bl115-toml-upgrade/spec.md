@@ -31,7 +31,7 @@ The `toml` crate in `ecc-infra` is at version 0.8. Version 0.9 (released July 20
 - AC-001.1: `crates/ecc-infra/Cargo.toml` changes `toml = "0.8"` to `toml = "0.9"`
 - AC-001.2: `cargo build` compiles without errors
 - AC-001.3: `cargo clippy -- -D warnings` exits zero
-- AC-001.4: `cargo test` — all tests pass, including 7 file_config_store tests
+- AC-001.4: `cargo test` — all tests pass, including all file_config_store tests
 - AC-001.5: No source code changes required
 
 #### Dependencies
