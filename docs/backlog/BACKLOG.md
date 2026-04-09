@@ -129,6 +129,15 @@
 | BL-126 | Token optimization wave 3 — new CLI commands replacing agent work | — | HIGH | /spec-dev | implemented | 2026-04-06 |
 | BL-127 | Token optimization wave 4 — pipeline architecture changes | — | HIGH | /spec-dev | implemented | 2026-04-06 |
 | BL-128 | Token optimization wave 5 — local LLM offload | — | MEDIUM | /spec-dev | implemented | 2026-04-06 |
+| BL-133 | Migrate workspace to Rust 2024 edition | — | MEDIUM | /spec-dev | open | 2026-04-09 |
+| BL-134 | Audit CLAUDE.md for LLM-generated content | — | LOW | direct edit | open | 2026-04-09 |
+| BL-135 | Add cargo-llvm-cov coverage gate to CI | — | LOW | direct edit | open | 2026-04-09 |
+| BL-136 | Add cargo-vet for SLSA Level 2 supply chain compliance | — | MEDIUM | /spec-dev | open | 2026-04-09 |
+| BL-137 | Apply difficulty-aware model routing from multi-agent research | — | HIGH | /spec-dev | open | 2026-04-09 |
+| BL-138 | Evaluate hex crate for compile-time architecture boundary enforcement | — | MEDIUM | /spec-dev | open | 2026-04-09 |
+| BL-139 | Monitor Claude Code Agent Teams API for ECC integration | — | LOW | /spec-dev | open | 2026-04-09 |
+| BL-140 | Competitor analysis: Claw Code and Goose agent frameworks | — | LOW | /spec-dev | open | 2026-04-09 |
+| BL-141 | Monitor serde-saphyr for 0.1.0 stability release | — | LOW | direct edit | open | 2026-04-09 |
 
 ## Dependency Graph
 
@@ -211,11 +220,11 @@ BL-128 → BL-126 (wave 5 offloads agents not already replaced by CLI in wave 3)
 
 ## Stats
 
-- **Total:** 128
-- **Open:** 18
+- **Total:** 141
+- **Open:** 24
 - **In-progress:** 0
 - **Implemented:** 105
-- **Archived:** 4
+- **Archived:** 6
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)
 - **Web radar derived:** 8 (BL-099 through BL-106)
