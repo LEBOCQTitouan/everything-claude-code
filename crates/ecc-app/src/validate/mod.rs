@@ -1,12 +1,16 @@
 //! Validate use case — validates content files (agents, commands, hooks, skills, rules, paths).
 
 mod agents;
+mod code_block_scanning;
 mod commands;
 mod conventions;
+mod cross_ref_validation;
+mod frontmatter_validation;
 mod hooks;
 mod paths;
 mod patterns;
 mod rules;
+mod section_validation;
 mod skills;
 mod statusline;
 mod teams;
