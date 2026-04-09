@@ -80,7 +80,7 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
                 Some(name) => name.to_string_lossy().to_string(),
                 None => continue,
             };
-            if !filename.starts_with(id) {
+            if !(filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md")) {
                 continue;
             }
             let content = self.fs.read_to_string(path).map_err(|e| BacklogError::Io {

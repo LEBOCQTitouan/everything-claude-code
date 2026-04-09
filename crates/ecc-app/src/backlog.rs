@@ -12,6 +12,10 @@ use ecc_ports::worktree::WorktreeManager;
 use regex::Regex;
 use std::collections::HashSet;
 use std::path::Path;
+use std::sync::LazyLock;
+
+static BL_ID_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)bl-?(\d{3,})").unwrap());
 
 /// Extract a BL-NNN numeric ID from a worktree path's last component.
 ///
@@ -19,9 +23,7 @@ use std::path::Path;
 /// `ecc-bl042-feature` (case-insensitive).
 fn extract_bl_id_from_path(path: &str) -> Option<u32> {
     let last = path.rsplit('/').next().unwrap_or(path);
-    // Match bl-NNN or blNNN (case-insensitive)
-    let re = Regex::new(r"(?i)bl-?(\d{3,})").ok()?;
-    let caps = re.captures(last)?;
+    let caps = BL_ID_RE.captures(last)?;
     caps.get(1)?.as_str().parse().ok()
 }
 

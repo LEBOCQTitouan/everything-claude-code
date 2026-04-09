@@ -32,5 +32,3 @@ pub mod sqlite_log_store;
 pub mod sqlite_memory;
 pub mod sqlite_metrics_store;
 pub mod tarball_extractor;
-
-pub mod shell_worktree;
