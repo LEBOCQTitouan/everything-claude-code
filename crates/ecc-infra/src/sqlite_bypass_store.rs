@@ -423,6 +423,82 @@ mod tests {
         assert_eq!(remaining.len(), 1);
     }
 
+    /// Verifies that the new Rust-computed cutoff approach produces the same deletion set
+    /// as the old SQL-side `datetime('now', '-N days')` approach would have for identical inputs.
+    ///
+    /// The old approach computed cutoff inside SQL as:
+    ///   `datetime('now', '-1 days')` → "2024-04-05T12:00:00Z" when now = 2024-04-06T12:00:00Z
+    ///
+    /// The new approach computes cutoff in Rust:
+    ///   `cutoff_secs = now_secs - older_than_days * 86400`
+    ///   then formats as ISO 8601 UTC string.
+    ///
+    /// Both must delete exactly the records whose timestamp < cutoff.
+    #[test]
+    fn prune_equivalence() {
+        // Fixed "now": 2024-04-06T12:00:00Z = epoch 1712404800
+        // Old SQL: datetime('now', '-1 days') = "2024-04-05 12:00:00" (SQLite format)
+        // New Rust: cutoff_secs = 1712404800 - 86400 = 1712318400 = 2024-04-05T12:00:00Z
+        //
+        // The expected cutoff string from the new approach is "2024-04-05T12:00:00Z".
+        // Records with timestamp < "2024-04-05T12:00:00Z" are deleted.
+        // Records with timestamp >= "2024-04-05T12:00:00Z" survive.
+
+        let epoch_now: u64 = 1_712_404_800; // 2024-04-06T12:00:00Z
+        let clock: Arc<dyn Clock> = Arc::new(FixedClock(epoch_now));
+        let store = SqliteBypassStore::in_memory(clock).unwrap();
+
+        // Very old: 2020-01-01T00:00:00Z — well before cutoff → DELETED
+        let very_old = BypassDecision::new(
+            "hook-very-old", "old", "session-1", Verdict::Accepted, "2020-01-01T00:00:00Z",
+        ).unwrap();
+
+        // Before boundary by 1 sec: 2024-04-05T11:59:59Z — just before cutoff → DELETED
+        let before_boundary = BypassDecision::new(
+            "hook-before-boundary", "before", "session-2", Verdict::Accepted, "2024-04-05T11:59:59Z",
+        ).unwrap();
+
+        // Exactly at boundary: 2024-04-05T12:00:00Z — equal to cutoff → SURVIVES (not strictly less)
+        let at_boundary = BypassDecision::new(
+            "hook-at-boundary", "at", "session-3", Verdict::Accepted, "2024-04-05T12:00:00Z",
+        ).unwrap();
+
+        // After boundary by 1 sec: 2024-04-05T12:00:01Z → SURVIVES
+        let after_boundary = BypassDecision::new(
+            "hook-after-boundary", "after", "session-4", Verdict::Accepted, "2024-04-05T12:00:01Z",
+        ).unwrap();
+
+        // Recent: 2024-04-06T10:00:00Z — 2 hours before "now" → SURVIVES
+        let recent = BypassDecision::new(
+            "hook-recent", "recent", "session-5", Verdict::Accepted, "2024-04-06T10:00:00Z",
+        ).unwrap();
+
+        store.record(&very_old).unwrap();
+        store.record(&before_boundary).unwrap();
+        store.record(&at_boundary).unwrap();
+        store.record(&after_boundary).unwrap();
+        store.record(&recent).unwrap();
+
+        let deleted = store.prune(1).unwrap();
+
+        // The old SQL datetime('now', '-1 days') with now=2024-04-06T12:00:00Z
+        // yields cutoff = 2024-04-05T12:00:00Z.
+        // DELETE WHERE timestamp < '2024-04-05T12:00:00Z' deletes:
+        //   - very_old (2020-01-01T00:00:00Z) ✓
+        //   - before_boundary (2024-04-05T11:59:59Z) ✓
+        // Survives:
+        //   - at_boundary (2024-04-05T12:00:00Z) — not strictly less
+        //   - after_boundary (2024-04-05T12:00:01Z) ✓
+        //   - recent (2024-04-06T10:00:00Z) ✓
+        assert_eq!(deleted, 2, "old and before-boundary records must be deleted");
+
+        assert_eq!(store.query_by_hook("hook-very-old", 10).unwrap().len(), 0, "very old deleted");
+        assert_eq!(store.query_by_hook("hook-before-boundary", 10).unwrap().len(), 0, "before-boundary deleted");
+        assert_eq!(store.query_by_hook("hook-at-boundary", 10).unwrap().len(), 1, "at-boundary survives");
+        assert_eq!(store.query_by_hook("hook-after-boundary", 10).unwrap().len(), 1, "after-boundary survives");
+        assert_eq!(store.query_by_hook("hook-recent", 10).unwrap().len(), 1, "recent survives");
+    }
+
     #[test]
     fn bypass_prune_with_clock() {
         // Fixed "now": 2024-04-06T12:00:00Z = epoch 1712404800
