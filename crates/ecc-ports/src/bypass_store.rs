@@ -77,4 +77,13 @@ mod tests {
             let _ = s.prune(90);
         }
     }
+
+    /// Compile-time assertion: BypassStore trait has check_token method.
+    #[test]
+    fn bypass_store_has_check_token() {
+        fn _use_check_token<S: BypassStore>(s: &S) {
+            let _: Option<ecc_domain::hook_runtime::bypass::BypassToken> =
+                s.check_token("hook-id", "session-id");
+        }
+    }
 }
