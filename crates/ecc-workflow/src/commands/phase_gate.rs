@@ -25,6 +25,9 @@ fn allowed_prefixes(state_dir: &Path) -> Vec<String> {
         "docs/prds/".to_owned(),
         "docs/refactors/".to_owned(),
         "docs/cartography/".to_owned(),
+        "docs/domain/".to_owned(),
+        "docs/guides/".to_owned(),
+        "docs/diagrams/".to_owned(),
     ];
     let state_str = state_dir.to_string_lossy();
     let with_slash = if state_str.ends_with('/') {
