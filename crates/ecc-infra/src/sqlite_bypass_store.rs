@@ -209,6 +209,22 @@ impl BypassStore for SqliteBypassStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
+    use ecc_ports::clock::Clock;
+
+    /// Fixed-time clock for deterministic prune tests.
+    struct FixedClock(u64);
+
+    impl Clock for FixedClock {
+        fn now_iso8601(&self) -> String {
+            // Not needed for prune tests
+            String::new()
+        }
+
+        fn now_epoch_secs(&self) -> u64 {
+            self.0
+        }
+    }
 
     fn make_decision(hook_id: &str, verdict: Verdict) -> BypassDecision {
         // Use far-future timestamp so prune tests don't become flaky as calendar advances
@@ -393,5 +409,36 @@ mod tests {
         // hook-b should still be there
         let remaining = store.query_by_hook("hook-b", 10).unwrap();
         assert_eq!(remaining.len(), 1);
+    }
+
+    #[test]
+    fn bypass_prune_with_clock() {
+        // Fixed "now": 2024-04-06T12:00:00Z = epoch 1712404800
+        // cutoff for 1 day back: 1712404800 - 86400 = 1712318400 = 2024-04-05T12:00:00Z
+        let clock: Arc<dyn Clock> = Arc::new(FixedClock(1_712_404_800));
+        let store = SqliteBypassStore::in_memory(clock).unwrap();
+
+        // Old record: 2020-01-01T00:00:00Z — well before cutoff
+        let old = BypassDecision::new(
+            "hook-old", "old reason", "session-1", Verdict::Accepted, "2020-01-01T00:00:00Z",
+        ).unwrap();
+        store.record(&old).unwrap();
+
+        // Recent record: 2024-04-06T10:00:00Z — 2 hours before "now", after cutoff
+        let recent = BypassDecision::new(
+            "hook-recent", "recent reason", "session-2", Verdict::Accepted, "2024-04-06T10:00:00Z",
+        ).unwrap();
+        store.record(&recent).unwrap();
+
+        let deleted = store.prune(1).unwrap();
+        assert_eq!(deleted, 1, "expected old record deleted");
+
+        // recent record should survive
+        let remaining = store.query_by_hook("hook-recent", 10).unwrap();
+        assert_eq!(remaining.len(), 1, "recent record should survive");
+
+        // old record should be gone
+        let gone = store.query_by_hook("hook-old", 10).unwrap();
+        assert_eq!(gone.len(), 0, "old record should be deleted");
     }
 }
