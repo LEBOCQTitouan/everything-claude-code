@@ -151,6 +151,12 @@ pub struct BypassSummary {
     pub total_refused: u64,
 }
 
+/// Policy trait for bypass decision logic.
+pub trait BypassPolicy: Send + Sync {
+    /// Determine whether a hook should be bypassed for the given session.
+    fn should_bypass(&self, hook_id: &str, session_id: &str) -> bool;
+}
+
 /// Validate that session_id is non-empty and not "unknown".
 fn validate_session_id(session_id: &str) -> Result<(), BypassError> {
     if session_id.is_empty() || session_id == "unknown" {
