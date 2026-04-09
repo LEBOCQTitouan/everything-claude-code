@@ -187,15 +187,6 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     let stdin = truncate_stdin(&ctx.stdin_payload);
     let start = std::time::Instant::now();
 
-    // Deprecation warning for ECC_WORKFLOW_BYPASS=1 (AC-006.1, AC-006.2)
-    if ports.env.var("ECC_WORKFLOW_BYPASS").as_deref() == Some("1") {
-        ports.terminal.stderr_write(
-                "[Deprecated] ECC_WORKFLOW_BYPASS=1 is deprecated. Use 'ecc bypass grant' for granular, auditable bypasses. See ADR-0056.\n"
-            );
-        // Still allow passthrough for backward compat (AC-006.2)
-        return HookResult::passthrough(stdin);
-    }
-
     // Check if hook is enabled
     let profile_env = ports.env.var("ECC_HOOK_PROFILE");
     let disabled_env = ports.env.var("ECC_DISABLED_HOOKS");
@@ -291,74 +282,18 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         }
     };
 
-    // Check for bypass token when hook blocks
-    #[allow(clippy::collapsible_if)]
+    // Delegate to bypass_interceptor when hook blocks
     let result = if result.exit_code == 2 {
-        // Append bypass-available hint to stderr
-        let mut stderr = result.stderr.clone();
-        stderr.push_str(&format!(
-            "[Bypass available: {}] Use 'ecc bypass grant --hook {} --reason <reason>' to bypass\n",
-            ctx.hook_id, ctx.hook_id
-        ));
-
-        // Check for session-scoped bypass token
         let session_id = ports.env.var("CLAUDE_SESSION_ID");
-        match session_id.as_deref() {
-            Some(sid) if !sid.is_empty() && sid != "unknown" => {
-                // Check if a bypass token exists for this hook+session
-                if let Some(home) = ports.env.var("HOME") {
-                    let token_dir = format!("{}/.ecc/bypass-tokens/{}", home, sid);
-                    let encoded = ctx.hook_id.replace(':', "__");
-                    let token_path = format!("{}/{}.json", token_dir, encoded);
-                    if ports.fs.exists(std::path::Path::new(&token_path)) {
-                        // Read and validate token
-                        if let Ok(token_json) =
-                            ports.fs.read_to_string(std::path::Path::new(&token_path))
-                        {
-                            if let Ok(token) = serde_json::from_str::<
-                                ecc_domain::hook_runtime::bypass::BypassToken,
-                            >(&token_json)
-                            {
-                                if token.session_id == sid && token.hook_id == ctx.hook_id {
-                                    tracing::info!(hook_id = %ctx.hook_id, "bypass token found — allowing");
-                                    // Log the applied bypass
-                                    if let Some(store) = ports.bypass_store {
-                                        if let Ok(decision) =
-                                            ecc_domain::hook_runtime::bypass::BypassDecision::new(
-                                                &ctx.hook_id,
-                                                &token.reason,
-                                                sid,
-                                                ecc_domain::hook_runtime::bypass::Verdict::Applied,
-                                                &token.granted_at,
-                                            )
-                                        {
-                                            let _ = store.record(&decision);
-                                        }
-                                    }
-                                    let duration_ms = start.elapsed().as_millis() as u64;
-                                    tracing::debug!(duration_ms, hook_id = %ctx.hook_id, "hook bypassed via token");
-                                    return HookResult::passthrough(stdin);
-                                }
-                            }
-                        }
-                    }
-                }
-                HookResult {
-                    exit_code: 2,
-                    stdout: result.stdout,
-                    stderr,
-                }
-            }
-            _ => {
-                // No valid session ID — can't check tokens
-                tracing::debug!(hook_id = %ctx.hook_id, "no CLAUDE_SESSION_ID — bypass tokens unavailable");
-                HookResult {
-                    exit_code: 2,
-                    stdout: result.stdout,
-                    stderr,
-                }
-            }
-        }
+        let sid = session_id.as_deref().filter(|s| !s.is_empty() && *s != "unknown");
+        bypass_interceptor::intercept(
+            &ctx.hook_id,
+            stdin,
+            result,
+            sid,
+            ports.bypass_store,
+            start,
+        )
     } else {
         result
     };
@@ -861,36 +796,38 @@ mod tests {
         assert_eq!(h.hook_id(), "test:dummy");
     }
 
-    /// PC-001: Dispatch with bypass token file present returns exit 0 passthrough.
+    /// PC-001: Dispatch with bypass token present returns exit 0 passthrough.
     ///
-    /// Characterization test: locks down existing inline token-bypass logic in dispatch().
+    /// Characterization test: locks down token-bypass logic in dispatch() via bypass_store port.
     #[test]
     fn bypass_token_found_passthrough() {
-        // Build a valid BypassToken JSON for hook "pre:edit:boundary-crossing", session "sess-001"
+        use ecc_test_support::InMemoryBypassStore;
+
         let hook_id = "pre:edit:boundary-crossing";
         let session_id = "sess-001";
-        let token_json = serde_json::json!({
-            "hook_id": hook_id,
-            "session_id": session_id,
-            "granted_at": "2026-04-07T12:00:00Z",
-            "reason": "test bypass"
-        })
-        .to_string();
 
-        // Token path: {HOME}/.ecc/bypass-tokens/{session_id}/{hook_id_encoded}.json
-        let encoded = hook_id.replace(':', "__");
-        let token_path = format!(
-            "/home/test/.ecc/bypass-tokens/{}/{}.json",
-            session_id, encoded
-        );
+        let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
+            hook_id,
+            session_id,
+            "2026-04-07T12:00:00Z",
+            "test bypass",
+        )
+        .expect("valid token");
 
-        let fs = InMemoryFileSystem::new().with_file(&token_path, &token_json);
+        let bypass_store = InMemoryBypassStore::new().with_token(token);
+        let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
-        let env = MockEnvironment::new()
-            .with_var("CLAUDE_SESSION_ID", session_id)
-            .with_var("HOME", "/home/test");
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", session_id);
         let term = BufferedTerminal::new();
-        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: Some(&bypass_store),
+            metrics_store: None,
+        };
 
         // Use pre:edit:boundary-crossing with a domain file + infra import → triggers exit_code=2
         let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;

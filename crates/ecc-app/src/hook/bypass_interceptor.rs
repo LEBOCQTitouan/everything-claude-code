@@ -44,24 +44,24 @@ pub fn intercept(
     };
 
     // Check bypass token via store
-    if let Some(store) = bypass_store {
-        if let Some(token) = store.check_token(hook_id, sid) {
-            // Record Applied decision
-            if let Ok(decision) = ecc_domain::hook_runtime::bypass::BypassDecision::new(
-                hook_id,
-                &token.reason,
-                sid,
-                ecc_domain::hook_runtime::bypass::Verdict::Applied,
-                &token.granted_at,
-            ) {
-                let _ = store.record(&decision);
-            }
-
-            let duration_ms = start.elapsed().as_millis() as u64;
-            tracing::info!(hook_id, "bypass token found — allowing");
-            tracing::debug!(duration_ms, hook_id, "hook bypassed via token");
-            return HookResult::passthrough(stdin);
+    if let Some(store) = bypass_store
+        && let Some(token) = store.check_token(hook_id, sid)
+    {
+        // Record Applied decision
+        if let Ok(decision) = ecc_domain::hook_runtime::bypass::BypassDecision::new(
+            hook_id,
+            &token.reason,
+            sid,
+            ecc_domain::hook_runtime::bypass::Verdict::Applied,
+            &token.granted_at,
+        ) {
+            let _ = store.record(&decision);
         }
+
+        let duration_ms = start.elapsed().as_millis() as u64;
+        tracing::info!(hook_id, "bypass token found — allowing");
+        tracing::debug!(duration_ms, hook_id, "hook bypassed via token");
+        return HookResult::passthrough(stdin);
     }
 
     HookResult {
