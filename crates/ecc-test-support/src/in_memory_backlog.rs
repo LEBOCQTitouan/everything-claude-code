@@ -1,4 +1,4 @@
-use ecc_domain::backlog::entry::{BacklogEntry, BacklogError, BacklogStatus};
+use ecc_domain::backlog::entry::{BacklogEntry, BacklogError};
 use ecc_domain::backlog::lock::LockFile;
 use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore, BacklogLockStore};
 use std::collections::HashMap;
@@ -149,6 +149,7 @@ impl BacklogIndexStore for InMemoryBacklogRepository {
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use ecc_domain::backlog::entry::BacklogStatus;
     use std::path::Path;
 
     fn make_entry(id: &str, num: u32) -> BacklogEntry {

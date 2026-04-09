@@ -80,6 +80,7 @@ pub fn check_duplicates(
 /// (claimed by active worktrees or fresh lock files).
 ///
 /// If `dry_run` is true, returns the generated content without writing.
+#[allow(clippy::too_many_arguments)]
 pub fn reindex(
     entries: &dyn BacklogEntryStore,
     locks: &dyn BacklogLockStore,
@@ -97,10 +98,11 @@ pub fn reindex(
 
     // Override status to InProgress for claimed entries
     for entry in &mut all_entries {
-        if let Some(num) = extract_bl_num(&entry.id) {
-            if claimed.contains(&num) && entry.status == BacklogStatus::Open {
-                entry.status = BacklogStatus::InProgress;
-            }
+        if let Some(num) = extract_bl_num(&entry.id)
+            && claimed.contains(&num)
+            && entry.status == BacklogStatus::Open
+        {
+            entry.status = BacklogStatus::InProgress;
         }
     }
 
