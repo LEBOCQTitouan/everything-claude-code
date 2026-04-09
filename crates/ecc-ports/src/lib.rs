@@ -7,6 +7,8 @@
 
 #![warn(missing_docs)]
 
+/// Backlog entry, lock, and index store ports.
+pub mod backlog;
 pub mod bypass_store;
 /// Audit result caching port.
 pub mod cache_store;

@@ -1,0 +1,6 @@
+# Pins the minimum stable toolchain required for edition = "2024" (Rust 1.85+).
+# Do NOT add [toolchain].targets here — cargo-dist manages cross-compilation
+# targets via dist.toml and its own generated CI matrix.
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]

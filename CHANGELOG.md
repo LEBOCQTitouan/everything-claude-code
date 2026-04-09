@@ -8,7 +8,15 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
+### Added
+
+- **Backlog in-progress status sync**: Promoted backlog to full hexagonal concern with 3 ISP-compliant port traits (`BacklogEntryStore`, `BacklogLockStore`, `BacklogIndexStore`). New `ecc backlog list --available` CLI command derives in-progress status from worktree existence. `ecc backlog reindex` now reconciles status from active worktrees and lock files. Consolidated duplicated logic from `ecc-workflow`. Structural cleanup: moved `ShellWorktreeManager` to ecc-infra, split oversized `worktree.rs` and `merge.rs`. (ADR 0059)
+
 ### Upgraded
+
+- **Rust 2024 edition verification (BL-133)**: Formally verified workspace compiles, tests, and lints cleanly under edition 2024 (Rust 1.85+). Applied rustfmt 2024 formatting. Added SAFETY comments to xtask unsafe blocks. Pinned toolchain via `rust-toolchain.toml`.
+
+- **toml 0.8 → 0.9 (BL-115)**: Bumped toml dependency in ecc-infra. Serde bridge API unchanged. 8 existing tests pass.
 
 - **rustyline 15 → 17 (BL-114)**: Bumped rustyline dependency from v15 to v17. No breaking API changes. Replaced `Result<Self, String>` with `Result<Self, TerminalError>` in `RustylineInput::new()`, cleaned up `claw.rs` caller to use `?` directly.
 
@@ -25,11 +33,16 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
-- **Phase-gate hook worktree state resolution (BL-131)**: Added `.state-dir` anchor file at `.claude/workflow/.state-dir` containing the absolute state directory path. `resolve_state_dir()` reads this anchor before git-based resolution, ensuring hook subprocesses find the correct `state.json` regardless of CWD. Written atomically by `ecc-workflow init`, deleted by `ecc-workflow reset --force`. Fail-open: corrupt/stale/missing anchor falls back to git resolution with warning. Also untracked `implement-done.md` from git index.
+- **Phase-gate hook worktree state resolution (BL-131)**: Fixed phase-gate hook reading wrong `state.json` in worktrees when `CLAUDE_PROJECT_DIR` points to the main repo. The hook now derives the correct worktree from the gated file path (passed via stdin) by walking parent directories to find the `.git` file and reading its `gitdir:` line. Falls back to existing dispatch resolution for non-worktree paths. Bounded to 4096 bytes and 50 directory traversals. Also untracked `implement-done.md` from git index.
 
 - **Worktree session CWD orphaning**: Defer worktree directory deletion from merge/hook paths to session-start gc to prevent Claude Code session paralysis when CWD points to a deleted worktree. Session-end merge now preserves the worktree directory; `session:start` runs best-effort `ecc worktree gc` for self-healing cleanup of stale worktrees.
 
 ### Added
+
+- **Request-refactor-plan skill (BL-015)**: Interview-driven refactoring plan decomposition into tiny, green-state commits. 6-step flow with per-commit risk assessment (LOW/MEDIUM/HIGH). Output to `docs/refactors/`. Phase-gate allowlist updated.
+
+- **Write-a-PRD skill (BL-012)**: Interactive PRD generation skill. 6-step flow: problem interview, codebase exploration, alternatives, scope hammering, module sketch, file output to `docs/prds/`. Added `docs/prds/` to phase-gate allowlist.
+
 
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
@@ -98,6 +111,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **ASCII doc-comment convention skill**: Reusable skill defining when and how to add ASCII diagrams (state transition, flow, composition) and design pattern references (`# Pattern` section with GoF/DDD/Hexagonal/Rust Idiom sources) to Rust doc-comments. Enforced via code-reviewer (HIGH) and audit-code (MEDIUM on changed files). Backlog item BL-132 for full ECC sweep.
+
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
@@ -137,6 +152,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **ASCII doc-comment convention skill**: Reusable skill defining when and how to add ASCII diagrams (state transition, flow, composition) and design pattern references (`# Pattern` section with GoF/DDD/Hexagonal/Rust Idiom sources) to Rust doc-comments. Enforced via code-reviewer (HIGH) and audit-code (MEDIUM on changed files). Backlog item BL-132 for full ECC sweep.
+
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
@@ -169,6 +186,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **ASCII doc-comment convention skill**: Reusable skill defining when and how to add ASCII diagrams (state transition, flow, composition) and design pattern references (`# Pattern` section with GoF/DDD/Hexagonal/Rust Idiom sources) to Rust doc-comments. Enforced via code-reviewer (HIGH) and audit-code (MEDIUM on changed files). Backlog item BL-132 for full ECC sweep.
 
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
@@ -208,6 +227,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **ASCII doc-comment convention skill**: Reusable skill defining when and how to add ASCII diagrams (state transition, flow, composition) and design pattern references (`# Pattern` section with GoF/DDD/Hexagonal/Rust Idiom sources) to Rust doc-comments. Enforced via code-reviewer (HIGH) and audit-code (MEDIUM on changed files). Backlog item BL-132 for full ECC sweep.
+
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
@@ -244,6 +265,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **ASCII doc-comment convention skill**: Reusable skill defining when and how to add ASCII diagrams (state transition, flow, composition) and design pattern references (`# Pattern` section with GoF/DDD/Hexagonal/Rust Idiom sources) to Rust doc-comments. Enforced via code-reviewer (HIGH) and audit-code (MEDIUM on changed files). Backlog item BL-132 for full ECC sweep.
+
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
@@ -279,6 +302,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **ASCII doc-comment convention skill**: Reusable skill defining when and how to add ASCII diagrams (state transition, flow, composition) and design pattern references (`# Pattern` section with GoF/DDD/Hexagonal/Rust Idiom sources) to Rust doc-comments. Enforced via code-reviewer (HIGH) and audit-code (MEDIUM on changed files). Backlog item BL-132 for full ECC sweep.
+
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
@@ -310,6 +335,8 @@ Generated from git conventional commits. Grouped by type and version.
 ## v4.8.0
 
 ### Added
+
+- **ASCII doc-comment convention skill**: Reusable skill defining when and how to add ASCII diagrams (state transition, flow, composition) and design pattern references (`# Pattern` section with GoF/DDD/Hexagonal/Rust Idiom sources) to Rust doc-comments. Enforced via code-reviewer (HIGH) and audit-code (MEDIUM on changed files). Backlog item BL-132 for full ECC sweep.
 
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 

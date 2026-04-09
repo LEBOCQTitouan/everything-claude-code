@@ -12,7 +12,7 @@ The `ecc-domain` crate contains 9 domain modules, each responsible for a distinc
 | `diff` | Diff computation — LCS algorithm, line-level diffs, merge conflict representation | `LineDiff`, `DiffResult`, `MergeConflict` |
 | `hook_runtime` | Hook execution model — profile gating, flag checking, stdin passthrough protocol | `HookConfig`, `HookFlags`, `ExecutionGate` |
 | `session` | Session lifecycle — metadata parsing, alias management, statistics | `SessionMetadata`, `SessionAlias`, `SessionStats` |
-| `backlog` | Backlog management — entry parsing, ID generation, duplicate detection | `BacklogEntry`, `BacklogError`, `BacklogId` |
+| `backlog` | Backlog management — entry parsing, ID generation, duplicate detection, lock file lifecycle, status reconciliation | `BacklogEntry`, `BacklogStatus`, `BacklogError`, `LockFile`, `DuplicateCandidate` |
 | `workflow` | Workflow state machine — phase transitions, state persistence, toolchain config | `WorkflowState`, `Phase`, `Concern`, `Timestamp`, `Completion` |
 | `cartography` | Cartography document model — delta merge, schema validation, staleness detection, coverage calculation, element registry, cross-reference matrix | `SessionDelta`, `ProjectType`, `ChangedFile`, `CartographyMeta`, `CoverageReport`, `ElementEntry`, `ElementType`, `CrossReferenceMatrix` |
 

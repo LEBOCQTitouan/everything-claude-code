@@ -3,6 +3,10 @@ use std::path::Path;
 use crate::output::WorkflowOutput;
 use crate::slug::make_slug;
 use crate::time::utc_today;
+use ecc_infra::fs_backlog::FsBacklogRepository;
+use ecc_infra::os_fs::OsFileSystem;
+use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore};
+use ecc_ports::fs::FileSystem;
 
 /// Run the `backlog add-entry` subcommand.
 ///
@@ -35,17 +39,27 @@ fn add_entry(
     project_dir: &Path,
 ) -> Result<WorkflowOutput, anyhow::Error> {
     let backlog_dir = project_dir.join("docs/backlog");
+    let fs = OsFileSystem;
 
     // Acquire exclusive lock for the backlog directory
     let _guard = ecc_flock::acquire(project_dir, "backlog")
         .map_err(|e| anyhow::anyhow!("Failed to acquire backlog lock: {e}"))?;
 
     // Ensure backlog dir exists
-    std::fs::create_dir_all(&backlog_dir)
+    fs.create_dir_all(&backlog_dir)
         .map_err(|e| anyhow::anyhow!("Failed to create docs/backlog: {e}"))?;
 
-    // Scan for existing BL-NNN-*.md files and find max ID
-    let next_id = compute_next_id(&backlog_dir)?;
+    // Compute next ID via the BacklogEntryStore port
+    let repo = FsBacklogRepository::new(&fs);
+    let next_id_str = repo
+        .next_id(&backlog_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to compute next ID: {e}"))?;
+
+    // Parse numeric part from "BL-NNN"
+    let next_id: u32 = next_id_str
+        .strip_prefix("BL-")
+        .and_then(|s| s.parse().ok())
+        .ok_or_else(|| anyhow::anyhow!("Invalid next_id format: {next_id_str}"))?;
 
     // Build slug and filename
     let slug = make_slug(title);
@@ -76,11 +90,11 @@ fn add_entry(
          Created via ecc-workflow backlog add-entry\n"
     );
 
-    std::fs::write(&entry_path, &content)
+    fs.write(&entry_path, &content)
         .map_err(|e| anyhow::anyhow!("Failed to write entry file {filename}: {e}"))?;
 
-    // Update BACKLOG.md — append a new row
-    update_backlog_index(&backlog_dir, next_id, title, scope, target, &today)?;
+    // Update BACKLOG.md — append a new row via BacklogIndexStore port
+    append_backlog_index(&repo, &backlog_dir, next_id, title, scope, target, &today)?;
 
     Ok(WorkflowOutput::pass(format!(
         "Created BL-{next_id:03}: {title}"
@@ -100,37 +114,9 @@ fn format_tags(tags: &str) -> String {
     }
 }
 
-/// Scan `backlog_dir` for `BL-NNN-*.md` files and return max ID + 1 (or 1 if none).
-fn compute_next_id(backlog_dir: &Path) -> Result<u32, anyhow::Error> {
-    let read_dir = std::fs::read_dir(backlog_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to read {}: {e}", backlog_dir.display()))?;
-
-    let max_id = read_dir
-        .filter_map(|entry| entry.ok())
-        .filter_map(|entry| {
-            let name = entry.file_name();
-            let name_str = name.to_string_lossy().into_owned();
-            if name_str.starts_with("BL-") && name_str.ends_with(".md") {
-                let after_bl = name_str.strip_prefix("BL-")?;
-                let id_str: String = after_bl
-                    .chars()
-                    .take_while(|c| c.is_ascii_digit())
-                    .collect();
-                id_str.parse::<u32>().ok()
-            } else {
-                None
-            }
-        })
-        .max();
-
-    Ok(max_id.map_or(1, |m| m + 1))
-}
-
-/// Append a new row to `docs/backlog/BACKLOG.md`.
-///
-/// Reads the file, appends the row at the end of the table (or after the last `|` line),
-/// and writes the file back atomically.
-fn update_backlog_index(
+/// Append a new row to `docs/backlog/BACKLOG.md` via the BacklogIndexStore port.
+fn append_backlog_index(
+    repo: &FsBacklogRepository<'_>,
     backlog_dir: &Path,
     id: u32,
     title: &str,
@@ -138,14 +124,13 @@ fn update_backlog_index(
     target: &str,
     today: &str,
 ) -> Result<(), anyhow::Error> {
-    let backlog_md = backlog_dir.join("BACKLOG.md");
-
-    let existing = if backlog_md.exists() {
-        std::fs::read_to_string(&backlog_md)
-            .map_err(|e| anyhow::anyhow!("Failed to read BACKLOG.md: {e}"))?
-    } else {
-        "# Backlog\n\n| ID | Title | Body | Scope | Target | Status | Created |\n|---|---|---|---|---|---|---|\n".to_string()
-    };
+    let existing = repo
+        .read_index(backlog_dir)
+        .map_err(|e| anyhow::anyhow!("Failed to read BACKLOG.md: {e}"))?
+        .unwrap_or_else(|| {
+            "# Backlog\n\n| ID | Title | Body | Scope | Target | Status | Created |\n|---|---|---|---|---|---|---|\n"
+                .to_string()
+        });
 
     let new_row = format!("| BL-{id:03} | {title} | — | {scope} | {target} | open | {today} |\n");
 
@@ -156,12 +141,8 @@ fn update_backlog_index(
         format!("{}{}", existing, new_row)
     };
 
-    // Atomic write via temp file + rename
-    let tmp_path = backlog_dir.join(".BACKLOG.md.tmp");
-    std::fs::write(&tmp_path, &output_str)
-        .map_err(|e| anyhow::anyhow!("Failed to write temp BACKLOG.md: {e}"))?;
-    std::fs::rename(&tmp_path, &backlog_md)
-        .map_err(|e| anyhow::anyhow!("Failed to rename BACKLOG.md: {e}"))?;
+    repo.write_index(backlog_dir, &output_str)
+        .map_err(|e| anyhow::anyhow!("Failed to write BACKLOG.md: {e}"))?;
 
     Ok(())
 }
@@ -173,9 +154,10 @@ mod tests {
 
     fn setup_backlog(tmp: &TempDir) {
         let backlog_dir = tmp.path().join("docs/backlog");
-        std::fs::create_dir_all(&backlog_dir).unwrap();
-        std::fs::write(
-            backlog_dir.join("BACKLOG.md"),
+        let fs = OsFileSystem;
+        fs.create_dir_all(&backlog_dir).unwrap();
+        fs.write(
+            &backlog_dir.join("BACKLOG.md"),
             "# Backlog\n\n| ID | Title | Body | Scope | Target | Status | Created |\n|---|---|---|---|---|---|---|\n",
         )
         .unwrap();
@@ -194,13 +176,17 @@ mod tests {
         );
 
         let backlog_dir = tmp.path().join("docs/backlog");
-        let files: Vec<_> = std::fs::read_dir(&backlog_dir)
+        let fs = OsFileSystem;
+        let files: Vec<_> = fs
+            .read_dir(&backlog_dir)
             .unwrap()
-            .filter_map(|e| e.ok())
-            .filter(|e| {
-                let n = e.file_name();
-                let s = n.to_string_lossy();
-                s.starts_with("BL-") && s.ends_with(".md")
+            .into_iter()
+            .filter(|p| {
+                let name = p
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_default();
+                name.starts_with("BL-") && name.ends_with(".md")
             })
             .collect();
         assert_eq!(files.len(), 1, "expected 1 entry file");
@@ -215,14 +201,15 @@ mod tests {
         run("Second", "HIGH", "/spec-dev", "", tmp.path());
 
         let backlog_dir = tmp.path().join("docs/backlog");
-        let mut ids: Vec<u32> = std::fs::read_dir(&backlog_dir)
+        let fs = OsFileSystem;
+        let mut ids: Vec<u32> = fs
+            .read_dir(&backlog_dir)
             .unwrap()
-            .filter_map(|e| e.ok())
-            .filter_map(|e| {
-                let name = e.file_name();
-                let s = name.to_string_lossy().into_owned();
-                if s.starts_with("BL-") && s.ends_with(".md") {
-                    let after = s.strip_prefix("BL-")?;
+            .into_iter()
+            .filter_map(|p| {
+                let name = p.file_name()?.to_string_lossy().into_owned();
+                if name.starts_with("BL-") && name.ends_with(".md") {
+                    let after = name.strip_prefix("BL-")?;
                     let id_str: String = after.chars().take_while(|c| c.is_ascii_digit()).collect();
                     id_str.parse::<u32>().ok()
                 } else {
@@ -242,7 +229,10 @@ mod tests {
         run("Alpha", "LOW", "/spec-dev", "", tmp.path());
         run("Beta", "MEDIUM", "/spec-dev", "", tmp.path());
 
-        let content = std::fs::read_to_string(tmp.path().join("docs/backlog/BACKLOG.md")).unwrap();
+        let fs = OsFileSystem;
+        let content = fs
+            .read_to_string(&tmp.path().join("docs/backlog/BACKLOG.md"))
+            .unwrap();
         assert!(content.contains("Alpha"), "missing Alpha");
         assert!(content.contains("Beta"), "missing Beta");
     }

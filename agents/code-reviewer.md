@@ -4,7 +4,7 @@ description: Expert code review specialist. Proactively reviews code for quality
 tools: ["Read", "Grep", "Glob", "Bash", "Agent"]
 model: opus
 effort: high
-skills: ["coding-standards"]
+skills: ["coding-standards", "ascii-doc-diagrams"]
 memory: project
 ---
 
@@ -80,3 +80,7 @@ Check `CLAUDE.md` or project rules for: file size limits, emoji policy, immutabi
 - `fix: <issue>` for each CRITICAL/HIGH fix
 - `refactor: <improvement>` for MEDIUM fixes
 - Never batch unrelated fixes
+
+## ASCII Doc-Comment Diagrams (HIGH)
+
+Per `ascii-doc-diagrams` skill: flag missing ASCII diagrams or pattern annotations on eligible code as HIGH findings. Eligibility per AC-001.4: public functions with 3+ decision branches, enums with 3+ state-machine variants, structs composing 3+ domain types, items in ARCHITECTURE.md, or items with 5+ callers.

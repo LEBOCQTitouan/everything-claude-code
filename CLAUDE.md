@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, teams, 
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (2449 tests)
+cargo test              # Run all Rust tests (3028 tests)
 cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (22 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
@@ -44,7 +44,7 @@ ecc docs coverage --scope <path>     Doc comment coverage per module
 ecc diagram triggers --changed-files Evaluate diagram generation heuristics
 ecc commit lint --staged             Validate atomic commit concerns
 ecc hook <id> [profiles]             Run a hook by ID
-ecc backlog next-id|reindex          Backlog operations
+ecc backlog next-id|reindex|list     Backlog operations (list --available filters in-progress)
 ecc worktree gc|status               Worktree lifecycle
 ecc status [--json]                  Diagnostic snapshot (versions, phase, components)
 ecc dev on|off|switch                Toggle/switch ECC config
@@ -85,7 +85,7 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 ## Gotchas
 
 - Brevity rule (`rules/common/brevity.md`): all agents inherit output compression — no filler, no hedging, no pleasantries. Preserves code blocks and technical terms. See [caveman](https://github.com/JuliusBrussee/caveman).
-- Workflow state is worktree-scoped: `resolve_state_dir()` resolves to `<git-dir>/ecc-workflow/state.json` in git repos (per-worktree isolation), falling back to `.claude/workflow/` for non-git dirs. A `.state-dir` anchor file at `.claude/workflow/.state-dir` pins the state directory path so hook subprocesses resolve correctly regardless of CWD. Written by `ecc-workflow init`, deleted by `ecc-workflow reset --force`. If anchor is missing/corrupt/stale, falls back to git-based resolution. Run `ecc-workflow status` from a worktree to verify isolation. Old state at `.claude/workflow/state.json` is auto-migrated on first write.
+- Workflow state is worktree-scoped: `resolve_state_dir()` resolves to `<git-dir>/ecc-workflow/state.json` in git repos (per-worktree isolation), falling back to `.claude/workflow/` for non-git dirs. A `.state-dir` anchor file at `.claude/workflow/.state-dir` pins the state directory path so hook subprocesses resolve correctly regardless of CWD. Written by `ecc-workflow init`, deleted by `ecc-workflow reset --force`. If anchor is missing/corrupt/stale, falls back to git-based resolution. The phase-gate hook additionally derives the worktree from the gated file path (walking parents to find `.git` file → `gitdir:` line), bypassing `CLAUDE_PROJECT_DIR` when it points to the main repo. Run `ecc-workflow status` from a worktree to verify isolation. Old state at `.claude/workflow/state.json` is auto-migrated on first write.
 - `ecc workflow` mirrors `ecc-workflow` — use either during migration; `ecc-workflow` will become a thin wrapper
 - `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by hook)
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
@@ -117,4 +117,5 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Hexagonal architecture: domain → ports → infra → app → CLI
 - All I/O is abstracted behind port traits, enabling full in-memory testing
 - Agent/skill/hook format: Markdown with YAML frontmatter (see `agents/`, `skills/`, `hooks/`). Agent frontmatter includes `name`, `description`, `model`, `tools`, `effort`.
+- Rust edition: `edition = "2024"` (requires Rust 1.85+); toolchain pinned via `rust-toolchain.toml` at workspace root
 - File naming: lowercase with hyphens (e.g., `python-reviewer.md`, `tdd-workflow.md`)

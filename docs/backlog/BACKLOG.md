@@ -13,10 +13,10 @@
 | BL-009 | Add negative examples to planner agent | 2 | LOW | direct edit | implemented | 2026-03-20 |
 | BL-010 | Create ubiquitous-language skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-011 | Create grill-me skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
-| BL-012 | Create write-a-prd skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-012 | Create write-a-prd skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-013 | Create interview-me skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-014 | Create design-an-interface skill | 3 | HIGH | /spec dev | implemented | 2026-03-20 |
-| BL-015 | Create request-refactor-plan skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
+| BL-015 | Create request-refactor-plan skill | 3 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-016 | Create prd-to-plan skill | 3 | MEDIUM | /spec dev | open | 2026-03-20 |
 | BL-017 | Create /catchup command | 4 | MEDIUM | /spec dev | implemented | 2026-03-20 |
 | BL-019 | Create /spec command | 4 | MEDIUM | /spec dev | implemented | 2026-03-20 |
@@ -39,10 +39,10 @@
 | BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | implemented | 2026-03-21 |
 | BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | implemented | 2026-03-21 |
 | BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | implemented | 2026-03-21 |
-| BL-039 | CronCreate suggestion for periodic commands | 9 | LOW | audit/review/verify | open | 2026-03-21 |
+| BL-039 | CronCreate suggestion for periodic commands | 9 | LOW | audit/review/verify | archived | 2026-03-21 |
 | BL-040 | Meta-steering rules for ECC development | 9 | LOW | rules/ecc/ (new) | implemented | 2026-03-21 |
 | BL-041 | CLAUDE_CODE_TASK_LIST_ID for cross-session persistence | 9 | LOW | workflow-init.sh | implemented | 2026-03-21 |
-| BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | open | 2026-03-21 |
+| BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | archived | 2026-03-21 |
 | BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | implemented | 2026-03-21 |
 | BL-044 | Add grill-me interview step to /backlog add workflow | — | LOW | direct edit | archived | 2026-03-21 |
 | BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | implemented | 2026-03-21 |
@@ -114,8 +114,8 @@
 | BL-111 | Enable GitHub Merge Queue for CI load reduction | — | LOW | direct edit | implemented | 2026-03-31 | 2026-03-31 |
 | BL-112 | Evaluate cargo-dist to replace custom release.yml | — | MEDIUM | /spec-refactor | implemented | 2026-03-31 | 2026-03-31 |
 | BL-113 | Upgrade rusqlite 0.34 to 0.38 | — | LOW | direct edit | implemented | 2026-03-31 | 2026-03-31 |
-| BL-114 | Upgrade rustyline 15 to 17 | — | LOW | direct edit | open | 2026-03-31 |
-| BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | open | 2026-03-31 |
+| BL-114 | Upgrade rustyline 15 to 17 | — | LOW | direct edit | implemented | 2026-03-31 |
+| BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | implemented | 2026-03-31 |
 | BL-116 | Add cargo-mutants mutation testing | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
@@ -129,6 +129,15 @@
 | BL-126 | Token optimization wave 3 — new CLI commands replacing agent work | — | HIGH | /spec-dev | implemented | 2026-04-06 |
 | BL-127 | Token optimization wave 4 — pipeline architecture changes | — | HIGH | /spec-dev | implemented | 2026-04-06 |
 | BL-128 | Token optimization wave 5 — local LLM offload | — | MEDIUM | /spec-dev | implemented | 2026-04-06 |
+| BL-133 | Migrate workspace to Rust 2024 edition | — | MEDIUM | /spec-dev | implemented | 2026-04-09 |
+| BL-134 | Audit CLAUDE.md for LLM-generated content | — | LOW | direct edit | open | 2026-04-09 |
+| BL-135 | Add cargo-llvm-cov coverage gate to CI | — | LOW | direct edit | open | 2026-04-09 |
+| BL-136 | Add cargo-vet for SLSA Level 2 supply chain compliance | — | MEDIUM | /spec-dev | open | 2026-04-09 |
+| BL-137 | Apply difficulty-aware model routing from multi-agent research | — | HIGH | /spec-dev | open | 2026-04-09 |
+| BL-138 | Evaluate hex crate for compile-time architecture boundary enforcement | — | MEDIUM | /spec-dev | open | 2026-04-09 |
+| BL-139 | Monitor Claude Code Agent Teams API for ECC integration | — | LOW | /spec-dev | open | 2026-04-09 |
+| BL-140 | Competitor analysis: Claw Code and Goose agent frameworks | — | LOW | /spec-dev | open | 2026-04-09 |
+| BL-141 | Monitor serde-saphyr for 0.1.0 stability release | — | LOW | direct edit | open | 2026-04-09 |
 
 ## Dependency Graph
 
@@ -211,11 +220,11 @@ BL-128 → BL-126 (wave 5 offloads agents not already replaced by CLI in wave 3)
 
 ## Stats
 
-- **Total:** 128
-- **Open:** 18
+- **Total:** 141
+- **Open:** 24
 - **In-progress:** 0
 - **Implemented:** 105
-- **Archived:** 4
+- **Archived:** 6
 - **Deterministic upgrades:** 10 (BL-066 through BL-075)
 - **Stripe-inspired:** 3 (BL-078 through BL-080)
 - **Web radar derived:** 8 (BL-099 through BL-106)
