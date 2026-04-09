@@ -11,6 +11,7 @@ use ecc_ports::metrics_store::MetricsStore;
 use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
 
+pub mod bypass_interceptor;
 pub mod handlers;
 
 /// Trait for hook handlers that can be registered in a dispatch table.
