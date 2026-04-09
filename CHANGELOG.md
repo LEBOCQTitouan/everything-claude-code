@@ -14,6 +14,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Upgraded
 
+- **CLAUDE.md inferable content audit (BL-134)**: Removed unused inferable sections (Doc Hierarchy, Development Notes, Slash Commands listing, 2 inferable gotchas). Kept pipeline-consumed sections. Line count reduced by 17 lines.
+
 - **Rust 2024 edition verification (BL-133)**: Formally verified workspace compiles, tests, and lints cleanly under edition 2024 (Rust 1.85+). Applied rustfmt 2024 formatting. Added SAFETY comments to xtask unsafe blocks. Pinned toolchain via `rust-toolchain.toml`.
 
 - **toml 0.8 → 0.9 (BL-115)**: Bumped toml dependency in ecc-infra. Serde bridge API unchanged. 8 existing tests pass.

@@ -52,10 +52,6 @@ ecc dev on|off|switch                Toggle/switch ECC config
 
 Full CLI reference: `docs/commands-reference.md`
 
-## Slash Commands
-
-Audit commands (`/audit-full`, `/audit-archi`, `/audit-backlog`, `/audit-code`, `/audit-convention`, `/audit-doc`, `/audit-errors`, `/audit-evolution`, `/audit-observability`, `/audit-security`, `/audit-test`, `/audit-web`) and side commands (`/doc-suite`, `/verify`, `/review`, `/backlog`, `/build-fix`, `/catchup`, `/commit`, `/create-component`, `/ecc-test-mode`, `/scaffold-workflows`): see `docs/commands-reference.md`.
-
 ### Spec-Driven Pipeline (Doc-First)
 
 `/spec` → `/spec-dev`, `/spec-fix`, `/spec-refactor` → `/design` → `/implement`
@@ -70,10 +66,6 @@ Audit commands (`/audit-full`, `/audit-archi`, `/audit-backlog`, `/audit-code`, 
 ## Command Workflows
 
 Slash command workflows defined in `commands/` are mandatory. Follow every phase and step exactly as specified — do not skip, reorder, or modify phases. The spec-driven pipeline is enforced by `.claude/workflow/state.json` and hook-based gates.
-
-## Doc Hierarchy
-
-`CLAUDE.md` (onboarding) → `docs/getting-started.md` (human setup) → `docs/ARCHITECTURE.md` (system design) → `docs/adr/` (decisions) → `docs/specs/` (persisted spec+design artifacts per work item) → `docs/domain/bounded-contexts.md` (domain model) → `docs/sources.md` (curated knowledge sources — Technology Radar quadrants) → `docs/runbooks/` (ops) → `docs/MODULE-SUMMARIES.md` (per-crate reference). Information lives at the lowest layer that serves its audience; CLAUDE.md stays terse.
 
 ## Dual-Mode Development
 
@@ -90,8 +82,6 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - `ecc-domain` crate must have zero I/O imports — pure business logic only (enforced by hook)
 - Agent frontmatter `model` field controls which Claude model runs the agent — wrong value silently degrades quality
 - Agent frontmatter `effort` field (low/medium/high/max) controls thinking budget via SubagentStart hook — must match model tier
-- `hooks.json` lives in `hooks/`, not the project root
-- Skill directory name must match the `name` field in its frontmatter
 - Test count in CLAUDE.md must be updated after adding or removing tests
 - `pre:edit-write:workflow-branch-guard` blocks `.github/workflows/` edits on main/master/production — create a feature branch first
 - ECC hooks use the auditable bypass system — bypass individual hooks via `ecc bypass grant --hook <hook_id> --reason <reason>`. See ADR-0055. If you previously used `.envrc` with `ECC_WORKFLOW_BYPASS=1`, run `direnv revoke` to clean up cached approvals.
@@ -111,11 +101,3 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Batched tdd-executor: independent same-file PCs dispatch as single batch to reduce subagent overhead (BL-127)
 - Glossary: **write-guard** = PreToolUse hook blocking writes outside worktree (exit 2); **lazy worktree** = worktree created on-demand at first write; **session merge** = automatic rebase+verify+ff-merge at session end; **fix-round budget** = max 2 fix attempts per PC before user escalation; **coverage delta** = before/after test coverage % comparison across TDD loop; **bounded context enumeration** = listing affected DDD contexts in /design output; **per-test-name inventory** = individual test function names from TDD cycles; **harness metrics** = hook success rate, phase-gate violation rate, agent recovery rate, commit atomicity score (SLO targets: 99%/5%/80%/95%)
 
-## Development Notes
-
-- Source is Rust, organized as a Cargo workspace with 9 crates
-- Hexagonal architecture: domain → ports → infra → app → CLI
-- All I/O is abstracted behind port traits, enabling full in-memory testing
-- Agent/skill/hook format: Markdown with YAML frontmatter (see `agents/`, `skills/`, `hooks/`). Agent frontmatter includes `name`, `description`, `model`, `tools`, `effort`.
-- Rust edition: `edition = "2024"` (requires Rust 1.85+); toolchain pinned via `rust-toolchain.toml` at workspace root
-- File naming: lowercase with hyphens (e.g., `python-reviewer.md`, `tdd-workflow.md`)
