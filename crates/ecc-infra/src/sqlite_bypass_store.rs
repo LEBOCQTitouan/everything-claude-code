@@ -47,8 +47,8 @@ impl SqliteBypassStore {
 
     /// Create an in-memory store for testing.
     pub fn in_memory() -> Result<Self, BypassStoreError> {
-        let conn = Connection::open_in_memory()
-            .map_err(|e| BypassStoreError::Database(e.to_string()))?;
+        let conn =
+            Connection::open_in_memory().map_err(|e| BypassStoreError::Database(e.to_string()))?;
         crate::bypass_schema::ensure_schema(&conn)
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(Self {
@@ -162,10 +162,7 @@ impl BypassStore for SqliteBypassStore {
 
     fn prune(&self, older_than_days: u64) -> Result<u64, BypassStoreError> {
         let conn = self.conn.lock().expect("lock poisoned");
-        let cutoff = format!(
-            "datetime('now', '-{} days')",
-            older_than_days
-        );
+        let cutoff = format!("datetime('now', '-{} days')", older_than_days);
         let deleted = conn
             .execute(
                 &format!("DELETE FROM bypass_decisions WHERE timestamp < {cutoff}"),
@@ -220,9 +217,15 @@ mod tests {
     #[test]
     fn bypass_query_by_hook_filters() {
         let store = SqliteBypassStore::in_memory().unwrap();
-        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
-        store.record(&make_decision("hook-b", Verdict::Refused)).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Applied)).unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Accepted))
+            .unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Refused))
+            .unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Applied))
+            .unwrap();
 
         let results = store.query_by_hook("hook-a", 10).unwrap();
         assert_eq!(results.len(), 2);
@@ -232,16 +235,26 @@ mod tests {
     #[test]
     fn bypass_summary_counts() {
         let store = SqliteBypassStore::in_memory().unwrap();
-        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Refused)).unwrap();
-        store.record(&make_decision("hook-b", Verdict::Accepted)).unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Accepted))
+            .unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Refused))
+            .unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Accepted))
+            .unwrap();
 
         let summary = store.summary().unwrap();
         assert_eq!(summary.per_hook.len(), 2);
         assert_eq!(summary.total_accepted, 2);
         assert_eq!(summary.total_refused, 1);
 
-        let hook_a = summary.per_hook.iter().find(|h| h.hook_id == "hook-a").unwrap();
+        let hook_a = summary
+            .per_hook
+            .iter()
+            .find(|h| h.hook_id == "hook-a")
+            .unwrap();
         assert_eq!(hook_a.accepted, 1);
         assert_eq!(hook_a.refused, 1);
     }
@@ -255,10 +268,7 @@ mod tests {
         let encoded_hook_id = hook_id.replace(':', "__");
 
         // Write a valid token JSON file at the expected path
-        let token_dir = home_dir
-            .join(".ecc")
-            .join("bypass-tokens")
-            .join(session_id);
+        let token_dir = home_dir.join(".ecc").join("bypass-tokens").join(session_id);
         std::fs::create_dir_all(&token_dir).unwrap();
         let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
             hook_id,
@@ -281,15 +291,85 @@ mod tests {
     }
 
     #[test]
+    fn sqlite_bypass_store_check_token_malformed() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home_dir = tmp.path().to_path_buf();
+        let session_id = "session-abc";
+        let hook_id = "pre:write-edit:worktree-guard";
+        let encoded_hook_id = hook_id.replace(':', "__");
+
+        // Write malformed JSON to the token file
+        let token_dir = home_dir.join(".ecc").join("bypass-tokens").join(session_id);
+        std::fs::create_dir_all(&token_dir).unwrap();
+        std::fs::write(
+            token_dir.join(format!("{encoded_hook_id}.json")),
+            "not valid json",
+        )
+        .unwrap();
+
+        let db_path = home_dir.join("bypass.db");
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn sqlite_bypass_store_check_token_mismatched() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home_dir = tmp.path().to_path_buf();
+        let session_id = "session-abc";
+        let hook_id = "pre:write-edit:worktree-guard";
+        let encoded_hook_id = hook_id.replace(':', "__");
+
+        // Write a token JSON with a different hook_id
+        let token_dir = home_dir.join(".ecc").join("bypass-tokens").join(session_id);
+        std::fs::create_dir_all(&token_dir).unwrap();
+        let other_hook_id = "pre:other:hook";
+        let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
+            other_hook_id,
+            session_id,
+            "2026-04-07T10:00:00Z",
+            "test bypass",
+        )
+        .unwrap();
+        let json = serde_json::to_string(&token).unwrap();
+        std::fs::write(token_dir.join(format!("{encoded_hook_id}.json")), json).unwrap();
+
+        let db_path = home_dir.join("bypass.db");
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn sqlite_bypass_store_check_token_no_home() {
+        // Store created without home_dir — check_token must return None
+        let store = SqliteBypassStore::in_memory().unwrap();
+        let result = ecc_ports::bypass_store::BypassStore::check_token(
+            &store,
+            "pre:write-edit:worktree-guard",
+            "session-abc",
+        );
+        assert!(result.is_none());
+    }
+
+    #[test]
     fn bypass_prune_removes_old() {
         let store = SqliteBypassStore::in_memory().unwrap();
         // Insert old record
         let old = BypassDecision::new(
-            "hook-a", "old", "session-1", Verdict::Accepted, "2020-01-01T00:00:00Z",
-        ).unwrap();
+            "hook-a",
+            "old",
+            "session-1",
+            Verdict::Accepted,
+            "2020-01-01T00:00:00Z",
+        )
+        .unwrap();
         store.record(&old).unwrap();
         // Insert recent record
-        store.record(&make_decision("hook-b", Verdict::Accepted)).unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Accepted))
+            .unwrap();
 
         let deleted = store.prune(1).unwrap();
         assert_eq!(deleted, 1);
