@@ -28,6 +28,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Request-refactor-plan skill (BL-015)**: Interview-driven refactoring plan decomposition into tiny, green-state commits. 6-step flow with per-commit risk assessment (LOW/MEDIUM/HIGH). Output to `docs/refactors/`. Phase-gate allowlist updated.
+
 - **Write-a-PRD skill (BL-012)**: Interactive PRD generation skill. 6-step flow: problem interview, codebase exploration, alternatives, scope hammering, module sketch, file output to `docs/prds/`. Added `docs/prds/` to phase-gate allowlist.
 
 
