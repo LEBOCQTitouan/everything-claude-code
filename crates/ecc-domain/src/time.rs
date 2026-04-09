@@ -108,6 +108,30 @@ pub fn datetime_from_epoch(secs: u64) -> DateTime {
 mod tests {
     use super::*;
 
+    // --- is_leap_year ---
+
+    #[test]
+    fn leap_year_divisible_by_400() {
+        assert!(is_leap_year(2000));
+        assert!(is_leap_year(2400));
+    }
+
+    #[test]
+    fn not_leap_year_century_not_divisible_by_400() {
+        assert!(!is_leap_year(1900));
+        assert!(!is_leap_year(2100));
+    }
+
+    #[test]
+    fn leap_year_divisible_by_4_not_century() {
+        assert!(is_leap_year(2024));
+    }
+
+    #[test]
+    fn not_leap_year_not_divisible_by_4() {
+        assert!(!is_leap_year(2023));
+    }
+
     fn dt(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> DateTime {
         DateTime {
             year,
