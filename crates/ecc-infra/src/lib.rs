@@ -31,3 +31,4 @@ pub mod sqlite_metrics_store;
 pub mod tarball_extractor;
 pub mod local_llm_health;
 pub mod file_cache_store;
+pub mod fs_backlog;
