@@ -31,58 +31,207 @@ impl<'a> FsBacklogRepository<'a> {
 }
 
 impl BacklogEntryStore for FsBacklogRepository<'_> {
-    fn load_entries(&self, _backlog_dir: &Path) -> Result<Vec<BacklogEntry>, BacklogError> {
-        todo!("implement load_entries")
+    fn load_entries(&self, backlog_dir: &Path) -> Result<Vec<BacklogEntry>, BacklogError> {
+        let paths = self.fs.read_dir(backlog_dir).map_err(|e| BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: e.to_string(),
+        })?;
+
+        let mut entries = Vec::new();
+        for path in &paths {
+            let filename = match path.file_name() {
+                Some(name) => name.to_string_lossy().to_string(),
+                None => continue,
+            };
+            if extract_id_from_filename(&filename).is_none() {
+                continue;
+            }
+            let content = match self.fs.read_to_string(path) {
+                Ok(c) => c,
+                Err(e) => {
+                    tracing::warn!("skipping {filename}: {e}");
+                    continue;
+                }
+            };
+            match parse_frontmatter(&content) {
+                Ok(entry) => entries.push(entry),
+                Err(e) => {
+                    tracing::warn!("skipping {filename}: {e}");
+                }
+            }
+        }
+        Ok(entries)
     }
 
-    fn load_entry(&self, _backlog_dir: &Path, _id: &str) -> Result<BacklogEntry, BacklogError> {
-        todo!("implement load_entry")
+    fn load_entry(&self, backlog_dir: &Path, id: &str) -> Result<BacklogEntry, BacklogError> {
+        let paths = self.fs.read_dir(backlog_dir).map_err(|e| BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: e.to_string(),
+        })?;
+
+        for path in &paths {
+            let filename = match path.file_name() {
+                Some(name) => name.to_string_lossy().to_string(),
+                None => continue,
+            };
+            if !filename.starts_with(id) {
+                continue;
+            }
+            let content = self.fs.read_to_string(path).map_err(|e| BacklogError::Io {
+                path: path.display().to_string(),
+                message: e.to_string(),
+            })?;
+            return parse_frontmatter(&content);
+        }
+
+        Err(BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: format!("entry {id} not found"),
+        })
     }
 
     fn save_entry(
         &self,
-        _backlog_dir: &Path,
-        _entry: &BacklogEntry,
-        _body: &str,
+        backlog_dir: &Path,
+        entry: &BacklogEntry,
+        body: &str,
     ) -> Result<(), BacklogError> {
-        todo!("implement save_entry")
+        let slug = entry.title.to_lowercase().replace(' ', "-");
+        let filename = format!("{}-{slug}.md", entry.id);
+        let path = backlog_dir.join(&filename);
+        let yaml = serde_saphyr::to_string(entry)
+            .map_err(|e| BacklogError::MalformedYaml(e.to_string()))?;
+        let content = format!("---\n{yaml}---\n{body}");
+        self.fs.write(&path, &content).map_err(|e| BacklogError::Io {
+            path: path.display().to_string(),
+            message: e.to_string(),
+        })
     }
 
-    fn next_id(&self, _backlog_dir: &Path) -> Result<String, BacklogError> {
-        todo!("implement next_id")
+    fn next_id(&self, backlog_dir: &Path) -> Result<String, BacklogError> {
+        if !self.fs.is_dir(backlog_dir) {
+            return Err(BacklogError::DirectoryNotFound(backlog_dir.to_path_buf()));
+        }
+        let paths = self.fs.read_dir(backlog_dir).map_err(|e| BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: e.to_string(),
+        })?;
+
+        let max_id = paths
+            .iter()
+            .filter_map(|p| p.file_name())
+            .filter_map(|name| extract_id_from_filename(&name.to_string_lossy()))
+            .max()
+            .unwrap_or(0);
+
+        Ok(format!("BL-{:03}", max_id + 1))
     }
 }
 
 impl BacklogLockStore for FsBacklogRepository<'_> {
-    fn load_lock(&self, _backlog_dir: &Path, _id: &str) -> Result<Option<LockFile>, BacklogError> {
-        todo!("implement load_lock")
+    fn load_lock(&self, backlog_dir: &Path, id: &str) -> Result<Option<LockFile>, BacklogError> {
+        let lock_path = self.lock_path(backlog_dir, id);
+        match self.fs.read_to_string(&lock_path) {
+            Ok(content) => LockFile::parse(&content).map(Some),
+            Err(ecc_ports::fs::FsError::NotFound(_)) => Ok(None),
+            Err(e) => Err(BacklogError::Io {
+                path: lock_path.display().to_string(),
+                message: e.to_string(),
+            }),
+        }
     }
 
     fn save_lock(
         &self,
-        _backlog_dir: &Path,
-        _id: &str,
-        _lock: &LockFile,
+        backlog_dir: &Path,
+        id: &str,
+        lock: &LockFile,
     ) -> Result<(), BacklogError> {
-        todo!("implement save_lock")
+        let locks_dir = backlog_dir.join(".locks");
+        self.fs.create_dir_all(&locks_dir).map_err(|e| BacklogError::Io {
+            path: locks_dir.display().to_string(),
+            message: e.to_string(),
+        })?;
+        let lock_path = self.lock_path(backlog_dir, id);
+        self.fs.write(&lock_path, &lock.format()).map_err(|e| BacklogError::Io {
+            path: lock_path.display().to_string(),
+            message: e.to_string(),
+        })
     }
 
-    fn remove_lock(&self, _backlog_dir: &Path, _id: &str) -> Result<(), BacklogError> {
-        todo!("implement remove_lock")
+    fn remove_lock(&self, backlog_dir: &Path, id: &str) -> Result<(), BacklogError> {
+        let lock_path = self.lock_path(backlog_dir, id);
+        match self.fs.remove_file(&lock_path) {
+            Ok(()) => Ok(()),
+            Err(ecc_ports::fs::FsError::NotFound(_)) => Ok(()),
+            Err(e) => Err(BacklogError::Io {
+                path: lock_path.display().to_string(),
+                message: e.to_string(),
+            }),
+        }
     }
 
-    fn list_locks(&self, _backlog_dir: &Path) -> Result<Vec<(String, LockFile)>, BacklogError> {
-        todo!("implement list_locks")
+    fn list_locks(&self, backlog_dir: &Path) -> Result<Vec<(String, LockFile)>, BacklogError> {
+        let locks_dir = backlog_dir.join(".locks");
+        if !self.fs.is_dir(&locks_dir) {
+            return Ok(vec![]);
+        }
+        let paths = self.fs.read_dir(&locks_dir).map_err(|e| BacklogError::Io {
+            path: locks_dir.display().to_string(),
+            message: e.to_string(),
+        })?;
+
+        let mut result = Vec::new();
+        for path in &paths {
+            let filename = match path.file_name() {
+                Some(name) => name.to_string_lossy().to_string(),
+                None => continue,
+            };
+            let id = match filename.strip_suffix(".lock") {
+                Some(id) => id.to_owned(),
+                None => continue,
+            };
+            let content = self.fs.read_to_string(path).map_err(|e| BacklogError::Io {
+                path: path.display().to_string(),
+                message: e.to_string(),
+            })?;
+            match LockFile::parse(&content) {
+                Ok(lock) => result.push((id, lock)),
+                Err(e) => tracing::warn!("skipping malformed lock {filename}: {e}"),
+            }
+        }
+        Ok(result)
     }
 }
 
 impl BacklogIndexStore for FsBacklogRepository<'_> {
-    fn write_index(&self, _backlog_dir: &Path, _content: &str) -> Result<(), BacklogError> {
-        todo!("implement write_index")
+    fn write_index(&self, backlog_dir: &Path, content: &str) -> Result<(), BacklogError> {
+        let index_path = backlog_dir.join("BACKLOG.md");
+        let tmp_path = backlog_dir.join("BACKLOG.md.tmp");
+        self.fs.write(&tmp_path, content).map_err(|e| BacklogError::Io {
+            path: tmp_path.display().to_string(),
+            message: format!("failed to write temp file: {e}"),
+        })?;
+        if let Err(e) = self.fs.rename(&tmp_path, &index_path) {
+            let _ = self.fs.remove_file(&tmp_path);
+            return Err(BacklogError::Io {
+                path: tmp_path.display().to_string(),
+                message: format!("failed to rename temp file: {e}"),
+            });
+        }
+        Ok(())
     }
 
-    fn read_index(&self, _backlog_dir: &Path) -> Result<Option<String>, BacklogError> {
-        todo!("implement read_index")
+    fn read_index(&self, backlog_dir: &Path) -> Result<Option<String>, BacklogError> {
+        let index_path = backlog_dir.join("BACKLOG.md");
+        match self.fs.read_to_string(&index_path) {
+            Ok(content) => Ok(Some(content)),
+            Err(ecc_ports::fs::FsError::NotFound(_)) => Ok(None),
+            Err(e) => Err(BacklogError::Io {
+                path: index_path.display().to_string(),
+                message: e.to_string(),
+            }),
+        }
     }
 }
 
@@ -169,12 +318,9 @@ mod tests {
             .with_dir("/backlog/.locks")
             .with_file("/backlog/.locks/BL-001.lock", lock_content);
         let repo = FsBacklogRepository::new(&fs);
-        // Verify it exists first
         let lock = repo.load_lock(Path::new("/backlog"), "BL-001").unwrap();
         assert!(lock.is_some());
-        // Remove it
         repo.remove_lock(Path::new("/backlog"), "BL-001").unwrap();
-        // Verify it's gone
         let lock = repo.load_lock(Path::new("/backlog"), "BL-001").unwrap();
         assert!(lock.is_none());
     }
