@@ -904,4 +904,51 @@ mod tests {
         );
     }
 
+    /// BL-142: phase_gate allows writes to docs/domain/ during plan phase
+    #[test]
+    fn phase_gate_allows_domain_dir() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"docs/domain/bounded-contexts.md"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for docs/domain/ during plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// BL-142: phase_gate allows writes to docs/guides/ during plan phase
+    #[test]
+    fn phase_gate_allows_guides_dir() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"docs/guides/getting-started.md"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for docs/guides/ during plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
+    /// BL-142: phase_gate allows writes to docs/diagrams/ during plan phase
+    #[test]
+    fn phase_gate_allows_diagrams_dir() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"docs/diagrams/flow.md"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for docs/diagrams/ during plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
 }
