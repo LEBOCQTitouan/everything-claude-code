@@ -24,6 +24,7 @@ fn allowed_prefixes(state_dir: &Path) -> Vec<String> {
         "docs/adr/".to_owned(),
         "docs/prds/".to_owned(),
         "docs/refactors/".to_owned(),
+        "docs/cartography/".to_owned(),
     ];
     let state_str = state_dir.to_string_lossy();
     let with_slash = if state_str.ends_with('/') {
@@ -885,4 +886,22 @@ mod tests {
             output.message
         );
     }
+
+    /// BL-142: phase_gate allows writes to docs/cartography/ during plan phase
+    #[test]
+    fn phase_gate_allows_cartography_dir() {
+        let tmp = TempDir::new().unwrap();
+        write_state(tmp.path(), "plan");
+        let state_dir = state_dir_for(&tmp);
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/cartography/journeys/test.md"}}"#;
+        let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
+        assert!(
+            matches!(output.status, Status::Pass),
+            "Expected Pass for docs/cartography/ during plan phase, got {:?}: {}",
+            output.status,
+            output.message
+        );
+    }
+
 }
