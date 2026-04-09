@@ -2,7 +2,7 @@ use ecc_domain::backlog::entry::{BacklogEntry, BacklogError, BacklogStatus};
 use ecc_domain::backlog::lock::LockFile;
 use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore, BacklogLockStore};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 /// In-memory implementation of all three backlog port traits for testing.
@@ -46,10 +46,6 @@ impl Default for InMemoryBacklogRepository {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn entry_key(backlog_dir: &Path, id: &str) -> PathBuf {
-    backlog_dir.join(format!("{id}.md"))
 }
 
 impl BacklogEntryStore for InMemoryBacklogRepository {
