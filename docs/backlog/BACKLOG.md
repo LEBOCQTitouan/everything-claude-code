@@ -130,7 +130,7 @@
 | BL-127 | Token optimization wave 4 — pipeline architecture changes | — | HIGH | /spec-dev | implemented | 2026-04-06 |
 | BL-128 | Token optimization wave 5 — local LLM offload | — | MEDIUM | /spec-dev | implemented | 2026-04-06 |
 | BL-133 | Migrate workspace to Rust 2024 edition | — | MEDIUM | /spec-dev | implemented | 2026-04-09 |
-| BL-134 | Audit CLAUDE.md for LLM-generated content | — | LOW | direct edit | open | 2026-04-09 |
+| BL-134 | Audit CLAUDE.md for LLM-generated content | — | LOW | direct edit | implemented | 2026-04-09 |
 | BL-135 | Add cargo-llvm-cov coverage gate to CI | — | LOW | direct edit | open | 2026-04-09 |
 | BL-136 | Add cargo-vet for SLSA Level 2 supply chain compliance | — | MEDIUM | /spec-dev | open | 2026-04-09 |
 | BL-137 | Apply difficulty-aware model routing from multi-agent research | — | HIGH | /spec-dev | open | 2026-04-09 |
