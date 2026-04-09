@@ -174,6 +174,21 @@ impl BypassStore for SqliteBypassStore {
 
     fn check_token(&self, hook_id: &str, session_id: &str) -> Option<BypassToken> {
         let home = self.home_dir.as_ref()?;
+        // Reject path traversal in session_id and hook_id
+        if session_id.contains('/')
+            || session_id.contains('\\')
+            || session_id.contains("..")
+            || hook_id.contains('/')
+            || hook_id.contains('\\')
+            || hook_id.contains("..")
+        {
+            tracing::warn!(
+                session_id,
+                hook_id,
+                "rejecting bypass token lookup with path traversal chars"
+            );
+            return None;
+        }
         let encoded_hook_id = hook_id.replace(':', "__");
         let token_path = home
             .join(".ecc")

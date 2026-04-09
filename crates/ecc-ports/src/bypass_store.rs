@@ -45,9 +45,7 @@ pub trait BypassStore: Send + Sync {
     ///
     /// Returns `Some(token)` if a token file exists, is valid JSON, and matches
     /// both `hook_id` and `session_id`. Returns `None` on any failure or mismatch.
-    fn check_token(&self, _hook_id: &str, _session_id: &str) -> Option<BypassToken> {
-        None
-    }
+    fn check_token(&self, hook_id: &str, session_id: &str) -> Option<BypassToken>;
 }
 
 #[cfg(test)]

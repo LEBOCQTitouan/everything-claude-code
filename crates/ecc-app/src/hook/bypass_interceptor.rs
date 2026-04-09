@@ -55,7 +55,9 @@ pub fn intercept(
             ecc_domain::hook_runtime::bypass::Verdict::Applied,
             &token.granted_at,
         ) {
-            let _ = store.record(&decision);
+            if let Err(e) = store.record(&decision) {
+                tracing::warn!(hook_id, error = %e, "failed to record bypass audit decision");
+            }
         }
 
         let duration_ms = start.elapsed().as_millis() as u64;
