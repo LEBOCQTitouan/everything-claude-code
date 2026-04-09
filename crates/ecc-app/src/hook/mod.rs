@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 use ecc_ports::bypass_store::BypassStore;
 use ecc_ports::cost_store::CostStore;
-use ecc_ports::metrics_store::MetricsStore;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
+use ecc_ports::metrics_store::MetricsStore;
 use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
 
@@ -155,11 +155,11 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
     // Deprecation warning for ECC_WORKFLOW_BYPASS=1 (AC-006.1, AC-006.2)
     if ports.env.var("ECC_WORKFLOW_BYPASS").as_deref() == Some("1") {
-            ports.terminal.stderr_write(
+        ports.terminal.stderr_write(
                 "[Deprecated] ECC_WORKFLOW_BYPASS=1 is deprecated. Use 'ecc bypass grant' for granular, auditable bypasses. See ADR-0056.\n"
             );
-            // Still allow passthrough for backward compat (AC-006.2)
-            return HookResult::passthrough(stdin);
+        // Still allow passthrough for backward compat (AC-006.2)
+        return HookResult::passthrough(stdin);
     }
 
     // Check if hook is enabled
@@ -278,19 +278,26 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
                     let token_path = format!("{}/{}.json", token_dir, encoded);
                     if ports.fs.exists(std::path::Path::new(&token_path)) {
                         // Read and validate token
-                        if let Ok(token_json) = ports.fs.read_to_string(std::path::Path::new(&token_path)) {
-                            if let Ok(token) = serde_json::from_str::<ecc_domain::hook_runtime::bypass::BypassToken>(&token_json) {
+                        if let Ok(token_json) =
+                            ports.fs.read_to_string(std::path::Path::new(&token_path))
+                        {
+                            if let Ok(token) = serde_json::from_str::<
+                                ecc_domain::hook_runtime::bypass::BypassToken,
+                            >(&token_json)
+                            {
                                 if token.session_id == sid && token.hook_id == ctx.hook_id {
                                     tracing::info!(hook_id = %ctx.hook_id, "bypass token found — allowing");
                                     // Log the applied bypass
                                     if let Some(store) = ports.bypass_store {
-                                        if let Ok(decision) = ecc_domain::hook_runtime::bypass::BypassDecision::new(
-                                            &ctx.hook_id,
-                                            &token.reason,
-                                            sid,
-                                            ecc_domain::hook_runtime::bypass::Verdict::Applied,
-                                            &token.granted_at,
-                                        ) {
+                                        if let Ok(decision) =
+                                            ecc_domain::hook_runtime::bypass::BypassDecision::new(
+                                                &ctx.hook_id,
+                                                &token.reason,
+                                                sid,
+                                                ecc_domain::hook_runtime::bypass::Verdict::Applied,
+                                                &token.granted_at,
+                                            )
+                                        {
                                             let _ = store.record(&decision);
                                         }
                                     }
@@ -302,12 +309,20 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
                         }
                     }
                 }
-                HookResult { exit_code: 2, stdout: result.stdout, stderr }
+                HookResult {
+                    exit_code: 2,
+                    stdout: result.stdout,
+                    stderr,
+                }
             }
             _ => {
                 // No valid session ID — can't check tokens
                 tracing::debug!(hook_id = %ctx.hook_id, "no CLAUDE_SESSION_ID — bypass tokens unavailable");
-                HookResult { exit_code: 2, stdout: result.stdout, stderr }
+                HookResult {
+                    exit_code: 2,
+                    stdout: result.stdout,
+                    stderr,
+                }
             }
         }
     } else {
@@ -319,9 +334,8 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
     // Record hook execution metric (fire-and-forget)
     let metrics_disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
-    let session_id = crate::metrics_session::resolve_session_id(
-        ports.env.var("CLAUDE_SESSION_ID").as_deref(),
-    );
+    let session_id =
+        crate::metrics_session::resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
     let timestamp = {
         use std::time::{SystemTime, UNIX_EPOCH};
         let secs = SystemTime::now()
@@ -346,11 +360,8 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         outcome,
         error_message,
     ) {
-        let _ = crate::metrics_mgmt::record_if_enabled(
-            ports.metrics_store,
-            &event,
-            metrics_disabled,
-        );
+        let _ =
+            crate::metrics_mgmt::record_if_enabled(ports.metrics_store, &event, metrics_disabled);
     }
 
     result
@@ -636,7 +647,10 @@ mod tests {
 
         let result = dispatch(&ctx, &ports);
         // The hook must block (exit_code=2)
-        assert_eq!(result.exit_code, 2, "expected block exit code for failure metric test");
+        assert_eq!(
+            result.exit_code, 2,
+            "expected block exit code for failure metric test"
+        );
 
         let events = metrics_store.snapshot();
         assert_eq!(events.len(), 1, "expected exactly one metric event");
@@ -679,7 +693,11 @@ mod tests {
         dispatch(&ctx, &ports);
 
         let events = metrics_store.snapshot();
-        assert_eq!(events.len(), 0, "no events should be recorded when ECC_METRICS_DISABLED=1");
+        assert_eq!(
+            events.len(),
+            0,
+            "no events should be recorded when ECC_METRICS_DISABLED=1"
+        );
     }
 
     /// PC-007: With metrics_store: None, dispatch() completes normally (no panic, no error).

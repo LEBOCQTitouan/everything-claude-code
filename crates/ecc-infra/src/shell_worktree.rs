@@ -84,11 +84,7 @@ impl WorktreeManager for ShellWorktreeManager<'_> {
         Ok(true)
     }
 
-    fn remove_worktree(
-        &self,
-        repo_root: &Path,
-        worktree_path: &Path,
-    ) -> Result<(), WorktreeError> {
+    fn remove_worktree(&self, repo_root: &Path, worktree_path: &Path) -> Result<(), WorktreeError> {
         let path_str = worktree_path.to_string_lossy();
         let out = self
             .shell

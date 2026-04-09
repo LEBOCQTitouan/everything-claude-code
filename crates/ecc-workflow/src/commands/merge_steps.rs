@@ -262,7 +262,10 @@ mod tests {
         let result = run_fast_verify(tmp.path());
         assert!(result.is_err());
         if let Err(MergeError::VerifyFailed { step, .. }) = result {
-            assert_eq!(step, "cargo build", "first failing step should be cargo build");
+            assert_eq!(
+                step, "cargo build",
+                "first failing step should be cargo build"
+            );
         } else {
             panic!("expected VerifyFailed");
         }
@@ -341,7 +344,10 @@ mod tests {
     #[test]
     fn accepts_unprefixed_session_branch() {
         let result = validate_session_branch("ecc-session-20260404-150000-my-feature-12345");
-        assert!(result.is_ok(), "unprefixed session branch should be accepted");
+        assert!(
+            result.is_ok(),
+            "unprefixed session branch should be accepted"
+        );
     }
 
     #[test]
@@ -363,7 +369,10 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         setup_git_repo_with_main(tmp.path());
         let result = checkout_main(tmp.path());
-        assert!(result.is_ok(), "checkout main should succeed when already on main: {result:?}");
+        assert!(
+            result.is_ok(),
+            "checkout main should succeed when already on main: {result:?}"
+        );
     }
 
     #[test]
@@ -382,7 +391,10 @@ mod tests {
             .output()
             .unwrap();
         let result = checkout_main(tmp.path());
-        assert!(result.is_ok(), "checkout main from detached HEAD should succeed: {result:?}");
+        assert!(
+            result.is_ok(),
+            "checkout main from detached HEAD should succeed: {result:?}"
+        );
     }
 
     #[test]
@@ -395,7 +407,10 @@ mod tests {
             .output()
             .unwrap();
         let result = checkout_main(tmp.path());
-        assert!(result.is_ok(), "checkout main from other branch should succeed: {result:?}");
+        assert!(
+            result.is_ok(),
+            "checkout main from other branch should succeed: {result:?}"
+        );
     }
 
     #[test]
@@ -450,7 +465,10 @@ mod tests {
         merge_fast_forward(tmp.path(), "ecc-session-wt-test").unwrap();
 
         let content = std::fs::read_to_string(tmp.path().join("new_feature.txt")).unwrap();
-        assert_eq!(content, "feature content", "working tree file should match merged content");
+        assert_eq!(
+            content, "feature content",
+            "working tree file should match merged content"
+        );
     }
 
     #[test]
@@ -461,7 +479,11 @@ mod tests {
         let wt_dir = tmp.path().join("worktree-preserve");
         Command::new("git")
             .args([
-                "worktree", "add", wt_dir.to_str().unwrap(), "-b", "ecc-session-preserve",
+                "worktree",
+                "add",
+                wt_dir.to_str().unwrap(),
+                "-b",
+                "ecc-session-preserve",
             ])
             .current_dir(tmp.path())
             .output()
@@ -487,7 +509,10 @@ mod tests {
             .current_dir(tmp.path())
             .output();
 
-        assert!(wt_dir.exists(), "worktree directory should be preserved after merge");
+        assert!(
+            wt_dir.exists(),
+            "worktree directory should be preserved after merge"
+        );
     }
 
     #[test]
@@ -498,7 +523,11 @@ mod tests {
         let wt_dir = tmp.path().join("worktree-branch");
         Command::new("git")
             .args([
-                "worktree", "add", wt_dir.to_str().unwrap(), "-b", "ecc-session-branch-def",
+                "worktree",
+                "add",
+                wt_dir.to_str().unwrap(),
+                "-b",
+                "ecc-session-branch-def",
             ])
             .current_dir(tmp.path())
             .output()
@@ -537,7 +566,10 @@ mod tests {
             .output()
             .unwrap();
         let log_str = String::from_utf8_lossy(&log.stdout);
-        assert!(log_str.contains("branch commit"), "commit should be on main");
+        assert!(
+            log_str.contains("branch commit"),
+            "commit should be on main"
+        );
     }
 
     #[test]

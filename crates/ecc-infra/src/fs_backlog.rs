@@ -32,10 +32,13 @@ impl<'a> FsBacklogRepository<'a> {
 
 impl BacklogEntryStore for FsBacklogRepository<'_> {
     fn load_entries(&self, backlog_dir: &Path) -> Result<Vec<BacklogEntry>, BacklogError> {
-        let paths = self.fs.read_dir(backlog_dir).map_err(|e| BacklogError::Io {
-            path: backlog_dir.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let paths = self
+            .fs
+            .read_dir(backlog_dir)
+            .map_err(|e| BacklogError::Io {
+                path: backlog_dir.display().to_string(),
+                message: e.to_string(),
+            })?;
 
         let mut entries = Vec::new();
         for path in &paths {
@@ -64,10 +67,13 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
     }
 
     fn load_entry(&self, backlog_dir: &Path, id: &str) -> Result<BacklogEntry, BacklogError> {
-        let paths = self.fs.read_dir(backlog_dir).map_err(|e| BacklogError::Io {
-            path: backlog_dir.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let paths = self
+            .fs
+            .read_dir(backlog_dir)
+            .map_err(|e| BacklogError::Io {
+                path: backlog_dir.display().to_string(),
+                message: e.to_string(),
+            })?;
 
         for path in &paths {
             let filename = match path.file_name() {
@@ -102,20 +108,25 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
         let yaml = serde_saphyr::to_string(entry)
             .map_err(|e| BacklogError::MalformedYaml(e.to_string()))?;
         let content = format!("---\n{yaml}---\n{body}");
-        self.fs.write(&path, &content).map_err(|e| BacklogError::Io {
-            path: path.display().to_string(),
-            message: e.to_string(),
-        })
+        self.fs
+            .write(&path, &content)
+            .map_err(|e| BacklogError::Io {
+                path: path.display().to_string(),
+                message: e.to_string(),
+            })
     }
 
     fn next_id(&self, backlog_dir: &Path) -> Result<String, BacklogError> {
         if !self.fs.is_dir(backlog_dir) {
             return Err(BacklogError::DirectoryNotFound(backlog_dir.to_path_buf()));
         }
-        let paths = self.fs.read_dir(backlog_dir).map_err(|e| BacklogError::Io {
-            path: backlog_dir.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let paths = self
+            .fs
+            .read_dir(backlog_dir)
+            .map_err(|e| BacklogError::Io {
+                path: backlog_dir.display().to_string(),
+                message: e.to_string(),
+            })?;
 
         let max_id = paths
             .iter()
@@ -141,22 +152,21 @@ impl BacklogLockStore for FsBacklogRepository<'_> {
         }
     }
 
-    fn save_lock(
-        &self,
-        backlog_dir: &Path,
-        id: &str,
-        lock: &LockFile,
-    ) -> Result<(), BacklogError> {
+    fn save_lock(&self, backlog_dir: &Path, id: &str, lock: &LockFile) -> Result<(), BacklogError> {
         let locks_dir = backlog_dir.join(".locks");
-        self.fs.create_dir_all(&locks_dir).map_err(|e| BacklogError::Io {
-            path: locks_dir.display().to_string(),
-            message: e.to_string(),
-        })?;
+        self.fs
+            .create_dir_all(&locks_dir)
+            .map_err(|e| BacklogError::Io {
+                path: locks_dir.display().to_string(),
+                message: e.to_string(),
+            })?;
         let lock_path = self.lock_path(backlog_dir, id);
-        self.fs.write(&lock_path, &lock.format()).map_err(|e| BacklogError::Io {
-            path: lock_path.display().to_string(),
-            message: e.to_string(),
-        })
+        self.fs
+            .write(&lock_path, &lock.format())
+            .map_err(|e| BacklogError::Io {
+                path: lock_path.display().to_string(),
+                message: e.to_string(),
+            })
     }
 
     fn remove_lock(&self, backlog_dir: &Path, id: &str) -> Result<(), BacklogError> {
@@ -208,10 +218,12 @@ impl BacklogIndexStore for FsBacklogRepository<'_> {
     fn write_index(&self, backlog_dir: &Path, content: &str) -> Result<(), BacklogError> {
         let index_path = backlog_dir.join("BACKLOG.md");
         let tmp_path = backlog_dir.join("BACKLOG.md.tmp");
-        self.fs.write(&tmp_path, content).map_err(|e| BacklogError::Io {
-            path: tmp_path.display().to_string(),
-            message: format!("failed to write temp file: {e}"),
-        })?;
+        self.fs
+            .write(&tmp_path, content)
+            .map_err(|e| BacklogError::Io {
+                path: tmp_path.display().to_string(),
+                message: format!("failed to write temp file: {e}"),
+            })?;
         if let Err(e) = self.fs.rename(&tmp_path, &index_path) {
             let _ = self.fs.remove_file(&tmp_path);
             return Err(BacklogError::Io {
@@ -240,8 +252,10 @@ mod tests {
     use super::*;
     use ecc_test_support::InMemoryFileSystem;
 
-    const VALID_ENTRY: &str = "---\nid: BL-001\ntitle: First entry\nstatus: open\ncreated: 2026-04-07\n---\n# Body";
-    const VALID_ENTRY_2: &str = "---\nid: BL-002\ntitle: Second entry\nstatus: open\ncreated: 2026-04-07\n---\n# Body 2";
+    const VALID_ENTRY: &str =
+        "---\nid: BL-001\ntitle: First entry\nstatus: open\ncreated: 2026-04-07\n---\n# Body";
+    const VALID_ENTRY_2: &str =
+        "---\nid: BL-002\ntitle: Second entry\nstatus: open\ncreated: 2026-04-07\n---\n# Body 2";
 
     #[test]
     fn load_entries_reads_bl_files() {
@@ -302,7 +316,8 @@ mod tests {
         let fs = InMemoryFileSystem::new().with_dir("/backlog");
         let repo = FsBacklogRepository::new(&fs);
         let lock = LockFile::new("my-worktree".into(), "2026-04-07T14:10:39Z".into()).unwrap();
-        repo.save_lock(Path::new("/backlog"), "BL-042", &lock).unwrap();
+        repo.save_lock(Path::new("/backlog"), "BL-042", &lock)
+            .unwrap();
         let loaded = repo.load_lock(Path::new("/backlog"), "BL-042").unwrap();
         assert!(loaded.is_some());
         let loaded = loaded.unwrap();
@@ -329,7 +344,8 @@ mod tests {
     fn write_index_atomic() {
         let fs = InMemoryFileSystem::new().with_dir("/backlog");
         let repo = FsBacklogRepository::new(&fs);
-        repo.write_index(Path::new("/backlog"), "# Backlog Index\n").unwrap();
+        repo.write_index(Path::new("/backlog"), "# Backlog Index\n")
+            .unwrap();
         let content = repo.read_index(Path::new("/backlog")).unwrap();
         assert_eq!(content, Some("# Backlog Index\n".to_string()));
         // The temp file should not exist after successful write

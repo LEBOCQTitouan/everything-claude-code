@@ -126,7 +126,10 @@ mod tests {
     #[test]
     fn flowchart_trigger_fires() {
         let content = "pub enum State {\n    A,\n    B,\n    C,\n}";
-        assert!(check_flowchart_trigger(&[("f.rs".to_string(), content.to_string())]));
+        assert!(check_flowchart_trigger(&[(
+            "f.rs".to_string(),
+            content.to_string()
+        )]));
     }
 
     #[test]

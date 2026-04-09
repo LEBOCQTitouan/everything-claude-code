@@ -3,9 +3,7 @@
 use std::path::Path;
 use std::sync::Mutex;
 
-use ecc_domain::hook_runtime::bypass::{
-    BypassDecision, BypassSummary, HookBypassCount, Verdict,
-};
+use ecc_domain::hook_runtime::bypass::{BypassDecision, BypassSummary, HookBypassCount, Verdict};
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
 use rusqlite::{Connection, params};
 
@@ -37,8 +35,8 @@ impl SqliteBypassStore {
 
     /// Create an in-memory store for testing.
     pub fn in_memory() -> Result<Self, BypassStoreError> {
-        let conn = Connection::open_in_memory()
-            .map_err(|e| BypassStoreError::Database(e.to_string()))?;
+        let conn =
+            Connection::open_in_memory().map_err(|e| BypassStoreError::Database(e.to_string()))?;
         crate::bypass_schema::ensure_schema(&conn)
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(Self {
@@ -151,10 +149,7 @@ impl BypassStore for SqliteBypassStore {
 
     fn prune(&self, older_than_days: u64) -> Result<u64, BypassStoreError> {
         let conn = self.conn.lock().expect("lock poisoned");
-        let cutoff = format!(
-            "datetime('now', '-{} days')",
-            older_than_days
-        );
+        let cutoff = format!("datetime('now', '-{} days')", older_than_days);
         let deleted = conn
             .execute(
                 &format!("DELETE FROM bypass_decisions WHERE timestamp < {cutoff}"),
@@ -191,9 +186,15 @@ mod tests {
     #[test]
     fn bypass_query_by_hook_filters() {
         let store = SqliteBypassStore::in_memory().unwrap();
-        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
-        store.record(&make_decision("hook-b", Verdict::Refused)).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Applied)).unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Accepted))
+            .unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Refused))
+            .unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Applied))
+            .unwrap();
 
         let results = store.query_by_hook("hook-a", 10).unwrap();
         assert_eq!(results.len(), 2);
@@ -203,16 +204,26 @@ mod tests {
     #[test]
     fn bypass_summary_counts() {
         let store = SqliteBypassStore::in_memory().unwrap();
-        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Refused)).unwrap();
-        store.record(&make_decision("hook-b", Verdict::Accepted)).unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Accepted))
+            .unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Refused))
+            .unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Accepted))
+            .unwrap();
 
         let summary = store.summary().unwrap();
         assert_eq!(summary.per_hook.len(), 2);
         assert_eq!(summary.total_accepted, 2);
         assert_eq!(summary.total_refused, 1);
 
-        let hook_a = summary.per_hook.iter().find(|h| h.hook_id == "hook-a").unwrap();
+        let hook_a = summary
+            .per_hook
+            .iter()
+            .find(|h| h.hook_id == "hook-a")
+            .unwrap();
         assert_eq!(hook_a.accepted, 1);
         assert_eq!(hook_a.refused, 1);
     }
@@ -222,11 +233,18 @@ mod tests {
         let store = SqliteBypassStore::in_memory().unwrap();
         // Insert old record
         let old = BypassDecision::new(
-            "hook-a", "old", "session-1", Verdict::Accepted, "2020-01-01T00:00:00Z",
-        ).unwrap();
+            "hook-a",
+            "old",
+            "session-1",
+            Verdict::Accepted,
+            "2020-01-01T00:00:00Z",
+        )
+        .unwrap();
         store.record(&old).unwrap();
         // Insert recent record
-        store.record(&make_decision("hook-b", Verdict::Accepted)).unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Accepted))
+            .unwrap();
 
         let deleted = store.prune(1).unwrap();
         assert_eq!(deleted, 1);

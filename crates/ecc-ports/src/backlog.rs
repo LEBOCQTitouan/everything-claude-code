@@ -34,12 +34,7 @@ pub trait BacklogLockStore: Send + Sync {
     fn load_lock(&self, backlog_dir: &Path, id: &str) -> Result<Option<LockFile>, BacklogError>;
 
     /// Persist a lock for `id`.
-    fn save_lock(
-        &self,
-        backlog_dir: &Path,
-        id: &str,
-        lock: &LockFile,
-    ) -> Result<(), BacklogError>;
+    fn save_lock(&self, backlog_dir: &Path, id: &str, lock: &LockFile) -> Result<(), BacklogError>;
 
     /// Remove the lock for `id`.
     fn remove_lock(&self, backlog_dir: &Path, id: &str) -> Result<(), BacklogError>;

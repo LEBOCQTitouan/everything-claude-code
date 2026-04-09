@@ -5,15 +5,15 @@
 //! [`BufferedTerminal`], [`ScriptedInput`]) enabling fully deterministic,
 //! I/O-free testing of application use cases.
 
-pub mod in_memory_cache_store;
 pub mod buffered_terminal;
+pub mod in_memory_cache_store;
 pub mod in_memory_config_store;
 pub mod in_memory_cost_store;
 pub mod in_memory_fs;
 pub mod in_memory_lock;
 pub mod in_memory_log_store;
-pub mod in_memory_metrics_store;
 pub mod in_memory_memory_store;
+pub mod in_memory_metrics_store;
 pub mod mock_clock;
 pub mod mock_env;
 pub mod mock_executor;
@@ -31,8 +31,8 @@ pub use in_memory_cache_store::InMemoryCacheStore;
 pub use in_memory_fs::InMemoryFileSystem;
 pub use in_memory_lock::InMemoryLock;
 pub use in_memory_log_store::InMemoryLogStore;
-pub use in_memory_metrics_store::InMemoryMetricsStore;
 pub use in_memory_memory_store::InMemoryMemoryStore;
+pub use in_memory_metrics_store::InMemoryMetricsStore;
 pub use mock_clock::MockClock;
 pub use mock_env::MockEnvironment;
 pub use mock_executor::MockExecutor;

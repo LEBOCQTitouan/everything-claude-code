@@ -117,4 +117,5 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Hexagonal architecture: domain → ports → infra → app → CLI
 - All I/O is abstracted behind port traits, enabling full in-memory testing
 - Agent/skill/hook format: Markdown with YAML frontmatter (see `agents/`, `skills/`, `hooks/`). Agent frontmatter includes `name`, `description`, `model`, `tools`, `effort`.
+- Rust edition: `edition = "2024"` (requires Rust 1.85+); toolchain pinned via `rust-toolchain.toml` at workspace root
 - File naming: lowercase with hyphens (e.g., `python-reviewer.md`, `tdd-workflow.md`)

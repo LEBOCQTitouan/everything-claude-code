@@ -178,8 +178,7 @@ mod tests {
             .with_uncommitted_changes(true)
             .with_stash(true)
             .with_pushed(false);
-        let executor = MockExecutor::new()
-            .on_args("kill", &["-0", "99999"], ok(""));
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
 
         let entries = status(&mgr, &executor, Path::new("/repo")).unwrap();
         assert_eq!(entries.len(), 1, "expected 1 status entry");
@@ -196,14 +195,18 @@ mod tests {
 
     #[test]
     fn status_excludes_non_session() {
-        let mgr = MockWorktreeManager::new()
-            .with_worktrees(vec![
-                WorktreeInfo { path: "/repo/main".to_owned(), branch: Some("main".to_owned()) },
-                WorktreeInfo { path: "/repo/feature-xyz".to_owned(), branch: Some("feature-xyz".to_owned()) },
-                session_wt(FRESH_SESSION),
-            ]);
-        let executor = MockExecutor::new()
-            .on_args("kill", &["-0", "99999"], ok(""));
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![
+            WorktreeInfo {
+                path: "/repo/main".to_owned(),
+                branch: Some("main".to_owned()),
+            },
+            WorktreeInfo {
+                path: "/repo/feature-xyz".to_owned(),
+                branch: Some("feature-xyz".to_owned()),
+            },
+            session_wt(FRESH_SESSION),
+        ]);
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
 
         let entries = status(&mgr, &executor, Path::new("/repo")).unwrap();
         assert_eq!(entries.len(), 1, "only session worktrees must appear");
@@ -238,8 +241,7 @@ mod tests {
         let entries: Vec<WorktreeStatusEntry> = vec![];
         let table = format_status_table(&entries);
         assert_eq!(
-            table,
-            "Name\tBranch\tAge\tAhead\tClean\tStash\tPushed\tStatus",
+            table, "Name\tBranch\tAge\tAhead\tClean\tStash\tPushed\tStatus",
             "header must match exactly"
         );
     }

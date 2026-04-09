@@ -95,8 +95,10 @@ mod tests {
     fn errors_when_not_installed() {
         // Use an empty PATH so cargo-mutants cannot be found
         let original_path = std::env::var("PATH").unwrap_or_default();
+        // SAFETY: single-threaded test; PATH manipulation isolated to this test.
         unsafe { std::env::set_var("PATH", "/nonexistent") };
         let result = run(&["ecc-domain".to_string()], None, false, false);
+        // SAFETY: restoring PATH to original value; same single-threaded invariant.
         unsafe { std::env::set_var("PATH", &original_path) };
         assert!(
             result.is_err(),

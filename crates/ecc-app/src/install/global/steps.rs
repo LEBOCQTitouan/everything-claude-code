@@ -156,11 +156,7 @@ pub(super) fn step_merge_artifacts(
 /// Reads the canonical template from `ecc_root/agents/.templates/todowrite-block.md`
 /// and inserts it before the first `TodoWrite items:` line (or at end) in each
 /// agent file that has `tracking: todowrite` in its YAML frontmatter.
-fn expand_agents_tracking(
-    fs: &dyn ecc_ports::fs::FileSystem,
-    ecc_root: &Path,
-    dest_dir: &Path,
-) {
+fn expand_agents_tracking(fs: &dyn ecc_ports::fs::FileSystem, ecc_root: &Path, dest_dir: &Path) {
     let template_path = ecc_root
         .join("agents")
         .join(".templates")
@@ -185,11 +181,7 @@ fn expand_agents_tracking(
 }
 
 /// Expand a single agent file's `tracking: todowrite` into the canonical block.
-fn expand_tracking_field(
-    fs: &dyn ecc_ports::fs::FileSystem,
-    agent_path: &Path,
-    template: &str,
-) {
+fn expand_tracking_field(fs: &dyn ecc_ports::fs::FileSystem, agent_path: &Path, template: &str) {
     let Ok(content) = fs.read_to_string(agent_path) else {
         return;
     };
@@ -397,7 +389,9 @@ mod tests {
 
         expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
 
-        let result = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+        let result = fs
+            .read_to_string(std::path::Path::new("/agent.md"))
+            .unwrap();
         assert!(result.contains(TEMPLATE), "template should be inserted");
         let template_pos = result.find(TEMPLATE).unwrap();
         let items_pos = result.find("TodoWrite items:").unwrap();
@@ -413,9 +407,14 @@ mod tests {
 
         expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
 
-        let result = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+        let result = fs
+            .read_to_string(std::path::Path::new("/agent.md"))
+            .unwrap();
         assert!(result.contains(TEMPLATE), "template should be appended");
-        assert!(result.trim_end().ends_with("step finishes."), "should end with template");
+        assert!(
+            result.trim_end().ends_with("step finishes."),
+            "should end with template"
+        );
     }
 
     // PC-003: expand no-ops without tracking frontmatter
@@ -427,7 +426,9 @@ mod tests {
 
         expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
 
-        let result = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+        let result = fs
+            .read_to_string(std::path::Path::new("/agent.md"))
+            .unwrap();
         assert_eq!(result, agent, "content should be unchanged");
     }
 
@@ -436,7 +437,8 @@ mod tests {
     fn expand_tracking_noop_missing_template() {
         let fs = InMemoryFileSystem::new();
         let agent = "---\nname: test\ntracking: todowrite\n---\n\nContent.\n";
-        fs.write(std::path::Path::new("/dest/agent.md"), agent).unwrap();
+        fs.write(std::path::Path::new("/dest/agent.md"), agent)
+            .unwrap();
 
         expand_agents_tracking(
             &fs,
@@ -444,8 +446,13 @@ mod tests {
             std::path::Path::new("/dest"),
         );
 
-        let result = fs.read_to_string(std::path::Path::new("/dest/agent.md")).unwrap();
-        assert_eq!(result, agent, "content should be unchanged when template missing");
+        let result = fs
+            .read_to_string(std::path::Path::new("/dest/agent.md"))
+            .unwrap();
+        assert_eq!(
+            result, agent,
+            "content should be unchanged when template missing"
+        );
     }
 
     // PC-005: expand is idempotent
@@ -456,11 +463,18 @@ mod tests {
         fs.write(std::path::Path::new("/agent.md"), agent).unwrap();
 
         expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
-        let after_first = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+        let after_first = fs
+            .read_to_string(std::path::Path::new("/agent.md"))
+            .unwrap();
 
         expand_tracking_field(&fs, std::path::Path::new("/agent.md"), TEMPLATE);
-        let after_second = fs.read_to_string(std::path::Path::new("/agent.md")).unwrap();
+        let after_second = fs
+            .read_to_string(std::path::Path::new("/agent.md"))
+            .unwrap();
 
-        assert_eq!(after_first, after_second, "second expansion should be no-op");
+        assert_eq!(
+            after_first, after_second,
+            "second expansion should be no-op"
+        );
     }
 }

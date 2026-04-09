@@ -110,9 +110,7 @@ pub fn reindex(
     let stats = generate_stats(&all_entries);
 
     let existing_index = index.read_index(backlog_dir)?;
-    let dep_graph = existing_index
-        .as_deref()
-        .and_then(extract_dependency_graph);
+    let dep_graph = existing_index.as_deref().and_then(extract_dependency_graph);
 
     let mut output = String::new();
     output.push_str("# Backlog Index\n\n");
@@ -185,18 +183,10 @@ fn collect_claimed_ids(
     let mut claimed: HashSet<u32> = HashSet::new();
 
     // Collect IDs claimed by active worktrees
-    let worktrees = worktree_mgr
-        .list_worktrees(project_dir)
-        .unwrap_or_default();
+    let worktrees = worktree_mgr.list_worktrees(project_dir).unwrap_or_default();
     let worktree_names: HashSet<String> = worktrees
         .iter()
-        .map(|wt| {
-            wt.path
-                .rsplit('/')
-                .next()
-                .unwrap_or(&wt.path)
-                .to_string()
-        })
+        .map(|wt| wt.path.rsplit('/').next().unwrap_or(&wt.path).to_string())
         .collect();
 
     for wt in &worktrees {
@@ -288,12 +278,20 @@ mod tests {
 
     fn make_fresh_lock(worktree_name: &str) -> LockFile {
         // Timestamp close to now (within 24h)
-        LockFile::new(worktree_name.to_string(), "2026-04-07T11:00:00Z".to_string()).unwrap()
+        LockFile::new(
+            worktree_name.to_string(),
+            "2026-04-07T11:00:00Z".to_string(),
+        )
+        .unwrap()
     }
 
     fn make_stale_lock(worktree_name: &str) -> LockFile {
         // 2026-04-06T00:00:00Z — more than 24h before fresh_clock's 2026-04-07T12:00:00Z
-        LockFile::new(worktree_name.to_string(), "2026-04-06T00:00:00Z".to_string()).unwrap()
+        LockFile::new(
+            worktree_name.to_string(),
+            "2026-04-06T00:00:00Z".to_string(),
+        )
+        .unwrap()
     }
 
     // --- next_id tests ---
@@ -407,7 +405,10 @@ mod tests {
         .unwrap();
 
         let content = result.expect("dry_run should return content");
-        assert!(content.contains("in-progress"), "BL-010 should be in-progress");
+        assert!(
+            content.contains("in-progress"),
+            "BL-010 should be in-progress"
+        );
     }
 
     #[test]
@@ -450,8 +451,7 @@ mod tests {
 
     #[test]
     fn reindex_preserves_dep_graph() {
-        let dep_graph_content =
-            "# Backlog Index\n\n| old |\n\n## Dependency Graph\n\n```\nBL-001 → BL-002\n```\n\n## Stats\n\n- **Total:** 1\n";
+        let dep_graph_content = "# Backlog Index\n\n| old |\n\n## Dependency Graph\n\n```\nBL-001 → BL-002\n```\n\n## Stats\n\n- **Total:** 1\n";
 
         let repo = InMemoryBacklogRepository::new()
             .with_entry(make_entry("BL-001", BacklogStatus::Open))
@@ -517,7 +517,10 @@ mod tests {
         let repo = InMemoryBacklogRepository::new()
             .with_entry(make_entry("BL-010", BacklogStatus::Open))
             .with_entry(make_entry("BL-011", BacklogStatus::Open))
-            .with_lock("BL-010", make_fresh_lock("ecc-session-20260407-bl-010-work"));
+            .with_lock(
+                "BL-010",
+                make_fresh_lock("ecc-session-20260407-bl-010-work"),
+            );
 
         let worktree_mgr = MockWorktreeManager::new().with_worktrees(vec![WorktreeInfo {
             path: "/project/.claude/worktrees/ecc-session-20260407-bl-010-work".to_string(),
@@ -566,10 +569,11 @@ mod tests {
         assert_eq!(result[0].id, "BL-010");
 
         // The stale lock should have been removed
-        let remaining_locks = repo
-            .list_locks(Path::new(BACKLOG_DIR))
-            .unwrap();
-        assert!(remaining_locks.is_empty(), "stale lock should be auto-removed");
+        let remaining_locks = repo.list_locks(Path::new(BACKLOG_DIR)).unwrap();
+        assert!(
+            remaining_locks.is_empty(),
+            "stale lock should be auto-removed"
+        );
     }
 
     #[test]

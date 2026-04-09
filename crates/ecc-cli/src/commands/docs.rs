@@ -37,8 +37,18 @@ pub fn run(args: DocsArgs) -> anyhow::Result<()> {
     let fs = ecc_infra::os_fs::OsFileSystem;
     let terminal = ecc_infra::std_terminal::StdTerminal;
     match args.action {
-        DocsAction::UpdateModuleSummary { changed_files, feature, json } => {
-            if !ecc_app::docs_update_summary::run_update_summary(&fs, &terminal, &changed_files, &feature, json) {
+        DocsAction::UpdateModuleSummary {
+            changed_files,
+            feature,
+            json,
+        } => {
+            if !ecc_app::docs_update_summary::run_update_summary(
+                &fs,
+                &terminal,
+                &changed_files,
+                &feature,
+                json,
+            ) {
                 std::process::exit(1);
             }
             Ok(())

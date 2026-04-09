@@ -281,7 +281,11 @@ mod tests {
             is_pushed_to_remote: false,
         };
         let result = assess_safety(&input);
-        assert_eq!(result.len(), 5, "expected all 5 violations, got: {result:?}");
+        assert_eq!(
+            result.len(),
+            5,
+            "expected all 5 violations, got: {result:?}"
+        );
         assert!(result.contains(&SafetyViolation::UncommittedChanges));
         assert!(result.contains(&SafetyViolation::UntrackedFiles));
         assert!(result.contains(&SafetyViolation::UnmergedCommits { count: 2 }));

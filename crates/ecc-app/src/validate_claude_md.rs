@@ -29,7 +29,11 @@ pub fn run_validate_claude_md(
     let mut actuals: Vec<(String, u64)> = Vec::new();
 
     // Test count via cargo test --list
-    if let Ok(output) = shell.run_command_in_dir("cargo", &["test", "--", "--list"], std::path::Path::new(".")) {
+    if let Ok(output) = shell.run_command_in_dir(
+        "cargo",
+        &["test", "--", "--list"],
+        std::path::Path::new("."),
+    ) {
         let test_count = output
             .stdout
             .lines()
@@ -59,7 +63,9 @@ pub fn run_validate_claude_md(
                     "{{\"text\":\"{}\",\"claimed\":{},\"actual\":{},\"match\":{}}}",
                     c.text,
                     c.claimed,
-                    c.actual.map(|a| a.to_string()).unwrap_or("null".to_string()),
+                    c.actual
+                        .map(|a| a.to_string())
+                        .unwrap_or("null".to_string()),
                     c.matches,
                 )
             })
@@ -69,11 +75,13 @@ pub fn run_validate_claude_md(
         terminal.stdout_write("All counts valid\n");
     } else {
         for c in &claims {
-            if !c.matches && let Some(actual) = c.actual {
-                    terminal.stderr_write(&format!(
-                        "MISMATCH: \"{}\" — claimed {}, actual {}\n",
-                        c.text, c.claimed, actual
-                    ));
+            if !c.matches
+                && let Some(actual) = c.actual
+            {
+                terminal.stderr_write(&format!(
+                    "MISMATCH: \"{}\" — claimed {}, actual {}\n",
+                    c.text, c.claimed, actual
+                ));
             }
         }
     }
@@ -91,7 +99,13 @@ mod tests {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
         let term = BufferedTerminal::new();
-        assert!(!run_validate_claude_md(&fs, &shell, &term, Path::new("/root"), false));
+        assert!(!run_validate_claude_md(
+            &fs,
+            &shell,
+            &term,
+            Path::new("/root"),
+            false
+        ));
         assert!(term.stderr_output().join("").contains("not found"));
     }
 }

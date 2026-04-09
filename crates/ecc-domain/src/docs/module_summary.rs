@@ -86,7 +86,10 @@ mod tests {
     #[test]
     fn insert_between_markers() {
         let content = "# Header\n<!-- IMPLEMENT-GENERATED -->\nold content\n<!-- END IMPLEMENT-GENERATED -->\n# Footer";
-        let entries = vec![("ecc-domain".to_string(), format_entry("ecc-domain", "BL-126"))];
+        let entries = vec![(
+            "ecc-domain".to_string(),
+            format_entry("ecc-domain", "BL-126"),
+        )];
         let result = insert_entries(content, &entries);
         assert!(result.contains("### ecc-domain"));
         assert!(result.contains("# Footer"));

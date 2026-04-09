@@ -4,7 +4,7 @@
 //! Key sanitization: replace non-alphanumeric characters with `_`.
 //! Writes are atomic: write to a tempfile then rename.
 
-use ecc_ports::cache_store::{CacheError, CacheEntry, CacheStore};
+use ecc_ports::cache_store::{CacheEntry, CacheError, CacheStore};
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -75,8 +75,7 @@ impl CacheStore for FileCacheStore {
         if !path.exists() {
             return Ok(None);
         }
-        let contents =
-            std::fs::read_to_string(&path).map_err(|e| CacheError::Io(e.to_string()))?;
+        let contents = std::fs::read_to_string(&path).map_err(|e| CacheError::Io(e.to_string()))?;
         let entry: CacheEntryJson =
             serde_json::from_str(&contents).map_err(|e| CacheError::Parse(e.to_string()))?;
 
@@ -96,8 +95,7 @@ impl CacheStore for FileCacheStore {
         ttl_secs: u64,
         content_hash: &str,
     ) -> Result<(), CacheError> {
-        std::fs::create_dir_all(&self.cache_dir)
-            .map_err(|e| CacheError::Io(e.to_string()))?;
+        std::fs::create_dir_all(&self.cache_dir).map_err(|e| CacheError::Io(e.to_string()))?;
 
         let entry = CacheEntryJson {
             value: value.to_owned(),
@@ -110,7 +108,9 @@ impl CacheStore for FileCacheStore {
 
         // Atomic write: write to tempfile then rename.
         let final_path = self.cache_dir.join(format!("{}.json", sanitize_key(key)));
-        let tmp_path = self.cache_dir.join(format!(".{}.json.tmp", sanitize_key(key)));
+        let tmp_path = self
+            .cache_dir
+            .join(format!(".{}.json.tmp", sanitize_key(key)));
         std::fs::write(&tmp_path, &serialized).map_err(|e| CacheError::Io(e.to_string()))?;
         std::fs::rename(&tmp_path, &final_path).map_err(|e| CacheError::Io(e.to_string()))?;
 
@@ -144,7 +144,9 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let store = FileCacheStore::new(tmp.path().to_path_buf());
 
-        store.write("my-key", "audit findings", 3600, "hash123").unwrap();
+        store
+            .write("my-key", "audit findings", 3600, "hash123")
+            .unwrap();
 
         let result = store.check("my-key").unwrap();
         assert!(result.is_some(), "expected Some(entry) after write");
@@ -188,8 +190,14 @@ mod tests {
 
         store.clear().unwrap();
 
-        assert!(store.check("key1").unwrap().is_none(), "key1 should be gone after clear");
-        assert!(store.check("key2").unwrap().is_none(), "key2 should be gone after clear");
+        assert!(
+            store.check("key1").unwrap().is_none(),
+            "key1 should be gone after clear"
+        );
+        assert!(
+            store.check("key2").unwrap().is_none(),
+            "key2 should be gone after clear"
+        );
     }
 
     #[test]
@@ -206,7 +214,9 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let store = FileCacheStore::new(tmp.path().to_path_buf());
 
-        store.write("my-key", "audit findings", 3600, "abc123").unwrap();
+        store
+            .write("my-key", "audit findings", 3600, "abc123")
+            .unwrap();
 
         let result = store.check_with_hash("my-key", "different_hash").unwrap();
         assert!(result.is_none(), "expected None when hash does not match");
@@ -217,7 +227,9 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let store = FileCacheStore::new(tmp.path().to_path_buf());
 
-        store.write("my-key", "audit findings", 3600, "abc123").unwrap();
+        store
+            .write("my-key", "audit findings", 3600, "abc123")
+            .unwrap();
 
         let result = store.check_with_hash("my-key", "abc123").unwrap();
         assert!(result.is_some(), "expected Some(entry) when hash matches");

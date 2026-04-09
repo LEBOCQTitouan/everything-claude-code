@@ -44,12 +44,12 @@ pub fn detect_concerns(files: &[String]) -> LintResult {
     }
 
     // Check src + docs mix
-    let has_src = files.iter().any(|f| {
-        f.starts_with("crates/") || f.starts_with("src/")
-    });
-    let has_docs = files.iter().any(|f| {
-        f.starts_with("docs/") || f.starts_with("agents/") || f.starts_with("commands/")
-    });
+    let has_src = files
+        .iter()
+        .any(|f| f.starts_with("crates/") || f.starts_with("src/"));
+    let has_docs = files
+        .iter()
+        .any(|f| f.starts_with("docs/") || f.starts_with("agents/") || f.starts_with("commands/"));
     if has_src && has_docs {
         concerns.push("Mixed source code and documentation/agent files".to_string());
     }

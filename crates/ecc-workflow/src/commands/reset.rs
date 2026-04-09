@@ -331,7 +331,8 @@ pub mod tests {
         let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
         let state = WorkflowState::from_json(&content).unwrap();
         assert_eq!(
-            state.phase, Phase::Implement,
+            state.phase,
+            Phase::Implement,
             "state.json phase must be unchanged"
         );
     }

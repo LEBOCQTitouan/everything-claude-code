@@ -111,11 +111,7 @@ impl WorktreeManager for OsWorktreeManager {
         Ok(!output.stdout.is_empty())
     }
 
-    fn remove_worktree(
-        &self,
-        repo_root: &Path,
-        worktree_path: &Path,
-    ) -> Result<(), WorktreeError> {
+    fn remove_worktree(&self, repo_root: &Path, worktree_path: &Path) -> Result<(), WorktreeError> {
         let output = Command::new("git")
             .args(["-C"])
             .arg(repo_root)
@@ -132,11 +128,7 @@ impl WorktreeManager for OsWorktreeManager {
         Ok(())
     }
 
-    fn delete_branch(
-        &self,
-        repo_root: &Path,
-        branch: &str,
-    ) -> Result<(), WorktreeError> {
+    fn delete_branch(&self, repo_root: &Path, branch: &str) -> Result<(), WorktreeError> {
         let output = Command::new("git")
             .args(["-C"])
             .arg(repo_root)
@@ -266,15 +258,17 @@ mod tests {
         let mgr = OsWorktreeManager;
 
         // Initially clean
-        assert!(!mgr
-            .has_uncommitted_changes(repo.path())
-            .expect("has_uncommitted_changes"));
+        assert!(
+            !mgr.has_uncommitted_changes(repo.path())
+                .expect("has_uncommitted_changes")
+        );
 
         // Modify a tracked file
         std::fs::write(repo.path().join("README.md"), "changed\n").expect("write");
-        assert!(mgr
-            .has_uncommitted_changes(repo.path())
-            .expect("has_uncommitted_changes"));
+        assert!(
+            mgr.has_uncommitted_changes(repo.path())
+                .expect("has_uncommitted_changes")
+        );
     }
 
     #[test]
@@ -283,15 +277,17 @@ mod tests {
         let mgr = OsWorktreeManager;
 
         // Initially no untracked
-        assert!(!mgr
-            .has_untracked_files(repo.path())
-            .expect("has_untracked_files"));
+        assert!(
+            !mgr.has_untracked_files(repo.path())
+                .expect("has_untracked_files")
+        );
 
         // Add an untracked file
         std::fs::write(repo.path().join("untracked.txt"), "hello\n").expect("write");
-        assert!(mgr
-            .has_untracked_files(repo.path())
-            .expect("has_untracked_files"));
+        assert!(
+            mgr.has_untracked_files(repo.path())
+                .expect("has_untracked_files")
+        );
     }
 
     #[test]
@@ -420,9 +416,7 @@ mod tests {
         let repo = init_repo();
         let mgr = OsWorktreeManager;
 
-        let worktrees = mgr
-            .list_worktrees(repo.path())
-            .expect("list_worktrees");
+        let worktrees = mgr.list_worktrees(repo.path()).expect("list_worktrees");
 
         // Should have at least the main worktree
         assert!(!worktrees.is_empty(), "should list at least one worktree");

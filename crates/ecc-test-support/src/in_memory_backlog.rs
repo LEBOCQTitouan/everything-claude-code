@@ -85,9 +85,7 @@ impl BacklogEntryStore for InMemoryBacklogRepository {
         let entries = self.entries.lock().unwrap();
         let max_num = entries
             .iter()
-            .filter_map(|e| {
-                e.id.strip_prefix("BL-").and_then(|n| n.parse::<u32>().ok())
-            })
+            .filter_map(|e| e.id.strip_prefix("BL-").and_then(|n| n.parse::<u32>().ok()))
             .max()
             .unwrap_or(0);
         Ok(format!("BL-{:03}", max_num + 1))
@@ -95,11 +93,7 @@ impl BacklogEntryStore for InMemoryBacklogRepository {
 }
 
 impl BacklogLockStore for InMemoryBacklogRepository {
-    fn load_lock(
-        &self,
-        _backlog_dir: &Path,
-        id: &str,
-    ) -> Result<Option<LockFile>, BacklogError> {
+    fn load_lock(&self, _backlog_dir: &Path, id: &str) -> Result<Option<LockFile>, BacklogError> {
         Ok(self.locks.lock().unwrap().get(id).cloned())
     }
 
@@ -121,10 +115,7 @@ impl BacklogLockStore for InMemoryBacklogRepository {
         Ok(())
     }
 
-    fn list_locks(
-        &self,
-        _backlog_dir: &Path,
-    ) -> Result<Vec<(String, LockFile)>, BacklogError> {
+    fn list_locks(&self, _backlog_dir: &Path) -> Result<Vec<(String, LockFile)>, BacklogError> {
         Ok(self
             .locks
             .lock()

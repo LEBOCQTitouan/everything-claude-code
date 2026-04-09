@@ -141,8 +141,7 @@ mod tests {
 
     #[test]
     fn format_roundtrip() {
-        let lock =
-            LockFile::new("my-worktree".into(), "2026-04-07T14:10:39Z".into()).unwrap();
+        let lock = LockFile::new("my-worktree".into(), "2026-04-07T14:10:39Z".into()).unwrap();
         let formatted = lock.format();
         let parsed = LockFile::parse(&formatted).unwrap();
         assert_eq!(parsed.worktree_name, lock.worktree_name);
@@ -151,8 +150,7 @@ mod tests {
 
     #[test]
     fn stale_after_24h() {
-        let lock =
-            LockFile::new("wt".into(), "2026-04-07T00:00:00Z".into()).unwrap();
+        let lock = LockFile::new("wt".into(), "2026-04-07T00:00:00Z".into()).unwrap();
         // 25 hours later
         let now = lock.epoch_secs + 25 * 3600;
         assert!(lock.is_stale(now));
@@ -160,8 +158,7 @@ mod tests {
 
     #[test]
     fn fresh_within_24h() {
-        let lock =
-            LockFile::new("wt".into(), "2026-04-07T00:00:00Z".into()).unwrap();
+        let lock = LockFile::new("wt".into(), "2026-04-07T00:00:00Z".into()).unwrap();
         // 23 hours later
         let now = lock.epoch_secs + 23 * 3600;
         assert!(!lock.is_stale(now));

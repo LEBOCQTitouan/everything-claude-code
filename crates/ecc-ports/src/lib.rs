@@ -7,15 +7,17 @@
 
 #![warn(missing_docs)]
 
-/// Clock (time source) port.
-pub mod clock;
+/// Backlog entry, lock, and index store ports.
+pub mod backlog;
+pub mod bypass_store;
 /// Audit result caching port.
 pub mod cache_store;
+/// Clock (time source) port.
+pub mod clock;
 /// Persistent ECC configuration port.
 pub mod config_store;
 /// Cost and token tracking store port.
 pub mod cost_store;
-pub mod bypass_store;
 /// Environment variable and platform access port.
 pub mod env;
 /// Tarball extraction port.
@@ -30,10 +32,10 @@ pub mod git_log;
 pub mod lock;
 /// Structured log storage port.
 pub mod log_store;
-/// Harness reliability metrics store port.
-pub mod metrics_store;
 /// Three-tier memory store port.
 pub mod memory_store;
+/// Harness reliability metrics store port.
+pub mod metrics_store;
 /// Release artifact discovery and download port.
 pub mod release;
 /// REPL line-input port.
@@ -44,5 +46,3 @@ pub mod shell;
 pub mod terminal;
 /// Worktree management port.
 pub mod worktree;
-/// Backlog entry, lock, and index store ports.
-pub mod backlog;

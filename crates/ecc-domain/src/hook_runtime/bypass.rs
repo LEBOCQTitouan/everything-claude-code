@@ -234,8 +234,13 @@ mod tests {
 
     #[test]
     fn bypass_token_json_serialization() {
-        let t = BypassToken::new("pre:edit:guard", "session-1", "2026-04-06T10:00:00Z", "test")
-            .unwrap();
+        let t = BypassToken::new(
+            "pre:edit:guard",
+            "session-1",
+            "2026-04-06T10:00:00Z",
+            "test",
+        )
+        .unwrap();
         let json = serde_json::to_string(&t).unwrap();
         assert!(json.contains("\"hook_id\":\"pre:edit:guard\""));
         assert!(json.contains("\"session_id\":\"session-1\""));

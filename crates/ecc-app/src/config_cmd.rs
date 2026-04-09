@@ -194,9 +194,7 @@ pub fn set_local_llm(
         .load_global()
         .map_err(|e| ConfigCmdError::Store(e.to_string()))?;
 
-    let llm = config
-        .local_llm
-        .get_or_insert_with(Default::default);
+    let llm = config.local_llm.get_or_insert_with(Default::default);
 
     match key {
         "local-llm.enabled" => {

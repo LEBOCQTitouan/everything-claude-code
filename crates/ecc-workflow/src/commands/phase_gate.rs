@@ -82,9 +82,7 @@ fn resolve_worktree_state_dir(file_path: &str) -> Option<std::path::PathBuf> {
                 if content.len() > GIT_FILE_MAX_BYTES {
                     return None;
                 }
-                let gitdir_line = content
-                    .lines()
-                    .find(|l| l.starts_with("gitdir:"))?;
+                let gitdir_line = content.lines().find(|l| l.starts_with("gitdir:"))?;
                 let raw_path = gitdir_line.strip_prefix("gitdir:")?.trim();
                 let gitdir = if std::path::Path::new(raw_path).is_absolute() {
                     std::path::PathBuf::from(raw_path)
@@ -676,8 +674,11 @@ mod tests {
         // Write .git file in worktree root
         std::fs::write(
             worktree_root.join(".git"),
-            format!("gitdir: {}
-", gitdir_path.display()),
+            format!(
+                "gitdir: {}
+",
+                gitdir_path.display()
+            ),
         )
         .unwrap();
 
@@ -696,9 +697,8 @@ mod tests {
         // Gated file is inside the worktree checkout
         let file_in_worktree = worktree_root.join("src/main.rs");
         let file_path_str = file_in_worktree.to_string_lossy();
-        let hook_input = format!(
-            r#"{{"tool_name":"Write","tool_input":{{"file_path":"{file_path_str}"}}}}"#
-        );
+        let hook_input =
+            format!(r#"{{"tool_name":"Write","tool_input":{{"file_path":"{file_path_str}"}}}}"#);
 
         // run_with_input uses the wrong_state_dir (plan phase → would block),
         // but the file path should cause override to worktree state (implement → pass)
@@ -742,14 +742,16 @@ mod tests {
 
         std::fs::write(
             worktree_root.join(".git"),
-            format!("gitdir: {}
-", gitdir.display()),
+            format!(
+                "gitdir: {}
+",
+                gitdir.display()
+            ),
         )
         .unwrap();
 
-        let result = super::resolve_worktree_state_dir(
-            &worktree_root.join("src/lib.rs").to_string_lossy(),
-        );
+        let result =
+            super::resolve_worktree_state_dir(&worktree_root.join("src/lib.rs").to_string_lossy());
         assert_eq!(
             result,
             Some(gitdir.join("ecc-workflow")),
@@ -769,8 +771,11 @@ mod tests {
         std::fs::create_dir_all(&gitdir).unwrap();
         std::fs::write(
             worktree_root.join(".git"),
-            format!("gitdir: {}
-", gitdir.display()),
+            format!(
+                "gitdir: {}
+",
+                gitdir.display()
+            ),
         )
         .unwrap();
 
@@ -809,9 +814,8 @@ mod tests {
         std::fs::create_dir_all(repo_root.join(".git")).unwrap();
         std::fs::create_dir_all(repo_root.join("src")).unwrap();
 
-        let result = super::resolve_worktree_state_dir(
-            &repo_root.join("src/main.rs").to_string_lossy(),
-        );
+        let result =
+            super::resolve_worktree_state_dir(&repo_root.join("src/main.rs").to_string_lossy());
         assert_eq!(
             result, None,
             "should return None for main repo (.git is a directory)"
@@ -835,7 +839,6 @@ mod tests {
         );
     }
 
-
     /// PC-003b: resolve_worktree_state_dir handles relative gitdir: paths.
     #[test]
     fn resolve_worktree_from_relative_gitdir() {
@@ -856,9 +859,8 @@ mod tests {
         )
         .unwrap();
 
-        let result = super::resolve_worktree_state_dir(
-            &worktree_root.join("src/lib.rs").to_string_lossy(),
-        );
+        let result =
+            super::resolve_worktree_state_dir(&worktree_root.join("src/lib.rs").to_string_lossy());
         let resolved = result.expect("should resolve relative gitdir");
         let canonical_expected = gitdir.join("ecc-workflow").canonicalize().unwrap();
         let canonical_actual = resolved.canonicalize().unwrap();
@@ -868,15 +870,13 @@ mod tests {
         );
     }
 
-
     /// phase_gate allows writes to docs/refactors/ during plan phase (AC-004.3)
     #[test]
     fn phase_gate_allows_refactors_dir() {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
         let state_dir = state_dir_for(&tmp);
-        let hook_input =
-            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/refactors/my-refactor-plan.md"}}"#;
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"docs/refactors/my-refactor-plan.md"}}"#;
         let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Pass),
@@ -885,5 +885,4 @@ mod tests {
             output.message
         );
     }
-
 }

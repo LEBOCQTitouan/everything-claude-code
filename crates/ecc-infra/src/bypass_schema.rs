@@ -57,7 +57,11 @@ mod tests {
             rusqlite::params!["hook-a", "test", "session-1", "accepted", "2026-04-06T10:00:00Z"],
         ).unwrap();
         let version: i64 = conn
-            .query_row("SELECT schema_version FROM bypass_decisions WHERE id=1", [], |row| row.get(0))
+            .query_row(
+                "SELECT schema_version FROM bypass_decisions WHERE id=1",
+                [],
+                |row| row.get(0),
+            )
             .unwrap();
         assert_eq!(version, 1);
     }

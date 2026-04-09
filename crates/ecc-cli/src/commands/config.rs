@@ -73,7 +73,11 @@ mod tests {
             .expect("set_local_llm enabled=true should succeed");
         let config = store.load_global().unwrap();
         let llm = config.local_llm.expect("local_llm should be set");
-        assert_eq!(llm.enabled, Some(true), "enabled should be persisted as true");
+        assert_eq!(
+            llm.enabled,
+            Some(true),
+            "enabled should be persisted as true"
+        );
     }
 
     #[test]
@@ -83,7 +87,11 @@ mod tests {
             .expect("set_local_llm enabled=false should succeed");
         let config = store.load_global().unwrap();
         let llm = config.local_llm.expect("local_llm should be set");
-        assert_eq!(llm.enabled, Some(false), "enabled should be persisted as false");
+        assert_eq!(
+            llm.enabled,
+            Some(false),
+            "enabled should be persisted as false"
+        );
     }
 
     #[test]

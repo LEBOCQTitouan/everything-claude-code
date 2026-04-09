@@ -24,12 +24,18 @@ impl TrendComparison {
     pub fn compute(current: HarnessMetrics, previous: HarnessMetrics) -> Self {
         let hook_success_rate_delta =
             subtract(current.hook_success_rate, previous.hook_success_rate);
-        let phase_gate_violation_rate_delta =
-            subtract(current.phase_gate_violation_rate, previous.phase_gate_violation_rate);
-        let agent_failure_recovery_rate_delta =
-            subtract(current.agent_failure_recovery_rate, previous.agent_failure_recovery_rate);
-        let commit_atomicity_score_delta =
-            subtract(current.commit_atomicity_score, previous.commit_atomicity_score);
+        let phase_gate_violation_rate_delta = subtract(
+            current.phase_gate_violation_rate,
+            previous.phase_gate_violation_rate,
+        );
+        let agent_failure_recovery_rate_delta = subtract(
+            current.agent_failure_recovery_rate,
+            previous.agent_failure_recovery_rate,
+        );
+        let commit_atomicity_score_delta = subtract(
+            current.commit_atomicity_score,
+            previous.commit_atomicity_score,
+        );
 
         Self {
             current,
@@ -97,7 +103,10 @@ mod tests {
     #[test]
     fn format_delta_positive_has_plus_sign() {
         let result = TrendComparison::format_delta(Some(0.15));
-        assert!(result.starts_with('+'), "expected '+' prefix, got: {result}");
+        assert!(
+            result.starts_with('+'),
+            "expected '+' prefix, got: {result}"
+        );
         assert_eq!(result, "+15.0%");
     }
 
@@ -105,7 +114,10 @@ mod tests {
     #[test]
     fn format_delta_negative_no_plus_sign() {
         let result = TrendComparison::format_delta(Some(-0.05));
-        assert!(!result.starts_with('+'), "did not expect '+' prefix, got: {result}");
+        assert!(
+            !result.starts_with('+'),
+            "did not expect '+' prefix, got: {result}"
+        );
         assert_eq!(result, "-5.0%");
     }
 

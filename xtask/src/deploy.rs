@@ -274,12 +274,14 @@ mod tests {
             // SAFETY: test sets env var — must not run in parallel with other env-mutating tests
             unsafe { std::env::set_var("CARGO_HOME", "/custom/cargo") };
             let dir = cargo_bin_dir();
+            // SAFETY: single-threaded test; env var cleanup isolated to this test.
             unsafe { std::env::remove_var("CARGO_HOME") };
             assert_eq!(dir, PathBuf::from("/custom/cargo/bin"));
         }
 
         #[test]
         fn falls_back_to_home_cargo_bin() {
+            // SAFETY: single-threaded test; env var cleanup isolated to this test.
             unsafe { std::env::remove_var("CARGO_HOME") };
             let home = std::env::var("HOME").unwrap_or_else(|_| "/home/testuser".to_string());
             let dir = cargo_bin_dir();

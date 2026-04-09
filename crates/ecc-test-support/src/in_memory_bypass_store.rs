@@ -2,9 +2,7 @@
 
 use std::sync::Mutex;
 
-use ecc_domain::hook_runtime::bypass::{
-    BypassDecision, BypassSummary, HookBypassCount, Verdict,
-};
+use ecc_domain::hook_runtime::bypass::{BypassDecision, BypassSummary, HookBypassCount, Verdict};
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
 
 /// In-memory test double for [`BypassStore`].
@@ -112,8 +110,14 @@ mod tests {
     use super::*;
 
     fn make_decision(hook_id: &str, verdict: Verdict) -> BypassDecision {
-        BypassDecision::new(hook_id, "test reason", "session-1", verdict, "2026-04-06T10:00:00Z")
-            .unwrap()
+        BypassDecision::new(
+            hook_id,
+            "test reason",
+            "session-1",
+            verdict,
+            "2026-04-06T10:00:00Z",
+        )
+        .unwrap()
     }
 
     #[test]
@@ -132,9 +136,15 @@ mod tests {
     #[test]
     fn bypass_summary_aggregates() {
         let store = InMemoryBypassStore::new();
-        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Refused)).unwrap();
-        store.record(&make_decision("hook-b", Verdict::Accepted)).unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Accepted))
+            .unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Refused))
+            .unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Accepted))
+            .unwrap();
 
         let summary = store.summary().unwrap();
         assert_eq!(summary.total_accepted, 2);

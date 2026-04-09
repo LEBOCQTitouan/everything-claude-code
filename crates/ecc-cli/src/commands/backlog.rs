@@ -73,9 +73,8 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
             let tag_list: Vec<String> = tags
                 .map(|t| t.split(',').map(|s| s.trim().to_string()).collect())
                 .unwrap_or_default();
-            let candidates =
-                ecc_app::backlog::check_duplicates(&repo, dir, &query, &tag_list)
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let candidates = ecc_app::backlog::check_duplicates(&repo, dir, &query, &tag_list)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
             let json = serde_json::to_string_pretty(&candidates)?;
             println!("{json}");
         }
@@ -95,7 +94,10 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
                 print!("{content}");
             }
         }
-        BacklogAction::List { available, show_all } => {
+        BacklogAction::List {
+            available,
+            show_all,
+        } => {
             let entries = if available || show_all {
                 ecc_app::backlog::list_available(
                     &repo,
@@ -129,9 +131,9 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use ecc_domain::backlog::entry::BacklogError;
     use ecc_domain::backlog::entry::{BacklogEntry, BacklogStatus};
     use ecc_domain::backlog::lock::LockFile;
-    use ecc_domain::backlog::entry::BacklogError;
     use ecc_ports::backlog::{BacklogEntryStore, BacklogLockStore};
     use ecc_ports::clock::Clock;
     use ecc_ports::worktree::{WorktreeError, WorktreeInfo, WorktreeManager};
@@ -146,9 +148,17 @@ mod tests {
             Ok(self.0.clone())
         }
         fn load_entry(&self, _dir: &Path, _id: &str) -> Result<BacklogEntry, BacklogError> {
-            Err(BacklogError::Io { path: "stub".into(), message: "not found".into() })
+            Err(BacklogError::Io {
+                path: "stub".into(),
+                message: "not found".into(),
+            })
         }
-        fn save_entry(&self, _dir: &Path, _entry: &BacklogEntry, _body: &str) -> Result<(), BacklogError> {
+        fn save_entry(
+            &self,
+            _dir: &Path,
+            _entry: &BacklogEntry,
+            _body: &str,
+        ) -> Result<(), BacklogError> {
             Ok(())
         }
         fn next_id(&self, _dir: &Path) -> Result<String, BacklogError> {
