@@ -8,6 +8,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
+### Added
+
+- **Backlog in-progress status sync**: Promoted backlog to full hexagonal concern with 3 ISP-compliant port traits (`BacklogEntryStore`, `BacklogLockStore`, `BacklogIndexStore`). New `ecc backlog list --available` CLI command derives in-progress status from worktree existence. `ecc backlog reindex` now reconciles status from active worktrees and lock files. Consolidated duplicated logic from `ecc-workflow`. Structural cleanup: moved `ShellWorktreeManager` to ecc-infra, split oversized `worktree.rs` and `merge.rs`. (ADR 0059)
+
 ### Upgraded
 
 - **toml 0.8 → 0.9 (BL-115)**: Bumped toml dependency in ecc-infra. Serde bridge API unchanged. 8 existing tests pass.
