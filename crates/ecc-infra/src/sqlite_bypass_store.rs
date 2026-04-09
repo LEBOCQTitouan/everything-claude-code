@@ -1,30 +1,33 @@
 //! SQLite-backed implementation of [`BypassStore`].
 
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use ecc_domain::hook_runtime::bypass::{
     BypassDecision, BypassSummary, BypassToken, HookBypassCount, Verdict,
 };
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
+use ecc_ports::clock::Clock;
 use rusqlite::{Connection, params};
 
 /// SQLite-backed bypass audit trail store.
 pub struct SqliteBypassStore {
     conn: Mutex<Connection>,
     home_dir: Option<PathBuf>,
+    clock: Arc<dyn Clock>,
 }
 
 impl SqliteBypassStore {
     /// Open (or create) the database at `db_path`.
-    pub fn new(db_path: &Path) -> Result<Self, BypassStoreError> {
-        Self::new_with_home(db_path, None)
+    pub fn new(db_path: &Path, clock: Arc<dyn Clock>) -> Result<Self, BypassStoreError> {
+        Self::new_with_home(db_path, None, clock)
     }
 
     /// Open (or create) the database at `db_path` with a custom home directory for token lookup.
     pub fn new_with_home(
         db_path: &Path,
         home_dir: Option<PathBuf>,
+        clock: Arc<dyn Clock>,
     ) -> Result<Self, BypassStoreError> {
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| BypassStoreError::Io(e.to_string()))?;
@@ -42,11 +45,12 @@ impl SqliteBypassStore {
         Ok(Self {
             conn: Mutex::new(conn),
             home_dir,
+            clock,
         })
     }
 
     /// Create an in-memory store for testing.
-    pub fn in_memory() -> Result<Self, BypassStoreError> {
+    pub fn in_memory(clock: Arc<dyn Clock>) -> Result<Self, BypassStoreError> {
         let conn =
             Connection::open_in_memory().map_err(|e| BypassStoreError::Database(e.to_string()))?;
         crate::bypass_schema::ensure_schema(&conn)
@@ -54,6 +58,7 @@ impl SqliteBypassStore {
         Ok(Self {
             conn: Mutex::new(conn),
             home_dir: None,
+            clock,
         })
     }
 }
@@ -161,12 +166,22 @@ impl BypassStore for SqliteBypassStore {
     }
 
     fn prune(&self, older_than_days: u64) -> Result<u64, BypassStoreError> {
+        // UTC assumption: epoch arithmetic, no DST correction.
+        let now_secs = self.clock.now_epoch_secs();
+        let cutoff_secs = now_secs.saturating_sub(older_than_days * 86400);
+        let cutoff_dt = ecc_domain::time::datetime_from_epoch(cutoff_secs);
+        // Format as ISO 8601 UTC to match stored timestamp format ("YYYY-MM-DDTHH:MM:SSZ").
+        let cutoff_str = format!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+            cutoff_dt.year, cutoff_dt.month, cutoff_dt.day,
+            cutoff_dt.hour, cutoff_dt.minute, cutoff_dt.second,
+        );
         let conn = self.conn.lock().expect("lock poisoned");
-        let cutoff = format!("datetime('now', '-{} days')", older_than_days);
+
         let deleted = conn
             .execute(
-                &format!("DELETE FROM bypass_decisions WHERE timestamp < {cutoff}"),
-                [],
+                "DELETE FROM bypass_decisions WHERE timestamp < ?1",
+                [&cutoff_str],
             )
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(deleted as u64)
@@ -238,9 +253,13 @@ mod tests {
         .unwrap()
     }
 
+    fn system_clock() -> Arc<dyn Clock> {
+        Arc::new(crate::system_clock::SystemClock)
+    }
+
     #[test]
     fn bypass_record_inserts_row() {
-        let store = SqliteBypassStore::in_memory().unwrap();
+        let store = SqliteBypassStore::in_memory(system_clock()).unwrap();
         let d = make_decision("hook-a", Verdict::Accepted);
         let id = store.record(&d).unwrap();
         assert!(id > 0);
@@ -248,16 +267,11 @@ mod tests {
 
     #[test]
     fn bypass_query_by_hook_filters() {
-        let store = SqliteBypassStore::in_memory().unwrap();
-        store
-            .record(&make_decision("hook-a", Verdict::Accepted))
-            .unwrap();
-        store
-            .record(&make_decision("hook-b", Verdict::Refused))
-            .unwrap();
-        store
-            .record(&make_decision("hook-a", Verdict::Applied))
-            .unwrap();
+        let store = SqliteBypassStore::in_memory(system_clock()).unwrap();
+        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
+        store.record(&make_decision("hook-b", Verdict::Refused)).unwrap();
+        store.record(&make_decision("hook-a", Verdict::Applied)).unwrap();
+
 
         let results = store.query_by_hook("hook-a", 10).unwrap();
         assert_eq!(results.len(), 2);
@@ -266,16 +280,11 @@ mod tests {
 
     #[test]
     fn bypass_summary_counts() {
-        let store = SqliteBypassStore::in_memory().unwrap();
-        store
-            .record(&make_decision("hook-a", Verdict::Accepted))
-            .unwrap();
-        store
-            .record(&make_decision("hook-a", Verdict::Refused))
-            .unwrap();
-        store
-            .record(&make_decision("hook-b", Verdict::Accepted))
-            .unwrap();
+        let store = SqliteBypassStore::in_memory(system_clock()).unwrap();
+        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
+        store.record(&make_decision("hook-a", Verdict::Refused)).unwrap();
+        store.record(&make_decision("hook-b", Verdict::Accepted)).unwrap();
+
 
         let summary = store.summary().unwrap();
         assert_eq!(summary.per_hook.len(), 2);
@@ -387,7 +396,10 @@ mod tests {
 
     #[test]
     fn bypass_prune_removes_old() {
-        let store = SqliteBypassStore::in_memory().unwrap();
+        // Use a fixed far-future clock so the old record (2020) is always pruned
+        // and the recent record (2026-04-06T10:00:00Z) always survives (within 1 day of now).
+        // "now" = 2026-04-06T12:00:00Z = 1743940800 secs epoch
+        let store = SqliteBypassStore::in_memory(Arc::new(FixedClock(1_743_940_800))).unwrap();
         // Insert old record
         let old = BypassDecision::new(
             "hook-a",

@@ -3,6 +3,7 @@
 //! Manage bypass tokens and query the bypass audit trail.
 
 use clap::{Args, Subcommand};
+use std::sync::Arc;
 
 #[derive(Debug, Args)]
 pub struct BypassArgs {
@@ -51,7 +52,8 @@ pub fn run(args: BypassArgs) -> anyhow::Result<()> {
             if session_id == "unknown" || session_id.is_empty() {
                 anyhow::bail!("CLAUDE_SESSION_ID not set — cannot create bypass token");
             }
-            let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path)?;
+            let clock = Arc::new(ecc_infra::system_clock::SystemClock);
+            let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path, clock)?;
             let fs = ecc_infra::os_fs::OsFileSystem;
             let token =
                 ecc_app::bypass_mgmt::grant(&store, &fs, &home, &hook, &reason, &session_id)?;
@@ -68,7 +70,8 @@ pub fn run(args: BypassArgs) -> anyhow::Result<()> {
             Ok(())
         }
         BypassAction::List { hook } => {
-            let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path)?;
+            let clock = Arc::new(ecc_infra::system_clock::SystemClock);
+            let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path, clock)?;
             let decisions = ecc_app::bypass_mgmt::list(&store, hook.as_deref(), 50)?;
             if decisions.is_empty() {
                 println!("No bypass decisions found.");
@@ -97,7 +100,8 @@ pub fn run(args: BypassArgs) -> anyhow::Result<()> {
             Ok(())
         }
         BypassAction::Summary => {
-            let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path)?;
+            let clock = Arc::new(ecc_infra::system_clock::SystemClock);
+            let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path, clock)?;
             let summary = ecc_app::bypass_mgmt::summary(&store)?;
             println!(
                 "{:<40} {:<10} {:<10} {:<10}",
@@ -127,7 +131,8 @@ pub fn run(args: BypassArgs) -> anyhow::Result<()> {
         }
         BypassAction::Prune { older_than } => {
             let days = parse_duration_days(&older_than)?;
-            let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path)?;
+            let clock = Arc::new(ecc_infra::system_clock::SystemClock);
+            let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path, clock)?;
             let deleted = ecc_app::bypass_mgmt::prune(&store, days)?;
             println!("Pruned {deleted} bypass records older than {older_than}");
             Ok(())
