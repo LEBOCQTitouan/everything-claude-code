@@ -196,12 +196,13 @@ mod tests {
     use super::*;
 
     fn make_decision(hook_id: &str, verdict: Verdict) -> BypassDecision {
+        // Use far-future timestamp so prune tests don't become flaky as calendar advances
         BypassDecision::new(
             hook_id,
             "test reason",
             "session-1",
             verdict,
-            "2026-04-06T10:00:00Z",
+            "2099-01-01T00:00:00Z",
         )
         .unwrap()
     }
