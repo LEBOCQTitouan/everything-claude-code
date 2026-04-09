@@ -27,7 +27,6 @@ Meta-steering for how ECC agents, commands, skills, and hooks should be built. W
 
 ## Hook Conventions
 
-- All hooks MUST check `ECC_WORKFLOW_BYPASS` at the top: `[ "${ECC_WORKFLOW_BYPASS:-}" = "1" ] && exit 0`
 - Hooks MUST use atomic writes via `mktemp` + `mv` for any file mutations
 - Hook scripts MUST use `set -uo pipefail`
 
