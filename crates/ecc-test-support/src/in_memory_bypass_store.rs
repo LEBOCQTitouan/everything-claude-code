@@ -130,6 +130,28 @@ mod tests {
     }
 
     #[test]
+    fn check_token_returns_matching_token() {
+        use ecc_domain::hook_runtime::bypass::BypassToken;
+        use ecc_ports::bypass_store::BypassStore;
+
+        let token = BypassToken::new(
+            "pre:write-edit:worktree-guard",
+            "session-xyz",
+            "2026-04-07T10:00:00Z",
+            "test reason",
+        )
+        .unwrap();
+
+        let store = InMemoryBypassStore::new().with_token(token.clone());
+
+        let result = store.check_token("pre:write-edit:worktree-guard", "session-xyz");
+        assert!(result.is_some());
+        let found = result.unwrap();
+        assert_eq!(found.hook_id, token.hook_id);
+        assert_eq!(found.session_id, token.session_id);
+    }
+
+    #[test]
     fn bypass_summary_aggregates() {
         let store = InMemoryBypassStore::new();
         store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
