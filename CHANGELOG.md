@@ -16,6 +16,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **hex crate for architecture boundaries (BL-138)**: REJECTED. `hexser` is a boilerplate framework, not an enforcement tool. Added comprehensive domain purity integration test instead.
 
+### Fixed
+
+- **Phase-gate allowlist (BL-142)**: Added `docs/cartography/`, `docs/domain/`, `docs/guides/`, `docs/diagrams/` to phase-gate allowlist. These directories were blocked during active workflow phases, preventing doc-orchestrator and cartographer agents from writing during spec/design phases.
+
 ### Added
 
 - **prd-to-plan skill (BL-016)**: New skill absorbing community `blueprint` skill. Dual input modes: PRD file path or one-liner objective. Tracer-bullet vertical-slice decomposition with cold-start briefs, dependency graph, and parallel step detection. Output to `docs/plans/`. (ADR 0060)
