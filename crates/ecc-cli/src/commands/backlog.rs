@@ -1,7 +1,10 @@
 //! CLI for deterministic backlog management.
 
 use clap::{Args, Subcommand};
+use ecc_infra::fs_backlog::FsBacklogRepository;
 use ecc_infra::os_fs::OsFileSystem;
+use ecc_infra::os_worktree::OsWorktreeManager;
+use ecc_infra::system_clock::SystemClock;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -39,25 +42,45 @@ pub enum BacklogAction {
 
 pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
     let fs = OsFileSystem;
+    let repo = FsBacklogRepository::new(&fs);
+    let worktree_mgr = OsWorktreeManager;
+    let clock = SystemClock;
     let dir = &args.dir;
+
+    // Determine project root (parent of backlog dir, fallback to cwd)
+    let project_dir = dir
+        .parent()
+        .and_then(|p| p.parent())
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
 
     match args.action {
         BacklogAction::NextId => {
-            let id = ecc_app::backlog::next_id(&fs, dir).map_err(|e| anyhow::anyhow!("{e}"))?;
+            let id = ecc_app::backlog::next_id(&repo, dir).map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("{id}");
         }
         BacklogAction::CheckDuplicates { query, tags } => {
             let tag_list: Vec<String> = tags
                 .map(|t| t.split(',').map(|s| s.trim().to_string()).collect())
                 .unwrap_or_default();
-            let candidates = ecc_app::backlog::check_duplicates(&fs, dir, &query, &tag_list)
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let candidates =
+                ecc_app::backlog::check_duplicates(&repo, dir, &query, &tag_list)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
             let json = serde_json::to_string_pretty(&candidates)?;
             println!("{json}");
         }
         BacklogAction::Reindex { dry_run } => {
-            let output =
-                ecc_app::backlog::reindex(&fs, dir, dry_run).map_err(|e| anyhow::anyhow!("{e}"))?;
+            let output = ecc_app::backlog::reindex(
+                &repo,
+                &repo,
+                &repo,
+                &worktree_mgr,
+                &clock,
+                dir,
+                &project_dir,
+                dry_run,
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
             if let Some(content) = output {
                 print!("{content}");
             }
