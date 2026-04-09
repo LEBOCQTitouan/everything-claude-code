@@ -12,6 +12,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **ECC_WORKFLOW_BYPASS env var (ADR-0056 finale)**: Deleted defunct `.envrc` and updated CLAUDE.md bypass documentation. The env var was already ignored by all Rust code; this completes the ADR-0056 deprecation.
 
+### Evaluated
+
+- **hex crate for architecture boundaries (BL-138)**: REJECTED. `hexser` is a boilerplate framework, not an enforcement tool. Added comprehensive domain purity integration test instead.
+
 ### Added
 
 - **prd-to-plan skill (BL-016)**: New skill absorbing community `blueprint` skill. Dual input modes: PRD file path or one-liner objective. Tracer-bullet vertical-slice decomposition with cold-start briefs, dependency graph, and parallel step detection. Output to `docs/plans/`. (ADR 0060)

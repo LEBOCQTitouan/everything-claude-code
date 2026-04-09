@@ -3,7 +3,7 @@ id: BL-138
 title: "Evaluate hex crate for compile-time architecture boundary enforcement"
 scope: MEDIUM
 target: "/spec-dev"
-status: open
+status: implemented
 created: "2026-04-09"
 source: "docs/audits/web-radar-2026-04-09.md"
 ring: assess
