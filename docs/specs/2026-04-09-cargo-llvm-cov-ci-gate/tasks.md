@@ -2,29 +2,29 @@
 
 | PC ID | Description | Status |
 |-------|-------------|--------|
-| PC-015 | Glossary contains "coverage gate" | pending |
-| PC-001 | YAML parses without error | pending |
-| PC-002 | Job name is Coverage Gate | pending |
-| PC-011 | timeout-minutes: 20 | pending |
-| PC-012 | No continue-on-error: true | pending |
-| PC-013 | No needs: key | pending |
-| PC-014 | No job-level concurrency | pending |
-| PC-022 | runs-on: ubuntu-latest | pending |
-| PC-023 | No job-level permissions | pending |
-| PC-005 | rust-toolchain before install-action | pending |
-| PC-007 | All actions pinned | pending |
-| PC-008 | Cache key with cargo-llvm-cov- prefix | pending |
-| PC-009 | paths-filter with *.rs, Cargo.toml, Cargo.lock | pending |
-| PC-010 | merge_group bypass in if: condition | pending |
-| PC-003 | --fail-under-functions 80 | pending |
-| PC-004 | --exclude flags, --workspace, --lcov | pending |
-| PC-006 | Artifact upload config | pending |
-| PC-016 | --fail-under-functions flag present | pending |
-| PC-019 | cargo build passes | pending |
-| PC-020 | cargo clippy passes | pending |
-| PC-021 | validate job cache key unchanged | pending |
-| E2E | E2E tests | pending |
-| Review | Code review | pending |
-| Docs | Doc updates | pending |
-| SupDocs | Supplemental docs | pending |
-| Done | Write implement-done.md | pending |
+| PC-015 | Glossary contains "coverage gate" | done@2026-04-09T09:50:00Z |
+| PC-001 | YAML parses without error | done@2026-04-09T09:52:00Z |
+| PC-002 | Job name is Coverage Gate | done@2026-04-09T09:52:00Z |
+| PC-011 | timeout-minutes: 20 | done@2026-04-09T09:52:00Z |
+| PC-012 | No continue-on-error: true | done@2026-04-09T09:52:00Z |
+| PC-013 | No needs: key | done@2026-04-09T09:52:00Z |
+| PC-014 | No job-level concurrency | done@2026-04-09T09:52:00Z |
+| PC-022 | runs-on: ubuntu-latest | done@2026-04-09T09:52:00Z |
+| PC-023 | No job-level permissions | done@2026-04-09T09:52:00Z |
+| PC-005 | rust-toolchain before install-action | done@2026-04-09T09:53:00Z |
+| PC-007 | All actions pinned | done@2026-04-09T09:53:00Z |
+| PC-008 | Cache key with cargo-llvm-cov- prefix | done@2026-04-09T09:53:00Z |
+| PC-009 | paths-filter with *.rs, Cargo.toml, Cargo.lock | done@2026-04-09T09:53:00Z |
+| PC-010 | merge_group bypass in step conditions | done@2026-04-09T09:53:00Z |
+| PC-003 | --fail-under-functions 80 | done@2026-04-09T09:54:00Z |
+| PC-004 | --exclude flags, --workspace, --lcov | done@2026-04-09T09:54:00Z |
+| PC-006 | Artifact upload config | done@2026-04-09T09:54:00Z |
+| PC-016 | --fail-under-functions flag present | done@2026-04-09T09:54:00Z |
+| PC-019 | cargo build passes | done@2026-04-09T09:55:00Z |
+| PC-020 | cargo clippy passes | done@2026-04-09T09:55:00Z |
+| PC-021 | validate job cache key unchanged | done@2026-04-09T09:55:00Z |
+| E2E | E2E tests | done@2026-04-09T09:55:00Z |
+| Review | Code review | done@2026-04-09T09:56:00Z |
+| Docs | Doc updates | done@2026-04-09T09:56:00Z |
+| SupDocs | Supplemental docs | done@2026-04-09T09:56:00Z |
+| Done | Write implement-done.md | done@2026-04-09T09:57:00Z |
