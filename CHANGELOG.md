@@ -50,6 +50,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
+
 - **Phase-gate hook worktree state resolution (BL-131)**: Fixed phase-gate hook reading wrong `state.json` in worktrees when `CLAUDE_PROJECT_DIR` points to the main repo. The hook now derives the correct worktree from the gated file path (passed via stdin) by walking parent directories to find the `.git` file and reading its `gitdir:` line. Falls back to existing dispatch resolution for non-worktree paths. Bounded to 4096 bytes and 50 directory traversals. Also untracked `implement-done.md` from git index.
 
 - **Worktree session CWD orphaning**: Defer worktree directory deletion from merge/hook paths to session-start gc to prevent Claude Code session paralysis when CWD points to a deleted worktree. Session-end merge now preserves the worktree directory; `session:start` runs best-effort `ecc worktree gc` for self-healing cleanup of stale worktrees.
@@ -107,6 +109,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
+
 - **Worktree branch naming convention mismatch**: Fixed merge validation and GC silently failing on branches created by Claude Code's `EnterWorktree` (which prepends `worktree-` to branch names). Extended `WorktreeName::parse()` to strip the optional prefix, delegated `validate_session_branch()` to domain, added GC tracing for newly-parseable worktrees, and registered the `session:end:worktree-merge` hook. 12 new tests.
 - **Phase-gate worktree state resolution**: Fixed `ecc-workflow phase-gate` reading workflow state from the main repo instead of the worktree, blocking all writes when the main repo was in a different phase. All 14+ `ecc-workflow` subcommands now resolve state from `<git-dir>/ecc-workflow/state.json` via `resolve_state_dir` (completes ADR-0038 migration). Write-side migration, parameterized flock locking, dynamic path allowlisting, and SEC-010 path traversal protection.
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
@@ -162,6 +166,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
+
 - **Deploy ecc-flock not a binary**: `cargo xtask deploy` failed because ecc-flock (lib crate) was listed in binary install list. Removed from deploy lists.
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
@@ -207,6 +213,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
+
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
 - **Three-tier memory system (BL-093)**: SQLite FTS5-backed memory store at `~/.ecc/memory/memory.db` with working/episodic/semantic tiers. CLI: `ecc memory add/search/list/delete/promote/migrate/gc/stats`. Session-end consolidation (Jaccard 3-gram dedup, stale marking, relevance scoring). CONTEXT.md auto-generation. Session-start injection. Secret detection. MemoryStore port trait.
@@ -245,6 +253,8 @@ Generated from git conventional commits. Grouped by type and version.
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
+
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
 
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
@@ -290,6 +300,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
+
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
 - **Tiered diagnostics via tracing (BL-091)**: Replaced `log`+`env_logger` with `tracing`+`tracing-subscriber` across all crates. 5-level verbosity: -q (errors), default (warnings), -v (info), -vv (debug), -vvv (trace). `ECC_LOG` env var with `RUST_LOG` deprecated fallback. `ecc status` shows workflow state, versions, and component counts. `ecc config set log-level` persists verbosity preference to `~/.ecc/config.toml`. ADR 0031.
@@ -332,6 +344,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
+
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
 - `github-actions` skill: CI/CD patterns, debugging, caching, secrets for GitHub Actions
@@ -373,6 +387,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
+
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
 - **Adversarial challenge for audit commands (BL-083)**: New `audit-challenger` agent (Sonnet) independently re-interrogates codebase after each domain audit, searches web for best practices, produces challenged findings (confirmed/refuted/amended). Disagreements shown to user. Graceful degradation on failure. Always-on across all 10 `/audit-*` commands + audit-orchestrator.
@@ -411,6 +427,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
+
 - **Statusline Unicode byte-counting bug (BL-076)**: Fixed `${#var}` counting bytes instead of characters in non-UTF-8 locales, causing rate limit bars and other segments to be silently dropped. Added `LC_ALL=C.UTF-8` guard and `visible_width()` helper function. 6 new Bats tests.
 
 - **Structured log management (BL-092)**: JSON rolling daily files via tracing-appender to ~/.ecc/logs/. SQLite FTS5 index for full-text log search. Background indexer thread. `ecc log tail|search|prune|export` CLI commands. Session correlation via CLAUDE_SESSION_ID. 30-day auto-prune at startup with configurable retention. Structured tracing fields on all 40 hook handlers. LogStore port + SqliteLogStore adapter. ADR-0034 documents dual read/write path pattern.
@@ -426,6 +444,8 @@ Generated from git conventional commits. Grouped by type and version.
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
+
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
 
 - **Audit remediation 2026-03-29**: Corrected documentation inconsistencies surfaced by audit.
   Added `log::warn!` to two bare error-discard sites in `config/merge.rs` (observable error handling).
@@ -445,6 +465,8 @@ Generated from git conventional commits. Grouped by type and version.
 - **crossterm 0.28 → 0.29 (BL-105)**: Dependency bump for terminal I/O. No breaking changes — only 2 stable APIs used (is_tty, terminal::size), both behind TerminalIO port trait.
 
 ### Fixed
+
+- **Phase-gate cartography allowlist (BL-142)**: Added `docs/cartography/` to the phase-gate allowed prefixes so cartography delta processing works during active workflow phases.
 
 - Memory writes from worktree sessions (`write_daily`, `write_memory_index`) now resolve to the main repo's `~/.claude/projects/<hash>/memory/` directory instead of creating a worktree-specific hash (fixes daily memory and memory-index fragmentation in concurrent sessions)
 
