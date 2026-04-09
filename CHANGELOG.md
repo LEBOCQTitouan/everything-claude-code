@@ -10,6 +10,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Upgraded
 
+- **toml 0.8 → 0.9 (BL-115)**: Bumped toml dependency in ecc-infra. Serde bridge API unchanged. 8 existing tests pass.
+
 - **rustyline 15 → 17 (BL-114)**: Bumped rustyline dependency from v15 to v17. No breaking API changes. Replaced `Result<Self, String>` with `Result<Self, TerminalError>` in `RustylineInput::new()`, cleaned up `claw.rs` caller to use `?` directly.
 
 ### Refactored
