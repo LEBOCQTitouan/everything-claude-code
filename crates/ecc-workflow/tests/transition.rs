@@ -224,9 +224,8 @@ fn bypass_env_var() {
     );
 }
 
-/// bypass_env_var_ignored: when ECC_WORKFLOW_BYPASS=1, ecc-workflow still exits 0 immediately
-/// without creating state.json. This characterization test captures the current early-exit behavior
-/// and will be updated in PC-017 when the env var check is removed.
+/// bypass_env_var_ignored: ECC_WORKFLOW_BYPASS=1 is ignored by ecc-workflow — the binary runs
+/// normally, exits 0, and creates state.json as if the env var were not set.
 #[test]
 fn bypass_env_var_ignored() {
     let bin = common::binary_path();
@@ -241,7 +240,7 @@ fn bypass_env_var_ignored() {
         .output()
         .expect("failed to execute ecc-workflow init with ECC_WORKFLOW_BYPASS=1");
 
-    // Current behavior: exits 0 (early exit before any state is written)
+    // ECC_WORKFLOW_BYPASS is ignored: binary runs normally, exits 0
     assert_eq!(
         output.status.code(),
         Some(0),
@@ -251,11 +250,11 @@ fn bypass_env_var_ignored() {
         std::str::from_utf8(&output.stderr).unwrap_or(""),
     );
 
-    // Current behavior: no state.json is created (binary exits before doing any work)
+    // state.json MUST be created — the env var does not suppress normal execution
     let state_path = temp_dir.path().join(".claude/workflow/state.json");
     assert!(
-        !state_path.exists(),
-        "state.json must NOT be created when ECC_WORKFLOW_BYPASS=1 (current early-exit behavior)"
+        state_path.exists(),
+        "state.json must be created when ECC_WORKFLOW_BYPASS=1 (env var is ignored by ecc-workflow)"
     );
 }
 
