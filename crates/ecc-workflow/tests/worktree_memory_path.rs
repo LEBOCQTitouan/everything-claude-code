@@ -149,7 +149,6 @@ fn non_git_dir_returns_error() {
         .args(["memory-write", "daily", "plan", "test-feature", "dev"])
         .env("CLAUDE_PROJECT_DIR", temp_dir.path())
         .env("HOME", home_dir.path())
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .output()
         .expect("failed to execute memory-write daily");
 

@@ -31,7 +31,6 @@ fn run_pass_condition_check(
     Command::new(bin)
         .arg("pass-condition-check")
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .output()
         .expect("failed to execute ecc-workflow pass-condition-check")
 }
@@ -50,7 +49,6 @@ fn e2e_boundary_check() {
         Command::new(bin)
             .args(["e2e-boundary-check"])
             .env("CLAUDE_PROJECT_DIR", project_dir)
-            .env_remove("ECC_WORKFLOW_BYPASS")
             .output()
             .expect("failed to execute ecc-workflow e2e-boundary-check")
     }

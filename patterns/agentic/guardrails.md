@@ -74,7 +74,7 @@ const noPII: Rule = (output) =>
 
 **ECC Integration:**
 
-ECC implements guardrails through its hook system in `hooks/`. `PreToolUse` hooks validate tool calls before execution — `pre:write-edit:worktree-guard` prevents writes on protected branches. `PostToolUse` hooks run after execution for auto-formatting and checks. The `pre:edit-write:workflow-branch-guard` blocks workflow file edits on main. The `ECC_WORKFLOW_BYPASS` environment variable controls hook enforcement per `rules/ecc/development.md`. Security guardrails are codified in `rules/common/security.md` with mandatory pre-commit checks.
+ECC implements guardrails through its hook system in `hooks/`. `PreToolUse` hooks validate tool calls before execution — `pre:write-edit:worktree-guard` prevents writes on protected branches. `PostToolUse` hooks run after execution for auto-formatting and checks. The `pre:edit-write:workflow-branch-guard` blocks workflow file edits on main. Individual hooks can be bypassed via `ecc bypass grant` (auditable, session-scoped — see ADR-0055). Security guardrails are codified in `rules/common/security.md` with mandatory pre-commit checks.
 
 ## When to Use
 

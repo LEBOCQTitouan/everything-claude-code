@@ -301,24 +301,6 @@ mod tests {
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     fn ok_output() -> CommandOutput {
         CommandOutput {
             stdout: String::new(),
@@ -333,7 +315,7 @@ mod tests {
         let shell = MockExecutor::new().on("osascript", ok_output());
         let env = MockEnvironment::new().with_platform(Platform::MacOS);
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -349,7 +331,7 @@ mod tests {
             .on("notify-send", ok_output());
         let env = MockEnvironment::new().with_platform(Platform::Linux);
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -362,7 +344,7 @@ mod tests {
         let shell = MockExecutor::new(); // notify-send not registered
         let env = MockEnvironment::new().with_platform(Platform::Linux);
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -376,7 +358,7 @@ mod tests {
         let shell = MockExecutor::new().on("powershell", ok_output());
         let env = MockEnvironment::new().with_platform(Platform::Windows);
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -390,7 +372,7 @@ mod tests {
         let shell = MockExecutor::new().on("msg", ok_output());
         let env = MockEnvironment::new().with_platform(Platform::Windows);
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -403,7 +385,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_platform(Platform::Unknown);
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -419,7 +401,7 @@ mod tests {
             .with_platform(Platform::MacOS)
             .with_var("ECC_NOTIFY_ENABLED", "0");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -435,7 +417,7 @@ mod tests {
             .with_platform(Platform::MacOS)
             .with_var("ECC_NOTIFY_ENABLED", "false");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -451,7 +433,7 @@ mod tests {
             .with_var("ECC_NOTIFY_TITLE", "My Tool")
             .with_var("ECC_NOTIFY_MESSAGE", "Done!");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -465,7 +447,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_platform(Platform::MacOS);
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_notify("{}", &ports);
         assert_eq!(result.exit_code, 0);

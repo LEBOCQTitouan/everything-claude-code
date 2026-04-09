@@ -36,7 +36,6 @@ fn run_tdd_enforcement(project_dir: &std::path::Path, stdin_json: &str) -> std::
     let mut child = std::process::Command::new(&bin)
         .args(["tdd-enforcement"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

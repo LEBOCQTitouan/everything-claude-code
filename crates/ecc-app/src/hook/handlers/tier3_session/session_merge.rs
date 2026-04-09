@@ -118,24 +118,6 @@ mod tests {
     use ecc_ports::fs::FileSystem;
     use ecc_ports::shell::CommandOutput;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     fn ok(stdout: &str) -> CommandOutput {
         CommandOutput {
             stdout: stdout.to_string(),
@@ -186,7 +168,7 @@ mod tests {
             .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -200,7 +182,7 @@ mod tests {
         let shell = not_in_worktree_shell();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -217,7 +199,7 @@ mod tests {
             .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0); // warn, not block
@@ -235,7 +217,7 @@ mod tests {
             .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -255,7 +237,7 @@ mod tests {
             .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -274,7 +256,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -298,7 +280,7 @@ mod tests {
             .on("pwd", ok("/repo/.claude/worktrees/session-123\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -317,10 +299,9 @@ mod tests {
     fn bypass_skips_merge() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
-        // Handler no longer checks ECC_WORKFLOW_BYPASS — bypass is at dispatch level
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -337,7 +318,7 @@ mod tests {
             .on("pwd", ok("/tmp/worktree\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -362,7 +343,7 @@ mod tests {
             .on("pwd", ok("/tmp/wt\n"));
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_merge("{}", &ports);
         assert_eq!(result.exit_code, 0); // warn, not block

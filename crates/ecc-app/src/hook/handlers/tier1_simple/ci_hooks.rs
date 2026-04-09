@@ -54,24 +54,6 @@ mod tests {
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     fn make_stdin(file_path: &str) -> String {
         format!(r#"{{"tool_input":{{"file_path":"{}"}}}}"#, file_path)
     }
@@ -94,7 +76,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/ci.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -112,7 +94,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/release.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -130,7 +112,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/cd.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -148,7 +130,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/ci.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -166,7 +148,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/CODEOWNERS");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -184,7 +166,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/ci.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -199,7 +181,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/ci.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -217,7 +199,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/ci.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -235,7 +217,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/ci.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -250,7 +232,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = make_stdin(".github/workflows/ci.yml");
         let result = pre_edit_write_workflow_branch_guard(&stdin, &ports);
@@ -268,7 +250,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // stdin with no file_path key
         let stdin = r#"{"tool_input":{"content":"something"}}"#;
@@ -287,7 +269,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // MultiEdit uses same tool_input.file_path field
         let stdin = r#"{"tool_input":{"file_path":".github/workflows/ci.yml","edits":[]}}"#;

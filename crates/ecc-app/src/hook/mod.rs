@@ -11,6 +11,7 @@ use ecc_ports::metrics_store::MetricsStore;
 use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
 
+pub mod bypass_interceptor;
 pub mod handlers;
 
 /// Trait for hook handlers that can be registered in a dispatch table.
@@ -128,6 +129,39 @@ pub struct HookPorts<'a> {
     pub metrics_store: Option<&'a dyn MetricsStore>,
 }
 
+impl<'a> HookPorts<'a> {
+    /// Construct a `HookPorts` with all optional stores set to `None`.
+    ///
+    /// Intended for use in tests to reduce boilerplate when optional stores are not needed.
+    pub fn test_default(
+        fs: &'a dyn FileSystem,
+        shell: &'a dyn ShellExecutor,
+        env: &'a dyn Environment,
+        terminal: &'a dyn TerminalIO,
+    ) -> Self {
+        Self {
+            fs,
+            shell,
+            env,
+            terminal,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: None,
+        }
+    }
+}
+
+/// Bypass policy that always denies bypass requests.
+///
+/// Used as a safe default when no bypass mechanism is configured.
+pub struct AlwaysDenyPolicy;
+
+impl ecc_domain::hook_runtime::bypass::BypassPolicy for AlwaysDenyPolicy {
+    fn should_bypass(&self, _hook_id: &str, _session_id: &str) -> bool {
+        false
+    }
+}
+
 /// Truncate stdin payload to MAX_STDIN bytes.
 pub fn truncate_stdin(raw: &str) -> &str {
     if raw.len() <= MAX_STDIN {
@@ -152,15 +186,6 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
     let stdin = truncate_stdin(&ctx.stdin_payload);
     let start = std::time::Instant::now();
-
-    // Deprecation warning for ECC_WORKFLOW_BYPASS=1 (AC-006.1, AC-006.2)
-    if ports.env.var("ECC_WORKFLOW_BYPASS").as_deref() == Some("1") {
-        ports.terminal.stderr_write(
-                "[Deprecated] ECC_WORKFLOW_BYPASS=1 is deprecated. Use 'ecc bypass grant' for granular, auditable bypasses. See ADR-0056.\n"
-            );
-        // Still allow passthrough for backward compat (AC-006.2)
-        return HookResult::passthrough(stdin);
-    }
 
     // Check if hook is enabled
     let profile_env = ports.env.var("ECC_HOOK_PROFILE");
@@ -257,74 +282,13 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         }
     };
 
-    // Check for bypass token when hook blocks
-    #[allow(clippy::collapsible_if)]
+    // Delegate to bypass_interceptor when hook blocks
     let result = if result.exit_code == 2 {
-        // Append bypass-available hint to stderr
-        let mut stderr = result.stderr.clone();
-        stderr.push_str(&format!(
-            "[Bypass available: {}] Use 'ecc bypass grant --hook {} --reason <reason>' to bypass\n",
-            ctx.hook_id, ctx.hook_id
-        ));
-
-        // Check for session-scoped bypass token
         let session_id = ports.env.var("CLAUDE_SESSION_ID");
-        match session_id.as_deref() {
-            Some(sid) if !sid.is_empty() && sid != "unknown" => {
-                // Check if a bypass token exists for this hook+session
-                if let Some(home) = ports.env.var("HOME") {
-                    let token_dir = format!("{}/.ecc/bypass-tokens/{}", home, sid);
-                    let encoded = ctx.hook_id.replace(':', "__");
-                    let token_path = format!("{}/{}.json", token_dir, encoded);
-                    if ports.fs.exists(std::path::Path::new(&token_path)) {
-                        // Read and validate token
-                        if let Ok(token_json) =
-                            ports.fs.read_to_string(std::path::Path::new(&token_path))
-                        {
-                            if let Ok(token) = serde_json::from_str::<
-                                ecc_domain::hook_runtime::bypass::BypassToken,
-                            >(&token_json)
-                            {
-                                if token.session_id == sid && token.hook_id == ctx.hook_id {
-                                    tracing::info!(hook_id = %ctx.hook_id, "bypass token found — allowing");
-                                    // Log the applied bypass
-                                    if let Some(store) = ports.bypass_store {
-                                        if let Ok(decision) =
-                                            ecc_domain::hook_runtime::bypass::BypassDecision::new(
-                                                &ctx.hook_id,
-                                                &token.reason,
-                                                sid,
-                                                ecc_domain::hook_runtime::bypass::Verdict::Applied,
-                                                &token.granted_at,
-                                            )
-                                        {
-                                            let _ = store.record(&decision);
-                                        }
-                                    }
-                                    let duration_ms = start.elapsed().as_millis() as u64;
-                                    tracing::debug!(duration_ms, hook_id = %ctx.hook_id, "hook bypassed via token");
-                                    return HookResult::passthrough(stdin);
-                                }
-                            }
-                        }
-                    }
-                }
-                HookResult {
-                    exit_code: 2,
-                    stdout: result.stdout,
-                    stderr,
-                }
-            }
-            _ => {
-                // No valid session ID — can't check tokens
-                tracing::debug!(hook_id = %ctx.hook_id, "no CLAUDE_SESSION_ID — bypass tokens unavailable");
-                HookResult {
-                    exit_code: 2,
-                    stdout: result.stdout,
-                    stderr,
-                }
-            }
-        }
+        let sid = session_id
+            .as_deref()
+            .filter(|s| !s.is_empty() && *s != "unknown");
+        bypass_interceptor::intercept(&ctx.hook_id, stdin, result, sid, ports.bypass_store, start)
     } else {
         result
     };
@@ -370,32 +334,15 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ecc_domain::hook_runtime::bypass::BypassPolicy;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     #[test]
     fn disabled_hook_passes_through() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "my-hook");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "my-hook".to_string(),
@@ -415,7 +362,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "nonexistent:hook".to_string(),
@@ -447,7 +394,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "".to_string(),
@@ -460,6 +407,13 @@ mod tests {
         assert!(result.stderr.contains("Unknown hook ID"));
     }
 
+    #[test]
+    fn always_deny_policy_returns_false() {
+        let policy = AlwaysDenyPolicy;
+        assert!(!policy.should_bypass("pre:edit:guard", "session-123"));
+        assert!(!policy.should_bypass("stop:notify", "session-456"));
+    }
+
     /// PC-017: dispatch routes "stop:cartography" and "start:cartography" to correct handlers.
     #[test]
     fn dispatches_cartography_hooks() {
@@ -469,7 +423,7 @@ mod tests {
             let shell = MockExecutor::new();
             let env = MockEnvironment::new();
             let term = BufferedTerminal::new();
-            let ports = make_ports(&fs, &shell, &env, &term);
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
             let ctx = HookContext {
                 hook_id: "stop:cartography".to_string(),
@@ -490,7 +444,7 @@ mod tests {
             let shell = MockExecutor::new();
             let env = MockEnvironment::new();
             let term = BufferedTerminal::new();
-            let ports = make_ports(&fs, &shell, &env, &term);
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
             let ctx = HookContext {
                 hook_id: "start:cartography".to_string(),
@@ -512,7 +466,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_HOOK_PROFILE", "minimal");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "stop:check-console-log".to_string(),
@@ -542,15 +496,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = HookPorts {
-            fs: &fs,
-            shell: &shell,
-            env: &env,
-            terminal: &term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        };
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "nonexistent:hook:for-pc003".to_string(),
@@ -708,15 +654,7 @@ mod tests {
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
 
-        let ports = HookPorts {
-            fs: &fs,
-            shell: &shell,
-            env: &env,
-            terminal: &term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None, // explicitly None
-        };
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "check:hook:enabled".to_string(),
@@ -807,15 +745,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = HookPorts {
-            fs: &fs,
-            shell: &shell,
-            env: &env,
-            terminal: &term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        };
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "nonexistent:hook:for-pc039".to_string(),
@@ -861,6 +791,204 @@ mod tests {
         assert_eq!(h.hook_id(), "test:dummy");
     }
 
+    /// PC-001: Dispatch with bypass token present returns exit 0 passthrough.
+    ///
+    /// Characterization test: locks down token-bypass logic in dispatch() via bypass_store port.
+    #[test]
+    fn bypass_token_found_passthrough() {
+        use ecc_test_support::InMemoryBypassStore;
+
+        let hook_id = "pre:edit:boundary-crossing";
+        let session_id = "sess-001";
+
+        let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
+            hook_id,
+            session_id,
+            "2026-04-07T12:00:00Z",
+            "test bypass",
+        )
+        .expect("valid token");
+
+        let bypass_store = InMemoryBypassStore::new().with_token(token);
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", session_id);
+        let term = BufferedTerminal::new();
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: Some(&bypass_store),
+            metrics_store: None,
+        };
+
+        // Use pre:edit:boundary-crossing with a domain file + infra import → triggers exit_code=2
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        // With valid token present, bypass should apply → passthrough (exit 0)
+        assert_eq!(
+            result.exit_code, 0,
+            "valid bypass token must grant passthrough"
+        );
+    }
+
+    /// PC-002: Dispatch with no token returns exit 2 with bypass hint.
+    ///
+    /// Characterization test: verifies that when a hook blocks and no token exists,
+    /// dispatch() returns exit 2 and appends the bypass-available hint.
+    #[test]
+    fn bypass_token_not_found_blocks() {
+        let hook_id = "pre:edit:boundary-crossing";
+        let session_id = "sess-002";
+
+        // No token file — empty filesystem
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_SESSION_ID", session_id)
+            .with_var("HOME", "/home/test");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(result.exit_code, 2, "missing token must still block");
+        assert!(
+            result.stderr.contains("Bypass available"),
+            "stderr must contain bypass hint when no token found"
+        );
+    }
+
+    /// PC-003: Dispatch with no CLAUDE_SESSION_ID returns exit 2.
+    ///
+    /// Characterization test: verifies that when CLAUDE_SESSION_ID is absent,
+    /// dispatch() cannot check tokens and returns exit 2.
+    #[test]
+    fn no_session_id_blocks() {
+        let hook_id = "pre:edit:boundary-crossing";
+
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        // No CLAUDE_SESSION_ID in env
+        let env = MockEnvironment::new().with_var("HOME", "/home/test");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(
+            result.exit_code, 2,
+            "absent session_id must block (cannot check tokens)"
+        );
+    }
+
+    /// PC-012: HookPorts::test_default() returns struct with all optional ports as None.
+    #[test]
+    fn test_default_creates_ports() {
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new();
+        let term = BufferedTerminal::new();
+
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        assert!(ports.bypass_store.is_none());
+        assert!(ports.cost_store.is_none());
+        assert!(ports.metrics_store.is_none());
+    }
+
+    /// PC-023: dispatch() with ECC_WORKFLOW_BYPASS=1 does NOT passthrough (env var ignored).
+    #[test]
+    fn env_bypass_ignored() {
+        // hook id that produces a known block: pre:edit:boundary-crossing with domain+infra import
+        let hook_id = "pre:edit:boundary-crossing";
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        // ECC_WORKFLOW_BYPASS=1 set — must be ignored
+        let env = MockEnvironment::new().with_var("ECC_WORKFLOW_BYPASS", "1");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(
+            result.exit_code, 2,
+            "ECC_WORKFLOW_BYPASS=1 must be ignored — hook must still block"
+        );
+    }
+
+    /// PC-024: dispatch() delegates to bypass_interceptor when exit_code=2.
+    #[test]
+    fn dispatch_delegates_to_interceptor() {
+        use ecc_test_support::InMemoryBypassStore;
+
+        let hook_id = "pre:edit:boundary-crossing";
+        let session_id = "sess-024";
+
+        let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
+            hook_id,
+            session_id,
+            "2026-04-07T12:00:00Z",
+            "test bypass",
+        )
+        .expect("valid token");
+
+        let bypass_store = InMemoryBypassStore::new().with_token(token);
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", session_id);
+        let term = BufferedTerminal::new();
+
+        let ports = HookPorts {
+            fs: &fs,
+            shell: &shell,
+            env: &env,
+            terminal: &term,
+            cost_store: None,
+            bypass_store: Some(&bypass_store),
+            metrics_store: None,
+        };
+
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(
+            result.exit_code, 0,
+            "dispatch() must delegate to bypass_interceptor — valid token must grant passthrough"
+        );
+    }
+
     /// PC-031: Handler impl dispatches to cartography handler via registry.
     #[test]
     fn handler_trait_dispatch() {
@@ -872,7 +1000,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // Check registry has a cartography handler registered
         let registry = build_handler_registry();

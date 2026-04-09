@@ -442,26 +442,7 @@ fn contains_low_level_ops(line: &str) -> bool {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    // --- pre_edit_boundary_crossing ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- pre_edit_boundary_crossing ---
 
     #[test]
     fn boundary_crossing_blocks_domain_file_with_infra_import() {
@@ -469,7 +450,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"crates/ecc-domain/src/model.rs","new_string":"use crate::infra::database;\nfn query() {}"}}"#;
         let result = pre_edit_boundary_crossing(stdin, &ports);
@@ -483,7 +464,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/domain/order.rs","new_string":"use super::value_objects::Money;\nfn price() {}"}}"#;
         let result = pre_edit_boundary_crossing(stdin, &ports);
@@ -497,7 +478,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/adapters/http.rs","new_string":"use crate::infra::server;\n"}}"#;
         let result = pre_edit_boundary_crossing(stdin, &ports);
@@ -511,7 +492,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_edit_boundary_crossing("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -529,7 +510,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
         let result = post_edit_boy_scout_delta(stdin, &ports);
@@ -546,7 +527,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
         let result = post_edit_boy_scout_delta(stdin, &ports);
@@ -559,7 +540,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"nonexistent.rs"}}"#;
         let result = post_edit_boy_scout_delta(stdin, &ports);
@@ -574,7 +555,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs","new_string":"let tempData = fetch_items();\nlet result = process(tempData);\n"}}"#;
         let result = post_edit_naming_review(stdin, &ports);
@@ -588,7 +569,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs","new_string":"let invoice_line_items = fetch_invoices();\nlet total_amount = calculate_sum(invoice_line_items);\n"}}"#;
         let result = post_edit_naming_review(stdin, &ports);
@@ -601,7 +582,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = post_edit_naming_review("{}", &ports);
         assert!(result.stderr.is_empty());
@@ -618,7 +599,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
         let result = post_edit_newspaper_check(stdin, &ports);
@@ -635,7 +616,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
         let result = post_edit_newspaper_check(stdin, &ports);
@@ -648,7 +629,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"README.md"}}"#;
         let result = post_edit_newspaper_check(stdin, &ports);
@@ -663,7 +644,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs","new_string":"let result = calculate_total(items);\nlet first = items[0];\nlet mask = flags & 0xFF;\nlet output = format_report(result);\nlet byte = data[offset];\n"}}"#;
         let result = pre_edit_stepdown_warning(stdin, &ports);
@@ -677,7 +658,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs","new_string":"let orders = fetch_orders();\nlet total = calculate_total(orders);\nlet report = generate_report(total);\n"}}"#;
         let result = pre_edit_stepdown_warning(stdin, &ports);
@@ -690,7 +671,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_edit_stepdown_warning("{}", &ports);
         assert!(result.stderr.is_empty());

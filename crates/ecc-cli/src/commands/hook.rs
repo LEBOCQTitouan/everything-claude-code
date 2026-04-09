@@ -7,8 +7,10 @@ use ecc_app::hook::{HookContext, HookPorts, MAX_STDIN, dispatch};
 use ecc_infra::os_env::OsEnvironment;
 use ecc_infra::os_fs::OsFileSystem;
 use ecc_infra::process_executor::ProcessExecutor;
+use ecc_infra::sqlite_bypass_store::SqliteBypassStore;
 use ecc_infra::std_terminal::StdTerminal;
 use std::io::{self, Read, Write};
+use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct HookArgs {
@@ -45,13 +47,30 @@ pub fn run(args: HookArgs) -> anyhow::Result<()> {
     let env = OsEnvironment;
     let terminal = StdTerminal;
 
+    let bypass_store: Option<SqliteBypassStore> = (|| {
+        let home = std::env::var("HOME")
+            .ok()
+            .map(PathBuf::from)
+            .or_else(dirs::home_dir)?;
+        let db_path = home.join(".ecc").join("bypass.db");
+        match SqliteBypassStore::new_with_home(&db_path, Some(home)) {
+            Ok(store) => Some(store),
+            Err(e) => {
+                tracing::debug!("bypass_store unavailable: {}", e);
+                None
+            }
+        }
+    })();
+
     let ports = HookPorts {
         fs: &fs,
         shell: &shell,
         env: &env,
         terminal: &terminal,
         cost_store: None,
-        bypass_store: None,
+        bypass_store: bypass_store
+            .as_ref()
+            .map(|s| s as &dyn ecc_ports::bypass_store::BypassStore),
         metrics_store: None,
     };
 

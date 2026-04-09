@@ -172,26 +172,7 @@ mod tests {
     use crate::hook::HookPorts;
     use crate::hook::handlers::tier1_simple::*;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    // --- check_hook_enabled ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- check_hook_enabled ---
 
     #[test]
     fn check_hook_enabled_returns_yes_for_standard() {
@@ -199,7 +180,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = check_hook_enabled("my-hook", &ports);
         assert_eq!(result.stdout, "yes");
@@ -211,7 +192,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "my-hook");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = check_hook_enabled("my-hook", &ports);
         assert_eq!(result.stdout, "no");
@@ -223,7 +204,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "target-hook");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = check_hook_enabled(r#"{"hook_id":"target-hook"}"#, &ports);
         assert_eq!(result.stdout, "no");
@@ -237,7 +218,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_marker("stdin data", &ports);
         assert_eq!(result.stdout, "stdin data");
@@ -271,7 +252,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = check_console_log("input", &ports);
         assert!(result.stderr.contains("console.log found"));
@@ -302,7 +283,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = check_console_log("input", &ports);
         assert!(result.stderr.is_empty());
@@ -314,7 +295,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = check_console_log("input", &ports);
         assert_eq!(result.stdout, "input");
@@ -347,7 +328,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_uncommitted_reminder("input", &ports);
         assert!(result.stderr.contains("uncommitted changes"));
@@ -378,7 +359,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_uncommitted_reminder("input", &ports);
         assert!(result.stderr.is_empty());
@@ -408,7 +389,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"command":"npm install"}}"#;
         let result = pre_bash_tmux_reminder(stdin, &ports);
@@ -421,7 +402,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("TMUX", "/tmp/tmux-1001/default,123,0");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"command":"npm install"}}"#;
         let result = pre_bash_tmux_reminder(stdin, &ports);
@@ -493,7 +474,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
         let result = doc_coverage_reminder(stdin, &ports);
@@ -508,7 +489,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
         let result = doc_coverage_reminder(stdin, &ports);
@@ -524,7 +505,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/app.ts"}}"#;
         let result = post_edit_console_warn(stdin, &ports);
@@ -537,7 +518,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/lib.rs"}}"#;
         let result = post_edit_console_warn(stdin, &ports);
@@ -552,7 +533,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "test-session");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = suggest_compact("{}", &ports);
         assert!(result.stderr.is_empty());
@@ -564,7 +545,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "test-session");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = suggest_compact("{}", &ports);
         assert!(result.stderr.contains("50 tool calls reached"));
@@ -576,7 +557,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_SESSION_ID", "test-session");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = suggest_compact("{}", &ports);
         assert!(result.stderr.contains("75 tool calls"));

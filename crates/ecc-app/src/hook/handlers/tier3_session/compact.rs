@@ -87,31 +87,13 @@ mod tests {
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     #[test]
     fn post_compact_with_summary() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"compact_summary":"Summarized auth module discussion"}"#;
         let result = post_compact(stdin, &ports);
@@ -129,7 +111,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = post_compact("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -145,7 +127,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new(); // no home
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = post_compact("{}", &ports);
         assert_eq!(result.exit_code, 0);

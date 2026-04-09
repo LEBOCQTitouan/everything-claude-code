@@ -238,24 +238,6 @@ mod tests {
     use ecc_test_support::{
         BufferedTerminal, InMemoryFileSystem, InMemoryMetricsStore, MockEnvironment, MockExecutor,
     };
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     fn make_ports_with_metrics<'a>(
         fs: &'a InMemoryFileSystem,
         shell: &'a MockExecutor,
@@ -291,7 +273,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"/project/src/app.ts"}}"#;
         let result = post_edit_typecheck(stdin, &ports);
@@ -304,7 +286,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"src/app.js"}}"#;
         let result = post_edit_typecheck(stdin, &ports);
@@ -328,7 +310,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"/project/src/app.ts"}}"#;
         let result = quality_gate(stdin, &ports);
@@ -348,7 +330,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"main.py"}}"#;
         let result = quality_gate(stdin, &ports);
@@ -368,7 +350,7 @@ mod tests {
         );
         let env = MockEnvironment::new().with_var("ECC_QUALITY_GATE_STRICT", "true");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"main.py"}}"#;
         let result = quality_gate(stdin, &ports);

@@ -21,6 +21,9 @@ Generated from git conventional commits. Grouped by type and version.
 - **rustyline 15 → 17 (BL-114)**: Bumped rustyline dependency from v15 to v17. No breaking API changes. Replaced `Result<Self, String>` with `Result<Self, TerminalError>` in `RustylineInput::new()`, cleaned up `claw.rs` caller to use `?` directly.
 
 ### Refactored
+
+- **Bypass consolidation — remove ECC_WORKFLOW_BYPASS**: Removed the deprecated `ECC_WORKFLOW_BYPASS` env-var kill-switch (ADR-0056 completed). All bypass now uses auditable token system via `ecc bypass grant` (ADR-0055). Extracted `bypass_interceptor` from `dispatch()`, added `check_token()` to `BypassStore` port, introduced `HookPorts::test_default()` (eliminates 41 boilerplate sites), added `BypassPolicy` domain trait. Cleaned 50+ references across docs, commands, skills, patterns, and tests.
+
 - **Pipeline architecture improvements (BL-127)**: Added `--continue` flag for spec→design flow, composite `design-reviewer` agent (ADR 0058), batched tdd-executor for same-file PCs, per-domain audit caching with `ecc audit cache` CLI. Reduces session count and subagent overhead.
 
 

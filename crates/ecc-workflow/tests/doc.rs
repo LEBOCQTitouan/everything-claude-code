@@ -31,7 +31,6 @@ fn run_doc_level_check(
     Command::new(bin)
         .args(["doc-level-check"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .output()
         .expect("failed to execute ecc-workflow doc-level-check")
 }
@@ -64,7 +63,6 @@ fn doc_enforcement() {
         Command::new(bin)
             .args(["doc-enforcement"])
             .env("CLAUDE_PROJECT_DIR", dir)
-            .env_remove("ECC_WORKFLOW_BYPASS")
             .output()
             .expect("failed to execute ecc-workflow doc-enforcement")
     }

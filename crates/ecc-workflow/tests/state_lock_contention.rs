@@ -23,7 +23,6 @@ fn init_workflow(project_dir: &std::path::Path) {
     let output = Command::new(&bin)
         .args(["init", "test-concern", "test-feature"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .output()
         .expect("failed to run ecc-workflow init");
     assert!(
@@ -51,14 +50,12 @@ fn two_concurrent_transitions_serialize() {
     let mut child1 = Command::new(&bin)
         .args(["transition", "solution", "--artifact", "plan"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 1");
 
     let mut child2 = Command::new(&bin)
         .args(["transition", "solution", "--artifact", "plan"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 2");
 
@@ -113,14 +110,12 @@ fn init_concurrent_with_transition_no_loss() {
     let mut transition = Command::new(&bin)
         .args(["transition", "solution", "--artifact", "plan"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn transition process");
 
     let mut init = Command::new(&bin)
         .args(["init", "new-concern", "new-feature"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn init process");
 
@@ -167,7 +162,6 @@ fn phase_gate_reads_post_transition_state() {
     let mut transition = Command::new(&bin)
         .args(["transition", "solution", "--artifact", "plan"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn transition");
 
@@ -175,7 +169,6 @@ fn phase_gate_reads_post_transition_state() {
     let phase_gate_output = Command::new(&bin)
         .args(["phase-gate"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .stdin(std::process::Stdio::null())
         .output()
         .expect("failed to run phase-gate");

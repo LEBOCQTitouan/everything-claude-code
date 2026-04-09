@@ -3,26 +3,7 @@ use super::*;
 use crate::hook::HookPorts;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::CommandOutput;
-use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-fn make_ports<'a>(
-    fs: &'a InMemoryFileSystem,
-    shell: &'a MockExecutor,
-    env: &'a MockEnvironment,
-    term: &'a BufferedTerminal,
-) -> HookPorts<'a> {
-    HookPorts {
-        fs,
-        shell,
-        env,
-        terminal: term,
-        cost_store: None,
-        bypass_store: None,
-        metrics_store: None,
-    }
-}
-
-// ────────────────────────────────────────────────────────────────────────
+use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // ────────────────────────────────────────────────────────────────────────
 // PC-012 through PC-016: start_cartography tests
 // ────────────────────────────────────────────────────────────────────────
 
@@ -48,7 +29,7 @@ fn noop_when_no_pending_deltas() {
     let shell = MockExecutor::new(); // no commands registered — any call would return ShellError
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -109,7 +90,7 @@ fn creates_scaffold_when_missing() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -177,7 +158,7 @@ fn existing_scaffold_untouched() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let _ = process_cartography("{}", &ports);
 
@@ -244,7 +225,7 @@ fn discards_uncommitted_changes_on_start() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     // If git checkout was NOT called after dirty status, the handler would proceed
     // without discarding — we verify it completes successfully (checkout was called)
@@ -288,7 +269,7 @@ fn lock_idempotency_and_ordering() {
         );
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = process_cartography("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -325,7 +306,7 @@ fn lock_idempotency_and_ordering() {
         );
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = process_cartography("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -393,7 +374,7 @@ fn lock_idempotency_and_ordering() {
             );
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = process_cartography("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -460,7 +441,7 @@ fn archive_on_success_and_reset_on_failure() {
             );
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = process_cartography("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -515,7 +496,7 @@ fn archive_on_success_and_reset_on_failure() {
             );
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = process_cartography("{}", &ports);
         // Should still exit 0 (passthrough) but write error to stderr
@@ -663,7 +644,7 @@ fn agent_receives_existing_content_for_merge() {
     let shell = make_shell_for_agent(&enriched_json, &updated_journey);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -716,7 +697,7 @@ fn agent_output_validates_journey_schema() {
     let shell = make_shell_for_agent(&enriched_json, &valid_journey);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
     assert_eq!(result.exit_code, 0);
@@ -776,7 +757,7 @@ fn journey_links_to_flows() {
     let shell = make_shell_for_agent(&enriched_json, &journey_with_link);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
     assert_eq!(result.exit_code, 0);
@@ -826,7 +807,7 @@ fn no_backfill_on_first_run() {
 
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
     assert_eq!(result.exit_code, 0);
@@ -879,7 +860,7 @@ fn gap_markers_for_unknown_actors() {
     let shell = make_shell_for_agent(&enriched_json, &journey_with_gap);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
     assert_eq!(result.exit_code, 0);
@@ -943,7 +924,7 @@ fn flow_captures_external_io() {
     let shell = make_shell_for_agent(&enriched_json, &flow_output);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -995,7 +976,7 @@ fn agent_output_validates_flow_schema() {
     let shell = make_shell_for_agent(&enriched_json, &valid_flow);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
     assert_eq!(result.exit_code, 0);
@@ -1054,7 +1035,7 @@ fn flow_delta_merge_preserves_unchanged() {
     let shell = make_shell_for_agent(&enriched_json, &updated_flow);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
     assert_eq!(result.exit_code, 0);
@@ -1169,7 +1150,7 @@ fn commit_stages_only_cartography_dir() {
 
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
     assert_eq!(result.exit_code, 0);
@@ -1249,7 +1230,7 @@ fn scaffold_creates_elements_dir() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -1321,7 +1302,7 @@ fn scaffold_elements_idempotent() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let _ = process_cartography("{}", &ports);
 
@@ -1384,7 +1365,7 @@ fn element_dispatch_after_journey_flow() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -1455,7 +1436,7 @@ fn no_element_dispatch_without_targets() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -1561,7 +1542,7 @@ fn element_failure_resets() {
     // No claude response → all claude calls fail → agent loop fails → reset triggered
     let env2 = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term2 = BufferedTerminal::new();
-    let ports2 = make_ports(&fs2, &shell2, &env2, &term2);
+    let ports2 = HookPorts::test_default(&fs2, &shell2, &env2, &term2);
 
     let result = process_cartography("{}", &ports2);
 
@@ -1626,7 +1607,7 @@ fn element_success_stages() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -1689,7 +1670,7 @@ fn index_full_replacement() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -1754,7 +1735,7 @@ fn index_after_elements() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -1819,7 +1800,7 @@ fn safety_net_agent_nonzero_exit() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -1881,7 +1862,7 @@ fn safety_net_agent_invalid_output() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 
@@ -1937,7 +1918,7 @@ fn safety_net_archive_failure() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
     assert_eq!(result.exit_code, 0);
@@ -1990,7 +1971,7 @@ fn safety_net_malformed_delta_json() {
         );
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
-    let ports = make_ports(&fs, &shell, &env, &term);
+    let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
     let result = process_cartography("{}", &ports);
 

@@ -44,7 +44,6 @@ fn two_concurrent_action_log_writes_both_appear() {
             "[]",
         ])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 1");
 
@@ -58,7 +57,6 @@ fn two_concurrent_action_log_writes_both_appear() {
             "[]",
         ])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 2");
 

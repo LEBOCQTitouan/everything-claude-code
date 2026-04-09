@@ -336,24 +336,6 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     fn git_branch_output(branch: &str) -> ecc_ports::shell::CommandOutput {
         ecc_ports::shell::CommandOutput {
             stdout: format!("{}\n", branch),
@@ -378,7 +360,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_prompt_context_hydrate("{}", &ports);
         assert!(result.stderr.contains("Rust workspace"));
@@ -390,7 +372,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_prompt_context_hydrate("{}", &ports);
         assert!(result.stderr.contains("cargo test"));
@@ -408,7 +390,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_prompt_context_hydrate("{}", &ports);
         assert!(result.stderr.contains("implement"));
@@ -426,7 +408,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_prompt_context_hydrate("{}", &ports);
         // Should have project type and branch, no panic
@@ -445,7 +427,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_prompt_context_hydrate("{}", &ports);
         assert!(result.stderr.contains("feature/bl-078"));
@@ -457,7 +439,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_prompt_context_hydrate("{}", &ports);
         assert!(result.stderr.contains("Unknown"));
@@ -469,7 +451,7 @@ mod tests {
         let shell = MockExecutor::new(); // no git responses registered
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // Should not panic
         let result = pre_prompt_context_hydrate("{}", &ports);
@@ -485,7 +467,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_prompt_context_hydrate("{}", &ports);
         // Should not panic, still outputs base context
@@ -553,7 +535,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"content": "/spec new feature"}"#;
         let result = pre_prompt_context_hydrate(stdin, &ports);
@@ -575,7 +557,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"content": "/spec new feature"}"#;
         let result = pre_prompt_context_hydrate(stdin, &ports);
@@ -597,7 +579,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"content": "run /design"}"#;
         let result = pre_prompt_context_hydrate(stdin, &ports);
@@ -619,7 +601,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"content": "run /design"}"#;
         let result = pre_prompt_context_hydrate(stdin, &ports);
@@ -637,7 +619,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"content": "run /design"}"#;
         let result = pre_prompt_context_hydrate(stdin, &ports);
@@ -660,7 +642,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"content": "run /implement"}"#;
         let result = pre_prompt_context_hydrate(stdin, &ports);

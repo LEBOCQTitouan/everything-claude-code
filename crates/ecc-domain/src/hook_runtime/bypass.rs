@@ -151,6 +151,12 @@ pub struct BypassSummary {
     pub total_refused: u64,
 }
 
+/// Policy trait for bypass decision logic.
+pub trait BypassPolicy: Send + Sync {
+    /// Determine whether a hook should be bypassed for the given session.
+    fn should_bypass(&self, hook_id: &str, session_id: &str) -> bool;
+}
+
 /// Validate that session_id is non-empty and not "unknown".
 fn validate_session_id(session_id: &str) -> Result<(), BypassError> {
     if session_id.is_empty() || session_id == "unknown" {
@@ -262,5 +268,20 @@ mod tests {
         assert!(s.per_hook.is_empty());
         assert_eq!(s.total_accepted, 0);
         assert_eq!(s.total_refused, 0);
+    }
+
+    struct AlwaysAllowPolicy;
+
+    impl BypassPolicy for AlwaysAllowPolicy {
+        fn should_bypass(&self, _hook_id: &str, _session_id: &str) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn bypass_policy_trait_compiles() {
+        let policy = AlwaysAllowPolicy;
+        assert!(policy.should_bypass("pre:edit:guard", "session-123"));
+        assert!(policy.should_bypass("stop:notify", "session-456"));
     }
 }

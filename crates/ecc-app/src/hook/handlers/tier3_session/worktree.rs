@@ -56,26 +56,7 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    // --- post_enter_worktree_session_log (PostToolUse format) ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- post_enter_worktree_session_log (PostToolUse format) ---
 
     #[test]
     fn post_enter_worktree_session_log_logs_from_tool_input() {
@@ -86,7 +67,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_name":"EnterWorktree","tool_input":{"worktree_path":"/tmp/wt"}}"#;
         let result = post_enter_worktree_session_log(stdin, &ports);
@@ -109,7 +90,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_name":"EnterWorktree","tool_input":{"name":"feature-branch"}}"#;
         let result = post_enter_worktree_session_log(stdin, &ports);
@@ -132,7 +113,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_name":"EnterWorktree","tool_input":{}}"#;
         let result = post_enter_worktree_session_log(stdin, &ports);
@@ -152,7 +133,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_name":"EnterWorktree","tool_input":{"worktree_path":"/tmp/wt"}}"#;
         let result = post_enter_worktree_session_log(stdin, &ports);

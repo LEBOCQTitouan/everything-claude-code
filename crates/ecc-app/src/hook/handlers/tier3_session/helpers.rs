@@ -273,26 +273,7 @@ mod tests {
     use crate::hook::handlers::tier3_session::{
         cost_tracker, evaluate_session, pre_compact, session_end, session_start,
     };
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    // --- session_start ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- session_start ---
 
     #[test]
     fn session_start_detects_project() {
@@ -303,7 +284,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_start("", &ports);
         assert!(result.stderr.contains("rust"));
@@ -320,7 +301,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_start("", &ports);
         assert!(result.stdout.contains("Previous session summary"));
@@ -334,7 +315,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_start("stdin", &ports);
         assert_eq!(result.exit_code, 0);
@@ -350,7 +331,7 @@ mod tests {
             .with_home("/home/test")
             .with_var("CLAUDE_SESSION_ID", "abc12345");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -379,7 +360,7 @@ mod tests {
             .with_home("/home/test")
             .with_var("CLAUDE_SESSION_ID", "test1234");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"transcript_path":"/tmp/transcript.jsonl"}"#;
         let result = session_end(stdin, &ports);
@@ -407,7 +388,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_compact("data", &ports);
         assert!(result.stderr.contains("PreCompact"));
@@ -428,7 +409,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let _ = pre_compact("data", &ports);
 
@@ -451,7 +432,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"transcript_path":"/tmp/transcript.jsonl"}"#;
         let result = evaluate_session(stdin, &ports);
@@ -469,7 +450,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"transcript_path":"/tmp/transcript.jsonl"}"#;
         let result = evaluate_session(stdin, &ports);
@@ -483,7 +464,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = evaluate_session("{}", &ports);
         assert!(result.stderr.is_empty());
@@ -499,7 +480,7 @@ mod tests {
             .with_home("/home/test")
             .with_var("CLAUDE_SESSION_ID", "test-session");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"model":"sonnet","usage":{"input_tokens":1000,"output_tokens":500}}"#;
         let result = cost_tracker(stdin, &ports);

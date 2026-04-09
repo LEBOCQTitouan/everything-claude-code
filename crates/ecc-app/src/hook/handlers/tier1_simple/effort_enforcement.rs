@@ -131,24 +131,6 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     fn agent_content(effort: &str) -> String {
         format!(
             "---\nname: test-agent\ndescription: Test\nmodel: sonnet\ntools: Read\neffort: {effort}\n---\n# Agent"
@@ -167,7 +149,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = subagent_start_effort(r#"{"agent_type":"my-agent"}"#, &ports);
         assert_eq!(result.stdout, "MAX_THINKING_TOKENS=2048");
@@ -181,7 +163,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = subagent_start_effort(r#"{"agent_type":"my-agent"}"#, &ports);
         assert_eq!(result.stdout, "MAX_THINKING_TOKENS=8192");
@@ -194,7 +176,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = subagent_start_effort(r#"{"agent_type":"my-agent"}"#, &ports);
         assert_eq!(result.stdout, "MAX_THINKING_TOKENS=16384");
@@ -207,7 +189,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = subagent_start_effort(r#"{"agent_type":"my-agent"}"#, &ports);
         assert_eq!(result.stdout, "MAX_THINKING_TOKENS=32768");
@@ -220,7 +202,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"my-agent"}"#;
         let result = subagent_start_effort(stdin, &ports);
@@ -233,7 +215,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"nonexistent"}"#;
         let result = subagent_start_effort(stdin, &ports);
@@ -249,7 +231,7 @@ mod tests {
             .with_var("CLAUDE_PROJECT_DIR", "/project")
             .with_var("ECC_EFFORT_BYPASS", "1");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"my-agent"}"#;
         let result = subagent_start_effort(stdin, &ports);
@@ -265,7 +247,7 @@ mod tests {
             .with_var("CLAUDE_PROJECT_DIR", "/project")
             .with_var("MAX_THINKING_TOKENS", "4096");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"my-agent"}"#;
         let result = subagent_start_effort(stdin, &ports);
@@ -279,7 +261,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"my-agent"}"#;
         let result = subagent_start_effort(stdin, &ports);
@@ -292,7 +274,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"../../etc/passwd"}"#;
         let result = subagent_start_effort(stdin, &ports);
@@ -306,7 +288,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"my-agent"}"#;
         let result = subagent_start_effort(stdin, &ports);

@@ -141,24 +141,6 @@ mod tests {
     use ecc_ports::fs::FileSystem;
     use ecc_ports::shell::CommandOutput;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     /// PC-008: zero committed changes → passthrough, no delta file written.
     #[test]
     fn no_delta_when_no_changes() {
@@ -176,7 +158,7 @@ mod tests {
             .with_var("CLAUDE_PROJECT_DIR", "/project")
             .with_var("CLAUDE_SESSION_ID", "test-session-001");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_cartography("{}", &ports);
 
@@ -220,7 +202,7 @@ mod tests {
             .with_var("CLAUDE_PROJECT_DIR", "/project")
             .with_var("CLAUDE_SESSION_ID", "rust-session-001");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = stop_cartography("{}", &ports);
 
@@ -277,7 +259,7 @@ mod tests {
             .with_var("CLAUDE_PROJECT_DIR", "/tsproject")
             .with_var("CLAUDE_SESSION_ID", "ts-session-001");
         let term_ts = BufferedTerminal::new();
-        let ports_ts = make_ports(&fs_ts, &shell_ts, &env_ts, &term_ts);
+        let ports_ts = HookPorts::test_default(&fs_ts, &shell_ts, &env_ts, &term_ts);
 
         let _ = stop_cartography("{}", &ports_ts);
         let delta_ts_path = std::path::Path::new(
@@ -302,7 +284,7 @@ mod tests {
             .with_var("CLAUDE_PROJECT_DIR", "/jsproject")
             .with_var("CLAUDE_SESSION_ID", "js-session-001");
         let term_js = BufferedTerminal::new();
-        let ports_js = make_ports(&fs_js, &shell_js, &env_js, &term_js);
+        let ports_js = HookPorts::test_default(&fs_js, &shell_js, &env_js, &term_js);
 
         let _ = stop_cartography("{}", &ports_js);
         let delta_js_path = std::path::Path::new(
@@ -326,7 +308,7 @@ mod tests {
         let env_unk = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/unknown-project");
         // CLAUDE_SESSION_ID NOT set → fallback ID
         let term_unk = BufferedTerminal::new();
-        let ports_unk = make_ports(&fs_unk, &shell_unk, &env_unk, &term_unk);
+        let ports_unk = HookPorts::test_default(&fs_unk, &shell_unk, &env_unk, &term_unk);
 
         let _ = stop_cartography("{}", &ports_unk);
 
@@ -397,7 +379,7 @@ mod tests {
                 .with_var("CLAUDE_PROJECT_DIR", "/norepo")
                 .with_var("CLAUDE_SESSION_ID", "norepo-session");
             let term = BufferedTerminal::new();
-            let ports = make_ports(&fs, &shell, &env, &term);
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
             let result = stop_cartography("{}", &ports);
 
@@ -445,7 +427,7 @@ mod tests {
                 .with_var("CLAUDE_PROJECT_DIR", "/project")
                 .with_var("CLAUDE_SESSION_ID", "new-session-001");
             let term = BufferedTerminal::new();
-            let ports = make_ports(&fs, &shell, &env, &term);
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
             let result = stop_cartography("{}", &ports);
             assert_eq!(result.exit_code, 0);

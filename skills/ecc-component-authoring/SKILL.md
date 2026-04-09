@@ -59,7 +59,7 @@ Hooks are JSON entries in `hooks/hooks.json`, not markdown files:
 
 Event types: `PreToolUse`, `PostToolUse`, `Stop`. Hook object: `{type, command}`.
 
-Script conventions: `set -uo pipefail`, check `ECC_WORKFLOW_BYPASS` at top, atomic writes via `mktemp` + `mv`.
+Script conventions: `set -uo pipefail`, atomic writes via `mktemp` + `mv`.
 
 ## Behavioral Requirements
 

@@ -53,24 +53,6 @@ mod tests {
     };
 
     use super::cost_tracker;
-
-    fn make_ports_no_store<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     /// PC-024: cost_tracker calls CostStore::append when a store is provided.
     #[test]
     fn cost_tracker_uses_cost_store() {
@@ -114,7 +96,7 @@ mod tests {
             .with_home("/home/test")
             .with_var("CLAUDE_SESSION_ID", "sess-pc025");
         let term = BufferedTerminal::new();
-        let ports = make_ports_no_store(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin =
             r#"{"model":"claude-haiku-4-5","usage":{"input_tokens":5000,"output_tokens":1000}}"#;

@@ -4,7 +4,7 @@
 //! Production adapter: `SqliteBypassStore` in `ecc-infra`.
 //! Test double: `InMemoryBypassStore` in `ecc-test-support`.
 
-use ecc_domain::hook_runtime::bypass::{BypassDecision, BypassSummary};
+use ecc_domain::hook_runtime::bypass::{BypassDecision, BypassSummary, BypassToken};
 
 /// Errors that can occur during bypass store operations.
 #[derive(Debug, thiserror::Error)]
@@ -40,6 +40,12 @@ pub trait BypassStore: Send + Sync {
 
     /// Delete records older than the given number of days. Returns count deleted.
     fn prune(&self, older_than_days: u64) -> Result<u64, BypassStoreError>;
+
+    /// Look up a valid bypass token for the given hook and session.
+    ///
+    /// Returns `Some(token)` if a token file exists, is valid JSON, and matches
+    /// both `hook_id` and `session_id`. Returns `None` on any failure or mismatch.
+    fn check_token(&self, hook_id: &str, session_id: &str) -> Option<BypassToken>;
 }
 
 #[cfg(test)]
@@ -75,6 +81,15 @@ mod tests {
             let _ = s.query_by_hook("hook", 10);
             let _ = s.summary();
             let _ = s.prune(90);
+        }
+    }
+
+    /// Compile-time assertion: BypassStore trait has check_token method.
+    #[test]
+    fn bypass_store_has_check_token() {
+        fn _use_check_token<S: BypassStore>(s: &S) {
+            let _: Option<ecc_domain::hook_runtime::bypass::BypassToken> =
+                s.check_token("hook-id", "session-id");
         }
     }
 }

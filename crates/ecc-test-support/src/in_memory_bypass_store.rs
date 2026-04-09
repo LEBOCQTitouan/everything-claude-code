@@ -2,15 +2,19 @@
 
 use std::sync::Mutex;
 
-use ecc_domain::hook_runtime::bypass::{BypassDecision, BypassSummary, HookBypassCount, Verdict};
+use ecc_domain::hook_runtime::bypass::{
+    BypassDecision, BypassSummary, BypassToken, HookBypassCount, Verdict,
+};
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
 
 /// In-memory test double for [`BypassStore`].
 ///
 /// All writes held in `Mutex<Vec<_>>`. Thread-safe and deterministic.
+/// Pre-configured bypass tokens can be added via [`with_token()`].
 pub struct InMemoryBypassStore {
     records: Mutex<Vec<BypassDecision>>,
     next_id: Mutex<i64>,
+    tokens: Mutex<Vec<BypassToken>>,
 }
 
 impl InMemoryBypassStore {
@@ -18,7 +22,14 @@ impl InMemoryBypassStore {
         Self {
             records: Mutex::new(Vec::new()),
             next_id: Mutex::new(1),
+            tokens: Mutex::new(Vec::new()),
         }
+    }
+
+    /// Add a pre-configured bypass token. Builder pattern — returns self.
+    pub fn with_token(self, token: BypassToken) -> Self {
+        self.tokens.lock().expect("lock poisoned").push(token);
+        self
     }
 
     pub fn snapshot(&self) -> Vec<BypassDecision> {
@@ -103,6 +114,14 @@ impl BypassStore for InMemoryBypassStore {
         // InMemory doesn't track timestamps for pruning; just return 0
         Ok(0)
     }
+
+    fn check_token(&self, hook_id: &str, session_id: &str) -> Option<BypassToken> {
+        let guard = self.tokens.lock().expect("lock poisoned");
+        guard
+            .iter()
+            .find(|t| t.hook_id == hook_id && t.session_id == session_id)
+            .cloned()
+    }
 }
 
 #[cfg(test)]
@@ -131,6 +150,28 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].hook_id, "hook-a");
         assert_eq!(results[0].id, Some(1));
+    }
+
+    #[test]
+    fn check_token_returns_matching_token() {
+        use ecc_domain::hook_runtime::bypass::BypassToken;
+        use ecc_ports::bypass_store::BypassStore;
+
+        let token = BypassToken::new(
+            "pre:write-edit:worktree-guard",
+            "session-xyz",
+            "2026-04-07T10:00:00Z",
+            "test reason",
+        )
+        .unwrap();
+
+        let store = InMemoryBypassStore::new().with_token(token.clone());
+
+        let result = store.check_token("pre:write-edit:worktree-guard", "session-xyz");
+        assert!(result.is_some());
+        let found = result.unwrap();
+        assert_eq!(found.hook_id, token.hook_id);
+        assert_eq!(found.session_id, token.session_id);
     }
 
     #[test]

@@ -1,20 +1,31 @@
 //! SQLite-backed implementation of [`BypassStore`].
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use ecc_domain::hook_runtime::bypass::{BypassDecision, BypassSummary, HookBypassCount, Verdict};
+use ecc_domain::hook_runtime::bypass::{
+    BypassDecision, BypassSummary, BypassToken, HookBypassCount, Verdict,
+};
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
 use rusqlite::{Connection, params};
 
 /// SQLite-backed bypass audit trail store.
 pub struct SqliteBypassStore {
     conn: Mutex<Connection>,
+    home_dir: Option<PathBuf>,
 }
 
 impl SqliteBypassStore {
     /// Open (or create) the database at `db_path`.
     pub fn new(db_path: &Path) -> Result<Self, BypassStoreError> {
+        Self::new_with_home(db_path, None)
+    }
+
+    /// Open (or create) the database at `db_path` with a custom home directory for token lookup.
+    pub fn new_with_home(
+        db_path: &Path,
+        home_dir: Option<PathBuf>,
+    ) -> Result<Self, BypassStoreError> {
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| BypassStoreError::Io(e.to_string()))?;
             #[cfg(unix)]
@@ -30,6 +41,7 @@ impl SqliteBypassStore {
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(Self {
             conn: Mutex::new(conn),
+            home_dir,
         })
     }
 
@@ -41,6 +53,7 @@ impl SqliteBypassStore {
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(Self {
             conn: Mutex::new(conn),
+            home_dir: None,
         })
     }
 }
@@ -158,6 +171,39 @@ impl BypassStore for SqliteBypassStore {
             .map_err(|e| BypassStoreError::Database(e.to_string()))?;
         Ok(deleted as u64)
     }
+
+    fn check_token(&self, hook_id: &str, session_id: &str) -> Option<BypassToken> {
+        let home = self.home_dir.as_ref()?;
+        // Reject path traversal in session_id and hook_id
+        if session_id.contains('/')
+            || session_id.contains('\\')
+            || session_id.contains("..")
+            || hook_id.contains('/')
+            || hook_id.contains('\\')
+            || hook_id.contains("..")
+        {
+            tracing::warn!(
+                session_id,
+                hook_id,
+                "rejecting bypass token lookup with path traversal chars"
+            );
+            return None;
+        }
+        let encoded_hook_id = hook_id.replace(':', "__");
+        let token_path = home
+            .join(".ecc")
+            .join("bypass-tokens")
+            .join(session_id)
+            .join(format!("{encoded_hook_id}.json"));
+        tracing::debug!("check_token: looking for token at {}", token_path.display());
+        let contents = std::fs::read_to_string(&token_path).ok()?;
+        let token: BypassToken = serde_json::from_str(&contents).ok()?;
+        if token.hook_id == hook_id && token.session_id == session_id {
+            Some(token)
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -165,12 +211,13 @@ mod tests {
     use super::*;
 
     fn make_decision(hook_id: &str, verdict: Verdict) -> BypassDecision {
+        // Use far-future timestamp so prune tests don't become flaky as calendar advances
         BypassDecision::new(
             hook_id,
             "test reason",
             "session-1",
             verdict,
-            "2026-04-06T10:00:00Z",
+            "2099-01-01T00:00:00Z",
         )
         .unwrap()
     }
@@ -226,6 +273,100 @@ mod tests {
             .unwrap();
         assert_eq!(hook_a.accepted, 1);
         assert_eq!(hook_a.refused, 1);
+    }
+
+    #[test]
+    fn sqlite_bypass_store_check_token_found() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home_dir = tmp.path().to_path_buf();
+        let session_id = "session-abc";
+        let hook_id = "pre:write-edit:worktree-guard";
+        let encoded_hook_id = hook_id.replace(':', "__");
+
+        // Write a valid token JSON file at the expected path
+        let token_dir = home_dir.join(".ecc").join("bypass-tokens").join(session_id);
+        std::fs::create_dir_all(&token_dir).unwrap();
+        let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
+            hook_id,
+            session_id,
+            "2026-04-07T10:00:00Z",
+            "test bypass",
+        )
+        .unwrap();
+        let json = serde_json::to_string(&token).unwrap();
+        std::fs::write(token_dir.join(format!("{encoded_hook_id}.json")), json).unwrap();
+
+        // Create store with home_dir, check_token should find it
+        let db_path = home_dir.join("bypass.db");
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
+        assert!(result.is_some());
+        let found = result.unwrap();
+        assert_eq!(found.hook_id, hook_id);
+        assert_eq!(found.session_id, session_id);
+    }
+
+    #[test]
+    fn sqlite_bypass_store_check_token_malformed() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home_dir = tmp.path().to_path_buf();
+        let session_id = "session-abc";
+        let hook_id = "pre:write-edit:worktree-guard";
+        let encoded_hook_id = hook_id.replace(':', "__");
+
+        // Write malformed JSON to the token file
+        let token_dir = home_dir.join(".ecc").join("bypass-tokens").join(session_id);
+        std::fs::create_dir_all(&token_dir).unwrap();
+        std::fs::write(
+            token_dir.join(format!("{encoded_hook_id}.json")),
+            "not valid json",
+        )
+        .unwrap();
+
+        let db_path = home_dir.join("bypass.db");
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn sqlite_bypass_store_check_token_mismatched() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home_dir = tmp.path().to_path_buf();
+        let session_id = "session-abc";
+        let hook_id = "pre:write-edit:worktree-guard";
+        let encoded_hook_id = hook_id.replace(':', "__");
+
+        // Write a token JSON with a different hook_id
+        let token_dir = home_dir.join(".ecc").join("bypass-tokens").join(session_id);
+        std::fs::create_dir_all(&token_dir).unwrap();
+        let other_hook_id = "pre:other:hook";
+        let token = ecc_domain::hook_runtime::bypass::BypassToken::new(
+            other_hook_id,
+            session_id,
+            "2026-04-07T10:00:00Z",
+            "test bypass",
+        )
+        .unwrap();
+        let json = serde_json::to_string(&token).unwrap();
+        std::fs::write(token_dir.join(format!("{encoded_hook_id}.json")), json).unwrap();
+
+        let db_path = home_dir.join("bypass.db");
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn sqlite_bypass_store_check_token_no_home() {
+        // Store created without home_dir — check_token must return None
+        let store = SqliteBypassStore::in_memory().unwrap();
+        let result = ecc_ports::bypass_store::BypassStore::check_token(
+            &store,
+            "pre:write-edit:worktree-guard",
+            "session-abc",
+        );
+        assert!(result.is_none());
     }
 
     #[test]

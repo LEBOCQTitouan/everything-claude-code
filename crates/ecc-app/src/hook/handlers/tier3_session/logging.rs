@@ -186,24 +186,6 @@ mod tests {
     use ecc_test_support::{
         BufferedTerminal, InMemoryFileSystem, InMemoryMetricsStore, MockEnvironment, MockExecutor,
     };
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     fn make_ports_with_metrics<'a>(
         fs: &'a InMemoryFileSystem,
         shell: &'a MockExecutor,
@@ -363,7 +345,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"code-reviewer"}"#;
         let result = subagent_start_log(stdin, &ports);
@@ -386,7 +368,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = subagent_start_log("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -410,7 +392,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"agent_type":"architect","agent_id":"abc123"}"#;
         let result = subagent_stop_log(stdin, &ports);
@@ -433,7 +415,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = subagent_stop_log("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -454,7 +436,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"config_key":"theme","config_value":"dark"}"#;
         let result = config_change_log(stdin, &ports);
@@ -471,7 +453,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = config_change_log("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -487,7 +469,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new(); // no home
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = config_change_log("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -503,7 +485,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"config_key":"model","config_value":"opus"}"#;
         let result = config_change_log(stdin, &ports);
