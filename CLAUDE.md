@@ -94,8 +94,8 @@ Slash command workflows defined in `commands/` are mandatory. Follow every phase
 - Skill directory name must match the `name` field in its frontmatter
 - Test count in CLAUDE.md must be updated after adding or removing tests
 - `pre:edit-write:workflow-branch-guard` blocks `.github/workflows/` edits on main/master/production — create a feature branch first
-- ECC hooks are bypassed by default via `.envrc` (`ECC_WORKFLOW_BYPASS=1`) — to test the pipeline: `ECC_WORKFLOW_BYPASS=0 claude` or use `/ecc-test-mode`
-- `pre:write-edit:worktree-guard` blocks Write/Edit/MultiEdit on main branch — Claude must call EnterWorktree first; bypass with `ECC_WORKFLOW_BYPASS=1` (lazy worktree: created on first write, not session start)
+- ECC hooks use the auditable bypass system — bypass individual hooks via `ecc bypass grant --hook <hook_id> --reason <reason>`. See ADR-0055. If you previously used `.envrc` with `ECC_WORKFLOW_BYPASS=1`, run `direnv revoke` to clean up cached approvals.
+- `pre:write-edit:worktree-guard` blocks Write/Edit/MultiEdit on main branch — Claude must call EnterWorktree first; bypass with `ecc bypass grant` (lazy worktree: created on first write, not session start)
 - `session:end:worktree-merge` auto-merges worktree to main at session end via `ecc-workflow merge` (rebase + full verify + ff-only + safety-checked auto-cleanup). After successful merge, 5-point safety check (uncommitted changes, untracked files, unmerged commits, stash, remote push) runs inside the merge lock. If all pass, worktree directory + branch are deleted automatically. If any check fails, worktree is preserved with a warning listing which checks failed. If merge fails, worktree preserved; retry with `ecc-workflow merge`
 - `session:start` triggers `ecc worktree gc` automatically to clean stale worktrees from previous sessions (best-effort, non-blocking). GC now skips unmerged worktrees unless `--force` is passed
 - Claude Code's `EnterWorktree` prepends `worktree-` to branch names (e.g., `ecc-session-*` becomes `worktree-ecc-session-*`). ECC handles both forms — `WorktreeName::parse()` strips the prefix automatically
