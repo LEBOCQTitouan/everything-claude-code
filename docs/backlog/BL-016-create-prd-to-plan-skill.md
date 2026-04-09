@@ -4,7 +4,7 @@ title: Create prd-to-plan skill
 tier: 3
 scope: MEDIUM
 target: /spec dev
-status: open
+status: implemented
 created: 2026-03-20
 file: skills/prd-to-plan/SKILL.md
 ---
