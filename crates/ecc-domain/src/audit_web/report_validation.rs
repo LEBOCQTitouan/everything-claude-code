@@ -1,6 +1,7 @@
 //! Deterministic report structure validation.
 
 use regex::Regex;
+use std::sync::LazyLock;
 
 /// Error variants from report validation (blocking).
 #[derive(Debug, PartialEq)]
@@ -38,6 +39,18 @@ const REQUIRED_SECTIONS: &[&str] = &[
     "Feature Opportunities",
 ];
 
+static SCORE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\*\*Strategic Fit\*\*:\s*(-?\d+)/5")
+        .expect("BUG: invalid SCORE_RE regex")
+});
+
+static SECTION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^#{1,6}\s+(.+)$").expect("BUG: invalid SECTION_RE regex"));
+
+static LINK_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").expect("BUG: invalid LINK_RE regex")
+});
+
 /// Validate a markdown report string for required sections, score ranges,
 /// and citation counts.
 pub fn validate_report(content: &str) -> ReportValidationResult {
@@ -59,20 +72,10 @@ pub fn validate_report(content: &str) -> ReportValidationResult {
         errors.push(ReportError::MissingSections(missing));
     }
 
-    // Parse scores: **Strategic Fit**: N/5
-    static SCORE_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-    let score_re = SCORE_RE
-        .get_or_init(|| Regex::new(r"\*\*Strategic Fit\*\*:\s*(-?\d+)/5").expect("valid regex"));
-
-    // Parse section headers to associate scores with sections
-    static SECTION_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-    let section_re =
-        SECTION_RE.get_or_init(|| Regex::new(r"^#{1,6}\s+(.+)$").expect("valid regex"));
-
-    // Parse citation links: [text](url)
-    static LINK_RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-    let link_re =
-        LINK_RE.get_or_init(|| Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").expect("valid regex"));
+    // Parse scores: **Strategic Fit**: N/5, section headers, and citation links
+    let score_re = &*SCORE_RE;
+    let section_re = &*SECTION_RE;
+    let link_re = &*LINK_RE;
 
     let mut current_section = String::new();
     let mut section_score: Option<i32> = None;

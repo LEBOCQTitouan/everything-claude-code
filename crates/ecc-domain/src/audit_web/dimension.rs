@@ -2,6 +2,7 @@
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::sync::LazyLock;
 
 /// A single audit dimension — standard or custom — used in Phase 2 scanning.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -26,14 +27,16 @@ pub enum DimensionError {
 /// Regex pattern for allowed query template characters.
 const SAFE_TEMPLATE_PATTERN: &str = r"^[a-zA-Z0-9 _./{}\-]+$";
 
+static RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(SAFE_TEMPLATE_PATTERN).expect("BUG: invalid SAFE_TEMPLATE_PATTERN regex")
+});
+
 /// Validate that a query template contains only safe characters.
 ///
 /// Allowed: `[a-zA-Z0-9 -_./{}]`
 /// Rejected: shell metacharacters (`;`, `|`, `$`, backtick, `<`, `>`, `&`, `!`, `(`, `)`, `'`, `"`)
 pub fn validate_query_template(template: &str) -> Result<(), DimensionError> {
-    static RE: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-    let re = RE.get_or_init(|| Regex::new(SAFE_TEMPLATE_PATTERN).expect("valid regex pattern"));
-    if re.is_match(template) {
+    if RE.is_match(template) {
         Ok(())
     } else {
         Err(DimensionError::InvalidQueryTemplate)
