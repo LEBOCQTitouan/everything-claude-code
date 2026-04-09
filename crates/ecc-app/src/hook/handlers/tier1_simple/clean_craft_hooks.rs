@@ -442,7 +442,7 @@ fn contains_low_level_ops(line: &str) -> bool {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- pre_edit_boundary_crossing ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- pre_edit_boundary_crossing ---
 
     #[test]
     fn boundary_crossing_blocks_domain_file_with_infra_import() {

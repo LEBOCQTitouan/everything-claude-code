@@ -99,7 +99,8 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    #[test]
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    #[test]
     fn format_detects_biome() {
         let fs = InMemoryFileSystem::new()
             .with_file("/project/biome.json", "{}")

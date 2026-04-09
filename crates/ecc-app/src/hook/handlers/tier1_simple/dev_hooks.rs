@@ -308,7 +308,7 @@ pub fn post_exit_worktree_cleanup_reminder(stdin: &str, _ports: &HookPorts<'_>) 
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- post_bash_pr_created ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- post_bash_pr_created ---
 
     #[test]
     fn post_bash_pr_created_logs_pr_url_and_review_command() {

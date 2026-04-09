@@ -122,7 +122,8 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    #[test]
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    #[test]
     fn daily_summary_creates_file_when_missing() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();

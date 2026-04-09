@@ -130,7 +130,8 @@ pub fn subagent_start_effort(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    fn agent_content(effort: &str) -> String {
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    fn agent_content(effort: &str) -> String {
         format!(
             "---\nname: test-agent\ndescription: Test\nmodel: sonnet\ntools: Read\neffort: {effort}\n---\n# Agent"
         )

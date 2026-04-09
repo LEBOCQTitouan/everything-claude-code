@@ -53,7 +53,8 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    fn make_stdin(file_path: &str) -> String {
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    fn make_stdin(file_path: &str) -> String {
         format!(r#"{{"tool_input":{{"file_path":"{}"}}}}"#, file_path)
     }
 

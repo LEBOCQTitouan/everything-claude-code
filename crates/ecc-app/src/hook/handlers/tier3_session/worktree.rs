@@ -56,7 +56,7 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- post_enter_worktree_session_log (PostToolUse format) ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- post_enter_worktree_session_log (PostToolUse format) ---
 
     #[test]
     fn post_enter_worktree_session_log_logs_from_tool_input() {

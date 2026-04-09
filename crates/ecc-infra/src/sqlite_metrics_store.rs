@@ -21,8 +21,7 @@ impl SqliteMetricsStore {
     /// Open (or create) the SQLite database at `db_path`.
     pub fn new(db_path: &Path) -> Result<Self, MetricsStoreError> {
         if let Some(parent) = db_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| MetricsStoreError::Io(e.to_string()))?;
+            std::fs::create_dir_all(parent).map_err(|e| MetricsStoreError::Io(e.to_string()))?;
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
@@ -30,32 +29,42 @@ impl SqliteMetricsStore {
                     .map_err(|e| MetricsStoreError::Io(e.to_string()))?;
             }
         }
-        let conn = Connection::open(db_path)
-            .map_err(|e| MetricsStoreError::Database(e.to_string()))?;
+        let conn =
+            Connection::open(db_path).map_err(|e| MetricsStoreError::Database(e.to_string()))?;
         crate::metrics_schema::ensure_schema(&conn)
             .map_err(|e| MetricsStoreError::Database(e.to_string()))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     /// Create an in-memory store for testing.
     pub fn in_memory() -> Result<Self, MetricsStoreError> {
-        let conn = Connection::open_in_memory()
-            .map_err(|e| MetricsStoreError::Database(e.to_string()))?;
+        let conn =
+            Connection::open_in_memory().map_err(|e| MetricsStoreError::Database(e.to_string()))?;
         crate::metrics_schema::ensure_schema(&conn)
             .map_err(|e| MetricsStoreError::Database(e.to_string()))?;
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 }
 
 fn gates_to_string(gates: &[CommitGateKind]) -> String {
-    gates.iter().map(|g| g.to_string()).collect::<Vec<_>>().join(",")
+    gates
+        .iter()
+        .map(|g| g.to_string())
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 fn string_to_gates(s: &str) -> Vec<CommitGateKind> {
     if s.is_empty() {
         return Vec::new();
     }
-    s.split(',').filter_map(CommitGateKind::from_str_opt).collect()
+    s.split(',')
+        .filter_map(CommitGateKind::from_str_opt)
+        .collect()
 }
 
 fn row_to_event(row: &rusqlite::Row<'_>) -> rusqlite::Result<MetricEvent> {
@@ -69,8 +78,7 @@ fn row_to_event(row: &rusqlite::Row<'_>) -> rusqlite::Result<MetricEvent> {
             .unwrap_or(MetricEventType::HookExecution),
         session_id: row.get(2)?,
         timestamp: row.get(3)?,
-        outcome: MetricOutcome::from_str_opt(&outcome_str)
-            .unwrap_or(MetricOutcome::Failure),
+        outcome: MetricOutcome::from_str_opt(&outcome_str).unwrap_or(MetricOutcome::Failure),
         hook_id: row.get(5)?,
         duration_ms: row.get::<_, Option<i64>>(6)?.map(|v| v as u64),
         error_message: row.get(7)?,
@@ -111,7 +119,16 @@ fn format_iso8601(secs: u64) -> String {
     let months = [
         31u64,
         if is_leap(year) { 29 } else { 28 },
-        31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
     ];
     let mut month = 1u64;
     for &dim in &months {
@@ -131,7 +148,9 @@ fn is_leap(year: u64) -> bool {
 
 impl MetricsStore for SqliteMetricsStore {
     fn record(&self, event: &MetricEvent) -> Result<i64, MetricsStoreError> {
-        let conn = self.conn.lock()
+        let conn = self
+            .conn
+            .lock()
             .map_err(|e| MetricsStoreError::Database(e.to_string()))?;
 
         conn.execute(
@@ -155,13 +174,16 @@ impl MetricsStore for SqliteMetricsStore {
                 event.retry_count.map(|v| v as i32),
                 gates_to_string(&event.gates_failed),
             ],
-        ).map_err(|e| MetricsStoreError::Database(e.to_string()))?;
+        )
+        .map_err(|e| MetricsStoreError::Database(e.to_string()))?;
 
         Ok(conn.last_insert_rowid())
     }
 
     fn query(&self, query: &MetricsQuery) -> Result<Vec<MetricEvent>, MetricsStoreError> {
-        let conn = self.conn.lock()
+        let conn = self
+            .conn
+            .lock()
             .map_err(|e| MetricsStoreError::Database(e.to_string()))?;
 
         let mut filters: Vec<String> = Vec::new();
@@ -221,7 +243,8 @@ impl MetricsStore for SqliteMetricsStore {
         let params_refs: Vec<&dyn rusqlite::types::ToSql> =
             positional_params.iter().map(|p| p.as_ref()).collect();
 
-        let mut stmt = conn.prepare(&sql)
+        let mut stmt = conn
+            .prepare(&sql)
             .map_err(|e| MetricsStoreError::Query(e.to_string()))?;
 
         let events = stmt
@@ -239,12 +262,17 @@ impl MetricsStore for SqliteMetricsStore {
     }
 
     fn prune(&self, older_than: Duration) -> Result<u64, MetricsStoreError> {
-        let conn = self.conn.lock()
+        let conn = self
+            .conn
+            .lock()
             .map_err(|e| MetricsStoreError::Database(e.to_string()))?;
         let cutoff = cutoff_timestamp(older_than);
 
         let removed = conn
-            .execute("DELETE FROM metric_events WHERE timestamp < ?1", params![cutoff])
+            .execute(
+                "DELETE FROM metric_events WHERE timestamp < ?1",
+                params![cutoff],
+            )
             .map_err(|e| MetricsStoreError::Database(e.to_string()))? as u64;
 
         Ok(removed)
@@ -268,14 +296,15 @@ impl MetricsStore for SqliteMetricsStore {
                 Ok(format!("[{}]", items.join(",")))
             }
             MetricsExportFormat::Csv => {
-                let mut rows = vec![
-                    "id,event_type,session_id,timestamp,outcome".to_string(),
-                ];
+                let mut rows = vec!["id,event_type,session_id,timestamp,outcome".to_string()];
                 for e in &events {
                     rows.push(format!(
                         "{},{},{},{},{}",
                         e.id.map_or(String::new(), |v| v.to_string()),
-                        e.event_type, e.session_id, e.timestamp, e.outcome,
+                        e.event_type,
+                        e.session_id,
+                        e.timestamp,
+                        e.outcome,
                     ));
                 }
                 Ok(rows.join("\n"))
@@ -290,7 +319,15 @@ mod tests {
     use ecc_domain::metrics::{MetricEvent, MetricOutcome};
 
     fn hook(session: &str, ts: &str, outcome: MetricOutcome) -> MetricEvent {
-        MetricEvent::hook_execution(session.into(), ts.into(), "test-hook".into(), 100, outcome, None).unwrap()
+        MetricEvent::hook_execution(
+            session.into(),
+            ts.into(),
+            "test-hook".into(),
+            100,
+            outcome,
+            None,
+        )
+        .unwrap()
     }
 
     // PC-022: record + query round-trip
@@ -333,8 +370,12 @@ mod tests {
     #[test]
     fn metrics_store_sqlite_summarize() {
         let store = SqliteMetricsStore::in_memory().unwrap();
-        store.record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success)).unwrap();
-        store.record(&hook("s1", "2026-04-06T10:01:00Z", MetricOutcome::Failure)).unwrap();
+        store
+            .record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success))
+            .unwrap();
+        store
+            .record(&hook("s1", "2026-04-06T10:01:00Z", MetricOutcome::Failure))
+            .unwrap();
 
         let metrics = store.summarize(&MetricsQuery::default()).unwrap();
         assert_eq!(metrics.total_events, 2);
@@ -345,12 +386,19 @@ mod tests {
     #[test]
     fn metrics_store_sqlite_prune() {
         let store = SqliteMetricsStore::in_memory().unwrap();
-        store.record(&hook("s1", "2020-01-01T00:00:00Z", MetricOutcome::Success)).unwrap();
+        store
+            .record(&hook("s1", "2020-01-01T00:00:00Z", MetricOutcome::Success))
+            .unwrap();
 
         use std::time::{SystemTime, UNIX_EPOCH};
-        let now_secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         let recent_ts = format_iso8601(now_secs);
-        store.record(&hook("s1", &recent_ts, MetricOutcome::Success)).unwrap();
+        store
+            .record(&hook("s1", &recent_ts, MetricOutcome::Success))
+            .unwrap();
 
         let removed = store.prune(Duration::from_secs(30 * 86400)).unwrap();
         assert_eq!(removed, 1);
@@ -361,9 +409,15 @@ mod tests {
     #[test]
     fn metrics_store_sqlite_time_range() {
         let store = SqliteMetricsStore::in_memory().unwrap();
-        store.record(&hook("s1", "2026-01-01T00:00:00Z", MetricOutcome::Success)).unwrap();
-        store.record(&hook("s1", "2026-03-01T00:00:00Z", MetricOutcome::Success)).unwrap();
-        store.record(&hook("s1", "2026-05-01T00:00:00Z", MetricOutcome::Success)).unwrap();
+        store
+            .record(&hook("s1", "2026-01-01T00:00:00Z", MetricOutcome::Success))
+            .unwrap();
+        store
+            .record(&hook("s1", "2026-03-01T00:00:00Z", MetricOutcome::Success))
+            .unwrap();
+        store
+            .record(&hook("s1", "2026-05-01T00:00:00Z", MetricOutcome::Success))
+            .unwrap();
 
         let q = MetricsQuery {
             date_range: Some(("2026-02-01T00:00:00Z".into(), "2026-04-01T00:00:00Z".into())),

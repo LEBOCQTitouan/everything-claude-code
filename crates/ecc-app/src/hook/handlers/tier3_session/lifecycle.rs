@@ -244,7 +244,8 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    fn ok(stdout: &str) -> CommandOutput {
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    fn ok(stdout: &str) -> CommandOutput {
         CommandOutput {
             stdout: stdout.to_string(),
             stderr: String::new(),

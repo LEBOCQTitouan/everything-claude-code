@@ -191,7 +191,7 @@ mod tests {
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- oath_reflection ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- oath_reflection ---
 
     #[test]
     fn oath_reflection_summarizes_mixed_commits() {

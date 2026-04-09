@@ -285,15 +285,10 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     // Delegate to bypass_interceptor when hook blocks
     let result = if result.exit_code == 2 {
         let session_id = ports.env.var("CLAUDE_SESSION_ID");
-        let sid = session_id.as_deref().filter(|s| !s.is_empty() && *s != "unknown");
-        bypass_interceptor::intercept(
-            &ctx.hook_id,
-            stdin,
-            result,
-            sid,
-            ports.bypass_store,
-            start,
-        )
+        let sid = session_id
+            .as_deref()
+            .filter(|s| !s.is_empty() && *s != "unknown");
+        bypass_interceptor::intercept(&ctx.hook_id, stdin, result, sid, ports.bypass_store, start)
     } else {
         result
     };

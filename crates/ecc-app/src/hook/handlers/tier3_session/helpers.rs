@@ -273,7 +273,7 @@ mod tests {
     use crate::hook::handlers::tier3_session::{
         cost_tracker, evaluate_session, pre_compact, session_end, session_start,
     };
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- session_start ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- session_start ---
 
     #[test]
     fn session_start_detects_project() {

@@ -88,6 +88,9 @@ mod tests {
         let mgr = MockWorktreeManager::new();
         let executor = MockExecutor::new();
         let result = ecc_app::worktree::status(&mgr, &executor, Path::new("/repo"));
-        assert!(result.is_ok(), "status must return Ok (exit code 0 on success)");
+        assert!(
+            result.is_ok(),
+            "status must return Ok (exit code 0 on success)"
+        );
     }
 }

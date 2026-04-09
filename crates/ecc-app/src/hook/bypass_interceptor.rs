@@ -98,9 +98,19 @@ mod tests {
         let result = make_block_result("stdin-data");
         let start = std::time::Instant::now();
 
-        let out = intercept(hook_id, "stdin-data", result, Some(session_id), Some(&store), start);
+        let out = intercept(
+            hook_id,
+            "stdin-data",
+            result,
+            Some(session_id),
+            Some(&store),
+            start,
+        );
 
-        assert_eq!(out.exit_code, 0, "valid token must grant passthrough (exit 0)");
+        assert_eq!(
+            out.exit_code, 0,
+            "valid token must grant passthrough (exit 0)"
+        );
         assert_eq!(out.stdout, "stdin-data");
     }
 
@@ -114,7 +124,14 @@ mod tests {
         let result = make_block_result("stdin-data");
         let start = std::time::Instant::now();
 
-        let out = intercept(hook_id, "stdin-data", result, Some(session_id), Some(&store), start);
+        let out = intercept(
+            hook_id,
+            "stdin-data",
+            result,
+            Some(session_id),
+            Some(&store),
+            start,
+        );
 
         assert_eq!(out.exit_code, 2, "missing token must block (exit 2)");
         assert!(
@@ -151,10 +168,21 @@ mod tests {
         let result = make_block_result("stdin-data");
         let start = std::time::Instant::now();
 
-        let _ = intercept(hook_id, "stdin-data", result, Some(session_id), Some(&store), start);
+        let _ = intercept(
+            hook_id,
+            "stdin-data",
+            result,
+            Some(session_id),
+            Some(&store),
+            start,
+        );
 
         let decisions = store.snapshot();
-        assert_eq!(decisions.len(), 1, "exactly one Applied decision must be recorded");
+        assert_eq!(
+            decisions.len(),
+            1,
+            "exactly one Applied decision must be recorded"
+        );
         assert_eq!(decisions[0].verdict, Verdict::Applied);
         assert_eq!(decisions[0].hook_id, hook_id);
         assert_eq!(decisions[0].session_id, session_id);

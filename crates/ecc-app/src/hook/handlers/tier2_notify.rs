@@ -300,7 +300,8 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    fn ok_output() -> CommandOutput {
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    fn ok_output() -> CommandOutput {
         CommandOutput {
             stdout: String::new(),
             stderr: String::new(),

@@ -98,8 +98,15 @@ pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
         CliValidateTarget::ClaudeMd { counts } => {
             if *counts {
                 let shell = ecc_infra::process_executor::ProcessExecutor;
-                let project_root = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
-                if ecc_app::validate_claude_md::run_validate_claude_md(&fs, &shell, &terminal, &project_root, false) {
+                let project_root =
+                    std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+                if ecc_app::validate_claude_md::run_validate_claude_md(
+                    &fs,
+                    &shell,
+                    &terminal,
+                    &project_root,
+                    false,
+                ) {
                     Ok(())
                 } else {
                     std::process::exit(1);

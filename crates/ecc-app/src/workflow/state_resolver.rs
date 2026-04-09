@@ -29,13 +29,8 @@ const ANCHOR_FILE_NAME: &str = ".state-dir";
 ///
 /// Returns `(Some(dir), warnings)` if the anchor is valid and the directory exists.
 /// Returns `(None, warnings)` to signal "fall through to git resolution".
-fn read_anchor(
-    fs: &dyn FileSystem,
-    project_dir: &Path,
-) -> (Option<PathBuf>, Vec<Warning>) {
-    let anchor_path = project_dir
-        .join(".claude/workflow")
-        .join(ANCHOR_FILE_NAME);
+fn read_anchor(fs: &dyn FileSystem, project_dir: &Path) -> (Option<PathBuf>, Vec<Warning>) {
+    let anchor_path = project_dir.join(".claude/workflow").join(ANCHOR_FILE_NAME);
     let content = match fs.read_to_string(&anchor_path) {
         Ok(c) => c,
         Err(_) => return (None, vec![]),
@@ -129,9 +124,7 @@ pub fn resolve_state_dir(
     // Worktrees have git-dir paths like `.git/worktrees/<name>/ecc-workflow`.
     // They must NEVER fall back to the main repo's `.claude/workflow/` —
     // that would cause one session's state to bleed into another.
-    let is_worktree = state_dir
-        .components()
-        .any(|c| c.as_os_str() == "worktrees");
+    let is_worktree = state_dir.components().any(|c| c.as_os_str() == "worktrees");
 
     if state_dir != old_location && !is_worktree {
         let new_exists = fs.exists(&new_state_file);

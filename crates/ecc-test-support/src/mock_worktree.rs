@@ -85,17 +85,11 @@ impl MockWorktreeManager {
 }
 
 impl WorktreeManager for MockWorktreeManager {
-    fn has_uncommitted_changes(
-        &self,
-        _worktree_path: &Path,
-    ) -> Result<bool, WorktreeError> {
+    fn has_uncommitted_changes(&self, _worktree_path: &Path) -> Result<bool, WorktreeError> {
         Ok(self.has_uncommitted_changes)
     }
 
-    fn has_untracked_files(
-        &self,
-        _worktree_path: &Path,
-    ) -> Result<bool, WorktreeError> {
+    fn has_untracked_files(&self, _worktree_path: &Path) -> Result<bool, WorktreeError> {
         Ok(self.has_untracked_files)
     }
 
@@ -127,26 +121,23 @@ impl WorktreeManager for MockWorktreeManager {
         if self.remove_worktree_result {
             Ok(())
         } else {
-            Err(WorktreeError::CommandFailed("mock remove failed".to_owned()))
+            Err(WorktreeError::CommandFailed(
+                "mock remove failed".to_owned(),
+            ))
         }
     }
 
-    fn delete_branch(
-        &self,
-        _repo_root: &Path,
-        _branch: &str,
-    ) -> Result<(), WorktreeError> {
+    fn delete_branch(&self, _repo_root: &Path, _branch: &str) -> Result<(), WorktreeError> {
         if self.delete_branch_result {
             Ok(())
         } else {
-            Err(WorktreeError::CommandFailed("mock delete failed".to_owned()))
+            Err(WorktreeError::CommandFailed(
+                "mock delete failed".to_owned(),
+            ))
         }
     }
 
-    fn list_worktrees(
-        &self,
-        _repo_root: &Path,
-    ) -> Result<Vec<WorktreeInfo>, WorktreeError> {
+    fn list_worktrees(&self, _repo_root: &Path) -> Result<Vec<WorktreeInfo>, WorktreeError> {
         Ok(self.worktrees.clone())
     }
 }

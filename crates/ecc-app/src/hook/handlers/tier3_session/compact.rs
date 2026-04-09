@@ -86,7 +86,8 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    #[test]
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    #[test]
     fn post_compact_with_summary() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();

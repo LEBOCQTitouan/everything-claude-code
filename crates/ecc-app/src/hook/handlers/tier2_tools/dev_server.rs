@@ -46,7 +46,8 @@ pub fn pre_bash_dev_server_block(stdin: &str, ports: &HookPorts<'_>) -> HookResu
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    #[test]
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    #[test]
     fn dev_server_blocks_npm_run_dev() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();

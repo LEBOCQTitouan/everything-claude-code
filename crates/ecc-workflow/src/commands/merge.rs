@@ -2,7 +2,7 @@ use std::path::Path;
 use std::process::Command;
 use std::time::Duration;
 
-use crate::commands::merge_cleanup::{cleanup_after_merge, CleanupResult};
+use crate::commands::merge_cleanup::{CleanupResult, cleanup_after_merge};
 use crate::output::WorkflowOutput;
 
 const MERGE_LOCK_TIMEOUT_SECS: u64 = 60;
@@ -71,11 +71,9 @@ fn execute_merge(project_dir: &Path) -> Result<String, MergeError> {
     let worktree_dir = project_dir.to_path_buf();
     let cleanup = cleanup_after_merge(&repo_root, &worktree_dir, &branch);
     match cleanup {
-        CleanupResult::CleanedUp { branch } => {
-            Ok(format!(
-                "Merged {branch} into main and cleaned up successfully."
-            ))
-        }
+        CleanupResult::CleanedUp { branch } => Ok(format!(
+            "Merged {branch} into main and cleaned up successfully."
+        )),
         CleanupResult::Unsafe(violations) => {
             let checks: Vec<String> = violations.iter().map(|v| format!("{v:?}")).collect();
             Ok(format!(
@@ -83,11 +81,9 @@ fn execute_merge(project_dir: &Path) -> Result<String, MergeError> {
                 checks.join(", ")
             ))
         }
-        CleanupResult::Aborted(reason) => {
-            Ok(format!(
-                "Merged {branch} into main. Cleanup failed: {reason}. Worktree preserved."
-            ))
-        }
+        CleanupResult::Aborted(reason) => Ok(format!(
+            "Merged {branch} into main. Cleanup failed: {reason}. Worktree preserved."
+        )),
     }
 }
 
@@ -210,7 +206,6 @@ fn merge_fast_forward(repo_root: &Path, branch: &str) -> Result<(), MergeError> 
     }
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -805,5 +800,4 @@ mod tests {
             "working tree should be clean after merge, got: {status_str}"
         );
     }
-
 }

@@ -68,7 +68,9 @@ pub fn run(args: HookArgs) -> anyhow::Result<()> {
         env: &env,
         terminal: &terminal,
         cost_store: None,
-        bypass_store: bypass_store.as_ref().map(|s| s as &dyn ecc_ports::bypass_store::BypassStore),
+        bypass_store: bypass_store
+            .as_ref()
+            .map(|s| s as &dyn ecc_ports::bypass_store::BypassStore),
         metrics_store: None,
     };
 

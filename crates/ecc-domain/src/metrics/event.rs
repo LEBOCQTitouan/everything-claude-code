@@ -445,30 +445,50 @@ mod tests {
     // PC-008: invalid outcome for event type
     #[test]
     fn invalid_outcome_for_event_type() {
-        assert!(MetricEvent::hook_execution(
-            "s".into(), "t".into(), "h".into(), 0,
-            MetricOutcome::Rejected, None,
-        ).is_err());
+        assert!(
+            MetricEvent::hook_execution(
+                "s".into(),
+                "t".into(),
+                "h".into(),
+                0,
+                MetricOutcome::Rejected,
+                None,
+            )
+            .is_err()
+        );
 
-        assert!(MetricEvent::phase_transition(
-            "s".into(), "t".into(), "a".into(), "b".into(),
-            MetricOutcome::Passed, None,
-        ).is_err());
+        assert!(
+            MetricEvent::phase_transition(
+                "s".into(),
+                "t".into(),
+                "a".into(),
+                "b".into(),
+                MetricOutcome::Passed,
+                None,
+            )
+            .is_err()
+        );
 
-        assert!(MetricEvent::agent_spawn(
-            "s".into(), "t".into(), "a".into(),
-            MetricOutcome::Rejected, None,
-        ).is_err());
+        assert!(
+            MetricEvent::agent_spawn(
+                "s".into(),
+                "t".into(),
+                "a".into(),
+                MetricOutcome::Rejected,
+                None,
+            )
+            .is_err()
+        );
 
-        assert!(MetricEvent::commit_gate(
-            "s".into(), "t".into(),
-            MetricOutcome::Success, vec![],
-        ).is_err());
+        assert!(
+            MetricEvent::commit_gate("s".into(), "t".into(), MetricOutcome::Success, vec![],)
+                .is_err()
+        );
 
         // CommitGate CAN have Passed outcome
-        assert!(MetricEvent::commit_gate(
-            "s".into(), "t".into(),
-            MetricOutcome::Passed, vec![],
-        ).is_ok());
+        assert!(
+            MetricEvent::commit_gate("s".into(), "t".into(), MetricOutcome::Passed, vec![],)
+                .is_ok()
+        );
     }
 }

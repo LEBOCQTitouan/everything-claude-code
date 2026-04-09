@@ -47,7 +47,7 @@ pub fn session_end_marker(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- check_hook_enabled ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- check_hook_enabled ---
 
     #[test]
     fn check_hook_enabled_enabled_hook_returns_yes() {

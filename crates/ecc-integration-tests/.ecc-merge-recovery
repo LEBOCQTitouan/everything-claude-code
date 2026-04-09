@@ -1,7 +1,7 @@
 # ECC Merge Recovery
-# Merge failed at: epoch:1775473913
-# Worktree: /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-auditable-bypass/crates/ecc-integration-tests
+# Merge failed at: epoch:1775721667
+# Worktree: /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-bl125-token-boilerplate-bypass-refactor/crates/ecc-integration-tests
 # Exit code: 2
 #
-# To retry: cd /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-auditable-bypass/crates/ecc-integration-tests && ecc-workflow merge
+# To retry: cd /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-bl125-token-boilerplate-bypass-refactor/crates/ecc-integration-tests && ecc-workflow merge
 # To clean up: ecc worktree gc --force

@@ -54,7 +54,8 @@ pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    /// PC-016: Prints pending count and /doc-suite hint when deltas exist.
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    /// PC-016: Prints pending count and /doc-suite hint when deltas exist.
     #[test]
     fn prints_pending_count() {
         let fs = InMemoryFileSystem::new()

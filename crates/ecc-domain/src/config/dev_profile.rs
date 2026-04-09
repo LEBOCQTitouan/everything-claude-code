@@ -136,6 +136,9 @@ mod tests {
     // PC-007: MANAGED_DIRS constant contains exactly agents, commands, skills, rules
     #[test]
     fn managed_dirs_constant() {
-        assert_eq!(MANAGED_DIRS, &["agents", "commands", "skills", "rules", "teams"]);
+        assert_eq!(
+            MANAGED_DIRS,
+            &["agents", "commands", "skills", "rules", "teams"]
+        );
     }
 }

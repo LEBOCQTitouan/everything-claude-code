@@ -51,10 +51,7 @@ mod tests {
             "ecc-app"
         );
         // Fallback: non-crate path
-        assert_eq!(
-            classify_file("src/main.rs", &ProjectType::Rust),
-            "src"
-        );
+        assert_eq!(classify_file("src/main.rs", &ProjectType::Rust), "src");
     }
 
     #[test]
@@ -73,13 +70,7 @@ mod tests {
             "src"
         );
         // Unknown project type
-        assert_eq!(
-            classify_file("lib/utils.py", &ProjectType::Unknown),
-            "lib"
-        );
-        assert_eq!(
-            classify_file("cmd/server/main.go", &ProjectType::Go),
-            "cmd"
-        );
+        assert_eq!(classify_file("lib/utils.py", &ProjectType::Unknown), "lib");
+        assert_eq!(classify_file("cmd/server/main.go", &ProjectType::Go), "cmd");
     }
 }

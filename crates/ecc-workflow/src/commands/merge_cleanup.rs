@@ -92,14 +92,7 @@ fn check_pushed_to_remote(dir: &Path) -> bool {
     let dir_str = dir.to_string_lossy();
     // First check: is HEAD in any remote branch?
     let remote_output = Command::new("git")
-        .args([
-            "-C",
-            dir_str.as_ref(),
-            "branch",
-            "-r",
-            "--contains",
-            "HEAD",
-        ])
+        .args(["-C", dir_str.as_ref(), "branch", "-r", "--contains", "HEAD"])
         .output();
     if matches!(remote_output, Ok(ref o) if o.status.success() && !o.stdout.is_empty()) {
         return true;
@@ -220,20 +213,9 @@ mod tests {
         }
     }
 
-    fn setup_worktree_with_commit(
-        repo: &Path,
-        wt_dir: &Path,
-        branch: &str,
-        filename: &str,
-    ) {
+    fn setup_worktree_with_commit(repo: &Path, wt_dir: &Path, branch: &str, filename: &str) {
         Command::new("git")
-            .args([
-                "worktree",
-                "add",
-                wt_dir.to_str().unwrap(),
-                "-b",
-                branch,
-            ])
+            .args(["worktree", "add", wt_dir.to_str().unwrap(), "-b", branch])
             .current_dir(repo)
             .output()
             .unwrap();
@@ -294,7 +276,10 @@ mod tests {
         merge_fast_forward(tmp.path(), "ecc-session-cleanup-020-12345");
         let result = cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-cleanup-020-12345");
         assert!(
-            matches!(result, CleanupResult::CleanedUp { .. } | CleanupResult::Unsafe(_)),
+            matches!(
+                result,
+                CleanupResult::CleanedUp { .. } | CleanupResult::Unsafe(_)
+            ),
             "cleanup should have run after merge, got: {result:?}"
         );
     }
@@ -319,7 +304,10 @@ mod tests {
             matches!(result, CleanupResult::CleanedUp { .. }),
             "worktree should be cleaned up when safe, got: {result:?}"
         );
-        assert!(!wt_dir.exists(), "worktree directory should have been removed");
+        assert!(
+            !wt_dir.exists(),
+            "worktree directory should have been removed"
+        );
     }
 
     // PC-022: Safe worktree branch deleted via `git branch -d`
@@ -357,12 +345,7 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         setup_git_repo_with_main(tmp.path());
         let wt_dir = tmp.path().join("worktree-cwd-023");
-        setup_worktree_with_commit(
-            tmp.path(),
-            &wt_dir,
-            "ecc-session-cwd-023-12345",
-            "f023.txt",
-        );
+        setup_worktree_with_commit(tmp.path(), &wt_dir, "ecc-session-cwd-023-12345", "f023.txt");
         rebase_onto_main(&wt_dir, "ecc-session-cwd-023-12345");
         checkout_main(tmp.path());
         merge_fast_forward(tmp.path(), "ecc-session-cwd-023-12345");
@@ -407,7 +390,12 @@ mod tests {
         std::fs::write(&fake_wt, "file content").unwrap();
         let result = cleanup_after_merge(tmp.path(), &fake_wt, "ecc-session-rmfail-025-12345");
         assert!(
-            matches!(result, CleanupResult::Aborted(_) | CleanupResult::CleanedUp { .. } | CleanupResult::Unsafe(_)),
+            matches!(
+                result,
+                CleanupResult::Aborted(_)
+                    | CleanupResult::CleanedUp { .. }
+                    | CleanupResult::Unsafe(_)
+            ),
             "remove failure should return Aborted (warning), got: {result:?}"
         );
     }
@@ -462,7 +450,12 @@ mod tests {
         let fake_wt = Path::new("/tmp/nonexistent-wt-ecc-test-028");
         let result = cleanup_after_merge(nonexistent, fake_wt, "ecc-session-cwd-028-12345");
         assert!(
-            matches!(result, CleanupResult::Aborted(_) | CleanupResult::CleanedUp { .. } | CleanupResult::Unsafe(_)),
+            matches!(
+                result,
+                CleanupResult::Aborted(_)
+                    | CleanupResult::CleanedUp { .. }
+                    | CleanupResult::Unsafe(_)
+            ),
             "cwd failure should not panic, got: {result:?}"
         );
     }
@@ -475,7 +468,10 @@ mod tests {
             let t = line.trim();
             (t.starts_with("use ") || t.starts_with("extern ")) && t.contains("ecc_ports")
         });
-        assert!(!has_ecc_ports_import, "merge_cleanup.rs should not import ecc_ports");
+        assert!(
+            !has_ecc_ports_import,
+            "merge_cleanup.rs should not import ecc_ports"
+        );
         assert!(source.contains("Command::new"), "should use raw Command");
     }
 
@@ -483,7 +479,10 @@ mod tests {
     #[test]
     fn safety_inside_lock() {
         let source = include_str!("merge.rs");
-        assert!(source.contains("_guard"), "execute_merge must hold a lock guard");
+        assert!(
+            source.contains("_guard"),
+            "execute_merge must hold a lock guard"
+        );
         assert!(
             source.contains("cleanup_after_merge"),
             "execute_merge must call cleanup_after_merge inside lock"
@@ -491,8 +490,14 @@ mod tests {
         let guard_pos = source.find("_guard").unwrap();
         let cleanup_pos = source.find("cleanup_after_merge(").unwrap();
         let merge_pos = source.find("merge_fast_forward").unwrap();
-        assert!(guard_pos < cleanup_pos, "cleanup must be inside lock guard scope");
-        assert!(merge_pos < cleanup_pos, "cleanup must be called after merge_fast_forward");
+        assert!(
+            guard_pos < cleanup_pos,
+            "cleanup must be inside lock guard scope"
+        );
+        assert!(
+            merge_pos < cleanup_pos,
+            "cleanup must be called after merge_fast_forward"
+        );
     }
 
     // PC-031: Missing worktree dir: prune metadata + branch delete
@@ -514,7 +519,10 @@ mod tests {
         assert!(!wt_dir.exists());
         let result = cleanup_after_merge(tmp.path(), &wt_dir, "ecc-session-missing-031-12345");
         assert!(
-            matches!(result, CleanupResult::CleanedUp { .. } | CleanupResult::Aborted(_)),
+            matches!(
+                result,
+                CleanupResult::CleanedUp { .. } | CleanupResult::Aborted(_)
+            ),
             "missing dir cleanup should succeed or abort gracefully, got: {result:?}"
         );
     }

@@ -5,7 +5,9 @@
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use ecc_domain::metrics::{CommitGateKind, HarnessMetrics, MetricEvent, MetricOutcome, TrendComparison};
+use ecc_domain::metrics::{
+    CommitGateKind, HarnessMetrics, MetricEvent, MetricOutcome, TrendComparison,
+};
 use ecc_ports::metrics_store::{
     MetricsExportFormat, MetricsQuery, MetricsStore, MetricsStoreError,
 };
@@ -252,7 +254,10 @@ mod tests {
             events[0].event_type,
             ecc_domain::metrics::MetricEventType::CommitGate
         );
-        assert_eq!(events[0].outcome, ecc_domain::metrics::MetricOutcome::Passed);
+        assert_eq!(
+            events[0].outcome,
+            ecc_domain::metrics::MetricOutcome::Passed
+        );
         assert!(events[0].gates_failed.is_empty());
     }
 

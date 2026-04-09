@@ -49,7 +49,10 @@ impl MetricAggregator {
         if total == 0 {
             return None;
         }
-        let ok = hooks.iter().filter(|e| e.outcome == MetricOutcome::Success).count();
+        let ok = hooks
+            .iter()
+            .filter(|e| e.outcome == MetricOutcome::Success)
+            .count();
         Some(ok as f64 / total as f64)
     }
 
@@ -62,7 +65,10 @@ impl MetricAggregator {
         if total == 0 {
             return None;
         }
-        let rejected = transitions.iter().filter(|e| e.outcome == MetricOutcome::Rejected).count();
+        let rejected = transitions
+            .iter()
+            .filter(|e| e.outcome == MetricOutcome::Rejected)
+            .count();
         Some(rejected as f64 / total as f64)
     }
 
@@ -77,8 +83,7 @@ impl MetricAggregator {
             .iter()
             .filter(|e| {
                 e.outcome == MetricOutcome::Failure
-                    || (e.outcome == MetricOutcome::Success
-                        && e.retry_count.is_some_and(|r| r > 0))
+                    || (e.outcome == MetricOutcome::Success && e.retry_count.is_some_and(|r| r > 0))
             })
             .count();
         if denominator == 0 {
@@ -88,9 +93,7 @@ impl MetricAggregator {
         // Numerator: succeeded with retry > 0
         let recovered = agents
             .iter()
-            .filter(|e| {
-                e.outcome == MetricOutcome::Success && e.retry_count.is_some_and(|r| r > 0)
-            })
+            .filter(|e| e.outcome == MetricOutcome::Success && e.retry_count.is_some_and(|r| r > 0))
             .count();
         Some(recovered as f64 / denominator as f64)
     }
@@ -104,7 +107,10 @@ impl MetricAggregator {
         if total == 0 {
             return None;
         }
-        let passed = commits.iter().filter(|e| e.outcome == MetricOutcome::Passed).count();
+        let passed = commits
+            .iter()
+            .filter(|e| e.outcome == MetricOutcome::Passed)
+            .count();
         Some(passed as f64 / total as f64)
     }
 
@@ -122,8 +128,18 @@ impl MetricAggregator {
         if events.is_empty() {
             return None;
         }
-        let min = events.iter().map(|e| e.timestamp.as_str()).min().unwrap().to_owned();
-        let max = events.iter().map(|e| e.timestamp.as_str()).max().unwrap().to_owned();
+        let min = events
+            .iter()
+            .map(|e| e.timestamp.as_str())
+            .min()
+            .unwrap()
+            .to_owned();
+        let max = events
+            .iter()
+            .map(|e| e.timestamp.as_str())
+            .max()
+            .unwrap()
+            .to_owned();
         Some((min, max))
     }
 }
@@ -134,22 +150,52 @@ mod tests {
     use crate::metrics::event::{CommitGateKind, MetricEvent, MetricOutcome};
 
     fn hook(outcome: MetricOutcome) -> MetricEvent {
-        MetricEvent::hook_execution("sess-1".into(), "2026-04-06T10:00:00Z".into(), "h".into(), 100, outcome, None).unwrap()
+        MetricEvent::hook_execution(
+            "sess-1".into(),
+            "2026-04-06T10:00:00Z".into(),
+            "h".into(),
+            100,
+            outcome,
+            None,
+        )
+        .unwrap()
     }
 
     fn transition(outcome: MetricOutcome) -> MetricEvent {
-        MetricEvent::phase_transition("sess-1".into(), "2026-04-06T10:00:00Z".into(), "plan".into(), "solution".into(), outcome, None).unwrap()
+        MetricEvent::phase_transition(
+            "sess-1".into(),
+            "2026-04-06T10:00:00Z".into(),
+            "plan".into(),
+            "solution".into(),
+            outcome,
+            None,
+        )
+        .unwrap()
     }
 
     fn agent(outcome: MetricOutcome, retry: Option<u32>) -> MetricEvent {
-        MetricEvent::agent_spawn("sess-1".into(), "2026-04-06T10:00:00Z".into(), "tdd".into(), outcome, retry).unwrap()
+        MetricEvent::agent_spawn(
+            "sess-1".into(),
+            "2026-04-06T10:00:00Z".into(),
+            "tdd".into(),
+            outcome,
+            retry,
+        )
+        .unwrap()
     }
 
     fn commit(outcome: MetricOutcome) -> MetricEvent {
         MetricEvent::commit_gate(
-            "sess-1".into(), "2026-04-06T10:00:00Z".into(), outcome,
-            if outcome == MetricOutcome::Failure { vec![CommitGateKind::Test] } else { vec![] },
-        ).unwrap()
+            "sess-1".into(),
+            "2026-04-06T10:00:00Z".into(),
+            outcome,
+            if outcome == MetricOutcome::Failure {
+                vec![CommitGateKind::Test]
+            } else {
+                vec![]
+            },
+        )
+        .unwrap()
     }
 
     // PC-009: aggregator computes rates
@@ -189,7 +235,11 @@ mod tests {
     // PC-011: total events
     #[test]
     fn harness_metrics_total_events() {
-        let events = vec![hook(MetricOutcome::Success), transition(MetricOutcome::Success), commit(MetricOutcome::Passed)];
+        let events = vec![
+            hook(MetricOutcome::Success),
+            transition(MetricOutcome::Success),
+            commit(MetricOutcome::Passed),
+        ];
         assert_eq!(MetricAggregator::summarize(&events).total_events, 3);
     }
 }

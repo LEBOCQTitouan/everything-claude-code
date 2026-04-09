@@ -3,7 +3,7 @@ use super::*;
 use crate::hook::HookPorts;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::CommandOutput;
-use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};// ────────────────────────────────────────────────────────────────────────
+use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // ────────────────────────────────────────────────────────────────────────
 // PC-012 through PC-016: start_cartography tests
 // ────────────────────────────────────────────────────────────────────────
 

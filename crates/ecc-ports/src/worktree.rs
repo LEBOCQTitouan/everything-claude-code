@@ -37,16 +37,10 @@ pub struct WorktreeInfo {
 /// Port for querying and managing git worktrees.
 pub trait WorktreeManager: Send + Sync {
     /// Return `true` if the worktree at `worktree_path` has uncommitted changes.
-    fn has_uncommitted_changes(
-        &self,
-        worktree_path: &Path,
-    ) -> Result<bool, WorktreeError>;
+    fn has_uncommitted_changes(&self, worktree_path: &Path) -> Result<bool, WorktreeError>;
 
     /// Return `true` if the worktree at `worktree_path` has untracked files.
-    fn has_untracked_files(
-        &self,
-        worktree_path: &Path,
-    ) -> Result<bool, WorktreeError>;
+    fn has_untracked_files(&self, worktree_path: &Path) -> Result<bool, WorktreeError>;
 
     /// Return the number of commits reachable from HEAD but not from `target_branch`.
     fn unmerged_commit_count(
@@ -66,22 +60,11 @@ pub trait WorktreeManager: Send + Sync {
     ) -> Result<bool, WorktreeError>;
 
     /// Remove the worktree at `worktree_path` from the repo at `repo_root`.
-    fn remove_worktree(
-        &self,
-        repo_root: &Path,
-        worktree_path: &Path,
-    ) -> Result<(), WorktreeError>;
+    fn remove_worktree(&self, repo_root: &Path, worktree_path: &Path) -> Result<(), WorktreeError>;
 
     /// Delete the local branch `branch` in the repo at `repo_root`.
-    fn delete_branch(
-        &self,
-        repo_root: &Path,
-        branch: &str,
-    ) -> Result<(), WorktreeError>;
+    fn delete_branch(&self, repo_root: &Path, branch: &str) -> Result<(), WorktreeError>;
 
     /// List all worktrees for the repo at `repo_root`.
-    fn list_worktrees(
-        &self,
-        repo_root: &Path,
-    ) -> Result<Vec<WorktreeInfo>, WorktreeError>;
+    fn list_worktrees(&self, repo_root: &Path) -> Result<Vec<WorktreeInfo>, WorktreeError>;
 }

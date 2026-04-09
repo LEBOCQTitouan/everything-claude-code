@@ -27,10 +27,7 @@ pub fn grant(
         .map_err(|e| BypassMgmtError::Validation(e.to_string()))?;
 
     // Write token file
-    let token_dir = home
-        .join(".ecc")
-        .join("bypass-tokens")
-        .join(session_id);
+    let token_dir = home.join(".ecc").join("bypass-tokens").join(session_id);
     fs.create_dir_all(&token_dir)
         .map_err(|e| BypassMgmtError::Io(e.to_string()))?;
 
@@ -42,9 +39,7 @@ pub fn grant(
         .map_err(|e| BypassMgmtError::Io(e.to_string()))?;
 
     // Record in audit trail
-    store
-        .record(&decision)
-        .map_err(BypassMgmtError::Store)?;
+    store.record(&decision).map_err(BypassMgmtError::Store)?;
 
     Ok(token)
 }
@@ -62,7 +57,9 @@ pub fn list(
         None => {
             // query_by_hook with empty string won't work; use summary + individual queries
             // For v1, just return empty if no hook filter (will implement full list later)
-            store.query_by_hook("", limit).map_err(BypassMgmtError::Store)
+            store
+                .query_by_hook("", limit)
+                .map_err(BypassMgmtError::Store)
         }
     }
 }
@@ -199,7 +196,8 @@ mod tests {
         assert!(result.is_ok());
 
         // Token file should exist
-        let token_path = "/home/user/.ecc/bypass-tokens/session-abc/pre__write-edit__worktree-guard.json";
+        let token_path =
+            "/home/user/.ecc/bypass-tokens/session-abc/pre__write-edit__worktree-guard.json";
         assert!(fs.exists(Path::new(token_path)));
 
         // Audit trail should have one Accepted record

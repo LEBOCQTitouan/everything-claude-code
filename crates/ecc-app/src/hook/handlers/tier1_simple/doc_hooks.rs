@@ -117,7 +117,7 @@ pub fn doc_coverage_reminder(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- doc_file_warning ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- doc_file_warning ---
 
     #[test]
     fn doc_file_warning_warns_for_non_standard_md() {

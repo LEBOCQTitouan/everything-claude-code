@@ -335,7 +335,8 @@ pub fn pre_prompt_context_hydrate(stdin: &str, ports: &HookPorts<'_>) -> HookRes
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    fn git_branch_output(branch: &str) -> ecc_ports::shell::CommandOutput {
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    fn git_branch_output(branch: &str) -> ecc_ports::shell::CommandOutput {
         ecc_ports::shell::CommandOutput {
             stdout: format!("{}\n", branch),
             stderr: String::new(),

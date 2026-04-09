@@ -13,7 +13,10 @@ pub fn run_docs_coverage(
     json: bool,
 ) -> bool {
     if !fs.exists(scope) {
-        terminal.stderr_write(&format!("ERROR: Path does not exist: {}\n", scope.display()));
+        terminal.stderr_write(&format!(
+            "ERROR: Path does not exist: {}\n",
+            scope.display()
+        ));
         return false;
     }
 

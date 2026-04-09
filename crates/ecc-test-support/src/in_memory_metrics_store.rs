@@ -4,7 +4,9 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use ecc_domain::metrics::{HarnessMetrics, MetricAggregator, MetricEvent};
-use ecc_ports::metrics_store::{MetricsExportFormat, MetricsQuery, MetricsStore, MetricsStoreError};
+use ecc_ports::metrics_store::{
+    MetricsExportFormat, MetricsQuery, MetricsStore, MetricsStoreError,
+};
 
 /// In-memory test double for [`MetricsStore`].
 ///
@@ -82,9 +84,7 @@ impl MetricsStore for InMemoryMetricsStore {
 
         let mut guard = self.events.lock().expect("lock poisoned");
         let before = guard.len();
-        guard.retain(|e| {
-            parse_timestamp_secs(&e.timestamp).is_none_or(|ts| ts >= cutoff_secs)
-        });
+        guard.retain(|e| parse_timestamp_secs(&e.timestamp).is_none_or(|ts| ts >= cutoff_secs));
         Ok((before - guard.len()) as u64)
     }
 
@@ -140,8 +140,7 @@ fn matches_query(event: &MetricEvent, query: &MetricsQuery) -> bool {
         return false;
     }
     if let Some((ref start, ref end)) = query.date_range
-        && (event.timestamp.as_str() < start.as_str()
-            || event.timestamp.as_str() > end.as_str())
+        && (event.timestamp.as_str() < start.as_str() || event.timestamp.as_str() > end.as_str())
     {
         return false;
     }
@@ -216,20 +215,39 @@ mod tests {
 
     fn transition(session: &str, outcome: MetricOutcome) -> MetricEvent {
         MetricEvent::phase_transition(
-            session.into(), "2026-04-06T10:00:00Z".into(),
-            "plan".into(), "solution".into(), outcome, None,
-        ).unwrap()
+            session.into(),
+            "2026-04-06T10:00:00Z".into(),
+            "plan".into(),
+            "solution".into(),
+            outcome,
+            None,
+        )
+        .unwrap()
     }
 
     fn agent(outcome: MetricOutcome, retry: Option<u32>) -> MetricEvent {
-        MetricEvent::agent_spawn("s1".into(), "2026-04-06T10:00:00Z".into(), "tdd".into(), outcome, retry).unwrap()
+        MetricEvent::agent_spawn(
+            "s1".into(),
+            "2026-04-06T10:00:00Z".into(),
+            "tdd".into(),
+            outcome,
+            retry,
+        )
+        .unwrap()
     }
 
     fn commit(outcome: MetricOutcome) -> MetricEvent {
         MetricEvent::commit_gate(
-            "s1".into(), "2026-04-06T10:00:00Z".into(), outcome,
-            if outcome == MetricOutcome::Failure { vec![CommitGateKind::Test] } else { vec![] },
-        ).unwrap()
+            "s1".into(),
+            "2026-04-06T10:00:00Z".into(),
+            outcome,
+            if outcome == MetricOutcome::Failure {
+                vec![CommitGateKind::Test]
+            } else {
+                vec![]
+            },
+        )
+        .unwrap()
     }
 
     // PC-015: record + query round-trip
@@ -251,8 +269,12 @@ mod tests {
     #[test]
     fn metrics_store_summarize() {
         let store = InMemoryMetricsStore::new();
-        store.record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success)).unwrap();
-        store.record(&hook("s1", "2026-04-06T10:01:00Z", MetricOutcome::Failure)).unwrap();
+        store
+            .record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success))
+            .unwrap();
+        store
+            .record(&hook("s1", "2026-04-06T10:01:00Z", MetricOutcome::Failure))
+            .unwrap();
 
         let metrics = store.summarize(&MetricsQuery::default()).unwrap();
         assert_eq!(metrics.total_events, 2);
@@ -275,20 +297,35 @@ mod tests {
     #[test]
     fn metrics_store_query_filters() {
         let store = InMemoryMetricsStore::new();
-        store.record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success)).unwrap();
-        store.record(&hook("s2", "2026-04-06T10:01:00Z", MetricOutcome::Failure)).unwrap();
-        store.record(&transition("s3", MetricOutcome::Success)).unwrap();
+        store
+            .record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success))
+            .unwrap();
+        store
+            .record(&hook("s2", "2026-04-06T10:01:00Z", MetricOutcome::Failure))
+            .unwrap();
+        store
+            .record(&transition("s3", MetricOutcome::Success))
+            .unwrap();
 
         // Filter by session
-        let q = MetricsQuery { session_id: Some("s1".into()), ..Default::default() };
+        let q = MetricsQuery {
+            session_id: Some("s1".into()),
+            ..Default::default()
+        };
         assert_eq!(store.query(&q).unwrap().len(), 1);
 
         // Filter by event type
-        let q = MetricsQuery { event_type: Some(MetricEventType::PhaseTransition), ..Default::default() };
+        let q = MetricsQuery {
+            event_type: Some(MetricEventType::PhaseTransition),
+            ..Default::default()
+        };
         assert_eq!(store.query(&q).unwrap().len(), 1);
 
         // Filter by outcome
-        let q = MetricsQuery { outcome: Some(MetricOutcome::Failure), ..Default::default() };
+        let q = MetricsQuery {
+            outcome: Some(MetricOutcome::Failure),
+            ..Default::default()
+        };
         assert_eq!(store.query(&q).unwrap().len(), 1);
     }
 
@@ -297,9 +334,13 @@ mod tests {
     fn metrics_store_prune() {
         let store = InMemoryMetricsStore::new();
         // Old event
-        store.record(&hook("s1", "2020-01-01T00:00:00Z", MetricOutcome::Success)).unwrap();
+        store
+            .record(&hook("s1", "2020-01-01T00:00:00Z", MetricOutcome::Success))
+            .unwrap();
         // Recent event (use current-ish timestamp)
-        store.record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success)).unwrap();
+        store
+            .record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success))
+            .unwrap();
 
         let removed = store.prune(Duration::from_secs(30 * 86400)).unwrap();
         assert_eq!(removed, 1);
@@ -310,15 +351,21 @@ mod tests {
     #[test]
     fn metrics_store_export() {
         let store = InMemoryMetricsStore::new();
-        store.record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success)).unwrap();
+        store
+            .record(&hook("s1", "2026-04-06T10:00:00Z", MetricOutcome::Success))
+            .unwrap();
 
-        let json = store.export(&MetricsQuery::default(), MetricsExportFormat::Json).unwrap();
+        let json = store
+            .export(&MetricsQuery::default(), MetricsExportFormat::Json)
+            .unwrap();
         assert!(json.starts_with('['));
         assert!(json.ends_with(']'));
         assert!(json.contains("hook_execution"));
         assert!(json.contains("s1"));
 
-        let csv = store.export(&MetricsQuery::default(), MetricsExportFormat::Csv).unwrap();
+        let csv = store
+            .export(&MetricsQuery::default(), MetricsExportFormat::Csv)
+            .unwrap();
         assert!(csv.contains("id,event_type,session_id"));
         assert!(csv.contains("hook_execution"));
     }
@@ -327,9 +374,15 @@ mod tests {
     #[test]
     fn metrics_store_time_range_filter() {
         let store = InMemoryMetricsStore::new();
-        store.record(&hook("s1", "2026-01-01T00:00:00Z", MetricOutcome::Success)).unwrap();
-        store.record(&hook("s1", "2026-03-01T00:00:00Z", MetricOutcome::Success)).unwrap();
-        store.record(&hook("s1", "2026-05-01T00:00:00Z", MetricOutcome::Success)).unwrap();
+        store
+            .record(&hook("s1", "2026-01-01T00:00:00Z", MetricOutcome::Success))
+            .unwrap();
+        store
+            .record(&hook("s1", "2026-03-01T00:00:00Z", MetricOutcome::Success))
+            .unwrap();
+        store
+            .record(&hook("s1", "2026-05-01T00:00:00Z", MetricOutcome::Success))
+            .unwrap();
 
         let q = MetricsQuery {
             date_range: Some(("2026-02-01T00:00:00Z".into(), "2026-04-01T00:00:00Z".into())),

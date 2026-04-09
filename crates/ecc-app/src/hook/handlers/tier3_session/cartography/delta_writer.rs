@@ -140,7 +140,8 @@ mod tests {
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    /// PC-008: zero committed changes → passthrough, no delta file written.
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    /// PC-008: zero committed changes → passthrough, no delta file written.
     #[test]
     fn no_delta_when_no_changes() {
         let fs = InMemoryFileSystem::new();

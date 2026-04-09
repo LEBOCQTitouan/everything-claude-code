@@ -172,7 +172,7 @@ mod tests {
     use crate::hook::HookPorts;
     use crate::hook::handlers::tier1_simple::*;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- check_hook_enabled ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor}; // --- check_hook_enabled ---
 
     #[test]
     fn check_hook_enabled_returns_yes_for_standard() {
