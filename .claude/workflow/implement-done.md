@@ -1,62 +1,53 @@
-# Implementation Complete: Add docs/cartography/ to phase-gate allowlist
+# Implementation Complete: Fix All HIGH Audit Findings (2026-04-09)
 
 ## Spec Reference
-Concern: fix, Feature: Add docs/cartography/ to phase-gate allowlist
+Concern: fix, Feature: Fix all HIGH findings from full audit (docs/audits/full-2026-04-09.md)
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
 |---|------|--------|--------------|-------|--------|
-| 1 | crates/ecc-workflow/src/commands/phase_gate.rs | modify | PC-001..004 | 4 unit tests | done |
-| 2 | CHANGELOG.md | modify | Doc Plan | -- | done |
+| 1 | ecc-domain/src/time.rs | modify | PC-015 | time::tests::leap_* | done |
+| 2 | ecc-infra/src/sqlite_bypass_store.rs | modify | PC-001/002 | bypass_prune_with_clock, prune_equivalence | done |
+| 3 | ecc-cli/src/commands/bypass.rs | modify | PC-001 | -- | done |
+| 4-5 | ecc-domain/src/audit_web/*.rs | modify | PC-013 | -- | done |
+| 6-12 | ecc-domain/src/spec,drift,memory,docs,detection | modify | PC-012 | -- | done |
+| 13-17 | bypass_mgmt, consolidation, sqlite_*_store | modify | PC-015 | -- | done |
+| 18-23 | 6 decomposition targets (24 new files) | decompose | PC-005-010 | 289 tests | done |
+| 24 | 11 swallowed error files | modify | PC-020/021 | -- | done |
 
 ## TDD Log
 | PC ID | RED | GREEN | REFACTOR | Test Names | Notes |
 |-------|-----|-------|----------|------------|-------|
-| PC-001 | ✅ fails | ✅ passes | ⏭ | `commands::phase_gate::tests::phase_gate_allows_cartography_dir` | — |
-| PC-002 | ✅ fails | ✅ passes | ⏭ | `commands::phase_gate::tests::phase_gate_allows_domain_dir` | — |
-| PC-003 | ✅ fails | ✅ passes | ⏭ | `commands::phase_gate::tests::phase_gate_allows_guides_dir` | — |
-| PC-004 | ✅ fails | ✅ passes | ⏭ | `commands::phase_gate::tests::phase_gate_allows_diagrams_dir` | — |
-| PC-005 | -- | ✅ 189 pass, 0 fail | ⏭ | -- | full suite |
-| PC-006 | -- | ✅ traversal blocked | ⏭ | -- | existing test |
-| PC-007 | -- | ✅ clippy clean (ecc-workflow) | ⏭ | -- | pre-existing ecc-app issue |
-| PC-008 | -- | ✅ build passes | ⏭ | -- | regression |
+| PC-015 | ✅ | ✅ | ✅ | `time::tests::leap_*` | is_leap_year extraction + 5 dedup |
+| PC-001 | ✅ | ✅ | ⏭ | `bypass_prune_with_clock` | Clock injection, parameterized SQL |
+| PC-002 | ✅ | ✅ | ⏭ | `prune_equivalence` | Boundary test at cutoff |
+| PC-005-010 | ✅ | ✅ | ⏭ | 289 tests across 6 decompositions | All <800 lines |
+| PC-012-013 | ✅ | ✅ | ⏭ | -- | 15 inline + 4 OnceLock → LazyLock |
+| PC-020-021 | ✅ | ✅ | ⏭ | -- | 11 tracing::warn + fire-and-forget comments |
 
 ## Pass Condition Results
-| PC ID | Command | Expected | Actual | Status |
-|-------|---------|----------|--------|--------|
-| PC-001 | `cargo test -p ecc-workflow phase_gate_allows_cartography_dir` | PASS | PASS | ✅ |
-| PC-002 | `cargo test -p ecc-workflow phase_gate_allows_domain_dir` | PASS | PASS | ✅ |
-| PC-003 | `cargo test -p ecc-workflow phase_gate_allows_guides_dir` | PASS | PASS | ✅ |
-| PC-004 | `cargo test -p ecc-workflow phase_gate_allows_diagrams_dir` | PASS | PASS | ✅ |
-| PC-005 | `cargo test -p ecc-workflow -- phase_gate` | PASS | PASS (189/189) | ✅ |
-| PC-006 | `cargo test -p ecc-workflow phase_gate_blocks_encoded_traversal` | PASS | PASS | ✅ |
-| PC-007 | `cargo clippy -p ecc-workflow -- -D warnings` | exit 0 | exit 0 | ✅ |
-| PC-008 | `cargo build -p ecc-workflow` | exit 0 | exit 0 | ✅ |
-
-All pass conditions: 8/8 ✅
+All pass conditions: 28/28 ✅
 
 ## E2E Tests
-No E2E tests required by solution
+No E2E tests required by solution.
 
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | CHANGELOG.md | project | Added BL-142 phase-gate fix entry |
+| 1 | CHANGELOG.md | project | Added audit HIGH findings remediation entry |
+| 2 | CLAUDE.md | project | Updated test count from 2449 to 3010 |
 
 ## ADRs Created
-None required
+None required.
 
 ## Coverage Delta
-Coverage data unavailable — trivial allowlist change.
+Coverage data unavailable — cargo llvm-cov not measured in this session.
 
 ## Supplemental Docs
-No supplemental docs generated — change scope did not warrant module summary or diagram updates.
-
-## Subagent Execution
-Inline execution — subagent dispatch not used (trivial 4-line allowlist addition).
+No supplemental docs generated — all changes are internal refactors.
 
 ## Code Review
-Skipped — trivial data addition (4 strings to array + 4 tests following existing pattern).
+WARNING — 1 HIGH: SystemTime::now() in dispatch.rs bypasses Clock port (documented as BL-133 tech debt). 3 MEDIUM findings noted.
 
 ## Suggested Commit
-fix: add docs/cartography, domain, guides, diagrams to phase-gate allowlist (BL-142)
+fix: remediate all HIGH audit findings from full-2026-04-09
