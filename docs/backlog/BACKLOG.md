@@ -115,7 +115,7 @@
 | BL-112 | Evaluate cargo-dist to replace custom release.yml | — | MEDIUM | /spec-refactor | implemented | 2026-03-31 | 2026-03-31 |
 | BL-113 | Upgrade rusqlite 0.34 to 0.38 | — | LOW | direct edit | implemented | 2026-03-31 | 2026-03-31 |
 | BL-114 | Upgrade rustyline 15 to 17 | — | LOW | direct edit | implemented | 2026-03-31 |
-| BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | open | 2026-03-31 |
+| BL-115 | Upgrade toml 0.8 to 0.9 | — | LOW | direct edit | implemented | 2026-03-31 |
 | BL-116 | Add cargo-mutants mutation testing | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-117 | Evaluate release-plz for automated semver and changelog | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
 | BL-118 | Add SLSA provenance attestations to release pipeline | — | MEDIUM | /spec-dev | implemented | 2026-03-31 |
