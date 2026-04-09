@@ -128,6 +128,28 @@ pub struct HookPorts<'a> {
     pub metrics_store: Option<&'a dyn MetricsStore>,
 }
 
+impl<'a> HookPorts<'a> {
+    /// Construct a `HookPorts` with all optional stores set to `None`.
+    ///
+    /// Intended for use in tests to reduce boilerplate when optional stores are not needed.
+    pub fn test_default(
+        fs: &'a dyn FileSystem,
+        shell: &'a dyn ShellExecutor,
+        env: &'a dyn Environment,
+        terminal: &'a dyn TerminalIO,
+    ) -> Self {
+        Self {
+            fs,
+            shell,
+            env,
+            terminal,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: None,
+        }
+    }
+}
+
 /// Truncate stdin payload to MAX_STDIN bytes.
 pub fn truncate_stdin(raw: &str) -> &str {
     if raw.len() <= MAX_STDIN {
