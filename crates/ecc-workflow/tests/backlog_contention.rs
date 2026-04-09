@@ -57,7 +57,6 @@ fn two_concurrent_add_entries_have_unique_ids() {
             "/spec-dev",
         ])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 1");
 
@@ -72,7 +71,6 @@ fn two_concurrent_add_entries_have_unique_ids() {
             "/spec-dev",
         ])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 2");
 
@@ -156,7 +154,6 @@ fn two_concurrent_add_entries_both_appear_in_backlog_md() {
             "/spec-dev",
         ])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 1");
 
@@ -171,7 +168,6 @@ fn two_concurrent_add_entries_both_appear_in_backlog_md() {
             "/spec-dev",
         ])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 2");
 

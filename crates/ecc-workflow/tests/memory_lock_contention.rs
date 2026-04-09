@@ -49,14 +49,12 @@ fn two_concurrent_daily_writes_both_appear() {
     let mut child1 = Command::new(&bin)
         .args(["memory-write", "daily", "plan", "feature-a", "dev"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 1");
 
     let mut child2 = Command::new(&bin)
         .args(["memory-write", "daily", "solution", "feature-b", "dev"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 2");
 
@@ -129,14 +127,12 @@ fn two_concurrent_memory_index_writes_both_appear() {
     let mut child1 = Command::new(&bin)
         .args(["memory-write", "memory-index"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 1");
 
     let mut child2 = Command::new(&bin)
         .args(["memory-write", "memory-index"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 2");
 
@@ -189,14 +185,12 @@ fn two_concurrent_work_item_writes_revision() {
     let mut child1 = Command::new(&bin)
         .args(["memory-write", "work-item", "plan", "test-feature", "dev"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 1");
 
     let mut child2 = Command::new(&bin)
         .args(["memory-write", "work-item", "plan", "test-feature", "dev"])
         .env("CLAUDE_PROJECT_DIR", project_dir)
-        .env_remove("ECC_WORKFLOW_BYPASS")
         .spawn()
         .expect("failed to spawn process 2");
 
