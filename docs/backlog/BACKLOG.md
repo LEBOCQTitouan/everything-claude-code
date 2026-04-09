@@ -39,10 +39,10 @@
 | BL-036 | Numeric quality scores for adversary agents | 9 | MEDIUM | adversary agents | implemented | 2026-03-21 |
 | BL-037 | AskUserQuestion preview field for comparisons | 9 | LOW | /spec, /design | implemented | 2026-03-21 |
 | BL-038 | TaskCreate in audit-full and doc-orchestrator | 9 | LOW | audit/doc commands | implemented | 2026-03-21 |
-| BL-039 | CronCreate suggestion for periodic commands | 9 | LOW | audit/review/verify | open | 2026-03-21 |
+| BL-039 | CronCreate suggestion for periodic commands | 9 | LOW | audit/review/verify | archived | 2026-03-21 |
 | BL-040 | Meta-steering rules for ECC development | 9 | LOW | rules/ecc/ (new) | implemented | 2026-03-21 |
 | BL-041 | CLAUDE_CODE_TASK_LIST_ID for cross-session persistence | 9 | LOW | workflow-init.sh | implemented | 2026-03-21 |
-| BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | open | 2026-03-21 |
+| BL-042 | Background mode for /audit-full | 9 | LOW | audit-full.md | archived | 2026-03-21 |
 | BL-043 | QA strategist agent | 9 | LOW | agents/ (new) | implemented | 2026-03-21 |
 | BL-044 | Add grill-me interview step to /backlog add workflow | — | LOW | direct edit | archived | 2026-03-21 |
 | BL-045 | Remove alias commands (plan, solution) and audit for further duplicates | — | MEDIUM | /spec-refactor | implemented | 2026-03-21 |
