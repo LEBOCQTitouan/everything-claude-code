@@ -234,8 +234,13 @@ mod tests {
 
     #[test]
     fn bypass_token_json_serialization() {
-        let t = BypassToken::new("pre:edit:guard", "session-1", "2026-04-06T10:00:00Z", "test")
-            .unwrap();
+        let t = BypassToken::new(
+            "pre:edit:guard",
+            "session-1",
+            "2026-04-06T10:00:00Z",
+            "test",
+        )
+        .unwrap();
         let json = serde_json::to_string(&t).unwrap();
         assert!(json.contains("\"hook_id\":\"pre:edit:guard\""));
         assert!(json.contains("\"session_id\":\"session-1\""));
@@ -257,5 +262,20 @@ mod tests {
         assert!(s.per_hook.is_empty());
         assert_eq!(s.total_accepted, 0);
         assert_eq!(s.total_refused, 0);
+    }
+
+    struct AlwaysAllowPolicy;
+
+    impl BypassPolicy for AlwaysAllowPolicy {
+        fn should_bypass(&self, _hook_id: &str, _session_id: &str) -> bool {
+            true
+        }
+    }
+
+    #[test]
+    fn bypass_policy_trait_compiles() {
+        let policy = AlwaysAllowPolicy;
+        assert!(policy.should_bypass("pre:edit:guard", "session-123"));
+        assert!(policy.should_bypass("stop:notify", "session-456"));
     }
 }
