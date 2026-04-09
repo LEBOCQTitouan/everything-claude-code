@@ -54,6 +54,11 @@ jobs:
           cargo install cargo-semver-checks --locked
           cargo semver-checks
 
+      - name: Supply chain audit (cargo-vet)
+        run: |
+          cargo install cargo-vet --locked
+          cargo vet check --locked
+
       - name: Validate components
         run: |
           ./target/release/ecc validate agents
