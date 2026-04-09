@@ -67,6 +67,13 @@ pub fn parse_datetime(s: &str) -> Option<DateTime> {
     })
 }
 
+/// Returns true if `y` is a leap year in the proleptic Gregorian calendar.
+///
+/// A year is a leap year if divisible by 4, except century years which must be divisible by 400.
+pub fn is_leap_year(y: u64) -> bool {
+    (y.is_multiple_of(4) && !(y.is_multiple_of(100))) || y.is_multiple_of(400)
+}
+
 /// Convert days since 1970-01-01 to (year, month, day).
 pub fn days_to_civil(days: u32) -> (u16, u8, u8) {
     // Algorithm from Howard Hinnant

@@ -3,6 +3,7 @@
 //! Orchestrates bypass grant, list, summary, prune, and gc operations.
 
 use ecc_domain::hook_runtime::bypass::{BypassDecision, BypassSummary, BypassToken, Verdict};
+use ecc_domain::time::is_leap_year;
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
@@ -134,14 +135,14 @@ fn days_to_date(days: u64) -> (u64, u64, u64) {
     let mut y = 1970;
     let mut remaining = days;
     loop {
-        let days_in_year = if is_leap(y) { 366 } else { 365 };
+        let days_in_year = if is_leap_year(y) { 366 } else { 365 };
         if remaining < days_in_year {
             break;
         }
         remaining -= days_in_year;
         y += 1;
     }
-    let days_in_months: [u64; 12] = if is_leap(y) {
+    let days_in_months: [u64; 12] = if is_leap_year(y) {
         [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     } else {
         [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -157,10 +158,6 @@ fn days_to_date(days: u64) -> (u64, u64, u64) {
     (y, (m + 1) as u64, remaining + 1)
 }
 
-#[allow(clippy::manual_is_multiple_of)]
-fn is_leap(y: u64) -> bool {
-    (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0)
-}
 
 /// Errors from bypass management operations.
 #[derive(Debug, thiserror::Error)]

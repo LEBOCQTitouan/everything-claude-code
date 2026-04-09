@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use ecc_domain::time::is_leap_year;
 use ecc_ports::log_store::{ExportFormat, LogEntry, LogQuery, LogStore, LogStoreError};
 use rusqlite::{Connection, params};
 
@@ -55,7 +56,7 @@ fn format_iso8601(secs: u64) -> String {
     // Gregorian calendar conversion
     let mut year = 1970u64;
     loop {
-        let days_in_year = if is_leap(year) { 366 } else { 365 };
+        let days_in_year = if is_leap_year(year) { 366 } else { 365 };
         if days < days_in_year {
             break;
         }
@@ -64,7 +65,7 @@ fn format_iso8601(secs: u64) -> String {
     }
     let months = [
         31u64,
-        if is_leap(year) { 29 } else { 28 },
+        if is_leap_year(year) { 29 } else { 28 },
         31,
         30,
         31,
@@ -88,9 +89,6 @@ fn format_iso8601(secs: u64) -> String {
     format!("{year:04}-{month:02}-{day:02}T{h:02}:{m:02}:{s:02}Z")
 }
 
-fn is_leap(year: u64) -> bool {
-    (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
-}
 
 impl LogStore for SqliteLogStore {
     fn search(&self, query: &LogQuery) -> Result<Vec<LogEntry>, LogStoreError> {

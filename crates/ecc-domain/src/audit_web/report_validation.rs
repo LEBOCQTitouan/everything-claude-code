@@ -39,17 +39,11 @@ const REQUIRED_SECTIONS: &[&str] = &[
     "Feature Opportunities",
 ];
 
-static SCORE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\*\*Strategic Fit\*\*:\s*(-?\d+)/5")
-        .expect("BUG: invalid SCORE_RE regex")
-});
+static SCORE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\*\*Strategic Fit\*\*:\s*(-?\d+)/5").expect("BUG: invalid SCORE_RE regex"));
 
-static SECTION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^#{1,6}\s+(.+)$").expect("BUG: invalid SECTION_RE regex"));
+static SECTION_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^#{1,6}\s+(.+)$").expect("BUG: invalid SECTION_RE regex"));
 
-static LINK_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").expect("BUG: invalid LINK_RE regex")
-});
+static LINK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").expect("BUG: invalid LINK_RE regex"));
 
 /// Validate a markdown report string for required sections, score ranges,
 /// and citation counts.

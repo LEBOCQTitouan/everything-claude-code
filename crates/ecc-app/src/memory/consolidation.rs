@@ -7,6 +7,7 @@ use ecc_domain::memory::{MemoryEntry, MemoryId, MemoryTier};
 use ecc_ports::memory_store::MemoryStore;
 
 use crate::memory::crud::{MemoryAppError, current_timestamp};
+use ecc_domain::time::is_leap_year;
 
 /// Result of a consolidation run.
 #[derive(Debug)]
@@ -44,9 +45,6 @@ pub fn iso8601_to_epoch_days(ts: &str) -> u64 {
     ymd_to_epoch_days(year, month, day)
 }
 
-fn is_leap_year(y: u64) -> bool {
-    (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400)
-}
 
 fn ymd_to_epoch_days(year: u64, month: u64, day: u64) -> u64 {
     let mut days = 0u64;

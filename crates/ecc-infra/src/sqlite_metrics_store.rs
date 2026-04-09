@@ -7,6 +7,7 @@ use std::time::Duration;
 use ecc_domain::metrics::{
     CommitGateKind, HarnessMetrics, MetricAggregator, MetricEvent, MetricEventType, MetricOutcome,
 };
+use ecc_domain::time::is_leap_year;
 use ecc_ports::metrics_store::{
     MetricsExportFormat, MetricsQuery, MetricsStore, MetricsStoreError,
 };
@@ -109,7 +110,7 @@ fn format_iso8601(secs: u64) -> String {
 
     let mut year = 1970u64;
     loop {
-        let days_in_year = if is_leap(year) { 366 } else { 365 };
+        let days_in_year = if is_leap_year(year) { 366 } else { 365 };
         if days < days_in_year {
             break;
         }
@@ -118,17 +119,9 @@ fn format_iso8601(secs: u64) -> String {
     }
     let months = [
         31u64,
-        if is_leap(year) { 29 } else { 28 },
-        31,
-        30,
-        31,
-        30,
-        31,
-        31,
-        30,
-        31,
-        30,
-        31,
+        if is_leap_year(year) { 29 } else { 28 },
+        31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+
     ];
     let mut month = 1u64;
     for &dim in &months {
@@ -142,9 +135,6 @@ fn format_iso8601(secs: u64) -> String {
     format!("{year:04}-{month:02}-{day:02}T{h:02}:{m:02}:{s:02}Z")
 }
 
-fn is_leap(year: u64) -> bool {
-    (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400)
-}
 
 impl MetricsStore for SqliteMetricsStore {
     fn record(&self, event: &MetricEvent) -> Result<i64, MetricsStoreError> {
