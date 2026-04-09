@@ -74,6 +74,7 @@ mod tests {
         let store = InMemoryConfigStore::new();
         let config = RawEccConfig {
             log_level: Some("info".to_owned()),
+            ..Default::default()
         };
         store.save_global(&config).unwrap();
         let loaded = store.load_global().unwrap();
@@ -91,6 +92,7 @@ mod tests {
     fn with_local_builder_sets_local_config() {
         let local_config = RawEccConfig {
             log_level: Some("debug".to_owned()),
+            ..Default::default()
         };
         let store = InMemoryConfigStore::new().with_local(local_config.clone());
         let result = store.load_local().unwrap();
