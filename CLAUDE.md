@@ -9,7 +9,7 @@ A collection of production-ready agents, skills, hooks, commands, rules, teams, 
 ## Running Tests
 
 ```bash
-cargo test              # Run all Rust tests (2449 tests)
+cargo test              # Run all Rust tests (3028 tests)
 cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (22 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
@@ -44,7 +44,7 @@ ecc docs coverage --scope <path>     Doc comment coverage per module
 ecc diagram triggers --changed-files Evaluate diagram generation heuristics
 ecc commit lint --staged             Validate atomic commit concerns
 ecc hook <id> [profiles]             Run a hook by ID
-ecc backlog next-id|reindex          Backlog operations
+ecc backlog next-id|reindex|list     Backlog operations (list --available filters in-progress)
 ecc worktree gc|status               Worktree lifecycle
 ecc status [--json]                  Diagnostic snapshot (versions, phase, components)
 ecc dev on|off|switch                Toggle/switch ECC config
