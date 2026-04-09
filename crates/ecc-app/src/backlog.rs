@@ -19,7 +19,10 @@ fn load_entries(
 ) -> Result<Vec<BacklogEntry>, BacklogError> {
     let paths = fs
         .read_dir(backlog_dir)
-        .map_err(|e| BacklogError::IoError(e.to_string()))?;
+        .map_err(|e| BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: e.to_string(),
+        })?;
 
     let mut entries = Vec::new();
     for path in &paths {
@@ -56,7 +59,10 @@ pub fn next_id(fs: &dyn FileSystem, backlog_dir: &Path) -> Result<String, Backlo
     }
     let paths = fs
         .read_dir(backlog_dir)
-        .map_err(|e| BacklogError::IoError(e.to_string()))?;
+        .map_err(|e| BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: e.to_string(),
+        })?;
 
     let max_id = paths
         .iter()
@@ -148,12 +154,16 @@ pub fn reindex(
     // Atomic write: temp file + rename, with cleanup on failure
     let tmp_path = backlog_dir.join("BACKLOG.md.tmp");
     fs.write(&tmp_path, &output)
-        .map_err(|e| BacklogError::IoError(format!("failed to write temp file: {e}")))?;
+        .map_err(|e| BacklogError::Io {
+            path: tmp_path.display().to_string(),
+            message: format!("failed to write temp file: {e}"),
+        })?;
     if let Err(e) = fs.rename(&tmp_path, &backlog_path) {
         let _ = fs.remove_file(&tmp_path); // best-effort cleanup
-        return Err(BacklogError::IoError(format!(
-            "failed to rename temp file: {e}"
-        )));
+        return Err(BacklogError::Io {
+            path: tmp_path.display().to_string(),
+            message: format!("failed to rename temp file: {e}"),
+        });
     }
 
     Ok(None)

@@ -18,8 +18,8 @@ pub enum BacklogError {
     #[error("query must not be empty")]
     EmptyQuery,
 
-    #[error("I/O error: {0}")]
-    IoError(String),
+    #[error("I/O error at {path}: {message}")]
+    Io { path: String, message: String },
 }
 
 /// Backlog entry status with typed variants and Unknown fallback.
@@ -56,7 +56,7 @@ impl BacklogStatus {
 }
 
 /// A parsed backlog entry from a BL-*.md file's YAML frontmatter.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BacklogEntry {
     pub id: String,
     pub title: String,
@@ -177,18 +177,51 @@ mod tests {
 
     #[test]
     fn backlog_error_variants() {
-        // Verify all 5 variants exist and have Display
         let errors: Vec<BacklogError> = vec![
             BacklogError::NoFrontmatter,
             BacklogError::MalformedYaml("test".into()),
             BacklogError::DirectoryNotFound(PathBuf::from("/tmp")),
             BacklogError::EmptyQuery,
-            BacklogError::IoError("test".into()),
+            BacklogError::Io {
+                path: "/tmp/test".into(),
+                message: "not found".into(),
+            },
         ];
         assert_eq!(errors.len(), 5);
         for err in &errors {
             assert!(!format!("{err}").is_empty());
         }
+    }
+
+    #[test]
+    fn backlog_error_io_variant() {
+        let err = BacklogError::Io {
+            path: "/docs/backlog".into(),
+            message: "permission denied".into(),
+        };
+        let display = format!("{err}");
+        assert!(display.contains("/docs/backlog"));
+        assert!(display.contains("permission denied"));
+    }
+
+    #[test]
+    fn serialize_backlog_entry() {
+        let entry = BacklogEntry {
+            id: "BL-001".into(),
+            title: "Test entry".into(),
+            status: BacklogStatus::Open,
+            created: "2026-04-07".into(),
+            tier: None,
+            scope: Some("LOW".into()),
+            target: None,
+            target_command: None,
+            tags: vec!["test".into()],
+        };
+        let json = serde_json::to_string(&entry).unwrap();
+        assert!(json.contains("BL-001"));
+        assert!(json.contains("Test entry"));
+        let roundtrip: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(roundtrip["id"], "BL-001");
     }
 
     #[test]
