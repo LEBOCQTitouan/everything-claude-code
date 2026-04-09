@@ -14,6 +14,7 @@ cargo nextest run       # Faster test runner (~60% speedup, per-test isolation)
 bats tests/statusline/  # Run statusline Bats tests (22 tests)
 cargo clippy -- -D warnings  # Lint with zero warnings
 cargo deny check        # Supply chain audit (licenses + advisories)
+cargo vet check          # Supply chain audit (human-review verification)
 cargo llvm-cov --workspace   # Coverage report (works on macOS)
 cargo build --release   # Build release binary
 cargo mutants -p ecc-domain   # Mutation testing (domain crate)

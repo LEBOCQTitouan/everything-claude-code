@@ -28,6 +28,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **rustyline 15 → 17 (BL-114)**: Bumped rustyline dependency from v15 to v17. No breaking API changes. Replaced `Result<Self, String>` with `Result<Self, TerminalError>` in `RustylineInput::new()`, cleaned up `claw.rs` caller to use `?` directly.
 
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
+
 ### Refactored
 
 - **Bypass consolidation — remove ECC_WORKFLOW_BYPASS**: Removed the deprecated `ECC_WORKFLOW_BYPASS` env-var kill-switch (ADR-0056 completed). All bypass now uses auditable token system via `ecc bypass grant` (ADR-0055). Extracted `bypass_interceptor` from `dispatch()`, added `check_token()` to `BypassStore` port, introduced `HookPorts::test_default()` (eliminates 41 boilerplate sites), added `BypassPolicy` domain trait. Cleaned 50+ references across docs, commands, skills, patterns, and tests.
@@ -55,6 +59,10 @@ Generated from git conventional commits. Grouped by type and version.
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
 
 ### Refactored
 
@@ -125,6 +133,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
 
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -166,6 +178,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
 
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -200,6 +216,10 @@ Generated from git conventional commits. Grouped by type and version.
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
 
 ### Refactored
 
@@ -241,6 +261,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
 
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -279,6 +303,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
 
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -316,6 +344,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
 
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
+
 ### Refactored
 
 - **BL-125 Token Optimization Wave 2**: Extracted TodoWrite boilerplate from 14 files (implicit convention). Trimmed performance.md (45→22 lines) and agents.md (14→7 lines). Verified language rule conditional loading (all 13 dirs have correct frontmatter). CLAUDE.md CLI reference already slim (13 lines).
@@ -349,6 +381,10 @@ Generated from git conventional commits. Grouped by type and version.
 - **BL-043 QA Strategist Agent**: New `qa-strategist` agent for independent test plan validation. Reviews coverage gaps, edge cases, boundary conditions, integration adequacy, E2E scenarios. Opus model, optional invocation between /design and /implement.
 
 - **BL-038 TaskCreate in audit/doc orchestrators**: Added TaskCreate/TaskUpdate to audit-full command and both orchestrator agents (audit-orchestrator, doc-orchestrator). One task per audit domain or pipeline phase for spinner UX during 10+ minute operations.
+
+### Added
+
+- **cargo-vet supply chain integration (BL-136)**: Added cargo-vet for SLSA Level 2 compliance. Imported Mozilla + Google audit sets. Blocking CI check. Policy in supply-chain/README.md.
 
 ### Refactored
 
