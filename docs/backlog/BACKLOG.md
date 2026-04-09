@@ -138,7 +138,7 @@
 | BL-139 | Monitor Claude Code Agent Teams API for ECC integration | — | LOW | /spec-dev | implemented | 2026-04-09 |
 | BL-140 | Competitor analysis: Claw Code and Goose agent frameworks | — | LOW | /spec-dev | open | 2026-04-09 |
 | BL-141 | Monitor serde-saphyr for 0.1.0 stability release | — | LOW | direct edit | open | 2026-04-09 |
-| BL-142 | Add docs/cartography/ to phase-gate allowlist | — | LOW | direct edit | open | 2026-04-09 |
+| BL-142 | Add docs/cartography/ to phase-gate allowlist | — | LOW | direct edit | implemented | 2026-04-09 |
 
 ## Dependency Graph
 
