@@ -244,26 +244,7 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    fn ok(stdout: &str) -> CommandOutput {
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    fn ok(stdout: &str) -> CommandOutput {
         CommandOutput {
             stdout: stdout.to_string(),
             stderr: String::new(),
@@ -282,7 +263,7 @@ mod tests {
             .on_args("git", &["worktree", "list", "--porcelain"], ok(""));
         let env = MockEnvironment::new().with_home("/home/user");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // session_start should not panic — gc runs and completes
         let result = session_start("{}", &ports);
@@ -299,7 +280,7 @@ mod tests {
             .on_args("git", &["worktree", "list", "--porcelain"], ok(""));
         let env = MockEnvironment::new().with_home("/home/user");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // gc with no worktrees = nothing to skip, but no crash
         let result = session_start("{}", &ports);
@@ -315,7 +296,7 @@ mod tests {
         // No mocks = all commands return ShellError::NotFound
         let env = MockEnvironment::new().with_home("/home/user");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // session_start should succeed even when gc can't run
         let result = session_start("{}", &ports);

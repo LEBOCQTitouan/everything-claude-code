@@ -54,26 +54,7 @@ pub fn start_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    /// PC-016: Prints pending count and /doc-suite hint when deltas exist.
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    /// PC-016: Prints pending count and /doc-suite hint when deltas exist.
     #[test]
     fn prints_pending_count() {
         let fs = InMemoryFileSystem::new()
@@ -83,7 +64,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = start_cartography("{}", &ports);
 
@@ -107,7 +88,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = start_cartography("{}", &ports);
 
@@ -125,7 +106,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new(); // No CLAUDE_PROJECT_DIR
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = start_cartography("{}", &ports);
 

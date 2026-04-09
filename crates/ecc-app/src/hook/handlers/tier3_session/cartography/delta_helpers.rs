@@ -11,8 +11,9 @@
 use std::path::{Path, PathBuf};
 
 use ecc_domain::cartography::{
+    ChangedFile, ElementEntry, ElementType, ProjectType, SessionDelta,
     build_cross_reference_matrix, derive_slug, infer_element_type_from_path, validate_flow,
-    validate_journey, ChangedFile, ElementEntry, ElementType, ProjectType, SessionDelta,
+    validate_journey,
 };
 use serde::Serialize;
 use tracing::warn;

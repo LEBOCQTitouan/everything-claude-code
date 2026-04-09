@@ -191,26 +191,7 @@ mod tests {
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    // --- oath_reflection ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- oath_reflection ---
 
     #[test]
     fn oath_reflection_summarizes_mixed_commits() {
@@ -230,7 +211,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = oath_reflection("{}", &ports);
         assert!(result.stderr.contains("1 features shipped"));
@@ -253,7 +234,7 @@ mod tests {
         );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = oath_reflection("{}", &ports);
         assert!(result.stderr.is_empty());
@@ -265,7 +246,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = oath_reflection("{}", &ports);
         assert!(result.stderr.is_empty());
@@ -293,7 +274,7 @@ mod tests {
             .with_home("/home/test")
             .with_var("CLAUDE_SESSION_ID", "test-session");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = craft_velocity("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -311,7 +292,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = craft_velocity("{}", &ports);
         assert!(result.stderr.is_empty());
@@ -331,7 +312,7 @@ mod tests {
         );
         let env = MockEnvironment::new().with_home("/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = craft_velocity("{}", &ports);
         assert!(result.stderr.is_empty());

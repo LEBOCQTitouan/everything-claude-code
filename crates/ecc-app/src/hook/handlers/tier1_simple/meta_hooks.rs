@@ -47,26 +47,7 @@ pub fn session_end_marker(stdin: &str, _ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    // --- check_hook_enabled ---
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    // --- check_hook_enabled ---
 
     #[test]
     fn check_hook_enabled_enabled_hook_returns_yes() {
@@ -74,7 +55,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = check_hook_enabled("some-hook", &ports);
         assert_eq!(result.stdout, "yes");
@@ -87,7 +68,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "some-hook");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = check_hook_enabled("some-hook", &ports);
         assert_eq!(result.stdout, "no");
@@ -99,7 +80,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "some-hook");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // empty check_id → always enabled regardless of disabled list
         let result = check_hook_enabled("", &ports);
@@ -112,7 +93,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "json-hook");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"hook_id":"json-hook"}"#;
         let result = check_hook_enabled(stdin, &ports);
@@ -127,7 +108,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = session_end_marker("session data", &ports);
         assert_eq!(result.stdout, "session data");

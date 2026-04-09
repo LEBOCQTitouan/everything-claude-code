@@ -393,31 +393,13 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 mod tests {
     use super::*;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
     #[test]
     fn disabled_hook_passes_through() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "my-hook");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "my-hook".to_string(),
@@ -437,7 +419,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "nonexistent:hook".to_string(),
@@ -469,7 +451,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_DISABLED_HOOKS", "");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "".to_string(),
@@ -491,7 +473,7 @@ mod tests {
             let shell = MockExecutor::new();
             let env = MockEnvironment::new();
             let term = BufferedTerminal::new();
-            let ports = make_ports(&fs, &shell, &env, &term);
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
             let ctx = HookContext {
                 hook_id: "stop:cartography".to_string(),
@@ -512,7 +494,7 @@ mod tests {
             let shell = MockExecutor::new();
             let env = MockEnvironment::new();
             let term = BufferedTerminal::new();
-            let ports = make_ports(&fs, &shell, &env, &term);
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
             let ctx = HookContext {
                 hook_id: "start:cartography".to_string(),
@@ -534,7 +516,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_var("ECC_HOOK_PROFILE", "minimal");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "stop:check-console-log".to_string(),
@@ -564,15 +546,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = HookPorts {
-            fs: &fs,
-            shell: &shell,
-            env: &env,
-            terminal: &term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        };
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "nonexistent:hook:for-pc003".to_string(),
@@ -730,15 +704,7 @@ mod tests {
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
 
-        let ports = HookPorts {
-            fs: &fs,
-            shell: &shell,
-            env: &env,
-            terminal: &term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None, // explicitly None
-        };
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "check:hook:enabled".to_string(),
@@ -829,15 +795,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = HookPorts {
-            fs: &fs,
-            shell: &shell,
-            env: &env,
-            terminal: &term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        };
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let ctx = HookContext {
             hook_id: "nonexistent:hook:for-pc039".to_string(),
@@ -912,7 +870,7 @@ mod tests {
             .with_var("CLAUDE_SESSION_ID", session_id)
             .with_var("HOME", "/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // Use pre:edit:boundary-crossing with a domain file + infra import → triggers exit_code=2
         let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
@@ -946,7 +904,7 @@ mod tests {
             .with_var("CLAUDE_SESSION_ID", session_id)
             .with_var("HOME", "/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
         let ctx = HookContext {
@@ -976,7 +934,7 @@ mod tests {
         // No CLAUDE_SESSION_ID in env
         let env = MockEnvironment::new().with_var("HOME", "/home/test");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
         let ctx = HookContext {
@@ -1018,7 +976,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         // Check registry has a cartography handler registered
         let registry = build_handler_registry();

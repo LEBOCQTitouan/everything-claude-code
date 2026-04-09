@@ -85,26 +85,7 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::shell::CommandOutput;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    fn git_output(stdout: &str) -> CommandOutput {
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    fn git_output(stdout: &str) -> CommandOutput {
         CommandOutput {
             stdout: stdout.to_string(),
             stderr: String::new(),
@@ -137,7 +118,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_worktree_write_guard(r#"{"file_path":"src/main.rs"}"#, &ports);
         assert_eq!(result.exit_code, 2);
@@ -162,7 +143,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_worktree_write_guard(r#"{"file_path":"src/main.rs"}"#, &ports);
         assert_eq!(result.exit_code, 0);
@@ -176,7 +157,7 @@ mod tests {
         // Handler no longer checks ECC_WORKFLOW_BYPASS — bypass is at dispatch level
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_worktree_write_guard(r#"{"file_path":"src/main.rs"}"#, &ports);
         assert_eq!(result.exit_code, 0);
@@ -190,7 +171,7 @@ mod tests {
             MockExecutor::new().on_args("git", &["rev-parse", "--show-toplevel"], git_failure());
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_worktree_write_guard(r#"{"file_path":"src/main.rs"}"#, &ports);
         assert_eq!(result.exit_code, 0);
@@ -213,7 +194,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = is_in_worktree(&ports);
         assert_eq!(result, Ok(true));
@@ -235,7 +216,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = is_in_worktree(&ports);
         assert_eq!(result, Ok(false));
@@ -258,7 +239,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_worktree_write_guard(r#"{"file_path":"src/main.rs"}"#, &ports);
         assert_eq!(result.exit_code, 0);
@@ -281,7 +262,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = pre_worktree_write_guard(r#"{"file_path":"src/main.rs"}"#, &ports);
         assert_eq!(result.exit_code, 2);
@@ -306,7 +287,7 @@ mod tests {
             );
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result =
             pre_worktree_write_guard(r#"{"file_path":".github/workflows/ci.yml"}"#, &ports);

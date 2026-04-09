@@ -122,26 +122,7 @@ mod tests {
     use super::*;
     use crate::hook::HookPorts;
     use ecc_ports::fs::FileSystem;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    #[test]
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    #[test]
     fn daily_summary_creates_file_when_missing() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
@@ -149,7 +130,7 @@ mod tests {
             .with_var("CLAUDE_PROJECT_DIR", "/home/user/myproject")
             .with_home("/home/user");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = daily_summary("{}", &ports);
         assert_eq!(result.exit_code, 0);
@@ -188,7 +169,7 @@ mod tests {
         );
         fs.write(&file_path, &existing).unwrap();
 
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
         let result = daily_summary("{}", &ports);
         assert_eq!(result.exit_code, 0);
 
@@ -203,7 +184,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_home("/home/user");
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let result = daily_summary("hello", &ports);
         assert_eq!(result.stdout, "hello");

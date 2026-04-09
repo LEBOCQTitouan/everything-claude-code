@@ -46,32 +46,13 @@ pub fn pre_bash_dev_server_block(stdin: &str, ports: &HookPorts<'_>) -> HookResu
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
-
-    fn make_ports<'a>(
-        fs: &'a InMemoryFileSystem,
-        shell: &'a MockExecutor,
-        env: &'a MockEnvironment,
-        term: &'a BufferedTerminal,
-    ) -> HookPorts<'a> {
-        HookPorts {
-            fs,
-            shell,
-            env,
-            terminal: term,
-            cost_store: None,
-            bypass_store: None,
-            metrics_store: None,
-        }
-    }
-
-    #[test]
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};    #[test]
     fn dev_server_blocks_npm_run_dev() {
         let fs = InMemoryFileSystem::new();
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"command":"npm run dev"}}"#;
         let result = pre_bash_dev_server_block(stdin, &ports);
@@ -85,7 +66,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"command":"tmux new-session -d -s dev \"npm run dev\""}}"#;
         let result = pre_bash_dev_server_block(stdin, &ports);
@@ -99,7 +80,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new();
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"command":"npm test"}}"#;
         let result = pre_bash_dev_server_block(stdin, &ports);
@@ -112,7 +93,7 @@ mod tests {
         let shell = MockExecutor::new();
         let env = MockEnvironment::new().with_platform(ecc_ports::env::Platform::Windows);
         let term = BufferedTerminal::new();
-        let ports = make_ports(&fs, &shell, &env, &term);
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
 
         let stdin = r#"{"tool_input":{"command":"npm run dev"}}"#;
         let result = pre_bash_dev_server_block(stdin, &ports);
