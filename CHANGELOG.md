@@ -30,6 +30,9 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### CI
 - **Coverage gate (BL-135)**: Added `cargo-llvm-cov` coverage job to CI pipeline. Enforces ≥80% workspace function coverage via `--fail-under-functions 80`. Path-filtered to skip docs-only PRs, separate cache key for instrumented builds, LCOV artifact upload.
+### Fixed
+
+- **Audit HIGH findings remediation (full-2026-04-09)**: Fixed time-dependent prune test via Clock injection into `SqliteBypassStore` with parameterized SQL (no more `format!` interpolation). Converted 11 swallowed `let _ =` errors to `tracing::warn` across ecc-app and ecc-workflow. Standardized all regex on `LazyLock<Regex>` (15 inline + 4 OnceLock → LazyLock). Extracted shared `is_leap_year` to `ecc-domain::time`, deduplicating 5 copies. Decomposed 6 oversized files: `validate/patterns.rs` (2,355→6 files), `tests_helpers.rs` (2,009→4), `orchestrator_tests.rs` (962→4), `sqlite_memory.rs` (907→4), `hook/mod.rs` (873→4), `merge.rs` (809→2). All files now under 800 lines.
 
 ### Upgraded
 
