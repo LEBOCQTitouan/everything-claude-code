@@ -152,14 +152,13 @@ fn transition_illegal_exits_nonzero() {
     );
 }
 
-/// bypass_env_var: when ECC_WORKFLOW_BYPASS=1, all subcommands exit 0 immediately with no output
-/// and without creating or modifying state.json.
+/// bypass_env_var: ECC_WORKFLOW_BYPASS=1 is ignored by ecc-workflow — init runs normally,
+/// exits 0, and creates state.json regardless of the env var.
 #[test]
 fn bypass_env_var() {
     let bin = common::binary_path();
     assert!(bin.exists(), "ecc-workflow binary not found at {:?}", bin);
 
-    // --- Test 1: init with bypass ---
     let temp_dir = tempfile::tempdir().unwrap();
 
     let output = Command::new(&bin)
@@ -169,58 +168,21 @@ fn bypass_env_var() {
         .output()
         .expect("failed to execute ecc-workflow init with bypass");
 
+    // ECC_WORKFLOW_BYPASS is ignored: binary runs normally, exits 0
     assert_eq!(
         output.status.code(),
         Some(0),
-        "expected exit 0 with ECC_WORKFLOW_BYPASS=1, got: {:?}",
-        output.status.code()
+        "expected exit 0 with ECC_WORKFLOW_BYPASS=1, got: {:?}\nstdout: {}\nstderr: {}",
+        output.status.code(),
+        std::str::from_utf8(&output.stdout).unwrap_or(""),
+        std::str::from_utf8(&output.stderr).unwrap_or(""),
     );
 
-    let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
-    assert!(
-        stdout.trim().is_empty(),
-        "expected empty stdout with ECC_WORKFLOW_BYPASS=1, got: '{stdout}'"
-    );
-
-    let stderr = std::str::from_utf8(&output.stderr).unwrap_or("");
-    assert!(
-        stderr.trim().is_empty(),
-        "expected empty stderr with ECC_WORKFLOW_BYPASS=1, got: '{stderr}'"
-    );
-
+    // state.json MUST be created — the env var does not suppress normal execution
     let state_path = temp_dir.path().join(".claude/workflow/state.json");
     assert!(
-        !state_path.exists(),
-        "state.json must NOT be created when ECC_WORKFLOW_BYPASS=1"
-    );
-
-    // --- Test 2: transition with bypass ---
-    let temp_dir2 = tempfile::tempdir().unwrap();
-
-    let output2 = Command::new(&bin)
-        .args(["transition", "solution"])
-        .env("CLAUDE_PROJECT_DIR", temp_dir2.path())
-        .env("ECC_WORKFLOW_BYPASS", "1")
-        .output()
-        .expect("failed to execute ecc-workflow transition with bypass");
-
-    assert_eq!(
-        output2.status.code(),
-        Some(0),
-        "expected exit 0 for transition with ECC_WORKFLOW_BYPASS=1, got: {:?}",
-        output2.status.code()
-    );
-
-    let stdout2 = std::str::from_utf8(&output2.stdout).unwrap_or("");
-    assert!(
-        stdout2.trim().is_empty(),
-        "expected empty stdout for transition with ECC_WORKFLOW_BYPASS=1, got: '{stdout2}'"
-    );
-
-    let stderr2 = std::str::from_utf8(&output2.stderr).unwrap_or("");
-    assert!(
-        stderr2.trim().is_empty(),
-        "expected empty stderr for transition with ECC_WORKFLOW_BYPASS=1, got: '{stderr2}'"
+        state_path.exists(),
+        "state.json must be created when ECC_WORKFLOW_BYPASS=1 (env var is ignored by ecc-workflow)"
     );
 }
 

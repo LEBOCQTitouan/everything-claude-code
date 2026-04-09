@@ -208,10 +208,6 @@ fn init_tracing(verbose: u8, quiet: bool) {
 }
 
 fn main() {
-    if std::env::var("ECC_WORKFLOW_BYPASS").as_deref() == Ok("1") {
-        std::process::exit(0);
-    }
-
     let cli = Cli::parse();
 
     init_tracing(cli.verbose, cli.quiet);
