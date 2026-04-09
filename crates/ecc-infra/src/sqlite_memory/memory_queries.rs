@@ -1,7 +1,7 @@
 //! CRUD and query implementations for [`SqliteMemoryStore`].
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use ecc_domain::memory::{MemoryEntry, MemoryId, MemoryStats, MemoryTier};
 use ecc_ports::memory_store::MemoryStoreError;
@@ -78,7 +78,7 @@ pub(super) fn sanitize_fts_query(query: &str) -> String {
 
 /// Full-text search using the FTS5 index.
 pub(super) fn search_fts(
-    path: &PathBuf,
+    path: &Path,
     query: &str,
     limit: usize,
 ) -> Result<Vec<MemoryEntry>, MemoryStoreError> {
@@ -110,7 +110,7 @@ pub(super) fn search_fts(
 
 /// List entries filtered by tier, tag, and/or project_id.
 pub(super) fn list_filtered(
-    path: &PathBuf,
+    path: &Path,
     tier: Option<MemoryTier>,
     tag: Option<&str>,
     project_id: Option<&str>,
@@ -143,7 +143,7 @@ pub(super) fn list_filtered(
 
 /// List the most recently updated entries up to `limit`.
 pub(super) fn list_recent(
-    path: &PathBuf,
+    path: &Path,
     limit: usize,
 ) -> Result<Vec<MemoryEntry>, MemoryStoreError> {
     let conn = open_connection(path)?;
@@ -166,7 +166,7 @@ pub(super) fn list_recent(
 
 /// Count entries grouped by tier.
 pub(super) fn count_by_tier(
-    path: &PathBuf,
+    path: &Path,
 ) -> Result<HashMap<MemoryTier, usize>, MemoryStoreError> {
     let conn = open_connection(path)?;
     let mut stmt = conn
@@ -224,7 +224,7 @@ pub(super) fn stats(path: &PathBuf) -> Result<MemoryStats, MemoryStoreError> {
 
 /// Find an entry by its source path.
 pub(super) fn get_by_source_path(
-    path: &PathBuf,
+    path: &Path,
     source_path: &str,
 ) -> Result<Option<MemoryEntry>, MemoryStoreError> {
     let conn = open_connection(path)?;
@@ -245,7 +245,7 @@ pub(super) fn get_by_source_path(
 
 /// Delete all stale entries older than `days` days and return them.
 pub(super) fn delete_stale_older_than(
-    path: &PathBuf,
+    path: &Path,
     days: u64,
 ) -> Result<Vec<MemoryEntry>, MemoryStoreError> {
     let conn = open_connection(path)?;
@@ -279,7 +279,7 @@ pub(super) fn delete_stale_older_than(
 
 /// Merge two entries: update `keep_id` with `merged_content`, delete `remove_id`.
 pub(super) fn merge_entries(
-    path: &PathBuf,
+    path: &Path,
     keep_id: MemoryId,
     remove_id: MemoryId,
     merged_content: &str,
