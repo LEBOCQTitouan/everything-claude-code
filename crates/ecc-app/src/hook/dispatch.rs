@@ -195,6 +195,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     let session_id = crate::metrics_session::resolve_session_id(
         ports.env.var("CLAUDE_SESSION_ID").as_deref(),
     );
+    // TODO(BL-133): Replace with ports.clock.now_epoch_secs() when HookPorts gains Clock field
     let timestamp = {
         use std::time::{SystemTime, UNIX_EPOCH};
         let secs = SystemTime::now()
