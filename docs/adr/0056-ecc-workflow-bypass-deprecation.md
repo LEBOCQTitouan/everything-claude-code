@@ -1,7 +1,7 @@
 # ADR-0056: Deprecation of ECC_WORKFLOW_BYPASS
 
 ## Status
-Accepted (2026-04-06)
+Completed (2026-04-09)
 
 ## Context
 `ECC_WORKFLOW_BYPASS=1` exists in three code paths. The new auditable bypass system (ADR-0055) replaces it.
