@@ -150,6 +150,17 @@ impl<'a> HookPorts<'a> {
     }
 }
 
+/// Bypass policy that always denies bypass requests.
+///
+/// Used as a safe default when no bypass mechanism is configured.
+pub struct AlwaysDenyPolicy;
+
+impl ecc_domain::hook_runtime::bypass::BypassPolicy for AlwaysDenyPolicy {
+    fn should_bypass(&self, _hook_id: &str, _session_id: &str) -> bool {
+        false
+    }
+}
+
 /// Truncate stdin payload to MAX_STDIN bytes.
 pub fn truncate_stdin(raw: &str) -> &str {
     if raw.len() <= MAX_STDIN {
@@ -392,6 +403,7 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ecc_domain::hook_runtime::bypass::BypassPolicy;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
     #[test]
     fn disabled_hook_passes_through() {
