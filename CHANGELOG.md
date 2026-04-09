@@ -10,6 +10,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **prd-to-plan skill (BL-016)**: New skill absorbing community `blueprint` skill. Dual input modes: PRD file path or one-liner objective. Tracer-bullet vertical-slice decomposition with cold-start briefs, dependency graph, and parallel step detection. Output to `docs/plans/`. (ADR 0060)
+
 - **Backlog in-progress status sync**: Promoted backlog to full hexagonal concern with 3 ISP-compliant port traits (`BacklogEntryStore`, `BacklogLockStore`, `BacklogIndexStore`). New `ecc backlog list --available` CLI command derives in-progress status from worktree existence. `ecc backlog reindex` now reconciles status from active worktrees and lock files. Consolidated duplicated logic from `ecc-workflow`. Structural cleanup: moved `ShellWorktreeManager` to ecc-infra, split oversized `worktree.rs` and `merge.rs`. (ADR 0059)
 
 ### Added
