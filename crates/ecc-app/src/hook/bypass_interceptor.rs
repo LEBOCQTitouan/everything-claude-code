@@ -13,15 +13,62 @@ use super::HookResult;
 /// - If `bypass_store.check_token()` returns a token, records an Applied decision and returns passthrough
 /// - Otherwise returns exit 2 with augmented stderr
 pub fn intercept(
-    _hook_id: &str,
-    _stdin: &str,
+    hook_id: &str,
+    stdin: &str,
     result: HookResult,
-    _session_id: Option<&str>,
-    _bypass_store: Option<&dyn BypassStore>,
-    _start: std::time::Instant,
+    session_id: Option<&str>,
+    bypass_store: Option<&dyn BypassStore>,
+    start: std::time::Instant,
 ) -> HookResult {
-    // Stub: return result unchanged
-    result
+    if result.exit_code != 2 {
+        return result;
+    }
+
+    // Append bypass-available hint to stderr
+    let mut stderr = result.stderr.clone();
+    stderr.push_str(&format!(
+        "[Bypass available: {hook_id}] Use 'ecc bypass grant --hook {hook_id} --reason <reason>' to bypass\n",
+    ));
+
+    // No valid session ID — cannot check tokens
+    let sid = match session_id {
+        Some(s) if !s.is_empty() && s != "unknown" => s,
+        _ => {
+            tracing::debug!(hook_id, "no session_id — bypass tokens unavailable");
+            return HookResult {
+                exit_code: 2,
+                stdout: result.stdout,
+                stderr,
+            };
+        }
+    };
+
+    // Check bypass token via store
+    if let Some(store) = bypass_store {
+        if let Some(token) = store.check_token(hook_id, sid) {
+            // Record Applied decision
+            if let Ok(decision) = ecc_domain::hook_runtime::bypass::BypassDecision::new(
+                hook_id,
+                &token.reason,
+                sid,
+                ecc_domain::hook_runtime::bypass::Verdict::Applied,
+                &token.granted_at,
+            ) {
+                let _ = store.record(&decision);
+            }
+
+            let duration_ms = start.elapsed().as_millis() as u64;
+            tracing::info!(hook_id, "bypass token found — allowing");
+            tracing::debug!(duration_ms, hook_id, "hook bypassed via token");
+            return HookResult::passthrough(stdin);
+        }
+    }
+
+    HookResult {
+        exit_code: 2,
+        stdout: result.stdout,
+        stderr,
+    }
 }
 
 #[cfg(test)]
