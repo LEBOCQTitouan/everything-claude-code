@@ -1,6 +1,9 @@
 //! CLAUDE.md numeric claim extraction and validation.
 
 use serde::Serialize;
+use std::sync::LazyLock;
+
+static CLAIM_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex::Regex::new(r"\b(\d+)\s+(tests?|crates?)\b").expect("BUG: invalid CLAIM_RE regex"));
 
 /// A numeric claim extracted from CLAUDE.md.
 #[derive(Debug, Clone, Serialize)]
@@ -14,7 +17,6 @@ pub struct CountClaim {
 /// Extract numeric claims like "997 tests" or "9 crates" from CLAUDE.md content.
 pub fn extract_claims(content: &str) -> Vec<CountClaim> {
     let mut claims = Vec::new();
-    let re = regex::Regex::new(r"\b(\d+)\s+(tests?|crates?)\b").unwrap_or_else(|_| unreachable!());
 
     // Skip code blocks
     let mut in_code_block = false;
@@ -27,7 +29,7 @@ pub fn extract_claims(content: &str) -> Vec<CountClaim> {
             continue;
         }
 
-        for cap in re.captures_iter(line) {
+        for cap in CLAIM_RE.captures_iter(line) {
             let num: u64 = cap[1].parse().unwrap_or(0);
             let _label = &cap[2];
             let text = cap[0].to_string();

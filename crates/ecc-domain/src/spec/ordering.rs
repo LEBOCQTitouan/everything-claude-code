@@ -1,7 +1,6 @@
 //! Ordering validation — detect PC dependency order violations via file overlap.
 
-use crate::spec::pc::{PassCondition, PcId};
-use regex::Regex;
+use crate::spec::pc::{PassCondition, PcId, SEPARATOR_RE};
 use serde::Serialize;
 
 /// A parsed File Changes entry from the design's File Changes table.
@@ -37,7 +36,6 @@ pub struct OrderingResult {
 /// 4. If header has `|` but NOT "File"/"Action" → unrecognized format, warn and skip.
 /// 5. If no section found → warn "no File Changes table found".
 pub fn parse_file_changes(content: &str) -> (Vec<FileChange>, Vec<String>) {
-    let separator_re = Regex::new(r"^\s*\|?\s*[-:]+\s*\|").expect("valid regex");
     let mut warnings = Vec::new();
     let lines: Vec<&str> = content.lines().collect();
 
@@ -66,7 +64,7 @@ pub fn parse_file_changes(content: &str) -> (Vec<FileChange>, Vec<String>) {
     // Step 2: Find the first table header row after the section heading
     let table_header_idx = lines[search_start..]
         .iter()
-        .position(|l| l.trim_start().starts_with('|') && !separator_re.is_match(l.trim()))
+        .position(|l| l.trim_start().starts_with('|') && !SEPARATOR_RE.is_match(l.trim()))
         .map(|rel| rel + search_start);
 
     let header_idx = match table_header_idx {
@@ -113,7 +111,7 @@ pub fn parse_file_changes(content: &str) -> (Vec<FileChange>, Vec<String>) {
             break;
         }
         let trimmed = line.trim();
-        if separator_re.is_match(trimmed) {
+        if SEPARATOR_RE.is_match(trimmed) {
             continue;
         }
 

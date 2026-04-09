@@ -7,6 +7,12 @@ use crate::spec::error::SpecError;
 use regex::Regex;
 use serde::Serialize;
 use std::fmt;
+use std::sync::LazyLock;
+
+static PC_ID_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^PC-(\d+)$").expect("BUG: invalid PC_ID_RE regex"));
+
+pub(crate) static SEPARATOR_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\s*\|?\s*[-:]+\s*\|").expect("BUG: invalid SEPARATOR_RE regex"));
 
 /// A parsed Pass Condition identifier like `PC-003`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
@@ -15,8 +21,7 @@ pub struct PcId(pub u16);
 impl PcId {
     /// Parse a PC ID string like "PC-003" into a `PcId`.
     pub fn parse(s: &str) -> Result<PcId, SpecError> {
-        let re = Regex::new(r"^PC-(\d+)$").expect("valid regex");
-        let caps = re
+        let caps = PC_ID_RE
             .captures(s.trim())
             .ok_or_else(|| SpecError::InvalidPcId(s.to_owned()))?;
         let n: u16 = caps[1]
@@ -61,8 +66,6 @@ pub struct PcReport {
 /// Detects the table by header row containing all 6 column names.
 /// Skips separator rows. Reports malformed rows, gaps, and duplicates.
 pub fn parse_pcs(content: &str) -> Result<PcReport, SpecError> {
-    let separator_re = Regex::new(r"^\s*\|?\s*[-:]+\s*\|").expect("valid regex");
-
     let mut pcs: Vec<PassCondition> = Vec::new();
     let mut errors: Vec<String> = Vec::new();
     let warnings: Vec<String> = Vec::new();
@@ -85,7 +88,7 @@ pub fn parse_pcs(content: &str) -> Result<PcReport, SpecError> {
         row_num += 1;
         let trimmed = line.trim();
         // Skip separator rows
-        if separator_re.is_match(trimmed) {
+        if SEPARATOR_RE.is_match(trimmed) {
             continue;
         }
         let cols: Vec<&str> = trimmed

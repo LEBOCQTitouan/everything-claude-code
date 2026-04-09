@@ -3,11 +3,14 @@
 use crate::memory::entry::{MemoryEntry, MemoryId};
 use crate::memory::tier::MemoryTier;
 use regex::Regex;
+use std::sync::LazyLock;
+
+static WORK_ITEM_REF_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"BL-\d{3,}").expect("BUG: invalid WORK_ITEM_REF_RE regex"));
 
 /// Extract all BL-NNN references from content.
 pub fn extract_work_item_refs(content: &str) -> Vec<String> {
-    let re = Regex::new(r"BL-\d{3,}").expect("valid regex");
-    let mut refs: Vec<String> = re
+    let mut refs: Vec<String> = WORK_ITEM_REF_RE
         .find_iter(content)
         .map(|m| m.as_str().to_owned())
         .collect();

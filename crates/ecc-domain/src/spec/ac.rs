@@ -7,6 +7,18 @@ use crate::spec::error::SpecError;
 use regex::Regex;
 use serde::Serialize;
 use std::fmt;
+use std::sync::LazyLock;
+
+static AC_ID_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^AC-(\d{3})\.(\d+)$").expect("BUG: invalid AC_ID_RE regex"));
+
+static AC_DEF_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^- (AC-\d{3}\.\d+):(.*)$").expect("BUG: invalid AC_DEF_RE regex"));
+
+static MALFORMED_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"- AC-[^:]+:").expect("BUG: invalid MALFORMED_RE regex"));
+
+static FENCE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(`{3,}|~{3,})").expect("BUG: invalid FENCE_RE regex"));
 
 /// A parsed Acceptance Criterion identifier like `AC-001.2`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
@@ -20,8 +32,7 @@ impl AcId {
     ///
     /// Returns `Err(SpecError::InvalidAcId)` for malformed input.
     pub fn parse(s: &str) -> Result<AcId, SpecError> {
-        let re = Regex::new(r"^AC-(\d{3})\.(\d+)$").expect("valid regex");
-        let caps = re
+        let caps = AC_ID_RE
             .captures(s)
             .ok_or_else(|| SpecError::InvalidAcId(s.to_owned()))?;
         let us: u16 = caps[1]
@@ -72,10 +83,6 @@ pub struct AcReport {
 /// - Sequential numbering is validated; gaps and duplicates are reported as errors.
 /// - Returns `Err(SpecError::NoAcceptanceCriteria)` if no ACs are found.
 pub fn parse_acs(content: &str) -> Result<AcReport, SpecError> {
-    let ac_def_re = Regex::new(r"^- (AC-\d{3}\.\d+):(.*)$").expect("valid regex");
-    let malformed_re = Regex::new(r"- AC-[^:]+:").expect("valid regex");
-    let fence_re = Regex::new(r"^(`{3,}|~{3,})").expect("valid regex");
-
     let mut acs: Vec<AcceptanceCriterion> = Vec::new();
     let mut errors: Vec<String> = Vec::new();
     let mut warnings: Vec<String> = Vec::new();
@@ -84,14 +91,14 @@ pub fn parse_acs(content: &str) -> Result<AcReport, SpecError> {
     for line in content.lines() {
         let trimmed = line.trim();
         // Toggle code block state
-        if fence_re.is_match(trimmed) {
+        if FENCE_RE.is_match(trimmed) {
             in_code_block = !in_code_block;
             continue;
         }
         if in_code_block {
             continue;
         }
-        if let Some(caps) = ac_def_re.captures(line) {
+        if let Some(caps) = AC_DEF_RE.captures(line) {
             let id_str = &caps[1];
             match AcId::parse(id_str) {
                 Ok(id) => {
@@ -102,7 +109,7 @@ pub fn parse_acs(content: &str) -> Result<AcReport, SpecError> {
                     warnings.push(format!("malformed AC ID ignored: {id_str}"));
                 }
             }
-        } else if malformed_re.is_match(line) && line.trim_start().starts_with("- AC-") {
+        } else if MALFORMED_RE.is_match(line) && line.trim_start().starts_with("- AC-") {
             // Capture lines that look like AC definitions but don't match the strict format
             // e.g., "- AC-ABC.1: ..."
             warnings.push(format!("malformed AC definition ignored: {}", line.trim()));
