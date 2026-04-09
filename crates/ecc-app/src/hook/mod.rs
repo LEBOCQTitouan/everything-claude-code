@@ -843,6 +843,106 @@ mod tests {
         assert_eq!(h.hook_id(), "test:dummy");
     }
 
+    /// PC-001: Dispatch with bypass token file present returns exit 0 passthrough.
+    ///
+    /// Characterization test: locks down existing inline token-bypass logic in dispatch().
+    #[test]
+    fn bypass_token_found_passthrough() {
+        // Build a valid BypassToken JSON for hook "pre:edit:boundary-crossing", session "sess-001"
+        let hook_id = "pre:edit:boundary-crossing";
+        let session_id = "sess-001";
+        let token_json = serde_json::json!({
+            "hook_id": hook_id,
+            "session_id": session_id,
+            "granted_at": "2026-04-07T12:00:00Z",
+            "reason": "test bypass"
+        })
+        .to_string();
+
+        // Token path: {HOME}/.ecc/bypass-tokens/{session_id}/{hook_id_encoded}.json
+        let encoded = hook_id.replace(':', "__");
+        let token_path = format!("/home/test/.ecc/bypass-tokens/{}/{}.json", session_id, encoded);
+
+        let fs = InMemoryFileSystem::new().with_file(&token_path, &token_json);
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_SESSION_ID", session_id)
+            .with_var("HOME", "/home/test");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        // Use pre:edit:boundary-crossing with a domain file + infra import → triggers exit_code=2
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        // With valid token present, bypass should apply → passthrough (exit 0)
+        assert_eq!(result.exit_code, 0, "valid bypass token must grant passthrough");
+    }
+
+    /// PC-002: Dispatch with no token returns exit 2 with bypass hint.
+    ///
+    /// Characterization test: verifies that when a hook blocks and no token exists,
+    /// dispatch() returns exit 2 and appends the bypass-available hint.
+    #[test]
+    fn bypass_token_not_found_blocks() {
+        let hook_id = "pre:edit:boundary-crossing";
+        let session_id = "sess-002";
+
+        // No token file — empty filesystem
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_SESSION_ID", session_id)
+            .with_var("HOME", "/home/test");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(result.exit_code, 2, "missing token must still block");
+        assert!(
+            result.stderr.contains("Bypass available"),
+            "stderr must contain bypass hint when no token found"
+        );
+    }
+
+    /// PC-003: Dispatch with no CLAUDE_SESSION_ID returns exit 2.
+    ///
+    /// Characterization test: verifies that when CLAUDE_SESSION_ID is absent,
+    /// dispatch() cannot check tokens and returns exit 2.
+    #[test]
+    fn no_session_id_blocks() {
+        let hook_id = "pre:edit:boundary-crossing";
+
+        let fs = InMemoryFileSystem::new();
+        let shell = MockExecutor::new();
+        // No CLAUDE_SESSION_ID in env
+        let env = MockEnvironment::new().with_var("HOME", "/home/test");
+        let term = BufferedTerminal::new();
+        let ports = make_ports(&fs, &shell, &env, &term);
+
+        let stdin = r#"{"tool_input":{"file_path":"/project/ecc-domain/src/user.rs","new_string":"use crate::infra::db;"}}"#;
+        let ctx = HookContext {
+            hook_id: hook_id.to_string(),
+            stdin_payload: stdin.to_string(),
+            profiles_csv: None,
+        };
+
+        let result = dispatch(&ctx, &ports);
+        assert_eq!(result.exit_code, 2, "absent session_id must block (cannot check tokens)");
+    }
+
     /// PC-031: Handler impl dispatches to cartography handler via registry.
     #[test]
     fn handler_trait_dispatch() {
