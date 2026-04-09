@@ -73,7 +73,9 @@ pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
             );
 
             let recovery_path = std::path::Path::new(&cwd).join(".ecc-merge-recovery");
-            let _ = ports.fs.write(&recovery_path, &recovery_content);
+            if let Err(e) = ports.fs.write(&recovery_path, &recovery_content) {
+                tracing::warn!(path = %recovery_path.display(), error = %e, "failed to write merge recovery file");
+            }
 
             HookResult::warn(
                 stdin,

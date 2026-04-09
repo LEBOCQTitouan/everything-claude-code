@@ -161,10 +161,13 @@ pub(crate) fn cleanup_after_merge(
     }
 
     // 3. Delete the branch (failure is warning only — still return CleanedUp)
-    let _ = Command::new("git")
+    if let Err(e) = Command::new("git")
         .args(["branch", "-d", "--", branch])
         .current_dir(repo_root)
-        .output();
+        .output()
+    {
+        tracing::warn!(branch = %branch, error = %e, "failed to delete branch after worktree cleanup");
+    }
 
     CleanupResult::CleanedUp {
         branch: branch.to_owned(),

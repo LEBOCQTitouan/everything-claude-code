@@ -221,7 +221,9 @@ fn expand_tracking_field(fs: &dyn ecc_ports::fs::FileSystem, agent_path: &Path, 
         result
     };
 
-    let _ = fs.write(agent_path, &new_content);
+    if let Err(e) = fs.write(agent_path, &new_content) {
+        tracing::warn!(path = %agent_path.display(), error = %e, "failed to write expanded agent tracking field");
+    }
 }
 
 /// Check if content has `tracking: todowrite` in YAML frontmatter.

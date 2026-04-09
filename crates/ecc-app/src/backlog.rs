@@ -129,31 +129,17 @@ pub fn reindex(
         return Ok(Some(output));
     }
 
-    index.write_index(backlog_dir, &output)?;
-    Ok(None)
-}
-
-/// Return the open backlog entries not currently claimed by a worktree or fresh lock.
-///
-/// If `show_all` is true, returns all open entries regardless of claims.
-/// Stale and orphaned locks are auto-removed.
-pub fn list_available(
-    entries: &dyn BacklogEntryStore,
-    locks: &dyn BacklogLockStore,
-    worktree_mgr: &dyn WorktreeManager,
-    clock: &dyn Clock,
-    backlog_dir: &Path,
-    project_dir: &Path,
-    show_all: bool,
-) -> Result<Vec<BacklogEntry>, BacklogError> {
-    let all_entries = entries.load_entries(backlog_dir)?;
-    let open_entries: Vec<BacklogEntry> = all_entries
-        .into_iter()
-        .filter(|e| e.status == BacklogStatus::Open)
-        .collect();
-
-    if show_all {
-        return Ok(open_entries);
+    // Atomic write: temp file + rename, with cleanup on failure
+    let tmp_path = backlog_dir.join("BACKLOG.md.tmp");
+    fs.write(&tmp_path, &output)
+        .map_err(|e| BacklogError::IoError(format!("failed to write temp file: {e}")))?;
+    if let Err(e) = fs.rename(&tmp_path, &backlog_path) {
+        if let Err(rm_err) = fs.remove_file(&tmp_path) {
+            tracing::warn!(path = %tmp_path.display(), error = %rm_err, "failed to clean up temp file after rename failure");
+        }
+        return Err(BacklogError::IoError(format!(
+            "failed to rename temp file: {e}"
+        )));
     }
 
     let claimed = collect_claimed_ids(locks, worktree_mgr, clock, backlog_dir, project_dir);

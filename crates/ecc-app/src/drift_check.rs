@@ -53,10 +53,14 @@ pub fn run_drift_check(
     // Write drift-report.md
     let report_content = format_report_md(&report);
     let report_path = Path::new(".claude/workflow/drift-report.md");
-    if let Some(parent) = report_path.parent() {
-        let _ = fs.create_dir_all(parent);
+    if let Some(parent) = report_path.parent()
+        && let Err(e) = fs.create_dir_all(parent)
+    {
+        tracing::warn!(path = %parent.display(), error = %e, "failed to create drift report directory");
     }
-    let _ = fs.write(report_path, &report_content);
+    if let Err(e) = fs.write(report_path, &report_content) {
+        tracing::warn!(path = %report_path.display(), error = %e, "failed to write drift report");
+    }
 
     !matches!(report.level, Some(drift::DriftLevel::High))
 }

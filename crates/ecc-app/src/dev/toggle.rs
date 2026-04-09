@@ -65,8 +65,10 @@ pub fn dev_off(
     if !dry_run {
         for dir in MANAGED_DIRS {
             let link = claude_dir.join(dir);
-            if fs.is_symlink(&link) {
-                let _ = fs.remove_file(&link);
+            if fs.is_symlink(&link)
+                && let Err(e) = fs.remove_file(&link)
+            {
+                tracing::warn!(path = %link.display(), error = %e, "failed to remove managed dir symlink during dev off");
             }
         }
     }

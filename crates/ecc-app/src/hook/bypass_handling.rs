@@ -72,15 +72,17 @@ fn try_token_bypass(
 
     tracing::info!(hook_id = %ctx.hook_id, "bypass token found — allowing");
 
-    if let Some(store) = ports.bypass_store {
-        let _ = ecc_domain::hook_runtime::bypass::BypassDecision::new(
+    if let Some(store) = ports.bypass_store
+        && let Ok(decision) = ecc_domain::hook_runtime::bypass::BypassDecision::new(
             &ctx.hook_id,
             &token.reason,
             sid,
             ecc_domain::hook_runtime::bypass::Verdict::Applied,
             &token.granted_at,
         )
-        .map(|d| store.record(&d));
+        && let Err(e) = store.record(&decision)
+    {
+        tracing::warn!(hook_id = %ctx.hook_id, error = %e, "failed to record bypass decision");
     }
 
     let duration_ms = start.elapsed().as_millis() as u64;

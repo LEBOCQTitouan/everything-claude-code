@@ -137,10 +137,13 @@ fn rebase_onto_main(dir: &Path, branch: &str) -> Result<(), MergeError> {
             stderr: e.to_string(),
         })?;
     if !output.status.success() {
-        let _ = Command::new("git")
+        if let Err(e) = Command::new("git")
             .args(["rebase", "--abort"])
             .current_dir(dir)
-            .output();
+            .output()
+        {
+            tracing::warn!(error = %e, "failed to abort rebase during error recovery");
+        }
         return Err(MergeError::RebaseConflict {
             branch: branch.to_owned(),
             stderr: String::from_utf8_lossy(&output.stderr).to_string(),
