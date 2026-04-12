@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Universal questioning protocol with Socratic techniques (OARS, Laddering, MECE, 6-Type Rotation) and depth profiles (shallow/standard/deep). Stage-by-stage structured interview across 5 canonical stages. Uses AskUserQuestion — one question per turn, never batched. Supports standalone mode (default), spec-mode, and backlog-mode.
+description: Universal questioning protocol with Socratic techniques (OARS, Laddering, MECE, 6-Type Rotation) and depth profiles (shallow/standard/deep). Stage-by-stage structured interview across 5 canonical stages. Uses AskUserQuestion — one question per turn, never batched. Supports standalone mode (default), spec-mode, backlog-mode, and foundation-mode.
 origin: ECC
 ---
 
@@ -11,6 +11,7 @@ origin: ECC
 - User says "grill me", "challenge my assumptions", "stress test this idea", "poke holes in this", "what am I missing"
 - Invoked by `/spec`, `/spec-dev`, `/spec-fix`, `/spec-refactor` commands (spec-mode)
 - Invoked by `/backlog` command (backlog-mode)
+- Invoked by `/project-foundation` command (foundation-mode)
 - User wants to validate a plan, design, or proposal before committing
 
 ---
@@ -36,6 +37,15 @@ Activated when invoked by `/backlog`. Enables:
 - Max 2 questions per stage
 - Claude can escalate to full 5 stages when scope is assessed as HIGH or EPIC
 - Depth profile default: **standard**
+
+### Foundation-Mode
+
+Activated when invoked by `/project-foundation`. Two sub-invocations with different stage subsets:
+
+- **PRD creation**: Clarity + Assumptions stages only. Maximum 2 questions per stage. Recommended answers enabled.
+- **Architecture creation**: Clarity + Edge Cases stages only. Maximum 2 questions per stage. Recommended answers enabled.
+
+Depth profile default: **standard**. Does not affect standalone, spec-mode, or backlog-mode behavior.
 
 ### Profile Override
 
