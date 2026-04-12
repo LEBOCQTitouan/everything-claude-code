@@ -141,6 +141,7 @@
 | BL-142 | Add docs/cartography/ to phase-gate allowlist | — | LOW | direct edit | implemented | 2026-04-09 |
 | BL-143 | /project-foundation command — PRD + Architecture docs creation with codebase-aware challenge | — | MEDIUM | /spec-dev | open | 2026-04-12 |
 | BL-144 | /party command — BMAD-style multi-agent round-table with auto-generated domain agents | — | HIGH | /spec-dev | open | 2026-04-12 |
+| BL-145 | Wire party-mode into /spec phase as augmentation layer before adversarial review | — | MEDIUM | /spec-dev | open | 2026-04-12 |
 
 ## Dependency Graph
 
@@ -221,12 +222,13 @@ BL-128 → BL-121 (wave 5 local LLM offload derived from token audit findings)
 BL-128 → BL-126 (wave 5 offloads agents not already replaced by CLI in wave 3)
 BL-144 → BL-143 (/party recommended-panel heuristics consume /project-foundation PRD + arch docs)
 BL-144 → BL-137 (party-mode agent invocation applies difficulty-aware model routing)
+BL-145 → BL-144 (spec-phase integration requires /party command to exist first)
 ```
 
 ## Stats
 
-- **Total:** 141
-- **Open:** 24
+- **Total:** 142
+- **Open:** 25
 - **In-progress:** 0
 - **Implemented:** 105
 - **Archived:** 6
