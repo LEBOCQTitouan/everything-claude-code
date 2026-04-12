@@ -90,129 +90,77 @@ fn execute_merge(project_dir: &Path) -> Result<String, MergeError> {
     }
 }
 
-fn current_branch(dir: &Path) -> Result<String, MergeError> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--abbrev-ref", "HEAD"])
-        .current_dir(dir)
-        .output()
-        .map_err(|_| MergeError::NoBranch)?;
-    if !output.status.success() {
-        return Err(MergeError::NoBranch);
-    }
-    let branch = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-    if branch.is_empty() || branch == "HEAD" {
-        return Err(MergeError::NoBranch);
-    }
-    Ok(branch)
-}
-
-fn validate_session_branch(branch: &str) -> Result<(), MergeError> {
-    if ecc_domain::worktree::WorktreeName::parse(branch).is_none() {
-        return Err(MergeError::NotSessionBranch {
-            branch: branch.to_owned(),
-        });
-    }
-    Ok(())
-}
-
-fn acquire_merge_lock(repo_root: &Path) -> Result<ecc_flock::FlockGuard, MergeError> {
-    ecc_flock::acquire_with_timeout(
-        repo_root,
-        "merge",
-        Duration::from_secs(MERGE_LOCK_TIMEOUT_SECS),
-    )
-    .map_err(|e| match e {
-        ecc_flock::FlockError::Timeout(d) => MergeError::LockTimeout(d),
-        _ => MergeError::LockTimeout(Duration::from_secs(MERGE_LOCK_TIMEOUT_SECS)),
-    })
-}
-
-fn rebase_onto_main(dir: &Path, branch: &str) -> Result<(), MergeError> {
-    let output = Command::new("git")
-        .args(["rebase", "main"])
-        .current_dir(dir)
-        .output()
-        .map_err(|e| MergeError::RebaseConflict {
-            branch: branch.to_owned(),
-            stderr: e.to_string(),
-        })?;
-    if !output.status.success() {
-        if let Err(e) = Command::new("git")
-            .args(["rebase", "--abort"])
-            .current_dir(dir)
-            .output()
-        {
-            tracing::warn!(error = %e, "failed to abort rebase during error recovery");
-        }
-        return Err(MergeError::RebaseConflict {
-            branch: branch.to_owned(),
-            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-        });
-    }
-    Ok(())
-}
-
-fn run_fast_verify(dir: &Path) -> Result<(), MergeError> {
-    for (step, args) in [
-        ("cargo build", vec!["build"]),
-        ("cargo test", vec!["test"]),
-        ("cargo clippy", vec!["clippy", "--", "-D", "warnings"]),
-    ] {
-        let output = Command::new("cargo")
-            .args(&args)
-            .current_dir(dir)
-            .output()
-            .map_err(|e| MergeError::VerifyFailed {
-                step: step.to_owned(),
-                stderr: e.to_string(),
-            })?;
-        if !output.status.success() {
-            return Err(MergeError::VerifyFailed {
-                step: step.to_owned(),
-                stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-            });
-        }
-    }
-    Ok(())
-}
-
-/// Ensure the main repo has `main` checked out before merging.
-///
-/// Without this, `git merge --ff-only` would target whatever branch
-/// is currently checked out in the main repo, which may not be `main`
-/// if another session or manual git operation changed it.
-fn checkout_main(repo_root: &Path) -> Result<(), MergeError> {
-    let output = Command::new("git")
-        .args(["checkout", "main"])
-        .current_dir(repo_root)
-        .output()
-        .map_err(|e| MergeError::CheckoutFailed {
-            stderr: e.to_string(),
-        })?;
-    if !output.status.success() {
-        return Err(MergeError::CheckoutFailed {
-            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-        });
-    }
-    Ok(())
-}
-
-fn merge_fast_forward(repo_root: &Path, branch: &str) -> Result<(), MergeError> {
-    let output = Command::new("git")
-        .args(["merge", "--ff-only", "--", branch])
-        .current_dir(repo_root)
-        .output()
-        .map_err(|e| MergeError::MergeFailed {
-            stderr: e.to_string(),
-        })?;
-    if !output.status.success() {
-        return Err(MergeError::MergeFailed {
-            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
-        });
-    }
-    Ok(())
-}
-
 #[cfg(test)]
-#[path = "merge_tests.rs"]
-mod tests;
+mod tests {
+    use super::*;
+    use crate::commands::merge_steps::acquire_merge_lock;
+    use tempfile::TempDir;
+
+    #[test]
+    fn error_mapping() {
+        // LockTimeout → block
+        let err = MergeError::LockTimeout(Duration::from_secs(60));
+        let out = err.to_output();
+        assert!(matches!(out.status, crate::output::Status::Block));
+        assert!(out.message.contains("60s"));
+
+        // RebaseConflict → warn
+        let err = MergeError::RebaseConflict {
+            branch: "ecc-session-test".to_owned(),
+            stderr: "conflict".to_owned(),
+        };
+        let out = err.to_output();
+        assert!(matches!(out.status, crate::output::Status::Warn));
+        assert!(out.message.contains("ecc-session-test"));
+
+        // VerifyFailed → warn
+        let err = MergeError::VerifyFailed {
+            step: "cargo build".to_owned(),
+            stderr: "error".to_owned(),
+        };
+        let out = err.to_output();
+        assert!(matches!(out.status, crate::output::Status::Warn));
+        assert!(out.message.contains("cargo build"));
+
+        // MergeFailed → warn
+        let err = MergeError::MergeFailed {
+            stderr: "not possible".to_owned(),
+        };
+        let out = err.to_output();
+        assert!(matches!(out.status, crate::output::Status::Warn));
+        assert!(out.message.contains("ff-only"));
+
+        // NotSessionBranch → block
+        let err = MergeError::NotSessionBranch {
+            branch: "main".to_owned(),
+        };
+        let out = err.to_output();
+        assert!(matches!(out.status, crate::output::Status::Block));
+        assert!(out.message.contains("main"));
+
+        // NoBranch → block
+        let err = MergeError::NoBranch;
+        let out = err.to_output();
+        assert!(matches!(out.status, crate::output::Status::Block));
+        assert!(out.message.contains("detached HEAD"));
+    }
+
+    #[test]
+    fn acquires_lock() {
+        let tmp = TempDir::new().unwrap();
+        // acquire_merge_lock uses 60s timeout
+        let guard = acquire_merge_lock(tmp.path()).unwrap();
+        let lock_path = guard.lock_path().to_path_buf();
+        // Lock file is at .claude/workflow/.locks/merge.lock
+        assert!(lock_path.ends_with(".claude/workflow/.locks/merge.lock"));
+        assert!(lock_path.exists());
+    }
+
+    #[test]
+    fn timeout_blocks() {
+        let err = MergeError::LockTimeout(Duration::from_secs(60));
+        let out = err.to_output();
+        assert!(matches!(out.status, crate::output::Status::Block));
+        assert!(out.message.contains("Timed out after 60s"));
+    }
+}

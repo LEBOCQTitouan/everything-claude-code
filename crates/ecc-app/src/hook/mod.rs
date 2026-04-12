@@ -79,6 +79,26 @@ pub struct HookPorts<'a> {
     pub metrics_store: Option<&'a dyn MetricsStore>,
 }
 
+impl<'a> HookPorts<'a> {
+    /// Create a test-friendly HookPorts with all optional stores set to None.
+    pub fn test_default(
+        fs: &'a dyn FileSystem,
+        shell: &'a dyn ShellExecutor,
+        env: &'a dyn Environment,
+        terminal: &'a dyn TerminalIO,
+    ) -> Self {
+        Self {
+            fs,
+            shell,
+            env,
+            terminal,
+            cost_store: None,
+            bypass_store: None,
+            metrics_store: None,
+        }
+    }
+}
+
 /// Trait for hook handlers that can be registered in a dispatch table.
 pub trait Handler: Send + Sync {
     /// The hook ID this handler responds to (e.g., `"stop:cartography"`).

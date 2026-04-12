@@ -323,7 +323,7 @@ mod tests {
 
         // Create store with home_dir, check_token should find it
         let db_path = home_dir.join("bypass.db");
-        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
         let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
         assert!(result.is_some());
         let found = result.unwrap();
@@ -349,7 +349,7 @@ mod tests {
         .unwrap();
 
         let db_path = home_dir.join("bypass.db");
-        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
         let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
         assert!(result.is_none());
     }
@@ -377,7 +377,7 @@ mod tests {
         std::fs::write(token_dir.join(format!("{encoded_hook_id}.json")), json).unwrap();
 
         let db_path = home_dir.join("bypass.db");
-        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir)).unwrap();
+        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
         let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
         assert!(result.is_none());
     }
@@ -385,7 +385,7 @@ mod tests {
     #[test]
     fn sqlite_bypass_store_check_token_no_home() {
         // Store created without home_dir — check_token must return None
-        let store = SqliteBypassStore::in_memory().unwrap();
+        let store = SqliteBypassStore::in_memory(system_clock()).unwrap();
         let result = ecc_ports::bypass_store::BypassStore::check_token(
             &store,
             "pre:write-edit:worktree-guard",
