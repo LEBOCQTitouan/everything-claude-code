@@ -10,6 +10,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **AAIF standard alignment audit (BL-147)**: Audited ECC agent/skill frontmatter against AAIF AGENTS.md standard. All 4 core fields compatible, 8 extension fields non-conflicting. Adopted additive alignment stance — no file changes needed, model alias resolved by SubagentStart hook. Gap analysis at `docs/research/aaif-alignment-gap-analysis.md`. (ADR 0062)
+
 - **/project-foundation command (BL-143)**: New command for project-level document bootstrapping. Guided interview (interview-me + grill-me foundation-mode) producing PRD, architecture overview, and initial ADR in `docs/foundation/`. Includes codebase detection (new vs existing repo), Plan Mode gate, adversarial review, and CLAUDE.md bootstrapping for new repos. New grill-me foundation-mode with stage-limited challenges for PRD (Clarity+Assumptions) and architecture (Clarity+Edge Cases). (ADR 0061)
 
 ### Removed
