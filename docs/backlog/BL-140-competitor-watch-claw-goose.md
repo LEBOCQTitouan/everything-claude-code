@@ -3,8 +3,11 @@ id: BL-140
 title: "Competitor analysis: Claw Code and Goose agent frameworks"
 scope: LOW
 target: "/spec-dev"
-status: open
+status: implemented
 created: "2026-04-09"
+implemented: "2026-04-12"
+output: "docs/research/competitor-claw-goose.md"
+spawned: [BL-146, BL-147, BL-148, BL-149]
 source: "docs/audits/web-radar-2026-04-09.md"
 ring: assess
 tags: [competitors, agents, research]
