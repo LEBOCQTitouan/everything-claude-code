@@ -55,6 +55,7 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .lines()
         .map(str::trim)
         .filter(|l| !l.is_empty())
+        .filter(|l| !l.starts_with(".claude/"))
         .collect();
 
     if changed_lines.is_empty() {
@@ -454,5 +455,40 @@ mod tests {
             assert_eq!(delta.session_id, "new-session-001");
             assert_eq!(delta.project_type, ProjectType::Rust);
         }
+    }
+
+    /// Only `.claude/` paths in git diff → passthrough, no delta written (self-referential filter).
+    #[test]
+    fn filters_out_dot_claude_paths() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/cartography/pending-delta-old.json\n.claude/workflow/state.json\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "self-ref-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — all changed files were filtered out
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-self-ref-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            ".claude/ paths must be filtered — no delta should be written"
+        );
     }
 }
