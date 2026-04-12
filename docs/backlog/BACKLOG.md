@@ -134,7 +134,7 @@
 | BL-135 | Add cargo-llvm-cov coverage gate to CI | — | LOW | direct edit | open | 2026-04-09 |
 | BL-136 | Add cargo-vet for SLSA Level 2 supply chain compliance | — | MEDIUM | /spec-dev | implemented | 2026-04-09 |
 | BL-137 | Apply difficulty-aware model routing from multi-agent research | — | HIGH | /spec-dev | archived | 2026-04-09 |
-| BL-138 | Evaluate hex crate for compile-time architecture boundary enforcement | — | MEDIUM | /spec-dev | open | 2026-04-09 |
+| BL-138 | Evaluate hex crate for compile-time architecture boundary enforcement | — | MEDIUM | /spec-dev | implemented | 2026-04-09 |
 | BL-139 | Monitor Claude Code Agent Teams API for ECC integration | — | LOW | /spec-dev | implemented | 2026-04-09 |
 | BL-140 | Competitor analysis: Claw Code and Goose agent frameworks | — | LOW | /spec-dev | open | 2026-04-09 |
 | BL-141 | Monitor serde-saphyr for 0.1.0 stability release | — | LOW | direct edit | open | 2026-04-09 |
