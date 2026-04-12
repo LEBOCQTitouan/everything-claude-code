@@ -139,6 +139,7 @@
 | BL-140 | Competitor analysis: Claw Code and Goose agent frameworks | — | LOW | /spec-dev | open | 2026-04-09 |
 | BL-141 | Monitor serde-saphyr for 0.1.0 stability release | — | LOW | direct edit | open | 2026-04-09 |
 | BL-142 | Add docs/cartography/ to phase-gate allowlist | — | LOW | direct edit | implemented | 2026-04-09 |
+| BL-143 | /project-foundation command — PRD + Architecture docs creation with codebase-aware challenge | — | MEDIUM | /spec-dev | open | 2026-04-12 |
 
 ## Dependency Graph
 
