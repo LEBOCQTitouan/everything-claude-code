@@ -220,6 +220,37 @@ Execute wave dispatch per the skill. Accumulate commit SHA hashes for the Phase 
 
 > **Shared**: See `skills/progress-tracking/SKILL.md` for the full progress tracking logic — TodoWrite, TaskUpdate, tasks.md status updates, and loop completion.
 
+### Post-PC Self-Evaluation (Conditional)
+
+> **Shared**: See `skills/pc-evaluation/SKILL.md` for the full rubric (3 dimensions, PASS/WARN/FAIL criteria, trigger rules).
+
+After each PC completes successfully (or is skipped via fix-round budget), check whether self-evaluation should run. Evaluation is **conditional** — it triggers only when:
+
+1. `fix_round_count > 0` — the PC needed fix rounds
+2. PC type is `integration` or `e2e` — crosses boundaries
+3. Last PC in a wave — wave boundary checkpoint
+
+If none of these conditions are met (clean unit PC, first-try pass), skip evaluation and log "SKIPPED (clean unit)" in tasks.md.
+
+When triggered, dispatch the `pc-evaluator` agent (read-only: [Read, Grep, Glob]) with:
+- PC result (status, files_changed, test_names, green_result)
+- AC text from the spec for this PC's "Verifies AC"
+- Files to Modify list from the design
+- Prior PC results table
+
+The agent returns: `{ac_satisfied, regressions, achievability}` each PASS/WARN/FAIL, plus rationale.
+
+**Verdict handling:**
+- **All PASS**: Log `eval@<ISO 8601 timestamp>` to tasks.md. Continue.
+- **Any WARN**: Log verdict to tasks.md with `eval@<timestamp>`. Pipeline continues. Increment consecutive WARN counter.
+- **Any FAIL** (or 3 consecutive WARNs across PCs): Present via AskUserQuestion:
+  - "Re-dispatch PC with guidance" — re-run the tdd-executor with user guidance
+  - "Accept as-is" — log acceptance, continue
+  - "Pause and revise spec" — preserve state in tasks.md, stop pipeline cleanly for /spec re-entry
+  - "Abort" — stop implementation
+
+Record user decisions in campaign.md's `## Commit Trail` for audit trail.
+
 ### Post-TDD Coverage Measurement
 
 After all PCs pass and before Phase 4, measure test coverage delta:
@@ -405,6 +436,13 @@ All pass conditions: N/N ✅
 (or "Inline execution — subagent dispatch not used" for pre-BL-031 implementations)
 
 If wave-based parallel execution was used (any wave had 2+ PCs), add a `Wave` column to TDD Log and Subagent Execution tables showing which wave each PC belonged to. If all waves had only 1 PC (fully sequential), omit the Wave column for backward compatibility.
+
+## Self-Evaluation Log
+| PC ID | AC Verdict | Regression Verdict | Achievability Verdict | User Decision |
+|-------|-----------|-------------------|----------------------|---------------|
+| PC-001 | PASS | PASS | PASS | — |
+| PC-002 | SKIPPED (clean unit) | SKIPPED (clean unit) | SKIPPED (clean unit) | — |
+(Include all PCs. Show SKIPPED for PCs where evaluation was not triggered.)
 
 ## Code Review
 <summary — PASS or findings addressed>
