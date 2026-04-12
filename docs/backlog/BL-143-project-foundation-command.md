@@ -1,7 +1,7 @@
 ---
 id: BL-143
 title: /project-foundation command — PRD + Architecture docs creation with codebase-aware challenge
-status: open
+status: implemented
 created: 2026-04-12
 promoted_to: ""
 tags: [command, prd, architecture, bmad, interactive, codebase-analysis, grill-me, interview-me]
