@@ -26,6 +26,7 @@
 | `/spec-refactor` | Spec a refactoring — smell catalog, current state analysis, adversarial review |
 | `/design` | Technical design from spec — file changes, pass conditions, TDD order |
 | `/implement` | Execute the design — TDD loop, code review, doc updates |
+| `/project-foundation` | Bootstrap project-level PRD, architecture, ADR via guided interview with codebase-aware challenge |
 
 ## Side Commands
 
