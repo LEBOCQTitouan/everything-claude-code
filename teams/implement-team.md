@@ -7,6 +7,9 @@ agents:
   - name: tdd-executor
     role: Implements one Pass Condition per invocation using RED-GREEN-REFACTOR
     allowed-tools: ["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob"]
+  - name: pc-evaluator
+    role: Post-PC self-evaluation — checks AC satisfaction, regressions, spec achievability
+    allowed-tools: ["Read", "Grep", "Glob"]
   - name: code-reviewer
     role: Reviews implementation quality after TDD loop completes
     allowed-tools: ["Read", "Grep", "Glob", "Bash"]

@@ -13,6 +13,7 @@ After regression verification passes:
 3. Update `tasks.md` status for the completed PC:
    - Before dispatch: update the PC line from `pending` to append `| red@<ISO 8601 timestamp>`
    - On subagent success (green_result): append `| green@<ISO 8601 timestamp>`
+   - After self-evaluation (if triggered): append `| eval@<ISO 8601 timestamp>` with verdict summary (e.g., `eval@2026-04-12T16:00:00Z PASS/PASS/PASS`)
    - After regression verification passes: append `| done@<ISO 8601 timestamp>` and change `[ ]` to `[x]`
    - On subagent failure: append `| failed@<ISO 8601 timestamp> ERROR: <error summary>` — do NOT mark `[x]`
 4. If the subagent failed, do NOT mark the PC as complete — TodoWrite, Task, and tasks.md remain in-progress

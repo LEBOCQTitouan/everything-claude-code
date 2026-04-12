@@ -39,5 +39,6 @@ Persist a session-independent task tracker alongside the spec and design artifac
 Status updates during the TDD loop append to each line's trail:
 - Dispatch: append `| red@<ISO 8601 timestamp>`
 - Subagent success: append `| green@<ISO 8601 timestamp>`
+- Self-evaluation (if triggered): append `| eval@<ISO 8601 timestamp> <AC/REG/ACH verdict>`
 - Regression verification passes: append `| done@<ISO 8601 timestamp>` and mark `[x]`
 - Failure: append `| failed@<ISO 8601 timestamp> ERROR: <summary>`
