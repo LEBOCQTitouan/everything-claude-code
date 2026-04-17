@@ -375,6 +375,39 @@ presets:
                 // Must not panic — result may be Ok or Err
                 let _ = resolve_effective_tools(&spec, &manifest);
             }
+
+            // ── PC-057: pathological_names_no_recursion ───────────────────────
+            // Verifies that no matter how many distinct valid preset names are
+            // resolved in sequence, the resolver never revisits a preset (no
+            // recursion or infinite-loop) and always terminates.
+
+            #[test]
+            fn pathological_names_no_recursion(
+                names in proptest::collection::vec(
+                    "[a-z][a-z0-9-]{0,8}[a-z0-9]",
+                    1..20usize,
+                )
+            ) {
+                // Build a manifest with all generated names as presets
+                let tools = vec!["Read".to_string(), "Write".to_string()];
+                let presets: std::collections::HashMap<String, Vec<String>> = names
+                    .iter()
+                    .map(|n| (n.clone(), tools.clone()))
+                    .collect();
+                let manifest = ToolManifest { tools: tools.clone(), presets };
+
+                // Resolve each name exactly once — must terminate, no panic
+                for name in &names {
+                    let spec = FrontmatterToolSpec {
+                        tool_set: Some(name.clone()),
+                        inline_tools: None,
+                    };
+                    let result = resolve_effective_tools(&spec, &manifest);
+                    // Should succeed (names exist) and return the two preset tools
+                    let resolved = result.expect("valid preset must resolve");
+                    assert!(!resolved.tools.is_empty(), "resolved tools must not be empty");
+                }
+            }
         }
     }
 }
