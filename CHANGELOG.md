@@ -10,6 +10,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **/party command for multi-agent round-table discussions (BL-144)**: New `/party` command assembles an ephemeral panel of BMAD role agents (bmad-pm, bmad-architect, bmad-dev, bmad-qa, bmad-security) plus ECC specialists. Party-coordinator orchestrates sequential dispatch and synthesises output to `docs/party/`. Zero Rust changes — content-only implementation. (ADR 0064)
+
 - **AAIF standard alignment audit (BL-147)**: Audited ECC agent/skill frontmatter against AAIF AGENTS.md standard. All 4 core fields compatible, 8 extension fields non-conflicting. Adopted additive alignment stance — no file changes needed, model alias resolved by SubagentStart hook. Gap analysis at `docs/research/aaif-alignment-gap-analysis.md`. (ADR 0062)
 - **Post-PC self-evaluation in /implement (BL-149)**: Added conditional self-evaluation step after each Pass Condition completes. New `pc-evaluator` read-only agent checks AC satisfaction, regression heuristics, and spec achievability. Triggers on fix rounds > 0, integration/e2e PCs, or wave boundaries. WARN logged silently, FAIL escalates to user, 3 consecutive WARNs auto-escalate. New `pc-evaluation` skill defines the rubric. (ADR 0063)
 
