@@ -7,6 +7,7 @@ use super::concern::Concern;
 use super::error::WorkflowError;
 use super::phase::Phase;
 use super::timestamp::Timestamp;
+use super::transition::Direction;
 
 /// Deserializer for `Completion.phase` that falls back to [`Phase::Unknown`]
 /// for any string that is not a recognized phase value.
@@ -36,6 +37,58 @@ pub struct Artifacts {
     pub spec_path: Option<String>,
     pub design_path: Option<String>,
     pub tasks_path: Option<String>,
+}
+
+impl Artifacts {
+    /// Clear timestamps and path fields for phases between `to` (inclusive) and `from` (inclusive).
+    ///
+    /// Pipeline order: Plan → Solution → Implement
+    /// - Plan maps to: `plan` timestamp, `spec_path`
+    /// - Solution maps to: `solution` timestamp, `design_path`
+    /// - Implement maps to: `implement` timestamp, `tasks_path`
+    pub fn clear_artifacts_for_rollback(&mut self, from: Phase, to: Phase) {
+        // Pipeline order encoded as indices: Plan=0, Solution=1, Implement=2
+        let phase_index = |p: Phase| match p {
+            Phase::Plan => Some(0usize),
+            Phase::Solution => Some(1),
+            Phase::Implement => Some(2),
+            _ => None,
+        };
+        let Some(from_idx) = phase_index(from) else {
+            return;
+        };
+        let Some(to_idx) = phase_index(to) else {
+            return;
+        };
+        let (lo, hi) = if to_idx <= from_idx {
+            (to_idx, from_idx)
+        } else {
+            (from_idx, to_idx)
+        };
+        if lo == 0 {
+            self.plan = None;
+            self.spec_path = None;
+        }
+        if lo <= 1 && 1 <= hi {
+            self.solution = None;
+            self.design_path = None;
+        }
+        if hi >= 2 {
+            self.implement = None;
+            self.tasks_path = None;
+        }
+    }
+}
+
+/// A single transition record appended to the workflow history.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransitionRecord {
+    pub from: Phase,
+    pub to: Phase,
+    pub direction: Direction,
+    pub justification: Option<String>,
+    pub timestamp: String,
+    pub actor: String,
 }
 
 /// A single completed phase record.
@@ -70,6 +123,8 @@ pub struct WorkflowState {
     pub completed: Vec<Completion>,
     #[serde(default = "default_version")]
     pub version: u32,
+    #[serde(default)]
+    pub history: Vec<TransitionRecord>,
 }
 
 impl WorkflowState {
@@ -214,6 +269,7 @@ mod tests {
             artifacts,
             completed: vec![],
             version: 1,
+            history: vec![],
         };
 
         // Serialize to JSON
@@ -334,6 +390,7 @@ mod tests {
             artifacts: artifacts.clone(),
             completed: vec![completion.clone()],
             version: 1,
+            history: vec![],
         };
 
         // Verify phase field
@@ -468,7 +525,7 @@ mod tests {
 
     #[test]
     fn version_field_serialized() {
-        let state = WorkflowState {
+        let state_v = WorkflowState {
             phase: Phase::Idle,
             concern: Concern::Dev,
             feature: "test".to_owned(),
@@ -489,8 +546,9 @@ mod tests {
             },
             completed: vec![],
             version: 1,
+            history: vec![],
         };
-        let json = serde_json::to_string_pretty(&state).expect("serialization must succeed");
+        let json = serde_json::to_string_pretty(&state_v).expect("serialization must succeed");
         assert!(
             json.contains(r#""version": 1"#),
             "JSON must contain version field, got: {json}"

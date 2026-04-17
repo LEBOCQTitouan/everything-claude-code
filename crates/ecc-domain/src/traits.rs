@@ -121,6 +121,7 @@ mod transitionable_impl {
             },
             completed: vec![],
             version: 1,
+            history: vec![],
         }
     }
 
@@ -188,6 +189,7 @@ mod tests {
             },
             completed: vec![],
             version: 1,
+            history: vec![],
         }
     }
 

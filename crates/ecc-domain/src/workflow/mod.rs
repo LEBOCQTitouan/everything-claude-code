@@ -8,4 +8,5 @@ pub mod state;
 pub mod timestamp;
 pub mod transition;
 
+pub use state::TransitionRecord;
 pub use transition::{Direction, TransitionPolicy, TransitionResolver, TransitionResult};
