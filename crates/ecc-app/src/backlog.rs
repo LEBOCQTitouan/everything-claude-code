@@ -276,27 +276,27 @@ pub fn reindex(
         .map(parse_index_statuses)
         .unwrap_or_default();
     let new_statuses = parse_index_statuses(&output);
-    let diff_count = new_statuses
+    let changed_ids: Vec<&str> = new_statuses
         .iter()
         .filter(|(id, new_status)| {
             existing_statuses
                 .get(*id)
                 .is_some_and(|old| old != *new_status)
         })
-        .count();
+        .map(|(id, _)| id.as_str())
+        .collect();
+    let diff_count = changed_ids.len();
     if diff_count > 5 {
+        let id_list = changed_ids.join(", ");
         if !force {
-            return Err(BacklogError::Io {
-                path: "BACKLOG.md".to_string(),
-                message: format!(
-                    "reindex safety block: {diff_count} status changes detected. Use --force to override."
-                ),
-            });
+            return Err(BacklogError::SafetyBlock(format!(
+                "{diff_count} status changes detected ({id_list}). Use --force to override."
+            )));
         }
         tracing::warn!(
             diff_count = diff_count,
-            "reindex: forcing write despite {} status changes",
-            diff_count
+            changed = %id_list,
+            "reindex: forcing write despite {diff_count} status changes"
         );
     }
 
