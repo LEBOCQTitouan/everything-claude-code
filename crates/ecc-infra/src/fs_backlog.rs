@@ -29,6 +29,34 @@ impl<'a> FsBacklogRepository<'a> {
     fn lock_path(&self, backlog_dir: &Path, id: &str) -> std::path::PathBuf {
         backlog_dir.join(".locks").join(format!("{id}.lock"))
     }
+
+    /// Locate a backlog entry file by ID prefix (e.g., `BL-042-*` or `BL-042.md`).
+    fn find_entry_path(
+        &self,
+        backlog_dir: &Path,
+        id: &str,
+    ) -> Result<std::path::PathBuf, BacklogError> {
+        let paths = self
+            .fs
+            .read_dir(backlog_dir)
+            .map_err(|e| BacklogError::Io {
+                path: backlog_dir.display().to_string(),
+                message: e.to_string(),
+            })?;
+        for path in &paths {
+            let filename = match path.file_name() {
+                Some(name) => name.to_string_lossy().to_string(),
+                None => continue,
+            };
+            if filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md") {
+                return Ok(path.clone());
+            }
+        }
+        Err(BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: format!("entry {id} not found"),
+        })
+    }
 }
 
 impl BacklogEntryStore for FsBacklogRepository<'_> {
@@ -68,33 +96,12 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
     }
 
     fn load_entry(&self, backlog_dir: &Path, id: &str) -> Result<BacklogEntry, BacklogError> {
-        let paths = self
-            .fs
-            .read_dir(backlog_dir)
-            .map_err(|e| BacklogError::Io {
-                path: backlog_dir.display().to_string(),
-                message: e.to_string(),
-            })?;
-
-        for path in &paths {
-            let filename = match path.file_name() {
-                Some(name) => name.to_string_lossy().to_string(),
-                None => continue,
-            };
-            if !(filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md")) {
-                continue;
-            }
-            let content = self.fs.read_to_string(path).map_err(|e| BacklogError::Io {
-                path: path.display().to_string(),
-                message: e.to_string(),
-            })?;
-            return parse_frontmatter(&content);
-        }
-
-        Err(BacklogError::Io {
-            path: backlog_dir.display().to_string(),
-            message: format!("entry {id} not found"),
-        })
+        let path = self.find_entry_path(backlog_dir, id)?;
+        let content = self.fs.read_to_string(&path).map_err(|e| BacklogError::Io {
+            path: path.display().to_string(),
+            message: e.to_string(),
+        })?;
+        parse_frontmatter(&content)
     }
 
     fn save_entry(
@@ -145,79 +152,37 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
         id: &str,
         new_status: &str,
     ) -> Result<(), BacklogError> {
-        let paths = self
-            .fs
-            .read_dir(backlog_dir)
-            .map_err(|e| BacklogError::Io {
-                path: backlog_dir.display().to_string(),
-                message: e.to_string(),
-            })?;
-
-        for path in &paths {
-            let filename = match path.file_name() {
-                Some(name) => name.to_string_lossy().to_string(),
-                None => continue,
-            };
-            if !(filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md")) {
-                continue;
-            }
-            let original = self.fs.read_to_string(path).map_err(|e| BacklogError::Io {
-                path: path.display().to_string(),
-                message: e.to_string(),
-            })?;
-            let updated = replace_frontmatter_status(&original, new_status)?;
-            if updated == original {
-                return Ok(());
-            }
-            let tmp_path = path.with_extension("md.tmp");
-            self.fs
-                .write(&tmp_path, &updated)
-                .map_err(|e| BacklogError::Io {
-                    path: tmp_path.display().to_string(),
-                    message: e.to_string(),
-                })?;
-            if let Err(e) = self.fs.rename(&tmp_path, path) {
-                let _ = self.fs.remove_file(&tmp_path);
-                return Err(BacklogError::Io {
-                    path: path.display().to_string(),
-                    message: format!("failed to rename tmp file: {e}"),
-                });
-            }
+        let path = self.find_entry_path(backlog_dir, id)?;
+        let original = self.fs.read_to_string(&path).map_err(|e| BacklogError::Io {
+            path: path.display().to_string(),
+            message: e.to_string(),
+        })?;
+        let updated = replace_frontmatter_status(&original, new_status)?;
+        if updated == original {
             return Ok(());
         }
-
-        Err(BacklogError::Io {
-            path: backlog_dir.display().to_string(),
-            message: format!("entry {id} not found"),
-        })
+        let tmp_path = path.with_extension("md.tmp");
+        self.fs
+            .write(&tmp_path, &updated)
+            .map_err(|e| BacklogError::Io {
+                path: tmp_path.display().to_string(),
+                message: e.to_string(),
+            })?;
+        if let Err(e) = self.fs.rename(&tmp_path, &path) {
+            let _ = self.fs.remove_file(&tmp_path);
+            return Err(BacklogError::Io {
+                path: path.display().to_string(),
+                message: format!("failed to rename tmp file: {e}"),
+            });
+        }
+        Ok(())
     }
 
     fn read_entry_content(&self, backlog_dir: &Path, id: &str) -> Result<String, BacklogError> {
-        let paths = self
-            .fs
-            .read_dir(backlog_dir)
-            .map_err(|e| BacklogError::Io {
-                path: backlog_dir.display().to_string(),
-                message: e.to_string(),
-            })?;
-
-        for path in &paths {
-            let filename = match path.file_name() {
-                Some(name) => name.to_string_lossy().to_string(),
-                None => continue,
-            };
-            if !(filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md")) {
-                continue;
-            }
-            return self.fs.read_to_string(path).map_err(|e| BacklogError::Io {
-                path: path.display().to_string(),
-                message: e.to_string(),
-            });
-        }
-
-        Err(BacklogError::Io {
-            path: backlog_dir.display().to_string(),
-            message: format!("entry {id} not found"),
+        let path = self.find_entry_path(backlog_dir, id)?;
+        self.fs.read_to_string(&path).map_err(|e| BacklogError::Io {
+            path: path.display().to_string(),
+            message: e.to_string(),
         })
     }
 }
