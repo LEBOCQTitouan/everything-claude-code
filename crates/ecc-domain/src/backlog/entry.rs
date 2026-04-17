@@ -247,4 +247,84 @@ mod tests {
         assert_eq!(status.as_str(), "custom-status");
         assert!(!status.is_active());
     }
+
+    // PC-001: replace_frontmatter_status updates status line, preserves body
+    #[test]
+    fn replace_frontmatter_status_updates_status() {
+        let content = "---\nid: BL-001\nstatus: open\ncreated: 2026-01-01\n---\n\n# Body text\nsome content here";
+        let result = replace_frontmatter_status(content, "implemented").unwrap();
+        assert!(result.contains("status: implemented"));
+        assert!(!result.contains("status: open"));
+        // Body preserved character-for-character
+        assert!(result.ends_with("\n\n# Body text\nsome content here"));
+    }
+
+    // PC-002: No-op when status already matches
+    #[test]
+    fn replace_frontmatter_status_noop_same_status() {
+        let content = "---\nid: BL-001\nstatus: open\ncreated: 2026-01-01\n---\n\n# Body";
+        let result = replace_frontmatter_status(content, "open").unwrap();
+        assert_eq!(result, content);
+    }
+
+    // PC-003: Error when no status: field in frontmatter
+    #[test]
+    fn replace_frontmatter_status_missing_status_field() {
+        let content = "---\nid: BL-001\ncreated: 2026-01-01\n---\n\n# Body";
+        let err = replace_frontmatter_status(content, "implemented").unwrap_err();
+        assert!(matches!(err, BacklogError::MalformedYaml(_)));
+        if let BacklogError::MalformedYaml(msg) = err {
+            assert!(msg.contains("status field not found"));
+        }
+    }
+
+    // PC-004: Updates only first status: line when duplicates exist
+    #[test]
+    fn replace_frontmatter_status_duplicate_keys() {
+        let content = "---\nid: BL-001\nstatus: open\nstatus: archived\ncreated: 2026-01-01\n---\n\n# Body";
+        let result = replace_frontmatter_status(content, "implemented").unwrap();
+        // First occurrence updated
+        let first_status_pos = result.find("status: ").unwrap();
+        let first_status_line: &str = result[first_status_pos..].lines().next().unwrap();
+        assert_eq!(first_status_line, "status: implemented");
+        // Second occurrence unchanged
+        assert!(result.contains("status: archived"));
+    }
+
+    // PC-005: Strips YAML quotes from status value
+    #[test]
+    fn replace_frontmatter_status_strips_quotes() {
+        let content = "---\nid: BL-001\nstatus: \"implemented\"\ncreated: 2026-01-01\n---\n\n# Body";
+        let result = replace_frontmatter_status(content, "implemented").unwrap();
+        // No-op because quoted "implemented" == unquoted implemented
+        assert_eq!(result, content.replace("\"implemented\"", "implemented"));
+        // Also test double-quoted -> different status
+        let content2 = "---\nid: BL-001\nstatus: \"open\"\ncreated: 2026-01-01\n---\n\n# Body";
+        let result2 = replace_frontmatter_status(content2, "implemented").unwrap();
+        assert!(result2.contains("status: implemented"));
+        assert!(!result2.contains("\""));
+    }
+
+    // PC-006: Does not modify status: lines in body after closing ---
+    #[test]
+    fn replace_frontmatter_status_ignores_body_status() {
+        let content = "---\nid: BL-001\nstatus: open\ncreated: 2026-01-01\n---\n\nstatus: this is in the body\n# Body";
+        let result = replace_frontmatter_status(content, "implemented").unwrap();
+        assert!(result.contains("status: implemented"));
+        // Body status line unchanged
+        assert!(result.contains("status: this is in the body"));
+    }
+
+    // PC-007: from_kebab returns Some for 5 valid statuses, None for unknown
+    #[test]
+    fn from_kebab_valid_and_invalid() {
+        assert_eq!(BacklogStatus::from_kebab("open"), Some(BacklogStatus::Open));
+        assert_eq!(BacklogStatus::from_kebab("in-progress"), Some(BacklogStatus::InProgress));
+        assert_eq!(BacklogStatus::from_kebab("implemented"), Some(BacklogStatus::Implemented));
+        assert_eq!(BacklogStatus::from_kebab("archived"), Some(BacklogStatus::Archived));
+        assert_eq!(BacklogStatus::from_kebab("promoted"), Some(BacklogStatus::Promoted));
+        assert_eq!(BacklogStatus::from_kebab("unknown"), None);
+        assert_eq!(BacklogStatus::from_kebab("custom-status"), None);
+        assert_eq!(BacklogStatus::from_kebab(""), None);
+    }
 }
