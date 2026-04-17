@@ -29,6 +29,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Backlog status conformance (BL-084)**: Added `ecc backlog update-status` and `ecc backlog migrate` CLI commands to fix dual source-of-truth between individual BL-*.md files and BACKLOG.md index. New `replace_frontmatter_status` domain function performs in-place YAML frontmatter surgery. Reindex safety warning blocks writes when >5 statuses would change (exit code 2, `--force` to override). Migration function syncs divergent entries with best-effort partial failure handling. Fixed ERR-004: lock removal failures now logged instead of swallowed. Extracted `find_entry_path` DRY helper in infra adapter.
+
 - **Phase-gate allowlist (BL-142)**: Added `docs/cartography/`, `docs/domain/`, `docs/guides/`, `docs/diagrams/` to phase-gate allowlist. These directories were blocked during active workflow phases, preventing doc-orchestrator and cartographer agents from writing during spec/design phases.
 
 ### Added
