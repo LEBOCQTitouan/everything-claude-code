@@ -40,10 +40,18 @@ pub fn run_validate(
     target: &ValidateTarget,
     root: &std::path::Path,
 ) -> bool {
+    // Load manifest once (best-effort: missing manifest falls back to legacy behaviour)
+    let manifest_opt =
+        tool_manifest_loader::load_tool_manifest(fs, root).ok();
+
     match target {
-        ValidateTarget::Agents => agents::validate_agents(root, fs, terminal),
+        ValidateTarget::Agents => {
+            agents::validate_agents(root, fs, terminal, manifest_opt.as_ref())
+        }
         ValidateTarget::Commands => commands::validate_commands(root, fs, terminal),
-        ValidateTarget::Conventions => conventions::validate_conventions(root, fs, terminal),
+        ValidateTarget::Conventions => {
+            conventions::validate_conventions(root, fs, terminal, manifest_opt.as_ref())
+        }
         ValidateTarget::Hooks => hooks::validate_hooks(root, fs, terminal),
         ValidateTarget::Skills => skills::validate_skills(root, fs, terminal),
         ValidateTarget::Rules => rules::validate_rules(root, fs, terminal),

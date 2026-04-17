@@ -1,3 +1,5 @@
+use ecc_domain::config::tool_manifest::ToolManifest;
+use ecc_domain::config::tool_manifest_resolver::{FrontmatterToolSpec, ResolveError, resolve_effective_tools};
 use ecc_domain::config::validate::{
     LintFinding, LintSeverity, check_naming_consistency, check_tool_values, extract_frontmatter,
 };
@@ -6,7 +8,7 @@ use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
 /// Tool vocabulary for validation — sourced from manifest/tool-manifest.yaml.
-/// Phase 1 bridge: will be replaced by injected ToolManifest in Phase 3 (BL-146 US-003).
+/// Phase 1 bridge: used when no manifest is available (legacy fallback).
 const TOOL_VOCAB: &[&str] = &[
     "Read",
     "Write",
@@ -35,6 +37,7 @@ pub(super) fn validate_conventions(
     root: &Path,
     fs: &dyn FileSystem,
     terminal: &dyn TerminalIO,
+    manifest: Option<&ToolManifest>,
 ) -> bool {
     let mut findings: Vec<LintFinding> = Vec::new();
     let mut total_checked: usize = 0;
@@ -57,7 +60,12 @@ pub(super) fn validate_conventions(
                 let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
                 findings.extend(check_naming_consistency(&stem, fm_name, "agent"));
                 if let Some(tools) = fm.as_ref().and_then(|m| m.get("tools")) {
-                    findings.extend(check_tool_values(&stem, tools, "tools", TOOL_VOCAB));
+                    let vocab: Vec<&str> = if let Some(m) = manifest {
+                        m.tools.iter().map(String::as_str).collect()
+                    } else {
+                        TOOL_VOCAB.to_vec()
+                    };
+                    findings.extend(check_tool_values(&stem, tools, "tools", &vocab));
                 }
             }
         }
@@ -80,8 +88,53 @@ pub(super) fn validate_conventions(
                 let fm = extract_frontmatter(&content);
                 let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
                 findings.extend(check_naming_consistency(&stem, fm_name, "command"));
-                if let Some(tools) = fm.as_ref().and_then(|m| m.get("allowed-tools")) {
-                    findings.extend(check_tool_values(&stem, tools, "allowed-tools", TOOL_VOCAB));
+
+                // Resolve allowed-tool-set: (preset) and/or allowed-tools:
+                if let Some(ref fm_map) = fm {
+                    let tool_set_val = fm_map.get("allowed-tool-set").map(|s| s.trim().to_string());
+                    let inline_tools = fm_map
+                        .get("allowed-tools")
+                        .map(|raw| ecc_domain::config::validate::parse_tool_list(raw.trim()));
+
+                    if let (Some(ts_val), Some(m)) = (tool_set_val.as_ref(), manifest)
+                        && !ts_val.is_empty()
+                    {
+                        let spec = FrontmatterToolSpec {
+                            tool_set: tool_set_val.clone(),
+                            inline_tools: inline_tools.clone(),
+                        };
+                        match resolve_effective_tools(&spec, m) {
+                            Ok(_) => {}
+                            Err(ResolveError::UnknownPreset(preset)) => {
+                                findings.push(LintFinding {
+                                    severity: LintSeverity::Error,
+                                    file: stem.to_string(),
+                                    message: format!(
+                                        "'{stem}': unknown allowed-tool-set '{preset}'"
+                                    ),
+                                });
+                            }
+                            Err(e) => {
+                                findings.push(LintFinding {
+                                    severity: LintSeverity::Error,
+                                    file: stem.to_string(),
+                                    message: format!(
+                                        "'{stem}': allowed-tool-set error: {e}"
+                                    ),
+                                });
+                            }
+                        }
+                    } else if tool_set_val.is_none()
+                        && let Some(tools) = fm_map.get("allowed-tools")
+                    {
+                        // No preset: validate inline tools against vocab
+                        let vocab: Vec<&str> = if let Some(m) = manifest {
+                            m.tools.iter().map(String::as_str).collect()
+                        } else {
+                            TOOL_VOCAB.to_vec()
+                        };
+                        findings.extend(check_tool_values(&stem, tools, "allowed-tools", &vocab));
+                    }
                 }
             }
         }

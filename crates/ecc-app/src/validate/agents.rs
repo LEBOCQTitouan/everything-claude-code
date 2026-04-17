@@ -1,11 +1,18 @@
+use ecc_domain::config::tool_manifest::ToolManifest;
+use ecc_domain::config::tool_manifest_resolver::{FrontmatterToolSpec, resolve_effective_tools};
 use ecc_domain::config::validate::{
-    VALID_EFFORT_LEVELS, VALID_MODELS, extract_frontmatter, parse_tool_list,
+    VALID_EFFORT_LEVELS, VALID_MODELS, check_tool_values, extract_frontmatter, parse_tool_list,
 };
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
-pub(super) fn validate_agents(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
+pub(super) fn validate_agents(
+    root: &Path,
+    fs: &dyn FileSystem,
+    terminal: &dyn TerminalIO,
+    manifest: Option<&ToolManifest>,
+) -> bool {
     let agents_dir = root.join("agents");
     if !fs.exists(&agents_dir) {
         terminal.stdout_write("No agents directory found, skipping validation\n");
@@ -26,7 +33,7 @@ pub(super) fn validate_agents(root: &Path, fs: &dyn FileSystem, terminal: &dyn T
 
     let mut has_errors = false;
     for file in &md_files {
-        if !validate_agent_file(file, root, fs, terminal) {
+        if !validate_agent_file(file, root, fs, terminal, manifest) {
             has_errors = true;
         }
     }
@@ -44,8 +51,9 @@ fn validate_agent_file(
     root: &Path,
     fs: &dyn FileSystem,
     terminal: &dyn TerminalIO,
+    manifest: Option<&ToolManifest>,
 ) -> bool {
-    let required_fields = ["model", "tools"];
+    let required_fields = ["model"];
 
     let content = match fs.read_to_string(file) {
         Ok(c) => c,
@@ -79,6 +87,81 @@ fn validate_agent_file(
             }
         }
     }
+
+    // Tool resolution: tool-set and/or tools field
+    let has_tool_set = frontmatter
+        .get("tool-set")
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+    let has_tools = frontmatter
+        .get("tools")
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+
+    if !has_tool_set && !has_tools {
+        // Neither field: legacy error
+        terminal.stderr_write(&format!(
+            "ERROR: {} - Missing required field: tools\n",
+            name
+        ));
+        valid = false;
+    } else if let Some(m) = manifest {
+        // Manifest available: resolve and validate
+        let tool_set_val = frontmatter.get("tool-set").map(|s| s.trim().to_string());
+        let inline_tools = frontmatter.get("tools").map(|raw| parse_tool_list(raw.trim()));
+
+        let spec = FrontmatterToolSpec {
+            tool_set: tool_set_val,
+            inline_tools,
+        };
+
+        match resolve_effective_tools(&spec, m) {
+            Ok(resolved) => {
+                // Emit WARN for outlier inline tools
+                for warn in &resolved.warnings {
+                    terminal.stdout_write(&format!("WARNING: {} - {}\n", name, warn));
+                }
+                // Validate inline tools against manifest atomic tools
+                if let Some(raw_tools) = frontmatter.get("tools") {
+                    let atomic_tools: Vec<&str> = m.tools.iter().map(String::as_str).collect();
+                    let findings =
+                        check_tool_values(&name, raw_tools.trim(), "tools", &atomic_tools);
+                    for f in &findings {
+                        terminal.stderr_write(&format!("ERROR: {}\n", f.message));
+                        valid = false;
+                    }
+                }
+            }
+            Err(e) => {
+                use ecc_domain::config::tool_manifest_resolver::ResolveError;
+                match &e {
+                    ResolveError::UnknownPreset(preset) => {
+                        terminal.stderr_write(&format!(
+                            "ERROR: {} - unknown tool-set '{}'\n",
+                            name, preset
+                        ));
+                    }
+                    ResolveError::InvalidToolSetReference(v) => {
+                        terminal.stderr_write(&format!(
+                            "ERROR: {} - invalid tool-set value '{}'\n",
+                            name, v
+                        ));
+                    }
+                    ResolveError::ArrayNotSupported => {
+                        terminal.stderr_write(&format!(
+                            "ERROR: {} - tool-set must be a single string, not an array\n",
+                            name
+                        ));
+                    }
+                    _ => {
+                        terminal.stderr_write(&format!("ERROR: {} - {}\n", name, e));
+                    }
+                }
+                valid = false;
+            }
+        }
+    }
+    // If no manifest, skip tool-name validation (legacy pass-through)
 
     if let Some(model) = frontmatter.get("model")
         && !VALID_MODELS.contains(&model.as_str())
