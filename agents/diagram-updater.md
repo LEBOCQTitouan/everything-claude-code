@@ -1,7 +1,7 @@
 ---
 name: diagram-updater
 description: Feature-scoped Mermaid diagram generator. Dispatched by /implement Phase 7.5 to create or update sequence, flowchart, dependency, and C4 component diagrams for implemented features.
-tools: ["Read", "Write", "Edit", "Grep", "Glob"]
+tool-set: content-writer
 model: haiku
 effort: low
 skills: ["diagram-generation"]
