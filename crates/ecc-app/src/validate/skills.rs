@@ -1,9 +1,15 @@
+use ecc_domain::config::tool_manifest::ToolManifest;
 use ecc_domain::config::validate::extract_frontmatter;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
-pub(super) fn validate_skills(root: &Path, fs: &dyn FileSystem, terminal: &dyn TerminalIO) -> bool {
+pub(super) fn validate_skills(
+    root: &Path,
+    fs: &dyn FileSystem,
+    terminal: &dyn TerminalIO,
+    manifest: Option<&ToolManifest>,
+) -> bool {
     let skills_dir = root.join("skills");
     if !fs.exists(&skills_dir) {
         terminal.stdout_write("No skills directory found, skipping validation\n");
@@ -47,7 +53,7 @@ pub(super) fn validate_skills(root: &Path, fs: &dyn FileSystem, terminal: &dyn T
                 has_errors = true;
             }
             Ok(content) => {
-                if validate_skill_file(&name, &content, terminal) {
+                if validate_skill_file(&name, &content, terminal, manifest) {
                     valid_count += 1;
                 } else {
                     has_errors = true;
@@ -64,7 +70,12 @@ pub(super) fn validate_skills(root: &Path, fs: &dyn FileSystem, terminal: &dyn T
     true
 }
 
-fn validate_skill_file(name: &str, content: &str, terminal: &dyn TerminalIO) -> bool {
+fn validate_skill_file(
+    name: &str,
+    content: &str,
+    terminal: &dyn TerminalIO,
+    manifest: Option<&ToolManifest>,
+) -> bool {
     let fm = extract_frontmatter(content);
     let required_fields = ["name", "description", "origin"];
     let mut has_errors = false;
@@ -89,6 +100,21 @@ fn validate_skill_file(name: &str, content: &str, terminal: &dyn TerminalIO) -> 
                         "WARNING: {}/SKILL.md - Skills should not have '{}' field (use agents for behavioral configuration)\n",
                         name, warn_field
                     ));
+                }
+            }
+            // Validate tool-set reference when present
+            if let Some(preset_name) = map.get("tool-set") {
+                let preset_name = preset_name.trim();
+                if !preset_name.is_empty() {
+                    if let Some(m) = manifest {
+                        if !m.presets.contains_key(preset_name) {
+                            terminal.stderr_write(&format!(
+                                "ERROR: {}/SKILL.md - tool-set '{}' not found in manifest presets\n",
+                                name, preset_name
+                            ));
+                            has_errors = true;
+                        }
+                    }
                 }
             }
         }

@@ -53,7 +53,7 @@ pub fn run_validate(
             conventions::validate_conventions(root, fs, terminal, manifest_opt.as_ref())
         }
         ValidateTarget::Hooks => hooks::validate_hooks(root, fs, terminal),
-        ValidateTarget::Skills => skills::validate_skills(root, fs, terminal),
+        ValidateTarget::Skills => skills::validate_skills(root, fs, terminal, manifest_opt.as_ref()),
         ValidateTarget::Rules => rules::validate_rules(root, fs, terminal),
         ValidateTarget::Paths => paths::validate_paths(root, fs, terminal),
         ValidateTarget::Patterns => patterns::validate_patterns(root, fs, terminal),
