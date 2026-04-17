@@ -5,7 +5,7 @@ use ecc_ports::shell::ShellExecutor;
 use ecc_ports::worktree::WorktreeManager;
 use std::path::Path;
 
-use super::{WorktreeError, is_worktree_stale, now_secs};
+use super::{WorktreeGcError, is_worktree_stale, now_secs};
 
 /// Result of a worktree GC run.
 #[derive(Debug, Default)]
@@ -35,7 +35,7 @@ pub fn gc(
     executor: &dyn ShellExecutor,
     project_dir: &Path,
     force: bool,
-) -> Result<WorktreeGcResult, WorktreeError> {
+) -> Result<WorktreeGcResult, WorktreeGcError> {
     let entries = worktree_mgr.list_worktrees(project_dir)?;
     let mut result = WorktreeGcResult::default();
     let now = now_secs();
@@ -63,7 +63,7 @@ pub fn gc(
         let worktree_path = Path::new(&entry.path);
         let unmerged = worktree_mgr
             .unmerged_commit_count(worktree_path, "main")
-            .unwrap_or(0);
+            .unwrap_or(u64::MAX); // Fail-safe: assume unmerged when query fails
         if unmerged > 0 && !force {
             tracing::warn!(
                 worktree = %worktree_name,

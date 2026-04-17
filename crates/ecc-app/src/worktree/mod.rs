@@ -66,7 +66,7 @@ pub(crate) fn is_worktree_stale(
 
 /// Errors returned by worktree operations.
 #[derive(Debug, thiserror::Error)]
-pub enum WorktreeError {
+pub enum WorktreeGcError {
     /// A shell command failed or was not found.
     #[error("worktree operation failed: {0}")]
     Shell(String),

@@ -5,7 +5,7 @@ use ecc_ports::shell::ShellExecutor;
 use ecc_ports::worktree::WorktreeManager;
 use std::path::Path;
 
-use super::{WorktreeError, compact_ts_to_secs, is_worktree_stale, now_secs};
+use super::{WorktreeGcError, compact_ts_to_secs, is_worktree_stale, now_secs};
 
 /// A single row in the worktree status table.
 #[derive(Debug, Clone)]
@@ -44,7 +44,7 @@ pub fn status(
     worktree_mgr: &dyn WorktreeManager,
     executor: &dyn ShellExecutor,
     project_dir: &Path,
-) -> Result<Vec<WorktreeStatusEntry>, WorktreeError> {
+) -> Result<Vec<WorktreeStatusEntry>, WorktreeGcError> {
     let entries = worktree_mgr.list_worktrees(project_dir)?;
     let now = now_secs();
     let mut out = Vec::new();
