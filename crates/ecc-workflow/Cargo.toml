@@ -19,6 +19,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
+thiserror = { workspace = true }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter", "ansi"] }
 dirs = "6"
@@ -26,3 +27,5 @@ dirs = "6"
 [dev-dependencies]
 tempfile = "3"
 ecc-test-support = { workspace = true }
+rexpect = "0.7.0"
+proptest = "1"

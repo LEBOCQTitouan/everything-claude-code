@@ -24,7 +24,14 @@ pub struct WorkflowArgs {
 #[derive(Subcommand)]
 pub enum WorkflowCommand {
     /// Initialize workflow state for a new session
-    Init { concern: String, feature: String },
+    Init {
+        concern: String,
+        #[arg(conflicts_with = "feature_stdin")]
+        feature: Option<String>,
+        /// Read feature description from stdin instead of positional arg
+        #[arg(long = "feature-stdin", conflicts_with = "feature")]
+        feature_stdin: bool,
+    },
     /// Advance the workflow to the target phase
     Transition {
         target: String,
@@ -77,7 +84,14 @@ pub enum WorkflowCommand {
     /// Check E2E test section
     E2eBoundaryCheck,
     /// Generate a worktree name for session isolation
-    WorktreeName { concern: String, feature: String },
+    WorktreeName {
+        concern: String,
+        #[arg(conflicts_with = "feature_stdin")]
+        feature: Option<String>,
+        /// Read feature description from stdin instead of positional arg
+        #[arg(long = "feature-stdin", conflicts_with = "feature")]
+        feature_stdin: bool,
+    },
     /// Compute wave plan from design file
     WavePlan { design_path: String },
     /// Merge session worktree into main
@@ -147,8 +161,18 @@ pub fn run(args: WorkflowArgs) -> anyhow::Result<()> {
 /// Build the argument list for the ecc-workflow binary.
 fn build_args(command: &WorkflowCommand) -> Vec<String> {
     match command {
-        WorkflowCommand::Init { concern, feature } => {
-            vec!["init".into(), concern.clone(), feature.clone()]
+        WorkflowCommand::Init {
+            concern,
+            feature,
+            feature_stdin,
+        } => {
+            let mut args = vec!["init".into(), concern.clone()];
+            if *feature_stdin {
+                args.push("--feature-stdin".into());
+            } else if let Some(f) = feature {
+                args.push(f.clone());
+            }
+            args
         }
         WorkflowCommand::Transition {
             target,
@@ -213,8 +237,18 @@ fn build_args(command: &WorkflowCommand) -> Vec<String> {
         WorkflowCommand::DocLevelCheck => vec!["doc-level-check".into()],
         WorkflowCommand::PassConditionCheck => vec!["pass-condition-check".into()],
         WorkflowCommand::E2eBoundaryCheck => vec!["e2e-boundary-check".into()],
-        WorkflowCommand::WorktreeName { concern, feature } => {
-            vec!["worktree-name".into(), concern.clone(), feature.clone()]
+        WorkflowCommand::WorktreeName {
+            concern,
+            feature,
+            feature_stdin,
+        } => {
+            let mut args = vec!["worktree-name".into(), concern.clone()];
+            if *feature_stdin {
+                args.push("--feature-stdin".into());
+            } else if let Some(f) = feature {
+                args.push(f.clone());
+            }
+            args
         }
         WorkflowCommand::WavePlan { design_path } => {
             vec!["wave-plan".into(), design_path.clone()]

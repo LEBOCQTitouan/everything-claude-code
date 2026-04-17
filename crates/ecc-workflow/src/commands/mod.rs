@@ -5,6 +5,7 @@ pub mod campaign_io;
 pub mod doc_enforcement;
 pub mod doc_level_check;
 pub mod e2e_boundary_check;
+pub mod feature_input;
 pub mod grill_me_gate;
 pub mod history;
 pub mod init;

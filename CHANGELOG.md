@@ -8,6 +8,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
+### Fixed
+
+- **Shell-eval injection in slash-command templates (spec 2026-04-17)**: `/spec-dev`, `/spec-fix`, `/spec-refactor`, and `/project-foundation` no longer fail on argument strings containing shell metacharacters (`` ` ``, `"`, `$`, `\`, newline). Removed 7 `!`-prefix `$ARGUMENTS` lines across 4 templates; replaced with prose directing Claude to invoke the CLI via the Bash tool with env-var + stdin pattern. Added `--feature-stdin` flag on `ecc-workflow init` and `ecc-workflow worktree-name` (mirrored in `ecc workflow` delegator) for defense-in-depth: 64KB cap, UTF-8 validation, TTY rejection, single-trailing-LF strip. Added `ecc validate commands` rule preventing regression (pinned regex `^[[:space:]]*!.*\$ARGUMENTS`). Zero domain changes, zero data migration. 41 pass conditions, ~3000+ tests pass workspace-wide. (ADR 0066)
+
 ### Added
 
 - **Bidirectional pipeline transitions (BL-129)**: Replaced closed `matches!` transition table with data-driven `TransitionPolicy` type and `TransitionResolver` trait. Added backward transitions (implement→solution, solution→plan, implement→plan) with mandatory justification. Append-only `TransitionRecord` history in `state.json`. New `ecc workflow history [--json]` CLI. Artifact clearing (timestamps + paths) on rollback. Forward re-entry re-stamps timestamps. `TransitionPolicy::default_forward()` preserves existing forward-only behavior; `with_backward()` adds backward pairs. History preserved in reset archives. (ADR 0064, ADR 0065)

@@ -11,12 +11,12 @@ allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite, Agent, AskUs
 >
 > **Narrative**: See narrative-conventions skill.
 
-!`ecc-workflow init fix "$ARGUMENTS"`
+Invoke the CLI via the Bash tool (do NOT use `!`-prefix shell eval) to initialize the workflow state for this fix. Pass the fix description via an environment variable and pipe it through stdin to avoid shell-argv interpolation of metacharacters. For example: `env FEATURE='<user's fix description>' sh -c 'printf %s "$FEATURE" | ecc-workflow init fix --feature-stdin'`. This pattern is safe for all characters including backticks, quotes, dollar signs, and backslashes.
 
 ### Worktree Isolation
 
 Generate a worktree name and isolate this session:
-1. Run: `!ecc-workflow worktree-name fix "$ARGUMENTS"` — capture the output name
+1. Invoke the CLI via the Bash tool to generate the worktree name. Pass the fix description via an environment variable and pipe it through stdin, e.g.: `env FEATURE='<user's fix description>' sh -c 'printf %s "$FEATURE" | ecc-workflow worktree-name fix --feature-stdin'` — capture the output name.
 2. Call `EnterWorktree` with the generated name as the branch name. This isolates all session writes to a dedicated worktree.
 3. If `EnterWorktree` fails, proceed without worktree and warn: "Worktree isolation failed. Proceeding on main tree."
 

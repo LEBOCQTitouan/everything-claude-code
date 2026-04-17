@@ -142,12 +142,15 @@
 | BL-141 | Monitor serde-saphyr for 0.1.0 stability release | — | LOW | direct edit | open | 2026-04-09 |
 | BL-142 | Add docs/cartography/ to phase-gate allowlist | — | LOW | direct edit | implemented | 2026-04-09 |
 | BL-143 | /project-foundation command — PRD + Architecture docs creation with codebase-aware challenge | — | MEDIUM | /spec-dev | implemented | 2026-04-12 |
-| BL-144 | /party command — BMAD-style multi-agent round-table with auto-generated domain agents | — | HIGH | /spec-dev | implemented | 2026-04-12 |
+| BL-144 | /party command — BMAD-style multi-agent round-table with auto-generated domain agents | — | HIGH | /spec-dev | open | 2026-04-12 |
 | BL-145 | Wire party-mode into /spec phase as augmentation layer before adversarial review | — | MEDIUM | /spec-dev | open | 2026-04-12 |
 | BL-146 | Declarative tool manifest — centralize allowedTools via Serde-validated YAML/TOML | — | HIGH | /spec-dev | implemented | 2026-04-12 |
 | BL-147 | AGENTS.md / AAIF standard alignment audit | — | MEDIUM | /spec-dev | implemented | 2026-04-12 |
 | BL-148 | Formalize session resume/persist/delegate hook lifecycle | — | MEDIUM | /spec-dev | open | 2026-04-12 |
 | BL-149 | Add agentic self-evaluation step between /implement TDD iterations | — | MEDIUM | /spec-dev | implemented | 2026-04-12 |
+| BL-153 | Redact or truncate feature field in tracing::info! to prevent log-injection amplification | — | MEDIUM | direct edit | open | 2026-04-17 |
+| BL-154 | Widen ecc validate commands rule to catch backtick-embedded !$ARGUMENTS inline-code patterns | — | LOW | direct edit | open | 2026-04-17 |
+| BL-155 | Add Foundation variant to Concern domain enum for /project-foundation workflow | — | MEDIUM | /spec-dev | open | 2026-04-17 |
 
 ## Dependency Graph
 
@@ -233,9 +236,8 @@ BL-145 → BL-144 (spec-phase integration requires /party command to exist first
 
 ## Stats
 
-- **Total:** 146
-- **Open:** 6
-- **In-progress:** 1
+- **Total:** 149
+- **Open:** 10
 - **Implemented:** 131
 - **Archived:** 7
 - **2026-03-28:** 1

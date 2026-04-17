@@ -133,6 +133,7 @@ mod tests {
     use crate::sources::parser::parse_sources;
     use crate::sources::registry::ModuleMapping;
 
+    #[allow(clippy::too_many_arguments)]
     fn make_entry(
         url: &str,
         title: &str,

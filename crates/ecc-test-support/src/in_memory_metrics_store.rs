@@ -225,6 +225,7 @@ mod tests {
         .unwrap()
     }
 
+    #[allow(dead_code)]
     fn agent(outcome: MetricOutcome, retry: Option<u32>) -> MetricEvent {
         MetricEvent::agent_spawn(
             "s1".into(),
@@ -236,6 +237,7 @@ mod tests {
         .unwrap()
     }
 
+    #[allow(dead_code)]
     fn commit(outcome: MetricOutcome) -> MetricEvent {
         MetricEvent::commit_gate(
             "s1".into(),

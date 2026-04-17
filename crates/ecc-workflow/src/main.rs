@@ -25,9 +25,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    #[command(group = clap::ArgGroup::new("feature_input").args(&["feature", "feature_stdin"]).required(true).multiple(false))]
     Init {
         concern: String,
-        feature: String,
+        feature: Option<String>,
+        /// Read feature from stdin. Limits: 64KB, UTF-8, rejects TTY, strips single trailing LF.
+        #[arg(long = "feature-stdin", conflicts_with = "feature")]
+        feature_stdin: bool,
     },
     Transition {
         target: String,
@@ -99,9 +103,13 @@ enum Commands {
     E2eBoundaryCheck,
     /// Generate a new git worktree name for session isolation.
     /// Generate a session-isolated git worktree name from concern and feature.
+    #[command(group = clap::ArgGroup::new("worktree_feature_input").args(&["feature", "feature_stdin"]).required(true).multiple(false))]
     WorktreeName {
         concern: String,
-        feature: String,
+        feature: Option<String>,
+        /// Read feature from stdin. Limits: 64KB, UTF-8, rejects TTY, strips single trailing LF.
+        #[arg(long = "feature-stdin", conflicts_with = "feature")]
+        feature_stdin: bool,
     },
     /// Compute wave plan from design file's PC and File Changes tables.
     WavePlan {
@@ -274,6 +282,19 @@ fn migrate_state_if_needed(project_dir: &std::path::Path, state_dir: &std::path:
     }
 }
 
+/// Resolve the feature string from either the positional arg or stdin flag.
+/// Clap's ArgGroup guarantees exactly one is present.
+fn resolve_feature(feature: Option<String>, feature_stdin: bool) -> Result<String, String> {
+    if feature_stdin {
+        use std::io::IsTerminal as _;
+        let is_tty = std::io::stdin().is_terminal();
+        commands::feature_input::read_feature_from_stdin(std::io::stdin().lock(), is_tty)
+            .map_err(|e| format!("Failed to read feature from stdin: {e}"))
+    } else {
+        Ok(feature.expect("clap ArgGroup requires one of feature or feature_stdin"))
+    }
+}
+
 fn dispatch(cli: Cli) -> WorkflowOutput {
     tracing::debug!(
         "dispatching command: {:?}",
@@ -283,7 +304,17 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
     let sd = resolve_state_dir();
     migrate_state_if_needed(&proj, &sd);
     match cli.command {
-        Commands::Init { concern, feature } => commands::init::run(&concern, &feature, &proj, &sd),
+        Commands::Init {
+            concern,
+            feature,
+            feature_stdin,
+        } => {
+            let resolved = resolve_feature(feature, feature_stdin);
+            match resolved {
+                Ok(f) => commands::init::run(&concern, &f, &proj, &sd),
+                Err(e) => crate::output::WorkflowOutput::block(e),
+            }
+        }
         Commands::Transition {
             target,
             artifact,
@@ -316,8 +347,16 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
         Commands::DocLevelCheck => commands::doc_level_check::run(&proj, &sd),
         Commands::PassConditionCheck => commands::pass_condition_check::run(&sd),
         Commands::E2eBoundaryCheck => commands::e2e_boundary_check::run(&sd),
-        Commands::WorktreeName { concern, feature } => {
-            commands::worktree_name::run(&concern, &feature)
+        Commands::WorktreeName {
+            concern,
+            feature,
+            feature_stdin,
+        } => {
+            let resolved = resolve_feature(feature, feature_stdin);
+            match resolved {
+                Ok(f) => commands::worktree_name::run(&concern, &f),
+                Err(e) => crate::output::WorkflowOutput::block(e),
+            }
         }
         Commands::WavePlan { design_path } => commands::wave_plan::run(&design_path, &proj),
         Commands::Merge => commands::merge::run(&proj, &sd),
