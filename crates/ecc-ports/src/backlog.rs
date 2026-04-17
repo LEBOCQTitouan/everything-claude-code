@@ -26,6 +26,17 @@ pub trait BacklogEntryStore: Send + Sync {
 
     /// Compute the next available entry ID (max existing + 1).
     fn next_id(&self, backlog_dir: &Path) -> Result<String, BacklogError>;
+
+    /// Update the `status:` field inside the raw frontmatter for entry `id`.
+    fn update_entry_status(
+        &self,
+        backlog_dir: &Path,
+        id: &str,
+        new_status: &str,
+    ) -> Result<(), BacklogError>;
+
+    /// Return the raw file content for entry `id`.
+    fn read_entry_content(&self, backlog_dir: &Path, id: &str) -> Result<String, BacklogError>;
 }
 
 /// Port for managing session lock files on backlog entries.

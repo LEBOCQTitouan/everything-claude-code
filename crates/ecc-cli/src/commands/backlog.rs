@@ -164,6 +164,20 @@ mod tests {
         fn next_id(&self, _dir: &Path) -> Result<String, BacklogError> {
             Ok("BL-001".into())
         }
+        fn update_entry_status(
+            &self,
+            _dir: &Path,
+            _id: &str,
+            _new_status: &str,
+        ) -> Result<(), BacklogError> {
+            Ok(())
+        }
+        fn read_entry_content(&self, _dir: &Path, _id: &str) -> Result<String, BacklogError> {
+            Err(BacklogError::Io {
+                path: "stub".into(),
+                message: "not implemented".into(),
+            })
+        }
     }
 
     struct StubLocks;

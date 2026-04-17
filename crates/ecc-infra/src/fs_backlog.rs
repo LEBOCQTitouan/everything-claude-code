@@ -137,6 +137,19 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
 
         Ok(format!("BL-{:03}", max_id + 1))
     }
+
+    fn update_entry_status(
+        &self,
+        _backlog_dir: &Path,
+        _id: &str,
+        _new_status: &str,
+    ) -> Result<(), BacklogError> {
+        unimplemented!("update_entry_status not yet implemented for FsBacklogRepository")
+    }
+
+    fn read_entry_content(&self, _backlog_dir: &Path, _id: &str) -> Result<String, BacklogError> {
+        unimplemented!("read_entry_content not yet implemented for FsBacklogRepository")
+    }
 }
 
 impl BacklogLockStore for FsBacklogRepository<'_> {

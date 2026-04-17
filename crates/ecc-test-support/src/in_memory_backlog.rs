@@ -1,4 +1,4 @@
-use ecc_domain::backlog::entry::{BacklogEntry, BacklogError};
+use ecc_domain::backlog::entry::{BacklogEntry, BacklogError, replace_frontmatter_status};
 use ecc_domain::backlog::lock::LockFile;
 use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore, BacklogLockStore};
 use std::collections::HashMap;
@@ -11,6 +11,7 @@ pub struct InMemoryBacklogRepository {
     entries: Arc<Mutex<Vec<BacklogEntry>>>,
     locks: Arc<Mutex<HashMap<String, LockFile>>>,
     index: Arc<Mutex<Option<String>>>,
+    raw_contents: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl InMemoryBacklogRepository {
@@ -20,7 +21,17 @@ impl InMemoryBacklogRepository {
             entries: Arc::new(Mutex::new(Vec::new())),
             locks: Arc::new(Mutex::new(HashMap::new())),
             index: Arc::new(Mutex::new(None)),
+            raw_contents: Arc::new(Mutex::new(HashMap::new())),
         }
+    }
+
+    /// Seed raw file content for entry `id`.
+    pub fn with_raw_content(self, id: &str, content: &str) -> Self {
+        self.raw_contents
+            .lock()
+            .unwrap()
+            .insert(id.to_string(), content.to_string());
+        self
     }
 
     /// Seed an entry into the repository.
@@ -89,6 +100,34 @@ impl BacklogEntryStore for InMemoryBacklogRepository {
             .max()
             .unwrap_or(0);
         Ok(format!("BL-{:03}", max_num + 1))
+    }
+
+    fn update_entry_status(
+        &self,
+        _backlog_dir: &Path,
+        id: &str,
+        new_status: &str,
+    ) -> Result<(), BacklogError> {
+        let mut raw_contents = self.raw_contents.lock().unwrap();
+        let content = raw_contents.get(id).cloned().ok_or_else(|| BacklogError::Io {
+            path: id.to_string(),
+            message: "entry not found".into(),
+        })?;
+        let updated = replace_frontmatter_status(&content, new_status)?;
+        raw_contents.insert(id.to_string(), updated);
+        Ok(())
+    }
+
+    fn read_entry_content(&self, _backlog_dir: &Path, id: &str) -> Result<String, BacklogError> {
+        self.raw_contents
+            .lock()
+            .unwrap()
+            .get(id)
+            .cloned()
+            .ok_or_else(|| BacklogError::Io {
+                path: id.to_string(),
+                message: "entry not found".into(),
+            })
     }
 }
 
