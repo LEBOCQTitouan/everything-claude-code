@@ -11,11 +11,12 @@ Run the documentation pipeline by delegating to the `doc-orchestrator` agent.
 
 `$ARGUMENTS` supports all doc-orchestrator arguments:
 - `--scope=<path>` — directory to analyze (default: project root)
-- `--phase=<plan|analyze|cartography|generate|validate|coverage|diagrams|readme|claude-md|all>` — run specific phase (default: all)
+- `--phase=<plan|analyze|cartography|tribal-knowledge|generate|validate|coverage|diagrams|readme|claude-md|all>` — run specific phase (default: all); `--phase=tribal-knowledge` runs Phase 1.7 standalone
 - `--base=<branch|commit>` — baseline for coverage diff
 - `--dry-run` — report what would be written without writing
 - `--comments-only` — only write doc comments into source
 - `--skip-plan` — skip Phase 0 plan approval
+- `--auto-repair` — passed through to doc-validator to auto-fix LOW/MEDIUM drift (Phase 2d)
 
 ## Execution
 

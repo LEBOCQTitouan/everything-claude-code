@@ -63,6 +63,10 @@ Launch `doc-analyzer` (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) with
 
 Follow `skills/cartography-processing/SKILL.md`. Process pending deltas from `.claude/cartography/`. Skip if none. Commit: `docs: process cartography deltas`.
 
+### Phase 1.7: Tribal Knowledge Extraction
+
+Launch `doc-analyzer` (allowedTools: [Read, Write, Grep, Glob]) with `skills/tribal-knowledge-extraction/SKILL.md` targeting high-priority modules identified in Phase 1. Apply the five-question framework (configure/provide, common mods, failure patterns, hidden deps, comment knowledge) per module. Produces structured knowledge blocks merged into each module's doc section. Commit: `docs: extract tribal knowledge for priority modules`.
+
 ### Phase 2: Generation (Parallel)
 
 **SMALL**: Launch `doc-generator` + `diagram-generator` (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]) in parallel with `context: "fork"`.
@@ -72,6 +76,14 @@ Follow `skills/cartography-processing/SKILL.md`. Process pending deltas from `.c
 ### Phase 2b: Quality (Parallel)
 
 Launch `doc-validator` + `doc-reporter` (allowedTools: [Read, Grep, Glob, Bash]) in parallel. For large codebases, one validator per module.
+
+### Phase 2c: Compass Generation
+
+Launch `compass-context-writer` (allowedTools: [Read, Write, Grep, Glob, Bash]) for each crate and component directory identified in Phase 1. Produces/updates `docs/context/<component>.md` compass files (25-35 lines each) covering Quick Commands, Key Files, Non-Obvious Patterns, and Cross-References. Runs in parallel per component. Commit: `docs: generate compass context files`.
+
+### Phase 2d: Auto-Repair
+
+Launch `doc-validator --auto-repair` (allowedTools: [Read, Write, Edit, Grep, Glob, Bash]). Fixes LOW/MEDIUM drift automatically. Flags HIGH/CRITICAL findings for manual review with a warning. Commit: `docs: auto-repair LOW/MEDIUM doc drift`.
 
 ### Phase 3: Index Assembly (Sequential)
 
