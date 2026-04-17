@@ -1,6 +1,7 @@
 //! Validate team manifests — cross-references agents, checks tool escalation.
 
 use ecc_domain::config::team::{parse_team_manifest, validate_team_manifest};
+use ecc_domain::config::tool_manifest::ToolManifest;
 use ecc_domain::config::validate::extract_frontmatter;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
@@ -26,12 +27,16 @@ pub(super) fn validate_teams(root: &Path, fs: &dyn FileSystem, terminal: &dyn Te
         .filter(|f| f.to_string_lossy().ends_with(".md"))
         .collect();
 
+    // Load manifest (best-effort: missing manifest falls back to legacy behaviour)
+    let manifest_opt =
+        super::tool_manifest_loader::load_tool_manifest(fs, root).ok();
+
     // Collect known agent names + their tools from agents/ directory
-    let known_agents = collect_agent_info(root, fs);
+    let known_agents = collect_agent_info(root, fs, manifest_opt.as_ref());
 
     let mut has_errors = false;
     for file in &md_files {
-        if !validate_team_file(file, fs, terminal, &known_agents) {
+        if !validate_team_file(file, fs, terminal, &known_agents, manifest_opt.as_ref()) {
             has_errors = true;
         }
     }
@@ -45,7 +50,14 @@ pub(super) fn validate_teams(root: &Path, fs: &dyn FileSystem, terminal: &dyn Te
 }
 
 /// Agent info: name -> set of tools defined in the agent's frontmatter.
-fn collect_agent_info(root: &Path, fs: &dyn FileSystem) -> HashMap<String, HashSet<String>> {
+///
+/// When a `tool-set:` key is present and a manifest is provided, the preset is
+/// resolved to its atomic tools. Inline `tools:` and preset tools are merged.
+fn collect_agent_info(
+    root: &Path,
+    fs: &dyn FileSystem,
+    manifest: Option<&ToolManifest>,
+) -> HashMap<String, HashSet<String>> {
     let agents_dir = root.join("agents");
     let mut agents = HashMap::new();
 
@@ -67,14 +79,26 @@ fn collect_agent_info(root: &Path, fs: &dyn FileSystem) -> HashMap<String, HashS
         let mut tools = HashSet::new();
         if let Ok(content) = fs.read_to_string(file)
             && let Some(fm) = extract_frontmatter(&content)
-            && let Some(tools_str) = fm.get("tools")
         {
-            // Parse tools list: "Read, Write, Edit" or "[Read, Write]"
-            let cleaned = tools_str.trim_matches(|c| c == '[' || c == ']').to_string();
-            for tool in cleaned.split(',') {
-                let t = tool.trim().trim_matches('"').trim_matches('\'').to_string();
-                if !t.is_empty() {
-                    tools.insert(t);
+            // Resolve tool-set: via manifest if available
+            if let (Some(preset_name), Some(m)) = (fm.get("tool-set"), manifest) {
+                let preset_name = preset_name.trim().trim_matches('"').trim_matches('\'');
+                if let Some(preset_tools) = m.presets.get(preset_name) {
+                    for t in preset_tools {
+                        tools.insert(t.clone());
+                    }
+                }
+            }
+
+            // Merge inline tools: if present
+            if let Some(tools_str) = fm.get("tools") {
+                // Parse tools list: "Read, Write, Edit" or "[Read, Write]"
+                let cleaned = tools_str.trim_matches(|c| c == '[' || c == ']').to_string();
+                for tool in cleaned.split(',') {
+                    let t = tool.trim().trim_matches('"').trim_matches('\'').to_string();
+                    if !t.is_empty() {
+                        tools.insert(t);
+                    }
                 }
             }
         }
@@ -89,6 +113,7 @@ fn validate_team_file(
     fs: &dyn FileSystem,
     terminal: &dyn TerminalIO,
     known_agents: &HashMap<String, HashSet<String>>,
+    tool_manifest: Option<&ToolManifest>,
 ) -> bool {
     let file_name = file.file_name().unwrap_or_default().to_string_lossy();
 
@@ -100,7 +125,7 @@ fn validate_team_file(
         }
     };
 
-    // Parse manifest
+    // Parse team manifest
     let manifest = match parse_team_manifest(&content) {
         Ok(m) => m,
         Err(e) => {
@@ -129,14 +154,29 @@ fn validate_team_file(
 
     // Tool escalation check (AC-002.3) — warning only, exit 0
     for agent in &manifest.agents {
-        if let Some(ref team_tools) = agent.allowed_tools
+        // Resolve the effective team-side tool list from allowed-tools or allowed-tool-set
+        let team_tools: Option<Vec<String>> = if let Some(ref tools) = agent.allowed_tools {
+            Some(tools.clone())
+        } else if let (Some(preset_name), Some(m)) = (&agent.allowed_tool_set, tool_manifest) {
+            m.presets.get(preset_name.as_str()).cloned()
+        } else {
+            None
+        };
+
+        if let Some(ref team_tool_list) = team_tools
             && let Some(agent_tools) = known_agents.get(&agent.name)
         {
-            for tool in team_tools {
+            for tool in team_tool_list {
                 if !agent_tools.contains(tool) {
+                    // Name the preset if one was used, for better diagnostics
+                    let preset_info = agent
+                        .allowed_tool_set
+                        .as_ref()
+                        .map(|p| format!(" (from preset '{p}')"))
+                        .unwrap_or_default();
                     terminal.stdout_write(&format!(
-                        "WARNING: {file_name} - Tool '{}' in team manifest exceeds agent '{}' allowed tools (privilege escalation)\n",
-                        tool, agent.name
+                        "WARNING: {file_name} - Tool '{}'{} in team manifest exceeds agent '{}' allowed tools (privilege escalation)\n",
+                        tool, preset_info, agent.name
                     ));
                 }
             }
@@ -361,7 +401,19 @@ agents:
             "---\nname: code-reviewer\ndescription: Code reviewer\nmodel: opus\ntool-set: readonly-analyzer\n---\n",
         ).unwrap();
 
-        let known_agents = collect_agent_info(&root, &fs);
+        // Load manifest to pass to collect_agent_info
+        let yaml = r#"tools:
+  - Read
+  - Grep
+  - Glob
+presets:
+  readonly-analyzer:
+    - Read
+    - Grep
+    - Glob
+"#;
+        let tm = ecc_domain::config::tool_manifest::parse_tool_manifest(yaml).unwrap();
+        let known_agents = collect_agent_info(&root, &fs, Some(&tm));
         let tools = known_agents.get("code-reviewer").expect("code-reviewer should be in known_agents");
 
         // After resolving readonly-analyzer: [Read, Grep, Glob]
