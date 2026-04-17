@@ -6,9 +6,13 @@
 use std::collections::HashSet;
 use std::sync::LazyLock;
 
-static AC_ID_EXTRACT_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex::Regex::new(r"AC-(\d{3}\.\d+)").expect("BUG: invalid AC_ID_EXTRACT_RE regex"));
+static AC_ID_EXTRACT_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"AC-(\d{3}\.\d+)").expect("BUG: invalid AC_ID_EXTRACT_RE regex")
+});
 
-static PC_ID_EXTRACT_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex::Regex::new(r"PC-(\d{3})").expect("BUG: invalid PC_ID_EXTRACT_RE regex"));
+static PC_ID_EXTRACT_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"PC-(\d{3})").expect("BUG: invalid PC_ID_EXTRACT_RE regex")
+});
 
 /// Drift classification level.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,7 +51,8 @@ pub struct DriftReport {
 
 /// Extract AC IDs from spec/plan content via regex.
 pub fn extract_ac_ids(content: &str) -> Vec<String> {
-    AC_ID_EXTRACT_RE.find_iter(content)
+    AC_ID_EXTRACT_RE
+        .find_iter(content)
         .map(|m| m.as_str().to_string())
         .collect::<HashSet<_>>()
         .into_iter()
@@ -56,7 +61,8 @@ pub fn extract_ac_ids(content: &str) -> Vec<String> {
 
 /// Extract PC IDs from design/solution content via regex.
 pub fn extract_pc_ids(content: &str) -> Vec<String> {
-    PC_ID_EXTRACT_RE.find_iter(content)
+    PC_ID_EXTRACT_RE
+        .find_iter(content)
         .map(|m| m.as_str().to_string())
         .collect::<HashSet<_>>()
         .into_iter()

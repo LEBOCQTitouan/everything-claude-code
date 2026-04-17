@@ -109,10 +109,13 @@ impl BacklogEntryStore for InMemoryBacklogRepository {
         new_status: &str,
     ) -> Result<(), BacklogError> {
         let mut raw_contents = self.raw_contents.lock().unwrap();
-        let content = raw_contents.get(id).cloned().ok_or_else(|| BacklogError::Io {
-            path: id.to_string(),
-            message: "entry not found".into(),
-        })?;
+        let content = raw_contents
+            .get(id)
+            .cloned()
+            .ok_or_else(|| BacklogError::Io {
+                path: id.to_string(),
+                message: "entry not found".into(),
+            })?;
         let updated = replace_frontmatter_status(&content, new_status)?;
         raw_contents.insert(id.to_string(), updated);
         Ok(())

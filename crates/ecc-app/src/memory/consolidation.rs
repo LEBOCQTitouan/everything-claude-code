@@ -45,7 +45,6 @@ pub fn iso8601_to_epoch_days(ts: &str) -> u64 {
     ymd_to_epoch_days(year, month, day)
 }
 
-
 fn ymd_to_epoch_days(year: u64, month: u64, day: u64) -> u64 {
     let mut days = 0u64;
     for y in 1970..year {

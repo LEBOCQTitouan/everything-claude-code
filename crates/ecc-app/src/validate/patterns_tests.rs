@@ -1258,14 +1258,20 @@ Generic.
         // "factory" should NOT match when index only contains "factory-method"
         assert!(!super::super::stem_in_index("factory-method\n", "factory"));
         // "factory-method" should match as a standalone word
-        assert!(super::super::stem_in_index("factory-method\n", "factory-method"));
+        assert!(super::super::stem_in_index(
+            "factory-method\n",
+            "factory-method"
+        ));
         // Match when preceded by `/` (path component)
         assert!(super::super::stem_in_index(
             "- [Factory Method](creational/factory-method.md)",
             "factory-method"
         ));
         // Match when preceded by `(`
-        assert!(super::super::stem_in_index("(factory-method)", "factory-method"));
+        assert!(super::super::stem_in_index(
+            "(factory-method)",
+            "factory-method"
+        ));
         // No match when embedded in a longer word
         assert!(!super::super::stem_in_index(
             "abstract-factory-method-extra\n",

@@ -370,7 +370,8 @@ mod tests {
     // PC-004: Updates only first status: line when duplicates exist
     #[test]
     fn replace_frontmatter_status_duplicate_keys() {
-        let content = "---\nid: BL-001\nstatus: open\nstatus: archived\ncreated: 2026-01-01\n---\n\n# Body";
+        let content =
+            "---\nid: BL-001\nstatus: open\nstatus: archived\ncreated: 2026-01-01\n---\n\n# Body";
         let result = replace_frontmatter_status(content, "implemented").unwrap();
         // First occurrence updated
         let first_status_pos = result.find("status: ").unwrap();
@@ -383,7 +384,8 @@ mod tests {
     // PC-005: Strips YAML quotes from status value
     #[test]
     fn replace_frontmatter_status_strips_quotes() {
-        let content = "---\nid: BL-001\nstatus: \"implemented\"\ncreated: 2026-01-01\n---\n\n# Body";
+        let content =
+            "---\nid: BL-001\nstatus: \"implemented\"\ncreated: 2026-01-01\n---\n\n# Body";
         let result = replace_frontmatter_status(content, "implemented").unwrap();
         // No-op because quoted "implemented" == unquoted implemented
         assert_eq!(result, content.replace("\"implemented\"", "implemented"));
@@ -408,10 +410,22 @@ mod tests {
     #[test]
     fn from_kebab_valid_and_invalid() {
         assert_eq!(BacklogStatus::from_kebab("open"), Some(BacklogStatus::Open));
-        assert_eq!(BacklogStatus::from_kebab("in-progress"), Some(BacklogStatus::InProgress));
-        assert_eq!(BacklogStatus::from_kebab("implemented"), Some(BacklogStatus::Implemented));
-        assert_eq!(BacklogStatus::from_kebab("archived"), Some(BacklogStatus::Archived));
-        assert_eq!(BacklogStatus::from_kebab("promoted"), Some(BacklogStatus::Promoted));
+        assert_eq!(
+            BacklogStatus::from_kebab("in-progress"),
+            Some(BacklogStatus::InProgress)
+        );
+        assert_eq!(
+            BacklogStatus::from_kebab("implemented"),
+            Some(BacklogStatus::Implemented)
+        );
+        assert_eq!(
+            BacklogStatus::from_kebab("archived"),
+            Some(BacklogStatus::Archived)
+        );
+        assert_eq!(
+            BacklogStatus::from_kebab("promoted"),
+            Some(BacklogStatus::Promoted)
+        );
         assert_eq!(BacklogStatus::from_kebab("unknown"), None);
         assert_eq!(BacklogStatus::from_kebab("custom-status"), None);
         assert_eq!(BacklogStatus::from_kebab(""), None);

@@ -8,10 +8,10 @@ use ecc_ports::metrics_store::MetricsStore;
 use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
 
-pub mod bypass_interceptor;
-pub mod handlers;
 pub mod bypass_handling;
+pub mod bypass_interceptor;
 pub mod dispatch;
+pub mod handlers;
 
 pub use dispatch::{build_handler_registry, dispatch, truncate_stdin};
 

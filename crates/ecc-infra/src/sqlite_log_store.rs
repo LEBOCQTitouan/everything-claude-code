@@ -89,7 +89,6 @@ fn format_iso8601(secs: u64) -> String {
     format!("{year:04}-{month:02}-{day:02}T{h:02}:{m:02}:{s:02}Z")
 }
 
-
 impl LogStore for SqliteLogStore {
     fn search(&self, query: &LogQuery) -> Result<Vec<LogEntry>, LogStoreError> {
         let conn = self

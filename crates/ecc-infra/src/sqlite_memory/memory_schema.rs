@@ -93,8 +93,7 @@ pub(super) fn handle_corruption(path: &Path) -> Result<(), MemoryStoreError> {
 /// Initialise the store: create dirs, check integrity, apply schema, set permissions.
 pub(super) fn init(path: &std::path::PathBuf) -> Result<(), MemoryStoreError> {
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| MemoryStoreError::Database(e.to_string()))?;
+        std::fs::create_dir_all(parent).map_err(|e| MemoryStoreError::Database(e.to_string()))?;
 
         // Set directory permissions to 0700 on Unix
         #[cfg(unix)]

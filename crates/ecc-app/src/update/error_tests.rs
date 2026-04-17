@@ -141,8 +141,8 @@ fn version_not_found() {
 
 #[test]
 fn config_sync_failure() {
-    use ecc_ports::shell::CommandOutput;
     use super::happy_path_tests::fs_with_extracted_binaries;
+    use ecc_ports::shell::CommandOutput;
     let fs = fs_with_extracted_binaries();
     let env = MockEnvironment::new()
         .with_architecture(Architecture::Amd64)

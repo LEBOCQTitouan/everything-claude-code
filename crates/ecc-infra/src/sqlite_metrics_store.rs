@@ -120,8 +120,16 @@ fn format_iso8601(secs: u64) -> String {
     let months = [
         31u64,
         if is_leap_year(year) { 29 } else { 28 },
-        31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
-
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
     ];
     let mut month = 1u64;
     for &dim in &months {
@@ -134,7 +142,6 @@ fn format_iso8601(secs: u64) -> String {
     let day = days + 1;
     format!("{year:04}-{month:02}-{day:02}T{h:02}:{m:02}:{s:02}Z")
 }
-
 
 impl MetricsStore for SqliteMetricsStore {
     fn record(&self, event: &MetricEvent) -> Result<i64, MetricsStoreError> {

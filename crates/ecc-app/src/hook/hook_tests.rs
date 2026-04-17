@@ -278,7 +278,10 @@ fn dispatch_records_hook_failure_metric() {
 
     let result = dispatch(&ctx, &ports);
     // The hook must block (exit_code=2)
-    assert_eq!(result.exit_code, 2, "expected block exit code for failure metric test");
+    assert_eq!(
+        result.exit_code, 2,
+        "expected block exit code for failure metric test"
+    );
 
     let events = metrics_store.snapshot();
     assert_eq!(events.len(), 1, "expected exactly one metric event");
@@ -321,7 +324,11 @@ fn dispatch_metrics_disabled_records_nothing() {
     dispatch(&ctx, &ports);
 
     let events = metrics_store.snapshot();
-    assert_eq!(events.len(), 0, "no events should be recorded when ECC_METRICS_DISABLED=1");
+    assert_eq!(
+        events.len(),
+        0,
+        "no events should be recorded when ECC_METRICS_DISABLED=1"
+    );
 }
 
 /// PC-007: With metrics_store: None, dispatch() completes normally (no panic, no error).
@@ -488,9 +495,7 @@ fn handler_trait_compiles() {
 /// PC-031: Handler impl dispatches to cartography handler via registry.
 #[test]
 fn handler_trait_dispatch() {
-    use ecc_test_support::{
-        BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor,
-    };
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
 
     let fs = InMemoryFileSystem::new();
     let shell = MockExecutor::new();

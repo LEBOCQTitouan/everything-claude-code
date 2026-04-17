@@ -142,10 +142,7 @@ pub(super) fn list_filtered(
 }
 
 /// List the most recently updated entries up to `limit`.
-pub(super) fn list_recent(
-    path: &Path,
-    limit: usize,
-) -> Result<Vec<MemoryEntry>, MemoryStoreError> {
+pub(super) fn list_recent(path: &Path, limit: usize) -> Result<Vec<MemoryEntry>, MemoryStoreError> {
     let conn = open_connection(path)?;
     let mut stmt = conn
         .prepare(
@@ -165,9 +162,7 @@ pub(super) fn list_recent(
 }
 
 /// Count entries grouped by tier.
-pub(super) fn count_by_tier(
-    path: &Path,
-) -> Result<HashMap<MemoryTier, usize>, MemoryStoreError> {
+pub(super) fn count_by_tier(path: &Path) -> Result<HashMap<MemoryTier, usize>, MemoryStoreError> {
     let conn = open_connection(path)?;
     let mut stmt = conn
         .prepare("SELECT tier, COUNT(*) FROM memories GROUP BY tier")

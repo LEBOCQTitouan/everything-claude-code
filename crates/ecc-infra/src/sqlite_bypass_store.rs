@@ -173,8 +173,12 @@ impl BypassStore for SqliteBypassStore {
         // Format as ISO 8601 UTC to match stored timestamp format ("YYYY-MM-DDTHH:MM:SSZ").
         let cutoff_str = format!(
             "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-            cutoff_dt.year, cutoff_dt.month, cutoff_dt.day,
-            cutoff_dt.hour, cutoff_dt.minute, cutoff_dt.second,
+            cutoff_dt.year,
+            cutoff_dt.month,
+            cutoff_dt.day,
+            cutoff_dt.hour,
+            cutoff_dt.minute,
+            cutoff_dt.second,
         );
         let conn = self.conn.lock().expect("lock poisoned");
 
@@ -224,8 +228,8 @@ impl BypassStore for SqliteBypassStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use ecc_ports::clock::Clock;
+    use std::sync::Arc;
 
     /// Fixed-time clock for deterministic prune tests.
     struct FixedClock(u64);
@@ -268,10 +272,15 @@ mod tests {
     #[test]
     fn bypass_query_by_hook_filters() {
         let store = SqliteBypassStore::in_memory(system_clock()).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
-        store.record(&make_decision("hook-b", Verdict::Refused)).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Applied)).unwrap();
-
+        store
+            .record(&make_decision("hook-a", Verdict::Accepted))
+            .unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Refused))
+            .unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Applied))
+            .unwrap();
 
         let results = store.query_by_hook("hook-a", 10).unwrap();
         assert_eq!(results.len(), 2);
@@ -281,10 +290,15 @@ mod tests {
     #[test]
     fn bypass_summary_counts() {
         let store = SqliteBypassStore::in_memory(system_clock()).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Accepted)).unwrap();
-        store.record(&make_decision("hook-a", Verdict::Refused)).unwrap();
-        store.record(&make_decision("hook-b", Verdict::Accepted)).unwrap();
-
+        store
+            .record(&make_decision("hook-a", Verdict::Accepted))
+            .unwrap();
+        store
+            .record(&make_decision("hook-a", Verdict::Refused))
+            .unwrap();
+        store
+            .record(&make_decision("hook-b", Verdict::Accepted))
+            .unwrap();
 
         let summary = store.summary().unwrap();
         assert_eq!(summary.per_hook.len(), 2);
@@ -323,7 +337,8 @@ mod tests {
 
         // Create store with home_dir, check_token should find it
         let db_path = home_dir.join("bypass.db");
-        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
+        let store =
+            SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
         let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
         assert!(result.is_some());
         let found = result.unwrap();
@@ -349,7 +364,8 @@ mod tests {
         .unwrap();
 
         let db_path = home_dir.join("bypass.db");
-        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
+        let store =
+            SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
         let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
         assert!(result.is_none());
     }
@@ -377,7 +393,8 @@ mod tests {
         std::fs::write(token_dir.join(format!("{encoded_hook_id}.json")), json).unwrap();
 
         let db_path = home_dir.join("bypass.db");
-        let store = SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
+        let store =
+            SqliteBypassStore::new_with_home(&db_path, Some(home_dir), system_clock()).unwrap();
         let result = ecc_ports::bypass_store::BypassStore::check_token(&store, hook_id, session_id);
         assert!(result.is_none());
     }
@@ -450,28 +467,53 @@ mod tests {
 
         // Very old: 2020-01-01T00:00:00Z — well before cutoff → DELETED
         let very_old = BypassDecision::new(
-            "hook-very-old", "old", "session-1", Verdict::Accepted, "2020-01-01T00:00:00Z",
-        ).unwrap();
+            "hook-very-old",
+            "old",
+            "session-1",
+            Verdict::Accepted,
+            "2020-01-01T00:00:00Z",
+        )
+        .unwrap();
 
         // Before boundary by 1 sec: 2024-04-05T11:59:59Z — just before cutoff → DELETED
         let before_boundary = BypassDecision::new(
-            "hook-before-boundary", "before", "session-2", Verdict::Accepted, "2024-04-05T11:59:59Z",
-        ).unwrap();
+            "hook-before-boundary",
+            "before",
+            "session-2",
+            Verdict::Accepted,
+            "2024-04-05T11:59:59Z",
+        )
+        .unwrap();
 
         // Exactly at boundary: 2024-04-05T12:00:00Z — equal to cutoff → SURVIVES (not strictly less)
         let at_boundary = BypassDecision::new(
-            "hook-at-boundary", "at", "session-3", Verdict::Accepted, "2024-04-05T12:00:00Z",
-        ).unwrap();
+            "hook-at-boundary",
+            "at",
+            "session-3",
+            Verdict::Accepted,
+            "2024-04-05T12:00:00Z",
+        )
+        .unwrap();
 
         // After boundary by 1 sec: 2024-04-05T12:00:01Z → SURVIVES
         let after_boundary = BypassDecision::new(
-            "hook-after-boundary", "after", "session-4", Verdict::Accepted, "2024-04-05T12:00:01Z",
-        ).unwrap();
+            "hook-after-boundary",
+            "after",
+            "session-4",
+            Verdict::Accepted,
+            "2024-04-05T12:00:01Z",
+        )
+        .unwrap();
 
         // Recent: 2024-04-06T10:00:00Z — 2 hours before "now" → SURVIVES
         let recent = BypassDecision::new(
-            "hook-recent", "recent", "session-5", Verdict::Accepted, "2024-04-06T10:00:00Z",
-        ).unwrap();
+            "hook-recent",
+            "recent",
+            "session-5",
+            Verdict::Accepted,
+            "2024-04-06T10:00:00Z",
+        )
+        .unwrap();
 
         store.record(&very_old).unwrap();
         store.record(&before_boundary).unwrap();
@@ -490,13 +532,42 @@ mod tests {
         //   - at_boundary (2024-04-05T12:00:00Z) — not strictly less
         //   - after_boundary (2024-04-05T12:00:01Z) ✓
         //   - recent (2024-04-06T10:00:00Z) ✓
-        assert_eq!(deleted, 2, "old and before-boundary records must be deleted");
+        assert_eq!(
+            deleted, 2,
+            "old and before-boundary records must be deleted"
+        );
 
-        assert_eq!(store.query_by_hook("hook-very-old", 10).unwrap().len(), 0, "very old deleted");
-        assert_eq!(store.query_by_hook("hook-before-boundary", 10).unwrap().len(), 0, "before-boundary deleted");
-        assert_eq!(store.query_by_hook("hook-at-boundary", 10).unwrap().len(), 1, "at-boundary survives");
-        assert_eq!(store.query_by_hook("hook-after-boundary", 10).unwrap().len(), 1, "after-boundary survives");
-        assert_eq!(store.query_by_hook("hook-recent", 10).unwrap().len(), 1, "recent survives");
+        assert_eq!(
+            store.query_by_hook("hook-very-old", 10).unwrap().len(),
+            0,
+            "very old deleted"
+        );
+        assert_eq!(
+            store
+                .query_by_hook("hook-before-boundary", 10)
+                .unwrap()
+                .len(),
+            0,
+            "before-boundary deleted"
+        );
+        assert_eq!(
+            store.query_by_hook("hook-at-boundary", 10).unwrap().len(),
+            1,
+            "at-boundary survives"
+        );
+        assert_eq!(
+            store
+                .query_by_hook("hook-after-boundary", 10)
+                .unwrap()
+                .len(),
+            1,
+            "after-boundary survives"
+        );
+        assert_eq!(
+            store.query_by_hook("hook-recent", 10).unwrap().len(),
+            1,
+            "recent survives"
+        );
     }
 
     #[test]
@@ -508,14 +579,24 @@ mod tests {
 
         // Old record: 2020-01-01T00:00:00Z — well before cutoff
         let old = BypassDecision::new(
-            "hook-old", "old reason", "session-1", Verdict::Accepted, "2020-01-01T00:00:00Z",
-        ).unwrap();
+            "hook-old",
+            "old reason",
+            "session-1",
+            Verdict::Accepted,
+            "2020-01-01T00:00:00Z",
+        )
+        .unwrap();
         store.record(&old).unwrap();
 
         // Recent record: 2024-04-06T10:00:00Z — 2 hours before "now", after cutoff
         let recent = BypassDecision::new(
-            "hook-recent", "recent reason", "session-2", Verdict::Accepted, "2024-04-06T10:00:00Z",
-        ).unwrap();
+            "hook-recent",
+            "recent reason",
+            "session-2",
+            Verdict::Accepted,
+            "2024-04-06T10:00:00Z",
+        )
+        .unwrap();
         store.record(&recent).unwrap();
 
         let deleted = store.prune(1).unwrap();

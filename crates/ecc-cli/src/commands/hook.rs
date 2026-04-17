@@ -53,7 +53,11 @@ pub fn run(args: HookArgs) -> anyhow::Result<()> {
             .map(PathBuf::from)
             .or_else(dirs::home_dir)?;
         let db_path = home.join(".ecc").join("bypass.db");
-        match SqliteBypassStore::new_with_home(&db_path, Some(home), std::sync::Arc::new(ecc_infra::system_clock::SystemClock)) {
+        match SqliteBypassStore::new_with_home(
+            &db_path,
+            Some(home),
+            std::sync::Arc::new(ecc_infra::system_clock::SystemClock),
+        ) {
             Ok(store) => Some(store),
             Err(e) => {
                 tracing::debug!("bypass_store unavailable: {}", e);

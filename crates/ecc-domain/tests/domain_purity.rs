@@ -36,7 +36,10 @@ fn collect_rs_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) {
 #[test]
 fn domain_crate_has_zero_io_imports() {
     let domain_src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-    assert!(domain_src.exists(), "domain src dir not found: {domain_src:?}");
+    assert!(
+        domain_src.exists(),
+        "domain src dir not found: {domain_src:?}"
+    );
 
     let mut files = Vec::new();
     collect_rs_files(&domain_src, &mut files);

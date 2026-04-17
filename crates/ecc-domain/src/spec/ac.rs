@@ -12,7 +12,9 @@ use std::sync::LazyLock;
 static AC_ID_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^AC-(\d{3})\.(\d+)$").expect("BUG: invalid AC_ID_RE regex"));
 
-static AC_DEF_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^- (AC-\d{3}\.\d+):(.*)$").expect("BUG: invalid AC_DEF_RE regex"));
+static AC_DEF_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^- (AC-\d{3}\.\d+):(.*)$").expect("BUG: invalid AC_DEF_RE regex")
+});
 
 static MALFORMED_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"- AC-[^:]+:").expect("BUG: invalid MALFORMED_RE regex"));

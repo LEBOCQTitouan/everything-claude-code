@@ -483,9 +483,8 @@ mod tests {
         assert_eq!(result.stdout, "{}");
 
         // No delta should be written — all changed files were filtered out
-        let delta_path = std::path::Path::new(
-            "/project/.claude/cartography/pending-delta-self-ref-001.json",
-        );
+        let delta_path =
+            std::path::Path::new("/project/.claude/cartography/pending-delta-self-ref-001.json");
         assert!(
             !fs.exists(delta_path),
             ".claude/ paths must be filtered — no delta should be written"

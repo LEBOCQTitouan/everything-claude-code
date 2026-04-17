@@ -14,8 +14,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::LazyLock;
 
-static BL_ID_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)bl-?(\d{3,})").unwrap());
+static BL_ID_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)bl-?(\d{3,})").unwrap());
 
 /// Extract a BL-NNN numeric ID from a worktree path's last component.
 ///
@@ -172,15 +171,17 @@ pub fn migrate_statuses(
             || content.contains(&format!("status: '{index_status}'"));
 
         // Detect if file status differs from index status (by calling replace to check)
-        let updated =
-            match ecc_domain::backlog::entry::replace_frontmatter_status(&content, index_status) {
-                Ok(u) => u,
-                Err(e) => {
-                    tracing::warn!(entry_id = %id, error = %e, "migration: failed to compute status replacement");
-                    report.failed.push((id.clone(), e.to_string()));
-                    continue;
-                }
-            };
+        let updated = match ecc_domain::backlog::entry::replace_frontmatter_status(
+            &content,
+            index_status,
+        ) {
+            Ok(u) => u,
+            Err(e) => {
+                tracing::warn!(entry_id = %id, error = %e, "migration: failed to compute status replacement");
+                report.failed.push((id.clone(), e.to_string()));
+                continue;
+            }
+        };
 
         if updated == content && !needs_normalization {
             // Already in sync, no normalization needed
@@ -198,7 +199,17 @@ pub fn migrate_statuses(
     }
 
     // Reindex with force=true — migration is not blocked by safety check
-    reindex(entries, locks, index_store, worktree_mgr, clock, backlog_dir, project_dir, false, true)?;
+    reindex(
+        entries,
+        locks,
+        index_store,
+        worktree_mgr,
+        clock,
+        backlog_dir,
+        project_dir,
+        false,
+        true,
+    )?;
 
     Ok(report)
 }
@@ -411,8 +422,7 @@ pub fn update_status(
     // AC-001.3: read raw content (propagates Io error if not found)
     let content = entries.read_entry_content(backlog_dir, id)?;
     // AC-001.5: no-op guard — if content unchanged, return early
-    let updated =
-        ecc_domain::backlog::entry::replace_frontmatter_status(&content, new_status)?;
+    let updated = ecc_domain::backlog::entry::replace_frontmatter_status(&content, new_status)?;
     if updated == content {
         return Ok(());
     }
@@ -853,9 +863,7 @@ mod tests {
     // --- update_status tests ---
 
     fn raw_open_content(id: &str) -> String {
-        format!(
-            "---\nid: {id}\nstatus: open\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n"
-        )
+        format!("---\nid: {id}\nstatus: open\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n")
     }
 
     /// PC-008: update_status errors on invalid BL id
@@ -997,9 +1005,11 @@ mod tests {
         // even when lock removal would fail. Since InMemoryBacklogRepository always
         // succeeds on remove_lock, we test the code path compiles and runs.
         // The key AC-004.1 behavior is: execution continues, a warn is logged.
-        let stale_lock =
-            LockFile::new("old-worktree".to_string(), "2026-04-06T00:00:00Z".to_string())
-                .unwrap();
+        let stale_lock = LockFile::new(
+            "old-worktree".to_string(),
+            "2026-04-06T00:00:00Z".to_string(),
+        )
+        .unwrap();
         let repo = InMemoryBacklogRepository::new()
             .with_entry(make_entry("BL-010", BacklogStatus::Open))
             .with_lock("BL-010", stale_lock);
@@ -1067,13 +1077,19 @@ mod tests {
     // --- migrate_statuses tests ---
 
     fn make_raw_with_status(id: &str, status: &str) -> String {
-        format!("---\nid: {id}\nstatus: {status}\ntitle: Test {id}\ncreated: 2026-01-01\n---\n\n# Body\n")
+        format!(
+            "---\nid: {id}\nstatus: {status}\ntitle: Test {id}\ncreated: 2026-01-01\n---\n\n# Body\n"
+        )
     }
 
     fn make_index_with_entries(entries: &[(&str, &str)]) -> String {
-        let mut content = String::from("# Backlog Index\n\n| ID | Title | Tier | Scope | Target | Status | Created |\n|----|-------|------|-------|--------|--------|----------|\n");
+        let mut content = String::from(
+            "# Backlog Index\n\n| ID | Title | Tier | Scope | Target | Status | Created |\n|----|-------|------|-------|--------|--------|----------|\n",
+        );
         for (id, status) in entries {
-            content.push_str(&format!("| {id} | Title | core | infra | — | {status} | 2026-01-01 |\n"));
+            content.push_str(&format!(
+                "| {id} | Title | core | infra | — | {status} | 2026-01-01 |\n"
+            ));
         }
         content.push_str("\n## Stats\n");
         content
@@ -1097,15 +1113,32 @@ mod tests {
         let worktree_mgr = MockWorktreeManager::new();
         let clock = fresh_clock();
 
-        let report = migrate_statuses(&repo, &repo, &repo, &worktree_mgr, &clock, Path::new(BACKLOG_DIR), Path::new(PROJECT_DIR)).unwrap();
+        let report = migrate_statuses(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+        )
+        .unwrap();
 
         assert_eq!(report.updated, vec!["BL-001".to_string()]);
         assert!(report.failed.is_empty());
 
         // Verify file was actually updated
-        let updated_content = repo.read_entry_content(Path::new(BACKLOG_DIR), "BL-001").unwrap();
-        assert!(updated_content.contains("status: implemented"), "file should now say implemented");
-        assert!(!updated_content.contains("status: open"), "file should no longer say open");
+        let updated_content = repo
+            .read_entry_content(Path::new(BACKLOG_DIR), "BL-001")
+            .unwrap();
+        assert!(
+            updated_content.contains("status: implemented"),
+            "file should now say implemented"
+        );
+        assert!(
+            !updated_content.contains("status: open"),
+            "file should no longer say open"
+        );
     }
 
     /// PC-014: Migration handles partial failure (best-effort)
@@ -1127,11 +1160,26 @@ mod tests {
         let worktree_mgr = MockWorktreeManager::new();
         let clock = fresh_clock();
 
-        let report = migrate_statuses(&repo, &repo, &repo, &worktree_mgr, &clock, Path::new(BACKLOG_DIR), Path::new(PROJECT_DIR)).unwrap();
+        let report = migrate_statuses(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+        )
+        .unwrap();
 
         // BL-001 should fail (no raw content), BL-002 should succeed
-        assert!(report.failed.iter().any(|(id, _)| id == "BL-001"), "BL-001 should be in failed");
-        assert!(report.updated.contains(&"BL-002".to_string()), "BL-002 should be updated");
+        assert!(
+            report.failed.iter().any(|(id, _)| id == "BL-001"),
+            "BL-001 should be in failed"
+        );
+        assert!(
+            report.updated.contains(&"BL-002".to_string()),
+            "BL-002 should be updated"
+        );
     }
 
     /// PC-015: MigrationReport has updated/skipped/failed fields
@@ -1156,7 +1204,16 @@ mod tests {
         let worktree_mgr = MockWorktreeManager::new();
         let clock = fresh_clock();
 
-        let report = migrate_statuses(&repo, &repo, &repo, &worktree_mgr, &clock, Path::new(BACKLOG_DIR), Path::new(PROJECT_DIR)).unwrap();
+        let report = migrate_statuses(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+        )
+        .unwrap();
 
         assert_eq!(report.updated, vec!["BL-001".to_string()]);
         assert!(report.skipped.contains(&"BL-002".to_string()));
@@ -1168,7 +1225,14 @@ mod tests {
     fn make_repo_with_many_diverging_entries() -> InMemoryBacklogRepository {
         // Create 6 entries that diverge from a pre-set index (>5 changes)
         let statuses = ["open", "open", "open", "open", "open", "open"];
-        let index_statuses = ["implemented", "implemented", "implemented", "implemented", "implemented", "implemented"];
+        let index_statuses = [
+            "implemented",
+            "implemented",
+            "implemented",
+            "implemented",
+            "implemented",
+            "implemented",
+        ];
         let ids = ["BL-001", "BL-002", "BL-003", "BL-004", "BL-005", "BL-006"];
 
         let mut repo = InMemoryBacklogRepository::new();
@@ -1181,7 +1245,11 @@ mod tests {
         }
 
         // Build index with "implemented" for all entries
-        let index_entries: Vec<(&str, &str)> = ids.iter().zip(index_statuses.iter()).map(|(id, s)| (*id, *s)).collect();
+        let index_entries: Vec<(&str, &str)> = ids
+            .iter()
+            .zip(index_statuses.iter())
+            .map(|(id, s)| (*id, *s))
+            .collect();
         let index = make_index_with_entries(&index_entries);
         repo.with_index(&index)
     }
@@ -1205,10 +1273,16 @@ mod tests {
             false, // force
         );
 
-        assert!(result.is_err(), "reindex should block when >5 changes without force");
+        assert!(
+            result.is_err(),
+            "reindex should block when >5 changes without force"
+        );
         let err = result.unwrap_err();
         let msg = err.to_string();
-        assert!(msg.contains("5") || msg.contains("force") || msg.contains("status"), "error should mention safety block");
+        assert!(
+            msg.contains("5") || msg.contains("force") || msg.contains("status"),
+            "error should mention safety block"
+        );
     }
 
     /// PC-017: Reindex allows >5 changes with force=true
@@ -1230,7 +1304,11 @@ mod tests {
             true,  // force
         );
 
-        assert!(result.is_ok(), "reindex should proceed with force=true, got: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "reindex should proceed with force=true, got: {:?}",
+            result.err()
+        );
     }
 
     /// PC-018: Reindex no warning when <=5 changes
@@ -1265,7 +1343,11 @@ mod tests {
             false, // force (no force needed for <=5)
         );
 
-        assert!(result.is_ok(), "reindex with <=5 changes should not be blocked: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "reindex with <=5 changes should not be blocked: {:?}",
+            result.err()
+        );
     }
 
     // --- migration integration tests ---
@@ -1292,10 +1374,22 @@ mod tests {
         let clock = fresh_clock();
 
         // Run migration — updates BL-001 raw content, writes new index via reindex(force=true)
-        let report = migrate_statuses(&repo, &repo, &repo, &worktree_mgr, &clock, Path::new(BACKLOG_DIR), Path::new(PROJECT_DIR)).unwrap();
+        let report = migrate_statuses(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+        )
+        .unwrap();
 
         // Migration should have processed BL-001
-        assert!(!report.failed.iter().any(|(id, _)| id == "BL-001"), "migration should not fail on BL-001");
+        assert!(
+            !report.failed.iter().any(|(id, _)| id == "BL-001"),
+            "migration should not fail on BL-001"
+        );
 
         // After migration, index is written by migrate_statuses. A subsequent dry-run should
         // succeed without blocking — meaning the safety check passes (≤5 changes).
@@ -1316,17 +1410,26 @@ mod tests {
             "reindex dry-run should succeed after migration (idempotent): {:?}",
             dry_run_result.err()
         );
-        let dry_run_output = dry_run_result.unwrap().expect("dry_run should return content");
+        let dry_run_output = dry_run_result
+            .unwrap()
+            .expect("dry_run should return content");
         // The dry-run output should contain BL-001 and BL-002 (idempotent proof: no crash)
-        assert!(dry_run_output.contains("BL-001"), "dry-run output should contain BL-001");
-        assert!(dry_run_output.contains("BL-002"), "dry-run output should contain BL-002");
+        assert!(
+            dry_run_output.contains("BL-001"),
+            "dry-run output should contain BL-001"
+        );
+        assert!(
+            dry_run_output.contains("BL-002"),
+            "dry-run output should contain BL-002"
+        );
     }
 
     /// PC-029: Quoting normalized to unquoted
     #[test]
     fn migration_normalizes_quoting() {
         // File has quoted status: "open" → should be normalized to: open
-        let quoted_content = "---\nid: BL-001\nstatus: \"open\"\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n";
+        let quoted_content =
+            "---\nid: BL-001\nstatus: \"open\"\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n";
         // Index says "open" too → no status change, but quoting should be normalized
         let index = make_index_with_entries(&[("BL-001", "open")]);
 
@@ -1338,9 +1441,20 @@ mod tests {
         let worktree_mgr = MockWorktreeManager::new();
         let clock = fresh_clock();
 
-        let _report = migrate_statuses(&repo, &repo, &repo, &worktree_mgr, &clock, Path::new(BACKLOG_DIR), Path::new(PROJECT_DIR)).unwrap();
+        let _report = migrate_statuses(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+        )
+        .unwrap();
 
-        let updated = repo.read_entry_content(Path::new(BACKLOG_DIR), "BL-001").unwrap();
+        let updated = repo
+            .read_entry_content(Path::new(BACKLOG_DIR), "BL-001")
+            .unwrap();
         assert!(
             updated.contains("status: open"),
             "status should be unquoted after migration, got: {updated}"

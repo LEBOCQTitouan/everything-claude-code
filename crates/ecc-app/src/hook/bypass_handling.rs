@@ -63,8 +63,8 @@ fn try_token_bypass(
     let token_path = format!("{}/{}.json", token_dir, encoded);
 
     let token_json = ports.fs.read_to_string(Path::new(&token_path)).ok()?;
-    let token = serde_json::from_str::<ecc_domain::hook_runtime::bypass::BypassToken>(&token_json)
-        .ok()?;
+    let token =
+        serde_json::from_str::<ecc_domain::hook_runtime::bypass::BypassToken>(&token_json).ok()?;
 
     if token.session_id != sid || token.hook_id != ctx.hook_id {
         return None;

@@ -182,7 +182,14 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     // Check for bypass token when hook blocks
     #[allow(clippy::collapsible_if)]
     let result = if result.exit_code == 2 {
-        apply_bypass_check(ctx, ports, &result.stdout, result.stderr.clone(), start, stdin)
+        apply_bypass_check(
+            ctx,
+            ports,
+            &result.stdout,
+            result.stderr.clone(),
+            start,
+            stdin,
+        )
     } else {
         result
     };
@@ -192,9 +199,8 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
     // Record hook execution metric (fire-and-forget)
     let metrics_disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
-    let session_id = crate::metrics_session::resolve_session_id(
-        ports.env.var("CLAUDE_SESSION_ID").as_deref(),
-    );
+    let session_id =
+        crate::metrics_session::resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
     // TODO(BL-133): Replace with ports.clock.now_epoch_secs() when HookPorts gains Clock field
     let timestamp = {
         use std::time::{SystemTime, UNIX_EPOCH};
@@ -221,11 +227,8 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         error_message,
     ) {
         // Intentional fire-and-forget: metrics recording is best-effort
-        let _ = crate::metrics_mgmt::record_if_enabled(
-            ports.metrics_store,
-            &event,
-            metrics_disabled,
-        );
+        let _ =
+            crate::metrics_mgmt::record_if_enabled(ports.metrics_store, &event, metrics_disabled);
     }
 
     result

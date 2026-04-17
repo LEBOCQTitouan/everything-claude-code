@@ -27,7 +27,9 @@ pub enum DimensionError {
 /// Regex pattern for allowed query template characters.
 const SAFE_TEMPLATE_PATTERN: &str = r"^[a-zA-Z0-9 _./{}\-]+$";
 
-static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(SAFE_TEMPLATE_PATTERN).expect("BUG: invalid SAFE_TEMPLATE_PATTERN regex"));
+static RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(SAFE_TEMPLATE_PATTERN).expect("BUG: invalid SAFE_TEMPLATE_PATTERN regex")
+});
 
 /// Validate that a query template contains only safe characters.
 ///

@@ -128,13 +128,9 @@ pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     if !disabled {
         let session_id = resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
         let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
-        if let Ok(event) = MetricEvent::agent_spawn(
-            session_id,
-            timestamp,
-            agent_type,
-            outcome,
-            retry_count,
-        ) {
+        if let Ok(event) =
+            MetricEvent::agent_spawn(session_id, timestamp, agent_type, outcome, retry_count)
+        {
             // Intentional fire-and-forget: metrics recording is best-effort
             let _ = record_if_enabled(ports.metrics_store, &event, false);
         }

@@ -3,7 +3,9 @@
 use serde::Serialize;
 use std::sync::LazyLock;
 
-static CLAIM_RE: LazyLock<regex::Regex> = LazyLock::new(|| regex::Regex::new(r"\b(\d+)\s+(tests?|crates?)\b").expect("BUG: invalid CLAIM_RE regex"));
+static CLAIM_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"\b(\d+)\s+(tests?|crates?)\b").expect("BUG: invalid CLAIM_RE regex")
+});
 
 /// A numeric claim extracted from CLAUDE.md.
 #[derive(Debug, Clone, Serialize)]

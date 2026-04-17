@@ -896,8 +896,7 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
         let state_dir = state_dir_for(&tmp);
-        let hook_input =
-            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/cartography/journeys/test.md"}}"#;
+        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"docs/cartography/journeys/test.md"}}"#;
         let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Pass),
@@ -913,7 +912,8 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
         let state_dir = state_dir_for(&tmp);
-        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"docs/domain/bounded-contexts.md"}}"#;
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/domain/bounded-contexts.md"}}"#;
         let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Pass),
@@ -929,7 +929,8 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
         let state_dir = state_dir_for(&tmp);
-        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"docs/guides/getting-started.md"}}"#;
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/guides/getting-started.md"}}"#;
         let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Pass),
@@ -945,7 +946,8 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         write_state(tmp.path(), "plan");
         let state_dir = state_dir_for(&tmp);
-        let hook_input = r#"{"tool_name":"Write","tool_input":{"file_path":"docs/diagrams/flow.md"}}"#;
+        let hook_input =
+            r#"{"tool_name":"Write","tool_input":{"file_path":"docs/diagrams/flow.md"}}"#;
         let output = super::run_with_input(tmp.path(), &state_dir, hook_input);
         assert!(
             matches!(output.status, Status::Pass),

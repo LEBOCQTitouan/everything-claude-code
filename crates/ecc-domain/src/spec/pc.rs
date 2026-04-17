@@ -12,7 +12,8 @@ use std::sync::LazyLock;
 static PC_ID_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^PC-(\d+)$").expect("BUG: invalid PC_ID_RE regex"));
 
-pub(crate) static SEPARATOR_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\s*\|?\s*[-:]+\s*\|").expect("BUG: invalid SEPARATOR_RE regex"));
+pub(crate) static SEPARATOR_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\s*\|?\s*[-:]+\s*\|").expect("BUG: invalid SEPARATOR_RE regex"));
 
 /// A parsed Pass Condition identifier like `PC-003`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]

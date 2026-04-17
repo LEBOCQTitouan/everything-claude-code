@@ -158,7 +158,6 @@ fn days_to_date(days: u64) -> (u64, u64, u64) {
     (y, (m + 1) as u64, remaining + 1)
 }
 
-
 /// Errors from bypass management operations.
 #[derive(Debug, thiserror::Error)]
 pub enum BypassMgmtError {
