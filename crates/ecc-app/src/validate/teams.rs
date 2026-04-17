@@ -306,6 +306,70 @@ presets:
             .expect("write manifest");
     }
 
+    // ── PC-036: team_allowed_tools_cross_ref_manifest ───────────────────────
+    // Team validator cross-refs manifest for `allowed-tools`
+
+    #[test]
+    fn team_allowed_tools_cross_ref_manifest() {
+        let fs = InMemoryFileSystem::new();
+        let terminal = BufferedTerminal::new();
+        let root = PathBuf::from("/project");
+        with_manifest(&fs, &root);
+
+        // Agent has tools: Read, Grep, Glob (inline)
+        fs.write(
+            &root.join("agents/code-reviewer.md"),
+            "---\nname: code-reviewer\ndescription: Code reviewer\nmodel: opus\ntools: Read, Grep, Glob\n---\n",
+        ).unwrap();
+
+        // Team gives code-reviewer Write (not in its tools → escalation)
+        let content = r#"---
+name: cross-ref-team
+description: Team for cross-ref test
+coordination: sequential
+agents:
+  - name: code-reviewer
+    role: reviewer
+    allowed-tools: ["Read", "Grep", "Glob", "Write"]
+---
+"#;
+        fs.write(&root.join("teams/cross-ref-team.md"), content)
+            .unwrap();
+
+        let result = validate_teams(&root, &fs, &terminal);
+        assert!(result, "tool escalation should warn, not fail");
+        let stdout = terminal.stdout_output().join("");
+        // Should emit a privilege escalation warning naming Write
+        assert!(
+            stdout.contains("Write") || stdout.contains("privilege escalation"),
+            "warning should name escalated tool; got: {stdout}"
+        );
+    }
+
+    // ── PC-038: collect_agent_info_resolves_tool_set ─────────────────────────
+    // `collect_agent_info` resolves `tool-set:` via manifest
+
+    #[test]
+    fn collect_agent_info_resolves_tool_set() {
+        let fs = InMemoryFileSystem::new();
+        let root = PathBuf::from("/project");
+        with_manifest(&fs, &root);
+
+        // Agent with tool-set: readonly-analyzer (no inline tools:)
+        fs.write(
+            &root.join("agents/code-reviewer.md"),
+            "---\nname: code-reviewer\ndescription: Code reviewer\nmodel: opus\ntool-set: readonly-analyzer\n---\n",
+        ).unwrap();
+
+        let known_agents = collect_agent_info(&root, &fs);
+        let tools = known_agents.get("code-reviewer").expect("code-reviewer should be in known_agents");
+
+        // After resolving readonly-analyzer: [Read, Grep, Glob]
+        assert!(tools.contains("Read"), "resolved tools must contain Read; got: {tools:?}");
+        assert!(tools.contains("Grep"), "resolved tools must contain Grep; got: {tools:?}");
+        assert!(tools.contains("Glob"), "resolved tools must contain Glob; got: {tools:?}");
+    }
+
     // ── PC-027: escalation_warn_names_preset_and_missing_tool ────────────────
 
     #[test]

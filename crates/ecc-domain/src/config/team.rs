@@ -29,6 +29,8 @@ pub struct TeamAgent {
     pub role: String,
     #[serde(default)]
     pub allowed_tools: Option<Vec<String>>,
+    #[serde(default)]
+    pub allowed_tool_set: Option<String>,
 }
 
 /// Errors from team manifest parsing/validation (pure domain, no I/O).
@@ -265,6 +267,43 @@ agents:
         assert_eq!(
             manifest.agents[0].allowed_tools, None,
             "allowed_tools should default to None when omitted"
+        );
+    }
+
+    // PC-039: team_agent_has_allowed_tool_set_field
+    #[test]
+    fn team_agent_has_allowed_tool_set_field() {
+        // Verify the field parses from YAML
+        let content = r#"---
+name: test-team
+description: Team with tool-set
+coordination: sequential
+agents:
+  - name: code-reviewer
+    role: reviewer
+    allowed-tool-set: readonly-analyzer
+---
+"#;
+        let manifest = parse_team_manifest(content).unwrap();
+        assert_eq!(
+            manifest.agents[0].allowed_tool_set,
+            Some("readonly-analyzer".to_string()),
+            "allowed_tool_set should parse from allowed-tool-set YAML key"
+        );
+        // Without the field, defaults to None
+        let content2 = r#"---
+name: test-team2
+description: Team without tool-set
+coordination: sequential
+agents:
+  - name: tdd-executor
+    role: implementer
+---
+"#;
+        let manifest2 = parse_team_manifest(content2).unwrap();
+        assert_eq!(
+            manifest2.agents[0].allowed_tool_set, None,
+            "allowed_tool_set should default to None"
         );
     }
 }
