@@ -45,11 +45,11 @@ pub fn run(json: bool, state_dir: &Path) -> WorkflowOutput {
 #[cfg(test)]
 pub mod tests {
     use ecc_domain::workflow::{
+        Direction, TransitionRecord,
         concern::Concern,
         phase::Phase,
         state::{Artifacts, Toolchain, WorkflowState},
         timestamp::Timestamp,
-        Direction, TransitionRecord,
     };
     use tempfile::TempDir;
 
@@ -117,15 +117,36 @@ pub mod tests {
         // Must contain header columns
         assert!(output.message.contains("From"), "must contain From column");
         assert!(output.message.contains("To"), "must contain To column");
-        assert!(output.message.contains("Direction"), "must contain Direction column");
-        assert!(output.message.contains("Justification"), "must contain Justification column");
-        assert!(output.message.contains("Timestamp"), "must contain Timestamp column");
-        assert!(output.message.contains("Actor"), "must contain Actor column");
+        assert!(
+            output.message.contains("Direction"),
+            "must contain Direction column"
+        );
+        assert!(
+            output.message.contains("Justification"),
+            "must contain Justification column"
+        );
+        assert!(
+            output.message.contains("Timestamp"),
+            "must contain Timestamp column"
+        );
+        assert!(
+            output.message.contains("Actor"),
+            "must contain Actor column"
+        );
         // Must contain actual record data
         assert!(output.message.contains("plan"), "must contain plan phase");
-        assert!(output.message.contains("solution"), "must contain solution phase");
-        assert!(output.message.contains("backward"), "must contain backward direction");
-        assert!(output.message.contains("needed revision"), "must contain justification");
+        assert!(
+            output.message.contains("solution"),
+            "must contain solution phase"
+        );
+        assert!(
+            output.message.contains("backward"),
+            "must contain backward direction"
+        );
+        assert!(
+            output.message.contains("needed revision"),
+            "must contain justification"
+        );
         // First record (#1) must appear before second record (#2) — chronological order
         let pos_1 = output.message.find('1').unwrap_or(usize::MAX);
         let pos_2 = output.message.find('2').unwrap_or(usize::MAX);
@@ -167,9 +188,18 @@ pub mod tests {
         let record = &arr[0];
         assert!(record.get("from").is_some(), "must have 'from' field");
         assert!(record.get("to").is_some(), "must have 'to' field");
-        assert!(record.get("direction").is_some(), "must have 'direction' field");
-        assert!(record.get("justification").is_some(), "must have 'justification' field");
-        assert!(record.get("timestamp").is_some(), "must have 'timestamp' field");
+        assert!(
+            record.get("direction").is_some(),
+            "must have 'direction' field"
+        );
+        assert!(
+            record.get("justification").is_some(),
+            "must have 'justification' field"
+        );
+        assert!(
+            record.get("timestamp").is_some(),
+            "must have 'timestamp' field"
+        );
         assert!(record.get("actor").is_some(), "must have 'actor' field");
     }
 }

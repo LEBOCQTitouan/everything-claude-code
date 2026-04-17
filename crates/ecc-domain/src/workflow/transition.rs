@@ -149,9 +149,7 @@ impl TransitionResolver for TransitionPolicy {
         match pair {
             Some(p) if p.direction == Direction::Backward => {
                 // Backward transitions require non-empty, non-whitespace justification.
-                let valid = justification
-                    .map(|j| !j.trim().is_empty())
-                    .unwrap_or(false);
+                let valid = justification.map(|j| !j.trim().is_empty()).unwrap_or(false);
                 if valid {
                     Ok(TransitionResult {
                         from,

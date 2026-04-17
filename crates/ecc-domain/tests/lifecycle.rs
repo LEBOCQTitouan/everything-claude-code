@@ -24,13 +24,11 @@ mod lifecycle {
         assert_eq!(phase, Phase::Implement);
 
         // implement -> done
-        let phase =
-            resolve_transition(phase, Phase::Done).expect("implement->done should succeed");
+        let phase = resolve_transition(phase, Phase::Done).expect("implement->done should succeed");
         assert_eq!(phase, Phase::Done);
 
         // done -> idle
-        let phase =
-            resolve_transition(phase, Phase::Idle).expect("done->idle should succeed");
+        let phase = resolve_transition(phase, Phase::Idle).expect("done->idle should succeed");
         assert_eq!(phase, Phase::Idle);
     }
 }

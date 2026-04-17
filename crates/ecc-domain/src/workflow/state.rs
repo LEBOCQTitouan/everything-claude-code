@@ -604,14 +604,23 @@ mod artifacts {
             Some("2026-01-01T00:00:00Z".to_owned()),
             "plan timestamp must be preserved"
         );
-        assert!(artifacts.solution.is_none(), "solution timestamp must be cleared");
-        assert!(artifacts.implement.is_none(), "implement timestamp must be cleared");
+        assert!(
+            artifacts.solution.is_none(),
+            "solution timestamp must be cleared"
+        );
+        assert!(
+            artifacts.implement.is_none(),
+            "implement timestamp must be cleared"
+        );
         assert_eq!(
             artifacts.spec_path,
             Some("docs/specs/foo/spec.md".to_owned()),
             "spec_path must be preserved"
         );
-        assert!(artifacts.design_path.is_none(), "design_path must be cleared");
+        assert!(
+            artifacts.design_path.is_none(),
+            "design_path must be cleared"
+        );
         assert!(artifacts.tasks_path.is_none(), "tasks_path must be cleared");
     }
 
@@ -623,14 +632,20 @@ mod artifacts {
         let mut artifacts = make_artifacts();
         artifacts.clear_artifacts_for_rollback(Phase::Solution, Phase::Plan);
         assert!(artifacts.plan.is_none(), "plan timestamp must be cleared");
-        assert!(artifacts.solution.is_none(), "solution timestamp must be cleared");
+        assert!(
+            artifacts.solution.is_none(),
+            "solution timestamp must be cleared"
+        );
         assert_eq!(
             artifacts.implement,
             Some("2026-01-03T00:00:00Z".to_owned()),
             "implement timestamp must be preserved"
         );
         assert!(artifacts.spec_path.is_none(), "spec_path must be cleared");
-        assert!(artifacts.design_path.is_none(), "design_path must be cleared");
+        assert!(
+            artifacts.design_path.is_none(),
+            "design_path must be cleared"
+        );
         assert_eq!(
             artifacts.tasks_path,
             Some("docs/specs/foo/tasks.md".to_owned()),
@@ -645,10 +660,19 @@ mod artifacts {
         let mut artifacts = make_artifacts();
         artifacts.clear_artifacts_for_rollback(Phase::Implement, Phase::Plan);
         assert!(artifacts.plan.is_none(), "plan timestamp must be cleared");
-        assert!(artifacts.solution.is_none(), "solution timestamp must be cleared");
-        assert!(artifacts.implement.is_none(), "implement timestamp must be cleared");
+        assert!(
+            artifacts.solution.is_none(),
+            "solution timestamp must be cleared"
+        );
+        assert!(
+            artifacts.implement.is_none(),
+            "implement timestamp must be cleared"
+        );
         assert!(artifacts.spec_path.is_none(), "spec_path must be cleared");
-        assert!(artifacts.design_path.is_none(), "design_path must be cleared");
+        assert!(
+            artifacts.design_path.is_none(),
+            "design_path must be cleared"
+        );
         assert!(artifacts.tasks_path.is_none(), "tasks_path must be cleared");
     }
 }
@@ -702,7 +726,10 @@ mod state {
         assert!(json.contains(r#""from""#), "must contain from");
         assert!(json.contains(r#""to""#), "must contain to");
         assert!(json.contains(r#""direction""#), "must contain direction");
-        assert!(json.contains(r#""justification""#), "must contain justification");
+        assert!(
+            json.contains(r#""justification""#),
+            "must contain justification"
+        );
         assert!(json.contains(r#""timestamp""#), "must contain timestamp");
         assert!(json.contains(r#""actor""#), "must contain actor");
         let restored: TransitionRecord =

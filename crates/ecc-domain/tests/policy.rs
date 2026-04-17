@@ -1,7 +1,7 @@
 //! PC-003: TransitionPolicy::default() forward pairs test.
 
-use ecc_domain::workflow::transition::{Direction, TransitionPolicy, TransitionResolver};
 use ecc_domain::workflow::phase::Phase;
+use ecc_domain::workflow::transition::{Direction, TransitionPolicy, TransitionResolver};
 
 mod policy {
     use super::*;
@@ -21,7 +21,11 @@ mod policy {
             let result = policy.resolve(from, to, None).unwrap_or_else(|e| {
                 panic!("expected {from}->{to} to be a legal forward pair, got: {e}")
             });
-            assert_eq!(result.direction, Direction::Forward, "{from}->{to} should be Forward");
+            assert_eq!(
+                result.direction,
+                Direction::Forward,
+                "{from}->{to} should be Forward"
+            );
         }
         // Verify backward pairs are NOT in default policy
         let backward_pairs = [

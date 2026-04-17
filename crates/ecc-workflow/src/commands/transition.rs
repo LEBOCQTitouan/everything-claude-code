@@ -5,7 +5,7 @@ use ecc_domain::metrics::MetricOutcome;
 use ecc_domain::workflow::concern::Concern;
 use ecc_domain::workflow::phase::Phase;
 use ecc_domain::workflow::state::{Completion, TransitionRecord};
-use ecc_domain::workflow::transition::{resolve_transition_with_justification, Direction};
+use ecc_domain::workflow::transition::{Direction, resolve_transition_with_justification};
 use ecc_ports::metrics_store::MetricsStore;
 
 use crate::io::{read_state, with_state_lock, write_state_atomic};
@@ -149,14 +149,8 @@ mod tests {
         let state_dir = dir.path().join(".claude/workflow");
 
         // Pass None store — should complete without panic
-        let output = super::run_with_store(
-            "solution",
-            Some("plan"),
-            None,
-            dir.path(),
-            &state_dir,
-            None,
-        );
+        let output =
+            super::run_with_store("solution", Some("plan"), None, dir.path(), &state_dir, None);
 
         assert!(
             !matches!(output.status, crate::output::Status::Block),
@@ -178,7 +172,14 @@ mod tests {
         // No state.json written
 
         let store = InMemoryMetricsStore::new();
-        let _output = super::run_with_store("solution", Some("plan"), None, dir.path(), &state_dir, Some(&store as &dyn MetricsStore));
+        let _output = super::run_with_store(
+            "solution",
+            Some("plan"),
+            None,
+            dir.path(),
+            &state_dir,
+            Some(&store as &dyn MetricsStore),
+        );
 
         let events = store.snapshot();
         assert_eq!(
@@ -300,7 +301,14 @@ mod tests {
         std::fs::write(wf_dir.join("state.json"), json).unwrap();
 
         // Step 1: backward transition implement→solution
-        let output = super::run("solution", None, None, dir.path(), &wf_dir, Some("design flaw"));
+        let output = super::run(
+            "solution",
+            None,
+            None,
+            dir.path(),
+            &wf_dir,
+            Some("design flaw"),
+        );
         assert!(
             !matches!(output.status, crate::output::Status::Block),
             "backward transition should succeed: {:?}",
@@ -308,7 +316,14 @@ mod tests {
         );
 
         // Step 2: forward re-entry solution→solution with artifact stamp
-        let output = super::run("solution", Some("solution"), None, dir.path(), &wf_dir, None);
+        let output = super::run(
+            "solution",
+            Some("solution"),
+            None,
+            dir.path(),
+            &wf_dir,
+            None,
+        );
         assert!(
             !matches!(output.status, crate::output::Status::Block),
             "forward re-entry should succeed: {:?}",
@@ -364,7 +379,14 @@ mod tests {
         std::fs::write(wf_dir.join("state.json"), json).unwrap();
 
         // Backward transition with justification
-        let output = super::run("solution", None, None, dir.path(), &wf_dir, Some("design flaw"));
+        let output = super::run(
+            "solution",
+            None,
+            None,
+            dir.path(),
+            &wf_dir,
+            Some("design flaw"),
+        );
         assert!(
             !matches!(output.status, crate::output::Status::Block),
             "backward impl→solution should succeed: {:?}",
@@ -377,11 +399,23 @@ mod tests {
         // Phase must be solution
         assert_eq!(new_state.phase, Phase::Solution, "phase must be solution");
         // solution and implement artifacts must be cleared
-        assert!(new_state.artifacts.solution.is_none(), "solution artifact must be cleared");
-        assert!(new_state.artifacts.implement.is_none(), "implement artifact must be cleared");
+        assert!(
+            new_state.artifacts.solution.is_none(),
+            "solution artifact must be cleared"
+        );
+        assert!(
+            new_state.artifacts.implement.is_none(),
+            "implement artifact must be cleared"
+        );
         // design_path and tasks_path must be cleared
-        assert!(new_state.artifacts.design_path.is_none(), "design_path must be cleared");
-        assert!(new_state.artifacts.tasks_path.is_none(), "tasks_path must be cleared");
+        assert!(
+            new_state.artifacts.design_path.is_none(),
+            "design_path must be cleared"
+        );
+        assert!(
+            new_state.artifacts.tasks_path.is_none(),
+            "tasks_path must be cleared"
+        );
         // History must have 1 record with direction=backward
         assert_eq!(new_state.history.len(), 1, "history must have 1 record");
         assert_eq!(
@@ -389,8 +423,16 @@ mod tests {
             ecc_domain::workflow::Direction::Backward,
             "direction must be backward"
         );
-        assert_eq!(new_state.history[0].from, Phase::Implement, "from must be implement");
-        assert_eq!(new_state.history[0].to, Phase::Solution, "to must be solution");
+        assert_eq!(
+            new_state.history[0].from,
+            Phase::Implement,
+            "from must be implement"
+        );
+        assert_eq!(
+            new_state.history[0].to,
+            Phase::Solution,
+            "to must be solution"
+        );
         assert_eq!(
             new_state.history[0].justification.as_deref(),
             Some("design flaw"),
@@ -794,5 +836,13 @@ pub fn run(
     state_dir: &Path,
     justify: Option<&str>,
 ) -> WorkflowOutput {
-    run_with_store_and_justify(target, artifact, path, project_dir, state_dir, None, justify)
+    run_with_store_and_justify(
+        target,
+        artifact,
+        path,
+        project_dir,
+        state_dir,
+        None,
+        justify,
+    )
 }

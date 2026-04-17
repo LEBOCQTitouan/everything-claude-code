@@ -26,7 +26,10 @@ impl fmt::Display for WorkflowError {
             Self::InvalidState(msg) => write!(f, "invalid workflow state: {msg}"),
             Self::UnknownPhase(name) => write!(f, "unknown phase: {name}"),
             Self::MissingJustification => {
-                write!(f, "justification must be non-empty for backward transitions")
+                write!(
+                    f,
+                    "justification must be non-empty for backward transitions"
+                )
             }
         }
     }
