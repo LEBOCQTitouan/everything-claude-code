@@ -7,3 +7,5 @@ pub mod staleness;
 pub mod state;
 pub mod timestamp;
 pub mod transition;
+
+pub use transition::{Direction, TransitionPolicy, TransitionResolver, TransitionResult};

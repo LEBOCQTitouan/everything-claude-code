@@ -1,7 +1,178 @@
 //! Workflow transition rules — pure function, no I/O.
 
+use serde::{Deserialize, Serialize};
+
 use super::error::WorkflowError;
 use super::phase::Phase;
+
+// ── Direction ────────────────────────────────────────────────────────────────
+
+/// Direction of a workflow phase transition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Direction {
+    Forward,
+    Backward,
+}
+
+// ── TransitionPair (private) ─────────────────────────────────────────────────
+
+struct TransitionPair {
+    from: Phase,
+    to: Phase,
+    direction: Direction,
+}
+
+// ── TransitionResult ─────────────────────────────────────────────────────────
+
+/// The result of a successful phase transition.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TransitionResult {
+    pub from: Phase,
+    pub to: Phase,
+    pub direction: Direction,
+}
+
+// ── TransitionResolver trait ─────────────────────────────────────────────────
+
+/// Trait for types that can resolve workflow phase transitions.
+pub trait TransitionResolver {
+    /// Resolve a phase transition.
+    ///
+    /// - Forward transitions accept `None` justification.
+    /// - Backward transitions require a non-empty, non-whitespace justification.
+    /// - `Phase::Unknown` source or target always returns `Err(IllegalTransition)`.
+    /// - Re-entry (from == to) returns `Ok` with `direction = Forward`.
+    fn resolve(
+        &self,
+        from: Phase,
+        to: Phase,
+        justification: Option<&str>,
+    ) -> Result<TransitionResult, WorkflowError>;
+}
+
+// ── TransitionPolicy ─────────────────────────────────────────────────────────
+
+/// Policy-driven transition table.
+///
+/// Use [`TransitionPolicy::default_forward`] for forward-only (backward-compatible) behaviour.
+/// Use [`TransitionPolicy::with_backward`] to permit backward transitions with justification.
+pub struct TransitionPolicy {
+    pairs: Vec<TransitionPair>,
+}
+
+impl TransitionPolicy {
+    /// Returns the standard forward-only policy (6 forward pairs).
+    ///
+    /// Pairs: Done→Idle, Idle→Plan, Plan→Solution, Solution→Implement, Implement→Done.
+    /// Re-entry (from == to) is handled separately and always permitted.
+    pub fn default_forward() -> Self {
+        Self {
+            pairs: vec![
+                TransitionPair {
+                    from: Phase::Done,
+                    to: Phase::Idle,
+                    direction: Direction::Forward,
+                },
+                TransitionPair {
+                    from: Phase::Idle,
+                    to: Phase::Plan,
+                    direction: Direction::Forward,
+                },
+                TransitionPair {
+                    from: Phase::Plan,
+                    to: Phase::Solution,
+                    direction: Direction::Forward,
+                },
+                TransitionPair {
+                    from: Phase::Solution,
+                    to: Phase::Implement,
+                    direction: Direction::Forward,
+                },
+                TransitionPair {
+                    from: Phase::Implement,
+                    to: Phase::Done,
+                    direction: Direction::Forward,
+                },
+            ],
+        }
+    }
+
+    /// Returns the forward-only policy plus 3 backward pairs.
+    ///
+    /// Backward pairs: Implement→Solution, Solution→Plan, Implement→Plan.
+    /// All backward transitions require a non-empty justification.
+    pub fn with_backward() -> Self {
+        let mut policy = Self::default_forward();
+        policy.pairs.push(TransitionPair {
+            from: Phase::Implement,
+            to: Phase::Solution,
+            direction: Direction::Backward,
+        });
+        policy.pairs.push(TransitionPair {
+            from: Phase::Solution,
+            to: Phase::Plan,
+            direction: Direction::Backward,
+        });
+        policy.pairs.push(TransitionPair {
+            from: Phase::Implement,
+            to: Phase::Plan,
+            direction: Direction::Backward,
+        });
+        policy
+    }
+}
+
+impl TransitionResolver for TransitionPolicy {
+    fn resolve(
+        &self,
+        from: Phase,
+        to: Phase,
+        justification: Option<&str>,
+    ) -> Result<TransitionResult, WorkflowError> {
+        // Phase::Unknown is never valid as source or target.
+        if matches!(from, Phase::Unknown) || matches!(to, Phase::Unknown) {
+            return Err(WorkflowError::IllegalTransition { from, to });
+        }
+
+        // Re-entry: from == to is always permitted (direction = Forward).
+        if from == to {
+            return Ok(TransitionResult {
+                from,
+                to,
+                direction: Direction::Forward,
+            });
+        }
+
+        // Look up the pair in the policy table.
+        let pair = self.pairs.iter().find(|p| p.from == from && p.to == to);
+        match pair {
+            Some(p) if p.direction == Direction::Backward => {
+                // Backward transitions require non-empty, non-whitespace justification.
+                let valid = justification
+                    .map(|j| !j.trim().is_empty())
+                    .unwrap_or(false);
+                if valid {
+                    Ok(TransitionResult {
+                        from,
+                        to,
+                        direction: Direction::Backward,
+                    })
+                } else {
+                    Err(WorkflowError::MissingJustification)
+                }
+            }
+            Some(_) => Ok(TransitionResult {
+                from,
+                to,
+                direction: Direction::Forward,
+            }),
+            None => Err(WorkflowError::IllegalTransition { from, to }),
+        }
+    }
+}
+
+// ── Legacy free functions (backward-compatible API) ───────────────────────────
 
 /// Resolve a phase transition.
 ///
@@ -16,32 +187,8 @@ use super::phase::Phase;
 ///
 /// Everything else is illegal (including Done -> anything and backward transitions).
 pub fn resolve_transition(current: Phase, target: Phase) -> Result<Phase, WorkflowError> {
-    // Phase::Unknown is never a valid source or target — always reject.
-    if matches!(current, Phase::Unknown) || matches!(target, Phase::Unknown) {
-        return Err(WorkflowError::IllegalTransition {
-            from: current,
-            to: target,
-        });
-    }
-    if current == target {
-        return Ok(target);
-    }
-    let legal = matches!(
-        (current, target),
-        (Phase::Done, Phase::Idle)
-            | (Phase::Idle, Phase::Plan)
-            | (Phase::Plan, Phase::Solution)
-            | (Phase::Solution, Phase::Implement)
-            | (Phase::Implement, Phase::Done)
-    );
-    if legal {
-        Ok(target)
-    } else {
-        Err(WorkflowError::IllegalTransition {
-            from: current,
-            to: target,
-        })
-    }
+    let policy = TransitionPolicy::default_forward();
+    policy.resolve(current, target, None).map(|r| r.to)
 }
 
 /// Resolve a phase transition by target name string.
@@ -59,6 +206,19 @@ pub fn resolve_transition_by_name(
         .parse::<Phase>()
         .map_err(|e| WorkflowError::UnknownPhase(e.0))?;
     resolve_transition(current, target)
+}
+
+/// Resolve a phase transition with an optional justification (supports backward transitions).
+///
+/// Uses [`TransitionPolicy::with_backward`] — backward transitions (implement→solution,
+/// solution→plan, implement→plan) are accepted when `justification` is non-empty.
+pub fn resolve_transition_with_justification(
+    current: Phase,
+    target: Phase,
+    justification: Option<&str>,
+) -> Result<TransitionResult, WorkflowError> {
+    let policy = TransitionPolicy::with_backward();
+    policy.resolve(current, target, justification)
 }
 
 #[cfg(test)]

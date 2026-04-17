@@ -13,6 +13,8 @@ pub enum WorkflowError {
     InvalidState(String),
     /// An unknown phase name was provided.
     UnknownPhase(String),
+    /// A backward transition was attempted without a non-empty justification.
+    MissingJustification,
 }
 
 impl fmt::Display for WorkflowError {
@@ -23,6 +25,9 @@ impl fmt::Display for WorkflowError {
             }
             Self::InvalidState(msg) => write!(f, "invalid workflow state: {msg}"),
             Self::UnknownPhase(name) => write!(f, "unknown phase: {name}"),
+            Self::MissingJustification => {
+                write!(f, "justification must be non-empty for backward transitions")
+            }
         }
     }
 }
