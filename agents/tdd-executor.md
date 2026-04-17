@@ -1,7 +1,7 @@
 ---
 name: tdd-executor
 description: Self-contained TDD executor for a single Pass Condition. Receives a context brief, executes RED-GREEN-REFACTOR, commits atomically, and returns structured results. Used by /implement Phase 3 subagent dispatch.
-tools: ["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob"]
+tool-set: tdd-executor
 model: sonnet
 effort: medium
 skills: ["tdd-workflow"]

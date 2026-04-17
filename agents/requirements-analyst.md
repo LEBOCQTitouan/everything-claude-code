@@ -1,7 +1,7 @@
 ---
 name: requirements-analyst
 description: Product-minded requirements analyst that decomposes raw input into User Stories, challenges the user's thinking, validates against the codebase, and produces a dependency DAG for parallel execution.
-tools: ["Read", "Grep", "Glob", "Agent"]
+tool-set: readonly-agent
 model: opus
 effort: max
 skills: ["blueprint"]

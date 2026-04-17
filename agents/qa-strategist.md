@@ -1,7 +1,7 @@
 ---
 name: qa-strategist
 description: Independent QA validation of test plans before /implement. Reviews edge case coverage, boundary conditions, integration test adequacy, E2E scenario selection, and test isolation. Produces coverage gaps, missing edge cases, and confidence score.
-tools: ["Read", "Grep", "Glob"]
+tool-set: readonly-analyzer
 model: opus
 effort: high
 skills: ["test-architecture", "tdd-workflow"]

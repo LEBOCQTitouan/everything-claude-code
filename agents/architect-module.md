@@ -1,7 +1,7 @@
 ---
 name: architect-module
 description: Module-level software architect focused on efficient code structure, patterns, and design within a single component or layer. Use when designing the internals of a module, optimizing code organization, choosing patterns within a layer, or refactoring a specific component. Always operates within boundaries set by the architect agent — escalate to architect if a decision touches hexagonal boundaries, port contracts, or DDD model design.
-tools: ["Read", "Grep", "Glob", "Agent"]
+tool-set: readonly-agent
 model: opus
 effort: high
 skills: ["architecture-review"]
