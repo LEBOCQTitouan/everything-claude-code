@@ -10,6 +10,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Bidirectional pipeline transitions (BL-129)**: Replaced closed `matches!` transition table with data-driven `TransitionPolicy` type and `TransitionResolver` trait. Added backward transitions (implement→solution, solution→plan, implement→plan) with mandatory justification. Append-only `TransitionRecord` history in `state.json`. New `ecc workflow history [--json]` CLI. Artifact clearing (timestamps + paths) on rollback. Forward re-entry re-stamps timestamps. `TransitionPolicy::default_forward()` preserves existing forward-only behavior; `with_backward()` adds backward pairs. History preserved in reset archives. (ADR 0064, ADR 0065)
+
 - **/party command for multi-agent round-table discussions (BL-144)**: New `/party` command assembles an ephemeral panel of BMAD role agents (bmad-pm, bmad-architect, bmad-dev, bmad-qa, bmad-security) plus ECC specialists. Party-coordinator orchestrates sequential dispatch and synthesises output to `docs/party/`. Zero Rust changes — content-only implementation. (ADR 0064)
 
 - **AAIF standard alignment audit (BL-147)**: Audited ECC agent/skill frontmatter against AAIF AGENTS.md standard. All 4 core fields compatible, 8 extension fields non-conflicting. Adopted additive alignment stance — no file changes needed, model alias resolved by SubagentStart hook. Gap analysis at `docs/research/aaif-alignment-gap-analysis.md`. (ADR 0062)
