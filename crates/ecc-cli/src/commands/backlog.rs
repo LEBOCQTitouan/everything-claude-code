@@ -182,7 +182,7 @@ mod tests {
     use ecc_domain::backlog::entry::BacklogError;
     use ecc_domain::backlog::entry::{BacklogEntry, BacklogStatus};
     use ecc_domain::backlog::lock::LockFile;
-    use ecc_ports::backlog::{BacklogEntryStore, BacklogLockStore};
+    use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore, BacklogLockStore};
     use ecc_ports::clock::Clock;
     use ecc_ports::worktree::{WorktreeError, WorktreeInfo, WorktreeManager};
     use std::path::{Path, PathBuf};
@@ -404,22 +404,22 @@ mod tests {
         }
     }
 
-    impl ecc_ports::backlog::BacklogLockStore for StubEntriesWithContent {
-        fn load_lock(&self, _dir: &Path, _id: &str) -> Result<Option<ecc_domain::backlog::lock::LockFile>, BacklogError> {
+    impl BacklogLockStore for StubEntriesWithContent {
+        fn load_lock(&self, _dir: &Path, _id: &str) -> Result<Option<LockFile>, BacklogError> {
             Ok(None)
         }
-        fn save_lock(&self, _dir: &Path, _id: &str, _lock: &ecc_domain::backlog::lock::LockFile) -> Result<(), BacklogError> {
+        fn save_lock(&self, _dir: &Path, _id: &str, _lock: &LockFile) -> Result<(), BacklogError> {
             Ok(())
         }
         fn remove_lock(&self, _dir: &Path, _id: &str) -> Result<(), BacklogError> {
             Ok(())
         }
-        fn list_locks(&self, _dir: &Path) -> Result<Vec<(String, ecc_domain::backlog::lock::LockFile)>, BacklogError> {
+        fn list_locks(&self, _dir: &Path) -> Result<Vec<(String, LockFile)>, BacklogError> {
             Ok(vec![])
         }
     }
 
-    impl ecc_ports::backlog::BacklogIndexStore for StubEntriesWithContent {
+    impl BacklogIndexStore for StubEntriesWithContent {
         fn write_index(&self, _dir: &Path, _content: &str) -> Result<(), BacklogError> {
             Ok(())
         }
@@ -457,22 +457,22 @@ mod tests {
         }
     }
 
-    impl ecc_ports::backlog::BacklogLockStore for StubIndexWithDiverging {
-        fn load_lock(&self, _dir: &Path, _id: &str) -> Result<Option<ecc_domain::backlog::lock::LockFile>, BacklogError> {
+    impl BacklogLockStore for StubIndexWithDiverging {
+        fn load_lock(&self, _dir: &Path, _id: &str) -> Result<Option<LockFile>, BacklogError> {
             Ok(None)
         }
-        fn save_lock(&self, _dir: &Path, _id: &str, _lock: &ecc_domain::backlog::lock::LockFile) -> Result<(), BacklogError> {
+        fn save_lock(&self, _dir: &Path, _id: &str, _lock: &LockFile) -> Result<(), BacklogError> {
             Ok(())
         }
         fn remove_lock(&self, _dir: &Path, _id: &str) -> Result<(), BacklogError> {
             Ok(())
         }
-        fn list_locks(&self, _dir: &Path) -> Result<Vec<(String, ecc_domain::backlog::lock::LockFile)>, BacklogError> {
+        fn list_locks(&self, _dir: &Path) -> Result<Vec<(String, LockFile)>, BacklogError> {
             Ok(vec![])
         }
     }
 
-    impl ecc_ports::backlog::BacklogIndexStore for StubIndexWithDiverging {
+    impl BacklogIndexStore for StubIndexWithDiverging {
         fn write_index(&self, _dir: &Path, _content: &str) -> Result<(), BacklogError> {
             Ok(())
         }
