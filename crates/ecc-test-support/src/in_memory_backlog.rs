@@ -235,4 +235,19 @@ pub mod tests {
         let read = repo.read_index(dir).unwrap();
         assert_eq!(read.as_deref(), Some(content));
     }
+
+    // PC-020: update_entry_status roundtrip
+    #[test]
+    fn update_entry_status_roundtrip() {
+        let raw = "---\nid: BL-042\nstatus: open\ncreated: 2026-01-01\n---\n\n# Body";
+        let repo = InMemoryBacklogRepository::new().with_raw_content("BL-042", raw);
+        let dir = Path::new("/backlog");
+
+        repo.update_entry_status(dir, "BL-042", "in-progress")
+            .unwrap();
+
+        let updated = repo.read_entry_content(dir, "BL-042").unwrap();
+        assert!(updated.contains("status: in-progress"));
+        assert!(!updated.contains("status: open"));
+    }
 }
