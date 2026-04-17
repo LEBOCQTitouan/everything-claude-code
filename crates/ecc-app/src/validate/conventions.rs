@@ -1,37 +1,13 @@
 use ecc_domain::config::tool_manifest::ToolManifest;
-use ecc_domain::config::tool_manifest_resolver::{FrontmatterToolSpec, ResolveError, resolve_effective_tools};
+use ecc_domain::config::tool_manifest_resolver::{
+    FrontmatterToolSpec, ResolveError, resolve_effective_tools,
+};
 use ecc_domain::config::validate::{
     LintFinding, LintSeverity, check_naming_consistency, check_tool_values, extract_frontmatter,
 };
 use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
-
-/// Tool vocabulary for validation — sourced from manifest/tool-manifest.yaml.
-/// Phase 1 bridge: used when no manifest is available (legacy fallback).
-const TOOL_VOCAB: &[&str] = &[
-    "Read",
-    "Write",
-    "Edit",
-    "MultiEdit",
-    "Bash",
-    "Glob",
-    "Grep",
-    "Agent",
-    "Task",
-    "WebSearch",
-    "TodoWrite",
-    "TodoRead",
-    "AskUserQuestion",
-    "LS",
-    "Skill",
-    "EnterPlanMode",
-    "ExitPlanMode",
-    "TaskCreate",
-    "TaskUpdate",
-    "TaskGet",
-    "TaskList",
-];
 
 pub(super) fn validate_conventions(
     root: &Path,
@@ -59,12 +35,10 @@ pub(super) fn validate_conventions(
                 let fm = extract_frontmatter(&content);
                 let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
                 findings.extend(check_naming_consistency(&stem, fm_name, "agent"));
-                if let Some(tools) = fm.as_ref().and_then(|m| m.get("tools")) {
-                    let vocab: Vec<&str> = if let Some(m) = manifest {
-                        m.tools.iter().map(String::as_str).collect()
-                    } else {
-                        TOOL_VOCAB.to_vec()
-                    };
+                if let Some(tools) = fm.as_ref().and_then(|m| m.get("tools"))
+                    && let Some(m) = manifest
+                {
+                    let vocab: Vec<&str> = m.tools.iter().map(String::as_str).collect();
                     findings.extend(check_tool_values(&stem, tools, "tools", &vocab));
                 }
             }
@@ -118,22 +92,23 @@ pub(super) fn validate_conventions(
                                 findings.push(LintFinding {
                                     severity: LintSeverity::Error,
                                     file: stem.to_string(),
-                                    message: format!(
-                                        "'{stem}': allowed-tool-set error: {e}"
-                                    ),
+                                    message: format!("'{stem}': allowed-tool-set error: {e}"),
                                 });
                             }
                         }
                     } else if tool_set_val.is_none()
                         && let Some(tools) = fm_map.get("allowed-tools")
                     {
-                        // No preset: validate inline tools against vocab
-                        let vocab: Vec<&str> = if let Some(m) = manifest {
-                            m.tools.iter().map(String::as_str).collect()
-                        } else {
-                            TOOL_VOCAB.to_vec()
-                        };
-                        findings.extend(check_tool_values(&stem, tools, "allowed-tools", &vocab));
+                        // No preset: validate inline tools against manifest
+                        if let Some(m) = manifest {
+                            let vocab: Vec<&str> = m.tools.iter().map(String::as_str).collect();
+                            findings.extend(check_tool_values(
+                                &stem,
+                                tools,
+                                "allowed-tools",
+                                &vocab,
+                            ));
+                        }
                     }
                 }
             }
@@ -253,34 +228,38 @@ mod tests {
 
     #[test]
     fn conventions_agent_invalid_tool_returns_false() {
+        let root = Path::new("/root");
         let fs = InMemoryFileSystem::new().with_file(
             "/root/agents/my-agent.md",
             "---\nname: my-agent\ntools: UnknownTool\n---\n# Agent",
         );
+        with_manifest(&fs, root);
         let t = term();
         assert!(!run_validate(
             &fs,
             &t,
             &MockEnvironment::default(),
             &ValidateTarget::Conventions,
-            Path::new("/root")
+            root
         ));
         assert!(t.stderr_output().iter().any(|s| s.contains("ERROR")));
     }
 
     #[test]
     fn conventions_command_invalid_allowed_tool_returns_false() {
+        let root = Path::new("/root");
         let fs = InMemoryFileSystem::new().with_file(
             "/root/commands/my-command.md",
             "---\nname: my-command\nallowed-tools: FakeTool\n---\n# Command",
         );
+        with_manifest(&fs, root);
         let t = term();
         assert!(!run_validate(
             &fs,
             &t,
             &MockEnvironment::default(),
             &ValidateTarget::Conventions,
-            Path::new("/root")
+            root
         ));
         assert!(t.stderr_output().iter().any(|s| s.contains("ERROR")));
     }
@@ -344,17 +323,19 @@ mod tests {
     #[test]
     fn conventions_mixed_error_and_warn_returns_false() {
         // Agent with invalid tool (ERROR) + missing name (WARN)
+        let root = Path::new("/root");
         let fs = InMemoryFileSystem::new().with_file(
             "/root/agents/my-agent.md",
             "---\ntools: UnknownTool\n---\n# Agent",
         );
+        with_manifest(&fs, root);
         let t = term();
         assert!(!run_validate(
             &fs,
             &t,
             &MockEnvironment::default(),
             &ValidateTarget::Conventions,
-            Path::new("/root")
+            root
         ));
     }
 
@@ -437,11 +418,8 @@ presets:
     - Write
     - TodoWrite
 "#;
-        fs.write(
-            &root.join("manifest/tool-manifest.yaml"),
-            yaml,
-        )
-        .expect("write manifest");
+        fs.write(&root.join("manifest/tool-manifest.yaml"), yaml)
+            .expect("write manifest");
     }
 
     // ── PC-019: allowed_tool_set_validates ───────────────────────────────────
@@ -462,7 +440,11 @@ presets:
             &ValidateTarget::Conventions,
             root,
         );
-        assert!(result, "command with allowed-tool-set should validate; stderr: {:?}", t.stderr_output());
+        assert!(
+            result,
+            "command with allowed-tool-set should validate; stderr: {:?}",
+            t.stderr_output()
+        );
     }
 
     // ── PC-030: unknown_allowed_tool_set_reported ────────────────────────────

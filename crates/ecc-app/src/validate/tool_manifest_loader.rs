@@ -43,11 +43,7 @@ impl std::fmt::Display for ManifestLoadError {
             ),
             Self::Validation(errors) => {
                 let msgs: Vec<String> = errors.iter().map(ToString::to_string).collect();
-                write!(
-                    f,
-                    "tool manifest validation errors: {}",
-                    msgs.join("; ")
-                )
+                write!(f, "tool manifest validation errors: {}", msgs.join("; "))
             }
         }
     }

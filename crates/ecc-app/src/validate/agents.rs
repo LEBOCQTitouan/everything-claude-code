@@ -89,9 +89,7 @@ fn validate_agent_file(
     }
 
     // Tool resolution: tool-set and/or tools field
-    if let Some(tool_errors) =
-        resolve_tool_set_for_agent(&frontmatter, manifest, &name, terminal)
-    {
+    if let Some(tool_errors) = resolve_tool_set_for_agent(&frontmatter, manifest, &name, terminal) {
         if !tool_errors {
             valid = false;
         }
