@@ -310,6 +310,55 @@ mod tests {
         );
     }
 
+    const MINIMAL_MANIFEST: &str = "tools:\n  - Read\n  - Grep\n  - Glob\npresets:\n  readonly-analyzer:\n    - Read\n    - Grep\n    - Glob\n";
+
+    #[test]
+    fn skill_tool_set_enforced() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/skills")
+            .with_dir("/root/skills/bad-preset")
+            .with_file(
+                "/root/skills/bad-preset/SKILL.md",
+                "---\nname: bad-preset\ndescription: test\norigin: ECC\ntool-set: nonexistent-preset\n---\n# Bad",
+            )
+            .with_dir("/root/manifest")
+            .with_file("/root/manifest/tool-manifest.yaml", MINIMAL_MANIFEST);
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Skills,
+            Path::new("/root")
+        ));
+        assert!(
+            t.stderr_output()
+                .iter()
+                .any(|s| s.contains("nonexistent-preset"))
+        );
+    }
+
+    #[test]
+    fn skill_no_tools_valid() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/skills")
+            .with_dir("/root/skills/no-tools")
+            .with_file(
+                "/root/skills/no-tools/SKILL.md",
+                "---\nname: no-tools\ndescription: test\norigin: ECC\n---\n# No tools",
+            )
+            .with_dir("/root/manifest")
+            .with_file("/root/manifest/tool-manifest.yaml", MINIMAL_MANIFEST);
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Skills,
+            Path::new("/root")
+        ));
+    }
+
     #[test]
     fn skills_valid_count_accuracy() {
         let fs = InMemoryFileSystem::new()
