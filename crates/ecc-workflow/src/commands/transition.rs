@@ -536,6 +536,7 @@ pub(crate) fn try_record_transition(
 ///     v
 /// pass
 /// ```
+#[allow(dead_code)]
 pub fn run_with_store(
     target: &str,
     artifact: Option<&str>,

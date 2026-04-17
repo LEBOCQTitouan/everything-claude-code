@@ -11,7 +11,7 @@ pub fn run(json: bool, state_dir: &Path) -> WorkflowOutput {
     };
     let state: ecc_domain::workflow::state::WorkflowState = match serde_json::from_str(&content) {
         Ok(s) => s,
-        Err(e) => return WorkflowOutput::block(&format!("Invalid state: {e}")),
+        Err(e) => return WorkflowOutput::block(format!("Invalid state: {e}")),
     };
     if state.history.is_empty() {
         return WorkflowOutput::pass("No transition history");
@@ -39,7 +39,7 @@ pub fn run(json: bool, state_dir: &Path) -> WorkflowOutput {
             record.actor
         ));
     }
-    WorkflowOutput::pass(&lines.join("\n"))
+    WorkflowOutput::pass(lines.join("\n"))
 }
 
 #[cfg(test)]
