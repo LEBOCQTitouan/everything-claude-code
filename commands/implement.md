@@ -341,10 +341,11 @@ Generate context-aware supplemental documentation while session context is fresh
 
 ### Dispatch
 
-Launch two Task subagents in parallel:
+Launch three Task subagents in parallel:
 
 1. **module-summary-updater** (allowedTools: [Read, Write, Edit, Grep, Glob]) — updates `docs/MODULE-SUMMARIES.md` with entries for each Rust crate modified during the TDD loop
 2. **diagram-updater** (allowedTools: [Read, Write, Edit, Grep, Glob]) — generates Mermaid diagrams for new cross-module flows, state machines, or bounded contexts
+3. **compass-context-writer** (allowedTools: [Read, Write, Grep, Glob]) — generates or updates `docs/context/<component>.md` compass files for each component modified during the TDD loop
 
 Pass each subagent:
 - The list of files changed during the TDD loop
@@ -356,7 +357,7 @@ Wait for both tasks to reach a terminal status (completed or failed) before proc
 ### Result Handling
 
 For each subagent:
-- **Success**: Commit output. Module summaries: `docs: update MODULE-SUMMARIES for <feature>`. Diagrams: `docs(diagrams): add <feature> diagrams`
+- **Success**: Commit output. Module summaries: `docs: update MODULE-SUMMARIES for <feature>`. Diagrams: `docs(diagrams): add <feature> diagrams`. Compass: `docs: update compass context for <feature>`
 - **Failure (partial failure)**: Record the failure in implement-done.md `## Supplemental Docs` section. Proceed — Phase 7.5 failures are non-blocking.
 
 ### Cross-Link Fixup Pass
@@ -538,3 +539,4 @@ This command invokes:
 - `code-reviewer` — reviews all changes against spec and solution after TDD loop completes
 - `module-summary-updater` — updates MODULE-SUMMARIES.md with per-crate entries during Phase 7.5
 - `diagram-updater` — generates Mermaid diagrams for cross-module flows during Phase 7.5
+- `compass-context-writer` — generates or updates compass context files during Phase 7.5
