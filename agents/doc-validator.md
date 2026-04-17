@@ -98,6 +98,82 @@ Report includes: dimension breakdown table, issues by severity with file:line, C
 
 With `--module`, writes only to `docs/doc-quality/<module>.md`. INDEX.md written by orchestrator after all modules complete.
 
+## Auto-Repair Mode
+
+When invoked with `--auto-repair`, the validator attempts to fix low-to-medium severity issues inline before producing the final quality report.
+
+### Activation
+
+```
+doc-validator --auto-repair [--module=<name>] [--target=CLAUDE.md]
+```
+
+### Severity Triage
+
+| Severity | Auto-Repair Action |
+|----------|--------------------|
+| LOW severity | Auto-fix style/wording drift — rewrite passive voice, fix punctuation, standardize terminology against the project glossary |
+| MEDIUM severity | Auto-fix stale counts (resolve actual values with `ecc validate claude-md --counts`) and outdated path references (resolve actual file existence with Glob/Read) |
+| HIGH flag only | Flag for manual review only — not auto-fixed. Record in report with rationale. |
+| CRITICAL flag only | Flag for manual review only — not auto-fixed. Record in report with rationale. |
+
+**HIGH and CRITICAL findings are never auto-repaired.** These require human judgment: wrong types, wrong behavior descriptions, security-sensitive docs, and breaking API changes are out of scope for mechanical repair.
+
+### LOW Severity Auto-Fix
+
+LOW auto-fix applies to:
+- Minor wording/style issues (Step 1 outcome)
+- Style issues in Mermaid diagrams (Step 6 LOW outcome)
+- Wording drift in CLAUDE.md (Step 7 LOW outcome)
+
+Procedure:
+1. Read the doc file containing the LOW finding
+2. Apply the fix inline (rewrite the sentence or phrase)
+3. Write the corrected file back (atomic write — never partial)
+4. Log the change: `AUTO-FIXED(LOW): <file>:<line> — <description>`
+
+### MEDIUM Severity Auto-Fix
+
+MEDIUM auto-fix applies to:
+- Stale counts (test count, file count, command count)
+- Outdated path references that resolve to a new location
+- Missing param documentation (can be inferred from type signature)
+
+Procedure for stale counts:
+1. Run `ecc validate claude-md --counts` to get actual counts
+2. Replace stated count with actual count in the doc file
+3. Write back atomically
+4. Log: `AUTO-FIXED(MEDIUM): <file>:<line> — count updated from N to M`
+
+Procedure for path resolution:
+1. Use Glob to locate the file at its new path
+2. Update the reference in the doc file
+3. Write back atomically
+4. Log: `AUTO-FIXED(MEDIUM): <file>:<line> — path updated from <old> to <new>`
+
+### Post-Repair Validation
+
+After all auto-repair passes complete, run a post-repair validation pass:
+
+1. Re-run Steps 1-10 of the Validation Pipeline on repaired files only
+2. Any findings that re-appear after repair are flagged as `REPAIR-REGRESSION` at their original severity
+3. `REPAIR-REGRESSION` findings are not auto-repaired again — they are escalated to the report as unresolved
+4. The final report includes a `## Auto-Repair Summary` section:
+
+```markdown
+## Auto-Repair Summary
+- LOW fixes applied: N
+- MEDIUM fixes applied: M
+- HIGH/CRITICAL flagged (not repaired): K
+- Repair regressions: 0
+- Post-repair validation: PASS (or FAIL with regression list)
+```
+
+### Commit Cadence (Auto-Repair)
+
+After auto-repair completes and post-repair validation passes:
+`docs: auto-repair LOW/MEDIUM doc findings in <target>`
+
 ## Commit Cadence
 
 `docs: add documentation quality report` — after writing quality files.
