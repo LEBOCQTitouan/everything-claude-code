@@ -1,80 +1,62 @@
-# Implementation Complete: Fix Worktree GC PID Bug (BL-150)
+# Implementation Complete: BL-146 Declarative Tool Manifest
 
 ## Spec Reference
-Concern: fix, Feature: worktree gc pid bug
+Concern: `dev` | Feature: BL-146 Declarative tool manifest for ECC agents
 
 ## Changes Made
 | # | File | Action | Solution Ref | Tests | Status |
-|---|---|---|---|---|---|
-| 1 | `crates/ecc-workflow/src/commands/worktree_name.rs` | modify | PC-001 | `worktree_name::generates_pass_output`, `passes_for_safe_feature_name` | done |
-| 2 | `crates/ecc-app/src/worktree/mod.rs` | modify | PC-002, PC-006..010 | 5 new recency tests | done |
-| 3 | `crates/ecc-app/src/worktree/gc.rs` | modify | PC-003, PC-004 | `gc_skips_when_unmerged_query_fails` | done |
-| 4 | `crates/ecc-app/src/worktree/status.rs` | modify | PC-006 | -- | done |
-| 5 | `crates/ecc-test-support/src/mock_worktree.rs` | modify | PC-004 | -- | done |
-| 6 | `CLAUDE.md` | modify | PC-011 | -- | done |
-| 7 | `CHANGELOG.md` | modify | -- | -- | done |
-
-## TDD Log
-| PC ID | RED | GREEN | REFACTOR | Test Names | Notes |
-|---|---|---|---|---|---|
-| PC-001 | -- | ✅ | ⏭ | `worktree_name::generates_pass_output` | parent_id() swap |
-| PC-002 | -- | ✅ | ⏭ | -- | WorktreeGcError rename |
-| PC-003 | -- | ✅ | ⏭ | -- | unwrap_or(u64::MAX) |
-| PC-004 | ✅ | ✅ | ⏭ | `gc::tests::gc_skips_when_unmerged_query_fails` | New test |
-| PC-005 | -- | ✅ | ⏭ | `gc::tests::removes_stale` | Regression |
-| PC-006 | -- | ✅ | ⏭ | -- | Signature change |
-| PC-007 | ✅ | ✅ | ⏭ | `worktree::tests::recently_modified_worktree_is_not_stale` | -- |
-| PC-008 | ✅ | ✅ | ⏭ | `worktree::tests::old_unmodified_worktree_is_stale` | -- |
-| PC-009 | ✅ | ✅ | ⏭ | `worktree::tests::stat_failure_preserves_existing_behavior` | -- |
-| PC-009b | ✅ | ✅ | ⏭ | `worktree::tests::malformed_stat_output_treated_as_failure` | -- |
-| PC-010 | ✅ | ✅ | ⏭ | `worktree::tests::live_pid_overrides_old_modification` | -- |
-| PC-011 | -- | ✅ | ⏭ | -- | CLAUDE.md gotcha |
-| PC-012 | -- | ✅ | ⏭ | -- | 3059/3059 passed |
-| PC-013 | -- | ✅ | ⏭ | -- | Clippy clean |
+|---|------|--------|--------------|-------|--------|
+| 1 | `manifest/tool-manifest.yaml` | create | PC-001 | parses_valid_manifest | done |
+| 2 | `crates/ecc-domain/src/config/tool_manifest.rs` | create | PC-001..PC-014, PC-070 | 13 unit tests | done |
+| 3 | `crates/ecc-domain/src/config/tool_manifest_resolver.rs` | create | PC-017..PC-021, PC-057, PC-071 | 8 unit tests + proptest | done |
+| 4 | `crates/ecc-domain/src/config/validate.rs` | modify | PC-008, PC-009 | valid_tools_constant_removed | done |
+| 5 | `crates/ecc-domain/src/config/team.rs` | modify | PC-039 | team_agent_has_allowed_tool_set | done |
+| 6 | `crates/ecc-app/src/validate/tool_manifest_path_resolver.rs` | create | PC-028, PC-072 | 2 unit tests | done |
+| 7 | `crates/ecc-app/src/validate/tool_manifest_loader.rs` | create | PC-022, PC-025 | 2 integration tests | done |
+| 8 | `crates/ecc-app/src/validate/agents.rs` | modify | PC-015..PC-024 | 6 integration tests | done |
+| 9 | `crates/ecc-app/src/validate/conventions.rs` | modify | PC-019, PC-030 | 2 integration tests | done |
+| 10 | `crates/ecc-app/src/validate/teams.rs` | modify | PC-027, PC-036, PC-038 | 3 integration tests | done |
+| 11 | `crates/ecc-app/src/validate/skills.rs` | modify | PC-053, PC-054 | 2 integration tests | done |
+| 12 | `crates/ecc-app/src/install/global/steps.rs` | modify | PC-033, PC-035, PC-073 | 3 integration tests | done |
+| 13 | 51 agent files | modify | PC-040, PC-041 | — | done |
+| 14 | 29 command files | modify | PC-047..PC-051 | — | done |
+| 15 | 3 team files | modify | PC-037 | — | done |
+| 16 | 1 skill file | modify | PC-052 | — | done |
+| 17 | `crates/ecc-integration-tests/tests/` | create | PC-044..PC-061, PC-074 | 9 integration tests | done |
+| 18 | `docs/adr/0060-declarative-tool-manifest.md` | create | PC-059 | — | done |
+| 19 | `docs/tool-manifest-authoring.md` | create | PC-060 | — | done |
+| 20 | `CLAUDE.md` | modify | PC-061 | — | done |
 
 ## Pass Condition Results
-| PC ID | Command | Expected | Actual | Status |
-|---|---|---|---|---|
-| PC-001 | `cargo test -p ecc-workflow -- worktree_name` | PASS | PASS | ✅ |
-| PC-002 | `cargo build --workspace` | exit 0 | exit 0 | ✅ |
-| PC-003 | `grep unwrap_or(u64::MAX) gc.rs` | 1 match | 1 match | ✅ |
-| PC-004 | `cargo test -p ecc-app -- gc_skips_when_unmerged_query_fails` | PASS | PASS | ✅ |
-| PC-005 | `cargo test -p ecc-app -- removes_stale` | PASS | PASS | ✅ |
-| PC-006 | `cargo build --workspace` | exit 0 | exit 0 | ✅ |
-| PC-007 | `cargo test -p ecc-app -- recently_modified_worktree_is_not_stale` | PASS | PASS | ✅ |
-| PC-008 | `cargo test -p ecc-app -- old_unmodified_worktree_is_stale` | PASS | PASS | ✅ |
-| PC-009 | `cargo test -p ecc-app -- stat_failure_preserves_existing_behavior` | PASS | PASS | ✅ |
-| PC-009b | `cargo test -p ecc-app -- malformed_stat_output_treated_as_failure` | PASS | PASS | ✅ |
-| PC-010 | `cargo test -p ecc-app -- live_pid_overrides_old_modification` | PASS | PASS | ✅ |
-| PC-011 | `grep 'TEMPORARY (BL-150)' CLAUDE.md` | 1 match | 1 match | ✅ |
-| PC-012 | `cargo test --workspace` | PASS | 3059/3059 | ✅ |
-| PC-013 | `cargo clippy --workspace -- -D warnings` | exit 0 | exit 0 | ✅ |
-
-All pass conditions: 14/14 ✅
+All pass conditions: 74/74 ✅
 
 ## E2E Tests
-No E2E tests required by solution
+| # | Test | Result |
+|---|------|--------|
+| 1 | install_expands_tool_sets_from_manifest | ✅ |
+| 2 | validate_ecc_content_against_manifest | ✅ |
+| 3 | no_tool_set_in_installed_output | ✅ |
+| 4 | install_sha256_pre_post_match | ✅ |
+| 5 | validate_teams_byte_identical_pre_post | ✅ |
 
 ## Docs Updated
-| # | Doc File | Level | What Changed |
-|---|---|---|---|
-| 1 | CLAUDE.md | project | Added BL-150 temporary gotcha |
-| 2 | CHANGELOG.md | project | Added BL-150 fix entry |
+| # | Doc File | What Changed |
+|---|----------|--------------|
+| 1 | `docs/adr/0060-declarative-tool-manifest.md` | 12 decisions documented |
+| 2 | `docs/tool-manifest-authoring.md` | Adding tools + presets guide |
+| 3 | `docs/research/competitor-claw-goose.md` | Updated ECC claim |
+| 4 | `CLAUDE.md` | tool-set glossary entry |
 
 ## ADRs Created
-None required
+| # | File | Decision |
+|---|------|----------|
+| 1 | `docs/adr/0060-declarative-tool-manifest.md` | YAML manifest for tool vocabulary + presets |
 
 ## Coverage Delta
-Coverage data unavailable — install cargo-llvm-cov
-
-## Supplemental Docs
-No supplemental docs generated — change scope did not warrant module summary or diagram updates
-
-## Subagent Execution
-Inline execution — subagent dispatch not used
+Coverage data unavailable — cargo-llvm-cov not run in this session.
 
 ## Code Review
-Inline execution — proportionate for a 3-file bug fix with 6 new unit tests
+4 HIGH findings fixed: validate_tool_manifest production call, function extraction, DRY dedup, TOOL_VOCAB removal. 4 MEDIUM + 2 LOW accepted.
 
 ## Suggested Commit
-fix(worktree): prevent GC from deleting active worktrees (BL-150)
+feat(manifest): declarative tool manifest for ECC (BL-146)
