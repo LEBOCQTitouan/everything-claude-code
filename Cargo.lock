@@ -571,10 +571,12 @@ version = "4.2.0"
 dependencies = [
  "assert_cmd",
  "ecc-app",
+ "ecc-domain",
  "ecc-ports",
  "ecc-test-support",
  "predicates",
  "serde_json",
+ "sha2",
  "shell-words",
  "tempfile",
 ]

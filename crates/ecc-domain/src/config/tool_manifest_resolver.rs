@@ -52,10 +52,7 @@ impl std::fmt::Display for ResolveError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UnknownPreset(p) => write!(f, "unknown preset '{p}'"),
-            Self::ArrayNotSupported => write!(
-                f,
-                "tool-set: must be a single string, not an array"
-            ),
+            Self::ArrayNotSupported => write!(f, "tool-set: must be a single string, not an array"),
             Self::EmptyResolution => write!(f, "effective tool list is empty after resolution"),
             Self::NeitherToolSetNorTools => {
                 write!(f, "neither tool-set nor tools field provided")
@@ -225,8 +222,8 @@ presets:
         let spec = FrontmatterToolSpec {
             tool_set: Some("readonly-analyzer".to_string()),
             inline_tools: Some(vec![
-                "Read".to_string(),  // already in preset — no warn
-                "Bash".to_string(),  // NOT in readonly-analyzer — outlier
+                "Read".to_string(), // already in preset — no warn
+                "Bash".to_string(), // NOT in readonly-analyzer — outlier
             ]),
         };
         let result = resolve_effective_tools(&spec, &manifest).expect("should resolve");
@@ -236,10 +233,17 @@ presets:
         assert_eq!(read_count, 1, "Read should appear exactly once (deduped)");
 
         // Bash is included (outlier, but still merged)
-        assert!(result.tools.contains(&"Bash".to_string()), "Bash should be in merged list");
+        assert!(
+            result.tools.contains(&"Bash".to_string()),
+            "Bash should be in merged list"
+        );
 
         // Warning for Bash (outlier)
-        assert_eq!(result.warnings.len(), 1, "should have exactly 1 warning (Bash is outlier)");
+        assert_eq!(
+            result.warnings.len(),
+            1,
+            "should have exactly 1 warning (Bash is outlier)"
+        );
         assert!(
             result.warnings[0].contains("Bash"),
             "warning should name outlier tool 'Bash'"
@@ -268,15 +272,7 @@ presets:
     fn rejects_invalid_tool_set_value() {
         let manifest = make_manifest();
 
-        let invalid_values = [
-            "-foo",
-            "foo-",
-            "Foo",
-            "FOO",
-            "foo_bar",
-            "foo bar",
-            "",
-        ];
+        let invalid_values = ["-foo", "foo-", "Foo", "FOO", "foo_bar", "foo bar", ""];
 
         for v in &invalid_values {
             let spec = FrontmatterToolSpec {
@@ -341,7 +337,10 @@ presets:
             inline_tools: Some(vec!["Read".to_string(), "Write".to_string()]),
         };
         let resolved = resolve_effective_tools(&spec, &manifest).expect("should resolve");
-        assert_eq!(resolved.tools, vec!["Read".to_string(), "Write".to_string()]);
+        assert_eq!(
+            resolved.tools,
+            vec!["Read".to_string(), "Write".to_string()]
+        );
         assert!(resolved.warnings.is_empty());
     }
 

@@ -11,124 +11,126 @@ fn workspace_root() -> PathBuf {
         .to_path_buf()
 }
 
-// ── PC-058: competitor_research_claim_updated ─────────────────────────────────
+pub mod tool_manifest_docs {
+    use super::*;
 
-/// The competitor research file must contain the updated claim
-/// "ECC: declarative tool manifest" (not the old "ECC: hardcoded allowedTools").
-#[test]
-fn competitor_research_claim_updated() {
-    let root = workspace_root();
-    let path = root.join("docs/research/competitor-claw-goose.md");
+    // ── PC-058: competitor_research_claim_updated ─────────────────────────────
 
-    assert!(
-        path.exists(),
-        "docs/research/competitor-claw-goose.md must exist"
-    );
+    /// The competitor research file must contain the updated claim
+    /// "ECC: declarative tool manifest" (not the old "ECC: hardcoded allowedTools").
+    #[test]
+    pub fn competitor_research_claim_updated() {
+        let root = workspace_root();
+        let path = root.join("docs/research/competitor-claw-goose.md");
 
-    let content = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read competitor-claw-goose.md: {e}"));
+        assert!(
+            path.exists(),
+            "docs/research/competitor-claw-goose.md must exist"
+        );
 
-    assert!(
-        content.contains("ECC: declarative tool manifest"),
-        "competitor-claw-goose.md must contain 'ECC: declarative tool manifest' but got:\n{content}"
-    );
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("failed to read competitor-claw-goose.md: {e}"));
 
-    assert!(
-        !content.contains("ECC: hardcoded allowedTools"),
-        "competitor-claw-goose.md must NOT contain old claim 'ECC: hardcoded allowedTools'"
-    );
-}
+        assert!(
+            content.contains("ECC: declarative tool manifest"),
+            "competitor-claw-goose.md must contain 'ECC: declarative tool manifest' but got:\n{content}"
+        );
 
-// ── PC-059: adr_exists_with_required_cites ────────────────────────────────────
+        assert!(
+            !content.contains("ECC: hardcoded allowedTools"),
+            "competitor-claw-goose.md must NOT contain old claim 'ECC: hardcoded allowedTools'"
+        );
+    }
 
-/// ADR 0060 must exist and contain references to BL-146, BL-140, and
-/// competitor-claw-goose.
-#[test]
-fn adr_exists_with_required_cites() {
-    let root = workspace_root();
-    let path = root.join("docs/adr/0060-declarative-tool-manifest.md");
+    // ── PC-059: adr_exists_with_required_cites ────────────────────────────────
 
-    assert!(
-        path.exists(),
-        "docs/adr/0060-declarative-tool-manifest.md must exist"
-    );
+    /// ADR 0060 must exist and contain references to BL-146, BL-140, and
+    /// competitor-claw-goose.
+    #[test]
+    pub fn adr_exists_with_required_cites() {
+        let root = workspace_root();
+        let path = root.join("docs/adr/0060-declarative-tool-manifest.md");
 
-    let content = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read ADR 0060: {e}"));
+        assert!(
+            path.exists(),
+            "docs/adr/0060-declarative-tool-manifest.md must exist"
+        );
 
-    assert!(
-        content.contains("BL-146"),
-        "ADR 0060 must cite BL-146 but content does not contain it"
-    );
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("failed to read ADR 0060: {e}"));
 
-    assert!(
-        content.contains("BL-140"),
-        "ADR 0060 must cite BL-140 but content does not contain it"
-    );
+        assert!(
+            content.contains("BL-146"),
+            "ADR 0060 must cite BL-146 but content does not contain it"
+        );
 
-    assert!(
-        content.contains("competitor-claw-goose"),
-        "ADR 0060 must cite competitor-claw-goose but content does not contain it"
-    );
-}
+        assert!(
+            content.contains("BL-140"),
+            "ADR 0060 must cite BL-140 but content does not contain it"
+        );
 
-// ── PC-060: authoring_guide_exists_with_sections ─────────────────────────────
+        assert!(
+            content.contains("competitor-claw-goose"),
+            "ADR 0060 must cite competitor-claw-goose but content does not contain it"
+        );
+    }
 
-/// docs/tool-manifest-authoring.md must exist with the required sections.
-#[test]
-fn authoring_guide_exists_with_sections() {
-    let root = workspace_root();
-    let path = root.join("docs/tool-manifest-authoring.md");
+    // ── PC-060: authoring_guide_exists_with_sections ─────────────────────────
 
-    assert!(
-        path.exists(),
-        "docs/tool-manifest-authoring.md must exist"
-    );
+    /// docs/tool-manifest-authoring.md must exist with the required sections.
+    #[test]
+    pub fn authoring_guide_exists_with_sections() {
+        let root = workspace_root();
+        let path = root.join("docs/tool-manifest-authoring.md");
 
-    let content = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read tool-manifest-authoring.md: {e}"));
+        assert!(path.exists(), "docs/tool-manifest-authoring.md must exist");
 
-    assert!(
-        content.contains("# Adding a Tool"),
-        "tool-manifest-authoring.md must contain '# Adding a Tool'"
-    );
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("failed to read tool-manifest-authoring.md: {e}"));
 
-    assert!(
-        content.contains("# Adding a Preset"),
-        "tool-manifest-authoring.md must contain '# Adding a Preset'"
-    );
-}
+        assert!(
+            content.contains("# Adding a Tool"),
+            "tool-manifest-authoring.md must contain '# Adding a Tool'"
+        );
 
-// ── PC-061: claude_md_gotcha_and_glossary ────────────────────────────────────
+        assert!(
+            content.contains("# Adding a Preset"),
+            "tool-manifest-authoring.md must contain '# Adding a Preset'"
+        );
+    }
 
-/// CLAUDE.md must have exactly one new gotcha line for tool-set and the
-/// glossary must contain the 3-term extension (tool-set, install-time expansion,
-/// manifest).
-#[test]
-fn claude_md_gotcha_and_glossary() {
-    let root = workspace_root();
-    let path = root.join("CLAUDE.md");
+    // ── PC-061: claude_md_gotcha_and_glossary ────────────────────────────────
 
-    assert!(path.exists(), "CLAUDE.md must exist");
+    /// CLAUDE.md must contain exactly one gotcha line for tool-set that references
+    /// manifest/tool-manifest.yaml and install-time expansion.
+    #[test]
+    pub fn claude_md_gotcha_and_glossary() {
+        let root = workspace_root();
+        let path = root.join("CLAUDE.md");
 
-    let content = std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("failed to read CLAUDE.md: {e}"));
+        assert!(path.exists(), "CLAUDE.md must exist");
 
-    // The glossary line must mention tool-set
-    assert!(
-        content.contains("**tool-set**"),
-        "CLAUDE.md glossary must contain '**tool-set**'"
-    );
+        let content = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("failed to read CLAUDE.md: {e}"));
 
-    // Must mention manifest/tool-manifest.yaml
-    assert!(
-        content.contains("manifest/tool-manifest.yaml"),
-        "CLAUDE.md must reference 'manifest/tool-manifest.yaml' for tool-set definition"
-    );
+        // The glossary line must mention tool-set
+        assert!(
+            content.contains("**tool-set**"),
+            "CLAUDE.md must contain '**tool-set**'"
+        );
 
-    // Must mention install time expansion
-    assert!(
-        content.contains("install time") || content.contains("install-time") || content.contains("at install"),
-        "CLAUDE.md must mention install-time expansion for tool-set"
-    );
+        // Must mention manifest/tool-manifest.yaml
+        assert!(
+            content.contains("manifest/tool-manifest.yaml"),
+            "CLAUDE.md must reference 'manifest/tool-manifest.yaml' for tool-set definition"
+        );
+
+        // Must mention install time expansion
+        assert!(
+            content.contains("install time")
+                || content.contains("install-time")
+                || content.contains("at install"),
+            "CLAUDE.md must mention install-time expansion for tool-set"
+        );
+    }
 }

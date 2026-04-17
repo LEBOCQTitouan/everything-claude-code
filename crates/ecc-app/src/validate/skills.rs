@@ -105,16 +105,15 @@ fn validate_skill_file(
             // Validate tool-set reference when present
             if let Some(preset_name) = map.get("tool-set") {
                 let preset_name = preset_name.trim();
-                if !preset_name.is_empty() {
-                    if let Some(m) = manifest {
-                        if !m.presets.contains_key(preset_name) {
-                            terminal.stderr_write(&format!(
-                                "ERROR: {}/SKILL.md - tool-set '{}' not found in manifest presets\n",
-                                name, preset_name
-                            ));
-                            has_errors = true;
-                        }
-                    }
+                if !preset_name.is_empty()
+                    && let Some(m) = manifest
+                    && !m.presets.contains_key(preset_name)
+                {
+                    terminal.stderr_write(&format!(
+                        "ERROR: {}/SKILL.md - tool-set '{}' not found in manifest presets\n",
+                        name, preset_name
+                    ));
+                    has_errors = true;
                 }
             }
         }
