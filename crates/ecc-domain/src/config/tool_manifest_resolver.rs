@@ -5,7 +5,7 @@
 //! `ResolvedTools` (with optional warnings about outlier inline tools) or a
 //! `ResolveError`.
 
-use crate::config::tool_manifest::ToolManifest;
+use crate::config::tool_manifest::{ToolManifest, is_valid_kebab_identifier};
 
 /// Preset name regex: must match `^[a-z][a-z0-9-]*[a-z0-9]$`.
 const TOOL_SET_REGEX: &str = r"^[a-z][a-z0-9-]*[a-z0-9]$";
@@ -98,7 +98,7 @@ pub fn resolve_effective_tools(
         }
 
         // Validate against kebab regex before lookup
-        if !is_valid_tool_set_value(trimmed) {
+        if !is_valid_kebab_identifier(trimmed) {
             return Err(ResolveError::InvalidToolSetReference(ts_value.clone()));
         }
 
@@ -157,33 +157,6 @@ pub fn resolve_effective_tools(
         tools: merged,
         warnings,
     })
-}
-
-/// Returns `true` if the tool-set value matches `^[a-z][a-z0-9-]*[a-z0-9]$`.
-fn is_valid_tool_set_value(value: &str) -> bool {
-    if value.is_empty() {
-        return false;
-    }
-    let bytes = value.as_bytes();
-    if !value.is_ascii() {
-        return false;
-    }
-    if bytes.len() < 2 {
-        return false;
-    }
-    if !bytes[0].is_ascii_lowercase() {
-        return false;
-    }
-    let last = *bytes.last().unwrap();
-    if !last.is_ascii_lowercase() && !last.is_ascii_digit() {
-        return false;
-    }
-    for &b in &bytes[1..bytes.len() - 1] {
-        if !b.is_ascii_lowercase() && !b.is_ascii_digit() && b != b'-' {
-            return false;
-        }
-    }
-    true
 }
 
 #[cfg(test)]

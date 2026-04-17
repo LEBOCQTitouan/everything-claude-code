@@ -73,10 +73,7 @@ impl std::fmt::Display for ToolManifestError {
             Self::DuplicatePresetKey(k) => write!(f, "duplicate preset key: '{k}'"),
             Self::DuplicateAtomicTool(t) => write!(f, "duplicate atomic tool: '{t}'"),
             Self::UnknownToolInPreset { preset, tool } => {
-                write!(
-                    f,
-                    "preset '{preset}' references unknown tool '{tool}'"
-                )
+                write!(f, "preset '{preset}' references unknown tool '{tool}'")
             }
             Self::EmptyPreset(name) => write!(f, "preset '{name}' is empty"),
             Self::InvalidPresetName(name) => write!(
@@ -160,7 +157,7 @@ pub fn validate_tool_manifest(manifest: &ToolManifest) -> Vec<ToolManifestError>
 
     for (name, tools) in &manifest.presets {
         // Invalid preset name
-        if !is_valid_preset_name(name) {
+        if !is_valid_kebab_identifier(name) {
             errors.push(ToolManifestError::InvalidPresetName(name.clone()));
         }
 
@@ -283,7 +280,7 @@ fn detect_duplicate_preset_key(yaml: &str) -> Option<String> {
     None
 }
 
-/// Returns `true` if the preset name matches `^[a-z][a-z0-9-]*[a-z0-9]$`.
+/// Returns `true` if the string matches `^[a-z][a-z0-9-]*[a-z0-9]$`.
 ///
 /// Rules:
 /// - ASCII-only
@@ -291,7 +288,9 @@ fn detect_duplicate_preset_key(yaml: &str) -> Option<String> {
 /// - Last char: lowercase letter `a-z` or digit `0-9`
 /// - Middle chars: lowercase letters, digits, or hyphens
 /// - Minimum length: 2 characters
-fn is_valid_preset_name(name: &str) -> bool {
+///
+/// Used for both preset names and tool-set references.
+pub fn is_valid_kebab_identifier(name: &str) -> bool {
     if name.is_empty() {
         return false;
     }
@@ -431,10 +430,7 @@ presets:
     fn rejects_unknown_tool_in_preset() {
         use super::*;
 
-        let yaml = minimal_yaml(
-            &["Read", "Write"],
-            &[("my-preset", &["Read", "NotATool"])],
-        );
+        let yaml = minimal_yaml(&["Read", "Write"], &[("my-preset", &["Read", "NotATool"])]);
         let manifest = parse_tool_manifest(&yaml).expect("parse should succeed");
         let errors = validate_tool_manifest(&manifest);
         assert!(
@@ -452,19 +448,15 @@ presets:
         use super::*;
 
         // serde_saphyr silently takes last for duplicate YAML keys; we pre-scan.
-        let yaml = "tools:\n  - Read\npresets:\n  my-preset:\n    - Read\n  my-preset:\n    - Read\n";
+        let yaml =
+            "tools:\n  - Read\npresets:\n  my-preset:\n    - Read\n  my-preset:\n    - Read\n";
         let result = parse_tool_manifest(yaml);
         assert!(
             matches!(result, Err(ToolManifestError::DuplicateTopLevelKey(_)))
                 || result
                     .as_ref()
                     .err()
-                    .map(|e| {
-                        matches!(
-                            e,
-                            ToolManifestError::DuplicatePresetKey(_)
-                        )
-                    })
+                    .map(|e| { matches!(e, ToolManifestError::DuplicatePresetKey(_)) })
                     .unwrap_or(false),
             "expected DuplicateTopLevelKey or DuplicatePresetKey, got: {result:?}"
         );
@@ -524,14 +516,7 @@ presets:
         // These 7 fixture names must all be rejected with InvalidPresetName.
         // Note: empty-string key and keys starting with special chars are
         // YAML-level issues; we handle them in validate.
-        let invalid_names: &[&str] = &[
-            "-foo",
-            "foo-",
-            "Foo",
-            "foo_bar",
-            "foo.bar",
-            "resto-fr-ça",
-        ];
+        let invalid_names: &[&str] = &["-foo", "foo-", "Foo", "foo_bar", "foo.bar", "resto-fr-ça"];
 
         for name in invalid_names {
             let yaml = format!("tools:\n  - Read\npresets:\n  \"{name}\":\n    - Read\n");
@@ -578,8 +563,7 @@ presets:
         use super::*;
 
         // `presets:` appears twice at top level
-        let yaml =
-            "tools:\n  - Read\npresets:\n  my-preset:\n    - Read\npresets:\n  other:\n    - Read\n";
+        let yaml = "tools:\n  - Read\npresets:\n  my-preset:\n    - Read\npresets:\n  other:\n    - Read\n";
         let result = parse_tool_manifest(yaml);
         assert!(
             matches!(result, Err(ToolManifestError::DuplicateTopLevelKey(_))),
