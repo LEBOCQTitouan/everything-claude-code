@@ -1,7 +1,7 @@
 ---
 name: doc-analyzer
 description: Codebase documentation analyzer. Scans project structure, identifies public API surface, detects domain concepts, maps module dependencies. Produces analysis output that downstream doc agents consume.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tool-set: readonly-analyzer-shell
 model: opus
 effort: high
 skills: ["doc-analysis", "symbol-extraction", "behaviour-extraction"]

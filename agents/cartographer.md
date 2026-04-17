@@ -1,7 +1,7 @@
 ---
 name: cartographer
 description: Orchestrator agent that reads pending delta JSON files, decides which journey and flow files to update, and dispatches cartography-journey-generator and cartography-flow-generator as sub-Tasks. Returns results as JSON envelope for the doc-orchestrator to commit.
-tools: ["Read", "Write", "Edit", "Grep", "Glob", "Bash"]
+tool-set: code-writer
 model: haiku
 effort: low
 skills: ["cartography-processing"]

@@ -1,7 +1,7 @@
 ---
 name: cartography-element-generator
 description: Generates and delta-merges per-element documentation files in docs/cartography/elements/
-tools: ["Read", "Grep", "Glob"]
+tool-set: readonly-analyzer
 model: sonnet
 effort: medium
 ---
