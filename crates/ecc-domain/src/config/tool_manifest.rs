@@ -212,7 +212,6 @@ fn contains_yaml_anchors_or_aliases(yaml: &str) -> bool {
 fn has_bare_anchor_or_alias(line: &str) -> bool {
     let mut in_single = false;
     let mut in_double = false;
-    let mut prev_char = '\0';
     for c in line.chars() {
         match c {
             '\'' if !in_double => {
@@ -222,14 +221,10 @@ fn has_bare_anchor_or_alias(line: &str) -> bool {
                 in_double = !in_double;
             }
             '&' | '*' if !in_single && !in_double => {
-                // Must be followed by at least one non-whitespace (YAML requires
-                // anchor/alias to be followed by a name character).
-                let _ = prev_char; // suppress warning
                 return true;
             }
             _ => {}
         }
-        prev_char = c;
     }
     false
 }
@@ -241,12 +236,12 @@ fn detect_duplicate_top_level_key(yaml: &str) -> Option<String> {
     let mut seen: HashSet<String> = HashSet::new();
     for line in yaml.lines() {
         // Top-level keys: lines that start without indentation and contain `:`
-        if line.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_') {
-            if let Some(colon) = line.find(':') {
-                let key = line[..colon].trim().to_string();
-                if !key.is_empty() && !seen.insert(key.clone()) {
-                    return Some(key);
-                }
+        if line.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+            && let Some(colon) = line.find(':')
+        {
+            let key = line[..colon].trim().to_string();
+            if !key.is_empty() && !seen.insert(key.clone()) {
+                return Some(key);
             }
         }
     }
@@ -273,13 +268,14 @@ fn detect_duplicate_preset_key(yaml: &str) -> Option<String> {
                 continue;
             }
             // Preset sub-keys are indented exactly 2 spaces (not 4+)
-            if line.starts_with("  ") && !line.starts_with("    ") {
-                if let Some(colon) = line.find(':') {
-                    let raw_key = line[..colon].trim().trim_matches('"').trim_matches('\'');
-                    let key = raw_key.to_string();
-                    if !key.is_empty() && !seen.insert(key.clone()) {
-                        return Some(key);
-                    }
+            if line.starts_with("  ")
+                && !line.starts_with("    ")
+                && let Some(colon) = line.find(':')
+            {
+                let raw_key = line[..colon].trim().trim_matches('"').trim_matches('\'');
+                let key = raw_key.to_string();
+                if !key.is_empty() && !seen.insert(key.clone()) {
+                    return Some(key);
                 }
             }
         }
