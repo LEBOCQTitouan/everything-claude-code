@@ -313,7 +313,7 @@ fn expand_tool_set_field(
     let tools_str = format!("tools: [{}]", tools.join(", "));
 
     // Replace the `tool-set: <name>` line with `tools: [...]`
-    let new_content = replace_tool_set_with_tools(&content, &preset_name, &tools_str);
+    let new_content = replace_tool_set_with_tools(&content, &tools_str);
     if new_content == content {
         // Nothing changed (shouldn't happen if extract succeeded, but be safe)
         return;
@@ -349,8 +349,8 @@ fn extract_tool_set_from_frontmatter(content: &str) -> Option<String> {
     None
 }
 
-/// Replace `tool-set: <name>` line in frontmatter with `tools: [...]`.
-fn replace_tool_set_with_tools(content: &str, _preset_name: &str, tools_str: &str) -> String {
+/// Replace `tool-set: <preset>` line in frontmatter with `tools: [...]`.
+fn replace_tool_set_with_tools(content: &str, tools_str: &str) -> String {
     let mut result = String::with_capacity(content.len());
     let mut in_frontmatter = false;
     let mut frontmatter_done = false;
