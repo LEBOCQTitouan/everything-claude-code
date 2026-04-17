@@ -206,7 +206,9 @@ fn collect_claimed_ids(
         let is_stale = lock.is_stale(now);
 
         if is_stale || is_orphaned {
-            let _ = locks.remove_lock(backlog_dir, &id);
+            if let Err(e) = locks.remove_lock(backlog_dir, &id) {
+                tracing::warn!(lock_id = %id, error = %e, "failed to remove stale lock");
+            }
         } else if let Some(num) = extract_bl_num(&id) {
             claimed.insert(num);
         }
@@ -227,17 +229,46 @@ fn extract_bl_num(id: &str) -> Option<u32> {
 /// requested status, returns `Ok(())` without writing (no-op guard).
 #[allow(clippy::too_many_arguments)]
 pub fn update_status(
-    _entries: &dyn BacklogEntryStore,
-    _index_store: &dyn BacklogIndexStore,
-    _lock_store: &dyn BacklogLockStore,
-    _worktree_mgr: &dyn WorktreeManager,
-    _clock: &dyn Clock,
-    _backlog_dir: &Path,
-    _project_dir: &Path,
-    _id: &str,
-    _new_status: &str,
+    entries: &dyn BacklogEntryStore,
+    index_store: &dyn BacklogIndexStore,
+    lock_store: &dyn BacklogLockStore,
+    worktree_mgr: &dyn WorktreeManager,
+    clock: &dyn Clock,
+    backlog_dir: &Path,
+    project_dir: &Path,
+    id: &str,
+    new_status: &str,
 ) -> Result<(), BacklogError> {
-    unimplemented!("update_status not yet implemented")
+    use ecc_domain::backlog::entry::VALID_STATUSES;
+    // AC-001.4: validate new_status
+    if ecc_domain::backlog::entry::BacklogStatus::from_kebab(new_status).is_none() {
+        return Err(BacklogError::MalformedYaml(format!(
+            "invalid status '{}'; valid values are: {}",
+            new_status,
+            VALID_STATUSES.join(", ")
+        )));
+    }
+    // AC-001.3: read raw content (propagates Io error if not found)
+    let content = entries.read_entry_content(backlog_dir, id)?;
+    // AC-001.5: no-op guard — if content unchanged, return early
+    let updated =
+        ecc_domain::backlog::entry::replace_frontmatter_status(&content, new_status)?;
+    if updated == content {
+        return Ok(());
+    }
+    // AC-001.2: write update then reindex
+    entries.update_entry_status(backlog_dir, id, new_status)?;
+    reindex(
+        entries,
+        lock_store,
+        index_store,
+        worktree_mgr,
+        clock,
+        backlog_dir,
+        project_dir,
+        false,
+    )?;
+    Ok(())
 }
 
 /// Convert an [`ecc_ports::fs::FsError`] into a [`BacklogError`].
