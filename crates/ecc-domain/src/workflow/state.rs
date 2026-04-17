@@ -516,3 +516,164 @@ mod tests {
         assert_eq!(state.version, 1);
     }
 }
+
+#[cfg(test)]
+mod artifacts {
+    use super::*;
+    use crate::workflow::phase::Phase;
+
+    fn make_artifacts() -> Artifacts {
+        Artifacts {
+            plan: Some("2026-01-01T00:00:00Z".to_owned()),
+            solution: Some("2026-01-02T00:00:00Z".to_owned()),
+            implement: Some("2026-01-03T00:00:00Z".to_owned()),
+            campaign_path: None,
+            spec_path: Some("docs/specs/foo/spec.md".to_owned()),
+            design_path: Some("docs/specs/foo/design.md".to_owned()),
+            tasks_path: Some("docs/specs/foo/tasks.md".to_owned()),
+        }
+    }
+
+    #[test]
+    fn clear_impl_to_solution() {
+        // Rollback from Implement to Solution:
+        // clears solution + implement timestamps AND design_path + tasks_path
+        // preserves plan timestamp and spec_path
+        let mut artifacts = make_artifacts();
+        artifacts.clear_artifacts_for_rollback(Phase::Implement, Phase::Solution);
+        assert_eq!(
+            artifacts.plan,
+            Some("2026-01-01T00:00:00Z".to_owned()),
+            "plan timestamp must be preserved"
+        );
+        assert!(artifacts.solution.is_none(), "solution timestamp must be cleared");
+        assert!(artifacts.implement.is_none(), "implement timestamp must be cleared");
+        assert_eq!(
+            artifacts.spec_path,
+            Some("docs/specs/foo/spec.md".to_owned()),
+            "spec_path must be preserved"
+        );
+        assert!(artifacts.design_path.is_none(), "design_path must be cleared");
+        assert!(artifacts.tasks_path.is_none(), "tasks_path must be cleared");
+    }
+
+    #[test]
+    fn clear_solution_to_plan() {
+        // Rollback from Solution to Plan:
+        // clears plan + solution timestamps AND spec_path + design_path
+        // preserves implement timestamp
+        let mut artifacts = make_artifacts();
+        artifacts.clear_artifacts_for_rollback(Phase::Solution, Phase::Plan);
+        assert!(artifacts.plan.is_none(), "plan timestamp must be cleared");
+        assert!(artifacts.solution.is_none(), "solution timestamp must be cleared");
+        assert_eq!(
+            artifacts.implement,
+            Some("2026-01-03T00:00:00Z".to_owned()),
+            "implement timestamp must be preserved"
+        );
+        assert!(artifacts.spec_path.is_none(), "spec_path must be cleared");
+        assert!(artifacts.design_path.is_none(), "design_path must be cleared");
+        assert_eq!(
+            artifacts.tasks_path,
+            Some("docs/specs/foo/tasks.md".to_owned()),
+            "tasks_path must be preserved"
+        );
+    }
+
+    #[test]
+    fn clear_impl_to_plan() {
+        // Rollback from Implement to Plan:
+        // clears ALL three timestamps AND spec_path + design_path + tasks_path
+        let mut artifacts = make_artifacts();
+        artifacts.clear_artifacts_for_rollback(Phase::Implement, Phase::Plan);
+        assert!(artifacts.plan.is_none(), "plan timestamp must be cleared");
+        assert!(artifacts.solution.is_none(), "solution timestamp must be cleared");
+        assert!(artifacts.implement.is_none(), "implement timestamp must be cleared");
+        assert!(artifacts.spec_path.is_none(), "spec_path must be cleared");
+        assert!(artifacts.design_path.is_none(), "design_path must be cleared");
+        assert!(artifacts.tasks_path.is_none(), "tasks_path must be cleared");
+    }
+}
+
+#[cfg(test)]
+mod state {
+    use super::*;
+    use crate::workflow::concern::Concern;
+    use crate::workflow::phase::Phase;
+    use crate::workflow::timestamp::Timestamp;
+    use crate::workflow::transition::Direction;
+
+    fn make_state() -> WorkflowState {
+        WorkflowState {
+            phase: Phase::Plan,
+            concern: Concern::Dev,
+            feature: "test".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: Artifacts {
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
+            completed: vec![],
+            version: 1,
+            history: vec![],
+        }
+    }
+
+    #[test]
+    fn transition_record_serde() {
+        // TransitionRecord serialization roundtrip: contains all required fields
+        let record = TransitionRecord {
+            from: Phase::Plan,
+            to: Phase::Solution,
+            direction: Direction::Forward,
+            justification: Some("moved forward".to_owned()),
+            timestamp: "2026-01-01T00:00:00Z".to_owned(),
+            actor: "ecc-workflow".to_owned(),
+        };
+        let json = serde_json::to_string(&record).expect("serialization must succeed");
+        assert!(json.contains(r#""from""#), "must contain from");
+        assert!(json.contains(r#""to""#), "must contain to");
+        assert!(json.contains(r#""direction""#), "must contain direction");
+        assert!(json.contains(r#""justification""#), "must contain justification");
+        assert!(json.contains(r#""timestamp""#), "must contain timestamp");
+        assert!(json.contains(r#""actor""#), "must contain actor");
+        let restored: TransitionRecord =
+            serde_json::from_str(&json).expect("deserialization must succeed");
+        assert_eq!(restored.from, Phase::Plan);
+        assert_eq!(restored.to, Phase::Solution);
+        assert_eq!(restored.direction, Direction::Forward);
+        assert_eq!(restored.justification, Some("moved forward".to_owned()));
+        assert_eq!(restored.timestamp, "2026-01-01T00:00:00Z");
+        assert_eq!(restored.actor, "ecc-workflow");
+    }
+
+    #[test]
+    fn history_default_empty() {
+        // Old JSON without 'history' field deserializes with history=[]
+        let json = r#"{
+            "phase": "plan",
+            "concern": "dev",
+            "feature": "test",
+            "started_at": "2026-01-01T00:00:00Z",
+            "toolchain": {"test": null, "lint": null, "build": null},
+            "artifacts": {"plan": null, "solution": null, "implement": null, "campaign_path": null, "spec_path": null, "design_path": null, "tasks_path": null},
+            "completed": [],
+            "version": 1
+        }"#;
+        let state = WorkflowState::from_json(json).expect("must deserialize without history field");
+        assert!(
+            state.history.is_empty(),
+            "history must default to empty vec when absent"
+        );
+    }
+}
