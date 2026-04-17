@@ -1,44 +1,48 @@
-# Implementation Complete: Backlog Status Conformance Fix
+# Implementation Complete: BL-144 /party Command
 
 ## Spec Reference
-Concern: fix, Feature: backlog-status-conformance-fix
+Concern: `dev` | Feature: BL-144 /party command — BMAD-style multi-agent round-table
 
 ## Changes Made
-| # | File | Action | Solution Ref | Tests | Status |
-|---|------|--------|--------------|-------|--------|
-| 1 | crates/ecc-domain/src/backlog/entry.rs | modify | PC-001 through PC-007 | 7 tests | done |
-| 2 | crates/ecc-ports/src/backlog.rs | modify | PC-020 | -- | done |
-| 3 | crates/ecc-test-support/src/in_memory_backlog.rs | modify | PC-020 | 1 test | done |
-| 4 | crates/ecc-infra/src/fs_backlog.rs | modify | PC-021, PC-022 | 2 tests | done |
-| 5 | crates/ecc-app/src/backlog.rs | modify | PC-008 through PC-019, PC-028, PC-029 | 14 tests | done |
-| 6 | crates/ecc-cli/src/commands/backlog.rs | modify | PC-023 through PC-027 | 5 tests | done |
-| 7 | agents/backlog-curator.md | modify | Doc impact | -- | done |
-| 8 | skills/backlog-management/SKILL.md | modify | Doc impact | -- | done |
-| 9 | CLAUDE.md | modify | Doc impact | -- | done |
-| 10 | CHANGELOG.md | modify | Doc impact | -- | done |
+| # | File | Action | Solution Ref | Status |
+|---|------|--------|--------------|--------|
+| 1 | `agents/bmad-pm.md` | create | US-001 | done |
+| 2 | `agents/bmad-architect.md` | create | US-001 | done |
+| 3 | `agents/bmad-dev.md` | create | US-001 | done |
+| 4 | `agents/bmad-qa.md` | create | US-001 | done |
+| 5 | `agents/bmad-security.md` | create | US-001 | done |
+| 6 | `agents/party-coordinator.md` | create | US-005 | done |
+| 7 | `commands/party.md` | create | US-002, US-003, US-004, US-006 | done |
+| 8 | `docs/adr/0064-party-command.md` | create | Doc | done |
+| 9 | `CHANGELOG.md` | modify | Doc | done |
+| 10 | `CLAUDE.md` | modify | Doc | done |
 
 ## Pass Condition Results
-All pass conditions: 32/32
+All pass conditions: 41/41 ✅
 
 ## E2E Tests
-No additional E2E tests required — integration tests PC-021 through PC-027 cover all activated E2E boundaries.
+No E2E tests required by solution — purely additive content, no port/adapter changes.
 
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | CLAUDE.md | project | Added CLI commands, updated test count |
-| 2 | CHANGELOG.md | project | Added BL-084 fix entry |
-| 3 | skills/backlog-management/SKILL.md | skill | Added status transitions, CLI reference |
-| 4 | agents/backlog-curator.md | agent | Updated to use CLI for status changes |
+| 1 | `docs/adr/0064-party-command.md` | architecture | 4 decisions: content-only, bmad-prefix, sequential-only, ephemeral |
+| 2 | `CHANGELOG.md` | project | feat: /party command (BL-144) |
+| 3 | `CLAUDE.md` | project | party panel glossary entry |
 
 ## ADRs Created
-None required.
+| # | File | Decision |
+|---|------|----------|
+| 1 | `docs/adr/0064-party-command.md` | Content-only, bmad-prefix, sequential-only, ephemeral panels |
 
 ## Coverage Delta
-Coverage data unavailable — cargo-llvm-cov not run in this session.
+N/A — zero Rust changes, no code coverage applicable.
+
+## Supplemental Docs
+No supplemental docs generated — content-only feature, no Rust modules to summarize.
 
 ## Code Review
-2 HIGH addressed (exit code 2 + DRY extraction), 4 MEDIUM (1 fixed: SEC-001, 3 accepted), 4 LOW (accepted).
+N/A — content-only feature (markdown files). Structural validation via `ecc validate agents` (66 files), `ecc validate commands` (34 files), `ecc validate conventions` (217 files).
 
 ## Suggested Commit
-fix(backlog): add update-status and migrate CLI commands for status conformance
+feat(party): add /party command for multi-agent round-table (BL-144)
