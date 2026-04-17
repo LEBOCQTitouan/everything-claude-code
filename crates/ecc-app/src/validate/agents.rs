@@ -162,6 +162,7 @@ fn validate_agent_file(
 #[cfg(test)]
 mod tests {
     use super::super::{ValidateTarget, run_validate};
+    use ecc_ports::fs::FileSystem;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment};
     use std::path::Path;
 
@@ -426,5 +427,197 @@ mod tests {
             !stderr.iter().any(|s| s.to_lowercase().contains("pattern")),
             "unexpected pattern warning when field absent: {stderr:?}"
         );
+    }
+
+    // Helper: write the canonical tool manifest fixture into the in-memory fs
+    fn with_manifest(fs: &InMemoryFileSystem) {
+        let yaml = r#"tools:
+  - Read
+  - Write
+  - Edit
+  - MultiEdit
+  - Bash
+  - Glob
+  - Grep
+  - Agent
+  - Task
+  - WebSearch
+  - TodoWrite
+  - TodoRead
+  - AskUserQuestion
+  - LS
+  - Skill
+  - EnterPlanMode
+  - ExitPlanMode
+  - TaskCreate
+  - TaskUpdate
+  - TaskGet
+  - TaskList
+presets:
+  readonly-analyzer:
+    - Read
+    - Grep
+    - Glob
+  readonly-analyzer-shell:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+  tdd-executor:
+    - Read
+    - Write
+    - Edit
+    - Bash
+  code-writer:
+    - Read
+    - Write
+    - Edit
+    - MultiEdit
+    - Bash
+  orchestrator:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Agent
+    - Task
+  audit-command:
+    - Task
+    - Read
+    - Grep
+    - Glob
+    - LS
+    - Bash
+    - Write
+    - TodoWrite
+"#;
+        fs.write(
+            Path::new("/root/manifest/tool-manifest.yaml"),
+            yaml,
+        )
+        .expect("write manifest");
+    }
+
+    // ── PC-015: tool_set_only_validates ──────────────────────────────────────
+
+    #[test]
+    fn tool_set_only_validates() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/readonly-agent.md",
+            "---\nmodel: sonnet\ntool-set: readonly-analyzer\n---\n# Agent",
+        );
+        with_manifest(&fs);
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root"),
+        );
+        assert!(result, "agent with tool-set only should validate; stderr: {:?}", t.stderr_output());
+    }
+
+    // ── PC-016: unknown_preset_names_file_and_preset ─────────────────────────
+
+    #[test]
+    fn unknown_preset_names_file_and_preset() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/bad-agent.md",
+            "---\nmodel: sonnet\ntool-set: nonexistent\n---\n# Agent",
+        );
+        with_manifest(&fs);
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root"),
+        );
+        assert!(!result, "unknown preset should fail");
+        let stderr = t.stderr_output().join("");
+        assert!(
+            stderr.contains("nonexistent"),
+            "error must name the unknown preset, got: {stderr}"
+        );
+        assert!(
+            stderr.contains("bad-agent"),
+            "error must name the file, got: {stderr}"
+        );
+    }
+
+    // ── PC-018: neither_field_preserves_legacy_error ─────────────────────────
+
+    #[test]
+    fn neither_field_preserves_legacy_error() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/no-tools.md",
+            "---\nmodel: sonnet\n---\n# Agent with no tools",
+        );
+        with_manifest(&fs);
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root"),
+        );
+        assert!(!result, "agent with neither tool-set nor tools should fail");
+        let stderr = t.stderr_output().join("");
+        assert!(
+            stderr.to_lowercase().contains("missing required field") || stderr.to_lowercase().contains("tools"),
+            "should report missing tools field; got: {stderr}"
+        );
+    }
+
+    // ── PC-023: unknown_atomic_tool_reported ─────────────────────────────────
+
+    #[test]
+    fn unknown_atomic_tool_reported() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/bad-tools.md",
+            "---\nmodel: sonnet\ntools: Read, FakeTool\n---\n# Agent",
+        );
+        with_manifest(&fs);
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root"),
+        );
+        assert!(!result, "agent with unknown tool should fail");
+        let stderr = t.stderr_output().join("");
+        assert!(
+            stderr.contains("FakeTool"),
+            "error must name the unknown tool, got: {stderr}"
+        );
+        assert!(
+            stderr.contains("bad-tools"),
+            "error must name the file, got: {stderr}"
+        );
+    }
+
+    // ── PC-024: valid_preset_passes ──────────────────────────────────────────
+
+    #[test]
+    fn valid_preset_passes() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/valid-agent.md",
+            "---\nmodel: sonnet\ntool-set: readonly-analyzer\n---\n# Agent",
+        );
+        with_manifest(&fs);
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root"),
+        );
+        assert!(result, "valid preset should pass; stderr: {:?}", t.stderr_output());
     }
 }

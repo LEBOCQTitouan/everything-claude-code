@@ -14,6 +14,8 @@ mod section_validation;
 mod skills;
 mod statusline;
 mod teams;
+pub(crate) mod tool_manifest_loader;
+pub(crate) mod tool_manifest_path_resolver;
 
 /// Which content type to validate.
 #[derive(Debug, Clone, PartialEq, Eq)]

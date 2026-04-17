@@ -160,6 +160,7 @@ pub(super) fn validate_conventions(
 #[cfg(test)]
 mod tests {
     use super::super::{ValidateTarget, run_validate};
+    use ecc_ports::fs::FileSystem;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment};
     use std::path::Path;
 
@@ -342,5 +343,102 @@ mod tests {
         );
         assert!(result);
         assert!(t.stderr_output().is_empty());
+    }
+
+    // Helper: write the canonical tool manifest fixture into the in-memory fs
+    fn with_manifest(fs: &InMemoryFileSystem, root: &Path) {
+        let yaml = r#"tools:
+  - Read
+  - Write
+  - Edit
+  - MultiEdit
+  - Bash
+  - Glob
+  - Grep
+  - Agent
+  - Task
+  - WebSearch
+  - TodoWrite
+  - TodoRead
+  - AskUserQuestion
+  - LS
+  - Skill
+  - EnterPlanMode
+  - ExitPlanMode
+  - TaskCreate
+  - TaskUpdate
+  - TaskGet
+  - TaskList
+presets:
+  readonly-analyzer:
+    - Read
+    - Grep
+    - Glob
+  audit-command:
+    - Task
+    - Read
+    - Grep
+    - Glob
+    - LS
+    - Bash
+    - Write
+    - TodoWrite
+"#;
+        fs.write(
+            &root.join("manifest/tool-manifest.yaml"),
+            yaml,
+        )
+        .expect("write manifest");
+    }
+
+    // ── PC-019: allowed_tool_set_validates ───────────────────────────────────
+
+    #[test]
+    fn allowed_tool_set_validates() {
+        let root = Path::new("/root");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/commands/my-command.md",
+            "---\nname: my-command\nallowed-tool-set: audit-command\n---\n# Command",
+        );
+        with_manifest(&fs, root);
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Conventions,
+            root,
+        );
+        assert!(result, "command with allowed-tool-set should validate; stderr: {:?}", t.stderr_output());
+    }
+
+    // ── PC-030: unknown_allowed_tool_set_reported ────────────────────────────
+
+    #[test]
+    fn unknown_allowed_tool_set_reported() {
+        let root = Path::new("/root");
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/commands/bad-command.md",
+            "---\nname: bad-command\nallowed-tool-set: no-such-preset\n---\n# Command",
+        );
+        with_manifest(&fs, root);
+        let t = term();
+        let result = run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Conventions,
+            root,
+        );
+        assert!(!result, "unknown allowed-tool-set should fail");
+        let stderr = t.stderr_output().join("");
+        assert!(
+            stderr.contains("no-such-preset"),
+            "error must name the preset, got: {stderr}"
+        );
+        assert!(
+            stderr.contains("bad-command"),
+            "error must name the file, got: {stderr}"
+        );
     }
 }

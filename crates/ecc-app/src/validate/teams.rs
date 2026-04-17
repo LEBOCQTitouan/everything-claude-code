@@ -281,4 +281,72 @@ agents:
             "should include file name in error, got: {stderr}"
         );
     }
+
+    // Helper: write tool manifest fixture
+    fn with_manifest(fs: &InMemoryFileSystem, root: &PathBuf) {
+        let yaml = r#"tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Grep
+  - Glob
+presets:
+  readonly-analyzer:
+    - Read
+    - Grep
+    - Glob
+  code-writer:
+    - Read
+    - Write
+    - Edit
+    - Bash
+"#;
+        fs.write(&root.join("manifest/tool-manifest.yaml"), yaml)
+            .expect("write manifest");
+    }
+
+    // ── PC-027: escalation_warn_names_preset_and_missing_tool ────────────────
+
+    #[test]
+    fn escalation_warn_names_preset_and_missing_tool() {
+        let fs = InMemoryFileSystem::new();
+        let terminal = BufferedTerminal::new();
+        let root = PathBuf::from("/project");
+
+        // Agent that uses a preset (tool-set: readonly-analyzer)
+        fs.write(
+            &root.join("agents/code-reviewer.md"),
+            "---\nname: code-reviewer\ndescription: Code reviewer\nmodel: opus\ntool-set: readonly-analyzer\n---\n",
+        ).unwrap();
+
+        with_manifest(&fs, &root);
+
+        // Team manifest gives code-reviewer Write (not in readonly-analyzer → escalation)
+        let content = r#"---
+name: escalation-team
+description: Tool escalation test
+coordination: sequential
+agents:
+  - name: code-reviewer
+    role: reviewer
+    allowed-tools: ["Read", "Grep", "Glob", "Write"]
+---
+"#;
+        fs.write(&root.join("teams/escalation-team.md"), content)
+            .unwrap();
+
+        let result = validate_teams(&root, &fs, &terminal);
+        assert!(result, "tool escalation should warn, not fail");
+        let stdout = terminal.stdout_output().join("");
+        // Warning must name the preset AND the missing tool
+        assert!(
+            stdout.contains("Write") || stdout.contains("privilege escalation"),
+            "warning should mention the escalated tool; got: {stdout}"
+        );
+        assert!(
+            stdout.contains("readonly-analyzer") || stdout.contains("Write"),
+            "warning should name the preset or the tool; got: {stdout}"
+        );
+    }
 }
