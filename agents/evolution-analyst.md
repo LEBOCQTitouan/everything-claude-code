@@ -1,7 +1,7 @@
 ---
 name: evolution-analyst
 description: Git history mining agent. Analyzes change frequency, co-change coupling, bus factor, and complexity trends to identify evolutionary health risks.
-tools: ["Read", "Bash", "Grep", "Glob"]
+tool-set: readonly-analyzer-shell
 model: opus
 effort: high
 skills: ["evolutionary-analysis"]

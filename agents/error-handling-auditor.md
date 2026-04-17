@@ -1,7 +1,7 @@
 ---
 name: error-handling-auditor
 description: Error handling architecture analyst. Detects swallowed errors, evaluates error taxonomy, checks boundary translation, and identifies partial failure risks.
-tools: ["Read", "Bash", "Grep", "Glob"]
+tool-set: readonly-analyzer-shell
 model: sonnet
 effort: medium
 skills: ["error-handling-audit"]
