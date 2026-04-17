@@ -259,22 +259,22 @@ pub fn reindex(
         return Ok(Some(output));
     }
 
-    // Safety check: if >5 status changes vs current index and not forced, block the write
-    if !force {
-        let existing_statuses = existing_index
-            .as_deref()
-            .map(parse_index_statuses)
-            .unwrap_or_default();
-        let new_statuses = parse_index_statuses(&output);
-        let diff_count = new_statuses
-            .iter()
-            .filter(|(id, new_status)| {
-                existing_statuses
-                    .get(*id)
-                    .is_some_and(|old| old != *new_status)
-            })
-            .count();
-        if diff_count > 5 {
+    // Safety check: if >5 status changes vs current index, block or warn.
+    let existing_statuses = existing_index
+        .as_deref()
+        .map(parse_index_statuses)
+        .unwrap_or_default();
+    let new_statuses = parse_index_statuses(&output);
+    let diff_count = new_statuses
+        .iter()
+        .filter(|(id, new_status)| {
+            existing_statuses
+                .get(*id)
+                .is_some_and(|old| old != *new_status)
+        })
+        .count();
+    if diff_count > 5 {
+        if !force {
             return Err(BacklogError::Io {
                 path: "BACKLOG.md".to_string(),
                 message: format!(
@@ -282,27 +282,11 @@ pub fn reindex(
                 ),
             });
         }
-    } else if !existing_index.is_none() {
-        let existing_statuses = existing_index
-            .as_deref()
-            .map(parse_index_statuses)
-            .unwrap_or_default();
-        let new_statuses = parse_index_statuses(&output);
-        let diff_count = new_statuses
-            .iter()
-            .filter(|(id, new_status)| {
-                existing_statuses
-                    .get(*id)
-                    .is_some_and(|old| old != *new_status)
-            })
-            .count();
-        if diff_count > 5 {
-            tracing::warn!(
-                diff_count = diff_count,
-                "reindex: forcing write despite {} status changes",
-                diff_count
-            );
-        }
+        tracing::warn!(
+            diff_count = diff_count,
+            "reindex: forcing write despite {} status changes",
+            diff_count
+        );
     }
 
     index.write_index(backlog_dir, &output)?;
