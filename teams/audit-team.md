@@ -5,25 +5,25 @@ coordination: parallel
 agents:
   - name: evolution-analyst
     role: Git history analysis — hotspots, coupling, bus factor
-    allowed-tools: ["Read", "Bash", "Grep", "Glob"]
+    allowed-tool-set: readonly-analyzer-shell
   - name: arch-reviewer
     role: Architecture quality — layering, DDD, hexagonal compliance
-    allowed-tools: ["Read", "Grep", "Glob", "Bash"]
+    allowed-tool-set: readonly-analyzer-shell
   - name: component-auditor
     role: Component principles — instability, abstractness, main sequence
-    allowed-tools: ["Read", "Grep", "Glob", "Bash"]
+    allowed-tool-set: readonly-analyzer-shell
   - name: error-handling-auditor
     role: Error handling — swallowed errors, taxonomy, boundaries
-    allowed-tools: ["Read", "Bash", "Grep", "Glob"]
+    allowed-tool-set: readonly-analyzer-shell
   - name: convention-auditor
     role: Convention consistency — naming, patterns, config access
-    allowed-tools: ["Read", "Bash", "Grep", "Glob"]
+    allowed-tool-set: readonly-analyzer-shell
   - name: test-auditor
     role: Test architecture — classification, coupling, coverage
-    allowed-tools: ["Read", "Bash", "Grep", "Glob"]
+    allowed-tool-set: readonly-analyzer-shell
   - name: observability-auditor
     role: Observability — logging, metrics, correlation, health
-    allowed-tools: ["Read", "Bash", "Grep", "Glob"]
+    allowed-tool-set: readonly-analyzer-shell
 ---
 
 # Audit Team

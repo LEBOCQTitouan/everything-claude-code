@@ -12,7 +12,7 @@ agents:
     allowed-tools: ["Read", "Grep", "Glob"]
   - name: code-reviewer
     role: Reviews implementation quality after TDD loop completes
-    allowed-tools: ["Read", "Grep", "Glob", "Bash"]
+    allowed-tool-set: readonly-analyzer-shell
   - name: module-summary-updater
     role: Updates MODULE-SUMMARIES.md with per-crate entries
     allowed-tools: ["Read", "Write", "Edit", "Grep", "Glob"]
