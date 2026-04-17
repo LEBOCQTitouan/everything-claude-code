@@ -20,6 +20,9 @@ pub enum BacklogError {
 
     #[error("I/O error at {path}: {message}")]
     Io { path: String, message: String },
+
+    #[error("reindex safety block: {0}")]
+    SafetyBlock(String),
 }
 
 /// All valid kebab-case status strings for backlog entries.
@@ -148,6 +151,16 @@ pub fn parse_frontmatter(content: &str) -> Result<BacklogEntry, BacklogError> {
 /// - `BacklogError::MalformedYaml("status field not found")` if no `status:` key is present
 ///   inside the frontmatter block.
 pub fn replace_frontmatter_status(content: &str, new_status: &str) -> Result<String, BacklogError> {
+    // Defense-in-depth: reject status strings with characters that could corrupt YAML
+    if new_status.is_empty()
+        || new_status
+            .bytes()
+            .any(|b| !b.is_ascii_alphanumeric() && b != b'-')
+    {
+        return Err(BacklogError::MalformedYaml(format!(
+            "invalid status string: {new_status:?}"
+        )));
+    }
     let trimmed = content.trim_start();
     if !trimmed.starts_with("---") {
         return Err(BacklogError::NoFrontmatter);

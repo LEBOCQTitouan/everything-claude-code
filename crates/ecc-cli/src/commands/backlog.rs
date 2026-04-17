@@ -93,7 +93,7 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
             println!("{json}");
         }
         BacklogAction::Reindex { dry_run, force } => {
-            let output = ecc_app::backlog::reindex(
+            match ecc_app::backlog::reindex(
                 &repo,
                 &repo,
                 &repo,
@@ -103,10 +103,14 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
                 &project_dir,
                 dry_run,
                 force,
-            )
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-            if let Some(content) = output {
-                print!("{content}");
+            ) {
+                Err(ecc_domain::backlog::entry::BacklogError::SafetyBlock(msg)) => {
+                    eprintln!("{msg}");
+                    std::process::exit(2);
+                }
+                Err(e) => return Err(anyhow::anyhow!("{e}")),
+                Ok(Some(content)) => print!("{content}"),
+                Ok(None) => {}
             }
         }
         BacklogAction::UpdateStatus { id, status } => {
