@@ -1,7 +1,7 @@
 ---
 name: module-summary-updater
 description: Incremental MODULE-SUMMARIES.md updater. Dispatched by /implement Phase 7.5 to add or update entries for every Rust crate modified during the TDD loop while session context is fresh.
-tools: ["Read", "Write", "Edit", "Grep", "Glob"]
+tool-set: content-writer
 model: haiku
 effort: low
 skills: ["doc-guidelines"]
