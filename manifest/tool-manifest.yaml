@@ -1,0 +1,73 @@
+# Canonical tool vocabulary and named presets for ECC agents, commands, teams, and skills.
+# This is the single source of truth for all Claude Code tool identifiers used across ECC.
+#
+# tools:   Atomic vocabulary — every valid Claude Code tool identifier ECC may reference.
+# presets: Named bundles of commonly used tool combinations.
+#
+# Preset name format: ^[a-z][a-z0-9-]*[a-z0-9]$ (kebab-case, ASCII only)
+
+tools:
+  - Read
+  - Write
+  - Edit
+  - MultiEdit
+  - Bash
+  - Glob
+  - Grep
+  - Agent
+  - Task
+  - WebSearch
+  - TodoWrite
+  - TodoRead
+  - AskUserQuestion
+  - LS
+  - Skill
+  - EnterPlanMode
+  - ExitPlanMode
+  - TaskCreate
+  - TaskUpdate
+  - TaskGet
+  - TaskList
+
+presets:
+  readonly-analyzer:
+    - Read
+    - Grep
+    - Glob
+
+  readonly-analyzer-shell:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+
+  tdd-executor:
+    - Read
+    - Write
+    - Edit
+    - Bash
+
+  code-writer:
+    - Read
+    - Write
+    - Edit
+    - MultiEdit
+    - Bash
+
+  orchestrator:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Agent
+    - Task
+
+  audit-command:
+    - Task
+    - Read
+    - Grep
+    - Glob
+    - LS
+    - Bash
+    - Write
+    - TodoWrite

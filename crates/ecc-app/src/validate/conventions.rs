@@ -5,6 +5,32 @@ use ecc_ports::fs::FileSystem;
 use ecc_ports::terminal::TerminalIO;
 use std::path::Path;
 
+/// Tool vocabulary for validation — sourced from manifest/tool-manifest.yaml.
+/// Phase 1 bridge: will be replaced by injected ToolManifest in Phase 3 (BL-146 US-003).
+const TOOL_VOCAB: &[&str] = &[
+    "Read",
+    "Write",
+    "Edit",
+    "MultiEdit",
+    "Bash",
+    "Glob",
+    "Grep",
+    "Agent",
+    "Task",
+    "WebSearch",
+    "TodoWrite",
+    "TodoRead",
+    "AskUserQuestion",
+    "LS",
+    "Skill",
+    "EnterPlanMode",
+    "ExitPlanMode",
+    "TaskCreate",
+    "TaskUpdate",
+    "TaskGet",
+    "TaskList",
+];
+
 pub(super) fn validate_conventions(
     root: &Path,
     fs: &dyn FileSystem,
@@ -31,7 +57,7 @@ pub(super) fn validate_conventions(
                 let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
                 findings.extend(check_naming_consistency(&stem, fm_name, "agent"));
                 if let Some(tools) = fm.as_ref().and_then(|m| m.get("tools")) {
-                    findings.extend(check_tool_values(&stem, tools, "tools"));
+                    findings.extend(check_tool_values(&stem, tools, "tools", TOOL_VOCAB));
                 }
             }
         }
@@ -55,7 +81,7 @@ pub(super) fn validate_conventions(
                 let fm_name = fm.as_ref().and_then(|m| m.get("name")).map(|s| s.as_str());
                 findings.extend(check_naming_consistency(&stem, fm_name, "command"));
                 if let Some(tools) = fm.as_ref().and_then(|m| m.get("allowed-tools")) {
-                    findings.extend(check_tool_values(&stem, tools, "allowed-tools"));
+                    findings.extend(check_tool_values(&stem, tools, "allowed-tools", TOOL_VOCAB));
                 }
             }
         }

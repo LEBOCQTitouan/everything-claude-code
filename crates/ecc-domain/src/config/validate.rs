@@ -17,31 +17,6 @@ pub const EFFORT_TOKENS: &[(&str, u32)] = &[
     ("max", 32_768),
 ];
 
-/// Valid tool identifiers for agent/command frontmatter.
-pub const VALID_TOOLS: &[&str] = &[
-    "Read",
-    "Write",
-    "Edit",
-    "MultiEdit",
-    "Bash",
-    "Glob",
-    "Grep",
-    "Agent",
-    "Task",
-    "WebSearch",
-    "TodoWrite",
-    "TodoRead",
-    "AskUserQuestion",
-    // Command-only tools (used in allowed-tools but not agent tools)
-    "LS",
-    "Skill",
-    "EnterPlanMode",
-    "ExitPlanMode",
-    "TaskCreate",
-    "TaskUpdate",
-    "TaskGet",
-    "TaskList",
-];
 
 /// Canonical language identifiers for pattern frontmatter (AC-001.5).
 ///
@@ -274,15 +249,22 @@ pub fn check_naming_consistency(
     findings
 }
 
-/// Validate tool names against VALID_TOOLS registry.
+/// Validate tool names against the provided set of valid tool identifiers.
 ///
 /// `raw_tools` is the raw frontmatter value for tools/allowed-tools.
+/// `valid_tools` is the authoritative set of valid tool names (derive from
+/// `ToolManifest::tools` in application code, or pass legacy list in tests).
 /// Returns findings. Any invalid tool produces an ERROR for the whole file.
-pub fn check_tool_values(file_stem: &str, raw_tools: &str, field_name: &str) -> Vec<LintFinding> {
+pub fn check_tool_values(
+    file_stem: &str,
+    raw_tools: &str,
+    field_name: &str,
+    valid_tools: &[&str],
+) -> Vec<LintFinding> {
     let tools = parse_tool_list(raw_tools);
     let invalid: Vec<_> = tools
         .iter()
-        .filter(|t| !VALID_TOOLS.contains(&t.as_str()))
+        .filter(|t| !valid_tools.contains(&t.as_str()))
         .collect();
 
     if invalid.is_empty() {
@@ -295,7 +277,7 @@ pub fn check_tool_values(file_stem: &str, raw_tools: &str, field_name: &str) -> 
         message: format!(
             "'{file_stem}': invalid {field_name} {:?} — valid tools: {}",
             invalid,
-            VALID_TOOLS.join(", ")
+            valid_tools.join(", ")
         ),
     }]
 }
@@ -688,21 +670,25 @@ mod tests {
 
     // --- check_tool_values (PC-003) ---
 
+    const TOOL_FIXTURES: &[&str] = &["Read", "Write", "Edit", "Bash", "Glob", "Grep"];
+
     #[test]
     fn check_tool_values_returns_error_for_unknown_tool() {
-        let findings = check_tool_values("my-agent", r#"["Read", "UnknownTool"]"#, "tools");
+        let findings =
+            check_tool_values("my-agent", r#"["Read", "UnknownTool"]"#, "tools", TOOL_FIXTURES);
         assert!(findings.iter().any(|f| f.severity == LintSeverity::Error));
     }
 
     #[test]
     fn check_tool_values_returns_empty_for_all_valid_tools() {
-        let findings = check_tool_values("my-agent", r#"["Read", "Write"]"#, "tools");
+        let findings =
+            check_tool_values("my-agent", r#"["Read", "Write"]"#, "tools", TOOL_FIXTURES);
         assert!(findings.is_empty());
     }
 
     #[test]
     fn check_tool_values_returns_empty_for_empty_list() {
-        let findings = check_tool_values("my-agent", "[]", "tools");
+        let findings = check_tool_values("my-agent", "[]", "tools", TOOL_FIXTURES);
         assert!(findings.is_empty());
     }
 
