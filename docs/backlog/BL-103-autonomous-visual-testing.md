@@ -3,7 +3,7 @@ id: BL-103
 title: "Autonomous visual testing integration — vision-based UI validation"
 scope: HIGH
 target: "/spec-dev"
-status: open
+status: implemented
 tags: [testing, e2e, visual, vision, browser-automation]
 created: 2026-03-29
 related: []

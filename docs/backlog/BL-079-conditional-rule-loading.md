@@ -3,7 +3,7 @@ id: BL-079
 title: Conditional rule/skill loading via frontmatter applicability
 scope: MEDIUM
 target: /spec-dev
-status: open
+status: implemented
 created: 2026-03-27
 origin: Stripe Minions blog post — conditional rule application pattern
 ---

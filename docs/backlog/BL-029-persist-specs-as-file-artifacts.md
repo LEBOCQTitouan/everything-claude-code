@@ -1,7 +1,7 @@
 ---
 id: BL-029
 title: Persist specs and designs as versioned file artifacts
-status: "implemented"
+status: implemented
 created: 2026-03-21
 scope: HIGH
 target_command: /spec-dev, /spec-fix, /spec-refactor, /design

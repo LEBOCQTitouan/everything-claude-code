@@ -3,7 +3,7 @@ id: BL-093
 title: "Three-tier memory system — semantic/episodic/working memory with SQLite index, consolidation, auto-gen MEMORY.md"
 scope: EPIC
 target: "/spec dev"
-status: "implemented"
+status: implemented
 tags: [memory, sqlite, retrieval, consolidation, context-management]
 created: 2026-03-28
 related: [BL-027, BL-092]

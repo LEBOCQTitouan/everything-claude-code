@@ -1,7 +1,7 @@
 ---
 id: BL-073
 title: Deterministic diagram trigger heuristics — auto-detect when diagrams need updating
-status: open
+status: implemented
 scope: LOW
 target: /spec dev
 created: 2026-03-26

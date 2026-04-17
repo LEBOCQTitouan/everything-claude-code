@@ -1,7 +1,7 @@
 ---
 id: BL-072
 title: Deterministic artifact scaffolding — spec, solution, and tasks template generation
-status: "implemented"
+status: implemented
 scope: MEDIUM
 target: /spec dev
 created: 2026-03-26

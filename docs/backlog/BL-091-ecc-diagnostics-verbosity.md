@@ -3,7 +3,7 @@ id: BL-091
 title: "ECC diagnostics — tiered verbosity with tracing, ecc status command, zero model cost"
 scope: HIGH
 target: "/spec dev"
-status: "implemented"
+status: implemented
 tags: [observability, diagnostics, tracing, cli, developer-experience]
 created: 2026-03-28
 related: [BL-053]

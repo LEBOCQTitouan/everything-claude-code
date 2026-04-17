@@ -1,7 +1,7 @@
 ---
 id: BL-126
 title: "Token optimization wave 3 — new CLI commands replacing agent work"
-status: open
+status: implemented
 created: 2026-04-06
 promoted_to: ""
 tags: [token-optimization, rust-cli, agents, cost]

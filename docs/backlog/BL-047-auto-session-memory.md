@@ -1,7 +1,7 @@
 ---
 id: BL-047
 title: Automatic session-to-memory persistence with daily files
-status: "implemented"
+status: implemented
 created: 2026-03-21
 scope: HIGH
 target_command: /spec dev

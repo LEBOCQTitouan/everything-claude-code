@@ -1,7 +1,7 @@
 ---
 id: BL-065
 title: Full concurrent session safety — worktree isolation, serialized merge, codebase audit fixes
-status: "implemented"
+status: implemented
 created: 2026-03-26
 promoted_to: ""
 tags: [concurrency, worktree, git, safety, hooks, state, merge, audit]

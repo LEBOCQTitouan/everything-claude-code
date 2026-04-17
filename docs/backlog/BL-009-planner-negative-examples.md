@@ -4,7 +4,7 @@ title: Add negative examples to planner agent
 tier: 2
 scope: LOW
 target: direct edit
-status: "implemented"
+status: implemented
 created: 2026-03-20
 file: agents/planner.md
 ---

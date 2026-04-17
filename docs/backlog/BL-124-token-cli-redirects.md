@@ -1,7 +1,7 @@
 ---
 id: BL-124
 title: "Token optimization wave 1 — zero-cost CLI redirects and one-liner fixes"
-status: open
+status: implemented
 created: 2026-04-06
 promoted_to: ""
 tags: [token-optimization, agents, commands, cost]

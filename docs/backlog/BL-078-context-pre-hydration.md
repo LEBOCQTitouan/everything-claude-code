@@ -3,7 +3,7 @@ id: BL-078
 title: Context pre-hydration via hook before command runs
 scope: MEDIUM
 target: /spec-dev
-status: "implemented"
+status: implemented
 created: 2026-03-27
 origin: Stripe Minions blog post — pre-hydration pattern
 ---

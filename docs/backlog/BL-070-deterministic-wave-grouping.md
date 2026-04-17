@@ -1,7 +1,7 @@
 ---
 id: BL-070
 title: Deterministic wave grouping algorithm — PC parallelization from file-overlap analysis
-status: "implemented"
+status: implemented
 scope: MEDIUM
 target: /spec dev
 created: 2026-03-26

@@ -4,7 +4,7 @@ title: Extract command reference tables from CLAUDE.md
 tier: 5
 scope: LOW
 target: direct edit
-status: "implemented"
+status: implemented
 created: 2026-03-20
 files: docs/commands-reference.md (create), CLAUDE.md (modify)
 ---

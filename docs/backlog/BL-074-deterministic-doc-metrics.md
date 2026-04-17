@@ -1,7 +1,7 @@
 ---
 id: BL-074
 title: Deterministic doc metrics — staleness detection, coverage calculation, severity counting
-status: open
+status: implemented
 scope: LOW
 target: /spec dev
 created: 2026-03-26

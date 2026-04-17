@@ -3,7 +3,7 @@ id: BL-110
 title: "Add cargo-semver-checks to CI pipeline"
 scope: LOW
 target: "direct edit"
-status: open
+status: implemented
 created: "2026-03-31"
 source: "docs/audits/web-radar-2026-03-31.md"
 ring: adopt

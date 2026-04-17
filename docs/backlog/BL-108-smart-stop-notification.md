@@ -1,7 +1,7 @@
 ---
 id: BL-108
 title: Smart stop notification — only notify on final stop or user input needed
-status: open
+status: implemented
 scope: MEDIUM
 target: /spec-dev
 tags: [hooks, notifications, ux]

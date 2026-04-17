@@ -1,7 +1,7 @@
 ---
 id: BL-043
 title: Add QA strategist agent
-status: open
+status: implemented
 created: 2026-03-21
 scope: LOW
 target_command: agents/qa-strategist.md (new)

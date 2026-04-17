@@ -3,7 +3,7 @@ id: BL-115
 title: "Upgrade toml 0.8 to 0.9"
 scope: LOW
 target: "direct edit"
-status: archived
+status: implemented
 created: "2026-03-31"
 source: "docs/audits/web-radar-2026-03-31.md"
 ring: trial

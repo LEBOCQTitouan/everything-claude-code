@@ -4,7 +4,7 @@ title: Create /design command
 tier: 4
 scope: LOW
 target: direct edit
-status: "implemented"
+status: implemented
 created: 2026-03-20
 file: commands/design.md
 ---

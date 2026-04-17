@@ -3,7 +3,7 @@ id: BL-097
 title: "Spec backlog in-work filtering — hide entries claimed by other sessions"
 scope: MEDIUM
 target: "/spec-dev"
-status: open
+status: implemented
 tags: [spec, backlog, filtering, session, concurrency, stale-detection]
 created: 2026-03-29
 related: [BL-065, BL-066]

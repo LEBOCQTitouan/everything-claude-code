@@ -3,7 +3,7 @@ id: BL-077
 title: "Full documentation pass — coverage, drift validation, and gap analysis"
 scope: EPIC
 target: /spec-dev
-status: open
+status: implemented
 created: 2026-03-27
 related: [BL-050, BL-056, BL-064]
 ---

@@ -3,7 +3,7 @@ id: BL-082
 title: Add worktree display segment to statusline
 scope: LOW
 target: direct edit
-status: "implemented"
+status: implemented
 created: 2026-03-27
 ---
 

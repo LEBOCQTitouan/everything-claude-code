@@ -3,7 +3,7 @@ id: BL-105
 title: "Bump crossterm 0.28 → 0.29.0"
 scope: LOW
 target: "direct edit"
-status: "implemented"
+status: implemented
 tags: [dependencies, crossterm, terminal]
 created: 2026-03-29
 related: []

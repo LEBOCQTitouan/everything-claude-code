@@ -1,7 +1,7 @@
 ---
 id: BL-066
 title: Deterministic backlog management — ID generation, duplicate detection, index auto-generation
-status: "implemented"
+status: implemented
 scope: MEDIUM
 target: /spec dev
 created: 2026-03-26

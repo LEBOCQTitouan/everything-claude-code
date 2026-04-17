@@ -1,7 +1,7 @@
 ---
 id: BL-039
 title: Add CronCreate suggestion to periodic commands
-status: open
+status: archived
 created: 2026-03-21
 scope: LOW
 target_command: commands/audit-full.md, commands/review.md, commands/verify.md

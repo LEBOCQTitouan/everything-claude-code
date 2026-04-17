@@ -3,7 +3,7 @@ id: BL-142
 title: "Add docs/cartography/ to phase-gate allowlist"
 scope: LOW
 target: "direct edit"
-status: open
+status: implemented
 created: "2026-04-09"
 source: "session finding — cartography processing blocked during active workflow phases"
 tags: [phase-gate, cartography, fix]

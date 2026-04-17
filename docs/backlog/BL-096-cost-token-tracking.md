@@ -3,7 +3,7 @@ id: BL-096
 title: "Cost and token tracking — observability prerequisite for optimization"
 scope: MEDIUM
 target: "/spec dev"
-status: open
+status: implemented
 tags: [cost, observability, tokens, optimization, prerequisite]
 created: 2026-03-28
 related: [BL-094, BL-095, BL-092]

@@ -3,7 +3,7 @@ id: BL-133
 title: "Migrate workspace to Rust 2024 edition"
 scope: MEDIUM
 target: "/spec-dev"
-status: open
+status: implemented
 created: "2026-04-09"
 source: "docs/audits/web-radar-2026-04-09.md"
 ring: adopt

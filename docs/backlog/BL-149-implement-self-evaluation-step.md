@@ -3,7 +3,7 @@ id: BL-149
 title: "Add agentic self-evaluation step between /implement TDD iterations"
 scope: MEDIUM
 target: "/spec-dev"
-status: open
+status: implemented
 created: "2026-04-12"
 source: "docs/research/competitor-claw-goose.md"
 ring: assess

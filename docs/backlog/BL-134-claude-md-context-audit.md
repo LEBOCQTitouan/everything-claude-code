@@ -3,7 +3,7 @@ id: BL-134
 title: "Audit CLAUDE.md for LLM-generated content"
 scope: LOW
 target: "direct edit"
-status: open
+status: implemented
 created: "2026-04-09"
 source: "docs/audits/web-radar-2026-04-09.md"
 ring: adopt

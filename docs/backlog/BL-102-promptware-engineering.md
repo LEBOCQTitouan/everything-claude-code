@@ -3,7 +3,7 @@ id: BL-102
 title: "Promptware Engineering practices — prompt testing and monitoring"
 scope: MEDIUM
 target: "/spec-dev"
-status: open
+status: implemented
 tags: [prompts, testing, quality, agents, skills]
 created: 2026-03-29
 related: [BL-090]

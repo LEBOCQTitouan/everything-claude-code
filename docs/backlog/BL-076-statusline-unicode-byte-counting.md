@@ -3,7 +3,7 @@ id: BL-076
 title: "Statusline Unicode byte-counting bug hides rate limit segments"
 scope: LOW
 target: /spec-fix
-status: "implemented"
+status: implemented
 created: 2026-03-27
 related: [BL-053]
 ---

@@ -1,7 +1,7 @@
 ---
 id: BL-128
 title: "Token optimization wave 5 — local LLM offload for mechanical agents"
-status: open
+status: implemented
 created: 2026-04-06
 promoted_to: ""
 tags: [token-optimization, local-llm, ollama, mcp, cost]

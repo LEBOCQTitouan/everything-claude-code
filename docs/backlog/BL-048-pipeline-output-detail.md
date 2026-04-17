@@ -1,7 +1,7 @@
 ---
 id: BL-048
 title: Comprehensive output summaries for spec → design → implement pipeline
-status: "implemented"
+status: implemented
 created: 2026-03-22
 promoted_to: ""
 tags: [spec, design, implement, output, summary, artifacts, tables, transparency]

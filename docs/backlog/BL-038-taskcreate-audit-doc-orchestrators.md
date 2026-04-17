@@ -1,7 +1,7 @@
 ---
 id: BL-038
 title: Add TaskCreate to audit-full and doc-orchestrator
-status: open
+status: implemented
 created: 2026-03-21
 scope: LOW
 target_command: commands/audit-full.md, agents/audit-orchestrator.md, agents/doc-orchestrator.md

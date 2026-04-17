@@ -3,7 +3,7 @@ id: BL-095
 title: "Extended thinking and effort tuning — adaptive thinking budgets per agent type"
 scope: MEDIUM
 target: "/spec dev"
-status: open
+status: implemented
 tags: [cost, thinking, effort, optimization]
 created: 2026-03-28
 related: [BL-094, BL-096]

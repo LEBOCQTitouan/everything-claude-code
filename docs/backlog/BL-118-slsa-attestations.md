@@ -3,7 +3,7 @@ id: BL-118
 title: "Add SLSA provenance attestations to release pipeline"
 scope: MEDIUM
 target: "/spec-dev"
-status: open
+status: implemented
 created: "2026-03-31"
 source: "docs/audits/web-radar-2026-03-31.md"
 ring: trial

@@ -4,7 +4,7 @@ title: Create /catchup command
 tier: 4
 scope: MEDIUM
 target: /spec dev
-status: "implemented"
+status: implemented
 created: 2026-03-20
 file: commands/catchup.md
 ---

@@ -1,7 +1,7 @@
 ---
 id: BL-087
 title: Cargo xtask deploy — full local machine setup
-status: "implemented"
+status: implemented
 created: 2026-03-28
 tags: [deploy, xtask, install, shell-integration, completions]
 scope: HIGH

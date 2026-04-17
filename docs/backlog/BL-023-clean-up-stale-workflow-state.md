@@ -4,7 +4,7 @@ title: Clean up stale workflow state
 tier: 5
 scope: LOW
 target: direct edit
-status: "implemented"
+status: implemented
 created: 2026-03-20
 file: .claude/workflow/state.json
 ---

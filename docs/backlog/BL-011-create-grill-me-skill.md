@@ -4,7 +4,7 @@ title: Create grill-me skill
 tier: 3
 scope: MEDIUM
 target: /spec dev
-status: "implemented"
+status: implemented
 created: 2026-03-20
 file: skills/grill-me/SKILL.md
 ---

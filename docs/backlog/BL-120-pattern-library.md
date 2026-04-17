@@ -1,7 +1,7 @@
 ---
 id: BL-120
 title: "Pattern Library for Agent-Assisted Development"
-status: open
+status: implemented
 scope: EPIC
 target: /spec-dev
 tags: [patterns, knowledge, agents, multi-language, library]

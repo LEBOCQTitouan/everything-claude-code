@@ -1,7 +1,7 @@
 ---
 id: BL-125
 title: "Token optimization wave 2 — boilerplate extraction and context trimming"
-status: open
+status: implemented
 created: 2026-04-06
 promoted_to: ""
 tags: [token-optimization, agents, rules, context-bloat]

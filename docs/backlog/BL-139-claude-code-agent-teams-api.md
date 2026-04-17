@@ -3,7 +3,7 @@ id: BL-139
 title: "Monitor Claude Code Agent Teams API for ECC integration"
 scope: LOW
 target: "/spec-dev"
-status: open
+status: implemented
 created: "2026-04-09"
 source: "docs/audits/web-radar-2026-04-09.md"
 ring: assess

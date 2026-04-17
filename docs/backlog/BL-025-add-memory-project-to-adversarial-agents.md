@@ -4,7 +4,7 @@ title: "Add memory:project to adversarial agents"
 tier: 6
 scope: LOW
 target: direct edit
-status: "implemented"
+status: implemented
 created: 2026-03-20
 files: agents/spec-adversary.md, agents/solution-adversary.md, agents/drift-checker.md
 ---

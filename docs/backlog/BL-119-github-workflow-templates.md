@@ -3,7 +3,7 @@ id: BL-119
 title: "Create GitHub workflow templates for Claude Code integration"
 scope: HIGH
 target: "/spec-dev"
-status: "implemented"
+status: implemented
 created: "2026-03-31"
 source: "docs/audits/web-radar-2026-03-31.md"
 ring: adopt

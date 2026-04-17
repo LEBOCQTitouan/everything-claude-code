@@ -1,7 +1,7 @@
 ---
 id: BL-045
 title: Remove alias commands (plan, solution) and audit for further duplicates
-status: "implemented"
+status: implemented
 created: 2026-03-21
 promoted_to: ""
 tags: [commands, cleanup, aliases, refactor, dx]

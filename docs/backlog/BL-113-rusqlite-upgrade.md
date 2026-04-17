@@ -3,7 +3,7 @@ id: BL-113
 title: "Upgrade rusqlite 0.34 to 0.38"
 scope: LOW
 target: "direct edit"
-status: open
+status: implemented
 created: "2026-03-31"
 source: "docs/audits/web-radar-2026-03-31.md"
 ring: trial

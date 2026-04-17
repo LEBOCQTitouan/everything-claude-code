@@ -1,7 +1,7 @@
 ---
 id: BL-042
 title: Add background mode to /audit-full
-status: open
+status: archived
 created: 2026-03-21
 scope: LOW
 target_command: commands/audit-full.md

@@ -1,7 +1,7 @@
 ---
 id: BL-034
 title: Capture grill-me decisions in work-item files
-status: open
+status: implemented
 created: 2026-03-21
 scope: MEDIUM
 target_command: /spec-dev, /spec-fix, /spec-refactor

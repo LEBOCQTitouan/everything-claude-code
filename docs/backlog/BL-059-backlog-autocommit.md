@@ -1,7 +1,7 @@
 ---
 id: BL-059
 title: Auto-commit backlog edits at end of /backlog command
-status: "implemented"
+status: implemented
 created: 2026-03-22
 promoted_to: ""
 tags: [backlog, git, commit, commands]
