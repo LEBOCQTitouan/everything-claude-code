@@ -5,6 +5,7 @@
 
 use ecc_domain::backlog::entry::{
     BacklogEntry, BacklogError, extract_id_from_filename, parse_frontmatter,
+    replace_frontmatter_status,
 };
 use ecc_domain::backlog::lock::LockFile;
 use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore, BacklogLockStore};
@@ -140,15 +141,84 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
 
     fn update_entry_status(
         &self,
-        _backlog_dir: &Path,
-        _id: &str,
-        _new_status: &str,
+        backlog_dir: &Path,
+        id: &str,
+        new_status: &str,
     ) -> Result<(), BacklogError> {
-        unimplemented!("update_entry_status not yet implemented for FsBacklogRepository")
+        let paths = self
+            .fs
+            .read_dir(backlog_dir)
+            .map_err(|e| BacklogError::Io {
+                path: backlog_dir.display().to_string(),
+                message: e.to_string(),
+            })?;
+
+        for path in &paths {
+            let filename = match path.file_name() {
+                Some(name) => name.to_string_lossy().to_string(),
+                None => continue,
+            };
+            if !(filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md")) {
+                continue;
+            }
+            let original = self.fs.read_to_string(path).map_err(|e| BacklogError::Io {
+                path: path.display().to_string(),
+                message: e.to_string(),
+            })?;
+            let updated = replace_frontmatter_status(&original, new_status)?;
+            if updated == original {
+                return Ok(());
+            }
+            let tmp_path = path.with_extension("md.tmp");
+            self.fs
+                .write(&tmp_path, &updated)
+                .map_err(|e| BacklogError::Io {
+                    path: tmp_path.display().to_string(),
+                    message: e.to_string(),
+                })?;
+            if let Err(e) = self.fs.rename(&tmp_path, path) {
+                let _ = self.fs.remove_file(&tmp_path);
+                return Err(BacklogError::Io {
+                    path: path.display().to_string(),
+                    message: format!("failed to rename tmp file: {e}"),
+                });
+            }
+            return Ok(());
+        }
+
+        Err(BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: format!("entry {id} not found"),
+        })
     }
 
-    fn read_entry_content(&self, _backlog_dir: &Path, _id: &str) -> Result<String, BacklogError> {
-        unimplemented!("read_entry_content not yet implemented for FsBacklogRepository")
+    fn read_entry_content(&self, backlog_dir: &Path, id: &str) -> Result<String, BacklogError> {
+        let paths = self
+            .fs
+            .read_dir(backlog_dir)
+            .map_err(|e| BacklogError::Io {
+                path: backlog_dir.display().to_string(),
+                message: e.to_string(),
+            })?;
+
+        for path in &paths {
+            let filename = match path.file_name() {
+                Some(name) => name.to_string_lossy().to_string(),
+                None => continue,
+            };
+            if !(filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md")) {
+                continue;
+            }
+            return self.fs.read_to_string(path).map_err(|e| BacklogError::Io {
+                path: path.display().to_string(),
+                message: e.to_string(),
+            });
+        }
+
+        Err(BacklogError::Io {
+            path: backlog_dir.display().to_string(),
+            message: format!("entry {id} not found"),
+        })
     }
 }
 
