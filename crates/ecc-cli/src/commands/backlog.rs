@@ -37,7 +37,21 @@ pub enum BacklogAction {
         /// Print generated content without writing to file
         #[arg(long)]
         dry_run: bool,
+        /// Force reindex even when >5 status changes detected
+        #[arg(long)]
+        force: bool,
     },
+
+    /// Update the status of a single backlog entry
+    UpdateStatus {
+        /// Entry ID (e.g., BL-042)
+        id: String,
+        /// New status (open, in-progress, implemented, archived, promoted)
+        status: String,
+    },
+
+    /// Run one-time migration to sync divergent file statuses from BACKLOG.md index
+    Migrate,
 
     /// List open backlog entries, optionally filtering out in-progress items
     List {
@@ -78,7 +92,7 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
             let json = serde_json::to_string_pretty(&candidates)?;
             println!("{json}");
         }
-        BacklogAction::Reindex { dry_run } => {
+        BacklogAction::Reindex { dry_run, force } => {
             let output = ecc_app::backlog::reindex(
                 &repo,
                 &repo,
@@ -88,11 +102,45 @@ pub fn run(args: BacklogArgs) -> anyhow::Result<()> {
                 dir,
                 &project_dir,
                 dry_run,
+                force,
             )
             .map_err(|e| anyhow::anyhow!("{e}"))?;
             if let Some(content) = output {
                 print!("{content}");
             }
+        }
+        BacklogAction::UpdateStatus { id, status } => {
+            ecc_app::backlog::update_status(
+                &repo,
+                &repo,
+                &repo,
+                &worktree_mgr,
+                &clock,
+                dir,
+                &project_dir,
+                &id,
+                &status,
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("Updated {id} to {status}");
+        }
+        BacklogAction::Migrate => {
+            let report = ecc_app::backlog::migrate_statuses(
+                &repo,
+                &repo,
+                &repo,
+                &worktree_mgr,
+                &clock,
+                dir,
+                &project_dir,
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!(
+                "Migration complete: {} updated, {} skipped, {} failed",
+                report.updated.len(),
+                report.skipped.len(),
+                report.failed.len()
+            );
         }
         BacklogAction::List {
             available,
