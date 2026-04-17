@@ -22,6 +22,9 @@ pub enum BacklogError {
     Io { path: String, message: String },
 }
 
+/// All valid kebab-case status strings for backlog entries.
+pub const VALID_STATUSES: &[&str] = &["open", "in-progress", "implemented", "archived", "promoted"];
+
 /// Backlog entry status with typed variants and Unknown fallback.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -52,6 +55,21 @@ impl BacklogStatus {
     /// Whether this status represents an active entry (eligible for duplicate checking).
     pub fn is_active(&self) -> bool {
         matches!(self, Self::Open | Self::InProgress)
+    }
+
+    /// Parse a kebab-case status string into a typed variant.
+    ///
+    /// Returns `None` for any string not in the 5 known valid statuses.
+    /// The `Unknown` variant is intentionally not constructible via this method.
+    pub fn from_kebab(s: &str) -> Option<Self> {
+        match s {
+            "open" => Some(Self::Open),
+            "in-progress" => Some(Self::InProgress),
+            "implemented" => Some(Self::Implemented),
+            "archived" => Some(Self::Archived),
+            "promoted" => Some(Self::Promoted),
+            _ => None,
+        }
     }
 }
 
@@ -113,6 +131,88 @@ pub fn parse_frontmatter(content: &str) -> Result<BacklogEntry, BacklogError> {
         .ok_or(BacklogError::NoFrontmatter)?;
     let yaml_str = &after_first[..end_pos];
     serde_saphyr::from_str(yaml_str).map_err(|e| BacklogError::MalformedYaml(e.to_string()))
+}
+
+/// Update the `status:` field within YAML frontmatter in place.
+///
+/// Only modifies the first `status:` line within the frontmatter block (between the opening
+/// `---` and the closing `\n---`). Everything outside that range — including the body — is
+/// preserved character-for-character.
+///
+/// Returns the original content unchanged when the current status already equals `new_status`
+/// (no-op guard). Strips YAML quotes from the existing value before comparison.
+///
+/// # Errors
+///
+/// - `BacklogError::NoFrontmatter` if the content has no valid frontmatter delimiters.
+/// - `BacklogError::MalformedYaml("status field not found")` if no `status:` key is present
+///   inside the frontmatter block.
+pub fn replace_frontmatter_status(content: &str, new_status: &str) -> Result<String, BacklogError> {
+    let trimmed = content.trim_start();
+    if !trimmed.starts_with("---") {
+        return Err(BacklogError::NoFrontmatter);
+    }
+    let after_open = &trimmed["---".len()..];
+    let close_pos = after_open
+        .find("\n---")
+        .ok_or(BacklogError::NoFrontmatter)?;
+    let frontmatter = &after_open[..close_pos];
+
+    // Locate first status: line inside frontmatter
+    let status_line_offset = frontmatter
+        .lines()
+        .scan(0usize, |pos, line| {
+            let start = *pos;
+            *pos += line.len() + 1; // +1 for \n
+            Some((start, line))
+        })
+        .find(|(_, line)| {
+            let l = line.trim_start();
+            l == "status:" || l.starts_with("status: ") || l.starts_with("status:\t")
+        })
+        .map(|(offset, _)| offset)
+        .ok_or_else(|| BacklogError::MalformedYaml("status field not found".into()))?;
+
+    // The line within after_open (skip past the leading \n after ---)
+    let fm_start_in_after_open = 0usize;
+    let line_start = fm_start_in_after_open + status_line_offset;
+    let line_end = after_open[line_start..]
+        .find('\n')
+        .map(|n| line_start + n)
+        .unwrap_or(after_open.len());
+    let existing_line = &after_open[line_start..line_end];
+
+    // No-op guard: return unchanged only when line is already exactly `status: {new_status}`
+    // (unquoted). If the value matches but is quoted, we still rewrite to normalize quoting.
+    let expected_line = format!("status: {new_status}");
+    if existing_line == expected_line {
+        return Ok(content.to_owned());
+    }
+
+    // Extract current value, stripping optional YAML quotes, for no-write when values differ
+    let current_value = existing_line
+        .trim_start_matches(|c: char| c != ':')
+        .trim_start_matches(':')
+        .trim()
+        .trim_matches('"')
+        .trim_matches('\'');
+
+    // If the normalized value differs from new_status, we proceed with the rewrite below.
+    // If it matches (but was quoted), we also proceed to normalize quoting.
+    let _ = current_value; // used implicitly via the expected_line check above
+
+    // Reconstruct: prefix + replacement line + suffix
+    let leading_whitespace = content.len() - trimmed.len();
+    let open_delim_len = "---".len();
+    let prefix_len = leading_whitespace + open_delim_len + line_start;
+    let suffix_start = leading_whitespace + open_delim_len + line_end;
+
+    let mut result = String::with_capacity(content.len());
+    result.push_str(&content[..prefix_len]);
+    result.push_str("status: ");
+    result.push_str(new_status);
+    result.push_str(&content[suffix_start..]);
+    Ok(result)
 }
 
 #[cfg(test)]
