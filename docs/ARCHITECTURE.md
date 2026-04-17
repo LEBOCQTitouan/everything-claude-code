@@ -14,7 +14,7 @@
 | **Architecture** | Hexagonal (domain → ports → infra → app → CLI) |
 | **Crates** | 9 (`ecc-domain`, `ecc-ports`, `ecc-app`, `ecc-infra`, `ecc-cli`, `ecc-test-support`, `ecc-integration-tests`, `ecc-workflow`, `ecc-flock`) |
 | **Entry points** | `crates/ecc-cli/` → `ecc` binary, `crates/ecc-workflow/` → `ecc-workflow` binary |
-| **Test count** | 1671 (`cargo test`) |
+| **Test count** | 3028 (`cargo test`) |
 | **Build** | `cargo build --release` → single binary |
 
 ## System Diagram
@@ -35,9 +35,9 @@ User CLI (ecc)  — native Rust binary
   |    +-- bin/ecc-shell-hook.sh
   |
   +-- Content (copied to ~/.claude/)
-       +-- agents/    (51 markdown with YAML frontmatter)
-       +-- commands/  (24 active markdown slash commands)
-       +-- skills/    (110 domain knowledge directories)
+       +-- agents/    (67 markdown with YAML frontmatter)
+       +-- commands/  (34 active markdown slash commands)
+       +-- skills/    (120 domain knowledge directories)
        +-- rules/     (grouped by language: common/, typescript/, python/, ...)
        +-- contexts/  (dynamic system prompt injection)
 ```
@@ -56,7 +56,7 @@ target/release/ecc-workflow  (workflow state machine binary)
     +-- ecc-workflow init / transition / toolchain-persist / phase-gate / ...
 
 Test pipeline:
-    cargo test  (1671 tests across 9 crates)
+    cargo test  (3028 tests across 9 crates)
     cargo clippy -- -D warnings  (zero-warning lint)
 ```
 

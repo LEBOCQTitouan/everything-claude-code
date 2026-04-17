@@ -17,7 +17,7 @@ Compare Claw Code (72k★, clean-room Claude Code rewrite) and Goose (Block/Squa
 |-----------|-----|-----------|-------|
 | **Language** | Rust (9-crate hex arch) | Python primary + Rust runtime | Rust |
 | **LLM provider** | Claude only (via Claude Code harness) | Provider-abstracted | Provider-abstracted (any LLM) |
-| **Tool dispatch** | Hardcoded `allowedTools` in agent frontmatter | YAML tool manifest → Serde → Rust closures | MCP extension system |
+| **Tool dispatch** | ECC: declarative tool manifest (`manifest/tool-manifest.yaml`) with preset resolution | YAML tool manifest → Serde → Rust closures | MCP extension system |
 | **Context/session state** | `.claude/workflow/state.json` + per-worktree isolation | In-memory arenas + compaction algorithms | Core agent loop with plan→execute→evaluate |
 | **Agent isolation** | Worktree-per-session (git-backed) | Session-state via arenas | Per-task extension scope |
 | **Hook system** | Lifecycle events (PreToolUse, PostToolUse, SubagentStart, SessionStart, SessionEnd) | `Vec<Box<dyn Fn()>>` hook chain + plugin lifecycle (resume/persist/delegate) | Extension registration (MCP) |

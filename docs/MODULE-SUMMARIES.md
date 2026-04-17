@@ -211,4 +211,108 @@ See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glo
 
 **Modified in:** `BL-094` (worktree-auto-merge-and-cleanup-enforcement) — 2026-04-06
 
+### `ecc-domain::config::tool_manifest` (BL-146)
+
+**Purpose:** Declarative tool manifest domain model — parses and validates `manifest/tool-manifest.yaml`, the single source of truth for all Claude Code tool identifiers and named preset bundles ECC may reference.
+
+**Key Functions / Types:**
+- `ToolManifest` — Value Object: atomic tool vocabulary + named preset bundles (immutable once parsed, structurally equal)
+- `ToolManifestError` — 9-variant error enum covering size limits, YAML anchors, duplicate keys, unknown preset references, empty presets, and invalid preset names
+- `MAX_MANIFEST_BYTES` const — 1 MiB rejection ceiling before parsing (DoS protection)
+- `parse_tool_manifest()` + `validate_tool_manifest()` — pure parse and validation functions (zero I/O)
+
+**Spec Cross-Link:** BL-146 (declarative tool manifest)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
+
+**Design Rationale:** Replaces hardcoded `allowedTools` in agent/skill frontmatter with a declarative manifest. YAML anchors/aliases rejected to prevent DoS. All logic is pure (no I/O) per domain layer constraints. Manifest authoring guide at `docs/tool-manifest-authoring.md`.
+
+**Modified in:** `BL-146` — 2026-04-12
+
+### `ecc-domain::config::tool_manifest_resolver` (BL-146)
+
+**Purpose:** Pure resolver that expands `FrontmatterToolSpec` (agent/skill frontmatter) against a `ToolManifest`, returning an effective tool list with warnings.
+
+**Key Functions / Types:**
+- `FrontmatterToolSpec` — tool spec parsed from frontmatter (`tool_set` preset name + optional `inline_tools`)
+- `ResolvedTools` — successful result: deduped union of preset + inline tools, plus zero-or-more WARN messages
+- `ResolveError` — 5-variant failure enum (UnknownPreset, ArrayNotSupported, EmptyResolution, NeitherToolSetNorTools, InvalidToolSetReference)
+- `resolve_effective_tools()` — single entry point; no I/O, no panics
+
+**Spec Cross-Link:** BL-146 (declarative tool manifest)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
+
+**Design Rationale:** Separate resolver from parser — resolution is pure domain logic (preset lookup + union + dedup + warning generation). Outlier inline tools (tools not in the manifest vocab) trigger warnings rather than errors to allow gradual migration.
+
+**Modified in:** `BL-146` — 2026-04-12
+
+### `ecc-app::validate::tool_manifest_loader` (BL-146)
+
+**Purpose:** I/O bridge that reads `manifest/tool-manifest.yaml` via the `FileSystem` port and returns a parsed `ToolManifest` or a single `ManifestLoadError`.
+
+**Key Functions / Types:**
+- `ManifestLoadError` — 6-variant load error (NotFound, SymlinkRejected, PathTraversal, ReadError, ParseError, Validation); single-error semantics prevent per-file cascade
+- `load_tool_manifest()` — reads file, rejects symlinks and path-traversal, delegates parse + validation to domain
+
+**Spec Cross-Link:** BL-146 (declarative tool manifest)
+
+**ADR Cross-Link:** ADR-001 (Hexagonal Architecture)
+
+**Design Rationale:** Symlink rejection and path-traversal guard prevent filesystem escape attacks. Single-error semantics: callers emit ONE error to stderr and skip per-file validation — cleaner UX than cascading errors. All domain parse/validate logic lives in ecc-domain::config::tool_manifest.
+
+**Modified in:** `BL-146` — 2026-04-12
+
+### `/party` command (BL-144)
+
+**Purpose:** Multi-agent round-table discussion command. Assembles an ephemeral panel of BMAD role agents (bmad-pm, bmad-architect, bmad-dev, bmad-qa, bmad-security) plus ECC specialists. Synthesises output to `docs/party/`.
+
+**Key Functions / Types:**
+- `party-coordinator` agent — orchestrates sequential dispatch across panel members and synthesises output
+- Output directory: `docs/party/` — structured synthesis per session
+
+**Spec Cross-Link:** BL-144 (/party command)
+
+**ADR Cross-Link:** ADR 0064
+
+**Design Rationale:** Zero Rust changes — content-only implementation. BMAD role agents provide multi-perspective review without requiring separate manual invocations. Party-coordinator synthesises divergent perspectives into actionable output. Ephemeral panel composition means no persistent team manifests needed.
+
+**Modified in:** `BL-144` — 2026-04-12
+
+### `skills/ecc-help` (BL-151)
+
+**Purpose:** Quick-reference skill for ECC tooling — slash commands, pipeline flow, CLI commands, and key concepts. Loaded when users ask how ECC works or what commands are available.
+
+**Key Functions / Types:**
+- Pipeline overview: `/spec` → `/design` → `/implement` with Plan Mode gates
+- Slash commands reference table
+- CLI commands reference
+- Key concepts: worktree isolation, phase gates, bypass system
+
+**Spec Cross-Link:** BL-151 (ecc-help skill)
+
+**ADR Cross-Link:** N/A
+
+**Design Rationale:** Dedicated quick-reference skill reduces context-window bloat from full CLAUDE.md loading for orientation queries. Skill file is load-on-demand — only injected when relevant context triggers it.
+
+**Modified in:** `BL-151` — 2026-04-12
+
+### `skills/tribal-knowledge-extraction` (BL-152)
+
+**Purpose:** Extracts implicit tribal knowledge from codebases — configure patterns, common modification sites, failure patterns, cross-module dependencies, and undocumented conventions. Produces structured tribal knowledge for onboarding and compass context generation.
+
+**Key Functions / Types:**
+- Five Questions Framework: Q1 (configure), Q2 (modify), Q3 (failure patterns), Q4 (cross-module deps), Q5 (undocumented conventions)
+- Output format: structured extraction for onboarding docs and compass context files
+- Auto-repair mode: validates and repairs stale tribal knowledge entries
+- Periodic validation hook: detects drift between extracted knowledge and current codebase
+
+**Spec Cross-Link:** BL-152 (tribal knowledge documentation upgrade)
+
+**ADR Cross-Link:** N/A
+
+**Design Rationale:** Tribal knowledge is the highest-value documentation to capture before contributors leave. Five Questions Framework provides repeatable extraction. Compass context integration ensures tribal knowledge surfaces at session start rather than requiring explicit lookup.
+
+**Modified in:** `BL-152` — 2026-04-12
+
 <!-- END IMPLEMENT-GENERATED -->

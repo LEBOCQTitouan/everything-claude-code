@@ -76,6 +76,18 @@ Pure business logic -- zero I/O.
 | `resolve_alias()` | fn | `session::aliases` | Pure alias resolution |
 | `list_aliases()` | fn | `session::aliases` | Filtered/sorted alias listing |
 
+### tool_manifest (BL-146)
+
+| Symbol | Kind | Module | Description |
+|--------|------|--------|-------------|
+| `ToolManifest` | struct | `config::tool_manifest` | Value Object: atomic tool vocab + named preset bundles (immutable, structurally equal) |
+| `ToolManifestError` | enum | `config::tool_manifest` | Parse/validation errors: ManifestTooLarge, YamlAnchorsNotAllowed, DuplicateTopLevelKey, ParseError, DuplicatePresetKey, DuplicateAtomicTool, UnknownToolInPreset, EmptyPreset, InvalidPresetName |
+| `MAX_MANIFEST_BYTES` | const | `config::tool_manifest` | 1 MiB size cap — manifests exceeding this are rejected before parsing |
+| `FrontmatterToolSpec` | struct | `config::tool_manifest_resolver` | Tool spec extracted from agent/skill frontmatter (`tool_set` + `inline_tools`) |
+| `ResolvedTools` | struct | `config::tool_manifest_resolver` | Successful resolution result: effective tool list (union, deduped) + warnings |
+| `ResolveError` | enum | `config::tool_manifest_resolver` | Resolution failures: UnknownPreset, ArrayNotSupported, EmptyResolution, NeitherToolSetNorTools, InvalidToolSetReference |
+| `resolve_effective_tools()` | fn | `config::tool_manifest_resolver` | Pure resolver: FrontmatterToolSpec + ToolManifest → ResolvedTools or ResolveError |
+
 ## ecc-app
 
 Use case orchestration through port traits.
@@ -103,6 +115,7 @@ Use case orchestration through port traits.
 | `smart_merge()` | fn | `smart_merge` | Claude CLI merge invocation |
 | `CheckStatus` | enum | `act_ci` | Pass, Warn, Fail |
 | `ValidationReport` | struct | `act_ci` | Aggregated CI validation checks |
+| `ManifestLoadError` | enum | `validate::tool_manifest_loader` | Load failures: NotFound, SymlinkRejected, PathTraversal, ReadError, ParseError, Validation — single-error semantics, never cascade |
 
 ## ecc-test-support
 
