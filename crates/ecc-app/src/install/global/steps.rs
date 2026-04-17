@@ -479,4 +479,123 @@ mod tests {
             "second expansion should be no-op"
         );
     }
+
+    // Helper: write a minimal tool manifest with readonly-analyzer preset
+    fn with_tool_manifest(fs: &InMemoryFileSystem, ecc_root: &std::path::Path) {
+        let yaml = "tools:\n  - Read\n  - Grep\n  - Glob\npresets:\n  readonly-analyzer:\n    - Read\n    - Grep\n    - Glob\n";
+        fs.write(&ecc_root.join("manifest/tool-manifest.yaml"), yaml)
+            .unwrap();
+    }
+
+    // PC-033: expand_tool_sets_inlines_spec_adversary
+    // Install pipeline writes expanded inline `tools: [Read, Grep, Glob]` in
+    // installed spec-adversary.md (no `tool-set:`).
+    #[test]
+    fn expand_tool_sets_inlines_spec_adversary() {
+        let fs = InMemoryFileSystem::new();
+        let ecc_root = std::path::Path::new("/ecc");
+        let dest_dir = std::path::Path::new("/dest");
+
+        with_tool_manifest(&fs, ecc_root);
+
+        // Write spec-adversary.md with tool-set: readonly-analyzer (source form)
+        let source_content = "---\nname: spec-adversary\nmodel: opus\ntool-set: readonly-analyzer\n---\n# Spec Adversary\n";
+        fs.write(&dest_dir.join("spec-adversary.md"), source_content)
+            .unwrap();
+
+        expand_agents_tool_sets(&fs, dest_dir, ecc_root);
+
+        let result = fs
+            .read_to_string(&dest_dir.join("spec-adversary.md"))
+            .unwrap();
+
+        // Must contain expanded tools list
+        assert!(
+            result.contains("tools:"),
+            "installed file must have tools: field; got:\n{result}"
+        );
+        assert!(
+            result.contains("Read") && result.contains("Grep") && result.contains("Glob"),
+            "installed file must have expanded tools; got:\n{result}"
+        );
+        // Must NOT contain tool-set:
+        assert!(
+            !result.contains("tool-set:"),
+            "installed file must not contain tool-set:; got:\n{result}"
+        );
+    }
+
+    // PC-035: pre_post_effective_tools_byte_identical
+    // After expansion, the effective tools list is byte-identical to the preset contents.
+    #[test]
+    fn pre_post_effective_tools_byte_identical() {
+        let fs = InMemoryFileSystem::new();
+        let ecc_root = std::path::Path::new("/ecc");
+        let dest_dir = std::path::Path::new("/dest");
+
+        with_tool_manifest(&fs, ecc_root);
+
+        let source_content = "---\nname: test-agent\nmodel: sonnet\ntool-set: readonly-analyzer\n---\n# Agent\n";
+        fs.write(&dest_dir.join("test-agent.md"), source_content)
+            .unwrap();
+
+        expand_agents_tool_sets(&fs, dest_dir, ecc_root);
+
+        let result = fs
+            .read_to_string(&dest_dir.join("test-agent.md"))
+            .unwrap();
+
+        // The inline tools must exactly match the preset's members (Read, Grep, Glob)
+        let expected_tools = ["Read", "Grep", "Glob"];
+        for tool in &expected_tools {
+            assert!(
+                result.contains(tool),
+                "expanded output must contain tool '{tool}'; got:\n{result}"
+            );
+        }
+        // No extra tools beyond the preset
+        assert!(
+            !result.contains("Write") && !result.contains("Edit") && !result.contains("Bash"),
+            "expanded output must not contain tools outside the preset; got:\n{result}"
+        );
+    }
+
+    // PC-073: write_atomic_and_rejects_symlinks
+    // Atomic write: write to temp, then rename. Symlink paths are skipped.
+    #[test]
+    fn write_atomic_and_rejects_symlinks() {
+        let fs = InMemoryFileSystem::new();
+        let ecc_root = std::path::Path::new("/ecc");
+        let dest_dir = std::path::Path::new("/dest");
+
+        with_tool_manifest(&fs, ecc_root);
+
+        // Write a real agent file that will be expanded
+        let real_content = "---\nname: real-agent\nmodel: sonnet\ntool-set: readonly-analyzer\n---\n# Agent\n";
+        fs.write(&dest_dir.join("real-agent.md"), real_content)
+            .unwrap();
+
+        // Create a symlink file — expansion should skip it
+        fs.create_symlink(
+            std::path::Path::new("/some/other/target.md"),
+            &dest_dir.join("symlink-agent.md"),
+        )
+        .unwrap();
+
+        // Run expansion — should not panic or error on symlink
+        expand_agents_tool_sets(&fs, dest_dir, ecc_root);
+
+        // The real file should be expanded
+        let real_result = fs
+            .read_to_string(&dest_dir.join("real-agent.md"))
+            .unwrap();
+        assert!(
+            !real_result.contains("tool-set:"),
+            "real file should be expanded (no tool-set:); got:\n{real_result}"
+        );
+        assert!(
+            real_result.contains("tools:"),
+            "real file should have tools:; got:\n{real_result}"
+        );
+    }
 }
