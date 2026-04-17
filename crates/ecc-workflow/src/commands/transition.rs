@@ -47,6 +47,7 @@ mod tests {
             },
             completed: vec![],
             version: 1,
+            history: vec![],
         };
         let json = serde_json::to_string_pretty(&state).unwrap();
         std::fs::write(wf_dir.join("state.json"), json).unwrap();
@@ -262,6 +263,180 @@ mod tests {
         assert!(
             !output.message.contains("[warnings:"),
             "expected no warnings in message, got: {}",
+            output.message
+        );
+    }
+
+    // PC-012: Forward re-entry after rollback: plan→solution re-stamps timestamp with CURRENT time
+    #[test]
+    fn forward_reentry_restamps() {
+        let dir = TempDir::new().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        // Write implement-phase state with solution artifact set to old timestamp
+        let state = WorkflowState {
+            phase: Phase::Implement,
+            concern: Concern::Dev,
+            feature: "BL-129".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
+            toolchain: ecc_domain::workflow::state::Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: ecc_domain::workflow::state::Artifacts {
+                plan: Some("2026-01-01T00:00:00Z".to_owned()),
+                solution: Some("2026-01-01T00:00:00Z".to_owned()),
+                implement: Some("2026-01-01T00:00:00Z".to_owned()),
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
+            completed: vec![],
+            version: 1,
+            history: vec![],
+        };
+        let json = serde_json::to_string_pretty(&state).unwrap();
+        std::fs::write(wf_dir.join("state.json"), json).unwrap();
+
+        // Step 1: backward transition implement→solution
+        let output = super::run("solution", None, None, dir.path(), &wf_dir, Some("design flaw"));
+        assert!(
+            !matches!(output.status, crate::output::Status::Block),
+            "backward transition should succeed: {:?}",
+            output.message
+        );
+
+        // Step 2: forward re-entry solution→solution with artifact stamp
+        let output = super::run("solution", Some("solution"), None, dir.path(), &wf_dir, None);
+        assert!(
+            !matches!(output.status, crate::output::Status::Block),
+            "forward re-entry should succeed: {:?}",
+            output.message
+        );
+
+        // Verify the solution artifact timestamp was re-stamped
+        let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
+        let new_state = WorkflowState::from_json(&content).unwrap();
+        assert!(
+            new_state.artifacts.solution.is_some(),
+            "solution artifact must be set after forward re-entry"
+        );
+        // The new timestamp must not be the original old one
+        assert_ne!(
+            new_state.artifacts.solution.as_deref(),
+            Some("2026-01-01T00:00:00Z"),
+            "solution timestamp must be re-stamped with current time, not the original"
+        );
+    }
+
+    // PC-015: Binary backward impl→solution
+    #[test]
+    fn backward_impl_to_solution() {
+        let dir = TempDir::new().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        // Write implement-phase state with populated artifacts
+        let state = WorkflowState {
+            phase: Phase::Implement,
+            concern: Concern::Dev,
+            feature: "BL-129".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
+            toolchain: ecc_domain::workflow::state::Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: ecc_domain::workflow::state::Artifacts {
+                plan: Some("2026-01-01T00:00:00Z".to_owned()),
+                solution: Some("2026-01-02T00:00:00Z".to_owned()),
+                implement: Some("2026-01-03T00:00:00Z".to_owned()),
+                campaign_path: None,
+                spec_path: Some("docs/specs/foo/spec.md".to_owned()),
+                design_path: Some("docs/specs/foo/design.md".to_owned()),
+                tasks_path: Some("docs/specs/foo/tasks.md".to_owned()),
+            },
+            completed: vec![],
+            version: 1,
+            history: vec![],
+        };
+        let json = serde_json::to_string_pretty(&state).unwrap();
+        std::fs::write(wf_dir.join("state.json"), json).unwrap();
+
+        // Backward transition with justification
+        let output = super::run("solution", None, None, dir.path(), &wf_dir, Some("design flaw"));
+        assert!(
+            !matches!(output.status, crate::output::Status::Block),
+            "backward impl→solution should succeed: {:?}",
+            output.message
+        );
+
+        let content = std::fs::read_to_string(wf_dir.join("state.json")).unwrap();
+        let new_state = WorkflowState::from_json(&content).unwrap();
+
+        // Phase must be solution
+        assert_eq!(new_state.phase, Phase::Solution, "phase must be solution");
+        // solution and implement artifacts must be cleared
+        assert!(new_state.artifacts.solution.is_none(), "solution artifact must be cleared");
+        assert!(new_state.artifacts.implement.is_none(), "implement artifact must be cleared");
+        // design_path and tasks_path must be cleared
+        assert!(new_state.artifacts.design_path.is_none(), "design_path must be cleared");
+        assert!(new_state.artifacts.tasks_path.is_none(), "tasks_path must be cleared");
+        // History must have 1 record with direction=backward
+        assert_eq!(new_state.history.len(), 1, "history must have 1 record");
+        assert_eq!(
+            new_state.history[0].direction,
+            ecc_domain::workflow::Direction::Backward,
+            "direction must be backward"
+        );
+        assert_eq!(new_state.history[0].from, Phase::Implement, "from must be implement");
+        assert_eq!(new_state.history[0].to, Phase::Solution, "to must be solution");
+        assert_eq!(
+            new_state.history[0].justification.as_deref(),
+            Some("design flaw"),
+            "justification must be recorded"
+        );
+    }
+
+    // PC-016: Binary backward without --justify returns block output
+    #[test]
+    fn backward_no_justify_blocks() {
+        let dir = TempDir::new().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+        let state = WorkflowState {
+            phase: Phase::Implement,
+            concern: Concern::Dev,
+            feature: "BL-129".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
+            toolchain: ecc_domain::workflow::state::Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: ecc_domain::workflow::state::Artifacts {
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
+            completed: vec![],
+            version: 1,
+            history: vec![],
+        };
+        let json = serde_json::to_string_pretty(&state).unwrap();
+        std::fs::write(wf_dir.join("state.json"), json).unwrap();
+
+        // Attempt backward transition WITHOUT justification
+        let output = super::run("solution", None, None, dir.path(), &wf_dir, None);
+        assert!(
+            matches!(output.status, crate::output::Status::Block),
+            "backward transition without justify must be blocked, got: {:?}: {}",
+            output.status,
             output.message
         );
     }

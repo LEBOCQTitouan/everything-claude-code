@@ -337,6 +337,92 @@ pub mod tests {
         );
     }
 
+    // PC-019: After reset --force, history is preserved in the archived state file
+    #[test]
+    fn reset_preserves_history_in_archive() {
+        use ecc_domain::workflow::{Direction, TransitionRecord};
+
+        let dir = tempfile::tempdir().unwrap();
+        let wf_dir = dir.path().join(".claude/workflow");
+        std::fs::create_dir_all(&wf_dir).unwrap();
+
+        // Build a state with history entries
+        let record = TransitionRecord {
+            from: Phase::Implement,
+            to: Phase::Solution,
+            direction: Direction::Backward,
+            justification: Some("design flaw".to_owned()),
+            timestamp: "2026-01-01T00:00:00Z".to_owned(),
+            actor: "ecc-workflow".to_owned(),
+        };
+        let state = WorkflowState {
+            phase: Phase::Implement,
+            concern: Concern::Dev,
+            feature: "BL-129".to_owned(),
+            started_at: Timestamp::new("2026-01-01T00:00:00Z"),
+            toolchain: Toolchain {
+                test: None,
+                lint: None,
+                build: None,
+            },
+            artifacts: Artifacts {
+                plan: None,
+                solution: None,
+                implement: None,
+                campaign_path: None,
+                spec_path: None,
+                design_path: None,
+                tasks_path: None,
+            },
+            completed: vec![],
+            version: 1,
+            history: vec![record],
+        };
+        std::fs::write(
+            wf_dir.join("state.json"),
+            serde_json::to_string_pretty(&state).unwrap(),
+        )
+        .unwrap();
+
+        // Reset --force
+        let output = run(true, dir.path(), &wf_dir);
+        assert!(
+            matches!(output.status, crate::output::Status::Pass),
+            "reset should succeed: {:?}",
+            output.message
+        );
+
+        // Find the archived file
+        let archive_dir = wf_dir.join("archive");
+        assert!(archive_dir.exists(), "archive dir must exist");
+        let entries: Vec<_> = std::fs::read_dir(&archive_dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
+        assert!(!entries.is_empty(), "must have archived file");
+
+        // Read the archived state and verify history is present
+        let archived_content =
+            std::fs::read_to_string(entries[0].path()).expect("archive file must be readable");
+        let archived_state =
+            WorkflowState::from_json(&archived_content).expect("archive must be valid JSON");
+        assert_eq!(
+            archived_state.history.len(),
+            1,
+            "archived state must preserve history records"
+        );
+        assert_eq!(
+            archived_state.history[0].direction,
+            Direction::Backward,
+            "archived history direction must be preserved"
+        );
+        assert_eq!(
+            archived_state.history[0].justification.as_deref(),
+            Some("design flaw"),
+            "archived history justification must be preserved"
+        );
+    }
+
     /// PC-007: reset --force deletes .state-dir anchor (AC-001.4)
     #[test]
     fn reset_deletes_state_dir_anchor() {
