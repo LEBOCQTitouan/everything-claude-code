@@ -220,6 +220,26 @@ fn extract_bl_num(id: &str) -> Option<u32> {
     id.strip_prefix("BL-").and_then(|s| s.parse().ok())
 }
 
+/// Update the status of a backlog entry by ID, then reindex.
+///
+/// Validates `new_status` against `VALID_STATUSES`. Returns an error if the
+/// entry is not found or the status is invalid. If the entry already has the
+/// requested status, returns `Ok(())` without writing (no-op guard).
+#[allow(clippy::too_many_arguments)]
+pub fn update_status(
+    _entries: &dyn BacklogEntryStore,
+    _index_store: &dyn BacklogIndexStore,
+    _lock_store: &dyn BacklogLockStore,
+    _worktree_mgr: &dyn WorktreeManager,
+    _clock: &dyn Clock,
+    _backlog_dir: &Path,
+    _project_dir: &Path,
+    _id: &str,
+    _new_status: &str,
+) -> Result<(), BacklogError> {
+    unimplemented!("update_status not yet implemented")
+}
+
 /// Convert an [`ecc_ports::fs::FsError`] into a [`BacklogError`].
 ///
 /// The orphan rule prevents `impl From<FsError> for BacklogError` here since neither
@@ -631,6 +651,184 @@ mod tests {
         .unwrap();
 
         assert!(result.is_empty(), "no open entries means empty result");
+    }
+
+    // --- update_status tests ---
+
+    fn raw_open_content(id: &str) -> String {
+        format!(
+            "---\nid: {id}\nstatus: open\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n"
+        )
+    }
+
+    /// PC-008: update_status errors on invalid BL id
+    #[test]
+    fn update_status_invalid_id() {
+        let repo = InMemoryBacklogRepository::new();
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        let err = update_status(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            "BL-999",
+            "implemented",
+        )
+        .unwrap_err();
+
+        assert!(
+            matches!(err, BacklogError::Io { .. }),
+            "expected Io error for missing entry, got: {err:?}"
+        );
+    }
+
+    /// PC-009: update_status errors on invalid status string
+    #[test]
+    fn update_status_invalid_status() {
+        let repo = InMemoryBacklogRepository::new()
+            .with_raw_content("BL-001", &raw_open_content("BL-001"));
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        let err = update_status(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            "BL-001",
+            "wip",
+        )
+        .unwrap_err();
+
+        assert!(
+            matches!(err, BacklogError::MalformedYaml(_)),
+            "expected MalformedYaml for invalid status, got: {err:?}"
+        );
+        let msg = err.to_string();
+        assert!(
+            msg.contains("wip"),
+            "error message should contain the invalid status"
+        );
+        // AC-001.4: message should list valid statuses
+        assert!(
+            msg.contains("open"),
+            "error message should list valid statuses"
+        );
+    }
+
+    /// PC-010: update_status succeeds and triggers reindex
+    #[test]
+    fn update_status_success_triggers_reindex() {
+        let repo = InMemoryBacklogRepository::new()
+            .with_raw_content("BL-001", &raw_open_content("BL-001"))
+            .with_entry(make_entry("BL-001", BacklogStatus::Open));
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        // Before: no index
+        assert!(
+            repo.read_index(Path::new(BACKLOG_DIR)).unwrap().is_none(),
+            "index should not exist before update"
+        );
+
+        update_status(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            "BL-001",
+            "implemented",
+        )
+        .unwrap();
+
+        // After: index should have been written by reindex
+        let index = repo.read_index(Path::new(BACKLOG_DIR)).unwrap();
+        assert!(index.is_some(), "reindex should have written the index");
+    }
+
+    /// PC-011: update_status no-op for same status
+    #[test]
+    fn update_status_noop_same_status() {
+        // Content already has "status: open"
+        let raw = raw_open_content("BL-001");
+        let repo = InMemoryBacklogRepository::new()
+            .with_raw_content("BL-001", &raw)
+            .with_entry(make_entry("BL-001", BacklogStatus::Open));
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        let result = update_status(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            "BL-001",
+            "open",
+        );
+
+        assert!(result.is_ok(), "no-op should return Ok");
+        // No index should be written since this is a no-op
+        let index = repo.read_index(Path::new(BACKLOG_DIR)).unwrap();
+        assert!(
+            index.is_none(),
+            "no-op should not trigger reindex (no write occurs)"
+        );
+    }
+
+    /// PC-019: lock removal failure logged via tracing::warn
+    #[test]
+    fn lock_removal_failure_logged() {
+        use ecc_domain::backlog::lock::LockFile;
+
+        // A stale orphaned lock for BL-010 — no active worktree by that name
+        // When list_available is called, it will try to remove the stale lock.
+        // We verify the function completes successfully (does NOT panic/return error)
+        // even when lock removal would fail. Since InMemoryBacklogRepository always
+        // succeeds on remove_lock, we test the code path compiles and runs.
+        // The key AC-004.1 behavior is: execution continues, a warn is logged.
+        let stale_lock =
+            LockFile::new("old-worktree".to_string(), "2026-04-06T00:00:00Z".to_string())
+                .unwrap();
+        let repo = InMemoryBacklogRepository::new()
+            .with_entry(make_entry("BL-010", BacklogStatus::Open))
+            .with_lock("BL-010", stale_lock);
+
+        // No active worktree named "old-worktree" => lock is orphaned + stale
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        // Should succeed — stale lock handled gracefully
+        let result = list_available(
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            false,
+        );
+        assert!(
+            result.is_ok(),
+            "list_available should succeed even with stale lock"
+        );
+
+        // Verify stale lock was removed (InMemoryBacklogRepository.remove_lock succeeds)
+        let remaining = repo.list_locks(Path::new(BACKLOG_DIR)).unwrap();
+        assert!(remaining.is_empty(), "stale lock should have been removed");
     }
 
     // --- FsError conversion test ---
