@@ -1,5 +1,5 @@
 # Canonical tool vocabulary and named presets for ECC agents, commands, teams, and skills.
-# This is the single source of truth for all Claude Code tool identifiers used across ECC.
+# This is the single source of truth for all Claude Code tool identifiers ECC may reference.
 #
 # tools:   Atomic vocabulary — every valid Claude Code tool identifier ECC may reference.
 # presets: Named bundles of commonly used tool combinations.
@@ -30,38 +30,75 @@ tools:
   - TaskList
 
 presets:
+  # Read-only analysis — no shell access
   readonly-analyzer:
     - Read
     - Grep
     - Glob
 
+  # Read-only analysis with shell access
   readonly-analyzer-shell:
     - Read
     - Grep
     - Glob
     - Bash
 
-  tdd-executor:
+  # Read-only analysis with agent spawning (no shell)
+  readonly-agent:
+    - Read
+    - Grep
+    - Glob
+    - Agent
+
+  # Read-only analysis with agent spawning and shell access
+  readonly-agent-shell:
+    - Read
+    - Grep
+    - Glob
+    - Bash
+    - Agent
+
+  # Code writing with full search capabilities
+  code-writer:
     - Read
     - Write
     - Edit
     - Bash
+    - Grep
+    - Glob
 
-  code-writer:
+  # TDD executor with multi-edit and full search
+  tdd-executor:
     - Read
     - Write
     - Edit
     - MultiEdit
     - Bash
+    - Grep
+    - Glob
 
+  # Content writing without shell (for structured content generation)
+  content-writer:
+    - Read
+    - Write
+    - Edit
+    - Grep
+    - Glob
+
+  # Orchestrator with agent spawning and task management
   orchestrator:
     - Read
     - Write
     - Edit
     - Bash
+    - Grep
+    - Glob
     - Agent
-    - Task
+    - AskUserQuestion
+    - TaskCreate
+    - TaskUpdate
 
+  # Audit command preset for all /audit-* commands
   audit-command:
     - Task
     - Read
