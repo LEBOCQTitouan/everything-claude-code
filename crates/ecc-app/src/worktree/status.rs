@@ -78,7 +78,7 @@ pub fn status(
             .map(|ts| now.saturating_sub(ts))
             .unwrap_or(0);
 
-        let stale = is_worktree_stale(executor, &parsed, now);
+        let stale = is_worktree_stale(executor, &parsed, now, worktree_path);
 
         let wt_status = if commits_ahead > 0 {
             WorktreeStatus::Unmerged

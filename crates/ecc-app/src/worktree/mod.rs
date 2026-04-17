@@ -47,11 +47,21 @@ pub(crate) fn now_secs() -> u64 {
 
 pub(crate) const STALE_SECS: u64 = 24 * 3600;
 
-/// Determine whether a worktree entry is stale (old enough or PID dead).
+/// Worktrees modified within this window are never considered stale.
+pub(crate) const RECENCY_SECS: u64 = 30 * 60;
+
+/// Determine whether a worktree entry is stale.
+///
+/// Formula: `stale = (age > 24h OR pid_dead) AND modified > 30min`
+///
+/// A worktree is stale only when BOTH the existing staleness condition
+/// (age or PID) AND the recency condition (not recently modified) are true.
+/// The recency check uses `stat` via the executor for hexagonal purity.
 pub(crate) fn is_worktree_stale(
     executor: &dyn ShellExecutor,
     parsed: &ParsedWorktreeName,
     now: u64,
+    worktree_path: &std::path::Path,
 ) -> bool {
     let age_stale = compact_ts_to_secs(&parsed.timestamp)
         .map(|ts| now.saturating_sub(ts) > STALE_SECS)
@@ -61,7 +71,159 @@ pub(crate) fn is_worktree_stale(
         .run_command("kill", &["-0", &pid_str])
         .map(|o| o.success())
         .unwrap_or(false);
-    age_stale || !pid_alive
+
+    let base_stale = age_stale || !pid_alive;
+    if !base_stale {
+        return false;
+    }
+
+    // Defense-in-depth: skip if the worktree was recently modified.
+    let recently_modified = is_recently_modified(executor, worktree_path, now);
+    base_stale && !recently_modified
+}
+
+/// Check if a worktree's `.git` file/dir was modified within RECENCY_SECS.
+/// Uses `stat` via ShellExecutor. Returns false on any failure (fail-open).
+fn is_recently_modified(
+    executor: &dyn ShellExecutor,
+    worktree_path: &std::path::Path,
+    now: u64,
+) -> bool {
+    let git_path = worktree_path.join(".git");
+    let git_path_str = git_path.to_string_lossy();
+
+    // Try macOS stat format first, then Linux fallback.
+    let mtime = executor
+        .run_command("stat", &["-f", "%m", &git_path_str])
+        .or_else(|_| executor.run_command("stat", &["-c", "%Y", &git_path_str]))
+        .ok()
+        .filter(|o| o.success())
+        .and_then(|o| o.stdout.trim().parse::<u64>().ok());
+
+    match mtime {
+        Some(t) => now.saturating_sub(t) < RECENCY_SECS,
+        None => false, // Stat failed or malformed output → fail-open (skip recency guard)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ecc_domain::worktree::ParsedWorktreeName;
+    use ecc_ports::shell::CommandOutput;
+    use ecc_test_support::MockExecutor;
+    use std::path::Path;
+
+    fn ok(stdout: &str) -> CommandOutput {
+        CommandOutput {
+            stdout: stdout.to_owned(),
+            stderr: String::new(),
+            exit_code: 0,
+        }
+    }
+
+    fn err_output(code: i32) -> CommandOutput {
+        CommandOutput {
+            stdout: String::new(),
+            stderr: "error".to_owned(),
+            exit_code: code,
+        }
+    }
+
+    fn stale_parsed() -> ParsedWorktreeName {
+        ParsedWorktreeName {
+            timestamp: "20200101-000000".to_owned(),
+            slug: "old".to_owned(),
+            pid: 99999,
+        }
+    }
+
+    fn far_past() -> u64 {
+        // 2020-01-01 epoch seconds
+        1_577_836_800
+    }
+
+    fn now_test() -> u64 {
+        // 2026-04-17 ~epoch seconds
+        1_776_000_000
+    }
+
+    #[test]
+    fn recently_modified_worktree_is_not_stale() {
+        let recent_mtime = now_test() - 600; // 10 minutes ago
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], err_output(1)) // PID dead
+            .on_args("stat", &["-f", "%m", "/wt/.git"], ok(&recent_mtime.to_string()));
+        let parsed = stale_parsed();
+        assert!(
+            !is_worktree_stale(&executor, &parsed, now_test(), Path::new("/wt")),
+            "worktree modified 10min ago must NOT be stale even with dead PID"
+        );
+    }
+
+    #[test]
+    fn old_unmodified_worktree_is_stale() {
+        let old_mtime = now_test() - 7200; // 2 hours ago
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], err_output(1))
+            .on_args("stat", &["-f", "%m", "/wt/.git"], ok(&old_mtime.to_string()));
+        let parsed = stale_parsed();
+        assert!(
+            is_worktree_stale(&executor, &parsed, now_test(), Path::new("/wt")),
+            "worktree modified 2h ago + dead PID + old age must be stale"
+        );
+    }
+
+    #[test]
+    fn stat_failure_preserves_existing_behavior() {
+        // Stat fails → recency guard not applied → falls back to PID+age
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], err_output(1));
+        // No stat mock → stat returns Err → fail-open
+        let parsed = stale_parsed();
+        assert!(
+            is_worktree_stale(&executor, &parsed, now_test(), Path::new("/wt")),
+            "stat failure must not protect an otherwise-stale worktree"
+        );
+    }
+
+    #[test]
+    fn malformed_stat_output_treated_as_failure() {
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], err_output(1))
+            .on_args("stat", &["-f", "%m", "/wt/.git"], ok("not-a-number"));
+        let parsed = stale_parsed();
+        assert!(
+            is_worktree_stale(&executor, &parsed, now_test(), Path::new("/wt")),
+            "malformed stat output must be treated as stat failure (fail-open)"
+        );
+    }
+
+    #[test]
+    fn live_pid_overrides_old_modification() {
+        let old_mtime = now_test() - 7200;
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", "99999"], ok("")) // PID alive
+            .on_args("stat", &["-f", "%m", "/wt/.git"], ok(&old_mtime.to_string()));
+        // PID alive → base_stale = false (age is also old but PID check short-circuits)
+        // Actually: age_stale = true (2020 timestamp), pid_alive = true
+        // base_stale = age_stale || !pid_alive = true || false = true
+        // Hmm — that means live PID doesn't override old age.
+        // The formula is: (age > 24h OR pid_dead) AND modified > 30min
+        // With PID alive but age > 24h: base_stale = true
+        // With old modification: recently_modified = false
+        // So stale = true. But the test name says "live PID overrides old modification"
+        // Let me fix: use a fresh timestamp so age is NOT stale.
+        let fresh_parsed = ParsedWorktreeName {
+            timestamp: "20260417-000000".to_owned(),
+            slug: "fresh".to_owned(),
+            pid: 99999,
+        };
+        assert!(
+            !is_worktree_stale(&executor, &fresh_parsed, now_test(), Path::new("/wt")),
+            "live PID + fresh age must not be stale even with old modification"
+        );
+    }
 }
 
 /// Errors returned by worktree operations.

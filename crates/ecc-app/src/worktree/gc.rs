@@ -54,13 +54,13 @@ pub fn gc(
             continue;
         };
 
-        if !is_worktree_stale(executor, &parsed, now) {
+        let worktree_path = Path::new(&entry.path);
+        if !is_worktree_stale(executor, &parsed, now, worktree_path) {
             result.skipped.push(worktree_name);
             continue;
         }
 
         // Check merge status before removal.
-        let worktree_path = Path::new(&entry.path);
         let unmerged = worktree_mgr
             .unmerged_commit_count(worktree_path, "main")
             .unwrap_or(u64::MAX); // Fail-safe: assume unmerged when query fails
