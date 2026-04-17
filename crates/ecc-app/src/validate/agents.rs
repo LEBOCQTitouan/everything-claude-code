@@ -89,79 +89,20 @@ fn validate_agent_file(
     }
 
     // Tool resolution: tool-set and/or tools field
-    let has_tool_set = frontmatter
-        .get("tool-set")
-        .map(|v| !v.trim().is_empty())
-        .unwrap_or(false);
-    let has_tools = frontmatter
-        .get("tools")
-        .map(|v| !v.trim().is_empty())
-        .unwrap_or(false);
-
-    if !has_tool_set && !has_tools {
-        // Neither field: legacy error
+    if let Some(tool_errors) =
+        resolve_tool_set_for_agent(&frontmatter, manifest, &name, terminal)
+    {
+        if !tool_errors {
+            valid = false;
+        }
+    } else {
+        // Neither field present: legacy error
         terminal.stderr_write(&format!(
             "ERROR: {} - Missing required field: tools\n",
             name
         ));
         valid = false;
-    } else if let Some(m) = manifest {
-        // Manifest available: resolve and validate
-        let tool_set_val = frontmatter.get("tool-set").map(|s| s.trim().to_string());
-        let inline_tools = frontmatter.get("tools").map(|raw| parse_tool_list(raw.trim()));
-
-        let spec = FrontmatterToolSpec {
-            tool_set: tool_set_val,
-            inline_tools,
-        };
-
-        match resolve_effective_tools(&spec, m) {
-            Ok(resolved) => {
-                // Emit WARN for outlier inline tools
-                for warn in &resolved.warnings {
-                    terminal.stdout_write(&format!("WARNING: {} - {}\n", name, warn));
-                }
-                // Validate inline tools against manifest atomic tools
-                if let Some(raw_tools) = frontmatter.get("tools") {
-                    let atomic_tools: Vec<&str> = m.tools.iter().map(String::as_str).collect();
-                    let findings =
-                        check_tool_values(&name, raw_tools.trim(), "tools", &atomic_tools);
-                    for f in &findings {
-                        terminal.stderr_write(&format!("ERROR: {}\n", f.message));
-                        valid = false;
-                    }
-                }
-            }
-            Err(e) => {
-                use ecc_domain::config::tool_manifest_resolver::ResolveError;
-                match &e {
-                    ResolveError::UnknownPreset(preset) => {
-                        terminal.stderr_write(&format!(
-                            "ERROR: {} - unknown tool-set '{}'\n",
-                            name, preset
-                        ));
-                    }
-                    ResolveError::InvalidToolSetReference(v) => {
-                        terminal.stderr_write(&format!(
-                            "ERROR: {} - invalid tool-set value '{}'\n",
-                            name, v
-                        ));
-                    }
-                    ResolveError::ArrayNotSupported => {
-                        terminal.stderr_write(&format!(
-                            "ERROR: {} - tool-set must be a single string, not an array\n",
-                            name
-                        ));
-                    }
-                    _ => {
-                        terminal.stderr_write(&format!("ERROR: {} - {}\n", name, e));
-                    }
-                }
-                valid = false;
-            }
-        }
     }
-    // If no manifest, skip tool-name validation (legacy pass-through)
 
     if let Some(model) = frontmatter.get("model")
         && !VALID_MODELS.contains(&model.as_str())
@@ -240,6 +181,92 @@ fn validate_agent_file(
     }
 
     valid
+}
+
+/// Resolve and validate the tool-set/tools fields for an agent.
+///
+/// Returns `None` if neither `tool-set` nor `tools` is present (caller emits legacy error).
+/// Returns `Some(true)` if resolution succeeded with no errors, `Some(false)` if errors were found.
+fn resolve_tool_set_for_agent(
+    frontmatter: &std::collections::HashMap<String, String>,
+    manifest: Option<&ToolManifest>,
+    name: &str,
+    terminal: &dyn TerminalIO,
+) -> Option<bool> {
+    let has_tool_set = frontmatter
+        .get("tool-set")
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+    let has_tools = frontmatter
+        .get("tools")
+        .map(|v| !v.trim().is_empty())
+        .unwrap_or(false);
+
+    if !has_tool_set && !has_tools {
+        return None;
+    }
+
+    let m = match manifest {
+        Some(m) => m,
+        None => return Some(true), // No manifest: legacy pass-through
+    };
+
+    let tool_set_val = frontmatter.get("tool-set").map(|s| s.trim().to_string());
+    let inline_tools = frontmatter
+        .get("tools")
+        .map(|raw| parse_tool_list(raw.trim()));
+
+    let spec = FrontmatterToolSpec {
+        tool_set: tool_set_val,
+        inline_tools,
+    };
+
+    let mut valid = true;
+
+    match resolve_effective_tools(&spec, m) {
+        Ok(resolved) => {
+            for warn in &resolved.warnings {
+                terminal.stdout_write(&format!("WARNING: {} - {}\n", name, warn));
+            }
+            if let Some(raw_tools) = frontmatter.get("tools") {
+                let atomic_tools: Vec<&str> = m.tools.iter().map(String::as_str).collect();
+                let findings = check_tool_values(name, raw_tools.trim(), "tools", &atomic_tools);
+                for f in &findings {
+                    terminal.stderr_write(&format!("ERROR: {}\n", f.message));
+                    valid = false;
+                }
+            }
+        }
+        Err(e) => {
+            use ecc_domain::config::tool_manifest_resolver::ResolveError;
+            match &e {
+                ResolveError::UnknownPreset(preset) => {
+                    terminal.stderr_write(&format!(
+                        "ERROR: {} - unknown tool-set '{}'\n",
+                        name, preset
+                    ));
+                }
+                ResolveError::InvalidToolSetReference(v) => {
+                    terminal.stderr_write(&format!(
+                        "ERROR: {} - invalid tool-set value '{}'\n",
+                        name, v
+                    ));
+                }
+                ResolveError::ArrayNotSupported => {
+                    terminal.stderr_write(&format!(
+                        "ERROR: {} - tool-set must be a single string, not an array\n",
+                        name
+                    ));
+                }
+                _ => {
+                    terminal.stderr_write(&format!("ERROR: {} - {}\n", name, e));
+                }
+            }
+            valid = false;
+        }
+    }
+
+    Some(valid)
 }
 
 #[cfg(test)]
@@ -574,11 +601,8 @@ presets:
     - Write
     - TodoWrite
 "#;
-        fs.write(
-            Path::new("/root/manifest/tool-manifest.yaml"),
-            yaml,
-        )
-        .expect("write manifest");
+        fs.write(Path::new("/root/manifest/tool-manifest.yaml"), yaml)
+            .expect("write manifest");
     }
 
     // ── PC-015: tool_set_only_validates ──────────────────────────────────────
@@ -598,7 +622,11 @@ presets:
             &ValidateTarget::Agents,
             Path::new("/root"),
         );
-        assert!(result, "agent with tool-set only should validate; stderr: {:?}", t.stderr_output());
+        assert!(
+            result,
+            "agent with tool-set only should validate; stderr: {:?}",
+            t.stderr_output()
+        );
     }
 
     // ── PC-016: unknown_preset_names_file_and_preset ─────────────────────────
@@ -650,7 +678,8 @@ presets:
         assert!(!result, "agent with neither tool-set nor tools should fail");
         let stderr = t.stderr_output().join("");
         assert!(
-            stderr.to_lowercase().contains("missing required field") || stderr.to_lowercase().contains("tools"),
+            stderr.to_lowercase().contains("missing required field")
+                || stderr.to_lowercase().contains("tools"),
             "should report missing tools field; got: {stderr}"
         );
     }
@@ -701,6 +730,10 @@ presets:
             &ValidateTarget::Agents,
             Path::new("/root"),
         );
-        assert!(result, "valid preset should pass; stderr: {:?}", t.stderr_output());
+        assert!(
+            result,
+            "valid preset should pass; stderr: {:?}",
+            t.stderr_output()
+        );
     }
 }
