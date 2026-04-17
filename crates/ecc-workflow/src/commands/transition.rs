@@ -4,8 +4,8 @@ use std::str::FromStr;
 use ecc_domain::metrics::MetricOutcome;
 use ecc_domain::workflow::concern::Concern;
 use ecc_domain::workflow::phase::Phase;
-use ecc_domain::workflow::state::Completion;
-use ecc_domain::workflow::transition::resolve_transition_by_name;
+use ecc_domain::workflow::state::{Completion, TransitionRecord};
+use ecc_domain::workflow::transition::{resolve_transition_with_justification, Direction};
 use ecc_ports::metrics_store::MetricsStore;
 
 use crate::io::{read_state, with_state_lock, write_state_atomic};
@@ -149,8 +149,14 @@ mod tests {
         let state_dir = dir.path().join(".claude/workflow");
 
         // Pass None store — should complete without panic
-        let output =
-            super::run_with_store("solution", Some("plan"), None, dir.path(), &state_dir, None);
+        let output = super::run_with_store(
+            "solution",
+            Some("plan"),
+            None,
+            dir.path(),
+            &state_dir,
+            None,
+        );
 
         assert!(
             !matches!(output.status, crate::output::Status::Block),
@@ -172,14 +178,7 @@ mod tests {
         // No state.json written
 
         let store = InMemoryMetricsStore::new();
-        let _output = super::run_with_store(
-            "solution",
-            Some("plan"),
-            None,
-            dir.path(),
-            &state_dir,
-            Some(&store as &dyn MetricsStore),
-        );
+        let _output = super::run_with_store("solution", Some("plan"), None, dir.path(), &state_dir, Some(&store as &dyn MetricsStore));
 
         let events = store.snapshot();
         assert_eq!(
@@ -198,7 +197,7 @@ mod tests {
         block_memory_dir(&dir);
         let state_dir = dir.path().join(".claude/workflow");
 
-        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir);
+        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir, None);
 
         assert!(
             matches!(output.status, crate::output::Status::Warn),
@@ -221,7 +220,7 @@ mod tests {
         block_memory_dir(&dir);
         let state_dir = dir.path().join(".claude/workflow");
 
-        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir);
+        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir, None);
 
         // write_action and write_work_item both write to docs/memory and should fail.
         // The warning must contain both error descriptions.
@@ -252,7 +251,7 @@ mod tests {
             .expect("git init failed");
         let state_dir = dir.path().join(".claude/workflow");
 
-        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir);
+        let output = super::run("solution", Some("plan"), None, dir.path(), &state_dir, None);
 
         assert!(
             matches!(output.status, crate::output::Status::Pass),
@@ -449,7 +448,7 @@ mod tests {
         block_memory_dir(&dir);
         let state_dir = dir.path().join(".claude/workflow");
 
-        super::run("solution", Some("plan"), None, dir.path(), &state_dir);
+        super::run("solution", Some("plan"), None, dir.path(), &state_dir, None);
 
         let state_path = state_dir.join("state.json");
         assert!(
@@ -545,9 +544,23 @@ pub fn run_with_store(
     state_dir: &Path,
     store: Option<&dyn MetricsStore>,
 ) -> WorkflowOutput {
+    run_with_store_and_justify(target, artifact, path, project_dir, state_dir, store, None)
+}
+
+/// Full entry point with optional justification for backward transitions.
+pub fn run_with_store_and_justify(
+    target: &str,
+    artifact: Option<&str>,
+    path: Option<&str>,
+    project_dir: &Path,
+    state_dir: &Path,
+    store: Option<&dyn MetricsStore>,
+    justify: Option<&str>,
+) -> WorkflowOutput {
     let target = target.to_owned();
     let artifact = artifact.map(str::to_owned);
     let path = path.map(str::to_owned);
+    let justify = justify.map(str::to_owned);
 
     let metrics_disabled = std::env::var("ECC_METRICS_DISABLED").as_deref() == Ok("1");
 
@@ -571,10 +584,10 @@ pub fn run_with_store(
         };
         let from = state.phase;
         tracing::info!(from_phase = %from, target = %target, "transition: attempting phase change");
-        let to = match resolve_transition_by_name(from, &target) {
-            Ok(t) => t,
+        let target_phase = match target.parse::<Phase>() {
+            Ok(p) => p,
             Err(e) => {
-                let reason = format!("Illegal transition: {e}");
+                let reason = format!("Illegal transition: unknown phase: {}", e.0);
                 let feature = state.feature.clone();
                 let metric_info = Some((
                     format!("workflow-{feature}"),
@@ -586,6 +599,40 @@ pub fn run_with_store(
                 return (WorkflowOutput::block(reason), None, metric_info);
             }
         };
+        let transition_result =
+            match resolve_transition_with_justification(from, target_phase, justify.as_deref()) {
+                Ok(r) => r,
+                Err(e) => {
+                    let reason = format!("Illegal transition: {e}");
+                    let feature = state.feature.clone();
+                    let metric_info = Some((
+                        format!("workflow-{feature}"),
+                        from.to_string(),
+                        target.clone(),
+                        MetricOutcome::Rejected,
+                        Some(reason.clone()),
+                    ));
+                    return (WorkflowOutput::block(reason), None, metric_info);
+                }
+            };
+        let to = transition_result.to;
+
+        // For backward transitions, clear artifacts for the rolled-back phases
+        if transition_result.direction == Direction::Backward {
+            state.artifacts.clear_artifacts_for_rollback(from, to);
+        }
+
+        // Record the transition in history
+        let record = TransitionRecord {
+            from,
+            to,
+            direction: transition_result.direction,
+            justification: justify.clone(),
+            timestamp: utc_now_iso8601(),
+            actor: "ecc-workflow".to_string(),
+        };
+        state.history.push(record);
+
         state.phase = to;
         if let Some(ref artifact_name) = artifact
             && let Err(output) =
@@ -735,8 +782,8 @@ fn write_memory_best_effort(
 
 /// Run the `transition` subcommand: advance the workflow to the target phase.
 ///
-/// Delegates to [`run_with_store`] with `store = None`.
-/// Construct a [`SqliteMetricsStore`] in `main.rs` and call [`run_with_store`] directly
+/// Delegates to [`run_with_store_and_justify`] with `store = None`.
+/// Construct a [`SqliteMetricsStore`] in `main.rs` and call [`run_with_store_and_justify`] directly
 /// when metrics instrumentation is needed.
 pub fn run(
     target: &str,
@@ -744,6 +791,7 @@ pub fn run(
     path: Option<&str>,
     project_dir: &Path,
     state_dir: &Path,
+    justify: Option<&str>,
 ) -> WorkflowOutput {
-    run_with_store(target, artifact, path, project_dir, state_dir, None)
+    run_with_store_and_justify(target, artifact, path, project_dir, state_dir, None, justify)
 }

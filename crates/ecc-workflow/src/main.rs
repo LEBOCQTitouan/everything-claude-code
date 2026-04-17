@@ -35,6 +35,14 @@ enum Commands {
         artifact: Option<String>,
         #[arg(long)]
         path: Option<String>,
+        #[arg(long)]
+        justify: Option<String>,
+    },
+    /// Display workflow transition history.
+    History {
+        /// Output as JSON array instead of table
+        #[arg(long)]
+        json: bool,
     },
     ToolchainPersist {
         test_cmd: String,
@@ -280,7 +288,16 @@ fn dispatch(cli: Cli) -> WorkflowOutput {
             target,
             artifact,
             path,
-        } => commands::transition::run(&target, artifact.as_deref(), path.as_deref(), &proj, &sd),
+            justify,
+        } => commands::transition::run(
+            &target,
+            artifact.as_deref(),
+            path.as_deref(),
+            &proj,
+            &sd,
+            justify.as_deref(),
+        ),
+        Commands::History { json } => commands::history::run(json, &sd),
         Commands::ToolchainPersist {
             test_cmd,
             lint_cmd,

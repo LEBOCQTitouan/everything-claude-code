@@ -172,6 +172,15 @@ impl TransitionResolver for TransitionPolicy {
     }
 }
 
+impl std::fmt::Display for Direction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Forward => write!(f, "forward"),
+            Self::Backward => write!(f, "backward"),
+        }
+    }
+}
+
 // ── Legacy free functions (backward-compatible API) ───────────────────────────
 
 /// Resolve a phase transition.

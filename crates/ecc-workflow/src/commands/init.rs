@@ -56,6 +56,7 @@ pub fn run(concern: &str, feature: &str, project_dir: &Path, state_dir: &Path) -
             },
             completed: vec![],
             version: 1,
+            history: vec![],
         };
 
         match write_state_atomic(state_dir, &state) {

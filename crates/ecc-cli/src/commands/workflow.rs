@@ -32,6 +32,14 @@ pub enum WorkflowCommand {
         artifact: Option<String>,
         #[arg(long)]
         path: Option<String>,
+        #[arg(long)]
+        justify: Option<String>,
+    },
+    /// Display workflow transition history
+    History {
+        /// Output as JSON array
+        #[arg(long)]
+        json: bool,
     },
     /// Persist detected toolchain commands
     ToolchainPersist {
@@ -146,6 +154,7 @@ fn build_args(command: &WorkflowCommand) -> Vec<String> {
             target,
             artifact,
             path,
+            justify,
         } => {
             let mut args = vec!["transition".into(), target.clone()];
             if let Some(a) = artifact {
@@ -155,6 +164,17 @@ fn build_args(command: &WorkflowCommand) -> Vec<String> {
             if let Some(p) = path {
                 args.push("--path".into());
                 args.push(p.clone());
+            }
+            if let Some(j) = justify {
+                args.push("--justify".into());
+                args.push(j.clone());
+            }
+            args
+        }
+        WorkflowCommand::History { json } => {
+            let mut args = vec!["history".into()];
+            if *json {
+                args.push("--json".into());
             }
             args
         }

@@ -223,6 +223,7 @@ mod tests {
             },
             completed: vec![],
             version: 1,
+            history: vec![],
         };
         serde_json::to_string_pretty(&state).unwrap()
     }
@@ -338,6 +339,7 @@ mod tests {
             },
             completed: vec![],
             version: 1,
+            history: vec![],
         };
 
         write_state_atomic(&state_dir, &state).unwrap();
