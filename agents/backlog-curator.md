@@ -62,18 +62,15 @@ Full curation flow:
 
 ### `promote <id>`
 
-1. Read the entry file for the given ID
-2. Update `status: open` → `status: promoted`
-3. Ask for `promoted_to` value (PR link, User Story ID, or commit hash)
-4. Update the entry file and the index
-5. Confirm the promotion
+1. Run `ecc backlog update-status <id> promoted` to update the entry file and reindex
+2. Ask for `promoted_to` value (PR link, User Story ID, or commit hash)
+3. Update the entry file with the `promoted_to` field
+4. Confirm the promotion
 
 ### `archive <id>`
 
-1. Read the entry file for the given ID
-2. Update `status: open` → `status: archived`
-3. Update the index
-4. Confirm the archival
+1. Run `ecc backlog update-status <id> archived` to update the entry file and reindex
+2. Confirm the archival
 
 ### `match <prompt>`
 

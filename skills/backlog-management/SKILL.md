@@ -37,7 +37,7 @@ Each backlog entry is a Markdown file with YAML frontmatter:
 ---
 id: BL-NNN
 title: Short descriptive title
-status: open          # open | promoted | archived
+status: open          # open | in-progress | implemented | promoted | archived
 created: YYYY-MM-DD
 promoted_to: ""       # e.g., "US-001" or PR link (set on promotion)
 tags: [tag1, tag2]
@@ -94,11 +94,19 @@ Update this index whenever an entry is added, promoted, or archived.
 
 ## Status Transitions
 
+Use `ecc backlog update-status BL-NNN <status>` to change status programmatically. This updates the individual file and auto-reindexes BACKLOG.md.
+
 ```
-open → promoted    Set promoted_to field, update index
-open → archived    Update index, entry file stays for reference
+open → in-progress   Claimed by active worktree (automatic via reindex)
+open → implemented   Implementation complete, verified
+open → promoted      Picked up by /spec or another command
+open → archived      No longer relevant
 ```
 
+Any-to-any transitions are allowed (no validation graph enforced).
+
+- **in-progress**: Claimed by an active worktree session.
+- **implemented**: The feature described by this entry has been built and verified.
 - **promoted**: The idea was picked up by `/spec` or another command.
   Set `promoted_to` to the User Story ID, PR link, or commit hash.
 - **archived**: The idea is no longer relevant. Keep the file for history.
