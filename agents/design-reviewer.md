@@ -1,7 +1,7 @@
 ---
 name: design-reviewer
 description: Composite design reviewer combining SOLID/Clean Architecture analysis (uncle-bob), Programmer's Oath evaluation (robert), and security quick-check into a single subagent context. Replaces three sequential Task launches in /design.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tool-set: readonly-analyzer-shell
 model: opus
 effort: high
 skills: ["clean-craft", "security-review", "component-principles"]

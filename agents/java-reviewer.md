@@ -1,7 +1,7 @@
 ---
 name: java-reviewer
 description: Expert Java code reviewer specializing in modern Java idioms, Spring Boot patterns, security, and performance. Use for all Java code changes. MUST BE USED for Java projects.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tool-set: readonly-analyzer-shell
 model: sonnet
 effort: medium
 skills: ["java-coding-standards"]

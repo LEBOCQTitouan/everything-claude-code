@@ -1,7 +1,7 @@
 ---
 name: csharp-reviewer
 description: Expert C# code reviewer specializing in modern .NET patterns, async/await, security, and performance. Use for all C# code changes. MUST BE USED for C#/.NET projects.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tool-set: readonly-analyzer-shell
 model: sonnet
 effort: medium
 skills: ["csharp-testing"]
