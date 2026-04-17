@@ -18,6 +18,7 @@ pub struct MockWorktreeManager {
     remove_worktree_result: bool,
     delete_branch_result: bool,
     worktrees: Vec<WorktreeInfo>,
+    unmerged_query_fails: bool,
 }
 
 impl MockWorktreeManager {
@@ -32,6 +33,7 @@ impl MockWorktreeManager {
             remove_worktree_result: true,
             delete_branch_result: true,
             worktrees: Vec::new(),
+            unmerged_query_fails: false,
         }
     }
 
@@ -50,6 +52,12 @@ impl MockWorktreeManager {
     /// Configure the unmerged commit count.
     pub fn with_unmerged_commit_count(mut self, count: u64) -> Self {
         self.unmerged_commit_count = count;
+        self
+    }
+
+    /// Configure whether `unmerged_commit_count` returns Err.
+    pub fn with_unmerged_query_fails(mut self, value: bool) -> Self {
+        self.unmerged_query_fails = value;
         self
     }
 
@@ -98,7 +106,13 @@ impl WorktreeManager for MockWorktreeManager {
         _worktree_path: &Path,
         _target_branch: &str,
     ) -> Result<u64, WorktreeError> {
-        Ok(self.unmerged_commit_count)
+        if self.unmerged_query_fails {
+            Err(WorktreeError::CommandFailed(
+                "mock: unmerged query failed".to_owned(),
+            ))
+        } else {
+            Ok(self.unmerged_commit_count)
+        }
     }
 
     fn has_stash(&self, _worktree_path: &Path) -> Result<bool, WorktreeError> {

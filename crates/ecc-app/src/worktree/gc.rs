@@ -240,6 +240,27 @@ mod tests {
         );
     }
 
+    // ── BL-150: fail-safe unmerged count tests ──────────────────────────────
+
+    #[test]
+    fn gc_skips_when_unmerged_query_fails() {
+        let mgr = MockWorktreeManager::new()
+            .with_worktrees(vec![session_wt(STALE_SESSION)])
+            .with_unmerged_query_fails(true);
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], err_output(1));
+
+        let result = gc(&mgr, &executor, Path::new("/repo"), false).unwrap();
+        assert!(
+            result.skipped.contains(&STALE_SESSION.to_owned()),
+            "worktree must be skipped when unmerged_commit_count returns Err, got: {:?}",
+            result
+        );
+        assert!(
+            !result.removed.contains(&STALE_SESSION.to_owned()),
+            "worktree must NOT be removed when unmerged query fails"
+        );
+    }
+
     // ── Wave 4: migrated existing tests (AC-004.4) ───────────────────────────
 
     #[test]
