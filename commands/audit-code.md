@@ -1,6 +1,6 @@
 ---
 description: Code quality audit — SOLID principles, clean code, naming quality, function size, complexity, and craftsmanship assessment.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Code Quality Audit

@@ -1,6 +1,6 @@
 ---
 description: Documentation audit — coverage analysis, staleness detection, drift identification, and placement violation checks.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Documentation Audit

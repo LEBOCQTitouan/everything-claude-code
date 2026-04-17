@@ -1,6 +1,6 @@
 ---
 description: Error handling audit — swallowed errors, error taxonomy, boundary translation, and partial failure risk analysis.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Error Handling Audit

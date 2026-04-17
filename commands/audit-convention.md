@@ -1,6 +1,6 @@
 ---
 description: Convention audit — naming patterns, style consistency, configuration access scatter, and primitive obsession detection.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Convention Audit

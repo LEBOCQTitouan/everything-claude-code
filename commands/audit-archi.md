@@ -1,6 +1,6 @@
 ---
 description: Architecture audit — boundary integrity, dependency direction, component health, DDD compliance, and coupling/cohesion analysis.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Architecture Audit

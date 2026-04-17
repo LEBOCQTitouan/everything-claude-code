@@ -1,6 +1,6 @@
 ---
 description: Content ideation and scheduling — structured interview to clarify goals, then web research and plan generation with per-channel ideas and publication schedule.
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, Agent, AskUserQuestion, WebSearch, TodoWrite
+allowed-tools: [Read, Write, Edit, Bash, Grep, Glob, Agent, AskUserQuestion, WebSearch, TodoWrite]
 ---
 
 # /comms-plan

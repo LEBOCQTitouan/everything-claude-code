@@ -1,6 +1,6 @@
 ---
 description: Security audit — OWASP top 10, secrets detection, permissions review, hook injection analysis, and attack surface mapping.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Security Audit

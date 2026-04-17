@@ -1,6 +1,6 @@
 ---
 description: Test architecture audit — coverage analysis, test classification, fixture ratios, structural coupling, and E2E boundary coverage matrix.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Test Architecture Audit

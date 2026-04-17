@@ -1,6 +1,6 @@
 ---
 description: Evolution audit — git hotspots, co-change coupling, churn analysis, bus factor, and complexity trends from repository history.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Evolution Audit

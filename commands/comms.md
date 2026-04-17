@@ -1,6 +1,6 @@
 ---
 description: Manage comms pipeline infrastructure — init repo, edit strategies, manage drafts, view calendar.
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, TodoWrite
+allowed-tools: [Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, TodoWrite]
 ---
 
 # /comms

@@ -1,6 +1,6 @@
 ---
 description: Generate multi-channel DevRel content from codebase. Delegates to comms-generator agent.
-allowed-tools: Read, Write, Edit, Bash, Grep, Glob, Agent, AskUserQuestion, TodoWrite
+allowed-tools: [Read, Write, Edit, Bash, Grep, Glob, Agent, AskUserQuestion, TodoWrite]
 ---
 
 # /comms-generate

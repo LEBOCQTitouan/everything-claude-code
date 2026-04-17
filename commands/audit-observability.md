@@ -1,6 +1,6 @@
 ---
 description: Observability audit — logging consistency, structured logging, metrics coverage, tracing, correlation IDs, and health endpoint depth.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Observability Audit

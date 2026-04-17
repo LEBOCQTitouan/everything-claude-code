@@ -1,6 +1,6 @@
 ---
 description: Backlog conformance audit — verify implemented entries match original intent, detect shadow implementations, run scoped tests, and generate conformance report.
-allowed-tools: [Task, Read, Grep, Glob, LS, Bash, Write, TodoWrite]
+allowed-tool-set: audit-command
 ---
 
 # Backlog Conformance Audit
