@@ -353,6 +353,48 @@ mod tests {
         assert!(lock.is_none());
     }
 
+    // PC-021: update_entry_status performs atomic write (tmp+rename)
+    #[test]
+    fn update_entry_status_atomic_write() {
+        let entry_content =
+            "---\nid: BL-001\ntitle: First entry\nstatus: open\ncreated: 2026-04-07\n---\n# Body";
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/backlog")
+            .with_file("/backlog/BL-001-first-entry.md", entry_content);
+        let repo = FsBacklogRepository::new(&fs);
+        repo.update_entry_status(Path::new("/backlog"), "BL-001", "implemented")
+            .unwrap();
+        // The file should be updated
+        let updated = fs
+            .read_to_string(Path::new("/backlog/BL-001-first-entry.md"))
+            .unwrap();
+        assert!(updated.contains("status: implemented"));
+        // No .tmp file should remain
+        assert!(!fs.exists(Path::new("/backlog/BL-001-first-entry.md.tmp")));
+    }
+
+    // PC-022: update_entry_status preserves body character-for-character
+    #[test]
+    fn update_entry_status_preserves_body() {
+        let body = "# Complex Body\n\nLine with special chars: &, <, >, \"quotes\", 'apostrophes'\n\n## Section\n\nMore content here.\n";
+        let entry_content = format!(
+            "---\nid: BL-042\ntitle: Complex entry\nstatus: open\ncreated: 2026-04-07\n---\n{body}"
+        );
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/backlog")
+            .with_file("/backlog/BL-042-complex-entry.md", &entry_content);
+        let repo = FsBacklogRepository::new(&fs);
+        repo.update_entry_status(Path::new("/backlog"), "BL-042", "implemented")
+            .unwrap();
+        let updated = fs
+            .read_to_string(Path::new("/backlog/BL-042-complex-entry.md"))
+            .unwrap();
+        // Status updated
+        assert!(updated.contains("status: implemented"));
+        // Body preserved exactly
+        assert!(updated.ends_with(body), "body not preserved: {updated:?}");
+    }
+
     #[test]
     fn write_index_atomic() {
         let fs = InMemoryFileSystem::new().with_dir("/backlog");
