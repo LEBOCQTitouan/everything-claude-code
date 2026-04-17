@@ -183,23 +183,12 @@ pub fn replace_frontmatter_status(content: &str, new_status: &str) -> Result<Str
     let existing_line = &after_open[line_start..line_end];
 
     // No-op guard: return unchanged only when line is already exactly `status: {new_status}`
-    // (unquoted). If the value matches but is quoted, we still rewrite to normalize quoting.
+    // (unquoted). If the value matches but is quoted, we still rewrite to normalize quoting
+    // per AC-002.4.
     let expected_line = format!("status: {new_status}");
     if existing_line == expected_line {
         return Ok(content.to_owned());
     }
-
-    // Extract current value, stripping optional YAML quotes, for no-write when values differ
-    let current_value = existing_line
-        .trim_start_matches(|c: char| c != ':')
-        .trim_start_matches(':')
-        .trim()
-        .trim_matches('"')
-        .trim_matches('\'');
-
-    // If the normalized value differs from new_status, we proceed with the rewrite below.
-    // If it matches (but was quoted), we also proceed to normalize quoting.
-    let _ = current_value; // used implicitly via the expected_line check above
 
     // Reconstruct: prefix + replacement line + suffix
     let leading_whitespace = content.len() - trimmed.len();
