@@ -118,6 +118,18 @@
           }
         ],
         "description": "Process pending cartography deltas at session start"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"${ECC_DOC_VALIDATION_DISABLED:-0}\" = \"1\" ]; then exit 0; fi; LAST_RUN=\"${CLAUDE_PROJECT_DIR:-$(pwd)}/.claude/workflow/.doc-validation-last-run\"; NOW=$(date +%s); CUTOFF=$((NOW - 604800)); if [ ! -f \"$LAST_RUN\" ] || [ \"$(cat \"$LAST_RUN\" 2>/dev/null || echo 0)\" -lt \"$CUTOFF\" ]; then RESULT=$(ecc drift check --json 2>/dev/null || echo '{}'); HIGH=$(echo \"$RESULT\" | grep -c '\"severity\":\"HIGH\"\\|\"severity\":\"CRITICAL\"' || true); if [ \"$HIGH\" -gt 0 ]; then echo \"WARNING: doc drift check found $HIGH HIGH/CRITICAL finding(s). Run 'ecc drift check' for details.\"; fi; echo \"$NOW\" > \"$LAST_RUN\"; fi",
+            "async": true,
+            "timeout": 60
+          }
+        ],
+        "description": "Periodic doc validation: runs drift check if >7 days since last run. Emits warning on HIGH/CRITICAL findings. Checks .doc-validation-last-run timestamp. Kill switch: ECC_DOC_VALIDATION_DISABLED=1"
       }
     ],
     "PostToolUse": [
