@@ -148,6 +148,10 @@ pub(super) fn step_merge_artifacts(
     // Expand tracking: todowrite frontmatter in installed agents
     expand_agents_tracking(ctx.fs, ecc_root, &claude_dir.join("agents"));
 
+    // NOTE: if a third agent-frontmatter transformation is added, extract a Transformer trait (BL-150)
+    // Expand tool-set references: replace `tool-set: X` with `tools: [A, B, C]` inline
+    expand_agents_tool_sets(ctx.fs, &claude_dir.join("agents"), ecc_root);
+
     domain_merge::combine_reports(&all_reports)
 }
 
@@ -224,6 +228,164 @@ fn expand_tracking_field(fs: &dyn ecc_ports::fs::FileSystem, agent_path: &Path, 
     if let Err(e) = fs.write(agent_path, &new_content) {
         tracing::warn!(path = %agent_path.display(), error = %e, "failed to write expanded agent tracking field");
     }
+}
+
+/// Expand `tool-set: <preset>` frontmatter in all agent files at `dest_dir`.
+///
+/// For each `.md` file in `dest_dir`, if the frontmatter has a `tool-set:` field,
+/// resolve the preset via the tool manifest at `ecc_root/manifest/tool-manifest.yaml`,
+/// then rewrite the frontmatter replacing `tool-set: X` with `tools: [A, B, C]`.
+/// Uses atomic write (write to temp path, then rename). Skips symlinks.
+fn expand_agents_tool_sets(
+    fs: &dyn ecc_ports::fs::FileSystem,
+    dest_dir: &Path,
+    ecc_root: &Path,
+) {
+    use ecc_domain::config::tool_manifest::ToolManifest;
+
+    // Load the manifest; if missing or invalid, skip all expansion
+    let manifest_path = ecc_root.join("manifest").join("tool-manifest.yaml");
+    let manifest: ToolManifest = match fs.read_to_string(&manifest_path) {
+        Ok(content) => {
+            match ecc_domain::config::tool_manifest::parse_tool_manifest(&content) {
+                Ok(m) => m,
+                Err(e) => {
+                    tracing::debug!(error = %e, "tool manifest parse failed, skipping tool-set expansion");
+                    return;
+                }
+            }
+        }
+        Err(_) => {
+            tracing::debug!("tool manifest not found, skipping tool-set expansion");
+            return;
+        }
+    };
+
+    let Ok(entries) = fs.read_dir(dest_dir) else {
+        return;
+    };
+
+    for entry in entries {
+        if entry.extension().and_then(|e| e.to_str()) != Some("md") {
+            continue;
+        }
+        // Skip symlinks
+        if fs.is_symlink(&entry) {
+            tracing::debug!(path = %entry.display(), "skipping symlink during tool-set expansion");
+            continue;
+        }
+        expand_tool_set_field(fs, &entry, &manifest);
+    }
+}
+
+/// Expand a single agent file's `tool-set: <preset>` into `tools: [A, B, C]`.
+///
+/// Writes atomically: first to a temp path, then renames over the original.
+fn expand_tool_set_field(
+    fs: &dyn ecc_ports::fs::FileSystem,
+    agent_path: &Path,
+    manifest: &ecc_domain::config::tool_manifest::ToolManifest,
+) {
+    let Ok(content) = fs.read_to_string(agent_path) else {
+        return;
+    };
+
+    // Extract preset name from frontmatter
+    let preset_name = match extract_tool_set_from_frontmatter(&content) {
+        Some(name) => name,
+        None => return, // no tool-set: field, nothing to do
+    };
+
+    // Resolve preset tools from manifest
+    let tools = match manifest.presets.get(&preset_name) {
+        Some(t) => t.clone(),
+        None => {
+            tracing::warn!(
+                path = %agent_path.display(),
+                preset = %preset_name,
+                "tool-set preset not found in manifest, skipping expansion"
+            );
+            return;
+        }
+    };
+
+    // Build the inline tools string: `tools: [A, B, C]`
+    let tools_str = format!("tools: [{}]", tools.join(", "));
+
+    // Replace the `tool-set: <name>` line with `tools: [...]`
+    let new_content = replace_tool_set_with_tools(&content, &preset_name, &tools_str);
+    if new_content == content {
+        // Nothing changed (shouldn't happen if extract succeeded, but be safe)
+        return;
+    }
+
+    // Atomic write: write to temp path, then rename
+    let temp_path = agent_path.with_extension("md.tmp");
+    if let Err(e) = fs.write(&temp_path, &new_content) {
+        tracing::warn!(path = %agent_path.display(), error = %e, "failed to write temp file for tool-set expansion");
+        return;
+    }
+    if let Err(e) = fs.rename(&temp_path, agent_path) {
+        tracing::warn!(path = %agent_path.display(), error = %e, "failed to rename temp file for tool-set expansion");
+        // Attempt cleanup of temp file (best-effort)
+        let _ = fs.remove_file(&temp_path);
+    }
+}
+
+/// Extract the `tool-set:` value from YAML frontmatter, if present.
+fn extract_tool_set_from_frontmatter(content: &str) -> Option<String> {
+    let rest = content.strip_prefix("---\n")?;
+    let end = rest.find("\n---")?;
+    let frontmatter = &rest[..end];
+    for line in frontmatter.lines() {
+        let trimmed = line.trim();
+        if let Some(val) = trimmed.strip_prefix("tool-set:") {
+            let name = val.trim().trim_matches('"').trim_matches('\'').to_string();
+            if !name.is_empty() {
+                return Some(name);
+            }
+        }
+    }
+    None
+}
+
+/// Replace `tool-set: <name>` line in frontmatter with `tools: [...]`.
+fn replace_tool_set_with_tools(content: &str, _preset_name: &str, tools_str: &str) -> String {
+    let mut result = String::with_capacity(content.len());
+    let mut in_frontmatter = false;
+    let mut frontmatter_done = false;
+    let mut separator_count = 0;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if !frontmatter_done && trimmed == "---" {
+            separator_count += 1;
+            if separator_count == 1 {
+                in_frontmatter = true;
+                result.push_str(line);
+                result.push('\n');
+                continue;
+            } else if separator_count == 2 {
+                in_frontmatter = false;
+                frontmatter_done = true;
+                result.push_str(line);
+                result.push('\n');
+                continue;
+            }
+        }
+
+        if in_frontmatter && trimmed.starts_with("tool-set:") {
+            result.push_str(tools_str);
+            result.push('\n');
+        } else {
+            result.push_str(line);
+            result.push('\n');
+        }
+    }
+
+    // Preserve trailing newline if original had one (lines() strips it)
+    // The loop above always adds '\n' after each line, so content ends with '\n'
+    result
 }
 
 /// Check if content has `tracking: todowrite` in YAML frontmatter.
