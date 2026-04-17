@@ -15,6 +15,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 - **/project-foundation command (BL-143)**: New command for project-level document bootstrapping. Guided interview (interview-me + grill-me foundation-mode) producing PRD, architecture overview, and initial ADR in `docs/foundation/`. Includes codebase detection (new vs existing repo), Plan Mode gate, adversarial review, and CLAUDE.md bootstrapping for new repos. New grill-me foundation-mode with stage-limited challenges for PRD (Clarity+Assumptions) and architecture (Clarity+Edge Cases). (ADR 0061)
 
+### Fixed
+
+- **Worktree GC deletes active worktrees (BL-150)**: `ecc-workflow worktree-name` embedded its own short-lived subprocess PID, causing GC to consider every worktree stale. Fix: use `parent_id()` (Claude Code session PID). Also: `.unwrap_or(0)` → `.unwrap_or(u64::MAX)` on unmerged count (fail-safe), 30-minute `.git` recency guard (defense-in-depth), rename `WorktreeError` → `WorktreeGcError` (CONV-006).
+
 ### Removed
 
 - **ECC_WORKFLOW_BYPASS env var (ADR-0056 finale)**: Deleted defunct `.envrc` and updated CLAUDE.md bypass documentation. The env var was already ignored by all Rust code; this completes the ADR-0056 deprecation.
