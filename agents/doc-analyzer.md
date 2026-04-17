@@ -4,7 +4,7 @@ description: Codebase documentation analyzer. Scans project structure, identifie
 tool-set: readonly-analyzer-shell
 model: opus
 effort: high
-skills: ["doc-analysis", "symbol-extraction", "behaviour-extraction"]
+skills: ["doc-analysis", "symbol-extraction", "behaviour-extraction", "tribal-knowledge-extraction"]
 tracking: todowrite
 ---
 
