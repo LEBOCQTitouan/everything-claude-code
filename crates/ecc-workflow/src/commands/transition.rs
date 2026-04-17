@@ -330,6 +330,38 @@ pub(crate) fn try_record_transition(
 ///
 /// This is the primary entry point. [`run`] delegates here with `store = None`.
 /// Call this directly (e.g., from tests or main) when you need to inject a store.
+///
+/// # Flow
+///
+/// Steps: acquire lock → read state → resolve transition → write state → memory.
+///
+/// ```text
+/// acquire lock (with_state_lock)
+///     |
+///     v
+/// read state (read_state)
+///     |
+///     +--[missing]--> warn "not initialized"
+///     |
+///     v
+/// resolve transition (resolve_transition_by_name)
+///     |
+///     +--[illegal]--> record Rejected metric --> block
+///     |
+///     v
+/// apply artifact stamp (optional)
+///     |
+///     v
+/// write state (write_state_atomic)
+///     |
+///     +--[error]--> block "Failed to write state.json"
+///     |
+///     v
+/// record Success metric + write memory (best-effort)
+///     |
+///     v
+/// pass
+/// ```
 pub fn run_with_store(
     target: &str,
     artifact: Option<&str>,
