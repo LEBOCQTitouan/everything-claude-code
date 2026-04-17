@@ -3,7 +3,9 @@
 //! Single-error semantics: any failure produces ONE error message pointing to
 //! `manifest/tool-manifest.yaml`, never per-file cascade.
 
-use ecc_domain::config::tool_manifest::{ToolManifest, parse_tool_manifest};
+use ecc_domain::config::tool_manifest::{
+    ToolManifest, ToolManifestError, parse_tool_manifest, validate_tool_manifest,
+};
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
@@ -22,6 +24,8 @@ pub enum ManifestLoadError {
     ReadError(String),
     /// The manifest content could not be parsed.
     ParseError(String),
+    /// The manifest parsed but failed domain validation.
+    Validation(Vec<ToolManifestError>),
 }
 
 impl std::fmt::Display for ManifestLoadError {
@@ -33,7 +37,18 @@ impl std::fmt::Display for ManifestLoadError {
                 write!(f, "tool manifest path contains parent traversal: {p}")
             }
             Self::ReadError(msg) => write!(f, "tool manifest read error: {msg}"),
-            Self::ParseError(msg) => write!(f, "tool manifest parse error at manifest/tool-manifest.yaml: {msg}"),
+            Self::ParseError(msg) => write!(
+                f,
+                "tool manifest parse error at manifest/tool-manifest.yaml: {msg}"
+            ),
+            Self::Validation(errors) => {
+                let msgs: Vec<String> = errors.iter().map(ToString::to_string).collect();
+                write!(
+                    f,
+                    "tool manifest validation errors: {}",
+                    msgs.join("; ")
+                )
+            }
         }
     }
 }
@@ -53,9 +68,7 @@ pub fn load_tool_manifest(
 
     // Security: reject parent traversal in path
     if has_parent_traversal(&path) {
-        return Err(ManifestLoadError::PathTraversal(
-            path.display().to_string(),
-        ));
+        return Err(ManifestLoadError::PathTraversal(path.display().to_string()));
     }
 
     // Security: reject symlinks
@@ -76,7 +89,15 @@ pub fn load_tool_manifest(
         .read_to_string(&path)
         .map_err(|e| ManifestLoadError::ReadError(e.to_string()))?;
 
-    parse_tool_manifest(&content).map_err(|e| ManifestLoadError::ParseError(e.to_string()))
+    let manifest =
+        parse_tool_manifest(&content).map_err(|e| ManifestLoadError::ParseError(e.to_string()))?;
+
+    let errors = validate_tool_manifest(&manifest);
+    if !errors.is_empty() {
+        return Err(ManifestLoadError::Validation(errors));
+    }
+
+    Ok(manifest)
 }
 
 #[cfg(test)]
