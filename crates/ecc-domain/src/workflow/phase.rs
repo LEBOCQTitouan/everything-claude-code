@@ -6,6 +6,18 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 /// Legal workflow phases.
+///
+/// State-transition diagram (forward path + reset):
+///
+/// ```text
+/// [Idle] --> [Plan] --> [Solution] --> [Implement] --> [Done]
+///   ^                                                    |
+///   +----------------------------------------------------+
+///                        (reset)
+/// ```
+///
+/// Re-entry: any phase may transition to itself (idempotent).
+/// `Unknown` is a forward-compat sentinel — never a valid source or target.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
