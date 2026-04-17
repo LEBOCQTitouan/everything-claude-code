@@ -1,43 +1,19 @@
-# Implementation Complete: BL-132 ASCII Diagram Sweep (Priority Targets)
+# Implementation Complete: BL-129 Bidirectional Pipeline Transitions
 
 ## Spec Reference
-Concern: `dev` | Feature: BL-132 ASCII diagram sweep across 9 crates
-
-## Changes Made
-| # | File | Action | Solution Ref | Status |
-|---|------|--------|--------------|--------|
-| 1 | `crates/ecc-domain/src/workflow/phase.rs` | modify | PC-001 | done |
-| 2 | `crates/ecc-workflow/src/commands/transition.rs` | modify | PC-003 | done |
+Concern: refactor, Feature: BL-129 bidirectional pipeline transitions
 
 ## Pass Condition Results
-| PC ID | Command | Expected | Actual | Status |
-|-------|---------|----------|--------|--------|
-| PC-001 | grep Phase FSM diagram | PASS | PASS | ✅ |
-| PC-002 | cargo doc -p ecc-domain | PASS | PASS | ✅ |
-| PC-003 | grep transition flow | PASS | PASS | ✅ |
-| PC-004 | cargo doc -p ecc-workflow | PASS | PASS | ✅ |
-
-Pass conditions completed: 4/14 (priority targets). Remaining crates (ecc-ports, ecc-app, ecc-infra, ecc-cli, ecc-flock) deferred to follow-up sessions.
-
-## E2E Tests
-No E2E tests required by solution — doc-comments only.
+All pass conditions: 29/29
 
 ## Docs Updated
 | # | Doc File | Level | What Changed |
 |---|----------|-------|--------------|
-| 1 | CHANGELOG.md | project | ASCII diagram sweep entry (pre-existing) |
-
-## ADRs Created
-None required.
-
-## Coverage Delta
-N/A — doc-comments only, no code coverage applicable.
-
-## Supplemental Docs
-No supplemental docs generated — doc-comment-only feature.
+| 1 | CLAUDE.md | project | Added ecc workflow history, backward transition gotcha |
+| 2 | CHANGELOG.md | project | Added BL-129 entry |
 
 ## Code Review
-N/A — doc-comments only.
+Design review passed. LSP prescription followed.
 
 ## Suggested Commit
-docs: add ASCII diagrams to ecc-domain and ecc-workflow (BL-132)
+refactor(workflow): add bidirectional transitions with TransitionPolicy and history (BL-129)
