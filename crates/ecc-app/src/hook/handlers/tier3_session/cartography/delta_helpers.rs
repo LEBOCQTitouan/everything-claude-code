@@ -72,40 +72,45 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
         &["status", "--porcelain", "docs/cartography/"],
         &project_dir,
     ) && !status_out.stdout.trim().is_empty()
-    {
-        let _ = ports.shell.run_command_in_dir(
+        && let Err(e) = ports.shell.run_command_in_dir(
             "git",
             &["checkout", "--", "docs/cartography/"],
             &project_dir,
-        );
+        )
+    {
+        tracing::warn!("start_cartography: failed to discard docs/cartography/ changes: {e}");
     }
 
     // Step 3: Create scaffold if missing (AC-001.1, AC-001.4)
     let journeys_dir = docs_cartography.join("journeys");
     let flows_dir = docs_cartography.join("flows");
     let elements_dir = docs_cartography.join("elements");
-    if !ports.fs.exists(&journeys_dir) {
-        let _ = ports.fs.create_dir_all(&journeys_dir);
+    if !ports.fs.exists(&journeys_dir) && let Err(e) = ports.fs.create_dir_all(&journeys_dir) {
+        tracing::warn!("start_cartography: failed to create journeys dir: {e}");
     }
-    if !ports.fs.exists(&flows_dir) {
-        let _ = ports.fs.create_dir_all(&flows_dir);
+    if !ports.fs.exists(&flows_dir) && let Err(e) = ports.fs.create_dir_all(&flows_dir) {
+        tracing::warn!("start_cartography: failed to create flows dir: {e}");
     }
-    if !ports.fs.exists(&elements_dir) {
-        let _ = ports.fs.create_dir_all(&elements_dir);
+    if !ports.fs.exists(&elements_dir) && let Err(e) = ports.fs.create_dir_all(&elements_dir) {
+        tracing::warn!("start_cartography: failed to create elements dir: {e}");
     }
     let readme_path = docs_cartography.join("README.md");
-    if !ports.fs.exists(&readme_path) {
-        let _ = ports.fs.write(
+    if !ports.fs.exists(&readme_path)
+        && let Err(e) = ports.fs.write(
             &readme_path,
             "# Cartography\n\nAuto-generated documentation of user journeys and data flows.\n",
-        );
+        )
+    {
+        tracing::warn!("start_cartography: failed to write README.md: {e}");
     }
     let elements_readme_path = elements_dir.join("README.md");
-    if !ports.fs.exists(&elements_readme_path) {
-        let _ = ports.fs.write(
+    if !ports.fs.exists(&elements_readme_path)
+        && let Err(e) = ports.fs.write(
             &elements_readme_path,
             "# Cartography Elements\n\nAuto-generated documentation of system elements.\n",
-        );
+        )
+    {
+        tracing::warn!("start_cartography: failed to write elements README.md: {e}");
     }
 
     // Step 4: Try to acquire file lock (AC-002.4)
@@ -141,7 +146,9 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
     unprocessed.sort_by_key(|(_, delta)| delta.timestamp);
 
     if unprocessed.is_empty() {
-        let _ = ports.fs.remove_file(&lock_path);
+        if let Err(e) = ports.fs.remove_file(&lock_path) {
+            tracing::warn!("start_cartography: failed to remove lock file: {e}");
+        }
         return HookResult::passthrough(stdin);
     }
 
@@ -171,33 +178,46 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
 
     if success {
         // git add docs/cartography/ && git commit
-        let _ = ports
+        if let Err(e) = ports
             .shell
-            .run_command_in_dir("git", &["add", "docs/cartography/"], &project_dir);
-        let _ = ports.shell.run_command_in_dir(
+            .run_command_in_dir("git", &["add", "docs/cartography/"], &project_dir)
+        {
+            tracing::warn!("start_cartography: failed to git add docs/cartography/: {e}");
+        }
+        if let Err(e) = ports.shell.run_command_in_dir(
             "git",
             &["commit", "-m", "docs(cartography): update"],
             &project_dir,
-        );
+        ) {
+            tracing::warn!("start_cartography: failed to git commit cartography update: {e}");
+        }
 
         // Archive processed deltas (AC-006.8)
-        let _ = ports.fs.create_dir_all(&processed_dir);
+        if let Err(e) = ports.fs.create_dir_all(&processed_dir) {
+            tracing::warn!("start_cartography: failed to create processed dir: {e}");
+        }
         for (path, _) in &unprocessed {
             if let Some(file_name) = path.file_name() {
                 let dest = processed_dir.join(file_name);
-                let _ = ports.fs.rename(path, &dest);
+                if let Err(e) = ports.fs.rename(path, &dest) {
+                    tracing::warn!("start_cartography: failed to archive delta {:?}: {e}", path);
+                }
             }
         }
     } else {
         // On failure: git reset, do not archive (AC-006.3)
-        let _ = ports.shell.run_command_in_dir(
+        if let Err(e) = ports.shell.run_command_in_dir(
             "git",
             &["reset", "HEAD", "docs/cartography/"],
             &project_dir,
-        );
+        ) {
+            tracing::warn!("start_cartography: failed to git reset docs/cartography/: {e}");
+        }
         let msg = "[start_cartography] agent failed; changes reset, deltas not archived\n";
         warn!("{}", msg.trim());
-        let _ = ports.fs.remove_file(&lock_path);
+        if let Err(e) = ports.fs.remove_file(&lock_path) {
+            tracing::warn!("start_cartography: failed to remove lock file on failure: {e}");
+        }
         return HookResult {
             stdout: stdin.to_string(),
             stderr: msg.to_string(),
@@ -206,7 +226,9 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
     }
 
     // Release lock
-    let _ = ports.fs.remove_file(&lock_path);
+    if let Err(e) = ports.fs.remove_file(&lock_path) {
+        tracing::warn!("start_cartography: failed to release lock file: {e}");
+    }
 
     HookResult::passthrough(stdin)
 }
@@ -256,10 +278,10 @@ pub(super) fn invoke_agent_for_delta(
             if !output.is_empty() {
                 let is_journey = validate_journey(output).is_ok();
                 let is_flow = validate_flow(output).is_ok();
-                if is_journey {
-                    let _ = ports.fs.write(&journey_path, output);
-                } else if is_flow {
-                    let _ = ports.fs.write(&flow_path, output);
+                if is_journey && let Err(e) = ports.fs.write(&journey_path, output) {
+                    tracing::warn!("invoke_agent_for_delta: failed to write journey file: {e}");
+                } else if is_flow && let Err(e) = ports.fs.write(&flow_path, output) {
+                    tracing::warn!("invoke_agent_for_delta: failed to write flow file: {e}");
                 }
             }
             true
@@ -300,7 +322,9 @@ pub(super) fn invoke_element_generator(
             let index_content =
                 build_cross_reference_matrix(&element_entries, &journey_slugs, &flow_slugs);
             let index_path = elements_dir.join("INDEX.md");
-            let _ = ports.fs.write(&index_path, &index_content);
+            if let Err(e) = ports.fs.write(&index_path, &index_content) {
+                tracing::warn!("invoke_element_generator: failed to write INDEX.md: {e}");
+            }
             true
         }
         _ => false,
@@ -484,7 +508,12 @@ pub(super) fn clean_corrupt_deltas(ports: &HookPorts<'_>, cartography_dir: &Path
                         "stop_cartography: deleting corrupt delta file: {}",
                         entry.display()
                     );
-                    let _ = ports.fs.remove_file(&entry);
+                    if let Err(e) = ports.fs.remove_file(&entry) {
+                        tracing::warn!(
+                            "stop_cartography: failed to delete corrupt delta {}: {e}",
+                            entry.display()
+                        );
+                    }
                 }
             }
             Err(e) => {
