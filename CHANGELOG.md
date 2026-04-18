@@ -8,6 +8,10 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
+### Documentation
+
+- **BL-132-sweep-shipped**: ASCII doc-comment diagram sweep across 9 ECC crates (ADR 0067). Applied the `ascii-doc-diagrams` skill convention: 61 `text` fenced diagrams (state-transition, flow/decision, composition) + 20 `# Pattern` annotations. All 7 content crates meet their count floor (ecc-domain 23, ecc-workflow 7, ecc-app 17, ecc-ports 10 patterns, ecc-infra 10 patterns, ecc-cli 2, ecc-flock 2 + 1 pattern). Three classifier shell scripts + 8 fixture files enforce the Revision rules: clap-derive deny-list (R-1), drift anchors on flow diagrams (R-3), language-tag on every fence (R-1.2), no Unicode box-drawing (R-1.3). CI validate job gains `--help` smoke test (PC-021) guarding clap-derive corruption. Spec/design passed 3 adversary rounds each. (2026-04-17 spec + 2026-04-18 revision, BL-132)
+
 ### Fixed
 
 - **Full audit HIGH+MEDIUM remediation (2026-04-18)**: Fixed all actionable findings from full-2026-04-18 audit (grade B). US-001: Decomposed 2 oversized files (backlog.rs 1,467→4 files max 475, phase_gate.rs 959→3 files max 758). US-002: Replaced 18 swallowed `let _ =` errors with `tracing::warn!()` in delta_helpers.rs. US-003: Injected Clock port across 11 SystemTime::now() callsites in ecc-app (BL-133 debt resolved). US-004: Added `#[serde(deny_unknown_fields)]` to 20 Deserialize structs (10 forward-compat types excluded). US-005: Added `serial_test` to 3 env-dependent xtask tests. US-006: Enabled `#![warn(missing_docs)]` in ecc-domain, documented 718 pub items across 71 files. US-007: Added `--health` flag to `ecc status` (writable dir, state file, git repo, data dir checks).
