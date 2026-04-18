@@ -6,21 +6,32 @@ use std::path::PathBuf;
 /// Errors that can occur during backlog operations.
 #[derive(Debug, thiserror::Error)]
 pub enum BacklogError {
+    /// No frontmatter delimiter found in the markdown file.
     #[error("no frontmatter delimiter found")]
     NoFrontmatter,
 
+    /// YAML frontmatter could not be parsed.
     #[error("YAML parse error: {0}")]
     MalformedYaml(String),
 
+    /// The backlog directory does not exist.
     #[error("backlog directory not found: {0}")]
     DirectoryNotFound(PathBuf),
 
+    /// A query string was empty when it should not be.
     #[error("query must not be empty")]
     EmptyQuery,
 
+    /// An I/O error occurred at a specific path.
     #[error("I/O error at {path}: {message}")]
-    Io { path: String, message: String },
+    Io {
+        /// The file path where the error occurred.
+        path: String,
+        /// The error message.
+        message: String,
+    },
 
+    /// A reindex safety constraint was violated.
     #[error("reindex safety block: {0}")]
     SafetyBlock(String),
 }
@@ -32,12 +43,18 @@ pub const VALID_STATUSES: &[&str] = &["open", "in-progress", "implemented", "arc
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum BacklogStatus {
+    /// Entry is open and ready to start.
     Open,
+    /// Entry is currently being worked on.
     #[serde(alias = "in-progress")]
     InProgress,
+    /// Entry is implemented and completed.
     Implemented,
+    /// Entry has been archived.
     Archived,
+    /// Entry has been promoted.
     Promoted,
+    /// A custom status that doesn't match the standard variants.
     #[serde(untagged)]
     Unknown(String),
 }
@@ -80,18 +97,27 @@ impl BacklogStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BacklogEntry {
+    /// Backlog entry ID, e.g., "BL-075".
     pub id: String,
+    /// Short title describing the work.
     pub title: String,
+    /// Current status (open, in-progress, implemented, archived, promoted).
     pub status: BacklogStatus,
+    /// ISO 8601 date when the entry was created.
     pub created: String,
+    /// Optional priority tier.
     #[serde(default)]
     pub tier: Option<String>,
+    /// Optional scope indicator (e.g., HIGH, MEDIUM, LOW).
     #[serde(default)]
     pub scope: Option<String>,
+    /// Optional target identifier (e.g., version, milestone).
     #[serde(default)]
     pub target: Option<String>,
+    /// Optional target command (e.g., /spec dev).
     #[serde(default)]
     pub target_command: Option<String>,
+    /// Optional list of tags for categorization.
     #[serde(default)]
     pub tags: Vec<String>,
 }

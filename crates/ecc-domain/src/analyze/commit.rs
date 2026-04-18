@@ -6,16 +6,27 @@
 /// Standard conventional commit types.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CommitType {
+    /// A new feature.
     Feat,
+    /// A bug fix.
     Fix,
+    /// Code refactoring.
     Refactor,
+    /// Documentation changes.
     Docs,
+    /// Test additions or modifications.
     Test,
+    /// Build configuration or maintenance.
     Chore,
+    /// Performance improvements.
     Perf,
+    /// CI/CD configuration changes.
     Ci,
+    /// Code style changes.
     Style,
+    /// Build system changes.
     Build,
+    /// A non-standard commit type.
     Unknown(String),
 }
 
@@ -57,11 +68,17 @@ impl CommitType {
 /// A parsed conventional commit.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConventionalCommit {
+    /// The commit type (feat, fix, docs, etc.).
     pub commit_type: CommitType,
+    /// Optional scope of the change (e.g., "cli", "domain").
     pub scope: Option<String>,
+    /// Whether this is a breaking change.
     pub breaking: bool,
+    /// The description text after the colon.
     pub description: String,
+    /// The commit hash.
     pub hash: String,
+    /// The commit author.
     pub author: String,
 }
 

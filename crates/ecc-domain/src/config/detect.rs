@@ -3,35 +3,50 @@ use std::collections::BTreeMap;
 /// An agent file detected during setup scan.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DetectedAgent {
+    /// The agent filename.
     pub filename: String,
+    /// The agent name extracted from frontmatter (if present).
     pub name: Option<String>,
 }
 
 /// A skill directory detected during setup scan.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DetectedSkill {
+    /// The skill directory name.
     pub dirname: String,
+    /// Whether the skill directory contains a SKILL.md file.
     pub has_skill_md: bool,
 }
 
 /// A hook detected from settings.json.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DetectedHook {
+    /// The hook event type (e.g., PreToolUse, PostToolUse).
     pub event: String,
+    /// The hook description.
     pub description: String,
+    /// The hook matcher pattern.
     pub matcher: String,
 }
 
 /// Complete detection result for a Claude Code config directory.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DetectionResult {
+    /// Detected agent files.
     pub agents: Vec<DetectedAgent>,
+    /// Detected command filenames.
     pub commands: Vec<String>,
+    /// Detected skill directories.
     pub skills: Vec<DetectedSkill>,
+    /// Detected rules grouped by category.
     pub rules: BTreeMap<String, Vec<String>>,
+    /// Detected hooks from settings.json.
     pub hooks: Vec<DetectedHook>,
+    /// Headings found in CLAUDE.md (if present).
     pub claude_md_headings: Vec<String>,
+    /// Whether settings.json exists in the config directory.
     pub has_settings_json: bool,
+    /// Whether CLAUDE.md exists in the config directory.
     pub has_claude_md: bool,
 }
 

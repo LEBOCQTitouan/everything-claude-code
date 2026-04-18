@@ -1,8 +1,11 @@
 /// A single conversation turn in a Claw session.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct Turn {
+    /// ISO 8601 timestamp of when the turn occurred.
     pub timestamp: String,
+    /// The role of the speaker (User, Assistant, or System).
     pub role: Role,
+    /// The message content.
     pub content: String,
 }
 
@@ -10,8 +13,11 @@ pub struct Turn {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
+    /// Human user message.
     User,
+    /// Claude assistant message.
     Assistant,
+    /// System message (metadata, context).
     System,
 }
 

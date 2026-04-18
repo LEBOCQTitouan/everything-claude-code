@@ -25,7 +25,9 @@ static FENCE_RE: LazyLock<Regex> =
 /// A parsed Acceptance Criterion identifier like `AC-001.2`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct AcId {
+    /// User Story number (first 3 digits).
     pub us_number: u16,
+    /// Sub-criterion number (after the decimal).
     pub sub_number: u16,
 }
 
@@ -65,15 +67,20 @@ impl fmt::Display for AcId {
 /// A parsed Acceptance Criterion with ID and description text.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AcceptanceCriterion {
+    /// The AC identifier (e.g., AC-001.2).
     pub id: AcId,
+    /// The criterion text describing the requirement.
     pub description: String,
 }
 
 /// Result of parsing ACs from a spec file — includes data and accumulated diagnostics.
 #[derive(Debug)]
 pub struct AcReport {
+    /// Successfully parsed acceptance criteria.
     pub acs: Vec<AcceptanceCriterion>,
+    /// Parsing errors (gaps, duplicates, invalid formats).
     pub errors: Vec<String>,
+    /// Non-fatal warnings during parsing.
     pub warnings: Vec<String>,
 }
 

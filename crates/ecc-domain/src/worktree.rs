@@ -5,21 +5,27 @@
 /// Names validated against allowlist: `[a-zA-Z0-9/_-]` only, max 255 bytes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorktreeName {
+    /// The validated worktree name string.
     name: String,
 }
 
 /// Components extracted from a parsed worktree name.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedWorktreeName {
+    /// The timestamp portion in YYYYMMDD-HHMMSS format.
     pub timestamp: String,
+    /// The slug portion (sanitized feature description).
     pub slug: String,
+    /// The process ID portion.
     pub pid: u32,
 }
 
 /// Errors that can occur when creating or validating a `WorktreeName`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WorktreeNameError {
+    /// The name exceeds the maximum length of 255 bytes.
     TooLong(usize),
+    /// The name contains invalid characters outside the allowlist.
     InvalidChars(String),
 }
 
@@ -124,20 +130,33 @@ fn utc_timestamp_compact() -> String {
 /// Input data for the worktree safety assessment — all values gathered by the caller via I/O.
 #[derive(Debug, Clone)]
 pub struct WorktreeSafetyInput {
+    /// Whether the worktree has uncommitted changes.
     pub has_uncommitted_changes: bool,
+    /// Whether the worktree has untracked files.
     pub has_untracked_files: bool,
+    /// Number of unmerged commits in the worktree.
     pub unmerged_commit_count: u64,
+    /// Whether the worktree has stashed changes.
     pub has_stash: bool,
+    /// Whether all commits are pushed to the remote.
     pub is_pushed_to_remote: bool,
 }
 
 /// Reasons a worktree is not safe to delete.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SafetyViolation {
+    /// The worktree has uncommitted changes.
     UncommittedChanges,
+    /// The worktree has untracked files.
     UntrackedFiles,
-    UnmergedCommits { count: u64 },
+    /// The worktree has unmerged commits.
+    UnmergedCommits {
+        /// Number of unmerged commits.
+        count: u64,
+    },
+    /// The worktree has stashed changes.
     StashedChanges,
+    /// The worktree has unpushed commits.
     UnpushedCommits,
 }
 

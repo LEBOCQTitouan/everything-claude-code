@@ -8,25 +8,38 @@ use serde::Serialize;
 /// Output for `ecc validate spec`.
 #[derive(Clone, Debug, Serialize)]
 pub struct SpecValidationOutput {
+    /// Whether the spec is valid.
     pub valid: bool,
+    /// Number of acceptance criteria.
     pub ac_count: usize,
+    /// List of parsed acceptance criteria.
     pub acs: Vec<AcceptanceCriterion>,
+    /// Validation error messages.
     pub errors: Vec<String>,
+    /// Validation warning messages.
     pub warnings: Vec<String>,
 }
 
 /// Output for `ecc validate design`.
 #[derive(Clone, Debug, Serialize)]
 pub struct DesignValidationOutput {
+    /// Whether the design is valid.
     pub valid: bool,
+    /// Number of pass conditions.
     pub pc_count: usize,
+    /// List of parsed pass conditions.
     pub pcs: Vec<PassCondition>,
+    /// Acceptance criteria not covered by any pass condition.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uncovered_acs: Option<Vec<AcId>>,
+    /// Acceptance criteria mentioned in the design but not in the spec.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phantom_acs: Option<Vec<AcId>>,
+    /// Ordering violations between pass conditions.
     pub ordering_violations: Vec<OrderingViolation>,
+    /// Validation error messages.
     pub errors: Vec<String>,
+    /// Validation warning messages.
     pub warnings: Vec<String>,
 }
 

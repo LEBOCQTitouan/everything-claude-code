@@ -12,8 +12,11 @@ use std::collections::HashMap;
 /// An empty `AppliesTo` (all vecs empty) means universally applicable.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AppliesTo {
+    /// Languages that enable this rule (e.g., ["rust", "go"]).
     pub languages: Vec<String>,
+    /// Frameworks that enable this rule (e.g., ["axum", "actix"]).
     pub frameworks: Vec<String>,
+    /// Files that enable this rule (e.g., ["Cargo.toml"]).
     pub files: Vec<String>,
 }
 
@@ -27,7 +30,9 @@ impl AppliesTo {
 /// Detected project stack from filesystem marker inspection.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DetectedStack {
+    /// Detected programming languages in the project.
     pub languages: Vec<String>,
+    /// Detected frameworks and libraries.
     pub frameworks: Vec<String>,
     /// Sentinel files found at project root (for `files:` condition matching).
     pub files: Vec<String>,

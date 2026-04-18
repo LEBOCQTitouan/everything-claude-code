@@ -1,20 +1,27 @@
-/// Line-by-line diff using the LCS (Longest Common Subsequence) algorithm.
-/// Ported from TypeScript `smart-merge.ts::computeLineDiff`.
+//! Line-by-line diff using the LCS (Longest Common Subsequence) algorithm.
+//! Ported from TypeScript `smart-merge.ts::computeLineDiff`.
 
+/// Line diff operation type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DiffType {
+    /// Line appears in both old and new (unchanged).
     Same,
+    /// Line appears only in new (added).
     Added,
+    /// Line appears only in old (removed).
     Removed,
 }
 
+/// A single diff operation on a line.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiffLine {
+    /// Type of change (Same, Added, Removed).
     pub kind: DiffType,
+    /// The line content.
     pub content: String,
 }
 
-/// Maximum cell count before falling back to a simpler line-based diff.
+/// Maximum matrix cells for LCS algorithm before falling back to simple diff.
 /// Prevents OOM on very large files (mirrors the 1M limit in TypeScript).
 const MAX_MATRIX_CELLS: usize = 1_000_000;
 

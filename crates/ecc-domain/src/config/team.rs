@@ -13,10 +13,15 @@ pub const VALID_COORDINATION_STRATEGIES: &[&str] = &["sequential", "parallel", "
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct TeamManifest {
+    /// Name of the team.
     pub name: String,
+    /// Human-readable description of the team's purpose.
     pub description: String,
+    /// Coordination strategy (sequential, parallel, wave-dispatch).
     pub coordination: String,
+    /// List of agents in this team.
     pub agents: Vec<TeamAgent>,
+    /// Maximum number of concurrent agents (optional).
     #[serde(default)]
     pub max_concurrent: Option<u32>,
 }
@@ -25,10 +30,14 @@ pub struct TeamManifest {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct TeamAgent {
+    /// Agent name (references an agent.md file).
     pub name: String,
+    /// Role within the team (e.g., implementer, reviewer, security).
     pub role: String,
+    /// Explicit list of allowed tools for this agent (optional).
     #[serde(default)]
     pub allowed_tools: Option<Vec<String>>,
+    /// Name of a tool set preset (optional, alternative to allowed_tools).
     #[serde(default)]
     pub allowed_tool_set: Option<String>,
 }
@@ -44,7 +53,7 @@ pub enum TeamValidationError {
     UnknownStrategy(String),
     /// Duplicate agent name.
     DuplicateAgent(String),
-    /// max-concurrent is < 1.
+    /// `max-concurrent` value is less than 1.
     InvalidMaxConcurrent(u32),
 }
 
@@ -64,7 +73,7 @@ impl std::error::Error for TeamValidationError {}
 
 /// Extract the raw YAML frontmatter string from Markdown content.
 ///
-/// Returns the text between the first `---` and the next `---`.
+/// Returns the text between the first `---` and the next `---` (exclusive).
 pub fn extract_frontmatter_raw(content: &str) -> Option<&str> {
     let clean = content.strip_prefix('\u{FEFF}').unwrap_or(content);
     let rest = clean.strip_prefix("---")?;

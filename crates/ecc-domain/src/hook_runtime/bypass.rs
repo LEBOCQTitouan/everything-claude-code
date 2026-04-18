@@ -32,12 +32,16 @@ const MAX_REASON_LENGTH: usize = 500;
 /// Errors from bypass domain validation.
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum BypassError {
+    /// Hook ID must not be empty.
     #[error("hook_id must not be empty")]
     EmptyHookId,
+    /// Bypass reason must not be empty.
     #[error("reason must not be empty")]
     EmptyReason,
+    /// Bypass reason exceeds the maximum length.
     #[error("reason exceeds {MAX_REASON_LENGTH} characters")]
     ReasonTooLong,
+    /// Session ID must not be empty or the literal string "unknown".
     #[error("session_id must not be empty or 'unknown'")]
     InvalidSessionId,
 }
@@ -45,11 +49,17 @@ pub enum BypassError {
 /// Immutable audit record of a bypass request and its verdict.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BypassDecision {
+    /// Database row ID (None when newly constructed, Some when loaded from storage).
     pub id: Option<i64>,
+    /// Hook ID being bypassed.
     pub hook_id: String,
+    /// Human-readable reason for the bypass.
     pub reason: String,
+    /// Session ID during which the bypass was requested.
     pub session_id: String,
+    /// Outcome of the bypass request (accepted, refused, or applied).
     pub verdict: Verdict,
+    /// ISO 8601 timestamp of the decision.
     pub timestamp: String,
 }
 
@@ -106,9 +116,13 @@ impl BypassDecision {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BypassToken {
+    /// Hook ID this token authorizes to bypass.
     pub hook_id: String,
+    /// Session ID during which this token is valid.
     pub session_id: String,
+    /// ISO 8601 timestamp when the token was granted.
     pub granted_at: String,
+    /// Human-readable reason for granting this bypass.
     pub reason: String,
 }
 
@@ -139,16 +153,22 @@ impl BypassToken {
 /// Aggregate bypass statistics per hook.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct HookBypassCount {
+    /// Hook ID being tracked.
     pub hook_id: String,
+    /// Number of accepted bypasses for this hook.
     pub accepted: u64,
+    /// Number of refused bypasses for this hook.
     pub refused: u64,
 }
 
 /// Summary of bypass patterns across all hooks.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct BypassSummary {
+    /// Per-hook bypass statistics.
     pub per_hook: Vec<HookBypassCount>,
+    /// Total accepted bypasses across all hooks.
     pub total_accepted: u64,
+    /// Total refused bypasses across all hooks.
     pub total_refused: u64,
 }
 

@@ -11,7 +11,9 @@ use super::phase::Phase;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Direction {
+    /// A forward transition (typical progression).
     Forward,
+    /// A backward transition (rollback, requires justification).
     Backward,
 }
 
@@ -28,8 +30,11 @@ struct TransitionPair {
 /// The result of a successful phase transition.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransitionResult {
+    /// Source phase.
     pub from: Phase,
+    /// Target phase.
     pub to: Phase,
+    /// Direction of the transition (forward or backward).
     pub direction: Direction,
 }
 

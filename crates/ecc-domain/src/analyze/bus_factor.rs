@@ -10,9 +10,13 @@ use super::error::AnalyzeError;
 /// Bus factor data for a single file.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BusFactor {
+    /// File path.
     pub path: String,
+    /// Number of distinct authors who modified this file.
     pub unique_authors: u32,
+    /// Total commits affecting this file.
     pub total_commits: u32,
+    /// True if file has only a single author (bus factor = 1).
     pub is_risk: bool,
 }
 

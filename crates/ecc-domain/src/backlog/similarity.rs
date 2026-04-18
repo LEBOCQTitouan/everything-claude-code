@@ -20,8 +20,11 @@ const MAX_RAW_SCORE: f64 = LEVENSHTEIN_WEIGHT + JACCARD_WEIGHT + TAG_BOOST_CAP;
 /// A candidate duplicate entry with similarity score.
 #[derive(Debug, Clone, Serialize)]
 pub struct DuplicateCandidate {
+    /// Identifier of the candidate entry.
     pub id: String,
+    /// Title or name of the candidate.
     pub title: String,
+    /// Similarity score (0.0 to 1.0, where 1.0 = perfect match).
     pub score: f64,
 }
 

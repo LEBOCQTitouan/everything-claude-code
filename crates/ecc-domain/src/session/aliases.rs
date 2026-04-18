@@ -12,7 +12,9 @@ use std::sync::LazyLock;
 
 // ── Constants ──────────────────────────────────────────────────────────
 
+/// Current version of the aliases format.
 pub const ALIAS_VERSION: &str = "1.0";
+/// Maximum length of an alias name in characters.
 pub const MAX_ALIAS_LENGTH: usize = 128;
 
 const RESERVED_NAMES: &[&str] = &["list", "help", "remove", "delete", "create", "set"];
@@ -22,96 +24,150 @@ static ALIAS_NAME_RE: LazyLock<Regex> =
 
 // ── Data types ─────────────────────────────────────────────────────────
 
+/// A single alias entry mapping a name to a session path.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct AliasEntry {
+    /// Path to the session directory.
     pub session_path: String,
+    /// ISO 8601 timestamp when the alias was created.
     pub created_at: String,
+    /// ISO 8601 timestamp when the alias was last updated.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated_at: Option<String>,
+    /// User-provided title for the session.
     pub title: Option<String>,
 }
 
+/// Metadata about the aliases collection.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct AliasMetadata {
+    /// Total number of aliases.
     pub total_count: usize,
+    /// ISO 8601 timestamp of the last update to any alias.
     pub last_updated: String,
 }
 
+/// The complete aliases data structure persisted to disk.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct AliasesData {
+    /// Version of the aliases format.
     pub version: String,
+    /// Map from alias name to entry.
     pub aliases: BTreeMap<String, AliasEntry>,
+    /// Metadata about the collection.
     pub metadata: AliasMetadata,
 }
 
 // ── Result types ───────────────────────────────────────────────────────
 
+/// The result of resolving an alias name to its full details.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedAlias {
+    /// The alias name.
     pub alias: String,
+    /// The resolved session path.
     pub session_path: String,
+    /// ISO 8601 timestamp when the alias was created.
     pub created_at: String,
+    /// User-provided title for the session.
     pub title: Option<String>,
 }
 
+/// Result of a set alias operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetAliasResult {
+    /// Whether the operation succeeded.
     pub success: bool,
+    /// Error message, if any.
     pub error: Option<String>,
+    /// True if a new alias was created; false if updated.
     pub is_new: Option<bool>,
+    /// The alias name.
     pub alias: Option<String>,
+    /// The session path.
     pub session_path: Option<String>,
+    /// The session title.
     pub title: Option<String>,
 }
 
+/// Result of a delete alias operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeleteAliasResult {
+    /// Whether the operation succeeded.
     pub success: bool,
+    /// Error message, if any.
     pub error: Option<String>,
+    /// The alias name that was deleted.
     pub alias: Option<String>,
+    /// The session path that the alias pointed to.
     pub deleted_session_path: Option<String>,
 }
 
+/// Result of a rename alias operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenameAliasResult {
+    /// Whether the operation succeeded.
     pub success: bool,
+    /// Error message, if any.
     pub error: Option<String>,
+    /// The old alias name.
     pub old_alias: Option<String>,
+    /// The new alias name.
     pub new_alias: Option<String>,
+    /// The session path.
     pub session_path: Option<String>,
 }
 
+/// Information about a single alias.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AliasInfo {
+    /// The alias name.
     pub name: String,
+    /// Path to the session.
     pub session_path: String,
+    /// ISO 8601 timestamp when the alias was created.
     pub created_at: String,
+    /// ISO 8601 timestamp when the alias was last updated.
     pub updated_at: Option<String>,
+    /// User-provided title for the session.
     pub title: Option<String>,
 }
 
+/// Compact alias information for a specific session.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionAliasInfo {
+    /// The alias name.
     pub name: String,
+    /// ISO 8601 timestamp when the alias was created.
     pub created_at: String,
+    /// User-provided title for the session.
     pub title: Option<String>,
 }
 
+/// Result of cleaning up stale alias references.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CleanupResult {
+    /// Whether the cleanup succeeded.
     pub success: bool,
+    /// Total number of aliases checked.
     pub total_checked: usize,
+    /// Number of aliases removed.
     pub removed: usize,
+    /// List of aliases that were removed.
     pub removed_aliases: Vec<RemovedAlias>,
+    /// Error message, if any.
     pub error: Option<String>,
 }
 
+/// An alias that was removed during cleanup.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RemovedAlias {
+    /// The alias name.
     pub name: String,
+    /// The session path that the alias pointed to.
     pub session_path: String,
 }
 

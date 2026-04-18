@@ -6,25 +6,40 @@ use std::sync::LazyLock;
 /// Error variants from report validation (blocking).
 #[derive(Debug, PartialEq)]
 pub enum ReportError {
+    /// Required report sections are missing.
     MissingSections(Vec<String>),
-    ScoreOutOfRange { section: String, score: i32 },
+    /// Strategic Fit score is outside the valid range [0, 5].
+    ScoreOutOfRange {
+        /// Section name where the score is out of range.
+        section: String,
+        /// The invalid score value.
+        score: i32,
+    },
 }
 
 /// Warning variants from report validation (non-blocking).
 #[derive(Debug, PartialEq)]
 pub enum ReportWarning {
-    LowCitations { section: String, count: usize },
+    /// A required section has fewer than 3 citations.
+    LowCitations {
+        /// Section name with low citation count.
+        section: String,
+        /// Number of citations found.
+        count: usize,
+    },
 }
 
 /// The result of validating a report.
 #[derive(Debug)]
 pub struct ReportValidationResult {
+    /// Blocking validation errors.
     pub errors: Vec<ReportError>,
+    /// Non-blocking warnings (report is still usable).
     pub warnings: Vec<ReportWarning>,
 }
 
 impl ReportValidationResult {
-    /// Returns true when there are no blocking errors.
+    /// Check if the report is valid (no blocking errors).
     pub fn is_valid(&self) -> bool {
         self.errors.is_empty()
     }

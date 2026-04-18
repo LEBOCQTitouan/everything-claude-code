@@ -60,35 +60,52 @@ pub fn ensure_statusline(
     }
 }
 
-/// Fields displayable in the statusline
+/// Fields displayable in the statusline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StatuslineField {
+    /// The current model name.
     Model,
+    /// A visual progress bar of context window usage.
     ContextBar,
+    /// The cost of tokens used in the session.
     Cost,
+    /// How long the session has run.
     Duration,
+    /// Number of lines changed in the session.
     LinesChanged,
+    /// The current git branch.
     GitBranch,
+    /// The 5-hour rate limit status.
     RateLimitFiveHour,
+    /// The 7-day rate limit status.
     RateLimitSevenDay,
+    /// Detailed token usage counts.
     TokenCounts,
+    /// The ECC version string.
     EccVersion,
+    /// The current worktree name.
     Worktree,
+    /// The vim mode indicator.
     VimMode,
 }
 
-/// Color thresholds for the context window progress bar
+/// Color thresholds for the context window progress bar.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContextThresholds {
+    /// Percentage at which the bar turns yellow.
     pub yellow_pct: u32,
+    /// Percentage at which the bar turns red.
     pub red_pct: u32,
 }
 
-/// Configuration for the statusline display
+/// Configuration for the statusline display.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatuslineConfig {
+    /// TTL in seconds for cached statusline data.
     pub cache_ttl_secs: u32,
+    /// Color thresholds for the context progress bar.
     pub context_thresholds: ContextThresholds,
+    /// Ordered list of fields to display in the statusline.
     pub field_order: Vec<StatuslineField>,
 }
 

@@ -1,7 +1,10 @@
 /// A rule for detecting a programming language by marker files and extensions.
 pub struct LanguageRule {
+    /// Language identifier (e.g., "rust", "python").
     pub lang_type: &'static str,
+    /// Marker files that indicate this language (e.g., "Cargo.toml" for Rust).
     pub markers: &'static [&'static str],
+    /// File extensions associated with this language (e.g., ".rs" for Rust).
     pub extensions: &'static [&'static str],
 }
 

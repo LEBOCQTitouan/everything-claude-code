@@ -16,7 +16,9 @@ fn quadrant_order(q: &Quadrant) -> u8 {
 /// Maps a module path to a list of subjects relevant to that module.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModuleMapping {
+    /// File path or module name.
     pub module_path: String,
+    /// Subjects covered by this module.
     pub subjects: Vec<String>,
 }
 
@@ -26,8 +28,11 @@ pub struct ModuleMapping {
 /// All mutation methods return a new registry — the original is unchanged.
 #[derive(Debug, Clone, Default)]
 pub struct SourcesRegistry {
+    /// Unclassified entries pending review.
     pub inbox: Vec<SourceEntry>,
+    /// Classified source entries (organized by quadrant and subject).
     pub entries: Vec<SourceEntry>,
+    /// Mappings from modules to relevant subjects.
     pub module_mappings: Vec<ModuleMapping>,
 }
 

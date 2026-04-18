@@ -8,11 +8,16 @@ pub const MANIFEST_FILENAME: &str = ".ecc-manifest.json";
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EccManifest {
+    /// The ECC version when the manifest was created or last updated.
     pub version: String,
+    /// ISO 8601 timestamp when ECC was first installed.
     pub installed_at: String,
+    /// ISO 8601 timestamp of the last update.
     pub updated_at: String,
+    /// List of programming languages in the project.
     #[serde(default)]
     pub languages: Vec<String>,
+    /// Collection of installed artifacts.
     pub artifacts: Artifacts,
 }
 
@@ -20,18 +25,25 @@ pub struct EccManifest {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Artifacts {
+    /// List of installed agent filenames.
     #[serde(default)]
     pub agents: Vec<String>,
+    /// List of installed command filenames.
     #[serde(default)]
     pub commands: Vec<String>,
+    /// List of installed skill directories.
     #[serde(default)]
     pub skills: Vec<String>,
+    /// Rules grouped by category.
     #[serde(default)]
     pub rules: BTreeMap<String, Vec<String>>,
+    /// List of hook descriptions.
     #[serde(default)]
     pub hook_descriptions: Vec<String>,
+    /// List of installed pattern names.
     #[serde(default)]
     pub patterns: Vec<String>,
+    /// List of installed team configurations.
     #[serde(default)]
     pub teams: Vec<String>,
 }
@@ -39,8 +51,11 @@ pub struct Artifacts {
 /// Diff between two file lists — files added, updated (in both), and removed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestDiff {
+    /// Files that are in the incoming list but not in the existing list.
     pub added: Vec<String>,
+    /// Files that are in both the existing and incoming lists.
     pub updated: Vec<String>,
+    /// Files that are in the existing list but not in the incoming list.
     pub removed: Vec<String>,
 }
 

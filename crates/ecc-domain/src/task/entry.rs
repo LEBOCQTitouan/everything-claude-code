@@ -18,33 +18,44 @@ pub enum EntryKind {
 /// A single segment of the status trail (e.g. `pending@2026-03-29T13:59:20Z`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct StatusSegment {
+    /// The status at this point in the trail.
     pub status: TaskStatus,
+    /// ISO 8601 timestamp when this status was recorded.
     pub timestamp: String,
-    /// Non-empty only for `Failed` segments that carry an error detail.
+    /// Error detail for `Failed` segments (None for other statuses).
     pub error_detail: Option<String>,
 }
 
 /// A parsed task entry from tasks.md.
 #[derive(Debug, Clone, Serialize)]
 pub struct TaskEntry {
+    /// The kind of entry (Pass Condition or Post-TDD activity).
     pub kind: EntryKind,
+    /// The description text of the task.
     pub description: String,
-    /// Present only for `Pc` entries; `None` for `PostTdd`.
+    /// The command to run (Present only for `Pc` entries; `None` for `PostTdd`).
     pub command: Option<String>,
-    /// `true` when the checkbox is `[x]`.
+    /// Whether the checkbox is marked `[x]`.
     pub completed: bool,
-    /// Ordered list of status trail segments.
+    /// Ordered list of status trail segments tracking changes over time.
     pub trail: Vec<StatusSegment>,
 }
 
 /// Summary report produced by parsing a tasks.md file.
 #[derive(Debug, Serialize)]
 pub struct TaskReport {
+    /// All parsed task entries.
     pub entries: Vec<TaskEntry>,
+    /// Total number of task entries.
     pub total: usize,
+    /// Number of completed entries.
     pub completed: usize,
+    /// Number of pending entries.
     pub pending: usize,
+    /// Number of entries in progress.
     pub in_progress: usize,
+    /// Number of failed entries.
     pub failed: usize,
+    /// Progress percentage (0-100).
     pub progress_pct: f64,
 }

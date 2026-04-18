@@ -10,10 +10,15 @@ use crate::task::error::TaskError;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TaskStatus {
+    /// Task not yet started.
     Pending,
+    /// Test written, failing (RED phase).
     Red,
+    /// Test passing (GREEN phase).
     Green,
+    /// Task completed and verified.
     Done,
+    /// Task execution failed (terminal state).
     Failed,
 }
 

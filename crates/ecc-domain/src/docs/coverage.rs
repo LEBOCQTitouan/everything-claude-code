@@ -1,11 +1,15 @@
 //! Documentation coverage counting — detects `///` doc comments above `pub` items.
 
-/// Per-module documentation coverage.
+/// Per-module documentation coverage metrics.
 #[derive(Debug, Clone, Default)]
 pub struct ModuleCoverage {
+    /// Module name.
     pub name: String,
+    /// Total number of public items.
     pub total_pub_items: usize,
+    /// Number of public items with doc comments.
     pub documented: usize,
+    /// Coverage percentage (0.0 to 100.0).
     pub pct: f64,
 }
 

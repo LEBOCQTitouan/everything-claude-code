@@ -6,20 +6,30 @@ use std::str::FromStr;
 /// Type of knowledge source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SourceType {
+    /// A code repository.
     Repo,
+    /// Documentation or guide.
     Doc,
+    /// Blog post or article.
     Blog,
+    /// Software package or library.
     Package,
+    /// Recorded talk or presentation.
     Talk,
+    /// Academic or technical paper.
     Paper,
 }
 
 /// Technology Radar quadrant.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Quadrant {
+    /// Ready for production use.
     Adopt,
+    /// Recommended for experimental use on low-risk projects.
     Trial,
+    /// Worth evaluating but not ready for mainstream use.
     Assess,
+    /// No longer recommended; being phased out.
     Hold,
 }
 
@@ -28,13 +38,24 @@ pub enum Quadrant {
 /// Enforces that the URL has a valid HTTP/HTTPS scheme and contains a dot.
 /// Invalid URLs cannot be represented — construction fails at parse time.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SourceUrl(String);
+pub struct SourceUrl(
+    /// The inner URL string.
+    String,
+);
 
 impl SourceUrl {
     /// Parse and validate a URL string.
     ///
     /// Succeeds for `http://` and `https://` URLs containing a dot.
     /// Rejects empty strings, missing schemes, non-HTTP schemes, and host-only URLs without a dot.
+    ///
+    /// # Arguments
+    ///
+    /// * `raw` — The URL string to validate.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(SourceUrl)` if valid, or `Err(SourceError::InvalidUrl)`.
     pub fn parse(raw: &str) -> Result<Self, SourceError> {
         let has_valid_scheme = raw.starts_with("http://") || raw.starts_with("https://");
         let has_dot = raw.contains('.');
@@ -46,6 +67,10 @@ impl SourceUrl {
     }
 
     /// Return the inner URL string.
+    ///
+    /// # Returns
+    ///
+    /// The URL as a string slice.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -60,31 +85,52 @@ impl fmt::Display for SourceUrl {
 /// A curated knowledge source entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceEntry {
+    /// The validated URL of the source.
     pub url: SourceUrl,
+    /// The title of the source.
     pub title: String,
+    /// The type of source.
     pub source_type: SourceType,
+    /// The Technology Radar quadrant.
     pub quadrant: Quadrant,
+    /// Subject or domain category.
     pub subject: String,
+    /// The user who added this source.
     pub added_by: String,
+    /// ISO 8601 date when this source was added.
     pub added_date: String,
+    /// ISO 8601 date when this source was last verified to be accessible.
     pub last_checked: Option<String>,
+    /// Reason for deprecation, if applicable.
     pub deprecation_reason: Option<String>,
+    /// True if the source is no longer actively maintained.
     pub stale: bool,
 }
 
 /// Errors from sources domain operations.
 #[derive(Debug, thiserror::Error)]
 pub enum SourceError {
+    /// The URL is invalid or does not match the required format.
     #[error("URL must be a valid URL format: {0}")]
     InvalidUrl(String),
+    /// The title is empty after trimming whitespace.
     #[error("title must not be empty")]
     EmptyTitle,
+    /// An error occurred while parsing source data.
     #[error("parse error at line {line}: {message}")]
-    ParseError { line: usize, message: String },
+    ParseError {
+        /// The line number where the error occurred.
+        line: usize,
+        /// Description of the parse error.
+        message: String,
+    },
+    /// The URL is already present in the sources collection.
     #[error("duplicate URL: {0}")]
     DuplicateUrl(String),
+    /// The source type string is not recognized.
     #[error("unknown source type: {0}")]
     UnknownSourceType(String),
+    /// The quadrant string is not recognized.
     #[error("unknown quadrant: {0}")]
     UnknownQuadrant(String),
 }
@@ -146,6 +192,14 @@ impl FromStr for Quadrant {
 }
 
 /// Validate title is non-empty after trimming whitespace.
+///
+/// # Arguments
+///
+/// * `title` — The title to validate.
+///
+/// # Returns
+///
+/// `Ok(())` if the title is non-empty, or `Err(SourceError::EmptyTitle)`.
 pub fn validate_title(title: &str) -> Result<(), SourceError> {
     if title.trim().is_empty() {
         Err(SourceError::EmptyTitle)
@@ -156,6 +210,10 @@ pub fn validate_title(title: &str) -> Result<(), SourceError> {
 
 impl SourceEntry {
     /// Returns true when the entry has been deprecated.
+    ///
+    /// # Returns
+    ///
+    /// True if `deprecation_reason` is set.
     pub fn is_deprecated(&self) -> bool {
         self.deprecation_reason.is_some()
     }

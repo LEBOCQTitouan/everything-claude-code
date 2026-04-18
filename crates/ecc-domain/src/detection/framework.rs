@@ -1,8 +1,12 @@
 /// A rule for detecting a framework by marker files and package dependencies.
 pub struct FrameworkRule {
+    /// The framework name (e.g., "django", "nextjs").
     pub framework: &'static str,
+    /// The language this framework is for (e.g., "python", "typescript").
     pub language: &'static str,
+    /// Marker files that indicate this framework is in use.
     pub markers: &'static [&'static str],
+    /// Package manager keys to look for (e.g., "django" in requirements.txt or pyproject.toml).
     pub package_keys: &'static [&'static str],
 }
 
@@ -175,16 +179,22 @@ pub const FRAMEWORK_RULES: &[FrameworkRule] = &[
 /// Result of full project type detection.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectType {
+    /// All detected programming languages.
     pub languages: Vec<String>,
+    /// All detected frameworks.
     pub frameworks: Vec<String>,
+    /// The primary language as a string.
     pub primary: String,
+    /// The project directory path.
     pub project_dir: String,
 }
 
+/// Framework names that indicate a frontend/UI-focused project.
 pub const FRONTEND_SIGNALS: &[&str] = &[
     "react", "vue", "angular", "svelte", "nextjs", "nuxt", "astro", "remix", "electron",
 ];
 
+/// Framework names that indicate a backend/server-focused project.
 pub const BACKEND_SIGNALS: &[&str] = &[
     "django",
     "fastapi",

@@ -8,7 +8,12 @@ use super::phase::Phase;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WorkflowError {
     /// A phase transition that violates the state machine rules was attempted.
-    IllegalTransition { from: Phase, to: Phase },
+    IllegalTransition {
+        /// Source phase.
+        from: Phase,
+        /// Target phase.
+        to: Phase,
+    },
     /// The workflow state is invalid (e.g. corrupted JSON).
     InvalidState(String),
     /// An unknown phase name was provided.

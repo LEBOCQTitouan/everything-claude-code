@@ -3,8 +3,11 @@ use std::collections::HashSet;
 /// Hook execution profile — controls which hooks run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HookProfile {
+    /// Only run critical hooks.
     Minimal,
+    /// Run standard hooks (default).
     Standard,
+    /// Run all hooks including strict quality checks.
     Strict,
 }
 

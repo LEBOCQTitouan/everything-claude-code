@@ -2,18 +2,22 @@
 
 use serde::Serialize;
 
-/// Verdict for commit lint.
+/// Verdict for commit lint analysis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ConcernVerdict {
+    /// Commit is atomic (single concern).
     Pass,
+    /// Commit spans multiple concerns (should be split).
     Warn,
 }
 
 /// Result of commit lint analysis.
 #[derive(Debug, Clone, Serialize)]
 pub struct LintResult {
+    /// List of detected multi-concern issues.
     pub concerns: Vec<String>,
+    /// Pass/Warn verdict based on concerns.
     pub verdict: ConcernVerdict,
 }
 

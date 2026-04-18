@@ -1,9 +1,12 @@
 /// Available Claude models for Claw sessions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ClawModel {
+    /// Claude Sonnet (default, balanced performance).
     #[default]
     Sonnet,
+    /// Claude Opus (most capable).
     Opus,
+    /// Claude Haiku (fastest, most compact).
     Haiku,
 }
 

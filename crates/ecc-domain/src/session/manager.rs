@@ -16,44 +16,70 @@ use std::sync::LazyLock;
 // Types
 // ---------------------------------------------------------------------------
 
+/// Parsed components of a session filename.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionFilename {
+    /// The full filename (e.g., `2024-03-15-abc12345-session.tmp`).
     pub filename: String,
+    /// The short ID component (8+ lowercase alphanumeric characters), or `"no-id"` if absent.
     pub short_id: String,
+    /// The date component (YYYY-MM-DD).
     pub date: String,
 }
 
+/// Structured metadata extracted from a session file.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SessionMetadata {
+    /// Title extracted from the markdown `# Title` heading.
     pub title: Option<String>,
+    /// Date extracted from `**Date:** YYYY-MM-DD`.
     pub date: Option<String>,
+    /// Start time extracted from `**Started:** HH:MM`.
     pub started: Option<String>,
+    /// Last updated time extracted from `**Last Updated:** HH:MM`.
     pub last_updated: Option<String>,
+    /// List of completed task items (checked items in the Completed section).
     pub completed: Vec<String>,
+    /// List of in-progress task items (unchecked items in the In Progress section).
     pub in_progress: Vec<String>,
+    /// Notes extracted from the "Notes for Next Session" section.
     pub notes: String,
+    /// Context extracted from the "Context to Load" code block.
     pub context: String,
 }
 
+/// Statistics about a session's content.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionStats {
+    /// Total number of task items (completed + in-progress).
     pub total_items: usize,
+    /// Number of completed tasks.
     pub completed_items: usize,
+    /// Number of in-progress tasks.
     pub in_progress_items: usize,
+    /// Total line count in the session content.
     pub line_count: usize,
+    /// Whether the session has notes.
     pub has_notes: bool,
+    /// Whether the session has context to load.
     pub has_context: bool,
 }
 
+/// Options for querying sessions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GetAllSessionsOptions {
+    /// Maximum number of sessions to return.
     pub limit: usize,
+    /// Number of sessions to skip.
     pub offset: usize,
+    /// Filter by date (YYYY-MM-DD).
     pub date: Option<String>,
+    /// Search text for filtering sessions by name or content.
     pub search: Option<String>,
 }
 
 impl Default for GetAllSessionsOptions {
+    /// Default options: 50 sessions, no offset or filters.
     fn default() -> Self {
         Self {
             limit: 50,
@@ -64,34 +90,56 @@ impl Default for GetAllSessionsOptions {
     }
 }
 
+/// Paginated result of querying sessions.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionListResult {
+    /// The list of sessions in this page.
     pub sessions: Vec<SessionListItem>,
+    /// Total number of sessions matching the query.
     pub total: usize,
+    /// The offset used in the query.
     pub offset: usize,
+    /// The limit used in the query.
     pub limit: usize,
+    /// True if there are more results beyond this page.
     pub has_more: bool,
 }
 
+/// A single session in a list result.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionListItem {
+    /// The session filename.
     pub filename: String,
+    /// The short ID from the filename.
     pub short_id: String,
+    /// The date from the filename.
     pub date: String,
+    /// Full path to the session file.
     pub session_path: PathBuf,
+    /// True if the session file has content.
     pub has_content: bool,
+    /// File size in bytes.
     pub size: usize,
 }
 
+/// Complete details about a session.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionDetail {
+    /// The session filename.
     pub filename: String,
+    /// The short ID from the filename.
     pub short_id: String,
+    /// The date from the filename.
     pub date: String,
+    /// Full path to the session file.
     pub session_path: PathBuf,
+    /// File size in bytes.
     pub size: usize,
+    /// Full content of the session file.
     pub content: Option<String>,
+    /// Extracted metadata from the content.
     pub metadata: Option<SessionMetadata>,
+    /// Computed statistics about the content.
     pub stats: Option<SessionStats>,
 }
 
@@ -149,6 +197,14 @@ static IN_PROGRESS_ITEM_RE: LazyLock<Regex> =
 /// Parse a session filename to extract date and short ID.
 ///
 /// Returns `None` for invalid filenames or invalid dates (month > 12, day > 31).
+///
+/// # Arguments
+///
+/// * `filename` — The filename to parse (e.g., `2024-03-15-abc12345-session.tmp`).
+///
+/// # Returns
+///
+/// `Some(SessionFilename)` if the filename matches the expected format and has a valid date.
 pub fn parse_session_filename(filename: &str) -> Option<SessionFilename> {
     let caps = SESSION_FILENAME_RE.captures(filename)?;
 
@@ -175,6 +231,14 @@ pub fn parse_session_filename(filename: &str) -> Option<SessionFilename> {
 }
 
 /// Parse markdown session content into structured metadata.
+///
+/// # Arguments
+///
+/// * `content` — The session markdown content, or `None` for an empty default.
+///
+/// # Returns
+///
+/// `SessionMetadata` with extracted fields; missing sections default to empty.
 pub fn parse_session_metadata(content: Option<&str>) -> SessionMetadata {
     let Some(content) = content else {
         return SessionMetadata::default();
@@ -247,6 +311,14 @@ pub fn parse_session_metadata(content: Option<&str>) -> SessionMetadata {
 }
 
 /// Compute statistics for session content.
+///
+/// # Arguments
+///
+/// * `content` — The session markdown content.
+///
+/// # Returns
+///
+/// `SessionStats` including item counts, line count, and feature flags.
 pub fn get_session_stats(content: &str) -> SessionStats {
     let metadata = parse_session_metadata(Some(content));
 
@@ -261,6 +333,14 @@ pub fn get_session_stats(content: &str) -> SessionStats {
 }
 
 /// Format a byte size into a human-readable string.
+///
+/// # Arguments
+///
+/// * `size` — The size in bytes.
+///
+/// # Returns
+///
+/// A formatted string (e.g., `"1.5 KB"`, `"2.3 MB"`).
 pub fn format_session_size(size: usize) -> String {
     if size < 1024 {
         format!("{size} B")

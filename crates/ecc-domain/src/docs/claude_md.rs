@@ -10,9 +10,13 @@ static CLAIM_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
 /// A numeric claim extracted from CLAUDE.md.
 #[derive(Debug, Clone, Serialize)]
 pub struct CountClaim {
+    /// The extracted claim text (e.g., "997 tests").
     pub text: String,
+    /// The claimed numeric value.
     pub claimed: u64,
+    /// The actual measured value (if validated).
     pub actual: Option<u64>,
+    /// True if claimed matches actual.
     pub matches: bool,
 }
 

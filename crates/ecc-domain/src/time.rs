@@ -2,25 +2,31 @@
 /// Fields are expected to be pre-validated calendar values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DateTime {
+    /// Year in the proleptic Gregorian calendar.
     pub year: u16,
+    /// Month (1-12).
     pub month: u8,
+    /// Day of month (1-31).
     pub day: u8,
+    /// Hour (0-23).
     pub hour: u8,
+    /// Minute (0-59).
     pub minute: u8,
+    /// Second (0-59).
     pub second: u8,
 }
 
-/// Format a DateTime as YYYY-MM-DD.
+/// Format a `DateTime` as YYYY-MM-DD.
 pub fn format_date(dt: &DateTime) -> String {
     format!("{:04}-{:02}-{:02}", dt.year, dt.month, dt.day)
 }
 
-/// Format a DateTime as HH:MM.
+/// Format a `DateTime` as HH:MM.
 pub fn format_time(dt: &DateTime) -> String {
     format!("{:02}:{:02}", dt.hour, dt.minute)
 }
 
-/// Format a DateTime as YYYY-MM-DD HH:MM:SS.
+/// Format a `DateTime` as YYYY-MM-DD HH:MM:SS.
 pub fn format_datetime(dt: &DateTime) -> String {
     format!(
         "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
@@ -28,8 +34,9 @@ pub fn format_datetime(dt: &DateTime) -> String {
     )
 }
 
-/// Parse an ISO 8601 datetime string (YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS) into a DateTime.
-/// Returns None if the format is invalid.
+/// Parse an ISO 8601 datetime string (YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS) into a `DateTime`.
+///
+/// Returns `None` if the format is invalid or dates are out of range.
 pub fn parse_datetime(s: &str) -> Option<DateTime> {
     // Accept both 'T' and space as separator
     let s = s.trim();
@@ -74,7 +81,7 @@ pub fn is_leap_year(y: u64) -> bool {
     (y.is_multiple_of(4) && !(y.is_multiple_of(100))) || y.is_multiple_of(400)
 }
 
-/// Convert days since 1970-01-01 to (year, month, day).
+/// Convert days since 1970-01-01 to (year, month, day) using the Hinnant algorithm.
 pub fn days_to_civil(days: u32) -> (u16, u8, u8) {
     // Algorithm from Howard Hinnant
     let z = days as i64 + 719468;
@@ -90,7 +97,7 @@ pub fn days_to_civil(days: u32) -> (u16, u8, u8) {
     (y as u16, m as u8, d as u8)
 }
 
-/// Build a `DateTime` from a Unix epoch timestamp (seconds since 1970-01-01 UTC).
+/// Build a `DateTime` from a Unix epoch timestamp (seconds since 1970-01-01 UTC) in UTC.
 pub fn datetime_from_epoch(secs: u64) -> DateTime {
     let days = (secs / 86400) as u32;
     let time_of_day = (secs % 86400) as u32;

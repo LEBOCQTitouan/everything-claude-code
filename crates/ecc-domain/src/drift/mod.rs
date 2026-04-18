@@ -41,11 +41,17 @@ impl std::fmt::Display for DriftLevel {
 /// Drift analysis report.
 #[derive(Debug, Clone, Default)]
 pub struct DriftReport {
+    /// Drift severity level (None, Low, Medium, High).
     pub level: Option<DriftLevel>,
+    /// ACs that have no coverage in PCs.
     pub unimplemented_acs: Vec<String>,
+    /// Files in implementation that aren't in spec.
     pub unexpected_files: Vec<String>,
+    /// Files in spec that aren't in implementation.
     pub missing_files: Vec<String>,
+    /// Total number of ACs in spec.
     pub total_acs: usize,
+    /// Number of ACs covered by PCs.
     pub covered_acs: usize,
 }
 

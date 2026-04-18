@@ -11,8 +11,11 @@ pub const LOCK_STALE_SECS: u64 = 24 * 3600;
 /// A parsed lock file representing a session's claim on a backlog item.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LockFile {
+    /// Name of the worktree holding the lock.
     pub worktree_name: String,
+    /// ISO 8601 timestamp when the lock was acquired.
     pub timestamp: String,
+    /// Unix epoch seconds (cached for staleness checks).
     epoch_secs: u64,
 }
 
