@@ -21,6 +21,7 @@ where
 
 /// Toolchain commands used during this workflow run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Toolchain {
     pub test: Option<String>,
     pub lint: Option<String>,
@@ -29,6 +30,7 @@ pub struct Toolchain {
 
 /// Artifact timestamps and paths accumulated during the workflow.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Artifacts {
     pub plan: Option<String>,
     pub solution: Option<String>,
@@ -82,6 +84,7 @@ impl Artifacts {
 
 /// A single transition record appended to the workflow history.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TransitionRecord {
     pub from: Phase,
     pub to: Phase,
@@ -93,6 +96,7 @@ pub struct TransitionRecord {
 
 /// A single completed phase record.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Completion {
     /// The phase that was completed. Unrecognized strings deserialize as [`Phase::Unknown`].
     #[serde(deserialize_with = "deserialize_phase_with_fallback")]

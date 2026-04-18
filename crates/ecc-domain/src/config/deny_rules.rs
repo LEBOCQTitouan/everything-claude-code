@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// A deny rule that prevents specific tools/patterns in Claude Code settings.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct DenyRule {
     pub tool_name: String,
     pub reason: String,

@@ -6,7 +6,7 @@ pub const MANIFEST_FILENAME: &str = ".ecc-manifest.json";
 
 /// ECC installation manifest — tracks version, languages, and installed artifacts.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EccManifest {
     pub version: String,
     pub installed_at: String,
@@ -18,7 +18,7 @@ pub struct EccManifest {
 
 /// Artifact lists tracked by the manifest.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Artifacts {
     #[serde(default)]
     pub agents: Vec<String>,

@@ -78,6 +78,7 @@ impl BacklogStatus {
 
 /// A parsed backlog entry from a BL-*.md file's YAML frontmatter.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BacklogEntry {
     pub id: String,
     pub title: String,

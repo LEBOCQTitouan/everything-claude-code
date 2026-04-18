@@ -19,6 +19,7 @@ pub enum ProjectType {
 
 /// A single file changed in a session, with its classification.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChangedFile {
     /// Relative path from project root.
     pub path: String,
@@ -28,6 +29,7 @@ pub struct ChangedFile {
 
 /// A session-scoped delta written by the stop:cartography hook.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionDelta {
     pub session_id: String,
     /// Unix timestamp (seconds since epoch).
@@ -38,6 +40,7 @@ pub struct SessionDelta {
 
 /// Metadata embedded in generated cartography documents.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CartographyMeta {
     /// Date of last update in YYYY-MM-DD format.
     pub last_updated: String,

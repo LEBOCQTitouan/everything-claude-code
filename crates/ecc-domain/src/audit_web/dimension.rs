@@ -6,6 +6,7 @@ use std::sync::LazyLock;
 
 /// A single audit dimension — standard or custom — used in Phase 2 scanning.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AuditDimension {
     pub name: String,
     pub query_template: String,

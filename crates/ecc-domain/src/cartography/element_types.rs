@@ -33,6 +33,7 @@ pub enum ElementType {
 /// All fields are serialisable; the struct is the canonical in-memory
 /// representation used by generators and validators.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ElementEntry {
     pub slug: String,
     pub element_type: ElementType,

@@ -8,6 +8,7 @@ const CURRENT_PROFILE_VERSION: u32 = 1;
 
 /// Top-level profile persisted to `docs/audits/audit-web-profile.yaml`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AuditWebProfile {
     pub version: u32,
     pub dimensions: Vec<AuditDimension>,
@@ -19,6 +20,7 @@ pub struct AuditWebProfile {
 /// Thresholds that control which ring a technology is placed in during
 /// Phase 3 synthesis.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DimensionThreshold {
     /// Minimum strategic-fit score to place in Adopt ring (default: 4).
     pub adopt_min_fit: u8,
@@ -30,6 +32,7 @@ pub struct DimensionThreshold {
 
 /// A single improvement suggestion persisted to the profile.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImprovementSuggestion {
     pub text: String,
     pub accepted: bool,

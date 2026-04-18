@@ -104,6 +104,7 @@ impl BypassDecision {
 
 /// Session-scoped file authorizing a specific hook to pass.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BypassToken {
     pub hook_id: String,
     pub session_id: String,

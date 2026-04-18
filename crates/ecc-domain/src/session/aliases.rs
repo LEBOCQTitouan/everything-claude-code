@@ -23,7 +23,7 @@ static ALIAS_NAME_RE: LazyLock<Regex> =
 // ── Data types ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct AliasEntry {
     pub session_path: String,
     pub created_at: String,
@@ -33,13 +33,14 @@ pub struct AliasEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct AliasMetadata {
     pub total_count: usize,
     pub last_updated: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct AliasesData {
     pub version: String,
     pub aliases: BTreeMap<String, AliasEntry>,
