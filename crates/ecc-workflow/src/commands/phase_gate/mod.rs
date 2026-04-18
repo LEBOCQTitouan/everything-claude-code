@@ -13,6 +13,7 @@
 //! - Bash with destructive command → exit 2 (block)
 //! - All other tools → exit 0 (pass)
 
+mod resolve;
 mod validation;
 
 use std::path::Path;
@@ -23,9 +24,9 @@ use ecc_domain::workflow::state::WorkflowState;
 use crate::io::{read_stdin, with_state_lock};
 use crate::output::WorkflowOutput;
 
+use resolve::resolve_worktree_state_dir;
 use validation::{
     allowed_prefixes, contains_encoded_traversal, is_allowed_path, is_destructive_bash,
-    resolve_worktree_state_dir,
 };
 
 enum PhaseResult {
