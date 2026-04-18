@@ -89,18 +89,207 @@ pub fn run_validate_claude_md(
     all_match
 }
 
+// ─── Marker validation helpers ──────────────────────────────────────────────
+
+const WALK_DEPTH_CAP: usize = 16;
+const DENY_LIST: &[&str] = &[".git", "target", "node_modules"];
+const DENY_PATH_SEGMENTS: &[&str] = &[".claude/worktrees"];
+
+/// Strip control characters from a path string before emitting it.
+fn sanitize_path_display(p: &std::path::Path) -> String {
+    p.display()
+        .to_string()
+        .chars()
+        .filter(|c| !c.is_control() || *c == '\n' || *c == '\t')
+        .collect()
+}
+
+/// Returns true if `path` starts with a denied directory segment under `root`.
+fn is_denied(root: &std::path::Path, path: &std::path::Path) -> bool {
+    if let Ok(rel) = path.strip_prefix(root) {
+        let components: Vec<_> = rel.components().collect();
+        // Check top-level deny-list names
+        if let Some(first) = components.first() {
+            let name = first.as_os_str().to_string_lossy();
+            if DENY_LIST.iter().any(|d| *d == name.as_ref()) {
+                return true;
+            }
+        }
+        // Check multi-component deny paths
+        let rel_str = rel.to_string_lossy();
+        if DENY_PATH_SEGMENTS
+            .iter()
+            .any(|seg| rel_str.starts_with(seg))
+        {
+            return true;
+        }
+    }
+    false
+}
+
+/// Recursive walker that collects CLAUDE.md and AGENTS.md files respecting deny-list + depth cap.
+fn walk_marker_files(
+    fs: &dyn FileSystem,
+    root: &std::path::Path,
+    dir: &std::path::Path,
+    depth: usize,
+    results: &mut Vec<std::path::PathBuf>,
+) {
+    if depth > WALK_DEPTH_CAP {
+        return;
+    }
+    let entries = match fs.read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+    for entry in entries {
+        if fs.is_symlink(&entry) {
+            continue;
+        }
+        if is_denied(root, &entry) {
+            continue;
+        }
+        if fs.is_dir(&entry) {
+            walk_marker_files(fs, root, &entry, depth + 1, results);
+        } else if fs.is_file(&entry) {
+            let name = entry
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            if name == "CLAUDE.md" || name == "AGENTS.md" {
+                results.push(entry);
+            }
+        }
+    }
+}
+
+/// Lazy backlog index — reads backlog dir once and checks file presence by ID.
+struct BacklogIndex {
+    filenames: Vec<String>,
+}
+
+impl BacklogIndex {
+    fn load(fs: &dyn FileSystem, project_root: &std::path::Path) -> Self {
+        let backlog_dir = project_root.join("docs/backlog");
+        let filenames = fs
+            .read_dir(&backlog_dir)
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
+            .collect();
+        Self { filenames }
+    }
+
+    fn contains(&self, id: u32) -> bool {
+        use ecc_domain::backlog::entry::matches_backlog_filename;
+        self.filenames
+            .iter()
+            .any(|f| matches_backlog_filename(f, id))
+    }
+}
+
+/// Collected finding for a single marker.
+#[derive(Debug)]
+struct MarkerFinding {
+    path: std::path::PathBuf,
+    line: usize,
+    id: u32,
+    resolved: bool,
+}
+
+/// Emit diagnostics and return false if any finding is missing in strict mode.
+fn emit_diagnostics(
+    terminal: &dyn TerminalIO,
+    findings: &[MarkerFinding],
+    strict: bool,
+    audit_report: bool,
+) -> bool {
+    let any_missing = findings.iter().any(|f| !f.resolved);
+
+    if audit_report {
+        terminal.stdout_write("| File | Line | Marker ID | Status |\n");
+        terminal.stdout_write("|------|------|-----------|--------|\n");
+        for f in findings {
+            let status = if f.resolved { "resolved" } else { "missing" };
+            terminal.stdout_write(&format!(
+                "| {} | {} | BL-{:03} | {} |\n",
+                sanitize_path_display(&f.path),
+                f.line,
+                f.id,
+                status
+            ));
+        }
+    }
+
+    for f in findings {
+        if !f.resolved {
+            let path_str = sanitize_path_display(&f.path);
+            if strict {
+                terminal.stderr_write(&format!(
+                    "ERROR: {path_str}:{}: BL-{:03} not found in docs/backlog/\n",
+                    f.line, f.id
+                ));
+            } else {
+                terminal.stderr_write(&format!(
+                    "WARN: {path_str}:{}: BL-{:03} not found in docs/backlog/\n  Remediation: (a) file docs/backlog/BL-{:03}-<slug>.md or (b) remove the stale warning\n",
+                    f.line, f.id, f.id
+                ));
+            }
+        }
+    }
+
+    if strict && !any_missing {
+        terminal.stdout_write("All TEMPORARY markers reference valid backlog entries\n");
+    }
+
+    !any_missing || !strict
+}
+
 /// Scan CLAUDE.md and AGENTS.md for TEMPORARY (BL-NNN) markers whose backlog file is missing.
 /// Returns true on success (exit 0 semantics). Kill switch: if `disabled=true`, short-circuits
 /// to true with a single stderr notice.
 pub fn run_validate_temporary_markers(
-    _fs: &dyn FileSystem,
-    _terminal: &dyn TerminalIO,
-    _project_root: &Path,
-    _disabled: bool,
-    _strict: bool,
-    _audit_report: bool,
+    fs: &dyn FileSystem,
+    terminal: &dyn TerminalIO,
+    project_root: &std::path::Path,
+    disabled: bool,
+    strict: bool,
+    audit_report: bool,
 ) -> bool {
-    false
+    if disabled {
+        terminal.stderr_write("markers: disabled via ECC_CLAUDE_MD_MARKERS_DISABLED\n");
+        return true;
+    }
+
+    let mut files: Vec<std::path::PathBuf> = Vec::new();
+    walk_marker_files(fs, project_root, project_root, 0, &mut files);
+    files.sort();
+
+    let index = BacklogIndex::load(fs, project_root);
+    let mut findings: Vec<MarkerFinding> = Vec::new();
+
+    for file_path in &files {
+        let content = match fs.read_to_string(file_path) {
+            Ok(c) => c,
+            Err(e) => {
+                let path_str = sanitize_path_display(file_path);
+                terminal.stderr_write(&format!("WARN: {path_str}: read error: {e}\n"));
+                continue;
+            }
+        };
+        let markers = ecc_domain::docs::claude_md::extract_temporary_markers(&content);
+        for marker in markers {
+            let resolved = index.contains(marker.backlog_id);
+            findings.push(MarkerFinding {
+                path: file_path.clone(),
+                line: marker.line_number,
+                id: marker.backlog_id,
+                resolved,
+            });
+        }
+    }
+
+    emit_diagnostics(terminal, &findings, strict, audit_report)
 }
 
 #[cfg(test)]
