@@ -20,7 +20,28 @@ pub struct TemporaryMarker {
 ///
 /// Skips fenced code blocks. Returns markers in line-number order.
 pub fn extract_temporary_markers(content: &str) -> Vec<TemporaryMarker> {
-    Vec::new()
+    let mut markers = Vec::new();
+    let mut in_code_block = false;
+    for (idx, line) in content.lines().enumerate() {
+        let line_number = idx + 1;
+        if line.trim().starts_with("```") {
+            in_code_block = !in_code_block;
+            continue;
+        }
+        if in_code_block {
+            continue;
+        }
+        for cap in TEMP_MARKER_RE.captures_iter(line) {
+            if let Ok(id) = cap[1].parse::<u32>() {
+                markers.push(TemporaryMarker {
+                    backlog_id: id,
+                    line_number,
+                    raw_text: cap[0].to_string(),
+                });
+            }
+        }
+    }
+    markers
 }
 
 static CLAIM_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
