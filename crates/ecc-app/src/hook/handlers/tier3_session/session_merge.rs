@@ -6,6 +6,34 @@ use crate::hook::{HookPorts, HookResult};
 /// Calls `ecc-workflow merge` which handles rebase + verify + ff-only merge.
 /// Worktree cleanup is deferred to `ecc worktree gc` at next session start.
 /// If the merge fails, the worktree is preserved and a recovery file is written.
+///
+/// Flow/decision diagram — worktree-only merge with recovery fallback:
+///
+/// <!-- keep in sync with: calls_merge_in_worktree -->
+/// ```text
+/// session_end_merge(stdin, ports)
+///        |
+///        v
+/// is_in_worktree(ports)?
+///        |--false|Err--> passthrough (not a worktree)
+///        |--true-->
+///        v
+/// git rev-list HEAD ^main --count
+///        |--"0"--> warn "empty worktree, defer to gc"
+///        |--N  -->
+///        v
+/// ecc-workflow merge --Err--> warn "could not run, retry manually"
+///        |--Ok(out)-->
+///        v
+/// out.exit_code == 0? --Y--> warn "merged successfully"
+///                     --N-->
+///        v
+/// write .ecc-merge-recovery (cwd, ts, exit) -> warn "merge failed, preserved"
+/// ```
+///
+/// # Pattern
+///
+/// Compensating Transaction \[DDD\] — failed merge preserves state + recovery file.
 pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "session_end_merge", "executing handler");
 

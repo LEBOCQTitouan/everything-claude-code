@@ -12,6 +12,25 @@ use ecc_domain::config::manifest;
 use ecc_domain::config::merge as domain_merge;
 use std::path::Path;
 
+/// Clean previous ECC files before installing.
+///
+/// Flow/decision diagram — three mutually-exclusive cleanup paths:
+///
+/// <!-- keep in sync with: install_with_clean_all -->
+/// ```text
+/// step_clean(ctx, claude_dir, opts)
+///        |
+///        v
+/// opts.clean_all? --Y--> clean_all(fs, dir, legacy?) + report
+///                  --N-->
+///        v
+/// opts.clean?     --Y--> read_manifest(fs, dir)
+///                         |--Some(m)--> clean_from_manifest + report
+///                         |--None----> warn "no manifest"
+///                  --N-->
+///        v
+/// no-op (preserve existing files)
+/// ```
 pub(super) fn step_clean(ctx: &InstallContext, claude_dir: &Path, options: &InstallOptions) {
     tracing::info!("install: cleaning previous installation");
     if options.clean_all {

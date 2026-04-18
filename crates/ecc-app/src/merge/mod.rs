@@ -75,6 +75,39 @@ pub struct MergeContext<'a> {
 ///
 /// Uses `pre_scan_directory` from domain to find changed/new files,
 /// then prompts for each one (or applies force/apply_all).
+///
+/// Flow/decision diagram — per-file review pipeline:
+///
+/// <!-- keep in sync with: merge_directory_with_force_skips_prompt -->
+/// ```text
+/// merge_directory(ctx, src, dest, type, ext, opts)
+///        |
+///        v
+/// pre_scan_directory -> (review, unchanged, errors)
+///        |
+///        v
+/// review.is_empty()? --Y--> return report
+///                    --N-->
+///        v
+/// for each file in review:
+///        |
+///        v
+/// +------- resolve_choice --------+
+/// | force || !interactive? --Y--> Accept
+/// | apply_all == Some(c)?  --Y--> c
+/// | otherwise prompt user         |
+/// +-------------------------------+
+///        |
+///        v
+/// apply_review_choice(choice, file)
+///        |
+///        v
+/// accumulate -> format + print report
+/// ```
+///
+/// # Pattern
+///
+/// Pipeline \[Rust Idiom\] — scan -> resolve -> apply per file.
 pub fn merge_directory(
     ctx: &MergeContext,
     src_dir: &Path,
@@ -120,6 +153,25 @@ pub fn merge_directory(
 }
 
 /// Determine the review choice for a file based on options (force/non-interactive/apply-all/prompt).
+///
+/// Flow/decision diagram — four-way short-circuit:
+///
+/// <!-- keep in sync with: merge_directory_with_force_skips_prompt -->
+/// ```text
+/// resolve_choice(ctx, file, progress, opts)
+///        |
+///        v
+/// opts.force || !opts.interactive?
+///        |--Y--> return Accept
+///        |--N-->
+///        v
+/// opts.apply_all == Some(c)?
+///        |--Y--> return c
+///        |--N-->
+///        v
+/// prompt_file_review(...) --Ok(choice, apply_all)--> store apply_all? ret choice
+///                         --Err(e)-----------------> warn + return Accept
+/// ```
 fn resolve_choice(
     ctx: &MergeContext,
     file: &FileToReview,
@@ -523,6 +575,39 @@ pub fn merge_patterns(
 ///
 /// Deserializes JSON at the boundary, uses typed domain functions for merge,
 /// and serializes back when writing to disk.
+///
+/// Flow/decision diagram — boundary deserialize -> domain merge -> boundary write:
+///
+/// <!-- keep in sync with: merge_hooks_adds_new_hooks -->
+/// ```text
+/// merge_hooks(fs, hooks_json, settings_json, dry_run)
+///        |
+///        v
+/// read_json(hooks_json_path) --Err--> MergeError
+///        |--Ok(source)-->
+///        v
+/// read_json_or_default(settings_json) -> existing
+///        |
+///        v
+/// deserialize source_hooks / existing_hooks as HooksMap
+///        |
+///        v
+/// merge_hooks_typed(source, existing) -> MergeResult
+///        |
+///        v
+/// added > 0 || legacy_removed > 0?
+///        |--N--> return Ok(counts)
+///        |--Y-->
+///        v
+/// dry_run? --Y--> return Ok(counts)
+///          --N-->
+///        v
+/// serialize merged + write settings.json -> return Ok(counts)
+/// ```
+///
+/// # Pattern
+///
+/// Anti-Corruption Layer \[DDD\] — typed domain core, untyped JSON at boundaries.
 pub fn merge_hooks(
     fs: &dyn FileSystem,
     hooks_json_path: &Path,

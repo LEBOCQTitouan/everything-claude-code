@@ -42,6 +42,24 @@ const MAINTENANCE_JOBS: &[&str] = &["dependency-check", "security-audit", "stale
 // ── Validation functions ──────────────────────────────────────────────
 
 /// Validate that `.actrc` exists and contains required configuration lines.
+///
+/// Flow/decision diagram — four terminal checks:
+///
+/// <!-- keep in sync with: validate_actrc_pass -->
+/// ```text
+/// validate_actrc(fs, project_dir)
+///        |
+///        v
+/// read_to_string(.actrc) --Err--> Fail("not found")
+///        |--Ok(content)-->
+///        v
+/// content.trim().is_empty()? --Y--> Fail("empty")
+///        |--N-->
+///        v
+/// has_platform && has_secret_file?
+///        |--N--> Fail("missing required: -P, --secret-file")
+///        |--Y--> Pass(".actrc is valid")
+/// ```
 pub fn validate_actrc(fs: &dyn FileSystem, project_dir: &Path) -> Check {
     let path = project_dir.join(".actrc");
     let content = match fs.read_to_string(&path) {

@@ -18,6 +18,26 @@ pub struct StalenessInfo {
 ///
 /// Reads `state.json` from `state_dir`, checks `started_at` against the clock,
 /// and returns `Some(StalenessInfo)` if the threshold is exceeded.
+///
+/// Flow/decision diagram — silent-None on any error, filter idle/done:
+///
+/// <!-- keep in sync with: staleness_with_mock_clock -->
+/// ```text
+/// detect_staleness(state_dir, fs, clock, threshold)
+///        |
+///        v
+/// read_to_string(state.json) --Err--> None
+///        |--Ok(content)-->
+///        v
+/// WorkflowState::from_json --Err--> None
+///        |--Ok(state)-->
+///        v
+/// phase is Idle || Done? --Y--> None (never stale)
+///        |--N-->
+///        v
+/// is_stale(started_at, now, threshold)? --N--> None
+///        |--Y--> Some(StalenessInfo { phase, started_at })
+/// ```
 pub fn detect_staleness(
     state_dir: &Path,
     fs: &dyn FileSystem,
@@ -77,6 +97,32 @@ impl std::error::Error for RecoverError {}
 /// 3. Writes a new Idle state
 ///
 /// If archival fails, the reset does NOT happen (no data loss).
+///
+/// Flow/decision diagram — archive-before-reset order guarantee:
+///
+/// <!-- keep in sync with: recover_archives_and_resets -->
+/// ```text
+/// recover(state_dir, fs, clock)
+///        |
+///        v
+/// read(state.json) --Err--> ReadFailed
+///        |--Ok(content)-->
+///        v
+/// create_dir_all(archive/) --Err--> ArchiveFailed (no reset)
+///        |--Ok-->
+///        v
+/// write(archive/state-<ts>.json) --Err--> ArchiveFailed (no reset)
+///        |--Ok-->
+///        v
+/// write(state.json, idle_json) --Err--> WriteFailed
+///        |--Ok-->
+///        v
+/// return Ok(())
+/// ```
+///
+/// # Pattern
+///
+/// Memento \[GoF\] — preserves prior state before reset.
 pub fn recover(
     state_dir: &Path,
     fs: &dyn FileSystem,

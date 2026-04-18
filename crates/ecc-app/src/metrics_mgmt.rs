@@ -39,6 +39,27 @@ pub fn prune(store: &dyn MetricsStore, older_than: Duration) -> Result<u64, Metr
 /// - If `disabled` is true, skips entirely (zero-cost kill switch).
 /// - If the store returns an error, logs a warning and returns `Ok(())`.
 /// - Never blocks the caller's operation.
+///
+/// Flow/decision diagram — fire-and-forget kill switch + store optionality:
+///
+/// <!-- keep in sync with: metrics_fire_and_forget -->
+/// ```text
+/// record_if_enabled(store, event, disabled)
+///        |
+///        v
+/// disabled? --Y--> return Ok(()) (zero-cost skip)
+///           --N-->
+///        v
+/// store.is_some()? --N--> debug! + Ok(()) (no store wired)
+///                  --Y-->
+///        v
+/// store.record(event) --Err(e)--> warn! + Ok(()) (never fail caller)
+///                     --Ok-----> Ok(())
+/// ```
+///
+/// # Pattern
+///
+/// Fire-and-Forget \[Rust Idiom\] — telemetry never blocks or surfaces errors.
 pub fn record_if_enabled(
     store: Option<&dyn MetricsStore>,
     event: &MetricEvent,
@@ -68,6 +89,29 @@ pub fn record_if_enabled(
 /// Maps `kind` ("build"|"test"|"lint") to [`CommitGateKind`] and
 /// `outcome` ("pass" → Passed / "fail" → Failure).
 /// Respects the kill switch via `disabled`.
+///
+/// Flow/decision diagram — validate strings -> construct event -> delegate:
+///
+/// <!-- keep in sync with: record_commit_gate_pass -->
+/// ```text
+/// record_commit_gate(store, session, kind, outcome, disabled)
+///        |
+///        v
+/// disabled? --Y--> return Ok(())
+///           --N-->
+///        v
+/// CommitGateKind::from_str_opt(kind) --None--> Err("unknown kind")
+///        |--Some(gate_kind)-->
+///        v
+/// outcome match: "pass" -> Passed | "fail" -> Failure | _ -> Err
+///        |
+///        v
+/// outcome == Failure? --Y--> gates_failed = [gate_kind]
+///                     --N--> gates_failed = []
+///        v
+/// MetricEvent::commit_gate(...) --Err--> Err(msg)
+///        |--Ok(event)--> record_if_enabled(store, event, false)
+/// ```
 pub fn record_commit_gate(
     store: Option<&dyn MetricsStore>,
     session_id: &str,

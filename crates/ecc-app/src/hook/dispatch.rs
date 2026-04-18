@@ -38,6 +38,21 @@ impl Handler for StartCartographyHandler {
 ///
 /// Handlers registered here take precedence over the match-based dispatch below.
 /// This is intentionally a function (not a static) so tests can call it directly.
+///
+/// Composition diagram — registry layout:
+///
+/// ```text
+/// +------------ HandlerRegistry --------------+
+/// | HashMap<&'static str, Box<dyn Handler>>   |
+/// |  "stop:cartography"  -> StopCartography   |
+/// |  "start:cartography" -> StartCartography  |
+/// |  (extend via m.insert for new handlers)   |
+/// +-------------------------------------------+
+/// ```
+///
+/// # Pattern
+///
+/// Registry \[Rust Idiom\] — dynamic dispatch via trait objects keyed by ID.
 pub fn build_handler_registry() -> HashMap<&'static str, Box<dyn Handler>> {
     let mut m: HashMap<&'static str, Box<dyn Handler>> = HashMap::new();
 
@@ -66,6 +81,47 @@ pub fn truncate_stdin(raw: &str) -> &str {
 ///
 /// If the hook is disabled by profile/env, returns a passthrough result.
 /// If the hook ID is unknown, returns a passthrough result with a stderr warning.
+///
+/// Flow/decision diagram — three-tier chain-of-responsibility resolution:
+///
+/// <!-- keep in sync with: dispatches_cartography_hooks -->
+/// ```text
+/// dispatch(ctx, ports)
+///        |
+///        v
+/// +-----------------------------+
+/// | ECC_WORKFLOW_BYPASS == "1"? |
+/// +-----------------------------+
+///        |--Y--> deprecation warn + passthrough (exit)
+///        |--N-->
+///        v
+/// +-----------------------------+
+/// | is_hook_enabled(id, prof.)? |
+/// +-----------------------------+
+///        |--N--> passthrough (disabled)
+///        |--Y-->
+///        v
+/// +----------- tier match ------------+
+/// | tier1: simple passthrough handlers|
+/// | tier2: tool-spawning handlers     |
+/// | tier3: session/file I/O handlers  |
+/// | unknown -> warn + passthrough     |
+/// +-----------------------------------+
+///        |
+///        v
+/// +-----------------------------+
+/// | result.exit_code == 2 ?     |
+/// +-----------------------------+
+///        |--Y--> apply_bypass_check()
+///        |--N-->
+///        v
+///   record metric (fire-and-forget) --> return
+/// ```
+///
+/// # Pattern
+///
+/// Chain of Responsibility \[GoF\] — tier1 -> tier2 -> tier3 handler lookup.
+/// Command \[GoF\] — each `HookContext` is a command routed to its handler.
 pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 

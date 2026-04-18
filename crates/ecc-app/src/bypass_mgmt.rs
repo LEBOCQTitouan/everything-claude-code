@@ -11,6 +11,33 @@ use std::path::Path;
 /// Grant a bypass for a specific hook in the current session.
 ///
 /// Creates a bypass token file AND records an Accepted decision in the audit trail.
+///
+/// Flow/decision diagram — dual write (file + audit) with validation:
+///
+/// <!-- keep in sync with: bypass_grant_creates_token -->
+/// ```text
+/// grant(store, fs, home, hook_id, reason, session_id)
+///        |
+///        v
+/// BypassToken::new(...) --Err--> Validation error
+///        |--Ok(token)-->
+///        v
+/// BypassDecision::new(...) --Err--> Validation error
+///        |--Ok(decision)-->
+///        v
+/// create_dir_all(home/.ecc/bypass-tokens/<session>)  --Err--> Io error
+///        |--Ok-->
+///        v
+/// serialize token -> write <hook_id>.json  --Err--> Io error
+///        |--Ok-->
+///        v
+/// store.record(decision) --Err--> Store error
+///        |--Ok--> return Ok(token)
+/// ```
+///
+/// # Pattern
+///
+/// Audit Log \[DDD\] — decision persisted as immutable record alongside token.
 pub fn grant(
     store: &dyn BypassStore,
     fs: &dyn FileSystem,
