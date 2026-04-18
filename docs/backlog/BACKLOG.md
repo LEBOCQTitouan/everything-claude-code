@@ -151,6 +151,7 @@
 | BL-153 | Redact or truncate feature field in tracing::info! to prevent log-injection amplification | — | MEDIUM | direct edit | open | 2026-04-17 |
 | BL-154 | Widen ecc validate commands rule to catch backtick-embedded !$ARGUMENTS inline-code patterns | — | LOW | direct edit | open | 2026-04-17 |
 | BL-155 | Add Foundation variant to Concern domain enum for /project-foundation workflow | — | MEDIUM | /spec-dev | open | 2026-04-17 |
+| BL-156 | Safe worktree GC — skip active session worktrees | — | MEDIUM | /spec-fix | open | 2026-04-18 |
 
 ## Dependency Graph
 
@@ -232,12 +233,14 @@ BL-128 → BL-126 (wave 5 offloads agents not already replaced by CLI in wave 3)
 BL-144 → BL-143 (/party recommended-panel heuristics consume /project-foundation PRD + arch docs)
 BL-144 → BL-137 (party-mode agent invocation applies difficulty-aware model routing)
 BL-145 → BL-144 (spec-phase integration requires /party command to exist first)
+BL-156 → BL-065 (session-aware GC extends worktree isolation infrastructure)
+BL-156 → BL-097 (reuses transient lock-file pattern for session liveness)
 ```
 
 ## Stats
 
-- **Total:** 149
-- **Open:** 10
+- **Total:** 150
+- **Open:** 11
 - **Implemented:** 131
 - **Archived:** 7
 - **2026-03-28:** 1
