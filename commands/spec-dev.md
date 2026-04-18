@@ -101,6 +101,21 @@ If `docs/sources.md` exists:
 
 If `docs/sources.md` does not exist, skip this step silently.
 
+## Phase 0.7: Domain Context
+
+> **Shared**: See `skills/domain-agents/SKILL.md` for the full domain agent discovery pattern.
+
+Inject domain-specialized agent knowledge before the main analysis phases:
+
+1. Check if `agents/domain/` exists and contains `.md` files. If the directory does not exist or is empty, skip this phase silently.
+2. Read `docs/domain/bounded-contexts.md` to get the list of module names (both table rows and freestanding `###` sections).
+3. Tokenize the feature description into words. Perform exact match (case-insensitive) of each word against the bounded-contexts module names.
+4. If zero modules match, log "No domain agents matched" and skip.
+5. If more than 3 modules match, select the first 3 in alphabetical order.
+6. For each matched module, check if `agents/domain/<module>.md` exists.
+7. Spawn each matched domain agent as a read-only Task subagent with `allowedTools: [Read, Grep, Glob]` and prompt: "Summarize your domain knowledge relevant to: <feature description>".
+8. Collect the output from each domain agent and store it verbatim in a `## Domain Context` section prepended to the plan file, available as pre-context for all subsequent phases.
+
 ## Phase 3.7: Actor Registry Integration
 
 Before identifying actors for user stories, check `docs/cartography/journeys/` for established actor definitions:

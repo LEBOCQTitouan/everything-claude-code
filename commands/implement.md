@@ -49,6 +49,20 @@ If `docs/sources.md` exists:
 
 If `docs/sources.md` does not exist, skip this step silently.
 
+## Phase 0.7: Domain Context
+
+> **Shared**: See `skills/domain-agents/SKILL.md` for the full domain agent discovery pattern.
+
+Inject domain-specialized agent knowledge before implementation:
+
+1. Check if `agents/domain/` exists and contains `.md` files. If the directory does not exist or is empty, skip this phase silently.
+2. Read the design's `## File Changes` table. Parse crate paths to extract module names (e.g., `crates/ecc-domain/src/workflow/` -> `workflow`).
+3. For each extracted module name, check if `agents/domain/<module>.md` exists (exact match).
+4. If zero modules match, log "No domain agents matched" and skip.
+5. If more than 3 modules match, select the first 3 in alphabetical order.
+6. Spawn each matched domain agent as a read-only Task subagent with `allowedTools: [Read, Grep, Glob]` and prompt: "Summarize your domain knowledge relevant to: <feature from state.json>".
+7. Collect output and store in a `## Domain Context` section prepended to the plan file, available as pre-context for tdd-executor subagents.
+
 ## Phase 1: Enter Plan Mode
 
 > **BLOCKING**: You MUST call `EnterPlanMode` before any implementation work. NEVER skip Plan Mode — not to "save context", not for "simple changes", not for any reason. This is non-negotiable.
