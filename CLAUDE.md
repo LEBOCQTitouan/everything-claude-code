@@ -39,7 +39,8 @@ cargo build --release                Build release binary
 ecc workflow init|transition|status  Workflow state machine
 ecc workflow history [--json]        View transition history for current session
 ecc validate <target>                Validate agents|commands|hooks|skills|rules|teams
-ecc validate claude-md --counts      Cross-check CLAUDE.md numeric claims
+ecc validate claude-md counts        Cross-check CLAUDE.md numeric claims (legacy --counts deprecated)
+ecc validate claude-md markers       Flag stale TEMPORARY (BL-NNN) markers whose backlog file is missing (--strict blocks CI)
 ecc drift check [--json]             Compute spec-vs-implementation drift
 ecc docs update-module-summary       Update MODULE-SUMMARIES.md entries
 ecc docs coverage --scope <path>     Doc comment coverage per module
