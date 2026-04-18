@@ -98,6 +98,23 @@ pub fn read_stdin() -> String {
 ///
 /// When `include_done` is false, done-phase states are NOT archived (init behavior).
 /// When `include_done` is true, ALL states are archived (reset behavior).
+///
+/// <!-- keep in sync with: archive_state_skips_done -->
+/// ```text
+/// state.json exists? --N--> Ok(())
+///     |
+///     Y
+///     v
+/// parse phase from file --> corrupt? --Y--> treat as non-done
+///     |
+///     N
+///     v
+/// phase == Done AND !include_done? --Y--> Ok(()) (skip)
+///     |
+///     N
+///     v
+/// create archive/ dir --> rename state.json --> Ok(())
+/// ```
 pub fn archive_state(workflow_dir: &Path, include_done: bool) -> Result<(), anyhow::Error> {
     let state_path = workflow_dir.join("state.json");
     if !state_path.exists() {

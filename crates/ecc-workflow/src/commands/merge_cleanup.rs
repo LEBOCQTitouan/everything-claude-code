@@ -126,6 +126,29 @@ fn gather_safety_data(dir: &Path) -> ecc_domain::worktree::WorktreeSafetyInput {
 /// Perform post-merge cleanup: gather safety data, assess, remove worktree, delete branch.
 /// All git commands use `current_dir(repo_root)` for deletion operations.
 /// If the worktree directory does not exist, skip safety checks and proceed directly.
+///
+/// <!-- keep in sync with: safe_worktree_removed -->
+/// ```text
+/// worktree_dir exists? --N--> skip safety (nothing to lose)
+///     |
+///     Y
+///     v
+/// gather_safety_data --> assess_safety
+///     |
+///     v
+/// violations empty? --N--> return Unsafe(violations)
+///     |
+///     Y
+///     v
+/// git worktree remove --force --Y--> failed? --Y--> return Aborted
+///     |
+///     N
+///     v
+/// git branch -d <branch> (best-effort; errors logged as warnings)
+///     |
+///     v
+/// return CleanedUp { branch }
+/// ```
 pub(crate) fn cleanup_after_merge(
     repo_root: &Path,
     worktree_dir: &Path,

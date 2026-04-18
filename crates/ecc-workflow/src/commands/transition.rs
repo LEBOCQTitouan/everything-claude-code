@@ -549,34 +549,29 @@ pub(crate) fn try_record_transition(
 ///
 /// # Flow
 ///
-/// Steps: acquire lock → read state → resolve transition → write state → memory.
+/// Forward/backward transition steps: lock -> read -> resolve -> write -> memory.
 ///
+/// <!-- keep in sync with: backward_impl_to_solution -->
 /// ```text
-/// acquire lock (with_state_lock)
+/// lock --> state.json exists? --N--> warn "not initialized"
+///     |
+///     Y
+///     v
+/// resolve transition legal? --N--> Rejected metric --> block
+///     |
+///     Y
+///     v
+/// direction == backward? --Y--> clear rollback artifacts
 ///     |
 ///     v
-/// read state (read_state)
-///     |
-///     +--[missing]--> warn "not initialized"
+/// push TransitionRecord --> apply artifact stamp
 ///     |
 ///     v
-/// resolve transition (resolve_transition_by_name)
+/// write_state_atomic --N--> block "Failed to write"
 ///     |
-///     +--[illegal]--> record Rejected metric --> block
-///     |
+///     Y
 ///     v
-/// apply artifact stamp (optional)
-///     |
-///     v
-/// write state (write_state_atomic)
-///     |
-///     +--[error]--> block "Failed to write state.json"
-///     |
-///     v
-/// record Success metric + write memory (best-effort)
-///     |
-///     v
-/// pass
+/// record Success + memory writes --> pass
 /// ```
 #[allow(dead_code)]
 pub fn run_with_store(

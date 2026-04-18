@@ -60,7 +60,30 @@ pub fn run(project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
     }
 }
 
-/// Orchestrator — one level of abstraction
+/// Orchestrator — one level of abstraction.
+///
+/// <!-- keep in sync with: ff_merge -->
+/// ```text
+/// current_branch --> validate_session_branch?
+///     |
+///     +--N--> block NotSessionBranch
+///     |
+///     Y
+///     v
+/// acquire_merge_lock (timeout? --Y--> block LockTimeout)
+///     |
+///     v
+/// rebase_onto_main (conflict? --Y--> warn RebaseConflict)
+///     |
+///     v
+/// run_fast_verify (fail? --Y--> warn VerifyFailed)
+///     |
+///     v
+/// checkout_main --> merge_fast_forward --> cleanup_after_merge
+///     |
+///     v
+/// CleanedUp | Unsafe(violations) | Aborted(reason)
+/// ```
 fn execute_merge(project_dir: &Path) -> Result<String, MergeError> {
     let repo_root = ecc_flock::resolve_repo_root(project_dir);
     let branch = current_branch(project_dir)?;
