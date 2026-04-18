@@ -8,6 +8,18 @@ use super::phase::Phase;
 // ── Direction ────────────────────────────────────────────────────────────────
 
 /// Direction of a workflow phase transition.
+///
+/// State-transition diagram — forward vs backward along the pipeline:
+///
+/// ```text
+///   [Plan] -- Forward --> [Solution] -- Forward --> [Implement]
+///     ^                       ^                         |
+///     |                       +------ Backward ---------+
+///     +------- Backward ----------------+               |
+///                                       |               |
+///     +-------------- Backward ---------+---------------+
+///                      (Implement -> Plan)
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Direction {
@@ -128,6 +140,27 @@ impl TransitionPolicy {
     }
 }
 
+/// Flow/decision diagram for [`TransitionPolicy::resolve`]:
+///
+/// <!-- keep in sync with: backward_with_justification -->
+/// ```text
+/// [from/to in {Unknown}?] --Y--> Err(IllegalTransition)
+///         |N
+///         v
+/// [from == to?] --Y--> Ok(direction = Forward)   (re-entry)
+///         |N
+///         v
+/// [pair in policy table?] --N--> Err(IllegalTransition)
+///         |Y
+///         v
+/// [pair.direction == Backward?] --N--> Ok(direction = Forward)
+///         |Y
+///         v
+/// [justification non-empty, non-whitespace?] --Y--> Ok(Backward)
+///         |N
+///         v
+/// Err(MissingJustification)
+/// ```
 impl TransitionResolver for TransitionPolicy {
     fn resolve(
         &self,

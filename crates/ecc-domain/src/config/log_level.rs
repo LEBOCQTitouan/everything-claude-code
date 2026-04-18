@@ -1,6 +1,20 @@
 /// Log verbosity level for ECC diagnostics.
 ///
 /// Pure value object — zero I/O imports, no cross-cutting concerns.
+///
+/// Verbosity ladder (quietest at top, most verbose at bottom):
+///
+/// ```text
+///   [Error]   <-- only failures
+///      |
+///   [Warn]    <-- warnings + errors           (default)
+///      |
+///   [Info]    <-- operational info + above
+///      |
+///   [Debug]   <-- debug traces + above
+///      |
+///   [Trace]   <-- everything, including deep traces
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LogLevel {
     /// Only error messages.

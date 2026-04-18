@@ -5,6 +5,16 @@ use std::fmt;
 use std::str::FromStr;
 
 /// The classification of work being performed in this workflow run.
+///
+/// Variant selector diagram — routes to spec-dev, spec-fix, or spec-refactor:
+///
+/// ```text
+///   [Concern]
+///      |
+///      +--> Dev      --> /spec-dev      (new feature)
+///      +--> Fix      --> /spec-fix      (bug / defect)
+///      +--> Refactor --> /spec-refactor (restructure, no behaviour change)
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Concern {

@@ -1,6 +1,18 @@
 use std::collections::HashSet;
 
 /// Hook execution profile — controls which hooks run.
+///
+/// Profile ladder (fewest hooks active at top, most hooks active at bottom):
+///
+/// ```text
+///   [Minimal]   <-- essential hooks only (fast feedback)
+///      |
+///      v
+///   [Standard]  <-- default balance, runs in CI
+///      |
+///      v
+///   [Strict]    <-- all hooks + extra validation
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HookProfile {
     /// Only run critical hooks.
@@ -108,6 +120,20 @@ pub struct HookEnabledOptions<'a> {
 /// Check if a hook is enabled based on its ID, disabled list, and active profile.
 /// `profile_env` is the ECC_HOOK_PROFILE env value.
 /// `disabled_env` is the ECC_DISABLED_HOOKS env value.
+///
+/// <!-- keep in sync with: disabled_takes_priority_over_profile -->
+/// ```text
+/// [id empty after normalize?] --Y--> true
+///       |N
+///       v
+/// [id in disabled set?] --Y--> false
+///       |N
+///       v
+/// [active profile in allowed list?] --Y--> true
+///       |N
+///       v
+/// false
+/// ```
 pub fn is_hook_enabled(
     hook_id: &str,
     profile_env: Option<&str>,

@@ -9,6 +9,22 @@ use super::entry::BacklogError;
 pub const LOCK_STALE_SECS: u64 = 24 * 3600;
 
 /// A parsed lock file representing a session's claim on a backlog item.
+///
+/// Lifecycle state-transition diagram (unlocked -> locked -> stale):
+///
+/// ```text
+///   [Unlocked]  ---- write lock content ---->  [Locked]
+///                                                 |
+///                                                 | age > 24h
+///                                                 v
+///                                              [Stale]
+///                                                 |
+///                                                 | cleanup / re-claim
+///                                                 v
+///                                              [Unlocked]
+/// ```
+///
+/// `is_stale()` reports `true` once `now - timestamp > LOCK_STALE_SECS`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LockFile {
     /// Name of the worktree holding the lock.

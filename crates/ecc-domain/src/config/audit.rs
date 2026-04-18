@@ -1,3 +1,29 @@
+//! Config audit: scoring, findings, hook classification.
+//!
+//! Cluster overview of the audit module's public types + pure functions.
+//!
+//! ```text
+//! +------------------ AuditReport -------------------+
+//! | score: i32      grade: String (A..F)             |
+//! | checks: Vec<AuditCheckResult>                    |
+//! +--------------------------------------------------+
+//!           |
+//!           v
+//! +----- AuditCheckResult -----+     +-- AuditFinding --+
+//! | name, passed: bool         |---> | severity:Severity|
+//! | findings: Vec<AuditFinding>|     | id, title, detail|
+//! +----------------------------+     | fix              |
+//!                                    +------------------+
+//! +----- ConfigAudit ---- (aggregates ArtifactAudit * 2 + HooksDiff)
+//! | agents, commands: ArtifactAudit  (matching, outdated, missing)
+//! | hooks: HooksDiff (stale, missing, matching, user_hooks)
+//! | has_differences: bool                                |
+//! +------------------------------------------------------+
+//! Pure fns: is_legacy_pattern, is_ecc_managed_hook[_typed],
+//!           compute_audit_score, exists_in_source[_typed],
+//!           exists_in_settings[_typed], parse_frontmatter.
+//! ```
+
 use std::collections::BTreeMap;
 
 // ---------------------------------------------------------------------------
@@ -5,6 +31,14 @@ use std::collections::BTreeMap;
 // ---------------------------------------------------------------------------
 
 /// Severity level for an audit finding.
+///
+/// State-transition ladder (highest impact -> lowest, used in scoring):
+///
+/// ```text
+///   [Critical] --20 pts--> [High] --10 pts--> [Medium] --5 pts--> [Low] --2 pts-->
+/// ```
+///
+/// Deduction magnitudes applied by [`compute_audit_score`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
     /// Critical: immediate attention required.

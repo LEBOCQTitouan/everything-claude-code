@@ -40,6 +40,20 @@ pub struct Toolchain {
 }
 
 /// Artifact timestamps and paths accumulated during the workflow.
+///
+/// Composition diagram — pairs each phase with its timestamp and path:
+///
+/// ```text
+/// +--------------- Artifacts ---------------+
+/// | plan:       Option<String> (timestamp)  |
+/// | solution:   Option<String> (timestamp)  |
+/// | implement:  Option<String> (timestamp)  |
+/// | campaign_path: Option<String>           |
+/// | spec_path:  Option<String>              |
+/// | design_path:Option<String>              |
+/// | tasks_path: Option<String>              |
+/// +-----------------------------------------+
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Artifacts {
@@ -145,6 +159,28 @@ fn default_version() -> u32 {
 ///
 /// Note: `deny_unknown_fields` must NEVER be added — forward compatibility
 /// requires ignoring unknown fields so older readers can parse newer state files.
+///
+/// Composition diagram (aggregate root + owned value objects):
+///
+/// ```text
+/// +---------------------- WorkflowState -----------------------+
+/// | phase: Phase           (current FSM state)                 |
+/// | concern: Concern       (dev | fix | refactor)              |
+/// | feature: String        (human feature label)               |
+/// | started_at: Timestamp  (session open ISO 8601)             |
+/// | toolchain: Toolchain   +--> { test, lint, build: Option<String> }
+/// | artifacts: Artifacts   +--> { plan, solution, implement, ...
+/// |                                campaign_path, spec_path,   |
+/// |                                design_path, tasks_path }   |
+/// | completed: Vec<Completion>                                 |
+/// | version: u32           (default = 1)                       |
+/// | history: Vec<TransitionRecord>                             |
+/// +------------------------------------------------------------+
+/// ```
+///
+/// # Pattern
+///
+/// Aggregate Root \[DDD\] — single write-through entry point for workflow state.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkflowState {
     /// The current workflow phase.

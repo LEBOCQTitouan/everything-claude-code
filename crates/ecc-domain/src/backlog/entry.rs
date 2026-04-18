@@ -40,6 +40,18 @@ pub enum BacklogError {
 pub const VALID_STATUSES: &[&str] = &["open", "in-progress", "implemented", "archived", "promoted"];
 
 /// Backlog entry status with typed variants and Unknown fallback.
+///
+/// State-transition diagram — forward lifecycle + side-arcs:
+///
+/// ```text
+///   [Open] --> [InProgress] --> [Implemented] --> [Promoted]
+///     |             |                 |
+///     v             v                 v
+///   [Archived]  [Archived]        [Archived]
+/// ```
+///
+/// `is_active()` returns `true` for `Open` and `InProgress` only.
+/// `Unknown(String)` is a forward-compat sentinel for future statuses.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum BacklogStatus {

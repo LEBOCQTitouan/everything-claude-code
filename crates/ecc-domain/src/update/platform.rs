@@ -35,6 +35,17 @@ impl fmt::Display for Architecture {
 }
 
 /// Host operating system platform.
+///
+/// Detection fan-out (compile-time `cfg!` on `target_os`):
+///
+/// ```text
+///     [current()]
+///         |
+///         +--> cfg!(target_os="macos")   --> MacOS
+///         +--> cfg!(target_os="linux")   --> Linux
+///         +--> cfg!(target_os="windows") --> Windows
+///         +--> (fallback)                --> Unknown
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Platform {
     /// Apple macOS.

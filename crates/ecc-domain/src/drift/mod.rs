@@ -15,6 +15,21 @@ static PC_ID_EXTRACT_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
 });
 
 /// Drift classification level.
+///
+/// Severity ladder — lowest impact at top, blocks ship at bottom:
+///
+/// ```text
+///   [None]   <-- all ACs implemented, zero unexpected files
+///     |
+///     v
+///   [Low]    <-- 0 unimplemented ACs, <3 unexpected files
+///     |
+///     v
+///   [Medium] <-- 1-2 unimplemented ACs OR >3 unexpected files
+///     |
+///     v
+///   [High]   <-- 3+ unimplemented ACs (ship-blocking)
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DriftLevel {
     /// All ACs implemented, no unexpected files.

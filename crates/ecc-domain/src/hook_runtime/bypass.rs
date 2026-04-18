@@ -6,6 +6,15 @@
 use serde::{Deserialize, Serialize};
 
 /// Verdict for a bypass decision.
+///
+/// State-transition diagram — Accepted may be Applied once; Refused is terminal:
+///
+/// ```text
+///   [request grant]
+///         |
+///         +--> [Accepted] --consumed by hook--> [Applied]
+///         +--> [Refused]  (terminal)
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Verdict {
     /// User approved the bypass request.
@@ -47,6 +56,24 @@ pub enum BypassError {
 }
 
 /// Immutable audit record of a bypass request and its verdict.
+///
+/// Composition diagram — validated aggregate (see `new()` for invariants):
+///
+/// ```text
+/// +-------------- BypassDecision --------------+
+/// | id:         Option<i64>   (db PK, None new)|
+/// | hook_id:    String        (non-empty)      |
+/// | reason:     String        (1..=500 chars)  |
+/// | session_id: String        (non-empty, not  |
+/// |                            "unknown")      |
+/// | verdict:    Verdict                        |
+/// | timestamp:  String        (ISO 8601)       |
+/// +--------------------------------------------+
+/// ```
+///
+/// # Pattern
+///
+/// Value Object \[DDD\] — equality by all fields, validated at construction.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BypassDecision {
     /// Database row ID (None when newly constructed, Some when loaded from storage).
