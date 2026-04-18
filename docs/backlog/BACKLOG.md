@@ -128,8 +128,8 @@
 | BL-126 | Token optimization wave 3 — new CLI commands replacing agent work | — | HIGH | /spec-dev | implemented | 2026-04-06 |
 | BL-127 | Token optimization wave 4 — pipeline architecture for session and subagent reduction | — | HIGH | /spec-dev | implemented | 2026-04-06 |
 | BL-128 | Token optimization wave 5 — local LLM offload for mechanical agents | — | MEDIUM | /spec-dev | implemented | 2026-04-06 |
-| BL-129 | Bidirectional pipeline transitions with justification logging | — | HIGH | /spec-refactor | open | 2026-04-07 |
-| BL-130 | US/epic-level sub-tracking within /implement pipeline | — | MEDIUM | /spec-dev | open | 2026-04-07 |
+| BL-129 | Bidirectional pipeline transitions with justification logging | — | HIGH | /spec-refactor | implemented | 2026-04-07 |
+| BL-130 | US/epic-level sub-tracking within /implement pipeline | — | MEDIUM | /spec-dev | in-progress | 2026-04-07 |
 | BL-132 | Full ASCII diagram sweep of all 9 ECC crates | 5 | HIGH | direct edit | open | 2026-04-08 |
 | BL-133 | Migrate workspace to Rust 2024 edition | — | MEDIUM | /spec-dev | implemented | 2026-04-09 |
 | BL-134 | Audit CLAUDE.md for LLM-generated content | — | LOW | direct edit | implemented | 2026-04-09 |
@@ -240,7 +240,8 @@ BL-156 → BL-097 (reuses transient lock-file pattern for session liveness)
 ## Stats
 
 - **Total:** 150
-- **Open:** 11
-- **Implemented:** 131
+- **Open:** 9
+- **In-progress:** 1
+- **Implemented:** 132
 - **Archived:** 7
 - **2026-03-28:** 1

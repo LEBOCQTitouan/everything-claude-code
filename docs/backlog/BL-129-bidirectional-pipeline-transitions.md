@@ -3,7 +3,7 @@ id: BL-129
 title: "Bidirectional pipeline transitions with justification logging"
 scope: HIGH
 target: "/spec-refactor"
-status: open
+status: implemented
 created: "2026-04-07"
 tags: [workflow, pipeline, state-machine, transitions, logging]
 ---
