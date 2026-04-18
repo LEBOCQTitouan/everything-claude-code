@@ -55,7 +55,7 @@ pub(super) fn validate_agents(
             .collect();
         domain_count = domain_md.len();
         for file in &domain_md {
-            if !validate_agent_file(file, root, fs, terminal) {
+            if !validate_agent_file(file, root, fs, terminal, manifest) {
                 has_errors = true;
             }
         }
