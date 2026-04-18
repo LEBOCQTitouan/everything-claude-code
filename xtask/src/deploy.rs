@@ -268,8 +268,10 @@ mod tests {
 
     mod cargo_bin {
         use super::*;
+        use serial_test::serial;
 
         #[test]
+        #[serial]
         fn uses_cargo_home_when_set() {
             // SAFETY: test sets env var — must not run in parallel with other env-mutating tests
             unsafe { std::env::set_var("CARGO_HOME", "/custom/cargo") };
@@ -280,6 +282,7 @@ mod tests {
         }
 
         #[test]
+        #[serial]
         fn falls_back_to_home_cargo_bin() {
             // SAFETY: single-threaded test; env var cleanup isolated to this test.
             unsafe { std::env::remove_var("CARGO_HOME") };
