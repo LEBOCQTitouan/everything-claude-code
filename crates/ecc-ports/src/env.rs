@@ -4,6 +4,10 @@ use std::path::PathBuf;
 pub use ecc_domain::update::platform::{Architecture, Platform};
 
 /// Port for environment access (env vars, home dir, platform info).
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait Environment: Send + Sync {
     /// Return the value of an environment variable, or `None` if unset.
     fn var(&self, name: &str) -> Option<String>;

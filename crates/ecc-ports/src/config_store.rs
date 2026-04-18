@@ -62,6 +62,10 @@ mod tests {
 ///
 /// Production adapter: `FileConfigStore` in ecc-infra.
 /// Test double: `InMemoryConfigStore` in ecc-test-support.
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait ConfigStore: Send + Sync {
     /// Load the global configuration from `~/.ecc/config.toml`.
     fn load_global(&self) -> Result<RawEccConfig, ConfigError>;
