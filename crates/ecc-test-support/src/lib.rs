@@ -35,6 +35,12 @@ pub use in_memory_memory_store::InMemoryMemoryStore;
 pub use in_memory_metrics_store::InMemoryMetricsStore;
 pub use mock_clock::MockClock;
 pub use mock_env::MockEnvironment;
+
+/// Fixed-time test clock for use in `HookPorts` struct literals and `test_default` calls.
+///
+/// Fixed at 2026-01-01T00:00:00Z (epoch 1735689600).
+pub static TEST_CLOCK: std::sync::LazyLock<MockClock> =
+    std::sync::LazyLock::new(|| MockClock::fixed("2026-01-01T00:00:00Z", 1_735_689_600));
 pub use mock_executor::MockExecutor;
 pub use mock_extractor::MockExtractor;
 pub use mock_git::MockGitInfo;

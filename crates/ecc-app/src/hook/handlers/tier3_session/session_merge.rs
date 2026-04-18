@@ -60,13 +60,13 @@ pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
             let recovery_content = format!(
                 "# ECC Merge Recovery\n\
-                 # Merge failed at: {}\n\
+                 # Merge failed at: epoch:{}\n\
                  # Worktree: {}\n\
                  # Exit code: {}\n\
                  #\n\
                  # To retry: cd {} && ecc-workflow merge\n\
                  # To clean up: ecc worktree gc --force\n",
-                chrono_like_now(),
+                ports.clock.now_epoch_secs(),
                 cwd,
                 output.exit_code,
                 cwd,
@@ -104,14 +104,6 @@ pub fn session_end_merge(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 }
 
-/// Simple timestamp without requiring chrono crate.
-fn chrono_like_now() -> String {
-    let secs = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    format!("epoch:{secs}")
-}
 
 #[cfg(test)]
 mod tests {

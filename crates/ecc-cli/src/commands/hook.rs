@@ -9,6 +9,7 @@ use ecc_infra::os_fs::OsFileSystem;
 use ecc_infra::process_executor::ProcessExecutor;
 use ecc_infra::sqlite_bypass_store::SqliteBypassStore;
 use ecc_infra::std_terminal::StdTerminal;
+use ecc_infra::system_clock::SystemClock;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 
@@ -66,11 +67,13 @@ pub fn run(args: HookArgs) -> anyhow::Result<()> {
         }
     })();
 
+    let clock = SystemClock;
     let ports = HookPorts {
         fs: &fs,
         shell: &shell,
         env: &env,
         terminal: &terminal,
+        clock: &clock,
         cost_store: None,
         bypass_store: bypass_store
             .as_ref()

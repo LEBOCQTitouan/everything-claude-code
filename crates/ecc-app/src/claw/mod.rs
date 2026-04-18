@@ -5,6 +5,7 @@ use ecc_domain::claw::model::ClawModel;
 
 // Re-export ClawModel so CLI doesn't need to import from ecc-domain directly.
 pub use ecc_domain::claw::model::ClawModel as Model;
+use ecc_ports::clock::Clock;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
 use ecc_ports::repl::ReplInput;
@@ -25,6 +26,7 @@ pub struct ClawPorts<'a> {
     pub env: &'a dyn Environment,
     pub terminal: &'a dyn TerminalIO,
     pub repl_input: &'a dyn ReplInput,
+    pub clock: &'a dyn Clock,
 }
 
 /// Configuration for a Claw session.
@@ -203,6 +205,7 @@ mod tests {
             env,
             terminal: term,
             repl_input: input,
+            clock: &*ecc_test_support::TEST_CLOCK,
         }
     }
 

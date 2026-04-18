@@ -1,7 +1,7 @@
 //! Tests for hook dispatch.
 
 use super::*;
-use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor, TEST_CLOCK};
 
 fn make_ports<'a>(
     fs: &'a InMemoryFileSystem,
@@ -14,6 +14,7 @@ fn make_ports<'a>(
         shell,
         env,
         terminal: term,
+        clock: &*TEST_CLOCK,
         cost_store: None,
         bypass_store: None,
         metrics_store: None,
@@ -178,6 +179,7 @@ fn hook_ports_with_metrics_store_none() {
         shell: &shell,
         env: &env,
         terminal: &term,
+        clock: &*TEST_CLOCK,
         cost_store: None,
         bypass_store: None,
         metrics_store: None,
@@ -212,6 +214,7 @@ fn dispatch_records_hook_success_metric() {
         shell: &shell,
         env: &env,
         terminal: &term,
+        clock: &*TEST_CLOCK,
         cost_store: None,
         bypass_store: None,
         metrics_store: Some(&metrics_store),
@@ -262,6 +265,7 @@ fn dispatch_records_hook_failure_metric() {
         shell: &shell,
         env: &env,
         terminal: &term,
+        clock: &*TEST_CLOCK,
         cost_store: None,
         bypass_store: None,
         metrics_store: Some(&metrics_store),
@@ -310,6 +314,7 @@ fn dispatch_metrics_disabled_records_nothing() {
         shell: &shell,
         env: &env,
         terminal: &term,
+        clock: &*TEST_CLOCK,
         cost_store: None,
         bypass_store: None,
         metrics_store: Some(&metrics_store),
@@ -344,6 +349,7 @@ fn dispatch_none_store_fire_and_forget() {
         shell: &shell,
         env: &env,
         terminal: &term,
+        clock: &*TEST_CLOCK,
         cost_store: None,
         bypass_store: None,
         metrics_store: None, // explicitly None
@@ -378,6 +384,7 @@ fn dispatch_session_id_resolution() {
             shell: &shell,
             env: &env,
             terminal: &term,
+            clock: &*TEST_CLOCK,
             cost_store: None,
             bypass_store: None,
             metrics_store: Some(&metrics_store),
@@ -409,6 +416,7 @@ fn dispatch_session_id_resolution() {
             shell: &shell,
             env: &env,
             terminal: &term,
+            clock: &*TEST_CLOCK,
             cost_store: None,
             bypass_store: None,
             metrics_store: Some(&metrics_store),
@@ -443,6 +451,7 @@ fn hook_ports_with_cost_store_none() {
         shell: &shell,
         env: &env,
         terminal: &term,
+        clock: &*TEST_CLOCK,
         cost_store: None,
         bypass_store: None,
         metrics_store: None,

@@ -37,11 +37,8 @@ fn log_write_failure(
     }
 }
 
-fn epoch_secs() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs()
+pub(super) fn epoch_secs(clock: &dyn ecc_ports::clock::Clock) -> u64 {
+    clock.now_epoch_secs()
 }
 
 #[cfg(test)]
@@ -50,6 +47,7 @@ mod tests {
     use ecc_ports::fs::FileSystem as _;
     use ecc_test_support::{
         BufferedTerminal, InMemoryCostStore, InMemoryFileSystem, MockEnvironment, MockExecutor,
+        TEST_CLOCK,
     };
 
     use super::cost_tracker;
@@ -69,6 +67,7 @@ mod tests {
             shell: &shell,
             env: &env,
             terminal: &term,
+            clock: &*TEST_CLOCK,
             cost_store: Some(&store),
             bypass_store: None,
             metrics_store: None,
@@ -134,6 +133,7 @@ mod tests {
             shell: &shell,
             env: &env,
             terminal: &term,
+            clock: &*TEST_CLOCK,
             cost_store: Some(&store),
             bypass_store: None,
             metrics_store: None,
@@ -163,6 +163,7 @@ mod tests {
             shell: &shell,
             env: &env,
             terminal: &term,
+            clock: &*TEST_CLOCK,
             cost_store: Some(&store),
             bypass_store: None,
             metrics_store: None,

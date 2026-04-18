@@ -1,6 +1,7 @@
 //! CRUD use cases for the memory system.
 
 use ecc_domain::memory::{MemoryEntry, MemoryId, MemoryTier};
+use ecc_ports::clock::Clock;
 use ecc_ports::memory_store::{MemoryStore, MemoryStoreError};
 
 /// Result type for memory app use cases.
@@ -35,14 +36,14 @@ pub struct AddParams {
 /// Add a new memory entry.
 ///
 /// Rejects content that contains likely secrets (unless `force=true`).
-pub fn add(store: &dyn MemoryStore, params: AddParams) -> MemoryResult<MemoryId> {
+pub fn add(store: &dyn MemoryStore, params: AddParams, clock: &dyn Clock) -> MemoryResult<MemoryId> {
     if !params.force
         && let Some(detected) = ecc_domain::memory::secrets::contains_likely_secret(&params.content)
     {
         return Err(MemoryAppError::SecretDetected(detected));
     }
 
-    let now = current_timestamp();
+    let now = current_timestamp(clock);
     let entry = MemoryEntry::new(
         MemoryId(0),
         params.tier,
@@ -108,56 +109,15 @@ pub fn show(store: &dyn MemoryStore, id: MemoryId) -> MemoryResult<MemoryEntry> 
 }
 
 /// Return the current timestamp as an ISO-8601 string.
-pub fn current_timestamp() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    // Convert epoch seconds to ISO-8601 (UTC)
-    let days = secs / 86400;
-    let time_secs = secs % 86400;
-    let hours = time_secs / 3600;
-    let mins = (time_secs % 3600) / 60;
-    let s = time_secs % 60;
-    let (year, month, day) = days_to_ymd(days);
-    format!("{year:04}-{month:02}-{day:02}T{hours:02}:{mins:02}:{s:02}Z")
+pub fn current_timestamp(clock: &dyn Clock) -> String {
+    clock.now_iso8601()
 }
 
-fn days_to_ymd(mut days: u64) -> (u64, u64, u64) {
-    let days_400 = 146097u64;
-    let days_100 = 36524u64;
-    let days_4 = 1461u64;
-    let days_1 = 365u64;
-
-    let n400 = days / days_400;
-    days %= days_400;
-    let n100 = (days / days_100).min(3);
-    days -= n100 * days_100;
-    let n4 = days / days_4;
-    days %= days_4;
-    let n1 = (days / days_1).min(3);
-    days -= n1 * days_1;
-
-    let year = n400 * 400 + n100 * 100 + n4 * 4 + n1 + 1970;
-    let leap = (n1 == 0 && (n4 != 0 || n100 == 0)) as u64;
-    let month_days = [31u64, 28 + leap, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    let mut month = 0u64;
-    let mut remaining = days;
-    for (i, &md) in month_days.iter().enumerate() {
-        if remaining < md {
-            month = i as u64 + 1;
-            break;
-        }
-        remaining -= md;
-    }
-    (year, month, remaining + 1)
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ecc_test_support::InMemoryMemoryStore;
+    use ecc_test_support::{InMemoryMemoryStore, TEST_CLOCK};
 
     fn make_store() -> InMemoryMemoryStore {
         InMemoryMemoryStore::new()
@@ -188,7 +148,7 @@ mod tests {
             session_id: None,
             force: false,
         };
-        let id = add(&store, params).unwrap();
+        let id = add(&store, params, &*TEST_CLOCK).unwrap();
         let entry = store.get(id).unwrap();
         assert_eq!(entry.title, "Test Memory");
         assert_eq!(entry.tier, MemoryTier::Semantic);
@@ -208,7 +168,7 @@ mod tests {
             session_id: None,
             force: false,
         };
-        let result = add(&store, params);
+        let result = add(&store, params, &*TEST_CLOCK);
         assert!(matches!(result, Err(MemoryAppError::SecretDetected(_))));
     }
 
@@ -224,7 +184,7 @@ mod tests {
             session_id: None,
             force: true,
         };
-        let result = add(&store, params);
+        let result = add(&store, params, &*TEST_CLOCK);
         assert!(result.is_ok());
     }
 
@@ -258,7 +218,7 @@ mod tests {
     fn test_search_returns_ok_for_any_query() {
         let store = make_store();
         // The result type is Ok even when there are entries (tests the Ok path)
-        add(&store, simple_add_params("some entry", "some content")).unwrap();
+        add(&store, simple_add_params("some entry", "some content"), &*TEST_CLOCK).unwrap();
         // We don't check count here — just that it doesn't error
         let result = search(&store, "some", 10);
         assert!(result.is_ok());
@@ -286,8 +246,8 @@ mod tests {
             session_id: None,
             force: false,
         };
-        add(&store, p1).unwrap();
-        add(&store, p2).unwrap();
+        add(&store, p1, &*TEST_CLOCK).unwrap();
+        add(&store, p2, &*TEST_CLOCK).unwrap();
         let results = list(&store, Some(MemoryTier::Semantic), None, None).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].title, "S1");
@@ -314,8 +274,8 @@ mod tests {
             session_id: None,
             force: false,
         };
-        add(&store, p1).unwrap();
-        add(&store, p2).unwrap();
+        add(&store, p1, &*TEST_CLOCK).unwrap();
+        add(&store, p2, &*TEST_CLOCK).unwrap();
         let results = list(&store, None, Some("rust"), None).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].title, "T1");
@@ -325,7 +285,7 @@ mod tests {
     #[test]
     fn test_delete_removes_entry() {
         let store = make_store();
-        let id = add(&store, simple_add_params("Entry", "content")).unwrap();
+        let id = add(&store, simple_add_params("Entry", "content"), &*TEST_CLOCK).unwrap();
         delete(&store, id).unwrap();
         assert!(store.get(id).is_err());
     }

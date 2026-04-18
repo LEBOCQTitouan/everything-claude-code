@@ -48,7 +48,7 @@ pub fn daily_summary(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         return HookResult::passthrough(stdin);
     }
 
-    let now = datetime_from_epoch(epoch_secs());
+    let now = datetime_from_epoch(epoch_secs(ports.clock));
     let today = format_date(&now);
     let time = format_time(&now);
 
@@ -121,8 +121,9 @@ fn insert_after_heading(content: &str, heading: &str, entry: &str) -> String {
 mod tests {
     use super::*;
     use crate::hook::HookPorts;
+    use ecc_ports::clock::Clock as _;
     use ecc_ports::fs::FileSystem;
-    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor};
+    use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockEnvironment, MockExecutor, TEST_CLOCK};
     #[test]
     fn daily_summary_creates_file_when_missing() {
         let fs = InMemoryFileSystem::new();
@@ -158,7 +159,7 @@ mod tests {
         let term = BufferedTerminal::new();
 
         // Pre-create daily dir and file
-        let now = datetime_from_epoch(epoch_secs());
+        let now = datetime_from_epoch(TEST_CLOCK.now_epoch_secs());
         let today = format_date(&now);
         let dir_path =
             std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");

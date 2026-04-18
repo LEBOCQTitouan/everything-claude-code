@@ -136,7 +136,8 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
                 session_id: None,
                 force,
             };
-            match ecc_app::memory::crud::add(&store, params) {
+            let clock = ecc_infra::system_clock::SystemClock;
+            match ecc_app::memory::crud::add(&store, params, &clock) {
                 Ok(id) => println!("Added memory entry: {id}"),
                 Err(MemoryAppError::SecretDetected(kind)) => {
                     eprintln!(
@@ -206,7 +207,8 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
 
         MemoryAction::Promote { id } => {
             let store = open_store()?;
-            match ecc_app::memory::lifecycle::promote(&store, MemoryId(id)) {
+            let clock = ecc_infra::system_clock::SystemClock;
+            match ecc_app::memory::lifecycle::promote(&store, MemoryId(id), &clock) {
                 Ok(entry) => println!(
                     "Promoted entry {} to {} (score: {:.2})",
                     id, entry.tier, entry.relevance_score

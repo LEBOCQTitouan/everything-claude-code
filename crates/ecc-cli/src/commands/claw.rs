@@ -7,6 +7,7 @@ use ecc_infra::os_fs::OsFileSystem;
 use ecc_infra::process_executor::ProcessExecutor;
 use ecc_infra::rustyline_input::RustylineInput;
 use ecc_infra::std_terminal::StdTerminal;
+use ecc_infra::system_clock::SystemClock;
 use ecc_ports::env::Environment;
 
 #[derive(Args)]
@@ -48,12 +49,14 @@ pub fn run(args: ClawArgs) -> anyhow::Result<()> {
     let history_path = env.home_dir().map(|h| ecc_app::claw::history_path(&h));
     let repl_input = RustylineInput::new(history_path)?;
 
+    let clock = SystemClock;
     let ports = ClawPorts {
         fs: &fs,
         shell: &shell,
         env: &env,
         terminal: &terminal,
         repl_input: &repl_input,
+        clock: &clock,
     };
 
     run_repl(&config, &ports).map_err(|e| anyhow::anyhow!("{e}"))

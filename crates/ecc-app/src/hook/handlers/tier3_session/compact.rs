@@ -22,7 +22,7 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     let compaction_log = sessions_dir.join("compaction-log.txt");
-    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs(ports.clock)));
 
     // Append to compaction log
     let existing = ports.fs.read_to_string(&compaction_log).unwrap_or_default();
@@ -36,7 +36,7 @@ pub fn pre_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     if let Some(active) = session_files.first()
         && let Ok(content) = ports.fs.read_to_string(active)
     {
-        let time_str = format_time(&datetime_from_epoch(epoch_secs()));
+        let time_str = format_time(&datetime_from_epoch(epoch_secs(ports.clock)));
         let updated = format!(
             "{}\n---\n**[Compaction occurred at {}]** - Context was summarized\n",
             content, time_str
@@ -70,7 +70,7 @@ pub fn post_compact(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     let compaction_log = sessions_dir.join("compaction-log.txt");
-    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs(ports.clock)));
     let existing = ports.fs.read_to_string(&compaction_log).unwrap_or_default();
     let new_content = format!("{}[{}] PostCompact: {}\n", existing, timestamp, summary);
 

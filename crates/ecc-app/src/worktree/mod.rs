@@ -37,12 +37,8 @@ pub(crate) fn compact_ts_to_secs(ts: &str) -> Option<u64> {
 }
 
 /// Return the current Unix timestamp in seconds.
-pub(crate) fn now_secs() -> u64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs()
+pub(crate) fn now_secs(clock: &dyn ecc_ports::clock::Clock) -> u64 {
+    clock.now_epoch_secs()
 }
 
 pub(crate) const STALE_SECS: u64 = 24 * 3600;

@@ -192,15 +192,9 @@ pub fn quality_gate(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         };
         let session_id = crate::metrics_session::resolve_session_id(
             ports.env.var("CLAUDE_SESSION_ID").as_deref(),
+            ports.clock,
         );
-        let timestamp = {
-            use std::time::{SystemTime, UNIX_EPOCH};
-            let secs = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs();
-            format!("{secs}")
-        };
+        let timestamp = ports.clock.now_epoch_secs().to_string();
         if let Ok(event) = MetricEvent::commit_gate(session_id, timestamp, outcome, gates_failed) {
             // Intentional fire-and-forget: metrics recording is best-effort
             let _ = crate::metrics_mgmt::record_if_enabled(ports.metrics_store, &event, disabled);
@@ -251,6 +245,7 @@ mod tests {
             shell,
             env,
             terminal: term,
+            clock: &*ecc_test_support::TEST_CLOCK,
             cost_store: None,
             bypass_store: None,
             metrics_store: Some(store),

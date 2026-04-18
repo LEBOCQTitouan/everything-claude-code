@@ -7,14 +7,9 @@ use ecc_domain::claw::prompt::{assemble_prompt, build_system_context};
 use ecc_domain::claw::session_name::is_valid_session_name;
 use ecc_domain::claw::turn::{Role, Turn};
 use ecc_domain::time::{datetime_from_epoch, format_datetime};
-use std::time::{SystemTime, UNIX_EPOCH};
 
-fn now_datetime_string() -> String {
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    format_datetime(&datetime_from_epoch(secs))
+fn now_datetime_string(clock: &dyn ecc_ports::clock::Clock) -> String {
+    format_datetime(&datetime_from_epoch(clock.now_epoch_secs()))
 }
 
 /// Clear the current session history.
@@ -196,12 +191,12 @@ pub fn handle_user_message(message: &str, state: &mut ClawState, ports: &ClawPor
     match super::super::claude_runner::run_claude(&prompt, state.model(), ports) {
         Ok(response) => {
             let user_turn = Turn {
-                timestamp: now_datetime_string(),
+                timestamp: now_datetime_string(ports.clock),
                 role: Role::User,
                 content: message.to_string(),
             };
             let assistant_turn = Turn {
-                timestamp: now_datetime_string(),
+                timestamp: now_datetime_string(ports.clock),
                 role: Role::Assistant,
                 content: response.clone(),
             };
@@ -239,6 +234,7 @@ mod tests {
             env,
             terminal: term,
             repl_input: input,
+            clock: &*ecc_test_support::TEST_CLOCK,
         }
     }
 

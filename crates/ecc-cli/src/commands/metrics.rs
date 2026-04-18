@@ -100,8 +100,9 @@ pub fn run(args: MetricsArgs) -> anyhow::Result<()> {
             if trend {
                 let dur =
                     parse_duration(&since).unwrap_or(std::time::Duration::from_secs(7 * 86400));
+                let clock = ecc_infra::system_clock::SystemClock;
                 let trend_data =
-                    metrics_mgmt::trend_summary(&store, dur).map_err(|e| anyhow::anyhow!("{e}"))?;
+                    metrics_mgmt::trend_summary(&store, dur, &clock).map_err(|e| anyhow::anyhow!("{e}"))?;
                 use ecc_domain::metrics::TrendComparison;
                 println!("Harness Metrics Trend (last {since} vs previous {since})");
                 println!(
@@ -187,7 +188,8 @@ pub fn run(args: MetricsArgs) -> anyhow::Result<()> {
             let disabled = std::env::var("ECC_METRICS_DISABLED")
                 .map(|v| v == "1")
                 .unwrap_or(false);
-            metrics_mgmt::record_commit_gate(Some(&store), &session_id, &kind, &outcome, disabled)
+            let clock = ecc_infra::system_clock::SystemClock;
+            metrics_mgmt::record_commit_gate(Some(&store), &session_id, &kind, &outcome, disabled, &clock)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             println!("Recorded commit gate: kind={kind} outcome={outcome}");
         }
@@ -264,7 +266,7 @@ mod tests {
     use super::*;
     use ecc_domain::metrics::{MetricEvent, MetricOutcome};
     use ecc_ports::metrics_store::MetricsStore;
-    use ecc_test_support::InMemoryMetricsStore;
+    use ecc_test_support::{InMemoryMetricsStore, TEST_CLOCK};
 
     fn hook_event(session: &str, ts: &str, outcome: MetricOutcome) -> MetricEvent {
         MetricEvent::hook_execution(
@@ -510,6 +512,7 @@ mod tests {
             "build",
             "pass",
             false,
+            &*TEST_CLOCK,
         )
         .unwrap();
         let events = store.snapshot();

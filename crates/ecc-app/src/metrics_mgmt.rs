@@ -3,7 +3,7 @@
 //! Thin delegation layer between CLI and the MetricsStore port.
 //! Includes `record_if_enabled()` for fire-and-forget instrumentation.
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use ecc_domain::metrics::{
     CommitGateKind, HarnessMetrics, MetricEvent, MetricOutcome, TrendComparison,
@@ -74,6 +74,7 @@ pub fn record_commit_gate(
     kind: &str,
     outcome: &str,
     disabled: bool,
+    clock: &dyn ecc_ports::clock::Clock,
 ) -> Result<(), String> {
     if disabled {
         return Ok(());
@@ -90,7 +91,7 @@ pub fn record_commit_gate(
     } else {
         vec![]
     };
-    let timestamp = chrono_now_iso8601();
+    let timestamp = clock.now_iso8601();
     let event = MetricEvent::commit_gate(
         session_id.to_owned(),
         timestamp,
@@ -108,11 +109,9 @@ pub fn record_commit_gate(
 pub fn trend_summary(
     store: &dyn MetricsStore,
     since: Duration,
+    clock: &dyn ecc_ports::clock::Clock,
 ) -> Result<TrendComparison, MetricsStoreError> {
-    let now_secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
+    let now_secs = clock.now_epoch_secs();
 
     let current_start = secs_to_iso8601(now_secs.saturating_sub(since.as_secs()));
     let current_end = secs_to_iso8601(now_secs);
@@ -131,15 +130,6 @@ pub fn trend_summary(
     let current = store.summarize(&current_query)?;
     let previous = store.summarize(&previous_query)?;
     Ok(TrendComparison::compute(current, previous))
-}
-
-/// Return the current time as an ISO-8601 string (UTC, second precision).
-fn chrono_now_iso8601() -> String {
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    secs_to_iso8601(secs)
 }
 
 /// Convert Unix epoch seconds to an ISO-8601 UTC string.
@@ -178,7 +168,7 @@ fn days_to_ymd(days: u64) -> (u64, u64, u64) {
 mod tests {
     use super::*;
     use ecc_domain::metrics::{MetricEvent, MetricOutcome};
-    use ecc_test_support::InMemoryMetricsStore;
+    use ecc_test_support::{InMemoryMetricsStore, TEST_CLOCK};
 
     fn test_event() -> MetricEvent {
         MetricEvent::hook_execution(
@@ -246,7 +236,7 @@ mod tests {
     #[test]
     fn record_commit_gate_pass() {
         let store = InMemoryMetricsStore::new();
-        record_commit_gate(Some(&store), "sess-1", "build", "pass", false).unwrap();
+        record_commit_gate(Some(&store), "sess-1", "build", "pass", false, &*TEST_CLOCK).unwrap();
 
         let events = store.snapshot();
         assert_eq!(events.len(), 1);
@@ -265,7 +255,7 @@ mod tests {
     #[test]
     fn record_commit_gate_fail() {
         let store = InMemoryMetricsStore::new();
-        record_commit_gate(Some(&store), "sess-1", "test", "fail", false).unwrap();
+        record_commit_gate(Some(&store), "sess-1", "test", "fail", false, &*TEST_CLOCK).unwrap();
 
         let events = store.snapshot();
         assert_eq!(events.len(), 1);
@@ -327,7 +317,7 @@ mod tests {
         store.record(&curr_event).unwrap();
 
         // trend_summary over 7 days
-        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400));
+        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400), &*TEST_CLOCK);
         assert!(result.is_ok(), "trend_summary failed: {:?}", result.err());
         let trend = result.unwrap();
         // Both snapshots are returned
@@ -352,7 +342,7 @@ mod tests {
         .unwrap();
         store.record(&curr_event).unwrap();
 
-        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400));
+        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400), &*TEST_CLOCK);
         assert!(result.is_ok());
         let trend = result.unwrap();
         // Previous period has no events → rates should be None
@@ -368,7 +358,7 @@ mod tests {
         let store = InMemoryMetricsStore::new();
         // Empty store — both periods have no events
 
-        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400));
+        let result = trend_summary(&store, std::time::Duration::from_secs(7 * 86400), &*TEST_CLOCK);
         assert!(result.is_ok());
         let trend = result.unwrap();
         assert!(

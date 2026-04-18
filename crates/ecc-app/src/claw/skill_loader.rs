@@ -70,6 +70,7 @@ mod tests {
             env,
             terminal: term,
             repl_input: input,
+            clock: &*ecc_test_support::TEST_CLOCK,
         }
     }
 

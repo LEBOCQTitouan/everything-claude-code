@@ -33,7 +33,7 @@ pub fn subagent_start_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     if let Some(active) = session_files.first()
         && let Ok(content) = ports.fs.read_to_string(active)
     {
-        let timestamp = format_time(&datetime_from_epoch(epoch_secs()));
+        let timestamp = format_time(&datetime_from_epoch(epoch_secs(ports.clock)));
         let updated = format!(
             "{}\n[{}] [Subagent] Started: {}\n",
             content, timestamp, agent_type
@@ -46,8 +46,8 @@ pub fn subagent_start_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     // Record AgentSpawn/Success metric event.
     let disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
     if !disabled {
-        let session_id = resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
-        let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+        let session_id = resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref(), ports.clock);
+        let timestamp = format_datetime(&datetime_from_epoch(epoch_secs(ports.clock)));
         if let Ok(event) = MetricEvent::agent_spawn(
             session_id,
             timestamp,
@@ -87,7 +87,7 @@ pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     if let Some(active) = session_files.first()
         && let Ok(content) = ports.fs.read_to_string(active)
     {
-        let timestamp = format_time(&datetime_from_epoch(epoch_secs()));
+        let timestamp = format_time(&datetime_from_epoch(epoch_secs(ports.clock)));
         let updated = format!(
             "{}\n[{}] [Subagent] Completed: {}\n",
             content, timestamp, agent_type
@@ -126,8 +126,8 @@ pub fn subagent_stop_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     // Record AgentSpawn metric event.
     let disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
     if !disabled {
-        let session_id = resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
-        let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+        let session_id = resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref(), ports.clock);
+        let timestamp = format_datetime(&datetime_from_epoch(epoch_secs(ports.clock)));
         if let Ok(event) =
             MetricEvent::agent_spawn(session_id, timestamp, agent_type, outcome, retry_count)
         {
@@ -165,7 +165,7 @@ pub fn config_change_log(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     let log_file = sessions_dir.join("config-changes.log");
-    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs(ports.clock)));
     let existing = ports.fs.read_to_string(&log_file).unwrap_or_default();
     let new_content = format!(
         "{}[{}] Config changed: {} = {}\n",
@@ -200,6 +200,7 @@ mod tests {
             shell,
             env,
             terminal: term,
+            clock: &*ecc_test_support::TEST_CLOCK,
             cost_store: None,
             bypass_store: None,
             metrics_store: Some(store),

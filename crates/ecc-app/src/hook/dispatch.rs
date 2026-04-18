@@ -199,17 +199,11 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
     // Record hook execution metric (fire-and-forget)
     let metrics_disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
-    let session_id =
-        crate::metrics_session::resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
-    // TODO(BL-133): Replace with ports.clock.now_epoch_secs() when HookPorts gains Clock field
-    let timestamp = {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let secs = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        format!("{secs}")
-    };
+    let session_id = crate::metrics_session::resolve_session_id(
+        ports.env.var("CLAUDE_SESSION_ID").as_deref(),
+        ports.clock,
+    );
+    let timestamp = ports.clock.now_epoch_secs().to_string();
     let (outcome, error_message) = if result.exit_code == 0 {
         (ecc_domain::metrics::MetricOutcome::Success, None)
     } else {

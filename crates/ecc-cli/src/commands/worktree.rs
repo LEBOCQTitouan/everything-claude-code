@@ -39,7 +39,8 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
     match args.action {
         WorktreeAction::Gc { force, dir } => {
             let project_dir = resolve_dir(dir)?;
-            let result = worktree::gc(&worktree_mgr, &executor, &project_dir, force)?;
+            let clock = ecc_infra::system_clock::SystemClock;
+            let result = worktree::gc(&worktree_mgr, &executor, &project_dir, force, &clock)?;
 
             for name in &result.removed {
                 println!("Removed: {name}");
@@ -57,7 +58,8 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
         }
         WorktreeAction::Status { dir } => {
             let project_dir = resolve_dir(dir)?;
-            let entries = worktree::status(&worktree_mgr, &executor, &project_dir)?;
+            let clock = ecc_infra::system_clock::SystemClock;
+            let entries = worktree::status(&worktree_mgr, &executor, &project_dir, &clock)?;
             let table = worktree::format_status_table(&entries);
             println!("{table}");
         }
@@ -82,12 +84,12 @@ mod tests {
     fn status_exit_zero() {
         // Verify that the status function returns Ok (exit code 0 on success).
         // Uses in-memory mock rather than real OsWorktreeManager to avoid I/O.
-        use ecc_test_support::{MockExecutor, MockWorktreeManager};
+        use ecc_test_support::{MockExecutor, MockWorktreeManager, TEST_CLOCK};
         use std::path::Path;
 
         let mgr = MockWorktreeManager::new();
         let executor = MockExecutor::new();
-        let result = ecc_app::worktree::status(&mgr, &executor, Path::new("/repo"));
+        let result = ecc_app::worktree::status(&mgr, &executor, Path::new("/repo"), &*TEST_CLOCK);
         assert!(
             result.is_ok(),
             "status must return Ok (exit code 0 on success)"

@@ -3,8 +3,8 @@
 //! Orchestrates bypass grant, list, summary, prune, and gc operations.
 
 use ecc_domain::hook_runtime::bypass::{BypassDecision, BypassSummary, BypassToken, Verdict};
-use ecc_domain::time::is_leap_year;
 use ecc_ports::bypass_store::{BypassStore, BypassStoreError};
+use ecc_ports::clock::Clock;
 use ecc_ports::fs::FileSystem;
 use std::path::Path;
 
@@ -18,8 +18,9 @@ pub fn grant(
     hook_id: &str,
     reason: &str,
     session_id: &str,
+    clock: &dyn Clock,
 ) -> Result<BypassToken, BypassMgmtError> {
-    let timestamp = chrono_like_now();
+    let timestamp = clock.now_iso8601();
 
     // Create domain objects (validates inputs)
     let token = BypassToken::new(hook_id, session_id, &timestamp, reason)
@@ -107,56 +108,6 @@ pub fn gc(
     Ok(removed)
 }
 
-/// Generate an ISO-8601 timestamp string without chrono dependency.
-fn chrono_like_now() -> String {
-    use std::time::SystemTime;
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_default();
-    // Simple UTC timestamp format
-    let secs = now.as_secs();
-    let days = secs / 86400;
-    let remaining = secs % 86400;
-    let hours = remaining / 3600;
-    let minutes = (remaining % 3600) / 60;
-    let seconds = remaining % 60;
-
-    // Approximate date from days since epoch (good enough for timestamps)
-    let (year, month, day) = days_to_date(days);
-    format!(
-        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
-        year, month, day, hours, minutes, seconds
-    )
-}
-
-/// Convert days since Unix epoch to (year, month, day).
-fn days_to_date(days: u64) -> (u64, u64, u64) {
-    // Simplified calendar calculation
-    let mut y = 1970;
-    let mut remaining = days;
-    loop {
-        let days_in_year = if is_leap_year(y) { 366 } else { 365 };
-        if remaining < days_in_year {
-            break;
-        }
-        remaining -= days_in_year;
-        y += 1;
-    }
-    let days_in_months: [u64; 12] = if is_leap_year(y) {
-        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    } else {
-        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    };
-    let mut m = 0;
-    for (i, &dim) in days_in_months.iter().enumerate() {
-        if remaining < dim {
-            m = i;
-            break;
-        }
-        remaining -= dim;
-    }
-    (y, (m + 1) as u64, remaining + 1)
-}
 
 /// Errors from bypass management operations.
 #[derive(Debug, thiserror::Error)]
@@ -172,7 +123,7 @@ pub enum BypassMgmtError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ecc_test_support::{InMemoryBypassStore, InMemoryFileSystem};
+    use ecc_test_support::{InMemoryBypassStore, InMemoryFileSystem, TEST_CLOCK};
     use std::path::Path;
 
     #[test]
@@ -188,6 +139,7 @@ mod tests {
             "pre:write-edit:worktree-guard",
             "hotfix needed",
             "session-abc",
+            &*TEST_CLOCK,
         );
         assert!(result.is_ok());
 
@@ -206,7 +158,7 @@ mod tests {
     fn bypass_grant_without_reason_errors() {
         let store = InMemoryBypassStore::new();
         let fs = InMemoryFileSystem::new();
-        let result = grant(&store, &fs, Path::new("/home"), "hook", "", "session-1");
+        let result = grant(&store, &fs, Path::new("/home"), "hook", "", "session-1", &*TEST_CLOCK);
         assert!(result.is_err());
     }
 
