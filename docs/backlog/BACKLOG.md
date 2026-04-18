@@ -152,6 +152,7 @@
 | BL-154 | Widen ecc validate commands rule to catch backtick-embedded !$ARGUMENTS inline-code patterns | — | LOW | direct edit | open | 2026-04-17 |
 | BL-155 | Add Foundation variant to Concern domain enum for /project-foundation workflow | — | MEDIUM | /spec-dev | open | 2026-04-17 |
 | BL-156 | Safe worktree GC — skip active session worktrees | — | MEDIUM | /spec-fix | open | 2026-04-18 |
+| BL-157 | Tech Debt Registry linked to Backlog | — | HIGH | /spec | open | 2026-04-18 |
 
 ## Dependency Graph
 
