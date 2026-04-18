@@ -297,6 +297,28 @@ mod tests {
     use super::*;
     use ecc_test_support::{BufferedTerminal, InMemoryFileSystem, MockExecutor};
 
+    // PC-040: sanitize_path_display strips control bytes before emission.
+    // Protects stderr/stdout from ANSI-escape injection via malicious filenames.
+    #[test]
+    fn markers_path_sanitizer_strips_control_bytes() {
+        use std::path::PathBuf;
+        let input = PathBuf::from("foo\x1b[31mred\x1b[0m\x07bar\x7fbaz\x00end");
+        let output = sanitize_path_display(&input);
+        assert!(!output.contains('\x1b'), "ESC byte must be stripped");
+        assert!(!output.contains('\x07'), "BEL byte must be stripped");
+        assert!(!output.contains('\x7f'), "DEL byte must be stripped");
+        assert!(!output.contains('\x00'), "NUL byte must be stripped");
+        assert!(output.contains("foo"), "non-control text preserved");
+        assert!(output.contains("red"), "non-control text preserved");
+        assert!(output.contains("baz"), "non-control text preserved");
+        assert!(output.contains("end"), "non-control text preserved");
+        // Tab and newline are explicitly kept (visible whitespace not treated as injection).
+        let ws = PathBuf::from("a\tb\nc");
+        let ws_out = sanitize_path_display(&ws);
+        assert!(ws_out.contains('\t'));
+        assert!(ws_out.contains('\n'));
+    }
+
     #[test]
     fn missing_claude_md() {
         let fs = InMemoryFileSystem::new();
