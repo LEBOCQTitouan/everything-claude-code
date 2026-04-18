@@ -174,6 +174,34 @@ mod tests {
     }
 
     #[test]
+    fn agent_with_generated_fields_passes() {
+        let a = AgentFrontmatter {
+            name: Some("backlog".to_string()),
+            description: Some("Domain agent for backlog".to_string()),
+            model: Some("sonnet".to_string()),
+            tools: None,
+            effort: None,
+            generated: Some(true),
+            generated_at: Some("2026-04-17T00:00:00Z".to_string()),
+        };
+        assert!(a.validate().is_ok());
+    }
+
+    #[test]
+    fn agent_without_generated_fields_passes() {
+        let a = AgentFrontmatter {
+            name: Some("my-agent".to_string()),
+            description: Some("Does stuff".to_string()),
+            model: Some("sonnet".to_string()),
+            tools: None,
+            effort: None,
+            generated: None,
+            generated_at: None,
+        };
+        assert!(a.validate().is_ok());
+    }
+
+    #[test]
     fn valid_hook_passes() {
         let h = HookFrontmatter {
             hook_type: Some("command".to_string()),

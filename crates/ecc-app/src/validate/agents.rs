@@ -514,6 +514,94 @@ mod tests {
     }
 
     #[test]
+    fn agents_domain_subdir_valid_file() {
+        let fs = InMemoryFileSystem::new()
+            .with_file(
+                "/root/agents/top.md",
+                "---\nmodel: sonnet\ntools: Read\n---\n# Top Agent",
+            )
+            .with_file(
+                "/root/agents/domain/backlog.md",
+                "---\nmodel: sonnet\ntools: Read\ngenerated: true\ngenerated_at: 2026-04-17T00:00:00Z\n---\n# Backlog Domain Agent",
+            );
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+    }
+
+    #[test]
+    fn agents_domain_subdir_missing_model_fails() {
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/domain/backlog.md",
+            "---\ntools: Read\n---\n# Missing model",
+        );
+        let t = term();
+        assert!(!run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        let stderr = t.stderr_output();
+        assert!(
+            stderr
+                .iter()
+                .any(|s| s.contains("backlog.md") || s.contains("Missing required field") || s.contains("model")),
+            "expected error mentioning backlog.md or model field, got: {stderr:?}"
+        );
+    }
+
+    #[test]
+    fn agents_domain_subdir_absent_succeeds() {
+        // No agents/domain/ dir — should succeed silently
+        let fs = InMemoryFileSystem::new().with_file(
+            "/root/agents/top.md",
+            "---\nmodel: sonnet\ntools: Read\n---\n# Top",
+        );
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+    }
+
+    #[test]
+    fn agents_count_includes_domain_subdir() {
+        let fs = InMemoryFileSystem::new()
+            .with_file(
+                "/root/agents/top.md",
+                "---\nmodel: sonnet\ntools: Read\n---\n# Top",
+            )
+            .with_file(
+                "/root/agents/domain/config.md",
+                "---\nmodel: sonnet\ntools: Read\ngenerated: true\ngenerated_at: 2026-04-17T00:00:00Z\n---\n# Config Domain Agent",
+            );
+        let t = term();
+        assert!(run_validate(
+            &fs,
+            &t,
+            &MockEnvironment::default(),
+            &ValidateTarget::Agents,
+            Path::new("/root")
+        ));
+        // Count should include both top-level and domain subdir agents (2 total)
+        let stdout = t.stdout_output();
+        assert!(
+            stdout.iter().any(|s| s.contains('2')),
+            "expected count 2 in stdout, got: {stdout:?}"
+        );
+    }
+
+    #[test]
     fn agent_no_patterns_field_ok() {
         // Agent without patterns field — no warning, validation passes
         let fs = InMemoryFileSystem::new().with_file(
