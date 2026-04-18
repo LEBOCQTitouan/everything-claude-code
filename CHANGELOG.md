@@ -10,6 +10,8 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Full audit HIGH+MEDIUM remediation (2026-04-18)**: Fixed all actionable findings from full-2026-04-18 audit (grade B). US-001: Decomposed 2 oversized files (backlog.rs 1,467→4 files max 475, phase_gate.rs 959→3 files max 758). US-002: Replaced 18 swallowed `let _ =` errors with `tracing::warn!()` in delta_helpers.rs. US-003: Injected Clock port across 11 SystemTime::now() callsites in ecc-app (BL-133 debt resolved). US-004: Added `#[serde(deny_unknown_fields)]` to 20 Deserialize structs (10 forward-compat types excluded). US-005: Added `serial_test` to 3 env-dependent xtask tests. US-006: Enabled `#![warn(missing_docs)]` in ecc-domain, documented 718 pub items across 71 files. US-007: Added `--health` flag to `ecc status` (writable dir, state file, git repo, data dir checks).
+
 - **Shell-eval injection in slash-command templates (spec 2026-04-17)**: `/spec-dev`, `/spec-fix`, `/spec-refactor`, and `/project-foundation` no longer fail on argument strings containing shell metacharacters (`` ` ``, `"`, `$`, `\`, newline). Removed 7 `!`-prefix `$ARGUMENTS` lines across 4 templates; replaced with prose directing Claude to invoke the CLI via the Bash tool with env-var + stdin pattern. Added `--feature-stdin` flag on `ecc-workflow init` and `ecc-workflow worktree-name` (mirrored in `ecc workflow` delegator) for defense-in-depth: 64KB cap, UTF-8 validation, TTY rejection, single-trailing-LF strip. Added `ecc validate commands` rule preventing regression (pinned regex `^[[:space:]]*!.*\$ARGUMENTS`). Zero domain changes, zero data migration. 41 pass conditions, ~3000+ tests pass workspace-wide. (ADR 0066)
 
 ### Added
