@@ -164,27 +164,29 @@ fn walk_marker_files(
 }
 
 /// Lazy backlog index — reads backlog dir once and checks file presence by ID.
+///
+/// Stores an O(1)-lookup HashSet of parsed backlog IDs, not a filename list.
+/// Lookup is O(1) regardless of backlog size; load is O(n) in dir entries (done once).
 struct BacklogIndex {
-    filenames: Vec<String>,
+    ids: std::collections::HashSet<u32>,
 }
 
 impl BacklogIndex {
     fn load(fs: &dyn FileSystem, project_root: &std::path::Path) -> Self {
+        use ecc_domain::backlog::entry::extract_id_from_filename;
         let backlog_dir = project_root.join("docs/backlog");
-        let filenames = fs
+        let ids = fs
             .read_dir(&backlog_dir)
             .unwrap_or_default()
             .into_iter()
             .filter_map(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
+            .filter_map(|name| extract_id_from_filename(&name))
             .collect();
-        Self { filenames }
+        Self { ids }
     }
 
     fn contains(&self, id: u32) -> bool {
-        use ecc_domain::backlog::entry::matches_backlog_filename;
-        self.filenames
-            .iter()
-            .any(|f| matches_backlog_filename(f, id))
+        self.ids.contains(&id)
     }
 }
 

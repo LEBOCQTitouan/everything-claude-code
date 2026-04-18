@@ -67,6 +67,7 @@ jobs:
           ./target/release/ecc validate skills
           ./target/release/ecc validate rules
           ./target/release/ecc validate patterns
+          ./target/release/ecc validate claude-md counts
           ./target/release/ecc validate claude-md markers --strict
 
       - name: Validate workflow templates
