@@ -147,6 +147,14 @@ pub fn extract_id_from_filename(filename: &str) -> Option<u32> {
     digits.parse().ok()
 }
 
+/// Returns true if `filename` is the backlog file for the given numeric ID.
+///
+/// Uses `BL-{:03}` padding for IDs ≤ 999 and `BL-{id}` for IDs ≥ 1000.
+/// Matches both `BL-NNN.md` (no slug) and `BL-NNN-<slug>.md` (with slug).
+pub fn matches_backlog_filename(_filename: &str, _id: u32) -> bool {
+    false
+}
+
 /// Parse YAML frontmatter from markdown content.
 ///
 /// Returns `Err(BacklogError)` if no frontmatter found or YAML is malformed.
@@ -436,7 +444,34 @@ mod tests {
         assert!(!result2.contains("\""));
     }
 
-    // PC-006: Does not modify status: lines in body after closing ---
+    // matches_backlog_filename tests
+
+    // PC-006: Predicate matches BL-{:03} for IDs ≤ 999
+    #[test]
+    fn matches_backlog_filename_padded() {
+        assert!(matches_backlog_filename("BL-001-foo.md", 1));
+        assert!(matches_backlog_filename("BL-100.md", 100));
+        assert!(matches_backlog_filename("BL-100-bar.md", 100));
+        assert!(matches_backlog_filename("BL-099-zzz.md", 99));
+        assert!(!matches_backlog_filename("BL-001-foo.md", 2));
+        assert!(!matches_backlog_filename("BL-100-foo.md", 1));
+        assert!(!matches_backlog_filename("foo.md", 1));
+        assert!(!matches_backlog_filename("BL-001.txt", 1));
+        assert!(!matches_backlog_filename("BL-001", 1));
+    }
+
+    // PC-007: Predicate matches BL-{id} for IDs ≥ 1000
+    #[test]
+    fn matches_backlog_filename_unpadded() {
+        assert!(matches_backlog_filename("BL-1000-foo.md", 1000));
+        assert!(matches_backlog_filename("BL-1000.md", 1000));
+        assert!(matches_backlog_filename("BL-9999-zzz.md", 9999));
+        assert!(matches_backlog_filename("BL-10000-foo.md", 10000));
+        assert!(!matches_backlog_filename("BL-100-foo.md", 1000));
+        assert!(!matches_backlog_filename("BL-1000-foo.md", 100));
+    }
+
+    // PC-006 (original numbering): Does not modify status: lines in body after closing ---
     #[test]
     fn replace_frontmatter_status_ignores_body_status() {
         let content = "---\nid: BL-001\nstatus: open\ncreated: 2026-01-01\n---\n\nstatus: this is in the body\n# Body";
