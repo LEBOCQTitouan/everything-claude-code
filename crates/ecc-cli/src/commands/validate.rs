@@ -6,6 +6,7 @@ use clap::{Args, Subcommand};
 use ecc_infra::os_fs::OsFileSystem;
 use ecc_infra::process_executor::ProcessExecutor;
 use ecc_infra::std_terminal::StdTerminal;
+use ecc_ports::terminal::TerminalIO;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -57,9 +58,11 @@ pub enum CliValidateTarget {
         #[arg(long)]
         spec: Option<PathBuf>,
     },
-    /// Validate CLAUDE.md numeric claims against actual counts
+    /// Validate CLAUDE.md numeric claims and TEMPORARY marker staleness
     ClaudeMd {
-        /// Cross-check numeric counts
+        #[command(subcommand)]
+        cmd: Option<ClaudeMdSubcommand>,
+        /// DEPRECATED: use `ecc validate claude-md counts` instead
         #[arg(long)]
         counts: bool,
     },
@@ -68,6 +71,29 @@ pub enum CliValidateTarget {
         /// Show coverage dashboard (total files, referenced, percentage, priority gaps)
         #[arg(long)]
         coverage: bool,
+    },
+}
+
+/// Subcommands for `ecc validate claude-md`.
+#[derive(Subcommand)]
+pub enum ClaudeMdSubcommand {
+    /// Cross-check CLAUDE.md numeric claims against actual counts
+    Counts,
+    /// Flag stale TEMPORARY (BL-NNN) markers whose backlog file is missing
+    Markers {
+        /// Escalate warnings to errors (exit 1 on missing markers)
+        #[arg(long)]
+        strict: bool,
+        /// Emit markdown table of all markers + resolution status to stdout
+        #[arg(long)]
+        audit_report: bool,
+    },
+    /// Run both counts and markers validation
+    All {
+        #[arg(long)]
+        strict: bool,
+        #[arg(long)]
+        audit_report: bool,
     },
 }
 
@@ -95,24 +121,70 @@ pub fn run(args: ValidateArgs) -> anyhow::Result<()> {
                 Err(e) => Err(anyhow::anyhow!("{e}")),
             }
         }
-        CliValidateTarget::ClaudeMd { counts } => {
-            if *counts {
-                let shell = ecc_infra::process_executor::ProcessExecutor;
-                let project_root =
-                    std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
-                if ecc_app::validate_claude_md::run_validate_claude_md(
-                    &fs,
-                    &shell,
-                    &terminal,
-                    &project_root,
-                    false,
-                ) {
-                    Ok(())
-                } else {
-                    std::process::exit(1);
+        CliValidateTarget::ClaudeMd { cmd, counts } => {
+            match (cmd, counts) {
+                (Some(ClaudeMdSubcommand::Counts), _) | (None, true) => {
+                    if *counts {
+                        terminal.stderr_write("DEPRECATED: use 'ecc validate claude-md counts' (subcommand form); --counts will be removed in the next minor release.\n");
+                    }
+                    let shell = ecc_infra::process_executor::ProcessExecutor;
+                    if ecc_app::validate_claude_md::run_validate_claude_md(
+                        &fs,
+                        &shell,
+                        &terminal,
+                        &args.ecc_root,
+                        false,
+                    ) {
+                        Ok(())
+                    } else {
+                        std::process::exit(1);
+                    }
                 }
-            } else {
-                Ok(()) // --counts is the only mode for now
+                (Some(ClaudeMdSubcommand::Markers { strict, audit_report }), _) => {
+                    let disabled = std::env::var("ECC_CLAUDE_MD_MARKERS_DISABLED")
+                        .is_ok_and(|v| v == "1");
+                    if ecc_app::validate_claude_md::run_validate_temporary_markers(
+                        &fs,
+                        &terminal,
+                        &args.ecc_root,
+                        disabled,
+                        *strict,
+                        *audit_report,
+                    ) {
+                        Ok(())
+                    } else {
+                        std::process::exit(1);
+                    }
+                }
+                (Some(ClaudeMdSubcommand::All { strict, audit_report }), _) => {
+                    let disabled = std::env::var("ECC_CLAUDE_MD_MARKERS_DISABLED")
+                        .is_ok_and(|v| v == "1");
+                    let shell = ecc_infra::process_executor::ProcessExecutor;
+                    let markers_ok = ecc_app::validate_claude_md::run_validate_temporary_markers(
+                        &fs,
+                        &terminal,
+                        &args.ecc_root,
+                        disabled,
+                        *strict,
+                        *audit_report,
+                    );
+                    let counts_ok = ecc_app::validate_claude_md::run_validate_claude_md(
+                        &fs,
+                        &shell,
+                        &terminal,
+                        &args.ecc_root,
+                        false,
+                    );
+                    if markers_ok && counts_ok {
+                        Ok(())
+                    } else {
+                        std::process::exit(1);
+                    }
+                }
+                (None, false) => {
+                    terminal.stderr_write("usage: ecc validate claude-md [counts|markers|all] [--strict] [--audit-report]\n");
+                    std::process::exit(2);
+                }
             }
         }
         CliValidateTarget::Cartography { coverage } => {
