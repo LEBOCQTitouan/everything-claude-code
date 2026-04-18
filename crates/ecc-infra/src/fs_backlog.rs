@@ -4,8 +4,8 @@
 //! via the [`FileSystem`] port, enabling real filesystem I/O and in-memory testing.
 
 use ecc_domain::backlog::entry::{
-    BacklogEntry, BacklogError, extract_id_from_filename, parse_frontmatter,
-    replace_frontmatter_status,
+    BacklogEntry, BacklogError, extract_id_from_filename, matches_backlog_filename,
+    parse_frontmatter, replace_frontmatter_status,
 };
 use ecc_domain::backlog::lock::LockFile;
 use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore, BacklogLockStore};
@@ -48,7 +48,11 @@ impl<'a> FsBacklogRepository<'a> {
                 Some(name) => name.to_string_lossy().to_string(),
                 None => continue,
             };
-            if filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md") {
+            let matched = match id.strip_prefix("BL-").and_then(|s| s.parse::<u32>().ok()) {
+                Some(n) => matches_backlog_filename(&filename, n),
+                None => filename.starts_with(&format!("{id}-")) || filename == format!("{id}.md"),
+            };
+            if matched {
                 return Ok(path.clone());
             }
         }
