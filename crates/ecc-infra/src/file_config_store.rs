@@ -10,6 +10,10 @@ use std::path::PathBuf;
 ///
 /// Reads from and writes to `~/.ecc/config.toml` (global) and an optional
 /// project-local `.ecc/config.toml`.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::config_store::ConfigStore`
 pub struct FileConfigStore {
     global_dir: PathBuf,
     local_dir: Option<PathBuf>,

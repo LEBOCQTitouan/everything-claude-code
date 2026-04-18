@@ -2,6 +2,10 @@ use ecc_ports::env::{Architecture, Environment, Platform};
 use std::path::PathBuf;
 
 /// Production environment adapter using `std::env`.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::env::Environment`
 pub struct OsEnvironment;
 
 impl Environment for OsEnvironment {
