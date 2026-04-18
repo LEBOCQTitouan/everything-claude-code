@@ -11,8 +11,11 @@ static TEMP_MARKER_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
 /// A `TEMPORARY (BL-NNN)` marker extracted from CLAUDE.md.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct TemporaryMarker {
+    /// Parsed numeric backlog ID (e.g. `150` for `TEMPORARY (BL-150)`).
     pub backlog_id: u32,
+    /// 1-indexed line number within the source file where the marker was found.
     pub line_number: usize,
+    /// The captured marker text (e.g. `TEMPORARY (BL-150)`), useful for diagnostics.
     pub raw_text: String,
 }
 
