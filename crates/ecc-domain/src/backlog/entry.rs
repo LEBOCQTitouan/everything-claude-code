@@ -151,8 +151,13 @@ pub fn extract_id_from_filename(filename: &str) -> Option<u32> {
 ///
 /// Uses `BL-{:03}` padding for IDs ≤ 999 and `BL-{id}` for IDs ≥ 1000.
 /// Matches both `BL-NNN.md` (no slug) and `BL-NNN-<slug>.md` (with slug).
-pub fn matches_backlog_filename(_filename: &str, _id: u32) -> bool {
-    false
+pub fn matches_backlog_filename(filename: &str, id: u32) -> bool {
+    let prefix = if id <= 999 {
+        format!("BL-{id:03}")
+    } else {
+        format!("BL-{id}")
+    };
+    filename == format!("{prefix}.md") || filename.starts_with(&format!("{prefix}-"))
 }
 
 /// Parse YAML frontmatter from markdown content.
