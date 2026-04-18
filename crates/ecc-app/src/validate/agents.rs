@@ -38,11 +38,35 @@ pub(super) fn validate_agents(
         }
     }
 
+    // Recurse into agents/domain/ if it exists
+    let domain_dir = agents_dir.join("domain");
+    let mut domain_count = 0usize;
+    if fs.is_dir(&domain_dir) {
+        let domain_files = match fs.read_dir(&domain_dir) {
+            Ok(f) => f,
+            Err(e) => {
+                terminal.stderr_write(&format!("ERROR: Cannot read agents/domain/ directory: {e}\n"));
+                return false;
+            }
+        };
+        let domain_md: Vec<_> = domain_files
+            .iter()
+            .filter(|f| f.to_string_lossy().ends_with(".md"))
+            .collect();
+        domain_count = domain_md.len();
+        for file in &domain_md {
+            if !validate_agent_file(file, root, fs, terminal) {
+                has_errors = true;
+            }
+        }
+    }
+
     if has_errors {
         return false;
     }
 
-    terminal.stdout_write(&format!("Validated {} agent files\n", md_files.len()));
+    let total = md_files.len() + domain_count;
+    terminal.stdout_write(&format!("Validated {} agent files\n", total));
     true
 }
 
@@ -536,10 +560,12 @@ mod tests {
 
     #[test]
     fn agents_domain_subdir_missing_model_fails() {
-        let fs = InMemoryFileSystem::new().with_file(
-            "/root/agents/domain/backlog.md",
-            "---\ntools: Read\n---\n# Missing model",
-        );
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/root/agents")
+            .with_file(
+                "/root/agents/domain/backlog.md",
+                "---\ntools: Read\n---\n# Missing model",
+            );
         let t = term();
         assert!(!run_validate(
             &fs,
