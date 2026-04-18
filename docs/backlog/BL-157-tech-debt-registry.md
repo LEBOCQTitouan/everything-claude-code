@@ -6,64 +6,64 @@ scope: HIGH
 target_command: /spec
 created: 2026-04-18
 addresses_debt: []
+tags: [debt, registry, pipeline, adversary, cli, audit]
 ---
 
 ## Problem
 
-The ECC pipeline's adversarial reviewers (spec-adversary, solution-adversary, design-reviewer, uncle-bob, robert, pc-evaluator) regularly flag design shortcuts, SOLID violations, missing tests, doc gaps, and architectural concessions. Today these findings are either fixed ad-hoc or forgotten entirely. There is no persistent registry to track what debt has been accepted, what pays it down, and what remains open. Findings surface once and evaporate — there is no way to know the accumulated debt load, prioritize paydown, or link a backlog entry to the debt it retires.
+Adversarial reviewers (spec-adversary, solution-adversary, design-reviewer, uncle-bob, robert, pc-evaluator) regularly flag design shortcuts, SOLID violations, missing tests, doc gaps, and architectural concessions during the `/spec` → `/design` → `/implement` pipeline. Today these findings are fixed ad-hoc or forgotten entirely — there is no persistent registry to track what debt has been accepted, what pays it down, and what remains open. The backlog captures future intentions; nothing captures deliberately deferred technical obligations.
 
 ## Solution Sketch
 
-New `docs/debt/` registry mirroring `docs/backlog/` conventions, bidirectionally linked with it. Hybrid capture mechanism: adversary/reviewer agents emit structured debt findings as part of their normal output; a phase-end consolidation step in `/spec`, `/design`, `/implement` collects those findings and writes `DEBT-NNN-<slug>.md` entries. Full taxonomy combining Cunningham + Fowler + Kruchten + industry (14 debt types, Fowler quadrant, severity, principal, interest rate). Four surfacing channels: `/debt-review` command, audit integration, `/spec` Phase 0 cross-reference, and `ecc debt status` dashboard.
+New `docs/debt/` registry bidirectionally linked with `docs/backlog/`:
+- `DEBT.md` index (same shape as BACKLOG.md) and `DEBT-NNN-<slug>.md` per-entry files
+- Hybrid capture: adversary/reviewer agents emit structured debt findings in their normal output; a phase-end consolidation step in `/spec`, `/design`, `/implement` collects those findings and writes DEBT-NNN entries
+- Full taxonomy combining Cunningham (principal + interest), Fowler quadrant, Kruchten/Nord/Ozkaya debt type, and industry extensions (CAST/SonarQube/SEI — 14 total debt types)
+- Four surfacing channels: `/debt-review` command, audit integration, `/spec` Phase 0 cross-reference, `ecc debt status` dashboard
+- CLI surface mirroring `ecc backlog`: list, add, update-status, reindex, next-id, status
 
 ## Acceptance Criteria
 
-- `docs/debt/DEBT.md` index exists with the same shape as `BACKLOG.md`
-- `DEBT-NNN-<slug>.md` per-entry files follow the full schema (id, title, status, created, debt_type, quadrant, source_phase, source_agent, originating_spec, severity, component, remediation_hint, addressed_by, principal, interest_rate)
-- All 14 debt_type values are validated by `ecc validate debt`
-- All 4 Fowler quadrant values are validated
-- `ecc debt list [--type X] [--severity Y] [--status Z]` works
-- `ecc debt add` (manual capture) works
-- `ecc debt update-status DEBT-NNN <status>` updates the file and reindexes DEBT.md
-- `ecc debt reindex` rebuilds DEBT.md from entry files
-- `ecc debt next-id` returns the next sequential DEBT-NNN
-- `ecc debt status` prints a dashboard (count by type, severity distribution, oldest unpaid, total estimated principal)
-- Backlog entry schema gains `addresses_debt: [DEBT-NNN, ...]` field (empty = new implementation, non-empty = debt paydown)
-- `ecc backlog list --addresses-debt` filter works
-- Bidirectional sync: promoting/implementing a BL entry updates its linked DEBT entries to `addressed`
-- Every adversary agent output in `/spec`, `/design`, `/implement` can produce structured debt findings (new section or JSON block)
-- Phase-end consolidation step exists in all three pipeline commands and writes DEBT-NNN entries
-- Deduplication logic prevents duplicate entries when the same finding appears across phases
-- `/debt-review` command walks open entries, prioritizes by `interest_rate × time_carried / principal`, and suggests promoting to backlog
-- `/audit-full` and domain audits cross-reference `docs/debt/` and flag stale debt
-- `/spec` Phase 0 checks whether the incoming spec addresses existing debt and suggests linking via `addresses_debt:`
-- One-time migration scan of `docs/audits/` and `docs/specs/*/adversary-*.md` seeds initial DEBT-NNN entries
+- [ ] Every adversary agent output in `/spec`, `/design`, `/implement` can produce structured debt findings (new section or JSON block)
+- [ ] `docs/debt/DEBT.md` index exists with documented schema matching the 14-field entry format
+- [ ] `DEBT-NNN-<slug>.md` per-entry files are created by phase-end consolidation steps
+- [ ] `ecc debt` CLI exposes: `list [--type X] [--severity Y] [--status Z]`, `add`, `update-status`, `reindex`, `next-id`, `status`
+- [ ] Backlog entry schema gains `addresses_debt: [DEBT-NNN, ...]` field; `ecc backlog` supports `--addresses-debt` filter
+- [ ] Bidirectional sync: promoting/implementing a BL entry updates linked DEBT entries to `addressed`
+- [ ] `/debt-review` command exists and prioritizes by `interest_rate × time_carried / principal`
+- [ ] Audit commands (`/audit-full`, domain audits) cross-reference `docs/debt/` and flag stale entries
+- [ ] `/spec` Phase 0 checks for debt linkage via `addresses_debt:` and surfaces matches
+- [ ] Deduplication works across phases by component + debt_type + finding fingerprint
+- [ ] `ecc validate debt` validates entry files against schema
+- [ ] One-time migration scan of `docs/audits/` and `docs/specs/*/adversary-*.md` produces seed DEBT-NNN entries for manual review
 
 ## Scope & Non-Goals
 
 **In scope:**
 - `docs/debt/` registry (DEBT.md index + DEBT-NNN-<slug>.md entries)
-- CLI surface under `ecc debt` mirroring `ecc backlog`
-- Schema validation via `ecc validate debt`
-- Adversary agent output extensions (structured debt findings section)
+- Full entry schema (14 fields + optional principal/interest_rate)
 - Phase-end consolidation in `/spec`, `/design`, `/implement`
-- Deduplication by component + debt_type + finding fingerprint
-- Bidirectional linkage with `docs/backlog/` (addresses_debt field)
-- Four surfacing channels (debt-review command, audit integration, spec Phase 0, dashboard)
-- One-time migration / bootstrap from existing audit and adversary artifacts
+- Adversary agent output changes to emit structured debt findings
+- `ecc debt` CLI (list/add/update-status/reindex/next-id/status)
+- Backlog `addresses_debt` field + bidirectional sync
+- `/debt-review` command
+- Audit cross-referencing
+- `/spec` Phase 0 debt linkage check
+- `ecc validate debt`
+- One-time migration bootstrap
 
 **Out of scope:**
 - Automated debt paydown (user must explicitly `/spec` from a debt entry)
 - Auto-generated remediation specs
-- Debt import from external tools (SonarQube, CAST, etc.)
+- Debt import from external tools (SonarQube, CAST, Jira)
 
 ## Open Questions for /design
 
-- New crate `ecc-debt` vs extend `ecc-backlog` crate (shared index-file plumbing argues for extension; distinct domain model argues for new crate)
-- Phase-end consolidation: hook-based (automatic) vs command-based (explicit) vs both
+- New crate `ecc-debt` vs. extend `ecc-backlog` crate (shared index-file plumbing argues for extension; distinct domain model argues for a new crate)
+- Phase-end consolidation: hook-based (automatic, zero agent changes) vs. command-based (explicit, user-controlled) vs. both
 - Finding fingerprint algorithm for deduplication across phases (hash of component + debt_type + normalized finding text?)
-- Schema validation approach (`ecc validate debt`) — extend existing validate dispatcher or new target?
-- Migration scope: how much of `docs/audits/` and adversary output is machine-parseable vs requires manual triage?
+- Schema validation approach — extend `ecc validate <target>` dispatcher or standalone `ecc validate debt`
+- Migration scope — how deeply to scan `docs/audits/` and adversary artifacts for retroactive seed entries
 
 ## Optimized Prompt
 
@@ -147,21 +147,26 @@ Principal and interest_rate are optional at capture time; filled during periodic
 
 ## Original Input
 
-Add a tech debt registry that links to backlog entries — capturing debt found by adversary agents during pipeline reviews and surfacing it for systematic paydown.
+Add a tech debt registry to ECC, linked to the backlog, so that deferred technical debt surfaced by adversary agents during the pipeline is persistently tracked rather than lost.
 
 ## Challenge Log
 
-**Mode**: backlog-mode (escalated to HIGH scope — full 5 stages)
+**Mode**: backlog-mode (escalated to full 5 stages — HIGH scope)
 
-**Q1 (Location)**: Where should the debt registry live? → `docs/debt/` standalone directory, bidirectionally linked with `docs/backlog/`.
+**Q1 (Location)**: Where should the debt registry live?
+**A**: `docs/debt/` standalone directory, bidirectionally linked with `docs/backlog/`.
 
-**Q2 (Capture trigger)**: When and how are debt entries created? → Hybrid: adversary agents emit structured findings during normal runs; phase-end consolidation step in `/spec`, `/design`, `/implement` writes DEBT-NNN entries.
+**Q2 (Capture trigger)**: When and how are debt entries created?
+**A**: Hybrid — adversary agents emit structured findings during normal runs; phase-end consolidation step in `/spec`, `/design`, `/implement` writes DEBT-NNN entries.
 
-**Q3 (Schema)**: What fields does each entry need? → Full combined schema (Cunningham + Fowler + Kruchten + industry): 14 debt_type values, Fowler quadrant, severity, source_phase, source_agent, originating_spec, component, remediation_hint, addressed_by, optional principal + interest_rate.
+**Q3 (Schema)**: What fields does each entry need?
+**A**: Full combined schema (Cunningham + Fowler + Kruchten + industry): 14 debt_type values, Fowler quadrant, severity, source_phase, source_agent, originating_spec, component, remediation_hint, addressed_by, optional principal + interest_rate.
 
-**Q4 (Surfacing)**: How does debt get surfaced for remediation? → All four channels: `/debt-review` command with priority scoring, audit integration, `/spec` Phase 0 cross-reference, `ecc debt status` dashboard.
+**Q4 (Surfacing)**: How does debt get surfaced for remediation?
+**A**: All four channels — `/debt-review` command with priority scoring, audit integration, `/spec` Phase 0 cross-reference, `ecc debt status` dashboard.
 
 ## Related Backlog Items
 
 - BL-064 (cartography / docs coverage) — overlaps with documentation debt_type entries
-- BL-148 (session resume/persist/delegate hook lifecycle) — phase-end consolidation may intersect with hook lifecycle
+- BL-091 (diagnostics) — audit cross-reference overlap
+- BL-093 (memory system) — structured agent output patterns
