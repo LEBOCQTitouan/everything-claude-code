@@ -158,4 +158,32 @@ mod tests {
             "must reject root outside HOME; got {result:?}"
         );
     }
+
+    /// When `ECC_PROJECT_MEMORY_ROOT` points to a non-existent directory:
+    /// - CLI callers get `Err(CanonicalizeFailed)` (fail-loud)
+    /// - Hook callers wrap with `.ok()` to get `None` (fail-silent / fire-and-forget)
+    #[test]
+    fn missing_root_behaviour_cli_vs_hook() {
+        // Scenario: HOME set but ECC_PROJECT_MEMORY_ROOT points to non-existent dir
+        let fs = InMemoryFileSystem::new().with_dir("/home/alice");
+        // No /home/alice/nonexistent dir created
+        let env = MockEnvironment::new()
+            .with_var("HOME", "/home/alice")
+            .with_var("ECC_PROJECT_MEMORY_ROOT", "/home/alice/nonexistent");
+
+        // CLI pattern: direct call — returns Err
+        let cli_result = resolve_project_memory_root(&env, &fs);
+        assert!(cli_result.is_err(), "CLI must return Err on missing root");
+        assert!(
+            matches!(cli_result, Err(PathResolutionError::CanonicalizeFailed { .. })),
+            "expected CanonicalizeFailed, got {cli_result:?}"
+        );
+
+        // Hook pattern: wrap in ok() — returns None, caller logs warn
+        let env2 = MockEnvironment::new()
+            .with_var("HOME", "/home/alice")
+            .with_var("ECC_PROJECT_MEMORY_ROOT", "/home/alice/nonexistent");
+        let hook_result: Option<SafePath> = resolve_project_memory_root(&env2, &fs).ok();
+        assert!(hook_result.is_none(), "hook pattern returns None on missing root");
+    }
 }
