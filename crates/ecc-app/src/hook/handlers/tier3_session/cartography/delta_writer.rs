@@ -55,7 +55,7 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .lines()
         .map(str::trim)
         .filter(|l| !l.is_empty())
-        .filter(|l| !l.starts_with(".claude/"))
+        .filter(|l| !ecc_domain::cartography::is_noise_path(l))
         .collect();
 
     if changed_lines.is_empty() {
@@ -455,6 +455,41 @@ mod tests {
             assert_eq!(delta.session_id, "new-session-001");
             assert_eq!(delta.project_type, ProjectType::Rust);
         }
+    }
+
+    /// PC-010: workflow-only session (`.claude/workflow/` files only) → passthrough, no delta written.
+    #[test]
+    fn filters_workflow_only_session() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\n.claude/workflow/implement-done.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "workflow-only-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — all changed files are workflow noise
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-workflow-only-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "workflow-only paths must be filtered — no delta should be written"
+        );
     }
 
     /// Only `.claude/` paths in git diff → passthrough, no delta written (self-referential filter).
