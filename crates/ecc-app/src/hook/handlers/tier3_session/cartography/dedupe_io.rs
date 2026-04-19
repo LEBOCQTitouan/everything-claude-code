@@ -187,6 +187,36 @@ mod tests {
         );
     }
 
+    #[test]
+    #[cfg_attr(miri, ignore)] // Miri cannot interpret libc::flock FFI calls
+    fn flock_timeout_fail_open() {
+        use std::time::{Duration, Instant};
+        use tempfile::TempDir;
+
+        let tmp = TempDir::new().unwrap();
+        let dir = tmp.path();
+
+        // Hold the lock via ecc-flock before calling should_dedupe
+        let _lock = ecc_flock::acquire_for(dir, "dedupe").unwrap();
+
+        // Build a minimal delta and in-memory FS
+        let delta = make_delta("session-test", vec![("src/lib.rs", "ecc-app")]);
+        let fs = InMemoryFileSystem::new();
+
+        let start = Instant::now();
+        let outcome = should_dedupe(&fs, dir, &delta, 20);
+        let elapsed = start.elapsed();
+
+        assert!(
+            matches!(outcome, DedupeOutcome::LockBusy),
+            "expected LockBusy when lock is held, got {outcome:?}"
+        );
+        assert!(
+            elapsed < Duration::from_millis(1500),
+            "timeout took too long: {elapsed:?}"
+        );
+    }
+
     fn make_delta(session_id: &str, files: Vec<(&str, &str)>) -> SessionDelta {
         SessionDelta {
             session_id: session_id.to_owned(),
