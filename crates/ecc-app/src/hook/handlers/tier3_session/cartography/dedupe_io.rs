@@ -127,6 +127,19 @@ mod tests {
     use super::*;
     use ecc_domain::cartography::{ChangedFile, ProjectType};
     use ecc_test_support::InMemoryFileSystem;
+    use tempfile::TempDir;
+
+    /// Create a temp dir and return a pre-seeded `InMemoryFileSystem` where all
+    /// paths use `tmp.path()` as the cartography root.  The temp dir is returned
+    /// so its lifetime extends through the test.
+    fn make_fs_with_pending(tmp: &TempDir, files: &[(&str, &str)]) -> InMemoryFileSystem {
+        let mut fs = InMemoryFileSystem::new();
+        for (rel, content) in files {
+            let full = tmp.path().join(rel);
+            fs = fs.with_file(&full.to_string_lossy(), content);
+        }
+        fs
+    }
 
     #[test]
     fn reads_last_n_through_filesystem_port() {
@@ -174,17 +187,23 @@ mod tests {
         let base_delta = make_delta("session-base", vec![("src/lib.rs", "ecc-app")]);
         let base_json = serde_json::to_string(&base_delta).unwrap();
 
+        let tmp = TempDir::new().unwrap();
+
         // Build in-memory FS with 25 delta files (names session-000..session-024).
         // Lexicographic descending sort means the last N = window are checked first.
         let mut fs = InMemoryFileSystem::new();
         for i in 0..25_usize {
-            let name = format!("/cartography/pending-delta-session-{i:03}.json");
+            let name = tmp
+                .path()
+                .join(format!("pending-delta-session-{i:03}.json"))
+                .to_string_lossy()
+                .into_owned();
             fs = fs.with_file(&name, &base_json);
         }
 
         // Use window=5: only the 5 newest files are checked.
         let incoming = make_delta("session-new", vec![("src/lib.rs", "ecc-app")]);
-        let outcome = should_dedupe(&fs, Path::new("/cartography"), &incoming, 5);
+        let outcome = should_dedupe(&fs, tmp.path(), &incoming, 5);
 
         // The incoming delta matches base_delta, so Duplicate must be returned,
         // proving that the window files were read through FileSystem::read_to_string.
@@ -240,21 +259,53 @@ mod tests {
     }
 
     #[test]
+    fn scans_pending_and_processed_desc() {
+        // Arrange: 1 file in pending dir, 1 in processed/ sub-dir
+        let delta_a = make_delta("session-aaa", vec![("src/lib.rs", "ecc-app")]);
+        let delta_b = make_delta("session-bbb", vec![("src/main.rs", "ecc-cli")]);
+        let json_a = serde_json::to_string(&delta_a).unwrap();
+        let json_b = serde_json::to_string(&delta_b).unwrap();
+
+        let tmp = TempDir::new().unwrap();
+        let fs = make_fs_with_pending(
+            &tmp,
+            &[
+                ("pending-delta-aaa.json", &json_a),
+                ("processed/pending-delta-bbb.json", &json_b),
+            ],
+        );
+
+        // Input matches delta_a (in pending/) → Duplicate
+        let incoming_a = make_delta("session-new-a", vec![("src/lib.rs", "ecc-app")]);
+        let outcome_a = should_dedupe(&fs, tmp.path(), &incoming_a, 20);
+        assert!(
+            matches!(outcome_a, DedupeOutcome::Duplicate(_)),
+            "expected Duplicate for pending/ match, got {outcome_a:?}"
+        );
+
+        // Input matches delta_b (in processed/) → Duplicate (proves processed/ is scanned)
+        let incoming_b = make_delta("session-new-b", vec![("src/main.rs", "ecc-cli")]);
+        let outcome_b = should_dedupe(&fs, tmp.path(), &incoming_b, 20);
+        assert!(
+            matches!(outcome_b, DedupeOutcome::Duplicate(_)),
+            "expected Duplicate for processed/ match, got {outcome_b:?}"
+        );
+    }
+
+    #[test]
     fn duplicate_payload_skips_write() {
         // Arrange: build an existing delta and write it to the in-memory fs.
         let existing = make_delta("session-aaa", vec![("src/main.rs", "ecc-cli")]);
         let existing_json = serde_json::to_string(&existing).unwrap();
 
-        let fs = InMemoryFileSystem::new().with_file(
-            "/cartography/pending-delta-session-aaa.json",
-            &existing_json,
-        );
+        let tmp = TempDir::new().unwrap();
+        let fs = make_fs_with_pending(&tmp, &[("pending-delta-session-aaa.json", &existing_json)]);
 
         // New delta has the same content (different session_id, same files).
         let incoming = make_delta("session-bbb", vec![("src/main.rs", "ecc-cli")]);
 
         // Act
-        let outcome = should_dedupe(&fs, Path::new("/cartography"), &incoming, 10);
+        let outcome = should_dedupe(&fs, tmp.path(), &incoming, 10);
 
         // Assert: recognised as duplicate of the existing delta.
         assert_eq!(outcome, DedupeOutcome::Duplicate("session-aaa".to_owned()));
