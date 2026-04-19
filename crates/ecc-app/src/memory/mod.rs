@@ -12,5 +12,6 @@ pub mod crud;
 pub mod injection;
 pub mod lifecycle;
 pub mod migration;
+pub mod paths;
 
 pub use crud::{AddParams, MemoryAppError};
