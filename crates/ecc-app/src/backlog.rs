@@ -1038,6 +1038,57 @@ mod tests {
         assert!(remaining.is_empty(), "stale lock should have been removed");
     }
 
+    /// PC-037: prune failure does NOT fail the status transition (fire-and-forget).
+    ///
+    /// When `update_status` transitions to "implemented", it must call the memory
+    /// prune hook. If the prune fails (e.g. HOME not set), it must:
+    ///  1. Emit a `tracing::warn!` in the `memory::prune` target.
+    ///  2. Still return `Ok(())`.
+    #[test]
+    #[tracing_test::traced_test]
+    fn prune_failure_does_not_fail_transition() {
+        use ecc_test_support::{InMemoryFileSystem, MockEnvironment};
+
+        let raw = raw_open_content("BL-001");
+        let repo = InMemoryBacklogRepository::new()
+            .with_raw_content("BL-001", &raw)
+            .with_entry(make_entry("BL-001", BacklogStatus::Open));
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        // Construct a filesystem and env with no HOME → resolve_project_memory_root returns Err.
+        let env = MockEnvironment::new(); // no HOME set
+        let fs = InMemoryFileSystem::new();
+
+        // update_status → implemented triggers prune hook.
+        // Prune will fail because HOME is not available.
+        // The transition must still return Ok(()).
+        let result = update_status_with_prune_hook(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            "BL-001",
+            "implemented",
+            &env,
+            &fs,
+        );
+
+        assert!(
+            result.is_ok(),
+            "status transition must succeed even when prune hook fails; got: {result:?}"
+        );
+
+        // Verify that a warn was emitted for the prune failure.
+        assert!(
+            logs_contain("memory::prune"),
+            "must emit tracing::warn with target memory::prune when prune fails"
+        );
+    }
+
     // --- FsError conversion test ---
 
     #[test]
