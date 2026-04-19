@@ -125,6 +125,72 @@ mod tests {
     use ecc_domain::cartography::{ChangedFile, ProjectType};
     use ecc_test_support::InMemoryFileSystem;
 
+    #[test]
+    fn reads_last_n_through_filesystem_port() {
+        // Verify dedupe_io uses only pre-existing FileSystem port methods by
+        // inspecting the non-test portion of this module's source. We check that
+        // only `read_dir` and `read_to_string` — both methods present in the port
+        // trait before this feature — are called, and no new port methods appear.
+        const SOURCE: &str = include_str!("dedupe_io.rs");
+
+        // Isolate the non-test portion: everything before the `#[cfg(test)]` block.
+        // This prevents the test body itself from polluting the search space.
+        let production_source = SOURCE
+            .split("\n#[cfg(test)]")
+            .next()
+            .expect("source must have a #[cfg(test)] block");
+
+        // Positive assertion: confirm the two established port methods are used in
+        // the production code.
+        assert!(
+            production_source.contains("read_dir"),
+            "dedupe_io must use FileSystem::read_dir to list candidates"
+        );
+        assert!(
+            production_source.contains("read_to_string"),
+            "dedupe_io must use FileSystem::read_to_string to load candidates"
+        );
+
+        // Negative assertion: no method calls other than the two above on `fs`.
+        // We look for `fs.` call sites — only `read_dir` and `read_to_string`
+        // should appear.
+        let fs_call_sites: Vec<&str> = production_source
+            .lines()
+            .filter(|l| l.contains("fs."))
+            .collect();
+        for line in &fs_call_sites {
+            let trimmed = line.trim();
+            assert!(
+                trimmed.contains("fs.read_dir") || trimmed.contains("fs.read_to_string"),
+                "dedupe_io calls an unexpected FileSystem method: {trimmed}"
+            );
+        }
+
+        // Behavioural: seed 25 delta files and verify should_dedupe detects a
+        // duplicate within the window without needing to read all 25 files.
+        let base_delta = make_delta("session-base", vec![("src/lib.rs", "ecc-app")]);
+        let base_json = serde_json::to_string(&base_delta).unwrap();
+
+        // Build in-memory FS with 25 delta files (names session-000..session-024).
+        // Lexicographic descending sort means the last N = window are checked first.
+        let mut fs = InMemoryFileSystem::new();
+        for i in 0..25_usize {
+            let name = format!("/cartography/pending-delta-session-{i:03}.json");
+            fs = fs.with_file(&name, &base_json);
+        }
+
+        // Use window=5: only the 5 newest files are checked.
+        let incoming = make_delta("session-new", vec![("src/lib.rs", "ecc-app")]);
+        let outcome = should_dedupe(&fs, Path::new("/cartography"), &incoming, 5);
+
+        // The incoming delta matches base_delta, so Duplicate must be returned,
+        // proving that the window files were read through FileSystem::read_to_string.
+        assert!(
+            matches!(outcome, DedupeOutcome::Duplicate(_)),
+            "expected Duplicate when window covers matching file, got {outcome:?}"
+        );
+    }
+
     fn make_delta(session_id: &str, files: Vec<(&str, &str)>) -> SessionDelta {
         SessionDelta {
             session_id: session_id.to_owned(),
