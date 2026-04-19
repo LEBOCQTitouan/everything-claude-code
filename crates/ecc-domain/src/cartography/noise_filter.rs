@@ -62,6 +62,18 @@ mod tests {
     }
 
     #[test]
+    fn normalizes_case_and_separators() {
+        // Case-insensitive
+        assert!(is_noise_path(".CLAUDE/WORKFLOW/state.json"));
+        assert!(is_noise_path(".Claude/Workflow/State.json"));
+        // Separator normalization (Windows-style paths)
+        assert!(is_noise_path(".claude\\workflow\\state.json"));
+        assert!(is_noise_path("docs\\specs\\foo.md"));
+        // Mixed separators + case
+        assert!(is_noise_path(".CLAUDE\\cartography/pending.json"));
+    }
+
+    #[test]
     fn classifies_fixed_prefixes_as_noise() {
         let noise_cases = [
             ".claude/workflow/state.json",
