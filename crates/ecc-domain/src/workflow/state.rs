@@ -551,6 +551,14 @@ mod tests {
         let json_refactor =
             serde_json::to_string(&Concern::Refactor).expect("serialization must succeed");
         assert_eq!(json_refactor, r#""refactor""#);
+
+        // BL-155: Foundation variant round-trip.
+        let json_foundation =
+            serde_json::to_string(&Concern::Foundation).expect("serialization must succeed");
+        assert_eq!(json_foundation, r#""foundation""#);
+        let restored_foundation: Concern =
+            serde_json::from_str(&json_foundation).expect("deserialization must succeed");
+        assert_eq!(restored_foundation, Concern::Foundation);
     }
 
     #[test]
