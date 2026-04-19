@@ -913,6 +913,100 @@ mod tests {
         );
     }
 
+    /// PC-020: ECC_CARTOGRAPHY_DEDUPE=0 disables dedupe — duplicate payload still writes a new delta.
+    /// Without the env var (dedupe enabled), a duplicate payload must be suppressed (no write).
+    /// With ECC_CARTOGRAPHY_DEDUPE=0, dedupe is skipped and the new delta IS written.
+    #[test]
+    fn dedupe_opt_out_env() {
+        use ecc_domain::cartography::{ChangedFile, ProjectType, SessionDelta};
+
+        // Seed an existing delta with the same content that the incoming session will produce.
+        let existing_delta = SessionDelta {
+            session_id: "old-session-001".to_owned(),
+            timestamp: 1_000_000,
+            changed_files: vec![ChangedFile {
+                path: "crates/ecc-domain/src/lib.rs".to_owned(),
+                classification: "ecc-domain".to_owned(),
+            }],
+            project_type: ProjectType::Rust,
+        };
+        let existing_json = serde_json::to_string(&existing_delta).unwrap();
+
+        let git_output = CommandOutput {
+            stdout: "crates/ecc-domain/src/lib.rs\n".to_string(),
+            stderr: String::new(),
+            exit_code: 0,
+        };
+
+        // --- Part 1: dedupe ENABLED (no ECC_CARTOGRAPHY_DEDUPE env var) ---
+        // A duplicate payload must NOT be written.
+        {
+            let fs = InMemoryFileSystem::new()
+                .with_file("/project/Cargo.toml", "[workspace]")
+                .with_file(
+                    "/project/.claude/cartography/pending-delta-old-session-001.json",
+                    &existing_json,
+                );
+            let shell = MockExecutor::new().on_args(
+                "git",
+                &["diff", "--name-only", "HEAD"],
+                git_output.clone(),
+            );
+            let env = MockEnvironment::new()
+                .with_var("CLAUDE_PROJECT_DIR", "/project")
+                .with_var("CLAUDE_SESSION_ID", "new-session-dedup-enabled");
+            let term = BufferedTerminal::new();
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+
+            // With dedupe ENABLED, the duplicate delta must NOT be written
+            let dup_path = std::path::Path::new(
+                "/project/.claude/cartography/pending-delta-new-session-dedup-enabled.json",
+            );
+            assert!(
+                !fs.exists(dup_path),
+                "dedupe enabled: duplicate payload must be suppressed, no new delta written"
+            );
+        }
+
+        // --- Part 2: dedupe DISABLED via ECC_CARTOGRAPHY_DEDUPE=0 ---
+        // A duplicate payload MUST be written because dedupe is skipped.
+        {
+            let fs = InMemoryFileSystem::new()
+                .with_file("/project/Cargo.toml", "[workspace]")
+                .with_file(
+                    "/project/.claude/cartography/pending-delta-old-session-001.json",
+                    &existing_json,
+                );
+            let shell = MockExecutor::new().on_args(
+                "git",
+                &["diff", "--name-only", "HEAD"],
+                git_output,
+            );
+            // ECC_CARTOGRAPHY_DEDUPE=0 disables dedupe entirely
+            let env = MockEnvironment::new()
+                .with_var("CLAUDE_PROJECT_DIR", "/project")
+                .with_var("CLAUDE_SESSION_ID", "new-session-dedupe-opt-out")
+                .with_var("ECC_CARTOGRAPHY_DEDUPE", "0");
+            let term = BufferedTerminal::new();
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+
+            // A NEW pending-delta file must exist — dedupe was skipped
+            let new_delta_path = std::path::Path::new(
+                "/project/.claude/cartography/pending-delta-new-session-dedupe-opt-out.json",
+            );
+            assert!(
+                fs.exists(new_delta_path),
+                "dedupe opt-out must allow writing new delta even when content matches an existing one"
+            );
+        }
+    }
+
     /// Only `.claude/` paths in git diff → passthrough, no delta written (self-referential filter).
     #[test]
     fn filters_out_dot_claude_paths() {
