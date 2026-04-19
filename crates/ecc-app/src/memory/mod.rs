@@ -9,6 +9,7 @@
 
 pub mod consolidation;
 pub mod crud;
+pub mod file_prune;
 pub mod injection;
 pub mod lifecycle;
 pub mod migration;
