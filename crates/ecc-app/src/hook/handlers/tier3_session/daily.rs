@@ -38,6 +38,45 @@ fn resolve_daily_dir(ports: &HookPorts<'_>) -> Option<PathBuf> {
 /// stop:daily-summary — append session summary to daily memory file.
 pub fn daily_summary(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "daily_summary", "executing handler");
+
+    // Noise filter: skip append when all changed files are noise (e.g. workflow, specs).
+    // Gate: ECC_DAILY_SUMMARY_NOISE_FILTER=0 disables the filter.
+    let filter_enabled = ports
+        .env
+        .var("ECC_DAILY_SUMMARY_NOISE_FILTER")
+        .map(|v| v != "0")
+        .unwrap_or(true);
+
+    if filter_enabled {
+        if let Some(project_dir) = ports.env.var("CLAUDE_PROJECT_DIR") {
+            let project_path = std::path::PathBuf::from(project_dir);
+            if let Ok(git_out) = ports.shell.run_command_in_dir(
+                "git",
+                &["diff", "--name-only", "HEAD"],
+                &project_path,
+            ) {
+                let changed: Vec<&str> = git_out
+                    .stdout
+                    .lines()
+                    .map(str::trim)
+                    .filter(|l| !l.is_empty())
+                    .collect();
+                if !changed.is_empty()
+                    && changed
+                        .iter()
+                        .all(|p| ecc_domain::cartography::is_noise_path(p))
+                {
+                    tracing::info!(
+                        target: "daily::filter",
+                        paths_skipped = changed.len(),
+                        "noise-only session — skipping daily append"
+                    );
+                    return HookResult::passthrough(stdin);
+                }
+            }
+        }
+    }
+
     let daily_dir = match resolve_daily_dir(ports) {
         Some(d) => d,
         None => return HookResult::passthrough(stdin),
@@ -222,9 +261,8 @@ mod tests {
         assert_eq!(result.stdout, "{}");
 
         // No daily file should have been written — session was noise-only
-        let dir = std::path::Path::new(
-            "/home/user/.claude/projects/home-user-myproject/memory/daily",
-        );
+        let dir =
+            std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
         let no_file_written = if fs.exists(dir) {
             fs.read_dir(dir)
                 .map(|entries| entries.is_empty())
