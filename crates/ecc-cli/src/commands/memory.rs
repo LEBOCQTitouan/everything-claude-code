@@ -91,6 +91,16 @@ pub enum MemoryAction {
     },
     /// Show memory store statistics
     Stats,
+    /// Prune orphaned memory files
+    Prune {
+        /// Scan project_bl<N>_*.md files and cross-reference against BACKLOG.md;
+        /// list files whose BL entry is implemented/archived (default: dry-run)
+        #[arg(long)]
+        orphaned_backlogs: bool,
+        /// Actually move files to trash (opt-in destructive)
+        #[arg(long)]
+        apply: bool,
+    },
 }
 
 fn open_store() -> anyhow::Result<ecc_infra::sqlite_memory::SqliteMemoryStore> {
@@ -257,6 +267,14 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
                     result.deleted_count
                 );
             }
+        }
+
+        MemoryAction::Prune {
+            orphaned_backlogs: _,
+            apply: _,
+        } => {
+            // Placeholder — full implementation in GREEN phase
+            println!("prune: not yet implemented");
         }
 
         MemoryAction::Stats => {
@@ -495,6 +513,128 @@ mod tests {
                 _ => panic!("expected Export variant"),
             },
         }
+    }
+
+    // PC-039: CLI `ecc memory prune --orphaned-backlogs` defaults to dry-run
+    #[test]
+    fn prune_orphaned_dry_run_default() {
+        use clap::Parser;
+
+        #[derive(Parser)]
+        struct Cli {
+            #[command(subcommand)]
+            cmd: CliCmd,
+        }
+
+        #[derive(clap::Subcommand)]
+        enum CliCmd {
+            Memory(MemoryArgs),
+        }
+
+        // Parse `ecc memory prune --orphaned-backlogs` (no --apply)
+        let cli = Cli::try_parse_from(["ecc", "memory", "prune", "--orphaned-backlogs"])
+            .expect("should parse prune subcommand");
+
+        match cli.cmd {
+            CliCmd::Memory(args) => match args.action {
+                MemoryAction::Prune {
+                    orphaned_backlogs,
+                    apply,
+                } => {
+                    assert!(orphaned_backlogs, "orphaned_backlogs flag must be true");
+                    assert!(!apply, "apply must default to false (dry-run by default)");
+                }
+                _ => panic!("expected Prune variant"),
+            },
+        }
+
+        // Verify dry-run semantics: without --apply, handler must scan and list
+        // would-be-trashed files but not modify the filesystem.
+        //
+        // We verify this via the prune_orphaned_backlogs app helper:
+        // supply 2 orphaned (implemented) + 1 non-orphaned (open) memory file,
+        // expect 2 listed in "would_trash", 0 actually trashed.
+        use ecc_app::memory::file_prune::prune_orphaned_file_memories;
+        use ecc_domain::backlog::entry::{BacklogEntry, BacklogStatus};
+        use ecc_ports::fs::FileSystem as _;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/root");
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root)
+            .with_file(root.join("project_bl010_some_feature.md"), "bl010 memory")
+            .with_file(root.join("project_bl020_another.md"), "bl020 memory")
+            .with_file(root.join("project_bl030_open_entry.md"), "bl030 memory")
+            .with_file(root.join("MEMORY.md"), "# Memory\n");
+
+        let backlog_entries = vec![
+            BacklogEntry {
+                id: "BL-010".to_string(),
+                title: "Some Feature".to_string(),
+                status: BacklogStatus::Implemented, // orphaned
+                created: "2026-01-01".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-020".to_string(),
+                title: "Another".to_string(),
+                status: BacklogStatus::Archived, // orphaned
+                created: "2026-01-02".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-030".to_string(),
+                title: "Open Entry".to_string(),
+                status: BacklogStatus::Open, // NOT orphaned
+                created: "2026-01-03".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+        ];
+
+        let report = prune_orphaned_file_memories(
+            &fs,
+            &root,
+            &backlog_entries,
+            "2026-04-18",
+            false, // dry_run (no --apply)
+        );
+
+        assert_eq!(
+            report.would_trash.len(),
+            2,
+            "dry-run should list 2 orphaned files"
+        );
+        assert_eq!(
+            report.trashed_files.len(),
+            0,
+            "dry-run must not trash any files"
+        );
+        // Files still exist
+        assert!(
+            fs.exists(&root.join("project_bl010_some_feature.md")),
+            "bl010 file must survive dry-run"
+        );
+        assert!(
+            fs.exists(&root.join("project_bl020_another.md")),
+            "bl020 file must survive dry-run"
+        );
+        assert!(
+            fs.exists(&root.join("project_bl030_open_entry.md")),
+            "bl030 file must survive dry-run"
+        );
     }
 
     #[test]
