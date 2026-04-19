@@ -141,7 +141,7 @@ mod tests {
         let mut fs = InMemoryFileSystem::new();
         for (rel, content) in files {
             let full = tmp.path().join(rel);
-            fs = fs.with_file(&full.to_string_lossy(), content);
+            fs = fs.with_file(&full, content);
         }
         fs
     }
@@ -357,7 +357,7 @@ mod tests {
             let mut fs = InMemoryFileSystem::new();
             for (name, content) in &file_pairs {
                 let full = tmp100.path().join(name);
-                fs = fs.with_file(&full.to_string_lossy(), content);
+                fs = fs.with_file(&full, content);
             }
             fs
         };

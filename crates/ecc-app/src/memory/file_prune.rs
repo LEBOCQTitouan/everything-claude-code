@@ -1,8 +1,124 @@
 //! File pruning utilities for the memory system.
 //!
-//! Provides BL-ID pattern matching for memory file cleanup.
+//! Provides BL-ID pattern matching and file-level pruning for memory cleanup.
 
+use ecc_domain::memory::SafePath;
+use ecc_ports::fs::FileSystem;
 use regex::Regex;
+use std::path::PathBuf;
+
+/// Report produced by [`prune_file_memories_for_backlog`].
+#[derive(Debug, Default)]
+pub struct PruneReport {
+    /// Files that were moved to the trash directory.
+    pub trashed_files: Vec<PathBuf>,
+    /// Whether `MEMORY.md` was successfully rewritten.
+    pub index_updated: bool,
+    /// Non-fatal errors encountered during pruning.
+    pub errors: Vec<String>,
+}
+
+/// Move memory files matching `bl_id` to `<root>/.trash/<today>/` and remove
+/// their rows from `MEMORY.md` via atomic rewrite.
+///
+/// Fire-and-forget: individual file errors are appended to `report.errors` but
+/// do not abort the overall prune.
+pub fn prune_file_memories_for_backlog(
+    fs: &dyn FileSystem,
+    root: &SafePath,
+    bl_id: &str,
+    today: &str,
+) -> PruneReport {
+    let mut report = PruneReport::default();
+    let root_dir = root.full();
+
+    // 1. Scan root dir for files matching the BL-ID pattern.
+    let entries = match fs.read_dir(root_dir) {
+        Ok(e) => e,
+        Err(err) => {
+            report.errors.push(format!("read_dir failed: {err}"));
+            return report;
+        }
+    };
+
+    let trash_dir = root_dir.join(format!(".trash/{today}"));
+
+    let mut trashed_filenames: Vec<String> = Vec::new();
+
+    for entry in entries {
+        let filename = match entry.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n.to_owned(),
+            None => continue,
+        };
+        if !matches_bl_id(&filename, bl_id) {
+            continue;
+        }
+
+        // Ensure trash directory exists.
+        if let Err(err) = fs.create_dir_all(&trash_dir) {
+            report
+                .errors
+                .push(format!("create_dir_all {}: {err}", trash_dir.display()));
+            continue;
+        }
+
+        let dst = trash_dir.join(&filename);
+        match fs.rename(&entry, &dst) {
+            Ok(()) => {
+                report.trashed_files.push(dst);
+                trashed_filenames.push(filename);
+            }
+            Err(err) => {
+                report
+                    .errors
+                    .push(format!("rename {} -> {}: {err}", entry.display(), dst.display()));
+            }
+        }
+    }
+
+    // 2. Atomic rewrite of MEMORY.md — remove rows referencing trashed files.
+    let memory_md_path = root_dir.join("MEMORY.md");
+    match fs.read_to_string(&memory_md_path) {
+        Ok(content) => {
+            let updated: String = content
+                .lines()
+                .filter(|line| {
+                    !trashed_filenames
+                        .iter()
+                        .any(|name| line.contains(name.as_str()))
+                })
+                .map(|line| format!("{line}\n"))
+                .collect();
+
+            // Atomic write: write to .tmp then rename.
+            let tmp_path = root_dir.join("MEMORY.md.tmp");
+            match fs.write(&tmp_path, &updated) {
+                Ok(()) => match fs.rename(&tmp_path, &memory_md_path) {
+                    Ok(()) => {
+                        report.index_updated = true;
+                    }
+                    Err(err) => {
+                        report
+                            .errors
+                            .push(format!("rename MEMORY.md.tmp: {err}"));
+                    }
+                },
+                Err(err) => {
+                    report
+                        .errors
+                        .push(format!("write MEMORY.md.tmp: {err}"));
+                }
+            }
+        }
+        Err(err) => {
+            report
+                .errors
+                .push(format!("read MEMORY.md: {err}"));
+        }
+    }
+
+    report
+}
 
 /// Build a regex that matches `project_bl<N>_*.md` for a specific BL numeric ID.
 ///
@@ -38,6 +154,7 @@ mod tests {
     #[test]
     fn trashes_and_updates_index() {
         use ecc_domain::memory::SafePath;
+        use ecc_ports::fs::FileSystem as _;
         use ecc_test_support::InMemoryFileSystem;
         use std::path::PathBuf;
 
