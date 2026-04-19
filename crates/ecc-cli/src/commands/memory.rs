@@ -2,6 +2,7 @@
 
 use clap::{Args, Subcommand};
 use ecc_app::memory::crud::{AddParams, MemoryAppError};
+use ecc_app::memory::paths::resolve_project_memory_root;
 use ecc_domain::memory::{MemoryId, MemoryTier};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -372,10 +373,11 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
         }
 
         MemoryAction::Restore { trash, apply } => {
-            let home = dirs::home_dir()
-                .ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
-            let memory_root = home.join(".claude").join("projects");
             let fs = ecc_infra::os_fs::OsFileSystem;
+            let env = ecc_infra::os_env::OsEnvironment;
+            let safe_root = resolve_project_memory_root(&env, &fs)
+                .map_err(|e| anyhow::anyhow!("failed to resolve memory root: {e}"))?;
+            let memory_root = safe_root.full().to_path_buf();
             let result = handle_restore(&fs, &memory_root, &trash, apply)?;
             if apply {
                 if result.restored.is_empty() {
