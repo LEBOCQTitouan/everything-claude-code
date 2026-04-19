@@ -599,6 +599,40 @@ mod tests {
         );
     }
 
+    /// PC-014: Cargo.lock-only session → passthrough, no delta written (AC-001.5).
+    #[test]
+    fn filters_cargo_lock_only() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "Cargo.lock\n".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "cargo-lock-only-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — Cargo.lock is noise
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-cargo-lock-only-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "Cargo.lock-only sessions must be filtered — no delta should be written"
+        );
+    }
+
     /// Only `.claude/` paths in git diff → passthrough, no delta written (self-referential filter).
     #[test]
     fn filters_out_dot_claude_paths() {
