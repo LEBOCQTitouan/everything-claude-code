@@ -74,6 +74,35 @@ mod tests {
     }
 
     #[test]
+    fn bounds_check_after_canonicalize() {
+        // Contract documentation: caller canonicalizes at app boundary
+        // (std::fs::canonicalize resolves .., ., symlinks), then passes
+        // absolute paths into SafePath::from_canonical. The newtype
+        // performs only a string-prefix check via Path::starts_with.
+        //
+        // This test documents that the newtype's correctness depends on
+        // caller discipline — passing non-canonical paths is a contract
+        // violation that may allow escape.
+
+        let root = PathBuf::from("/root/memory");
+
+        // Canonical paths: newtype behaves correctly
+        let canonical_child = PathBuf::from("/root/memory/foo.md");
+        assert!(SafePath::from_canonical(root.clone(), canonical_child).is_ok());
+
+        let canonical_escape = PathBuf::from("/root/other/foo.md");
+        assert!(matches!(
+            SafePath::from_canonical(root.clone(), canonical_escape),
+            Err(SafePathError::Escape { .. })
+        ));
+
+        // Non-canonical input (with ..) is NOT sanitized by the newtype —
+        // this documents the contract that apps must canonicalize first.
+        // The following is intentionally NOT tested for safety; it would
+        // require fs::canonicalize which is I/O and belongs at the app layer.
+    }
+
+    #[test]
     fn rejects_traversal() {
         // Traversal-like inputs (pre-canonicalization should handle ..
         // but assume caller passes already-canonical paths).
