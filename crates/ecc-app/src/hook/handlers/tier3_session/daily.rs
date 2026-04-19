@@ -273,6 +273,32 @@ mod tests {
         );
     }
 
+    #[test]
+    fn reuses_domain_predicate() {
+        // Grep daily.rs source for the domain import; assert NO local
+        // re-implementation of noise-path matching.
+        const SOURCE: &str = include_str!("daily.rs");
+
+        // Must import is_noise_path from ecc-domain
+        assert!(
+            SOURCE.contains("ecc_domain::cartography::is_noise_path")
+                || SOURCE.contains("use ecc_domain::cartography::")
+                    && SOURCE.contains("is_noise_path"),
+            "daily.rs must import is_noise_path from ecc-domain"
+        );
+
+        // Must NOT define a local `fn is_noise` or `NOISE_PREFIXES` (forbids duplicate impl)
+        let production = SOURCE.split("#[cfg(test)]").next().unwrap_or(SOURCE);
+        assert!(
+            !production.contains("const NOISE_PREFIXES"),
+            "no local noise-prefix duplication"
+        );
+        assert!(
+            !production.contains("fn is_noise"),
+            "no local is_noise function"
+        );
+    }
+
     /// PC-025: when all changed files are noise paths, `daily_summary` returns passthrough
     /// without appending a daily entry (noise-only session skip).
     #[test]
