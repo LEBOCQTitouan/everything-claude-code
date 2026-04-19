@@ -7,6 +7,7 @@ use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
 
+use super::dedupe_io::{self, DedupeOutcome};
 use super::delta_helpers::clean_corrupt_deltas;
 
 /// stop:cartography — detect changed files and write a pending delta.
@@ -124,6 +125,32 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
     // Clean up any corrupt delta files
     clean_corrupt_deltas(ports, &cartography_dir);
+
+    // Deduplicate: skip write when the payload matches a recent delta, unless opted out.
+    let dedupe_enabled = ports
+        .env
+        .var("ECC_CARTOGRAPHY_DEDUPE")
+        .map(|v| v != "0")
+        .unwrap_or(true);
+
+    if dedupe_enabled {
+        let window: usize = ports
+            .env
+            .var("ECC_CARTOGRAPHY_DEDUPE_WINDOW")
+            .and_then(|v| v.parse::<usize>().ok())
+            .unwrap_or(20);
+        match dedupe_io::should_dedupe(ports.fs, &cartography_dir, &delta, window) {
+            DedupeOutcome::Duplicate(sid) => {
+                tracing::debug!(
+                    target: "cartography::dedupe",
+                    dup_of = %sid,
+                    "duplicate delta, skipping write"
+                );
+                return HookResult::passthrough(stdin);
+            }
+            _ => { /* Unique | LockBusy | WindowDisabled — proceed to write */ }
+        }
+    }
 
     // Serialize and write delta
     let delta_json = match serde_json::to_string_pretty(&delta) {

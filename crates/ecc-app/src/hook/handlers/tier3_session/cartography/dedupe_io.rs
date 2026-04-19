@@ -2,10 +2,6 @@
 //!
 //! Scans pending and processed delta files to detect whether an incoming
 //! `SessionDelta` is a duplicate of a recently written one.
-//!
-//! Public items are used by downstream PCs (PC-022, PC-024). Allow dead_code
-//! lint until the callers are wired in.
-#![allow(dead_code)]
 
 use std::path::{Path, PathBuf};
 
