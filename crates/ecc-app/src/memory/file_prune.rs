@@ -2,6 +2,35 @@
 //!
 //! Provides BL-ID pattern matching for memory file cleanup.
 
+use regex::Regex;
+
+/// Build a regex that matches `project_bl<N>_*.md` for a specific BL numeric ID.
+///
+/// Uses `0*<N>` to allow zero-padded variants while being collision-safe:
+/// `project_bl0*10` matches `bl10` and `bl010` but not `bl100`.
+fn bl_memory_regex(bl_id_num: u32) -> Regex {
+    // Pattern: ^project_bl0*<N>(_[a-z0-9_-]+)?\.md$ case-insensitive
+    // The `0*` before the number allows leading zeros but the trailing `(_...|$)` anchor
+    // prevents e.g. BL-10 matching BL-100.
+    let pattern = format!(r"(?i)^project_bl0*{bl_id_num}(_[a-z0-9_-]+)?\.md$");
+    Regex::new(&pattern).expect("valid regex")
+}
+
+/// Returns true if `filename` matches the BL-ID pattern.
+///
+/// Accepts filenames like `project_bl031.md` or `project_bl031_foo.md`.
+/// The BL-ID string must be in the form `BL-<digits>` (e.g. `BL-031`).
+pub fn matches_bl_id(filename: &str, bl_id: &str) -> bool {
+    let num = match bl_id
+        .strip_prefix("BL-")
+        .and_then(|s| s.parse::<u32>().ok())
+    {
+        Some(n) => n,
+        None => return false,
+    };
+    bl_memory_regex(num).is_match(filename)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
