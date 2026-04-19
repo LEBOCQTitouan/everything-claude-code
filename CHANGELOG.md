@@ -20,6 +20,7 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Added
 
+- **Foundation Concern variant (BL-155)**: `Concern::Foundation` joins `Dev | Fix | Refactor` as a fourth workflow concern, completing BL-143's `/project-foundation` command. `ecc-workflow init foundation <feature>` now succeeds without the `init dev` workaround. Serde round-trips via `"foundation"` (lowercase). `UnknownConcern` error text updated to alphabetical: `"dev, fix, foundation, or refactor"`. Three doc sites (catchup.md, campaign-manifest skill, artifact-schemas skill) updated to list all four concerns. Semver: minor bump 4.2.0 → 4.3.0 with `cargo-semver-checks --baseline-rev` waiver (ecc-domain has no external consumers; additive variant shipped as minor per adversary round-1 reversal). 4 integration tests using `tempfile::TempDir` walk init → plan → solution → implement → done with concern=foundation.
 - `ecc-domain::memory::SafePath` pure newtype — prefix-check bounds guard for path construction. Closes SEC-001/002/003 at the type level.
 - `ecc-domain::cartography::canonical_hash` — RFC 8785 canonical JSON → SHA-256 hasher for `SessionDelta`.
 - Cartography regression corpus — 10 fixture JSONs + `expected.yaml` under `crates/ecc-app/tests/fixtures/cartography-corpus/`; runs on every `cargo test`.
