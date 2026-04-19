@@ -67,8 +67,13 @@ pub fn should_dedupe(
     }
 
     let timeout = Duration::from_millis(500);
+    // DirCreation means the cartography dir doesn't exist on the real filesystem yet
+    // (common in tests with InMemoryFileSystem or on first run). Proceed unlocked — the
+    // FileSystem port scan below will still find any in-memory candidates.
+    // For Timeout / AcquireFailed (another process holds the lock), fail-open.
     let _lock = match ecc_flock::acquire_for_with_timeout(cartography_dir, "dedupe", timeout) {
-        Ok(lock) => lock,
+        Ok(lock) => Some(lock),
+        Err(ecc_flock::FlockError::DirCreation { .. }) => None,
         Err(_) => return DedupeOutcome::LockBusy,
     };
 
@@ -298,7 +303,10 @@ mod tests {
         let fs0 = InMemoryFileSystem::new();
         let fixture = make_delta("session-fixture", vec![("src/lib.rs", "ecc-app")]);
         assert!(
-            matches!(should_dedupe(&fs0, tmp0.path(), &fixture, 0), DedupeOutcome::WindowDisabled),
+            matches!(
+                should_dedupe(&fs0, tmp0.path(), &fixture, 0),
+                DedupeOutcome::WindowDisabled
+            ),
             "window=0 must return WindowDisabled"
         );
 
@@ -320,7 +328,10 @@ mod tests {
         // window=1 only picks "z" → no match → Unique.
         let incoming_a = make_delta("session-new", vec![("src/lib.rs", "ecc-app")]);
         assert!(
-            matches!(should_dedupe(&fs1, tmp1.path(), &incoming_a, 1), DedupeOutcome::Unique),
+            matches!(
+                should_dedupe(&fs1, tmp1.path(), &incoming_a, 1),
+                DedupeOutcome::Unique
+            ),
             "window=1 must exclude older-lex delta_a and return Unique"
         );
 
@@ -328,9 +339,17 @@ mod tests {
         // window=100 covers all 5 → Duplicate detected.
         let tmp100 = TempDir::new().unwrap();
         let deltas: Vec<_> = (0..5_usize)
-            .map(|i| make_delta(&format!("session-{i}"), vec![(&format!("src/file{i}.rs"), "ecc-app")]))
+            .map(|i| {
+                make_delta(
+                    &format!("session-{i}"),
+                    vec![(&format!("src/file{i}.rs"), "ecc-app")],
+                )
+            })
             .collect();
-        let jsons: Vec<_> = deltas.iter().map(|d| serde_json::to_string(d).unwrap()).collect();
+        let jsons: Vec<_> = deltas
+            .iter()
+            .map(|d| serde_json::to_string(d).unwrap())
+            .collect();
         let file_pairs: Vec<(String, String)> = (0..5)
             .map(|i| (format!("pending-delta-{i}.json"), jsons[i].clone()))
             .collect();
@@ -346,7 +365,10 @@ mod tests {
         // Lex descending order: 4, 3, 2, 1, 0 — window=100 covers all 5.
         let incoming100 = make_delta("session-new100", vec![("src/file0.rs", "ecc-app")]);
         assert!(
-            matches!(should_dedupe(&fs100, tmp100.path(), &incoming100, 100), DedupeOutcome::Duplicate(_)),
+            matches!(
+                should_dedupe(&fs100, tmp100.path(), &incoming100, 100),
+                DedupeOutcome::Duplicate(_)
+            ),
             "window=100 must detect duplicate at bottom of lex-sorted list"
         );
     }
