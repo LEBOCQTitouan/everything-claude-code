@@ -124,6 +124,18 @@ mod tests {
     }
 
     #[test]
+    fn bare_workflow_exact_noise() {
+        // AC-001.8 edge case: `.claude/workflow` bare (no trailing slash)
+        // must classify as noise via NOISE_EXACT, not be mis-classified as
+        // signal because it doesn't match the `.claude/workflow/` prefix.
+        assert!(is_noise_path(".claude/workflow"), "bare path must be noise");
+        // Sanity: with trailing slash it's still noise (via prefix)
+        assert!(is_noise_path(".claude/workflow/"), "trailing-slash variant still noise");
+        // And a subpath is noise via prefix
+        assert!(is_noise_path(".claude/workflow/state.json"), "subpath noise");
+    }
+
+    #[test]
     fn classifies_fixed_prefixes_as_noise() {
         let noise_cases = [
             ".claude/workflow/state.json",
