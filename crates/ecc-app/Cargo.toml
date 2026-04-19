@@ -24,3 +24,4 @@ ecc-flock = { workspace = true }
 tempfile = "3"
 tracing-test = "0.1"
 tracing-subscriber = { version = "0.3", features = ["registry"] }
+serde-saphyr = { workspace = true }
