@@ -3,6 +3,9 @@
 //! Classifies repository paths as noise (workflow metadata, docs) or signal
 //! (source code changes). Zero I/O — pure function.
 
+/// Fixed noise exact matches — ordered alphabetically for review clarity.
+const NOISE_EXACT: &[&str] = &[".claude/workflow", "cargo.lock"];
+
 /// Fixed noise prefixes — ordered alphabetically for review clarity.
 const NOISE_PREFIXES: &[&str] = &[
     ".claude/cartography/",
@@ -22,9 +25,10 @@ const NOISE_PREFIXES: &[&str] = &[
 /// - Noise if the lowercased path starts with any prefix in [`NOISE_PREFIXES`].
 pub fn is_noise_path(path: &str) -> bool {
     let normalized = path.replace('\\', "/").to_ascii_lowercase();
-    NOISE_PREFIXES
-        .iter()
-        .any(|prefix| normalized.starts_with(prefix))
+    NOISE_EXACT.iter().any(|exact| normalized == *exact)
+        || NOISE_PREFIXES
+            .iter()
+            .any(|prefix| normalized.starts_with(prefix))
 }
 
 #[cfg(test)]
