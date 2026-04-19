@@ -10,6 +10,7 @@ use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore, BacklogLockStore}
 use ecc_ports::clock::Clock;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
+use ecc_ports::memory_store::MemoryStore;
 use ecc_ports::worktree::WorktreeManager;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
@@ -449,6 +450,8 @@ pub fn update_status(
 ///
 /// Wraps [`update_status`] and then calls
 /// [`memory::file_prune::prune_file_memories_for_backlog`] if `new_status == "implemented"`.
+/// If `store` is `Some`, also calls [`memory::lifecycle::prune_by_backlog`] to remove
+/// SQLite memory entries tagged with `id`.
 /// Prune errors are logged via `tracing::warn!` with target `"memory::prune"` but do NOT
 /// propagate — the status transition always returns `Ok(())` on success.
 /// If [`memory::paths::resolve_project_memory_root`] fails, a warn is emitted and
@@ -466,6 +469,7 @@ pub fn update_status_with_prune_hook(
     new_status: &str,
     env: &dyn Environment,
     fs: &dyn FileSystem,
+    store: Option<&dyn MemoryStore>,
 ) -> Result<(), BacklogError> {
     update_status(
         entries,
@@ -503,6 +507,17 @@ pub fn update_status_with_prune_hook(
                     );
                 }
             }
+        }
+
+        if let Some(memory_store) = store
+            && let Err(e) = crate::memory::lifecycle::prune_by_backlog(memory_store, id)
+        {
+            tracing::warn!(
+                target: "memory::prune",
+                bl_id = id,
+                error = ?e,
+                "sqlite prune error (fire-and-forget)"
+            );
         }
     }
 
@@ -1180,6 +1195,7 @@ mod tests {
             "implemented",
             &env,
             &fs,
+            None,
         );
 
         assert!(
@@ -1261,6 +1277,7 @@ mod tests {
                     target_status,
                     &env,
                     &fs,
+                    None,
                 );
 
                 assert!(
@@ -1328,6 +1345,7 @@ mod tests {
             "implemented",
             &env,
             &fs,
+            None,
         );
         assert!(result1.is_ok(), "first call must succeed; got: {result1:?}");
 
@@ -1356,6 +1374,7 @@ mod tests {
             "implemented",
             &env,
             &fs,
+            None,
         );
         assert!(
             result2.is_ok(),
