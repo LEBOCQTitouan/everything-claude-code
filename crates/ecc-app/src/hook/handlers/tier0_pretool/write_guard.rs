@@ -3,8 +3,25 @@
 /// These paths are always outside any git worktree — Claude's memory prune
 /// writes there during active worktree sessions. The write-guard must never
 /// block them; this function provides the allow-list predicate.
-pub fn is_memory_root_path(_path: &str) -> bool {
-    false // stub — not yet implemented
+pub fn is_memory_root_path(path: &str) -> bool {
+    is_claude_projects_memory(path.trim())
+}
+
+/// Core pattern check — separated for testability.
+///
+/// Matches: `/<anything>/.claude/projects/<hash>/memory[/<file>]`
+fn is_claude_projects_memory(path: &str) -> bool {
+    let marker = "/.claude/projects/";
+    let Some(idx) = path.find(marker) else {
+        return false;
+    };
+    let after_marker = &path[idx + marker.len()..];
+    // Skip the hash component (first path segment after the marker).
+    let Some(slash) = after_marker.find('/') else {
+        return false;
+    };
+    let after_hash = &after_marker[slash + 1..];
+    after_hash.starts_with("memory/") || after_hash == "memory"
 }
 
 #[cfg(test)]
