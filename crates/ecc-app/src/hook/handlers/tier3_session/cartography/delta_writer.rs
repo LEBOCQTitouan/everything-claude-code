@@ -50,15 +50,28 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     // No changed files → passthrough, no delta written
-    let changed_lines: Vec<&str> = git_output
+    let raw_lines: Vec<&str> = git_output
         .stdout
         .lines()
         .map(str::trim)
         .filter(|l| !l.is_empty())
+        .collect();
+
+    let changed_lines: Vec<&str> = raw_lines
+        .iter()
+        .copied()
         .filter(|l| !ecc_domain::cartography::is_noise_path(l))
         .collect();
 
     if changed_lines.is_empty() {
+        if !raw_lines.is_empty() {
+            tracing::info!(
+                target: "cartography::filter",
+                paths_skipped = raw_lines.len(),
+                skipped = ?raw_lines,
+                "filter skipped all paths"
+            );
+        }
         return HookResult::passthrough(stdin);
     }
 
