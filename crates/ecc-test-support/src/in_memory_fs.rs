@@ -243,8 +243,17 @@ impl FileSystem for InMemoryFileSystem {
     }
 
     fn canonicalize(&self, path: &Path) -> Result<std::path::PathBuf, std::io::Error> {
-        // In-memory paths are already absolute and canonical.
-        Ok(path.to_path_buf())
+        // In-memory paths are already absolute and canonical,
+        // but must exist (as a file or directory) to canonicalize successfully.
+        let dirs = self.dirs.lock().unwrap();
+        let files = self.files.lock().unwrap();
+        if dirs.contains_key(path) || files.contains_key(path) {
+            return Ok(path.to_path_buf());
+        }
+        Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("no such file or directory: {}", path.display()),
+        ))
     }
 }
 
