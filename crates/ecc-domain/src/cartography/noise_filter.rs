@@ -44,6 +44,24 @@ mod tests {
     }
 
     #[test]
+    fn crate_paths_are_signal() {
+        let signal_cases = [
+            "crates/ecc-domain/src/foo.rs",
+            "crates/ecc-app/src/hook/handlers/tier3_session/cartography/delta_writer.rs",
+            "README.md",
+            "docs/ARCHITECTURE.md",
+            "docs/commands-reference.md",
+            "docs/adr/0068-foo.md",
+            ".github/workflows/ci.yml",
+            "rust-toolchain.toml",
+            "src/main.rs",
+        ];
+        for case in signal_cases {
+            assert!(!is_noise_path(case), "expected signal: {case}");
+        }
+    }
+
+    #[test]
     fn classifies_fixed_prefixes_as_noise() {
         let noise_cases = [
             ".claude/workflow/state.json",
