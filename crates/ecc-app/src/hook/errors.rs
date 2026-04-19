@@ -1,5 +1,23 @@
 /// Hook-layer error types for ecc-app.
 
+use std::path::PathBuf;
+
+/// Errors produced by hook execution.
+#[derive(Debug, thiserror::Error)]
+pub enum HookError {
+    /// An I/O error occurred during a cartography operation.
+    #[error("cartography I/O: {operation} at {path:?}: {source}")]
+    CartographyIo {
+        /// The operation that failed (e.g., "create_dir").
+        operation: String,
+        /// The filesystem path involved.
+        path: PathBuf,
+        /// The underlying I/O error.
+        #[source]
+        source: std::io::Error,
+    },
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
