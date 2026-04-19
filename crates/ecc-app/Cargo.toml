@@ -8,6 +8,7 @@ license.workspace = true
 [dependencies]
 ecc-domain = { workspace = true }
 ecc-ports = { workspace = true }
+ecc-flock = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }

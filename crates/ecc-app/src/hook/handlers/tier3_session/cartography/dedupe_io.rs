@@ -4,6 +4,7 @@
 //! `SessionDelta` is a duplicate of a recently written one.
 
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use ecc_domain::cartography::{ChangedFile, SessionDelta};
 use ecc_ports::fs::FileSystem;
@@ -64,6 +65,12 @@ pub fn should_dedupe(
     if window == 0 {
         return DedupeOutcome::WindowDisabled;
     }
+
+    let timeout = Duration::from_millis(500);
+    let _lock = match ecc_flock::acquire_for_with_timeout(cartography_dir, "dedupe", timeout) {
+        Ok(lock) => lock,
+        Err(_) => return DedupeOutcome::LockBusy,
+    };
 
     let incoming_hash = content_hash(delta);
 
