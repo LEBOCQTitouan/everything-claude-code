@@ -236,10 +236,7 @@ fn dispatch_records_hook_success_metric() {
     );
     assert_eq!(event.hook_id.as_deref(), Some("check:hook:enabled"));
     assert_eq!(event.outcome, ecc_domain::metrics::MetricOutcome::Success);
-    assert!(
-        event.duration_ms.unwrap_or(0) >= 0,
-        "duration_ms must be present"
-    );
+    assert!(event.duration_ms.is_some(), "duration_ms must be present");
 }
 
 /// PC-005: After dispatch() of a failing hook, InMemoryMetricsStore contains one HookExecution

@@ -1434,7 +1434,7 @@ mod tests {
         let index = make_index_with_entries(&[("BL-001", "open")]);
 
         let repo = InMemoryBacklogRepository::new()
-            .with_raw_content("BL-001", &quoted_content)
+            .with_raw_content("BL-001", quoted_content)
             .with_entry(make_entry("BL-001", BacklogStatus::Open))
             .with_index(&index);
 

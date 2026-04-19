@@ -28,8 +28,7 @@ pub(super) fn validate_teams(root: &Path, fs: &dyn FileSystem, terminal: &dyn Te
         .collect();
 
     // Load manifest (best-effort: missing manifest falls back to legacy behaviour)
-    let manifest_opt =
-        super::tool_manifest_loader::load_tool_manifest(fs, root).ok();
+    let manifest_opt = super::tool_manifest_loader::load_tool_manifest(fs, root).ok();
 
     // Collect known agent names + their tools from agents/ directory
     let known_agents = collect_agent_info(root, fs, manifest_opt.as_ref());
@@ -323,7 +322,7 @@ agents:
     }
 
     // Helper: write tool manifest fixture
-    fn with_manifest(fs: &InMemoryFileSystem, root: &PathBuf) {
+    fn with_manifest(fs: &InMemoryFileSystem, root: &Path) {
         let yaml = r#"tools:
   - Read
   - Write
@@ -414,12 +413,23 @@ presets:
 "#;
         let tm = ecc_domain::config::tool_manifest::parse_tool_manifest(yaml).unwrap();
         let known_agents = collect_agent_info(&root, &fs, Some(&tm));
-        let tools = known_agents.get("code-reviewer").expect("code-reviewer should be in known_agents");
+        let tools = known_agents
+            .get("code-reviewer")
+            .expect("code-reviewer should be in known_agents");
 
         // After resolving readonly-analyzer: [Read, Grep, Glob]
-        assert!(tools.contains("Read"), "resolved tools must contain Read; got: {tools:?}");
-        assert!(tools.contains("Grep"), "resolved tools must contain Grep; got: {tools:?}");
-        assert!(tools.contains("Glob"), "resolved tools must contain Glob; got: {tools:?}");
+        assert!(
+            tools.contains("Read"),
+            "resolved tools must contain Read; got: {tools:?}"
+        );
+        assert!(
+            tools.contains("Grep"),
+            "resolved tools must contain Grep; got: {tools:?}"
+        );
+        assert!(
+            tools.contains("Glob"),
+            "resolved tools must contain Glob; got: {tools:?}"
+        );
     }
 
     // ── PC-027: escalation_warn_names_preset_and_missing_tool ────────────────

@@ -133,10 +133,9 @@ mod tests {
     // This test fails in RED (merge_hooks still returns Result<_, String>) and passes in GREEN.
     #[test]
     fn merge_hooks_returns_merge_error() {
-        fn assert_return_type(
-            _: fn(&dyn FileSystem, &Path, &Path, bool) -> Result<(usize, usize, usize), MergeError>,
-        ) {
-        }
+        type MergeHooksFn =
+            fn(&dyn FileSystem, &Path, &Path, bool) -> Result<(usize, usize, usize), MergeError>;
+        fn assert_return_type(_: MergeHooksFn) {}
         assert_return_type(crate::merge::merge_hooks);
     }
 }

@@ -345,9 +345,7 @@ fn gap_markers_for_unknown_actors() {
     .unwrap();
 
     // Agent returns journey with GAP marker for unknown actor
-    let journey_with_gap = format!(
-        "# Unknown Journey\n\n## Overview\n<!-- GAP: actor unknown, infer from context -->\n\n## Mermaid Diagram\n```mermaid\nflowchart LR\n  A --> B\n```\n\n## Steps\n1. Unknown step\n\n## Related Flows\n"
-    );
+    let journey_with_gap = "# Unknown Journey\n\n## Overview\n<!-- GAP: actor unknown, infer from context -->\n\n## Mermaid Diagram\n```mermaid\nflowchart LR\n  A --> B\n```\n\n## Steps\n1. Unknown step\n\n## Related Flows\n".to_string();
     let shell = make_shell_for_agent(&enriched_json, &journey_with_gap);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();
@@ -495,9 +493,7 @@ fn agent_output_validates_flow_schema() {
 /// sections and only update the changed ones.
 #[test]
 fn flow_delta_merge_preserves_unchanged() {
-    let existing_flow = format!(
-        "# Test Flow\n\n## Overview\nData flow.\n\n## Mermaid Diagram\n```mermaid\nflowchart LR\n  A --> B\n```\n\n## Source-Destination\nSource: A\nDestination: B\n\n## Transformation Steps\n<!-- CARTOGRAPHY: step-1 -->\nOld step 1 content.\n<!-- /CARTOGRAPHY: step-1 -->\n<!-- CARTOGRAPHY: step-2 -->\nUnchanged step 2 content.\n<!-- /CARTOGRAPHY: step-2 -->\n\n## Error Paths\n- On failure: retry\n"
-    );
+    let existing_flow = "# Test Flow\n\n## Overview\nData flow.\n\n## Mermaid Diagram\n```mermaid\nflowchart LR\n  A --> B\n```\n\n## Source-Destination\nSource: A\nDestination: B\n\n## Transformation Steps\n<!-- CARTOGRAPHY: step-1 -->\nOld step 1 content.\n<!-- /CARTOGRAPHY: step-1 -->\n<!-- CARTOGRAPHY: step-2 -->\nUnchanged step 2 content.\n<!-- /CARTOGRAPHY: step-2 -->\n\n## Error Paths\n- On failure: retry\n".to_string();
 
     let delta = make_delta_with_file("session-flow-merge", 1000, "crates/ecc-app/src/data.rs");
     let delta_json = serde_json::to_string(&delta).unwrap();
@@ -520,9 +516,7 @@ fn flow_delta_merge_preserves_unchanged() {
     .unwrap();
 
     // Agent returns a flow that only updates step-1, step-2 remains unchanged
-    let updated_flow = format!(
-        "# Test Flow\n\n## Overview\nData flow.\n\n## Mermaid Diagram\n```mermaid\nflowchart LR\n  A --> B\n```\n\n## Source-Destination\nSource: A\nDestination: B\n\n## Transformation Steps\n<!-- CARTOGRAPHY: step-1 -->\nUpdated step 1 content.\n<!-- /CARTOGRAPHY: step-1 -->\n<!-- CARTOGRAPHY: step-2 -->\nUnchanged step 2 content.\n<!-- /CARTOGRAPHY: step-2 -->\n\n## Error Paths\n- On failure: retry\n"
-    );
+    let updated_flow = "# Test Flow\n\n## Overview\nData flow.\n\n## Mermaid Diagram\n```mermaid\nflowchart LR\n  A --> B\n```\n\n## Source-Destination\nSource: A\nDestination: B\n\n## Transformation Steps\n<!-- CARTOGRAPHY: step-1 -->\nUpdated step 1 content.\n<!-- /CARTOGRAPHY: step-1 -->\n<!-- CARTOGRAPHY: step-2 -->\nUnchanged step 2 content.\n<!-- /CARTOGRAPHY: step-2 -->\n\n## Error Paths\n- On failure: retry\n".to_string();
     let shell = make_shell_for_agent(&enriched_json, &updated_flow);
     let env = MockEnvironment::new().with_var("CLAUDE_PROJECT_DIR", "/project");
     let term = BufferedTerminal::new();

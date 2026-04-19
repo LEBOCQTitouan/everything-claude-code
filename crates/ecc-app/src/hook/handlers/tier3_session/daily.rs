@@ -47,32 +47,30 @@ pub fn daily_summary(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .map(|v| v != "0")
         .unwrap_or(true);
 
-    if filter_enabled {
-        if let Some(project_dir) = ports.env.var("CLAUDE_PROJECT_DIR") {
-            let project_path = std::path::PathBuf::from(project_dir);
-            if let Ok(git_out) = ports.shell.run_command_in_dir(
-                "git",
-                &["diff", "--name-only", "HEAD"],
-                &project_path,
-            ) {
-                let changed: Vec<&str> = git_out
-                    .stdout
-                    .lines()
-                    .map(str::trim)
-                    .filter(|l| !l.is_empty())
-                    .collect();
-                if !changed.is_empty()
-                    && changed
-                        .iter()
-                        .all(|p| ecc_domain::cartography::is_noise_path(p))
-                {
-                    tracing::info!(
-                        target: "daily::filter",
-                        paths_skipped = changed.len(),
-                        "noise-only session — skipping daily append"
-                    );
-                    return HookResult::passthrough(stdin);
-                }
+    if filter_enabled && let Some(project_dir) = ports.env.var("CLAUDE_PROJECT_DIR") {
+        let project_path = std::path::PathBuf::from(project_dir);
+        if let Ok(git_out) =
+            ports
+                .shell
+                .run_command_in_dir("git", &["diff", "--name-only", "HEAD"], &project_path)
+        {
+            let changed: Vec<&str> = git_out
+                .stdout
+                .lines()
+                .map(str::trim)
+                .filter(|l| !l.is_empty())
+                .collect();
+            if !changed.is_empty()
+                && changed
+                    .iter()
+                    .all(|p| ecc_domain::cartography::is_noise_path(p))
+            {
+                tracing::info!(
+                    target: "daily::filter",
+                    paths_skipped = changed.len(),
+                    "noise-only session — skipping daily append"
+                );
+                return HookResult::passthrough(stdin);
             }
         }
     }
@@ -331,7 +329,10 @@ mod tests {
         // Daily file MUST be written because the filter was disabled
         let dir =
             std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
-        assert!(fs.exists(dir), "daily dir should exist when filter is disabled");
+        assert!(
+            fs.exists(dir),
+            "daily dir should exist when filter is disabled"
+        );
         let entries = fs.read_dir(dir).expect("daily dir should be readable");
         assert_eq!(entries.len(), 1, "exactly one daily file should be written");
 
