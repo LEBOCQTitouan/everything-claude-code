@@ -15,7 +15,7 @@ Bootstrap project-level PRD, architecture, and ADR through guided interview with
 
 ## Phase 0: Detection
 
-1. Invoke the CLI via the Bash tool (do NOT use `!`-prefix shell eval) to initialize the workflow state for this foundation session. The `Concern` domain enum currently supports `dev | fix | refactor`; use `dev` for foundation sessions until a dedicated `foundation` variant is added (tracked as a follow-up backlog entry). Pass the project description via an environment variable and pipe it through stdin to avoid shell-argv interpolation of metacharacters, e.g.: `env FEATURE='<project description>' sh -c 'printf %s "$FEATURE" | ecc-workflow init dev --feature-stdin'`. Worktree isolation via existing write-guard.
+1. Invoke the CLI via the Bash tool (do NOT use `!`-prefix shell eval) to initialize the workflow state for this foundation session. Pass the project description via an environment variable and pipe it through stdin to avoid shell-argv interpolation of metacharacters, e.g.: `env FEATURE='<project description>' sh -c 'printf %s "$FEATURE" | ecc-workflow init foundation --feature-stdin'`. Worktree isolation via existing write-guard.
 2. Detect **new repo** vs **existing repo**:
    - New repo: no source files beyond README/LICENSE/`.gitignore`. Skip to Phase 2.
    - Existing repo: has CLAUDE.md, `Cargo.toml`, `package.json`, `go.mod`, `pyproject.toml`, or source directories. Proceed to Phase 1.
