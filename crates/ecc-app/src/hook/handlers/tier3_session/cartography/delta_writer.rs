@@ -492,6 +492,42 @@ mod tests {
         );
     }
 
+    /// PC-011: spec-only session (`docs/specs/<slug>/spec.md`, `design.md`, `tasks.md`) →
+    /// passthrough, no delta written.
+    #[test]
+    fn filters_spec_only_session() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "docs/specs/2026-04-19-foo/spec.md\ndocs/specs/2026-04-19-foo/design.md\ndocs/specs/2026-04-19-foo/tasks.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "spec-only-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — all changed files are spec noise
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-spec-only-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "spec-only paths must be filtered — no delta should be written"
+        );
+    }
+
     /// Only `.claude/` paths in git diff → passthrough, no delta written (self-referential filter).
     #[test]
     fn filters_out_dot_claude_paths() {
