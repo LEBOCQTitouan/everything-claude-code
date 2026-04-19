@@ -1,6 +1,7 @@
 //! Cartography hook handlers — stop:cartography writes session deltas,
 //! start:cartography processes them via the cartographer agent.
 
+pub mod dedupe_io;
 mod delta_helpers;
 mod delta_reminder;
 mod delta_writer;
