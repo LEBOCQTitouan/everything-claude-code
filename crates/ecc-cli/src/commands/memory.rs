@@ -4,6 +4,8 @@ use clap::{Args, Subcommand};
 use ecc_app::memory::crud::{AddParams, MemoryAppError};
 use ecc_app::memory::paths::resolve_project_memory_root;
 use ecc_domain::memory::{MemoryId, MemoryTier};
+use ecc_infra::fs_backlog::FsBacklogRepository;
+use ecc_ports::backlog::BacklogEntryStore;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -198,6 +200,33 @@ pub fn handle_restore<F: ecc_ports::fs::FileSystem>(
     Ok(result)
 }
 
+/// Return today's date as `YYYY-MM-DD` using the system clock (UTC).
+fn today_date() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let days = secs / 86400;
+    let (year, month, day) = days_to_ymd(days);
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
+/// Convert days since Unix epoch (1970-01-01) to `(year, month, day)`.
+fn days_to_ymd(days: u64) -> (u64, u64, u64) {
+    let z = days as i64 + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    (y as u64, m, d)
+}
+
 fn open_store() -> anyhow::Result<ecc_infra::sqlite_memory::SqliteMemoryStore> {
     let home =
         dirs::home_dir().ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
@@ -365,11 +394,66 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
         }
 
         MemoryAction::Prune {
-            orphaned_backlogs: _,
-            apply: _,
+            orphaned_backlogs,
+            apply,
         } => {
-            // Placeholder — full implementation in GREEN phase
-            println!("prune: not yet implemented");
+            if !orphaned_backlogs {
+                eprintln!("error: --orphaned-backlogs flag is required");
+                std::process::exit(1);
+            }
+
+            let fs = ecc_infra::os_fs::OsFileSystem;
+            let env = ecc_infra::os_env::OsEnvironment;
+            let safe_root = resolve_project_memory_root(&env, &fs)
+                .map_err(|e| anyhow::anyhow!("failed to resolve memory root: {e}"))?;
+            let memory_root = safe_root.full().to_path_buf();
+
+            let backlog_dir = PathBuf::from("docs/backlog");
+            let repo = FsBacklogRepository::new(&fs);
+            let backlog_entries = repo
+                .load_entries(&backlog_dir)
+                .map_err(|e| anyhow::anyhow!("failed to load backlog entries: {e}"))?;
+
+            let today = today_date();
+            let report = ecc_app::memory::file_prune::prune_orphaned_file_memories(
+                &fs,
+                &memory_root,
+                &backlog_entries,
+                &today,
+                apply,
+            );
+
+            if apply {
+                if report.trashed_files.is_empty() {
+                    println!("No orphaned memory files to prune.");
+                } else {
+                    println!("Pruned {} orphaned file(s):", report.trashed_files.len());
+                    for p in &report.trashed_files {
+                        println!("  trashed: {}", p.display());
+                    }
+                    if report.index_updated {
+                        println!("  MEMORY.md updated.");
+                    }
+                }
+            } else if report.would_trash.is_empty() {
+                println!("No orphaned memory files found (dry-run).");
+            } else {
+                println!(
+                    "Would prune {} orphaned file(s) (dry-run — use --apply to trash):",
+                    report.would_trash.len()
+                );
+                for p in &report.would_trash {
+                    println!("  would-trash: {}", p.display());
+                }
+            }
+
+            for e in &report.errors {
+                eprintln!("  error: {e}");
+            }
+
+            if !report.errors.is_empty() {
+                std::process::exit(1);
+            }
         }
 
         MemoryAction::Restore { trash, apply } => {
