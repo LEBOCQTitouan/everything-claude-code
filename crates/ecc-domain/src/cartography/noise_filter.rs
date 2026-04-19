@@ -32,6 +32,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn classifies_exact_matches_as_noise() {
+        let exact_cases = ["Cargo.lock", ".claude/workflow"];
+        for case in exact_cases {
+            assert!(is_noise_path(case), "expected exact-match noise: {case}");
+        }
+    }
+
+    #[test]
     fn classifies_fixed_prefixes_as_noise() {
         let noise_cases = [
             ".claude/workflow/state.json",
