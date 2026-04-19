@@ -26,6 +26,8 @@ pub struct OrphanedPruneReport {
     pub would_trash: Vec<PathBuf>,
     /// Files that were actually moved to the trash directory (only non-empty when `apply=true`).
     pub trashed_files: Vec<PathBuf>,
+    /// Whether `MEMORY.md` was successfully rewritten (only relevant when `apply=true`).
+    pub index_updated: bool,
     /// Non-fatal errors encountered during scanning.
     pub errors: Vec<String>,
 }
@@ -54,6 +56,7 @@ pub fn prune_orphaned_file_memories(
     };
 
     let trash_dir = root.join(format!(".trash/{today}"));
+    let mut trashed_filenames: Vec<String> = Vec::new();
 
     for entry in entries {
         let filename = match entry.file_name().and_then(|n| n.to_str()) {
@@ -87,7 +90,10 @@ pub fn prune_orphaned_file_memories(
             }
             let dst = trash_dir.join(&filename);
             match fs.rename(&entry, &dst) {
-                Ok(()) => report.trashed_files.push(dst),
+                Ok(()) => {
+                    report.trashed_files.push(dst);
+                    trashed_filenames.push(filename);
+                }
                 Err(err) => {
                     report.errors.push(format!(
                         "rename {} -> {}: {err}",
@@ -101,7 +107,55 @@ pub fn prune_orphaned_file_memories(
         }
     }
 
+    if apply && !trashed_filenames.is_empty() {
+        report.index_updated =
+            rewrite_memory_index(fs, root, &trashed_filenames, &mut report.errors);
+    }
+
     report
+}
+
+/// Atomically rewrite `MEMORY.md` to remove lines that reference any of `trashed_filenames`.
+///
+/// Uses a temp-file + rename for atomicity. On success sets `report.index_updated = true`.
+/// On failure appends to `report.errors` (non-fatal).
+fn rewrite_memory_index(
+    fs: &dyn FileSystem,
+    root_dir: &std::path::Path,
+    trashed_filenames: &[String],
+    errors: &mut Vec<String>,
+) -> bool {
+    let memory_md_path = root_dir.join("MEMORY.md");
+    match fs.read_to_string(&memory_md_path) {
+        Ok(content) => {
+            let updated: String = content
+                .lines()
+                .filter(|line| {
+                    !trashed_filenames
+                        .iter()
+                        .any(|name| line.contains(name.as_str()))
+                })
+                .map(|line| format!("{line}\n"))
+                .collect();
+
+            let tmp_path = root_dir.join("MEMORY.md.tmp");
+            match fs.write(&tmp_path, &updated) {
+                Ok(()) => match fs.rename(&tmp_path, &memory_md_path) {
+                    Ok(()) => return true,
+                    Err(err) => {
+                        errors.push(format!("rename MEMORY.md.tmp: {err}"));
+                    }
+                },
+                Err(err) => {
+                    errors.push(format!("write MEMORY.md.tmp: {err}"));
+                }
+            }
+        }
+        Err(err) => {
+            errors.push(format!("read MEMORY.md: {err}"));
+        }
+    }
+    false
 }
 
 /// Extract the numeric BL ID from a filename like `project_bl031_foo.md`.
@@ -184,38 +238,9 @@ pub fn prune_file_memories_for_backlog(
     }
 
     // 2. Atomic rewrite of MEMORY.md — remove rows referencing trashed files.
-    let memory_md_path = root_dir.join("MEMORY.md");
-    match fs.read_to_string(&memory_md_path) {
-        Ok(content) => {
-            let updated: String = content
-                .lines()
-                .filter(|line| {
-                    !trashed_filenames
-                        .iter()
-                        .any(|name| line.contains(name.as_str()))
-                })
-                .map(|line| format!("{line}\n"))
-                .collect();
-
-            // Atomic write: write to .tmp then rename.
-            let tmp_path = root_dir.join("MEMORY.md.tmp");
-            match fs.write(&tmp_path, &updated) {
-                Ok(()) => match fs.rename(&tmp_path, &memory_md_path) {
-                    Ok(()) => {
-                        report.index_updated = true;
-                    }
-                    Err(err) => {
-                        report.errors.push(format!("rename MEMORY.md.tmp: {err}"));
-                    }
-                },
-                Err(err) => {
-                    report.errors.push(format!("write MEMORY.md.tmp: {err}"));
-                }
-            }
-        }
-        Err(err) => {
-            report.errors.push(format!("read MEMORY.md: {err}"));
-        }
+    if !trashed_filenames.is_empty() {
+        report.index_updated =
+            rewrite_memory_index(fs, root_dir, &trashed_filenames, &mut report.errors);
     }
 
     report
@@ -390,5 +415,68 @@ mod tests {
 
         // Invalid BL ID returns false
         assert!(!matches_bl_id("project_bl001.md", "invalid"));
+    }
+
+    #[test]
+    fn orphaned_prune_apply_updates_memory_index() {
+        use ecc_domain::backlog::entry::{BacklogEntry, BacklogStatus};
+        use ecc_ports::fs::FileSystem as _;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/orphan-index-test");
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root)
+            .with_file(root.join("project_bl010_done.md"), "bl010 content")
+            .with_file(root.join("project_bl020_open.md"), "bl020 content")
+            .with_file(
+                root.join("MEMORY.md"),
+                "# Memory\n\n- [BL-010 done](project_bl010_done.md)\n- [BL-020 open](project_bl020_open.md)\n",
+            );
+
+        let backlog_entries = vec![
+            BacklogEntry {
+                id: "BL-010".to_string(),
+                title: "Done".to_string(),
+                status: BacklogStatus::Implemented,
+                created: "2026-01-01".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-020".to_string(),
+                title: "Open".to_string(),
+                status: BacklogStatus::Open,
+                created: "2026-01-02".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+        ];
+
+        let report =
+            prune_orphaned_file_memories(&fs, &root, &backlog_entries, "2026-04-18", true);
+
+        assert_eq!(report.trashed_files.len(), 1, "should trash BL-010 file");
+        assert!(report.errors.is_empty(), "no errors expected");
+        assert!(
+            report.index_updated,
+            "MEMORY.md must be updated after apply"
+        );
+
+        let memory_md = fs.read_to_string(&root.join("MEMORY.md")).unwrap();
+        assert!(
+            !memory_md.contains("project_bl010_done.md"),
+            "MEMORY.md must not reference trashed file"
+        );
+        assert!(
+            memory_md.contains("project_bl020_open.md"),
+            "MEMORY.md must retain active entry"
+        );
     }
 }
