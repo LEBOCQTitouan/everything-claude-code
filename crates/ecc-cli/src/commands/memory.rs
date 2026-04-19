@@ -842,6 +842,40 @@ mod tests {
         );
     }
 
+    // PC-104: `handle_restore` rejects `trash_date` values not matching `^\d{4}-\d{2}-\d{2}$`
+    #[test]
+    fn restore_rejects_non_iso_date() {
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/sec-root");
+        let fs = InMemoryFileSystem::new().with_dir(&root);
+
+        let bad_dates = [
+            "../../etc",
+            "2026-04-19/../..",
+            "2026/04/19",
+            "not-a-date",
+            "",
+            "2026-4-19",   // not zero-padded
+            "2026-04-19a", // trailing junk
+        ];
+        for bad in bad_dates {
+            let result = handle_restore(&fs, &root, bad, false);
+            assert!(result.is_err(), "must reject trash_date: {bad:?}");
+        }
+
+        // Valid ISO date passes validation (may fail with dir not found, but not with invalid date)
+        let good = "2026-04-19";
+        let result = handle_restore(&fs, &root, good, false);
+        // Either Ok (empty dir) or Err — must not be an invalid-date error.
+        // The in-memory FS has no .trash dir, so it returns Ok with empty listed.
+        assert!(
+            result.is_ok(),
+            "valid date should not produce a validation error"
+        );
+    }
+
     // PC-043: `ecc memory restore --trash <date>` lists trash files; `--apply` moves them back
     #[test]
     fn restore_lists_and_applies() {
