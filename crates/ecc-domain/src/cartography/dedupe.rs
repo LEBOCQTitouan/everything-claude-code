@@ -3,6 +3,8 @@
 //! Provides canonical hashing so that two `SessionDelta` values with identical
 //! content but different `changed_files` insertion order produce the same hash.
 
+use sha2::{Digest, Sha256};
+
 use crate::cartography::types::SessionDelta;
 
 /// Computes a canonical, order-independent SHA-256 hash of a `SessionDelta`.
@@ -13,8 +15,11 @@ use crate::cartography::types::SessionDelta;
 /// 3. SHA-256 the canonical JSON bytes.
 /// 4. Return a lowercase 64-character hex string.
 pub fn canonical_hash(delta: &SessionDelta) -> String {
-    // Stub: non-canonical serialization — will fail determinism test
-    serde_json::to_string(delta).unwrap_or_default()
+    let mut sorted = delta.clone();
+    sorted.changed_files.sort_by(|a, b| a.path.cmp(&b.path));
+    let canonical = serde_jcs::to_string(&sorted).expect("serde_jcs serialization failed");
+    let hash = Sha256::digest(canonical.as_bytes());
+    format!("{hash:x}")
 }
 
 #[cfg(test)]
