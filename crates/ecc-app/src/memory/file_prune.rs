@@ -2,6 +2,7 @@
 //!
 //! Provides BL-ID pattern matching and file-level pruning for memory cleanup.
 
+use ecc_domain::backlog::entry::{BacklogEntry, BacklogStatus};
 use ecc_domain::memory::SafePath;
 use ecc_ports::fs::FileSystem;
 use regex::Regex;
@@ -16,6 +17,107 @@ pub struct PruneReport {
     pub index_updated: bool,
     /// Non-fatal errors encountered during pruning.
     pub errors: Vec<String>,
+}
+
+/// Report produced by [`prune_orphaned_file_memories`].
+#[derive(Debug, Default)]
+pub struct OrphanedPruneReport {
+    /// Files that would be trashed in a real (apply) run.
+    pub would_trash: Vec<PathBuf>,
+    /// Files that were actually moved to the trash directory (only non-empty when `apply=true`).
+    pub trashed_files: Vec<PathBuf>,
+    /// Non-fatal errors encountered during scanning.
+    pub errors: Vec<String>,
+}
+
+/// Scan `root` for `project_bl<N>_*.md` files whose backlog entry is marked
+/// `Implemented` or `Archived` in `backlog_entries`.
+///
+/// When `apply` is `false` (dry-run), populates `would_trash` but does NOT
+/// move any files. When `apply` is `true`, moves matching files to
+/// `<root>/.trash/<today>/`.
+pub fn prune_orphaned_file_memories(
+    fs: &dyn FileSystem,
+    root: &std::path::Path,
+    backlog_entries: &[BacklogEntry],
+    today: &str,
+    apply: bool,
+) -> OrphanedPruneReport {
+    let mut report = OrphanedPruneReport::default();
+
+    let entries = match fs.read_dir(root) {
+        Ok(e) => e,
+        Err(err) => {
+            report.errors.push(format!("read_dir failed: {err}"));
+            return report;
+        }
+    };
+
+    let trash_dir = root.join(format!(".trash/{today}"));
+
+    for entry in entries {
+        let filename = match entry.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n.to_owned(),
+            None => continue,
+        };
+
+        let bl_num = match extract_bl_num_from_filename(&filename) {
+            Some(n) => n,
+            None => continue,
+        };
+
+        let orphaned = backlog_entries.iter().any(|e| {
+            is_same_bl_id(&e.id, bl_num)
+                && matches!(e.status, BacklogStatus::Implemented | BacklogStatus::Archived)
+        });
+
+        if !orphaned {
+            continue;
+        }
+
+        if apply {
+            if let Err(err) = fs.create_dir_all(&trash_dir) {
+                report
+                    .errors
+                    .push(format!("create_dir_all {}: {err}", trash_dir.display()));
+                continue;
+            }
+            let dst = trash_dir.join(&filename);
+            match fs.rename(&entry, &dst) {
+                Ok(()) => report.trashed_files.push(dst),
+                Err(err) => {
+                    report.errors.push(format!(
+                        "rename {} -> {}: {err}",
+                        entry.display(),
+                        dst.display()
+                    ));
+                }
+            }
+        } else {
+            report.would_trash.push(entry);
+        }
+    }
+
+    report
+}
+
+/// Extract the numeric BL ID from a filename like `project_bl031_foo.md`.
+///
+/// Returns `None` if the filename doesn't match the `project_bl<N>` pattern.
+fn extract_bl_num_from_filename(filename: &str) -> Option<u32> {
+    let pattern = Regex::new(r"(?i)^project_bl(\d+)").expect("valid regex");
+    pattern
+        .captures(filename)
+        .and_then(|c| c.get(1))
+        .and_then(|m| m.as_str().parse::<u32>().ok())
+}
+
+/// Returns true if backlog entry id `bl_id` (e.g. `"BL-031"`) matches numeric `bl_num`.
+fn is_same_bl_id(bl_id: &str, bl_num: u32) -> bool {
+    bl_id
+        .strip_prefix("BL-")
+        .and_then(|s| s.parse::<u32>().ok())
+        .is_some_and(|n| n == bl_num)
 }
 
 /// Move memory files matching `bl_id` to `<root>/.trash/<today>/` and remove
