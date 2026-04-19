@@ -112,6 +112,41 @@ mod tests {
         store.insert(&entry).unwrap()
     }
 
+    fn create_entry_with_source(
+        backlog_id: &str,
+        content: &str,
+    ) -> ecc_domain::memory::MemoryEntry {
+        ecc_domain::memory::MemoryEntry::new(
+            MemoryId(0),
+            MemoryTier::Episodic,
+            "Title",
+            content,
+            vec![],
+            None,
+            None,
+            1.0,
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:00:00Z",
+            false,
+            vec![],
+            Some(backlog_id.to_owned()),
+        )
+    }
+
+    // PC-044: prune_by_backlog deletes all entries tagged with BL-ID and returns count
+    #[test]
+    fn prune_by_backlog_returns_count() {
+        let store = InMemoryMemoryStore::new();
+        store.insert(&create_entry_with_source("BL-001", "content1")).unwrap();
+        store.insert(&create_entry_with_source("BL-001", "content2")).unwrap();
+        store.insert(&create_entry_with_source("BL-001", "content3")).unwrap();
+        store.insert(&create_entry_with_source("BL-002", "other1")).unwrap();
+        store.insert(&create_entry_with_source("BL-002", "other2")).unwrap();
+
+        let count = prune_by_backlog(&store, "BL-001").unwrap();
+        assert_eq!(count, 3, "returns count of deleted BL-001 entries");
+    }
+
     // PC-038: App `gc` deletes stale entries >180 days
     #[test]
     fn test_gc_deletes_stale_entries() {
