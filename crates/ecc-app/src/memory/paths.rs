@@ -77,6 +77,51 @@ mod tests {
     use super::*;
     use ecc_test_support::{InMemoryFileSystem, MockEnvironment};
 
+    /// Verify that the HOME-fallback path uses the same project-hash derivation
+    /// algorithm as `ecc-workflow/memory_write::resolve_project_memory_dir`:
+    /// `path.trim_start_matches('/').replace('/', "-")`.
+    #[test]
+    fn resolve_root_hash_algorithm_vectors() {
+        // Vector 1: /Users/alice/project/foo → Users-alice-project-foo
+        let expected_hash_1 = "Users-alice-project-foo";
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/home/alice")
+            .with_dir(&format!("/home/alice/.claude/projects/{expected_hash_1}/memory"));
+        let env = MockEnvironment::new()
+            .with_var("HOME", "/home/alice")
+            .with_var("CLAUDE_PROJECT_DIR", "/Users/alice/project/foo");
+
+        let result = resolve_project_memory_root(&env, &fs);
+        let safe = result.expect("should resolve");
+        assert!(
+            safe.full()
+                .to_string_lossy()
+                .contains(expected_hash_1),
+            "expected path to contain hash {expected_hash_1}, got {:?}",
+            safe.full()
+        );
+
+        // Vector 2: /home/bob/repos/myapp → home-bob-repos-myapp
+        let expected_hash_2 = "home-bob-repos-myapp";
+        let fs2 = InMemoryFileSystem::new()
+            .with_dir("/home/bob")
+            .with_dir(&format!("/home/bob/.claude/projects/{expected_hash_2}/memory"));
+        let env2 = MockEnvironment::new()
+            .with_var("HOME", "/home/bob")
+            .with_var("CLAUDE_PROJECT_DIR", "/home/bob/repos/myapp");
+
+        let result2 = resolve_project_memory_root(&env2, &fs2);
+        let safe2 = result2.expect("should resolve for vector 2");
+        assert!(
+            safe2
+                .full()
+                .to_string_lossy()
+                .contains(expected_hash_2),
+            "expected path to contain hash {expected_hash_2}, got {:?}",
+            safe2.full()
+        );
+    }
+
     #[test]
     fn resolve_root_env_override() {
         let fs = InMemoryFileSystem::new()
