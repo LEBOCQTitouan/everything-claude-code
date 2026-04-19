@@ -1653,6 +1653,74 @@ mod tests {
         );
     }
 
+    /// PC-115: table-driven test — migrate_statuses never fires prune hook for any status variant.
+    ///
+    /// Verifies that regardless of the status in the BACKLOG.md index (in-progress, archived,
+    /// promoted, implemented), `migrate_statuses` uses the direct path (no prune hook) and
+    /// emits zero `memory::prune` warn events.
+    #[test]
+    fn migrate_variant_never_fires_hooks() {
+        use std::sync::{Arc, Mutex};
+        use tracing_subscriber::layer::SubscriberExt as _;
+
+        struct CaptureLayer(Arc<Mutex<Vec<String>>>);
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                if *event.metadata().level() == tracing::Level::WARN
+                    && event.metadata().target().contains("memory::prune")
+                {
+                    self.0.lock().unwrap().push(format!(
+                        "WARN target={}",
+                        event.metadata().target()
+                    ));
+                }
+            }
+        }
+
+        let target_statuses = ["in-progress", "archived", "promoted", "implemented"];
+
+        for target_status in target_statuses {
+            let warn_messages: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+            let layer = CaptureLayer(Arc::clone(&warn_messages));
+            let subscriber = tracing_subscriber::registry().with(layer);
+
+            tracing::subscriber::with_default(subscriber, || {
+                // File says "open", index says target_status → migrate should update via direct path
+                let raw_bl001 = make_raw_with_status("BL-001", "open");
+                let index = make_index_with_entries(&[("BL-001", target_status)]);
+
+                let repo = InMemoryBacklogRepository::new()
+                    .with_raw_content("BL-001", &raw_bl001)
+                    .with_entry(make_entry("BL-001", BacklogStatus::Open))
+                    .with_index(&index);
+
+                let worktree_mgr = MockWorktreeManager::new();
+                let clock = fresh_clock();
+
+                migrate_statuses(
+                    &repo,
+                    &repo,
+                    &repo,
+                    &worktree_mgr,
+                    &clock,
+                    Path::new(BACKLOG_DIR),
+                    Path::new(PROJECT_DIR),
+                )
+                .unwrap();
+            });
+
+            let msgs = warn_messages.lock().unwrap();
+            assert!(
+                msgs.is_empty(),
+                "migrate of status={target_status} fired prune hook: {msgs:?}"
+            );
+        }
+    }
+
     /// PC-029: Quoting normalized to unquoted
     #[test]
     fn migration_normalizes_quoting() {
