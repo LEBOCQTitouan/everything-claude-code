@@ -72,11 +72,17 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
         &["status", "--porcelain", "docs/cartography/"],
         &project_dir,
     ) && !status_out.stdout.trim().is_empty()
-    {
-        let _ = ports.shell.run_command_in_dir(
+        && let Err(e) = ports.shell.run_command_in_dir(
             "git",
             &["checkout", "--", "docs/cartography/"],
             &project_dir,
+        )
+    {
+        tracing::warn!(
+            target: "cartography::io",
+            operation = "git_checkout",
+            path = %docs_cartography.display(),
+            error = %e
         );
     }
 
@@ -84,27 +90,62 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
     let journeys_dir = docs_cartography.join("journeys");
     let flows_dir = docs_cartography.join("flows");
     let elements_dir = docs_cartography.join("elements");
-    if !ports.fs.exists(&journeys_dir) {
-        let _ = ports.fs.create_dir_all(&journeys_dir);
+    if !ports.fs.exists(&journeys_dir)
+        && let Err(e) = ports.fs.create_dir_all(&journeys_dir)
+    {
+        tracing::warn!(
+            target: "cartography::io",
+            operation = "create_dir_all",
+            path = %journeys_dir.display(),
+            error = %e
+        );
     }
-    if !ports.fs.exists(&flows_dir) {
-        let _ = ports.fs.create_dir_all(&flows_dir);
+    if !ports.fs.exists(&flows_dir)
+        && let Err(e) = ports.fs.create_dir_all(&flows_dir)
+    {
+        tracing::warn!(
+            target: "cartography::io",
+            operation = "create_dir_all",
+            path = %flows_dir.display(),
+            error = %e
+        );
     }
-    if !ports.fs.exists(&elements_dir) {
-        let _ = ports.fs.create_dir_all(&elements_dir);
+    if !ports.fs.exists(&elements_dir)
+        && let Err(e) = ports.fs.create_dir_all(&elements_dir)
+    {
+        tracing::warn!(
+            target: "cartography::io",
+            operation = "create_dir_all",
+            path = %elements_dir.display(),
+            error = %e
+        );
     }
     let readme_path = docs_cartography.join("README.md");
-    if !ports.fs.exists(&readme_path) {
-        let _ = ports.fs.write(
+    if !ports.fs.exists(&readme_path)
+        && let Err(e) = ports.fs.write(
             &readme_path,
             "# Cartography\n\nAuto-generated documentation of user journeys and data flows.\n",
+        )
+    {
+        tracing::warn!(
+            target: "cartography::io",
+            operation = "write",
+            path = %readme_path.display(),
+            error = %e
         );
     }
     let elements_readme_path = elements_dir.join("README.md");
-    if !ports.fs.exists(&elements_readme_path) {
-        let _ = ports.fs.write(
+    if !ports.fs.exists(&elements_readme_path)
+        && let Err(e) = ports.fs.write(
             &elements_readme_path,
             "# Cartography Elements\n\nAuto-generated documentation of system elements.\n",
+        )
+    {
+        tracing::warn!(
+            target: "cartography::io",
+            operation = "write",
+            path = %elements_readme_path.display(),
+            error = %e
         );
     }
 
@@ -141,7 +182,14 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
     unprocessed.sort_by_key(|(_, delta)| delta.timestamp);
 
     if unprocessed.is_empty() {
-        let _ = ports.fs.remove_file(&lock_path);
+        if let Err(e) = ports.fs.remove_file(&lock_path) {
+            tracing::warn!(
+                target: "cartography::io",
+                operation = "remove_file",
+                path = %lock_path.display(),
+                error = %e
+            );
+        }
         return HookResult::passthrough(stdin);
     }
 
@@ -171,33 +219,77 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
 
     if success {
         // git add docs/cartography/ && git commit
-        let _ = ports
-            .shell
-            .run_command_in_dir("git", &["add", "docs/cartography/"], &project_dir);
-        let _ = ports.shell.run_command_in_dir(
+        if let Err(e) =
+            ports
+                .shell
+                .run_command_in_dir("git", &["add", "docs/cartography/"], &project_dir)
+        {
+            tracing::warn!(
+                target: "cartography::io",
+                operation = "git_add",
+                path = %docs_cartography.display(),
+                error = %e
+            );
+        }
+        if let Err(e) = ports.shell.run_command_in_dir(
             "git",
             &["commit", "-m", "docs(cartography): update"],
             &project_dir,
-        );
+        ) {
+            tracing::warn!(
+                target: "cartography::io",
+                operation = "git_commit",
+                path = %docs_cartography.display(),
+                error = %e
+            );
+        }
 
         // Archive processed deltas (AC-006.8)
-        let _ = ports.fs.create_dir_all(&processed_dir);
+        if let Err(e) = ports.fs.create_dir_all(&processed_dir) {
+            tracing::warn!(
+                target: "cartography::io",
+                operation = "create_dir_all",
+                path = %processed_dir.display(),
+                error = %e
+            );
+        }
         for (path, _) in &unprocessed {
             if let Some(file_name) = path.file_name() {
                 let dest = processed_dir.join(file_name);
-                let _ = ports.fs.rename(path, &dest);
+                if let Err(e) = ports.fs.rename(path, &dest) {
+                    tracing::warn!(
+                        target: "cartography::io",
+                        operation = "rename",
+                        path = %path.display(),
+                        error = %e
+                    );
+                }
             }
         }
     } else {
         // On failure: git reset, do not archive (AC-006.3)
-        let _ = ports.shell.run_command_in_dir(
+        if let Err(e) = ports.shell.run_command_in_dir(
             "git",
             &["reset", "HEAD", "docs/cartography/"],
             &project_dir,
-        );
+        ) {
+            tracing::warn!(
+                target: "cartography::io",
+                operation = "git_reset",
+                path = %docs_cartography.display(),
+                error = %e
+            );
+        }
         let msg = "[start_cartography] agent failed; changes reset, deltas not archived\n";
         warn!("{}", msg.trim());
-        let _ = ports.fs.remove_file(&lock_path);
+        if let Err(e) = ports.fs.remove_file(&lock_path) {
+            tracing::warn!(
+                target: "cartography::io",
+                operation = "remove_file",
+                path = %lock_path.display(),
+                error = %e
+            );
+        }
         return HookResult {
             stdout: stdin.to_string(),
             stderr: msg.to_string(),
@@ -206,7 +298,14 @@ pub(super) fn process_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookRes
     }
 
     // Release lock
-    let _ = ports.fs.remove_file(&lock_path);
+    if let Err(e) = ports.fs.remove_file(&lock_path) {
+        tracing::warn!(
+            target: "cartography::io",
+            operation = "remove_file",
+            path = %lock_path.display(),
+            error = %e
+        );
+    }
 
     HookResult::passthrough(stdin)
 }
@@ -256,10 +355,24 @@ pub(super) fn invoke_agent_for_delta(
             if !output.is_empty() {
                 let is_journey = validate_journey(output).is_ok();
                 let is_flow = validate_flow(output).is_ok();
-                if is_journey {
-                    let _ = ports.fs.write(&journey_path, output);
-                } else if is_flow {
-                    let _ = ports.fs.write(&flow_path, output);
+                if is_journey
+                    && let Err(e) = ports.fs.write(&journey_path, output)
+                {
+                    tracing::warn!(
+                        target: "cartography::io",
+                        operation = "write",
+                        path = %journey_path.display(),
+                        error = %e
+                    );
+                } else if is_flow
+                    && let Err(e) = ports.fs.write(&flow_path, output)
+                {
+                    tracing::warn!(
+                        target: "cartography::io",
+                        operation = "write",
+                        path = %flow_path.display(),
+                        error = %e
+                    );
                 }
             }
             true
@@ -300,7 +413,14 @@ pub(super) fn invoke_element_generator(
             let index_content =
                 build_cross_reference_matrix(&element_entries, &journey_slugs, &flow_slugs);
             let index_path = elements_dir.join("INDEX.md");
-            let _ = ports.fs.write(&index_path, &index_content);
+            if let Err(e) = ports.fs.write(&index_path, &index_content) {
+                tracing::warn!(
+                    target: "cartography::io",
+                    operation = "write",
+                    path = %index_path.display(),
+                    error = %e
+                );
+            }
             true
         }
         _ => false,
@@ -484,7 +604,14 @@ pub(super) fn clean_corrupt_deltas(ports: &HookPorts<'_>, cartography_dir: &Path
                         "stop_cartography: deleting corrupt delta file: {}",
                         entry.display()
                     );
-                    let _ = ports.fs.remove_file(&entry);
+                    if let Err(e) = ports.fs.remove_file(&entry) {
+                        tracing::warn!(
+                            target: "cartography::io",
+                            operation = "remove_file",
+                            path = %entry.display(),
+                            error = %e
+                        );
+                    }
                 }
             }
             Err(e) => {
