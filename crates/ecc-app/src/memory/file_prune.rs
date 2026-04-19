@@ -223,6 +223,29 @@ mod tests {
     }
 
     #[test]
+    fn memory_md_atomic_rewrite() {
+        // Structural guard: file_prune.rs must implement MEMORY.md updates via
+        // temp-file + rename (not direct overwrite). This prevents partial
+        // reads during concurrent file access.
+        const SOURCE: &str = include_str!("file_prune.rs");
+
+        // Production code only (before the #[cfg(test)] block)
+        let production = SOURCE.split("#[cfg(test)]").next().unwrap_or(SOURCE);
+
+        // Must use rename for MEMORY.md updates
+        let has_rename = production.contains(".rename(") || production.contains("fs.rename");
+        // Must use a temp path (.tmp suffix or similar) before renaming
+        let has_temp = production.contains(".tmp")
+            || production.contains("temp")
+            || production.contains("MEMORY.md.new");
+        assert!(
+            has_rename && has_temp,
+            "MEMORY.md rewrite must use temp+rename for atomicity; \
+             found rename={has_rename} temp={has_temp}"
+        );
+    }
+
+    #[test]
     fn bl_id_regex_collision_safety() {
         // BL-10 matches project_bl10* and project_bl010* but NOT project_bl100*
         assert!(matches_bl_id("project_bl10.md", "BL-10"));
