@@ -52,10 +52,7 @@ pub fn stats(store: &dyn MemoryStore) -> Result<ecc_domain::memory::MemoryStats,
 /// Delete all [`MemoryStore`] entries whose `source_path` equals `backlog_id`.
 ///
 /// Returns the number of entries deleted.
-pub fn prune_by_backlog(
-    store: &dyn MemoryStore,
-    backlog_id: &str,
-) -> Result<u32, MemoryAppError> {
+pub fn prune_by_backlog(store: &dyn MemoryStore, backlog_id: &str) -> Result<u32, MemoryAppError> {
     let all = store
         .list_filtered(None, None, None)
         .map_err(MemoryAppError::Store)?;
@@ -161,11 +158,21 @@ mod tests {
     #[test]
     fn prune_by_backlog_returns_count() {
         let store = InMemoryMemoryStore::new();
-        store.insert(&create_entry_with_source("BL-001", "content1")).unwrap();
-        store.insert(&create_entry_with_source("BL-001", "content2")).unwrap();
-        store.insert(&create_entry_with_source("BL-001", "content3")).unwrap();
-        store.insert(&create_entry_with_source("BL-002", "other1")).unwrap();
-        store.insert(&create_entry_with_source("BL-002", "other2")).unwrap();
+        store
+            .insert(&create_entry_with_source("BL-001", "content1"))
+            .unwrap();
+        store
+            .insert(&create_entry_with_source("BL-001", "content2"))
+            .unwrap();
+        store
+            .insert(&create_entry_with_source("BL-001", "content3"))
+            .unwrap();
+        store
+            .insert(&create_entry_with_source("BL-002", "other1"))
+            .unwrap();
+        store
+            .insert(&create_entry_with_source("BL-002", "other2"))
+            .unwrap();
 
         let count = prune_by_backlog(&store, "BL-001").unwrap();
         assert_eq!(count, 3, "returns count of deleted BL-001 entries");
@@ -279,5 +286,30 @@ mod tests {
         let store = make_store();
         let result = promote(&store, MemoryId(999));
         assert!(matches!(result, Err(MemoryAppError::NotFound(_))));
+    }
+
+    // PC-045: prune_by_backlog reuses existing MemoryStore trait methods only
+    #[test]
+    fn prune_by_backlog_no_new_port() {
+        const PORT_SOURCE: &str = include_str!("../../../ecc-ports/src/memory_store.rs");
+
+        let forbidden = [
+            concat!("fn prune_", "by_backlog"),
+            concat!("fn delete_", "by_backlog"),
+            concat!("fn list_", "by_backlog"),
+        ];
+        for pat in forbidden {
+            assert!(
+                !PORT_SOURCE.contains(pat),
+                "MemoryStore port has new backlog-specific method: {pat}"
+            );
+        }
+
+        // Sanity: the lifecycle function itself still works via existing methods
+        let store = InMemoryMemoryStore::new();
+        let entry = create_entry_with_source("BL-045", "sanity");
+        store.insert(&entry).unwrap();
+        let deleted = prune_by_backlog(&store, "BL-045").unwrap();
+        assert_eq!(deleted, 1);
     }
 }
