@@ -1966,9 +1966,14 @@ mod tests {
 
         // Verify entry is in the store before the call
         let before = store.list_filtered(None, None, None).unwrap();
-        assert_eq!(before.len(), 1, "store should have 1 entry before transition");
+        assert_eq!(
+            before.len(),
+            1,
+            "store should have 1 entry before transition"
+        );
 
-        let raw = "---\nid: BL-001\nstatus: open\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n";
+        let raw =
+            "---\nid: BL-001\nstatus: open\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n";
         let repo = InMemoryBacklogRepository::new()
             .with_raw_content("BL-001", raw)
             .with_entry(make_entry("BL-001", BacklogStatus::Open));

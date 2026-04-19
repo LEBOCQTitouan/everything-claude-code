@@ -85,11 +85,17 @@ mod tests {
 
         // A "symlink-like" path (just a regular string) is classified by the string itself.
         let symlink_path = "crates/ecc-domain/src/symlink_to_workflow.rs";
-        assert!(!is_noise_path(symlink_path), "symlink path classified by its own path, not target");
+        assert!(
+            !is_noise_path(symlink_path),
+            "symlink path classified by its own path, not target"
+        );
 
         // The target being in the noise set does not affect classification of the link path.
         let target = ".claude/workflow/state.json";
-        assert!(is_noise_path(target), "target path classified directly (unrelated)");
+        assert!(
+            is_noise_path(target),
+            "target path classified directly (unrelated)"
+        );
     }
 
     #[test]
@@ -130,9 +136,15 @@ mod tests {
         // signal because it doesn't match the `.claude/workflow/` prefix.
         assert!(is_noise_path(".claude/workflow"), "bare path must be noise");
         // Sanity: with trailing slash it's still noise (via prefix)
-        assert!(is_noise_path(".claude/workflow/"), "trailing-slash variant still noise");
+        assert!(
+            is_noise_path(".claude/workflow/"),
+            "trailing-slash variant still noise"
+        );
         // And a subpath is noise via prefix
-        assert!(is_noise_path(".claude/workflow/state.json"), "subpath noise");
+        assert!(
+            is_noise_path(".claude/workflow/state.json"),
+            "subpath noise"
+        );
     }
 
     #[test]

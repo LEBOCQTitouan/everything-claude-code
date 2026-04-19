@@ -47,19 +47,14 @@ fn fixtures_shape_present() {
 
     for file in &fixture_files {
         let path = dir.join(file);
-        assert!(
-            path.exists(),
-            "fixture file missing: {}",
-            path.display()
-        );
+        assert!(path.exists(), "fixture file missing: {}", path.display());
     }
 
     let expected_yaml = dir.join("expected.yaml");
     assert!(expected_yaml.exists(), "expected.yaml missing");
 
     // Verify expected.yaml parses as valid YAML with 'fixtures' key
-    let content = std::fs::read_to_string(&expected_yaml)
-        .expect("failed to read expected.yaml");
+    let content = std::fs::read_to_string(&expected_yaml).expect("failed to read expected.yaml");
     assert!(
         content.contains("fixtures:"),
         "expected.yaml should contain 'fixtures:' key"
@@ -72,8 +67,7 @@ fn fixtures_shape_present() {
 
     let readme = dir.join("README.md");
     assert!(readme.exists(), "README.md missing");
-    let readme_content = std::fs::read_to_string(&readme)
-        .expect("failed to read README.md");
+    let readme_content = std::fs::read_to_string(&readme).expect("failed to read README.md");
     assert!(!readme_content.is_empty(), "README.md should be non-empty");
 }
 
@@ -82,8 +76,8 @@ fn fixtures_shape_present() {
 #[test]
 fn outcomes_match_expected() {
     let corpus_dir = fixtures_dir();
-    let expected_yaml = std::fs::read_to_string(corpus_dir.join("expected.yaml"))
-        .expect("read expected.yaml");
+    let expected_yaml =
+        std::fs::read_to_string(corpus_dir.join("expected.yaml")).expect("read expected.yaml");
     let expected: ExpectedFile =
         serde_saphyr::from_str(&expected_yaml).expect("parse expected.yaml");
 
@@ -91,8 +85,8 @@ fn outcomes_match_expected() {
         let fixture_path = corpus_dir.join(&fix.file);
         let json = std::fs::read_to_string(&fixture_path)
             .unwrap_or_else(|e| panic!("read {}: {e}", fix.file));
-        let delta: SessionDelta = serde_json::from_str(&json)
-            .unwrap_or_else(|e| panic!("parse {}: {e}", fix.file));
+        let delta: SessionDelta =
+            serde_json::from_str(&json).unwrap_or_else(|e| panic!("parse {}: {e}", fix.file));
 
         let kept: Vec<&str> = delta
             .changed_files
@@ -103,16 +97,14 @@ fn outcomes_match_expected() {
 
         let write_expected = !kept.is_empty();
         assert_eq!(
-            write_expected,
-            fix.expected_write,
+            write_expected, fix.expected_write,
             "{}: expected_write mismatch (kept={kept:?})",
             fix.file
         );
 
         let kept_paths: Vec<String> = kept.into_iter().map(String::from).collect();
         assert_eq!(
-            kept_paths,
-            fix.expected_kept_paths,
+            kept_paths, fix.expected_kept_paths,
             "{}: kept paths mismatch",
             fix.file
         );

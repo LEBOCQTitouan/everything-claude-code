@@ -17,7 +17,6 @@ pub const EFFORT_TOKENS: &[(&str, u32)] = &[
     ("max", 32_768),
 ];
 
-
 /// Canonical language identifiers for pattern frontmatter (AC-001.5).
 ///
 /// 10 named languages plus the special value "all" for universal patterns.
@@ -674,8 +673,12 @@ mod tests {
 
     #[test]
     fn check_tool_values_returns_error_for_unknown_tool() {
-        let findings =
-            check_tool_values("my-agent", r#"["Read", "UnknownTool"]"#, "tools", TOOL_FIXTURES);
+        let findings = check_tool_values(
+            "my-agent",
+            r#"["Read", "UnknownTool"]"#,
+            "tools",
+            TOOL_FIXTURES,
+        );
         assert!(findings.iter().any(|f| f.severity == LintSeverity::Error));
     }
 

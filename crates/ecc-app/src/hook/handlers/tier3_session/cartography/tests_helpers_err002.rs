@@ -36,8 +36,7 @@ fn no_dead_code_allow() {
     // Check only the first 20 lines (module-level attributes are at top)
     let first_lines: String = SOURCE.lines().take(20).collect::<Vec<_>>().join("\n");
     assert!(
-        !first_lines.contains("#![allow(dead_code") &&
-        !first_lines.contains("#[allow(dead_code"),
+        !first_lines.contains("#![allow(dead_code") && !first_lines.contains("#[allow(dead_code"),
         "module must not use #[allow(dead_code)] — remove the attribute AND the dead code it gates"
     );
 }

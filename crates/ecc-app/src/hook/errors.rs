@@ -1,5 +1,4 @@
 /// Hook-layer error types for ecc-app.
-
 use std::path::PathBuf;
 
 /// Errors produced by hook execution.

@@ -1007,11 +1007,8 @@ mod tests {
                     "/project/.claude/cartography/pending-delta-old-session-001.json",
                     &existing_json,
                 );
-            let shell = MockExecutor::new().on_args(
-                "git",
-                &["diff", "--name-only", "HEAD"],
-                git_output,
-            );
+            let shell =
+                MockExecutor::new().on_args("git", &["diff", "--name-only", "HEAD"], git_output);
             // ECC_CARTOGRAPHY_DEDUPE=0 disables dedupe entirely
             let env = MockEnvironment::new()
                 .with_var("CLAUDE_PROJECT_DIR", "/project")

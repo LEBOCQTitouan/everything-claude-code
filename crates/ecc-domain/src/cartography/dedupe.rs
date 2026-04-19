@@ -48,7 +48,8 @@ mod tests {
         let h = canonical_hash(&delta);
         assert_eq!(h.len(), 64, "SHA-256 hex digest must be 64 chars");
         assert!(
-            h.chars().all(|c| c.is_ascii_hexdigit() && !c.is_uppercase()),
+            h.chars()
+                .all(|c| c.is_ascii_hexdigit() && !c.is_uppercase()),
             "hash must be lowercase hex, got: {h}"
         );
     }
@@ -69,8 +70,7 @@ mod tests {
         let actual = canonical_hash(&delta);
         let expected = "ed97c4b74f0ca17abb8bbfe469ade4f9b7b1d8b5101f23cc89d921d1e42cd2bf";
         assert_eq!(
-            actual,
-            expected,
+            actual, expected,
             "canonical_hash drift detected — serde_json or serde_jcs may have bumped canonicalization"
         );
     }

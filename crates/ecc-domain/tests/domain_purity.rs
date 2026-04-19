@@ -49,7 +49,11 @@ fn domain_crate_has_zero_io_imports() {
 
     for file in &files {
         let content = fs::read_to_string(file).unwrap();
-        for (line_num, line) in content.lines().enumerate() {
+        // Only scan production code, not #[cfg(test)] test modules. Test code
+        // may legitimately reference forbidden patterns in purity-assertion
+        // strings (e.g. PC-006/PC-110 runtime-constructed grep patterns).
+        let production = content.split("#[cfg(test)]").next().unwrap_or(&content);
+        for (line_num, line) in production.lines().enumerate() {
             let trimmed = line.trim();
             // Skip comments
             if trimmed.starts_with("//") || trimmed.starts_with("* ") {

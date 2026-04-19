@@ -5,27 +5,27 @@
 
 // Policy: all new public items in this module should have doc comments.
 
-pub mod dedupe;
 pub mod classification;
 pub mod coverage;
-pub mod noise_filter;
 pub mod cross_reference;
+pub mod dedupe;
 pub mod element_types;
 pub mod element_validation;
 pub mod merge;
+pub mod noise_filter;
 pub mod slug;
 pub mod staleness;
 pub mod types;
 pub mod validation;
 
 pub use classification::classify_file;
-pub use dedupe::canonical_hash;
-pub use noise_filter::is_noise_path;
 pub use coverage::{CoverageReport, calculate_coverage};
 pub use cross_reference::build_cross_reference_matrix;
+pub use dedupe::canonical_hash;
 pub use element_types::{ElementEntry, ElementType, infer_element_type_from_path};
 pub use element_validation::validate_element;
 pub use merge::{has_section, merge_section};
+pub use noise_filter::is_noise_path;
 pub use slug::derive_slug;
 pub use staleness::{check_staleness, parse_cartography_meta, remove_stale_marker};
 pub use types::{CartographyMeta, ChangedFile, ProjectType, SessionDelta};

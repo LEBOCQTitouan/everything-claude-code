@@ -35,8 +35,8 @@ mod tests {
         ];
 
         for file in &files {
-            let contents = fs::read_to_string(file)
-                .unwrap_or_else(|e| panic!("read {}: {e}", file.display()));
+            let contents =
+                fs::read_to_string(file).unwrap_or_else(|e| panic!("read {}: {e}", file.display()));
 
             // Skip #[cfg(test)] sections — tests may use I/O freely.
             // Simplest: split on the first occurrence of `#[cfg(test)]`

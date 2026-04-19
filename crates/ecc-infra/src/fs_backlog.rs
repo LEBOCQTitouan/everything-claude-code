@@ -97,10 +97,13 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
 
     fn load_entry(&self, backlog_dir: &Path, id: &str) -> Result<BacklogEntry, BacklogError> {
         let path = self.find_entry_path(backlog_dir, id)?;
-        let content = self.fs.read_to_string(&path).map_err(|e| BacklogError::Io {
-            path: path.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let content = self
+            .fs
+            .read_to_string(&path)
+            .map_err(|e| BacklogError::Io {
+                path: path.display().to_string(),
+                message: e.to_string(),
+            })?;
         parse_frontmatter(&content)
     }
 
@@ -153,10 +156,13 @@ impl BacklogEntryStore for FsBacklogRepository<'_> {
         new_status: &str,
     ) -> Result<(), BacklogError> {
         let path = self.find_entry_path(backlog_dir, id)?;
-        let original = self.fs.read_to_string(&path).map_err(|e| BacklogError::Io {
-            path: path.display().to_string(),
-            message: e.to_string(),
-        })?;
+        let original = self
+            .fs
+            .read_to_string(&path)
+            .map_err(|e| BacklogError::Io {
+                path: path.display().to_string(),
+                message: e.to_string(),
+            })?;
         let updated = replace_frontmatter_status(&original, new_status)?;
         if updated == original {
             return Ok(());

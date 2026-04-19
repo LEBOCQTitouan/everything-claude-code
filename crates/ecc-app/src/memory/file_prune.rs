@@ -68,7 +68,10 @@ pub fn prune_orphaned_file_memories(
 
         let orphaned = backlog_entries.iter().any(|e| {
             is_same_bl_id(&e.id, bl_num)
-                && matches!(e.status, BacklogStatus::Implemented | BacklogStatus::Archived)
+                && matches!(
+                    e.status,
+                    BacklogStatus::Implemented | BacklogStatus::Archived
+                )
         });
 
         if !orphaned {

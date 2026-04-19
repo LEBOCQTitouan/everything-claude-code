@@ -3,9 +3,9 @@
 //! This crate contains domain types, value objects, and business rules with
 //! zero I/O dependencies. All side effects are pushed to the [`ecc_ports`] layer.
 
-pub mod architecture;
 pub mod analyze;
 pub mod ansi;
+pub mod architecture;
 pub mod audit_web;
 pub mod backlog;
 pub mod cartography;
