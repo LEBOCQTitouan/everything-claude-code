@@ -16,7 +16,7 @@ Read `.claude/workflow/state.json` to determine the current workflow status.
 Display the following fields from state.json:
 - **phase**: the current workflow phase (e.g., spec, design, implement, done)
 - **feature**: the feature description being worked on
-- **concern**: the concern type (dev, fix, refactor)
+- **concern**: the concern type (dev, fix, foundation, refactor)
 - **started_at**: the timestamp when the workflow was started
 
 Check which artifacts have non-null timestamps in state.json:

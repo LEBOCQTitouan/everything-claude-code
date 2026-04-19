@@ -66,7 +66,7 @@ Failed: failed@<ISO> ERROR: <summary>
 
 ```json
 {
-  "concern": "dev|fix|refactor",
+  "concern": "dev|fix|foundation|refactor",
   "phase": "plan|solution|implement|done",
   "feature": "<description>",
   "started_at": "<ISO 8601>",

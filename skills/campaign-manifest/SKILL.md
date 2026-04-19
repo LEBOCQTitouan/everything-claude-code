@@ -15,7 +15,7 @@ A campaign manifest (`campaign.md`) indexes all artifacts, decisions, and progre
 
 ## Status
 Status: <in-progress|spec-complete|design-complete|implementing|done>
-Concern: <dev|fix|refactor>
+Concern: <dev|fix|foundation|refactor>
 Started: <ISO 8601>
 Updated: <ISO 8601>
 
