@@ -120,3 +120,20 @@ Processed deltas are archived to `.claude/cartography/processed/` to enable idem
 - **Session Lifecycle Hooks**: Triggered by session:start and session:stop
 - **Git Delta Detection**: Uses `git diff --name-only HEAD`
 - **Project Type Detection**: Analyzes build files at project root
+
+## Write-Time Noise Filter
+
+Before writing `pending-delta-*.json`, `stop_cartography` applies `ecc_domain::cartography::is_noise_path` to each changed file. Paths matching any of the following prefixes (ASCII-lowercase) are dropped pre-write:
+
+- `.claude/workflow/`
+- `.claude/cartography/`
+- `.claude/worktrees/`
+- `docs/specs/`
+- `docs/backlog/`
+- `docs/cartography/`
+
+Exact matches also classified as noise: `Cargo.lock`, `.claude/workflow` (bare).
+
+If no non-noise paths remain, no delta file is written — `tracing::info!(target: "cartography::filter", ...)` logs the skip.
+
+After filtering, a SHA-256 hash of `serde_jcs`-canonicalized `changed_files` is computed. If identical to any of the last 20 pending+processed deltas, the new delta is skipped. Controlled via `ECC_CARTOGRAPHY_DEDUPE` (default on) and `ECC_CARTOGRAPHY_DEDUPE_WINDOW` (default 20).
