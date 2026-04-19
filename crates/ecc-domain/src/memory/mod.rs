@@ -9,6 +9,7 @@ pub mod entry;
 pub mod error;
 pub mod export;
 pub mod migration;
+pub mod safe_path;
 pub mod secrets;
 pub mod stats;
 pub mod tier;
@@ -16,5 +17,6 @@ pub mod tier;
 // Re-exports for convenience
 pub use entry::{MemoryEntry, MemoryId};
 pub use error::MemoryError;
+pub use safe_path::{SafePath, SafePathError};
 pub use stats::MemoryStats;
 pub use tier::MemoryTier;
