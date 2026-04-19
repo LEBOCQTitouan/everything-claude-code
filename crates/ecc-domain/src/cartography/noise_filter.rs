@@ -74,6 +74,25 @@ mod tests {
     }
 
     #[test]
+    fn symlink_policy_by_path_only() {
+        // Contract: is_noise_path classifies by the input string only.
+        // Symlinks are NOT resolved — a symlink at `crates/foo/link.rs`
+        // pointing to `.claude/workflow/state.json` is classified by its
+        // symlink path (`crates/foo/link.rs` = signal), not its target.
+        //
+        // This is a pure function over &str; no FS access is possible.
+        // The test is documentary and asserts the observable behavior.
+
+        // A "symlink-like" path (just a regular string) is classified by the string itself.
+        let symlink_path = "crates/ecc-domain/src/symlink_to_workflow.rs";
+        assert!(!is_noise_path(symlink_path), "symlink path classified by its own path, not target");
+
+        // The target being in the noise set does not affect classification of the link path.
+        let target = ".claude/workflow/state.json";
+        assert!(is_noise_path(target), "target path classified directly (unrelated)");
+    }
+
+    #[test]
     fn classifies_fixed_prefixes_as_noise() {
         let noise_cases = [
             ".claude/workflow/state.json",
