@@ -77,3 +77,10 @@ Setting the environment variable `ECC_CLAUDE_MD_MARKERS_DISABLED=1` short-circui
 **Do not rely on this flag for normal operation.** It exists as an emergency CI brake for cases where the lint produces unexpected false positives and blocks every PR. The correct fix in that situation is to either file the missing backlog entry, remove the stale marker, or revert the CI wiring commit — not to rely on this bypass. The env var is intentionally undocumented in README.
 
 Walker details: depth cap 16, deny-list `.git/ target/ node_modules/ .claude/worktrees/`, symlink-skip, lexicographic cross-file order, line-number-ascending within-file order. All diagnostics pass through a control-byte sanitizer before emission.
+
+## ECC Memory Commands
+
+| Command | Purpose |
+|---------|---------|
+| `ecc memory prune --orphaned-backlogs [--apply]` | Prune memory files for BLs marked implemented. Dry-run by default. |
+| `ecc memory restore --trash <YYYY-MM-DD> [--apply]` | Restore trashed memory files from retention dir. |
