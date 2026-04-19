@@ -1581,6 +1581,78 @@ mod tests {
         );
     }
 
+    /// PC-038: migrate_statuses does NOT trigger the memory-prune hook.
+    ///
+    /// When `migrate_statuses` processes an entry with `implemented` status,
+    /// it must call `entries.update_entry_status()` directly (the non-hooked path),
+    /// NOT `update_status_with_prune_hook`. This is verified by asserting that no
+    /// `memory::prune` warn event is emitted during migration.
+    #[test]
+    fn migrate_does_not_prune_memory() {
+        use std::sync::{Arc, Mutex};
+        use tracing_subscriber::layer::SubscriberExt as _;
+
+        let warn_messages: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+
+        struct CaptureLayer(Arc<Mutex<Vec<String>>>);
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                if *event.metadata().level() == tracing::Level::WARN
+                    && event.metadata().target().contains("memory::prune")
+                {
+                    self.0.lock().unwrap().push(format!(
+                        "WARN target={}",
+                        event.metadata().target()
+                    ));
+                }
+            }
+        }
+
+        let subscriber = tracing_subscriber::registry().with(CaptureLayer(Arc::clone(&warn_messages)));
+        let _guard = tracing::subscriber::set_default(subscriber);
+
+        // File says "open", index says "implemented" — migrate should update the file
+        // using the direct path (no prune hook).
+        let raw_bl001 = make_raw_with_status("BL-001", "open");
+        let index = make_index_with_entries(&[("BL-001", "implemented")]);
+
+        let repo = InMemoryBacklogRepository::new()
+            .with_raw_content("BL-001", &raw_bl001)
+            .with_entry(make_entry("BL-001", BacklogStatus::Implemented))
+            .with_index(&index);
+
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        let report = migrate_statuses(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+        )
+        .unwrap();
+
+        // Migration should have updated BL-001
+        assert!(
+            report.updated.contains(&"BL-001".to_string()),
+            "BL-001 should be in updated list; got: {report:?}"
+        );
+
+        // No memory::prune warn should have been emitted — migrate uses the non-hooked path
+        let msgs = warn_messages.lock().unwrap();
+        assert!(
+            msgs.is_empty(),
+            "migrate_statuses must NOT trigger the memory-prune hook; got warns: {msgs:?}"
+        );
+    }
+
     /// PC-029: Quoting normalized to unquoted
     #[test]
     fn migration_normalizes_quoting() {
