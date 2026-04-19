@@ -491,8 +491,9 @@ pub fn update_status_with_prune_hook(
                 );
             }
             Ok(root) => {
-                let report =
-                    crate::memory::file_prune::prune_file_memories_for_backlog(fs, &root, id, today);
+                let report = crate::memory::file_prune::prune_file_memories_for_backlog(
+                    fs, &root, id, today,
+                );
                 for e in &report.errors {
                     tracing::warn!(
                         target: "memory::prune",
@@ -1152,8 +1153,8 @@ mod tests {
             }
         }
 
-        let subscriber = tracing_subscriber::registry()
-            .with(CaptureLayer(Arc::clone(&warn_messages)));
+        let subscriber =
+            tracing_subscriber::registry().with(CaptureLayer(Arc::clone(&warn_messages)));
         let _guard = tracing::subscriber::set_default(subscriber);
 
         let raw = raw_open_content("BL-001");
@@ -1219,10 +1220,10 @@ mod tests {
                 if *event.metadata().level() == tracing::Level::WARN
                     && event.metadata().target().contains("memory::prune")
                 {
-                    self.0.lock().unwrap().push(format!(
-                        "WARN target={}",
-                        event.metadata().target()
-                    ));
+                    self.0
+                        .lock()
+                        .unwrap()
+                        .push(format!("WARN target={}", event.metadata().target()));
                 }
             }
         }
@@ -1307,8 +1308,7 @@ mod tests {
             .with_var("HOME", home)
             .with_var("ECC_PROJECT_MEMORY_ROOT", root.to_str().unwrap());
 
-        let raw_in_progress =
-            "---\nid: BL-001\nstatus: in-progress\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n";
+        let raw_in_progress = "---\nid: BL-001\nstatus: in-progress\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n";
         let repo = InMemoryBacklogRepository::new()
             .with_raw_content("BL-001", raw_in_progress)
             .with_entry(make_entry("BL-001", BacklogStatus::InProgress));
@@ -1778,15 +1778,16 @@ mod tests {
                 if *event.metadata().level() == tracing::Level::WARN
                     && event.metadata().target().contains("memory::prune")
                 {
-                    self.0.lock().unwrap().push(format!(
-                        "WARN target={}",
-                        event.metadata().target()
-                    ));
+                    self.0
+                        .lock()
+                        .unwrap()
+                        .push(format!("WARN target={}", event.metadata().target()));
                 }
             }
         }
 
-        let subscriber = tracing_subscriber::registry().with(CaptureLayer(Arc::clone(&warn_messages)));
+        let subscriber =
+            tracing_subscriber::registry().with(CaptureLayer(Arc::clone(&warn_messages)));
         let _guard = tracing::subscriber::set_default(subscriber);
 
         // File says "open", index says "implemented" — migrate should update the file
@@ -1847,10 +1848,10 @@ mod tests {
                 if *event.metadata().level() == tracing::Level::WARN
                     && event.metadata().target().contains("memory::prune")
                 {
-                    self.0.lock().unwrap().push(format!(
-                        "WARN target={}",
-                        event.metadata().target()
-                    ));
+                    self.0
+                        .lock()
+                        .unwrap()
+                        .push(format!("WARN target={}", event.metadata().target()));
                 }
             }
         }
@@ -1893,6 +1894,102 @@ mod tests {
                 "migrate of status={target_status} fired prune hook: {msgs:?}"
             );
         }
+    }
+
+    /// PC-046: implemented transition prunes both the file memory AND the SQLite memory store.
+    ///
+    /// Seeds a file memory (BL-001 tagged .md file) and a SQLite memory entry with
+    /// `source_path = "BL-001"`. Calls `update_status_with_prune_hook` with a
+    /// `Some(&store)`. Verifies that:
+    ///  1. The file memory is moved to `.trash/<today>/`
+    ///  2. The SQLite entry is deleted from the store
+    #[test]
+    fn implemented_transition_prunes_file_and_sqlite() {
+        use ecc_domain::memory::{MemoryEntry, MemoryId, MemoryTier};
+        use ecc_ports::memory_store::MemoryStore as _;
+        use ecc_test_support::{InMemoryFileSystem, InMemoryMemoryStore, MockEnvironment};
+        use std::path::PathBuf;
+
+        let home = "/home/alice";
+        let root = PathBuf::from("/home/alice/.claude/projects/default/memory");
+        let memory_file = root.join("project_bl001_foo.md");
+        let today = "2026-04-07";
+        let trash_file = root.join(format!(".trash/{today}/project_bl001_foo.md"));
+
+        // Seed file memory
+        let fs = InMemoryFileSystem::new()
+            .with_dir(PathBuf::from(home))
+            .with_dir(&root)
+            .with_file(&memory_file, "BL-001 file memory content")
+            .with_file(root.join("MEMORY.md"), "- [foo](project_bl001_foo.md)\n");
+        let env = MockEnvironment::new()
+            .with_var("HOME", home)
+            .with_var("ECC_PROJECT_MEMORY_ROOT", root.to_str().unwrap());
+
+        // Seed SQLite (in-memory) store entry tagged BL-001
+        let store = InMemoryMemoryStore::new();
+        let sqlite_entry = MemoryEntry::new(
+            MemoryId(0),
+            MemoryTier::Episodic,
+            "BL-001 session note",
+            "some context about BL-001",
+            vec![],
+            None,
+            None,
+            1.0,
+            "2026-04-01T00:00:00Z",
+            "2026-04-01T00:00:00Z",
+            false,
+            vec![],
+            Some("BL-001".to_owned()),
+        );
+        store.insert(&sqlite_entry).unwrap();
+
+        // Verify entry is in the store before the call
+        let before = store.list_filtered(None, None, None).unwrap();
+        assert_eq!(before.len(), 1, "store should have 1 entry before transition");
+
+        let raw = "---\nid: BL-001\nstatus: open\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n";
+        let repo = InMemoryBacklogRepository::new()
+            .with_raw_content("BL-001", raw)
+            .with_entry(make_entry("BL-001", BacklogStatus::Open));
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        let result = update_status_with_prune_hook(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            "BL-001",
+            "implemented",
+            &env,
+            &fs,
+            Some(&store),
+        );
+
+        assert!(result.is_ok(), "transition must succeed; got: {result:?}");
+
+        // 1. File memory moved to trash
+        assert!(
+            fs.exists(&trash_file),
+            "file memory must be in trash after implemented transition"
+        );
+        assert!(
+            !fs.exists(&memory_file),
+            "original file memory must not exist after implemented transition"
+        );
+
+        // 2. SQLite entry deleted
+        let after = store.list_filtered(None, None, None).unwrap();
+        assert_eq!(
+            after.len(),
+            0,
+            "SQLite entry tagged BL-001 must be deleted; remaining: {after:?}"
+        );
     }
 
     /// PC-029: Quoting normalized to unquoted
