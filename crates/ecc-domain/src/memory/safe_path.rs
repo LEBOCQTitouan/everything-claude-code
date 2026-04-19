@@ -52,6 +52,28 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
+    fn rejects_escape_pure() {
+        // Sibling dir with shared prefix but not a child:
+        //   root=/home/user/mem, sibling=/home/user/memotherdir — NOT under root
+        let root = PathBuf::from("/home/user/mem");
+        let sibling = PathBuf::from("/home/user/memotherdir/file.md");
+        // starts_with is path-component aware in Rust — "/home/user/mem" is not
+        // a component prefix of "/home/user/memotherdir", so this correctly rejects.
+        let result = SafePath::from_canonical(root.clone(), sibling);
+        assert!(matches!(result, Err(SafePathError::Escape { .. })));
+
+        // Exact root path is accepted (degenerate case)
+        let root_exact = root.clone();
+        let result = SafePath::from_canonical(root.clone(), root_exact);
+        assert!(result.is_ok(), "exact root path is a valid SafePath");
+
+        // Deep nested child accepted
+        let deep = root.join("sub/dir/file.md");
+        let result = SafePath::from_canonical(root, deep);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn rejects_traversal() {
         // Traversal-like inputs (pre-canonicalization should handle ..
         // but assume caller passes already-canonical paths).
