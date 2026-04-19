@@ -1195,6 +1195,94 @@ mod tests {
         );
     }
 
+    /// PC-116: non-implemented transitions skip the memory prune hook.
+    ///
+    /// Verifies that `update_status_with_prune_hook` does NOT fire the prune
+    /// when `new_status` is "in-progress", "archived", or "promoted".
+    /// A memory file is seeded that WOULD be pruned if the hook fired.
+    /// After each transition, the file must still exist and no `memory::prune`
+    /// warn events must have been emitted.
+    #[test]
+    fn non_implemented_transitions_skip_prune() {
+        use ecc_test_support::{InMemoryFileSystem, MockEnvironment};
+        use std::path::PathBuf;
+        use std::sync::{Arc, Mutex};
+        use tracing_subscriber::layer::SubscriberExt as _;
+
+        struct CaptureLayer(Arc<Mutex<Vec<String>>>);
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                if *event.metadata().level() == tracing::Level::WARN
+                    && event.metadata().target().contains("memory::prune")
+                {
+                    self.0.lock().unwrap().push(format!(
+                        "WARN target={}",
+                        event.metadata().target()
+                    ));
+                }
+            }
+        }
+
+        for target_status in ["in-progress", "archived", "promoted"] {
+            let warn_messages: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+            let layer = CaptureLayer(Arc::clone(&warn_messages));
+            let subscriber = tracing_subscriber::registry().with(layer);
+
+            tracing::subscriber::with_default(subscriber, || {
+                let root = PathBuf::from("/home/alice/.claude/projects/default/memory");
+                let memory_file = root.join("project_bl001_foo.md");
+                let fs = InMemoryFileSystem::new()
+                    .with_dir(&root)
+                    .with_file(&memory_file, "content")
+                    .with_file(root.join("MEMORY.md"), "- [foo](project_bl001_foo.md)\n");
+                let env = MockEnvironment::new().with_var("HOME", "/home/alice");
+
+                let raw = raw_open_content("BL-001");
+                let repo = InMemoryBacklogRepository::new()
+                    .with_raw_content("BL-001", &raw)
+                    .with_entry(make_entry("BL-001", BacklogStatus::Open));
+                let worktree_mgr = MockWorktreeManager::new();
+                let clock = fresh_clock();
+
+                let result = update_status_with_prune_hook(
+                    &repo,
+                    &repo,
+                    &repo,
+                    &worktree_mgr,
+                    &clock,
+                    Path::new(BACKLOG_DIR),
+                    Path::new(PROJECT_DIR),
+                    "BL-001",
+                    target_status,
+                    &env,
+                    &fs,
+                );
+
+                assert!(
+                    result.is_ok(),
+                    "update_status_with_prune_hook({target_status}) must return Ok; got: {result:?}"
+                );
+
+                // Memory file must still exist — prune was NOT called
+                let file_exists = fs.exists(&memory_file);
+                assert!(
+                    file_exists,
+                    "memory file must survive non-implemented transition to '{target_status}'"
+                );
+            });
+
+            let msgs = warn_messages.lock().unwrap();
+            assert!(
+                msgs.is_empty(),
+                "transition to '{target_status}' must not fire prune hook; got warns: {msgs:?}"
+            );
+        }
+    }
+
     // --- FsError conversion test ---
 
     #[test]
