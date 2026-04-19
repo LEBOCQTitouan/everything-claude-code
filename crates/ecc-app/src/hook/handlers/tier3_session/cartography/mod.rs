@@ -10,6 +10,10 @@ pub use delta_reminder::start_cartography;
 pub use delta_writer::stop_cartography;
 
 #[cfg(test)]
+#[path = "tests_helpers_err002.rs"]
+pub mod tests_helpers;
+
+#[cfg(test)]
 pub mod tests {
     /// PC-035: The cartographer agent name matches an existing agents/ file.
     #[test]
