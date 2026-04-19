@@ -351,6 +351,29 @@ mod tests {
         );
     }
 
+    /// POSIX flock releases the lock when the fd is closed (i.e. when the process dies).
+    /// A stale `.dedupe.lock` file that no process holds must NOT cause `LockBusy`.
+    #[test]
+    #[cfg_attr(miri, ignore)] // Miri cannot interpret libc::flock FFI calls
+    fn stale_lock_recoverable() {
+        let tmp = TempDir::new().unwrap();
+        let dir = tmp.path();
+
+        // Create a stale .dedupe.lock file — existence alone does not hold flock.
+        let lock_path = dir.join(".dedupe.lock");
+        std::fs::write(&lock_path, b"").unwrap();
+
+        let delta = make_delta("session-stale", vec![("src/lib.rs", "ecc-app")]);
+        let fs = InMemoryFileSystem::new();
+
+        let outcome = should_dedupe(&fs, dir, &delta, 20);
+
+        assert!(
+            !matches!(outcome, DedupeOutcome::LockBusy),
+            "stale lock file must not cause LockBusy; got {outcome:?}"
+        );
+    }
+
     #[test]
     fn duplicate_payload_skips_write() {
         // Arrange: build an existing delta and write it to the in-memory fs.
