@@ -36,6 +36,58 @@ mod tests {
     use super::*;
 
     #[test]
+    fn trashes_and_updates_index() {
+        use ecc_domain::memory::SafePath;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root_path = PathBuf::from("/home/alice/.claude/projects/foo/memory");
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root_path)
+            .with_file(
+                root_path.join("project_bl001_foo.md"),
+                "BL-001 memory content",
+            )
+            .with_file(
+                root_path.join("project_bl001_bar.md"),
+                "another BL-001 memory",
+            )
+            .with_file(
+                root_path.join("project_bl002_other.md"),
+                "BL-002 memory — should NOT be trashed",
+            )
+            .with_file(
+                root_path.join("MEMORY.md"),
+                "# Memory\n\n- [BL-001 foo](project_bl001_foo.md)\n- [BL-001 bar](project_bl001_bar.md)\n- [BL-002 other](project_bl002_other.md)\n",
+            );
+
+        let safe =
+            SafePath::from_canonical(root_path.clone(), root_path.clone()).unwrap();
+
+        let report = prune_file_memories_for_backlog(&fs, &safe, "BL-001", "2026-04-19");
+
+        assert_eq!(report.trashed_files.len(), 2, "both BL-001 files trashed");
+
+        assert!(!fs.exists(&root_path.join("project_bl001_foo.md")));
+        assert!(!fs.exists(&root_path.join("project_bl001_bar.md")));
+
+        assert!(fs.exists(&root_path.join(".trash/2026-04-19/project_bl001_foo.md")));
+        assert!(fs.exists(&root_path.join(".trash/2026-04-19/project_bl001_bar.md")));
+
+        assert!(fs.exists(&root_path.join("project_bl002_other.md")));
+
+        let memory_md = fs
+            .read_to_string(&root_path.join("MEMORY.md"))
+            .unwrap();
+        assert!(!memory_md.contains("project_bl001_foo.md"));
+        assert!(!memory_md.contains("project_bl001_bar.md"));
+        assert!(memory_md.contains("project_bl002_other.md"));
+
+        assert!(report.index_updated);
+        assert_eq!(report.errors, Vec::<String>::new());
+    }
+
+    #[test]
     fn bl_id_regex_collision_safety() {
         // BL-10 matches project_bl10* and project_bl010* but NOT project_bl100*
         assert!(matches_bl_id("project_bl10.md", "BL-10"));
