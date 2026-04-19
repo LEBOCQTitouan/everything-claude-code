@@ -1,6 +1,32 @@
 //! ERR-002 audit assertion: no silent `let _ =` error suppressions in delta_helpers.rs.
 //! PC-031: no `#[allow(dead_code)]` at module scope in delta_helpers.rs.
 
+/// PC-033: delta_helpers.rs must not reference removed legacy functions in tests.
+#[test]
+fn no_orphan_tests() {
+    const SOURCE: &str = include_str!("delta_helpers.rs");
+
+    // Patterns built via concat! to avoid self-match in this source file.
+    let forbidden_test_refs = [
+        concat!("process_", "cartography"),
+        concat!("collect_pending", "_deltas"),
+        concat!("invoke_", "agent_for_delta"),
+        concat!("invoke_", "element_generator"),
+        concat!("collect_", "element_entries"),
+        concat!("extract_", "links_from_section"),
+        concat!("collect_", "slugs"),
+        concat!("collect_flow", "_slugs"),
+        concat!("detect_external_", "io_patterns"),
+    ];
+
+    for pat in forbidden_test_refs {
+        assert!(
+            !SOURCE.contains(pat),
+            "delta_helpers.rs references removed function: `{pat}` — delete orphan tests"
+        );
+    }
+}
+
 /// PC-031: module must not suppress dead-code warnings — remove the attribute AND the dead code.
 #[test]
 fn no_dead_code_allow() {
