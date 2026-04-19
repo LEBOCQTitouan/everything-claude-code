@@ -241,6 +241,11 @@ impl FileSystem for InMemoryFileSystem {
         }
         Ok(())
     }
+
+    fn canonicalize(&self, path: &Path) -> Result<std::path::PathBuf, std::io::Error> {
+        // In-memory paths are already absolute and canonical.
+        Ok(path.to_path_buf())
+    }
 }
 
 #[cfg(test)]
