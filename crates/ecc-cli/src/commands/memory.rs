@@ -946,6 +946,23 @@ mod tests {
         );
     }
 
+    // PC-107: CLI memory handlers (prune + restore) use SafePath boundary
+    #[test]
+    fn uses_safe_path() {
+        const SOURCE: &str = include_str!("memory.rs");
+        let production = SOURCE.split("#[cfg(test)]").next().unwrap_or(SOURCE);
+
+        // CLI handlers must call resolve_project_memory_root (which returns SafePath)
+        // OR use SafePath directly
+        let uses_resolver = production.contains("resolve_project_memory_root");
+        let uses_safe_path = production.contains("SafePath");
+
+        assert!(
+            uses_resolver || uses_safe_path,
+            "CLI memory handlers must go through SafePath boundary (resolve_project_memory_root or direct SafePath use)"
+        );
+    }
+
     #[test]
     fn test_parse_tags_empty() {
         let tags = parse_tags(None);
