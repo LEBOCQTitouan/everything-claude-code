@@ -22,6 +22,12 @@ pub enum Concern {
     Dev,
     /// An existing bug or defect is being fixed.
     Fix,
+    /// Foundational project bootstrap (PRD, architecture, initial ADR) via `/project-foundation`.
+    ///
+    /// Added in BL-155 to complete BL-143's `/project-foundation` command — the workflow
+    /// state machine reaches `done` via the same plan→solution→implement→done FSM as
+    /// other concerns, with artifacts representing foundation docs rather than code.
+    Foundation,
     /// Existing code is being restructured without changing behaviour.
     Refactor,
 }
@@ -31,6 +37,7 @@ impl fmt::Display for Concern {
         match self {
             Self::Dev => write!(f, "dev"),
             Self::Fix => write!(f, "fix"),
+            Self::Foundation => write!(f, "foundation"),
             Self::Refactor => write!(f, "refactor"),
         }
     }
@@ -44,7 +51,7 @@ impl fmt::Display for UnknownConcern {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "unknown concern: {} (expected dev, fix, or refactor)",
+            "unknown concern: {} (expected dev, fix, foundation, or refactor)",
             self.0
         )
     }
@@ -59,6 +66,7 @@ impl FromStr for Concern {
         match s {
             "dev" => Ok(Self::Dev),
             "fix" => Ok(Self::Fix),
+            "foundation" => Ok(Self::Foundation),
             "refactor" => Ok(Self::Refactor),
             other => Err(UnknownConcern(other.to_owned())),
         }
