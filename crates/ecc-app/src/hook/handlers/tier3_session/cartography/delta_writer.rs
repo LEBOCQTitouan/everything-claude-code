@@ -57,6 +57,14 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .filter(|l| !l.is_empty())
         .collect();
 
+    if raw_lines.is_empty() {
+        tracing::debug!(
+            target: "cartography::filter",
+            "git diff empty — no delta written"
+        );
+        return HookResult::passthrough(stdin);
+    }
+
     let changed_lines: Vec<&str> = raw_lines
         .iter()
         .copied()
