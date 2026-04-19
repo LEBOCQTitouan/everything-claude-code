@@ -540,9 +540,8 @@ mod tests {
         assert_eq!(result.stdout, "{}");
 
         // No delta should be written — all changed files are spec noise
-        let delta_path = std::path::Path::new(
-            "/project/.claude/cartography/pending-delta-spec-only-001.json",
-        );
+        let delta_path =
+            std::path::Path::new("/project/.claude/cartography/pending-delta-spec-only-001.json");
         assert!(
             !fs.exists(delta_path),
             "spec-only paths must be filtered — no delta should be written"
@@ -696,11 +695,14 @@ mod tests {
             delta.changed_files.len(),
             1,
             "only 1 signal file expected; got: {:?}",
-            delta.changed_files.iter().map(|f| &f.path).collect::<Vec<_>>()
+            delta
+                .changed_files
+                .iter()
+                .map(|f| &f.path)
+                .collect::<Vec<_>>()
         );
         assert_eq!(
-            delta.changed_files[0].path,
-            "crates/ecc-domain/src/foo.rs",
+            delta.changed_files[0].path, "crates/ecc-domain/src/foo.rs",
             "the surviving path must be the crate source, not the spec"
         );
     }
@@ -761,9 +763,8 @@ mod tests {
         });
 
         // No delta should be written
-        let delta_path = std::path::Path::new(
-            "/project/.claude/cartography/pending-delta-clean-tree-001.json",
-        );
+        let delta_path =
+            std::path::Path::new("/project/.claude/cartography/pending-delta-clean-tree-001.json");
         assert!(
             !fs.exists(delta_path),
             "no delta should be written for clean working tree"
@@ -840,6 +841,75 @@ mod tests {
                 .iter()
                 .any(|(target, _)| target == "cartography::filter"),
             "expected a tracing event with target 'cartography::filter', got: {captured:?}"
+        );
+    }
+
+    /// PC-021: when all changed files are noise (empty post-filter), stop_cartography skips write
+    /// WITHOUT computing any hash. Verified structurally: the filter-skip info event fires (on
+    /// cartography::filter target) and no dedupe event fires (cartography::dedupe target absent).
+    #[test]
+    fn empty_post_filter_no_hash() {
+        use std::sync::{Arc, Mutex};
+        use tracing::subscriber::with_default;
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::registry::Registry;
+
+        #[derive(Clone, Default)]
+        struct CaptureLayer {
+            events: Arc<Mutex<Vec<String>>>,
+        }
+
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                let meta = event.metadata();
+                self.events.lock().unwrap().push(meta.target().to_string());
+            }
+        }
+
+        let layer = CaptureLayer::default();
+        let events = layer.events.clone();
+        let sub = Registry::default().with(layer);
+
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        // All changed files are noise paths
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\ndocs/specs/2026-04-18-foo/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "empty-post-filter-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        with_default(sub, || {
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+            assert_eq!(result.stdout, "{}");
+        });
+
+        let captured = events.lock().unwrap();
+
+        // Filter-skip event MUST be present — early return happened
+        assert!(
+            captured.iter().any(|t| t == "cartography::filter"),
+            "filter-skip event must fire on cartography::filter target, got: {captured:?}"
+        );
+
+        // No dedupe event must be present — hash was never computed
+        assert!(
+            !captured.iter().any(|t| t == "cartography::dedupe"),
+            "dedupe must NOT run when all paths are noise (hash must not be computed), got: {captured:?}"
         );
     }
 
