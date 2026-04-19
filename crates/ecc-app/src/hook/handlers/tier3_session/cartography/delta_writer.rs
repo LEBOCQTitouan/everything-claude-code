@@ -563,6 +563,42 @@ mod tests {
         );
     }
 
+    /// PC-013: cartography-output-only session (`docs/cartography/**`) → passthrough, no delta
+    /// written (prevents self-ingestion feedback loops).
+    #[test]
+    fn filters_cartography_output_self_ingestion() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "docs/cartography/journeys/foo.md\ndocs/cartography/flows/bar.md\ndocs/cartography/elements/baz.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "cartography-self-ingestion-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — all changed files are docs/cartography/** noise
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-cartography-self-ingestion-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "docs/cartography/** paths must be filtered — no delta should be written (self-ingestion prevention)"
+        );
+    }
+
     /// Only `.claude/` paths in git diff → passthrough, no delta written (self-referential filter).
     #[test]
     fn filters_out_dot_claude_paths() {
