@@ -1283,6 +1283,92 @@ mod tests {
         }
     }
 
+    /// PC-119: Sequential double-call simulates concurrency — second call is a no-op (idempotent).
+    ///
+    /// First call: transitions BL-001 from in-progress → implemented, moves memory file to trash.
+    /// Second call (same args): status is already implemented → `update_status` no-op guard fires,
+    /// prune hook is NOT re-invoked, no panic, no error.
+    #[test]
+    fn concurrent_update_status_idempotent_prune() {
+        use ecc_test_support::{InMemoryFileSystem, MockEnvironment};
+        use std::path::PathBuf;
+
+        let home = "/home/alice";
+        let root = PathBuf::from("/home/alice/.claude/projects/default/memory");
+        let memory_file = root.join("project_bl001_foo.md");
+        let trash_file = root.join(".trash/2026-04-07/project_bl001_foo.md");
+
+        let fs = InMemoryFileSystem::new()
+            .with_dir(PathBuf::from(home))
+            .with_dir(&root)
+            .with_file(&memory_file, "BL-001 memory content")
+            .with_file(root.join("MEMORY.md"), "- [foo](project_bl001_foo.md)\n");
+        let env = MockEnvironment::new()
+            .with_var("HOME", home)
+            .with_var("ECC_PROJECT_MEMORY_ROOT", root.to_str().unwrap());
+
+        let raw_in_progress =
+            "---\nid: BL-001\nstatus: in-progress\ntitle: Test\ncreated: 2026-01-01\n---\n\n# Body\n";
+        let repo = InMemoryBacklogRepository::new()
+            .with_raw_content("BL-001", raw_in_progress)
+            .with_entry(make_entry("BL-001", BacklogStatus::InProgress));
+        let worktree_mgr = MockWorktreeManager::new();
+        let clock = fresh_clock();
+
+        // First call: in-progress → implemented. Memory file should be trashed.
+        let result1 = update_status_with_prune_hook(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            "BL-001",
+            "implemented",
+            &env,
+            &fs,
+        );
+        assert!(result1.is_ok(), "first call must succeed; got: {result1:?}");
+
+        // Memory file moved to trash after first call.
+        assert!(
+            fs.exists(&trash_file),
+            "memory file must be in trash after first call"
+        );
+        assert!(
+            !fs.exists(&memory_file),
+            "original memory file must not exist after first call"
+        );
+
+        // Second call: already implemented → no-op guard fires in update_status.
+        // Prune hook is reached only if update_status succeeds with actual write;
+        // no-op guard prevents the write, so prune is not re-invoked.
+        let result2 = update_status_with_prune_hook(
+            &repo,
+            &repo,
+            &repo,
+            &worktree_mgr,
+            &clock,
+            Path::new(BACKLOG_DIR),
+            Path::new(PROJECT_DIR),
+            "BL-001",
+            "implemented",
+            &env,
+            &fs,
+        );
+        assert!(
+            result2.is_ok(),
+            "second call must be a no-op and not panic; got: {result2:?}"
+        );
+
+        // Trash file still exists (was not moved again).
+        assert!(
+            fs.exists(&trash_file),
+            "trash file must still exist after second (no-op) call"
+        );
+    }
+
     // --- FsError conversion test ---
 
     #[test]
