@@ -69,9 +69,11 @@ pub fn prune_file_memories_for_backlog(
                 trashed_filenames.push(filename);
             }
             Err(err) => {
-                report
-                    .errors
-                    .push(format!("rename {} -> {}: {err}", entry.display(), dst.display()));
+                report.errors.push(format!(
+                    "rename {} -> {}: {err}",
+                    entry.display(),
+                    dst.display()
+                ));
             }
         }
     }
@@ -98,22 +100,16 @@ pub fn prune_file_memories_for_backlog(
                         report.index_updated = true;
                     }
                     Err(err) => {
-                        report
-                            .errors
-                            .push(format!("rename MEMORY.md.tmp: {err}"));
+                        report.errors.push(format!("rename MEMORY.md.tmp: {err}"));
                     }
                 },
                 Err(err) => {
-                    report
-                        .errors
-                        .push(format!("write MEMORY.md.tmp: {err}"));
+                    report.errors.push(format!("write MEMORY.md.tmp: {err}"));
                 }
             }
         }
         Err(err) => {
-            report
-                .errors
-                .push(format!("read MEMORY.md: {err}"));
+            report.errors.push(format!("read MEMORY.md: {err}"));
         }
     }
 
@@ -178,8 +174,7 @@ mod tests {
                 "# Memory\n\n- [BL-001 foo](project_bl001_foo.md)\n- [BL-001 bar](project_bl001_bar.md)\n- [BL-002 other](project_bl002_other.md)\n",
             );
 
-        let safe =
-            SafePath::from_canonical(root_path.clone(), root_path.clone()).unwrap();
+        let safe = SafePath::from_canonical(root_path.clone(), root_path.clone()).unwrap();
 
         let report = prune_file_memories_for_backlog(&fs, &safe, "BL-001", "2026-04-19");
 
@@ -193,15 +188,38 @@ mod tests {
 
         assert!(fs.exists(&root_path.join("project_bl002_other.md")));
 
-        let memory_md = fs
-            .read_to_string(&root_path.join("MEMORY.md"))
-            .unwrap();
+        let memory_md = fs.read_to_string(&root_path.join("MEMORY.md")).unwrap();
         assert!(!memory_md.contains("project_bl001_foo.md"));
         assert!(!memory_md.contains("project_bl001_bar.md"));
         assert!(memory_md.contains("project_bl002_other.md"));
 
         assert!(report.index_updated);
         assert_eq!(report.errors, Vec::<String>::new());
+    }
+
+    #[test]
+    fn is_idempotent() {
+        use ecc_domain::memory::SafePath;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root_path = PathBuf::from("/home/alice/.claude/projects/foo/memory");
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root_path)
+            .with_file(root_path.join("project_bl001_foo.md"), "content")
+            .with_file(
+                root_path.join("MEMORY.md"),
+                "- [foo](project_bl001_foo.md)\n",
+            );
+
+        let safe = SafePath::from_canonical(root_path.clone(), root_path.clone()).unwrap();
+
+        let r1 = prune_file_memories_for_backlog(&fs, &safe, "BL-001", "2026-04-19");
+        assert_eq!(r1.trashed_files.len(), 1, "first run trashes file");
+
+        let r2 = prune_file_memories_for_backlog(&fs, &safe, "BL-001", "2026-04-19");
+        assert_eq!(r2.trashed_files.len(), 0, "second run is no-op");
+        assert!(r2.errors.is_empty(), "idempotent: no errors");
     }
 
     #[test]
@@ -223,7 +241,10 @@ mod tests {
         // BL-031 matches with or without suffix
         assert!(matches_bl_id("project_bl031.md", "BL-031"));
         assert!(matches_bl_id("project_bl031_foo.md", "BL-031"));
-        assert!(matches_bl_id("project_bl31.md", "BL-031"), "zero-pad allowed via 0*");
+        assert!(
+            matches_bl_id("project_bl31.md", "BL-031"),
+            "zero-pad allowed via 0*"
+        );
 
         // Invalid BL ID returns false
         assert!(!matches_bl_id("project_bl001.md", "invalid"));
