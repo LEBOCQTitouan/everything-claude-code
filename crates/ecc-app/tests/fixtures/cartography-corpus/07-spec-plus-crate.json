@@ -1,0 +1,9 @@
+{
+  "session_id": "fixture-07",
+  "timestamp": 1700000007,
+  "changed_files": [
+    {"path": "docs/specs/US-010.md", "classification": "docs"},
+    {"path": "crates/ecc-app/src/cartography_service.rs", "classification": "source"}
+  ],
+  "project_type": "rust"
+}

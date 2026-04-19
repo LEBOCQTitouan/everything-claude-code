@@ -1,0 +1,8 @@
+{
+  "session_id": "fixture-10",
+  "timestamp": 1700000010,
+  "changed_files": [
+    {"path": "crates/ecc-app/src/foo.rs", "classification": "source"}
+  ],
+  "project_type": "rust"
+}

@@ -1,0 +1,9 @@
+{
+  "session_id": "fixture-04",
+  "timestamp": 1700000004,
+  "changed_files": [
+    {"path": "docs/cartography/session-map.json", "classification": "docs"},
+    {"path": "docs/cartography/index.md", "classification": "docs"}
+  ],
+  "project_type": "rust"
+}

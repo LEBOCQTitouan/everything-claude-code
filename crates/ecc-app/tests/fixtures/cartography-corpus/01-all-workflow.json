@@ -1,0 +1,10 @@
+{
+  "session_id": "fixture-01",
+  "timestamp": 1700000001,
+  "changed_files": [
+    {"path": ".claude/workflow/state.json", "classification": ".claude"},
+    {"path": ".claude/workflow/implement-done.md", "classification": ".claude"},
+    {"path": ".claude/workflow/history.json", "classification": ".claude"}
+  ],
+  "project_type": "rust"
+}

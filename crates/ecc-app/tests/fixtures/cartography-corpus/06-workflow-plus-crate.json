@@ -1,0 +1,9 @@
+{
+  "session_id": "fixture-06",
+  "timestamp": 1700000006,
+  "changed_files": [
+    {"path": ".claude/workflow/state.json", "classification": ".claude"},
+    {"path": "crates/ecc-domain/src/cartography.rs", "classification": "source"}
+  ],
+  "project_type": "rust"
+}

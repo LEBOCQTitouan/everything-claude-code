@@ -1,0 +1,8 @@
+{
+  "session_id": "fixture-05",
+  "timestamp": 1700000005,
+  "changed_files": [
+    {"path": "Cargo.lock", "classification": "config"}
+  ],
+  "project_type": "rust"
+}
