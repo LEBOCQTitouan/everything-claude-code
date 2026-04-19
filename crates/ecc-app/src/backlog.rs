@@ -8,6 +8,8 @@ use ecc_domain::backlog::index::{extract_dependency_graph, generate_index_table,
 use ecc_domain::backlog::similarity::{DUPLICATE_THRESHOLD, DuplicateCandidate, composite_score};
 use ecc_ports::backlog::{BacklogEntryStore, BacklogIndexStore, BacklogLockStore};
 use ecc_ports::clock::Clock;
+use ecc_ports::env::Environment;
+use ecc_ports::fs::FileSystem;
 use ecc_ports::worktree::WorktreeManager;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
@@ -439,6 +441,70 @@ pub fn update_status(
         false,
         false,
     )?;
+    Ok(())
+}
+
+/// Update the status of a backlog entry and, if transitioning to "implemented",
+/// fire-and-forget the memory prune hook.
+///
+/// Wraps [`update_status`] and then calls
+/// [`memory::file_prune::prune_file_memories_for_backlog`] if `new_status == "implemented"`.
+/// Prune errors are logged via `tracing::warn!` with target `"memory::prune"` but do NOT
+/// propagate — the status transition always returns `Ok(())` on success.
+/// If [`memory::paths::resolve_project_memory_root`] fails, a warn is emitted and
+/// pruning is skipped entirely.
+#[allow(clippy::too_many_arguments)]
+pub fn update_status_with_prune_hook(
+    entries: &dyn BacklogEntryStore,
+    index_store: &dyn BacklogIndexStore,
+    lock_store: &dyn BacklogLockStore,
+    worktree_mgr: &dyn WorktreeManager,
+    clock: &dyn Clock,
+    backlog_dir: &Path,
+    project_dir: &Path,
+    id: &str,
+    new_status: &str,
+    env: &dyn Environment,
+    fs: &dyn FileSystem,
+) -> Result<(), BacklogError> {
+    update_status(
+        entries,
+        index_store,
+        lock_store,
+        worktree_mgr,
+        clock,
+        backlog_dir,
+        project_dir,
+        id,
+        new_status,
+    )?;
+
+    if new_status == "implemented" {
+        let today = &clock.now_iso8601()[..10]; // YYYY-MM-DD prefix
+        match crate::memory::paths::resolve_project_memory_root(env, fs) {
+            Err(e) => {
+                tracing::warn!(
+                    target: "memory::prune",
+                    bl_id = id,
+                    error = ?e,
+                    "prune skipped: could not resolve memory root"
+                );
+            }
+            Ok(root) => {
+                let report =
+                    crate::memory::file_prune::prune_file_memories_for_backlog(fs, &root, id, today);
+                for e in &report.errors {
+                    tracing::warn!(
+                        target: "memory::prune",
+                        bl_id = id,
+                        error = %e,
+                        "prune error (fire-and-forget)"
+                    );
+                }
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -1040,14 +1106,55 @@ mod tests {
 
     /// PC-037: prune failure does NOT fail the status transition (fire-and-forget).
     ///
-    /// When `update_status` transitions to "implemented", it must call the memory
-    /// prune hook. If the prune fails (e.g. HOME not set), it must:
-    ///  1. Emit a `tracing::warn!` in the `memory::prune` target.
+    /// When `update_status_with_prune_hook` transitions to "implemented", it must call
+    /// the memory prune hook. If the prune fails (e.g. HOME not set), it must:
+    ///  1. Emit a `tracing::warn!` (captured via a channel layer).
     ///  2. Still return `Ok(())`.
     #[test]
-    #[tracing_test::traced_test]
     fn prune_failure_does_not_fail_transition() {
         use ecc_test_support::{InMemoryFileSystem, MockEnvironment};
+        use std::sync::{Arc, Mutex};
+        use tracing_subscriber::layer::SubscriberExt as _;
+
+        let warn_messages: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+
+        struct CaptureLayer(Arc<Mutex<Vec<String>>>);
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                if *event.metadata().level() == tracing::Level::WARN {
+                    let mut visitor = MessageVisitor(String::new());
+                    event.record(&mut visitor);
+                    let msg = format!(
+                        "WARN target={} msg={}",
+                        event.metadata().target(),
+                        visitor.0
+                    );
+                    self.0.lock().unwrap().push(msg);
+                }
+            }
+        }
+
+        struct MessageVisitor(String);
+        impl tracing::field::Visit for MessageVisitor {
+            fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
+                if field.name() == "message" {
+                    self.0 = value.to_string();
+                }
+            }
+            fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+                if field.name() == "message" {
+                    self.0 = format!("{value:?}");
+                }
+            }
+        }
+
+        let subscriber = tracing_subscriber::registry()
+            .with(CaptureLayer(Arc::clone(&warn_messages)));
+        let _guard = tracing::subscriber::set_default(subscriber);
 
         let raw = raw_open_content("BL-001");
         let repo = InMemoryBacklogRepository::new()
@@ -1056,13 +1163,10 @@ mod tests {
         let worktree_mgr = MockWorktreeManager::new();
         let clock = fresh_clock();
 
-        // Construct a filesystem and env with no HOME → resolve_project_memory_root returns Err.
-        let env = MockEnvironment::new(); // no HOME set
+        // MockEnvironment with no HOME → resolve_project_memory_root returns Err(HomeNotSet).
+        let env = MockEnvironment::new(); // vars is empty, var("HOME") returns None
         let fs = InMemoryFileSystem::new();
 
-        // update_status → implemented triggers prune hook.
-        // Prune will fail because HOME is not available.
-        // The transition must still return Ok(()).
         let result = update_status_with_prune_hook(
             &repo,
             &repo,
@@ -1082,10 +1186,12 @@ mod tests {
             "status transition must succeed even when prune hook fails; got: {result:?}"
         );
 
-        // Verify that a warn was emitted for the prune failure.
+        // Verify that a warn was emitted referencing the prune failure.
+        let msgs = warn_messages.lock().unwrap();
+        let has_prune_warn = msgs.iter().any(|m| m.contains("memory::prune"));
         assert!(
-            logs_contain("memory::prune"),
-            "must emit tracing::warn with target memory::prune when prune fails"
+            has_prune_warn,
+            "must emit tracing::warn with target memory::prune when prune fails; got: {msgs:?}"
         );
     }
 
