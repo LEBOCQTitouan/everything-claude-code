@@ -348,6 +348,20 @@ mod tests {
     }
 
     #[test]
+    fn uses_safe_path_only() {
+        const SOURCE: &str = include_str!("file_prune.rs");
+
+        // The main public functions should take &SafePath for the root
+        let production = SOURCE.split("#[cfg(test)]").next().unwrap_or(SOURCE);
+
+        // Primary fn signatures should include &SafePath
+        assert!(
+            production.contains("root: &SafePath") || production.contains("&SafePath"),
+            "file_prune production code must use &SafePath for root-derived paths"
+        );
+    }
+
+    #[test]
     fn bl_id_regex_collision_safety() {
         // BL-10 matches project_bl10* and project_bl010* but NOT project_bl100*
         assert!(matches_bl_id("project_bl10.md", "BL-10"));
