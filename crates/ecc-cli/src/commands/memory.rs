@@ -730,6 +730,55 @@ mod tests {
         );
     }
 
+    // PC-043: `ecc memory restore --trash <date>` lists trash files; `--apply` moves them back
+    #[test]
+    fn restore_lists_and_applies() {
+        use ecc_ports::fs::FileSystem as _;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/restore-root");
+        let trash_date = "2026-04-19";
+        let trash_dir = root.join(".trash").join(trash_date);
+        let file_name = "project_bl001_foo.md";
+        let trashed_path = trash_dir.join(file_name);
+
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root)
+            .with_dir(&trash_dir)
+            .with_file(&trashed_path, "bl001 content");
+
+        // Dry-run: list files in trash, nothing moved
+        let result = handle_restore(&fs, &root, trash_date, false).expect("dry-run should succeed");
+        assert!(
+            result.listed.iter().any(|p| p.ends_with(file_name)),
+            "dry-run should list the trashed file"
+        );
+        assert!(
+            fs.exists(&trashed_path),
+            "file must still be in trash after dry-run"
+        );
+        assert!(
+            !fs.exists(&root.join(file_name)),
+            "file must not appear in root after dry-run"
+        );
+
+        // Apply: move file back to memory root
+        let result = handle_restore(&fs, &root, trash_date, true).expect("apply should succeed");
+        assert!(
+            result.restored.iter().any(|p| p.ends_with(file_name)),
+            "apply should report restored file"
+        );
+        assert!(
+            !fs.exists(&trashed_path),
+            "file must not remain in trash after apply"
+        );
+        assert!(
+            fs.exists(&root.join(file_name)),
+            "file must be back in memory root after apply"
+        );
+    }
+
     #[test]
     fn test_parse_tags_empty() {
         let tags = parse_tags(None);
