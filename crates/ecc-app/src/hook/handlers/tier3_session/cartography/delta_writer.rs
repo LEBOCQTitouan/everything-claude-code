@@ -684,6 +684,70 @@ mod tests {
         );
     }
 
+    /// PC-016: all changed files are noise → passthrough and emits info event on cartography::filter
+    /// target with paths_skipped count.
+    #[test]
+    fn emits_filter_info_on_skip() {
+        use std::sync::{Arc, Mutex};
+        use tracing::subscriber::with_default;
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::registry::Registry;
+
+        #[derive(Clone, Default)]
+        struct CaptureLayer {
+            events: Arc<Mutex<Vec<(String, String)>>>,
+        }
+
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                let meta = event.metadata();
+                self.events
+                    .lock()
+                    .unwrap()
+                    .push((meta.target().to_string(), meta.name().to_string()));
+            }
+        }
+
+        let layer = CaptureLayer::default();
+        let events = layer.events.clone();
+        let sub = Registry::default().with(layer);
+
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\ndocs/specs/2026-04-18-foo/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "filter-skip-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        with_default(sub, || {
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+            assert_eq!(result.stdout, "{}");
+        });
+
+        let captured = events.lock().unwrap();
+        assert!(
+            captured
+                .iter()
+                .any(|(target, _)| target == "cartography::filter"),
+            "expected a tracing event with target 'cartography::filter', got: {captured:?}"
+        );
+    }
+
     /// Only `.claude/` paths in git diff → passthrough, no delta written (self-referential filter).
     #[test]
     fn filters_out_dot_claude_paths() {
