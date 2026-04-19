@@ -697,6 +697,80 @@ mod tests {
         );
     }
 
+    /// PC-017: clean working tree (git diff returns empty) → passthrough and emits debug event on
+    /// cartography::filter target indicating clean-tree skip.
+    #[test]
+    fn clean_tree_debug_log() {
+        use std::sync::{Arc, Mutex};
+        use tracing::subscriber::with_default;
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::registry::Registry;
+
+        #[derive(Clone, Default)]
+        struct CaptureLayer {
+            events: Arc<Mutex<Vec<(String, tracing::Level, String)>>>,
+        }
+
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                let meta = event.metadata();
+                self.events.lock().unwrap().push((
+                    meta.target().to_string(),
+                    *meta.level(),
+                    meta.name().to_string(),
+                ));
+            }
+        }
+
+        let layer = CaptureLayer::default();
+        let events = layer.events.clone();
+        let sub = Registry::default().with(layer);
+
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: String::new(), // empty — clean working tree
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "clean-tree-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        with_default(sub, || {
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+            assert_eq!(result.stdout, "{}");
+        });
+
+        // No delta should be written
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-clean-tree-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "no delta should be written for clean working tree"
+        );
+
+        // A debug event on the cartography::filter target must have been emitted
+        let captured = events.lock().unwrap();
+        assert!(
+            captured.iter().any(|(target, level, _name)| {
+                target == "cartography::filter" && *level == tracing::Level::DEBUG
+            }),
+            "expected a DEBUG tracing event on target 'cartography::filter' for clean-tree skip, got: {captured:?}"
+        );
+    }
+
     /// PC-016: all changed files are noise → passthrough and emits info event on cartography::filter
     /// target with paths_skipped count.
     #[test]
