@@ -293,6 +293,65 @@ mod tests {
     }
 
     #[test]
+    fn window_0_1_100_boundaries() {
+        let tmp0 = TempDir::new().unwrap();
+        let fs0 = InMemoryFileSystem::new();
+        let fixture = make_delta("session-fixture", vec![("src/lib.rs", "ecc-app")]);
+        assert!(
+            matches!(should_dedupe(&fs0, tmp0.path(), &fixture, 0), DedupeOutcome::WindowDisabled),
+            "window=0 must return WindowDisabled"
+        );
+
+        // Window=1: two files — z (newer lex) and a (older lex).
+        // Input matches delta_a. With window=1 only z is checked → Unique.
+        let tmp1 = TempDir::new().unwrap();
+        let delta_a = make_delta("session-aaa", vec![("src/lib.rs", "ecc-app")]);
+        let delta_z = make_delta("session-zzz", vec![("src/main.rs", "ecc-cli")]);
+        let json_a = serde_json::to_string(&delta_a).unwrap();
+        let json_z = serde_json::to_string(&delta_z).unwrap();
+        let fs1 = make_fs_with_pending(
+            &tmp1,
+            &[
+                ("pending-delta-a.json", &json_a),
+                ("pending-delta-z.json", &json_z),
+            ],
+        );
+        // Incoming matches delta_a but delta_a is at lex position "a" < "z".
+        // window=1 only picks "z" → no match → Unique.
+        let incoming_a = make_delta("session-new", vec![("src/lib.rs", "ecc-app")]);
+        assert!(
+            matches!(should_dedupe(&fs1, tmp1.path(), &incoming_a, 1), DedupeOutcome::Unique),
+            "window=1 must exclude older-lex delta_a and return Unique"
+        );
+
+        // Window=100: 5 seeded deltas, match is at position 0 (lex "0").
+        // window=100 covers all 5 → Duplicate detected.
+        let tmp100 = TempDir::new().unwrap();
+        let deltas: Vec<_> = (0..5_usize)
+            .map(|i| make_delta(&format!("session-{i}"), vec![(&format!("src/file{i}.rs"), "ecc-app")]))
+            .collect();
+        let jsons: Vec<_> = deltas.iter().map(|d| serde_json::to_string(d).unwrap()).collect();
+        let file_pairs: Vec<(String, String)> = (0..5)
+            .map(|i| (format!("pending-delta-{i}.json"), jsons[i].clone()))
+            .collect();
+        let fs100 = {
+            let mut fs = InMemoryFileSystem::new();
+            for (name, content) in &file_pairs {
+                let full = tmp100.path().join(name);
+                fs = fs.with_file(&full.to_string_lossy(), content);
+            }
+            fs
+        };
+        // Incoming matches deltas[0] — which is at lex "pending-delta-0.json"
+        // Lex descending order: 4, 3, 2, 1, 0 — window=100 covers all 5.
+        let incoming100 = make_delta("session-new100", vec![("src/file0.rs", "ecc-app")]);
+        assert!(
+            matches!(should_dedupe(&fs100, tmp100.path(), &incoming100, 100), DedupeOutcome::Duplicate(_)),
+            "window=100 must detect duplicate at bottom of lex-sorted list"
+        );
+    }
+
+    #[test]
     fn duplicate_payload_skips_write() {
         // Arrange: build an existing delta and write it to the in-memory fs.
         let existing = make_delta("session-aaa", vec![("src/main.rs", "ecc-cli")]);
