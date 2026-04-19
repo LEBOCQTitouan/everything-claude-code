@@ -26,6 +26,39 @@ pub struct DiagnosticReport {
     pub config_path: String,
     /// Whether ECC appears to be installed (i.e. `~/.claude/` exists).
     pub installed: bool,
+    /// Cartography observability counters and feature flags.
+    pub cartography: CartographyMetrics,
+    /// Memory pruning observability counters.
+    pub memory: MemoryMetrics,
+    /// Daily summary feature flags.
+    pub daily_summary: DailySummaryFlags,
+}
+
+/// Cartography observability counters and feature flags.
+#[derive(Debug, Serialize)]
+pub struct CartographyMetrics {
+    /// Number of delta writes skipped (deduplicated) in the last 24 hours.
+    /// Placeholder — always 0 until full counter implementation.
+    pub skipped_deltas_24h: u64,
+    /// Whether cartography deduplication is enabled (`ECC_CARTOGRAPHY_DEDUPE` != "0").
+    pub dedupe_enabled: bool,
+    /// Deduplication sliding-window size (`ECC_CARTOGRAPHY_DEDUPE_WINDOW`, default 20).
+    pub dedupe_window: usize,
+}
+
+/// Memory pruning observability counters.
+#[derive(Debug, Serialize)]
+pub struct MemoryMetrics {
+    /// Number of memory files pruned in the last 24 hours.
+    /// Placeholder — always 0 until full counter implementation.
+    pub pruned_files_24h: u64,
+}
+
+/// Daily summary feature flags.
+#[derive(Debug, Serialize)]
+pub struct DailySummaryFlags {
+    /// Whether the daily summary noise filter is enabled (`ECC_DAILY_SUMMARY_NOISE_FILTER` != "0").
+    pub noise_filter_enabled: bool,
 }
 
 /// Presence status of workflow artifact files.
@@ -98,6 +131,12 @@ pub fn gather_status(fs: &dyn FileSystem, env: &dyn Environment) -> DiagnosticRe
         rules: count_files(fs, &claude_dir.join("rules")),
     };
 
+    let cartography = cartography_metrics(env);
+    let memory = MemoryMetrics {
+        pruned_files_24h: 0,
+    };
+    let daily_summary = daily_summary_flags(env);
+
     DiagnosticReport {
         ecc_version,
         workflow_phase,
@@ -107,6 +146,9 @@ pub fn gather_status(fs: &dyn FileSystem, env: &dyn Environment) -> DiagnosticRe
         hook_count: 0,
         config_path,
         installed: true,
+        cartography,
+        memory,
+        daily_summary,
     }
 }
 
@@ -115,6 +157,8 @@ fn not_installed_report(ecc_version: String, env: &dyn Environment) -> Diagnosti
         .home_dir()
         .map(|h| h.join(".ecc/config.toml").to_string_lossy().into_owned())
         .unwrap_or_default();
+    let cartography = cartography_metrics(env);
+    let daily_summary = daily_summary_flags(env);
     DiagnosticReport {
         ecc_version,
         workflow_phase: None,
@@ -133,6 +177,37 @@ fn not_installed_report(ecc_version: String, env: &dyn Environment) -> Diagnosti
         hook_count: 0,
         config_path,
         installed: false,
+        cartography,
+        memory: MemoryMetrics {
+            pruned_files_24h: 0,
+        },
+        daily_summary,
+    }
+}
+
+fn cartography_metrics(env: &dyn Environment) -> CartographyMetrics {
+    let dedupe_enabled = env
+        .var("ECC_CARTOGRAPHY_DEDUPE")
+        .map(|v| v != "0")
+        .unwrap_or(true);
+    let dedupe_window = env
+        .var("ECC_CARTOGRAPHY_DEDUPE_WINDOW")
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(20);
+    CartographyMetrics {
+        skipped_deltas_24h: 0,
+        dedupe_enabled,
+        dedupe_window,
+    }
+}
+
+fn daily_summary_flags(env: &dyn Environment) -> DailySummaryFlags {
+    let noise_filter_enabled = env
+        .var("ECC_DAILY_SUMMARY_NOISE_FILTER")
+        .map(|v| v != "0")
+        .unwrap_or(true);
+    DailySummaryFlags {
+        noise_filter_enabled,
     }
 }
 
@@ -386,6 +461,17 @@ mod tests {
             hook_count: 7,
             config_path: "/home/test/.ecc/config.toml".to_owned(),
             installed: true,
+            cartography: CartographyMetrics {
+                skipped_deltas_24h: 0,
+                dedupe_enabled: true,
+                dedupe_window: 20,
+            },
+            memory: MemoryMetrics {
+                pruned_files_24h: 0,
+            },
+            daily_summary: DailySummaryFlags {
+                noise_filter_enabled: true,
+            },
         };
 
         let output = format_human(&report);
@@ -423,6 +509,17 @@ mod tests {
             hook_count: 0,
             config_path: String::new(),
             installed: false,
+            cartography: CartographyMetrics {
+                skipped_deltas_24h: 0,
+                dedupe_enabled: true,
+                dedupe_window: 20,
+            },
+            memory: MemoryMetrics {
+                pruned_files_24h: 0,
+            },
+            daily_summary: DailySummaryFlags {
+                noise_filter_enabled: true,
+            },
         };
 
         let json_str = format_json(&report);
