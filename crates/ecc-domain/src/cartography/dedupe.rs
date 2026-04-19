@@ -54,6 +54,28 @@ mod tests {
     }
 
     #[test]
+    fn hash_snapshot_stability() {
+        // Fixture: one file, fixed metadata. If serde_json or serde_jcs
+        // change their canonicalization in a minor bump, this test catches it.
+        let delta = SessionDelta {
+            session_id: "sess-snapshot".to_string(),
+            timestamp: 1_700_000_000,
+            changed_files: vec![ChangedFile {
+                path: "crates/ecc-domain/src/foo.rs".to_string(),
+                classification: "ecc-domain".to_string(),
+            }],
+            project_type: ProjectType::Rust,
+        };
+        let actual = canonical_hash(&delta);
+        let expected = "TBD";
+        assert_eq!(
+            actual,
+            expected,
+            "canonical_hash drift detected — serde_json or serde_jcs may have bumped canonicalization"
+        );
+    }
+
+    #[test]
     fn hash_is_canonical_and_deterministic() {
         let a = make_delta(
             "sess-1",
