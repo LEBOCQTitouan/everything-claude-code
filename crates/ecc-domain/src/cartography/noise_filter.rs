@@ -93,6 +93,37 @@ mod tests {
     }
 
     #[test]
+    fn module_has_no_io_imports() {
+        // Grep this module's own source for forbidden I/O imports.
+        // Uses include_str! which is a compile-time read — not runtime I/O.
+        //
+        // Patterns are built at runtime to avoid the self-referential false-positive
+        // where the test source itself contains the forbidden string literal.
+        const SOURCE: &str = include_str!("noise_filter.rs");
+
+        // Each tuple is ("prefix", "suffix") — joined at runtime so the combined
+        // string never appears verbatim in this source file.
+        let forbidden_parts: &[(&str, &str)] = &[
+            ("use std::", "fs"),
+            ("use std::", "net"),
+            ("use std::", "process"),
+            ("use std::io::", "Read"),
+            ("use std::io::", "Write"),
+            ("use ", "tokio"),
+            ("use ", "async_std"),
+            ("use ", "reqwest"),
+        ];
+
+        for (prefix, suffix) in forbidden_parts {
+            let pat = format!("{prefix}{suffix}");
+            assert!(
+                !SOURCE.contains(&pat),
+                "domain purity violation: noise_filter.rs contains `{pat}`"
+            );
+        }
+    }
+
+    #[test]
     fn classifies_fixed_prefixes_as_noise() {
         let noise_cases = [
             ".claude/workflow/state.json",
