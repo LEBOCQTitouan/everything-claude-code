@@ -13,13 +13,66 @@ use ecc_ports::fs::FileSystem;
 /// whose age (in days) exceeds `retention_days` are removed recursively.
 ///
 /// Returns the count of directories deleted.
-pub fn gc_trash(
-    _fs: &dyn FileSystem,
-    _root: &SafePath,
-    _today: &str,
-    _retention_days: u32,
-) -> u32 {
-    unimplemented!("gc_trash not yet implemented")
+pub fn gc_trash(fs: &dyn FileSystem, root: &SafePath, today: &str, retention_days: u32) -> u32 {
+    let trash_root = root.full().join(".trash");
+    let entries = match fs.read_dir(&trash_root) {
+        Ok(e) => e,
+        Err(_) => return 0,
+    };
+
+    let today_days = match date_to_days(today) {
+        Some(d) => d,
+        None => return 0,
+    };
+
+    let mut deleted = 0u32;
+    for entry in entries {
+        let dir_name = match entry.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n.to_owned(),
+            None => continue,
+        };
+        let entry_days = match date_to_days(&dir_name) {
+            Some(d) => d,
+            None => continue,
+        };
+        let age = today_days.saturating_sub(entry_days);
+        if age > retention_days && fs.remove_dir_all(&entry).is_ok() {
+            deleted += 1;
+        }
+    }
+    deleted
+}
+
+/// Convert a `YYYY-MM-DD` string to a day count (days since year 0).
+///
+/// Returns `None` if the string cannot be parsed as a valid date.
+fn date_to_days(date: &str) -> Option<u32> {
+    let parts: Vec<&str> = date.splitn(3, '-').collect();
+    if parts.len() != 3 {
+        return None;
+    }
+    let year: u32 = parts[0].parse().ok()?;
+    let month: u32 = parts[1].parse().ok()?;
+    let day: u32 = parts[2].parse().ok()?;
+    if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
+        return None;
+    }
+    // Days in each month (non-leap year base; February adjusted below)
+    let days_in_month = [0u32, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let is_leap = (year.is_multiple_of(4) && !year.is_multiple_of(100)) || year.is_multiple_of(400);
+    let feb_days = if is_leap { 29u32 } else { 28u32 };
+
+    // Days from year 0 (approximate; sufficient for age comparison)
+    let year_days = year * 365 + year / 4 - year / 100 + year / 400;
+    let mut month_days = 0u32;
+    for m in 1..month {
+        month_days += if m == 2 {
+            feb_days
+        } else {
+            days_in_month[m as usize]
+        };
+    }
+    Some(year_days + month_days + day)
 }
 
 #[cfg(test)]
