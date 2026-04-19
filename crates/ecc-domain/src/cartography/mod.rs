@@ -7,6 +7,7 @@
 
 pub mod classification;
 pub mod coverage;
+pub mod noise_filter;
 pub mod cross_reference;
 pub mod element_types;
 pub mod element_validation;
@@ -17,6 +18,7 @@ pub mod types;
 pub mod validation;
 
 pub use classification::classify_file;
+pub use noise_filter::is_noise_path;
 pub use coverage::{CoverageReport, calculate_coverage};
 pub use cross_reference::build_cross_reference_matrix;
 pub use element_types::{ElementEntry, ElementType, infer_element_type_from_path};
