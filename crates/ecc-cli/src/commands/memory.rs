@@ -101,6 +101,79 @@ pub enum MemoryAction {
         #[arg(long)]
         apply: bool,
     },
+    /// Restore memory files from the trash directory for a given date
+    Restore {
+        /// Date of the trash directory (YYYY-MM-DD)
+        #[arg(long)]
+        trash: String,
+        /// Actually move files back to memory root (default: dry-run)
+        #[arg(long)]
+        apply: bool,
+    },
+}
+
+/// Result of a restore operation (dry-run or apply).
+pub struct RestoreResult {
+    /// Files that would be or were restored (apply=false: preview; apply=true: actually moved).
+    pub listed: Vec<std::path::PathBuf>,
+    /// Files that were moved back to the memory root (only populated when apply=true).
+    pub restored: Vec<std::path::PathBuf>,
+    /// Errors encountered when moving individual files.
+    pub errors: Vec<String>,
+}
+
+/// List or restore files from `<memory_root>/.trash/<trash_date>/`.
+///
+/// Dry-run (apply=false): lists files in the trash directory without moving them.
+/// Apply (apply=true): moves each file back to `memory_root`.
+pub fn handle_restore<F: ecc_ports::fs::FileSystem>(
+    fs: &F,
+    memory_root: &std::path::Path,
+    trash_date: &str,
+    apply: bool,
+) -> anyhow::Result<RestoreResult> {
+    let trash_dir = memory_root.join(".trash").join(trash_date);
+
+    let entries = if fs.exists(&trash_dir) {
+        fs.read_dir(&trash_dir)
+            .map_err(|e| anyhow::anyhow!("failed to read trash directory: {e}"))?
+    } else {
+        vec![]
+    };
+
+    let mut result = RestoreResult {
+        listed: entries.clone(),
+        restored: vec![],
+        errors: vec![],
+    };
+
+    if apply {
+        for src in &entries {
+            let file_name = match src.file_name() {
+                Some(n) => n,
+                None => continue,
+            };
+            let dest = memory_root.join(file_name);
+            match fs.copy(src, &dest) {
+                Ok(()) => {
+                    if let Err(e) = fs.remove_file(src) {
+                        result
+                            .errors
+                            .push(format!("failed to remove {}: {e}", src.display()));
+                    } else {
+                        result.restored.push(dest);
+                    }
+                }
+                Err(e) => {
+                    result
+                        .errors
+                        .push(format!("failed to restore {}: {e}", src.display()));
+                }
+            }
+        }
+    }
+
+    Ok(result)
 }
 
 fn open_store() -> anyhow::Result<ecc_infra::sqlite_memory::SqliteMemoryStore> {
@@ -275,6 +348,37 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
         } => {
             // Placeholder — full implementation in GREEN phase
             println!("prune: not yet implemented");
+        }
+
+        MemoryAction::Restore { trash, apply } => {
+            let home = dirs::home_dir()
+                .ok_or_else(|| anyhow::anyhow!("could not determine home directory"))?;
+            let memory_root = home.join(".claude").join("projects");
+            let fs = ecc_infra::os_fs::OsFileSystem;
+            let result = handle_restore(&fs, &memory_root, &trash, apply)?;
+            if apply {
+                if result.restored.is_empty() {
+                    println!("No files restored from trash/{trash}");
+                } else {
+                    println!(
+                        "Restored {} file(s) from trash/{trash}:",
+                        result.restored.len()
+                    );
+                    for p in &result.restored {
+                        println!("  {}", p.display());
+                    }
+                }
+                for e in &result.errors {
+                    eprintln!("  error: {e}");
+                }
+            } else if result.listed.is_empty() {
+                println!("No files in trash/{trash}");
+            } else {
+                println!("Files in trash/{trash} (dry-run — use --apply to restore):");
+                for p in &result.listed {
+                    println!("  {}", p.display());
+                }
+            }
         }
 
         MemoryAction::Stats => {
@@ -577,8 +681,16 @@ mod tests {
         );
 
         // Two files were trashed
-        assert_eq!(report.trashed_files.len(), 2, "apply should trash 2 orphaned files");
-        assert_eq!(report.would_trash.len(), 0, "apply run must not populate would_trash");
+        assert_eq!(
+            report.trashed_files.len(),
+            2,
+            "apply should trash 2 orphaned files"
+        );
+        assert_eq!(
+            report.would_trash.len(),
+            0,
+            "apply run must not populate would_trash"
+        );
         assert!(report.errors.is_empty(), "no errors expected");
 
         // Orphaned files must no longer exist at their original paths
