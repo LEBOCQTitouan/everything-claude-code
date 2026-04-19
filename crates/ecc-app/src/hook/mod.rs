@@ -9,6 +9,8 @@ use ecc_ports::shell::ShellExecutor;
 use ecc_ports::terminal::TerminalIO;
 
 pub mod bypass_handling;
+pub mod errors;
+pub use errors::HookError;
 pub mod bypass_interceptor;
 pub mod dispatch;
 pub mod handlers;
