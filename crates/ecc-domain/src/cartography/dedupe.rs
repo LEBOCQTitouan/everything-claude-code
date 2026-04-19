@@ -1,0 +1,62 @@
+//! Deduplication utilities for session deltas.
+//!
+//! Provides canonical hashing so that two `SessionDelta` values with identical
+//! content but different `changed_files` insertion order produce the same hash.
+
+use crate::cartography::types::SessionDelta;
+
+/// Computes a canonical, order-independent SHA-256 hash of a `SessionDelta`.
+///
+/// Algorithm:
+/// 1. Sort `changed_files` by path.
+/// 2. Serialize the sorted delta via `serde_jcs` (RFC 8785 canonical JSON).
+/// 3. SHA-256 the canonical JSON bytes.
+/// 4. Return a lowercase 64-character hex string.
+pub fn canonical_hash(delta: &SessionDelta) -> String {
+    // Stub: non-canonical serialization — will fail determinism test
+    serde_json::to_string(delta).unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cartography::types::{ChangedFile, ProjectType, SessionDelta};
+
+    fn make_delta(session_id: &str, files: Vec<(&str, &str)>) -> SessionDelta {
+        SessionDelta {
+            session_id: session_id.to_string(),
+            timestamp: 1_700_000_000,
+            changed_files: files
+                .into_iter()
+                .map(|(path, class)| ChangedFile {
+                    path: path.to_string(),
+                    classification: class.to_string(),
+                })
+                .collect(),
+            project_type: ProjectType::Rust,
+        }
+    }
+
+    #[test]
+    fn hash_is_canonical_and_deterministic() {
+        let a = make_delta(
+            "sess-1",
+            vec![
+                ("crates/ecc-domain/src/foo.rs", "ecc-domain"),
+                ("docs/README.md", "docs"),
+            ],
+        );
+        let b = make_delta(
+            "sess-1",
+            vec![
+                ("docs/README.md", "docs"),
+                ("crates/ecc-domain/src/foo.rs", "ecc-domain"),
+            ],
+        );
+        assert_eq!(
+            canonical_hash(&a),
+            canonical_hash(&b),
+            "hash must be order-independent"
+        );
+    }
+}

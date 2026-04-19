@@ -5,6 +5,7 @@
 
 // Policy: all new public items in this module should have doc comments.
 
+pub mod dedupe;
 pub mod classification;
 pub mod coverage;
 pub mod noise_filter;
@@ -18,6 +19,7 @@ pub mod types;
 pub mod validation;
 
 pub use classification::classify_file;
+pub use dedupe::canonical_hash;
 pub use noise_filter::is_noise_path;
 pub use coverage::{CoverageReport, calculate_coverage};
 pub use cross_reference::build_cross_reference_matrix;
