@@ -78,6 +78,20 @@ mod tests {
     use ecc_test_support::{InMemoryFileSystem, MockEnvironment};
 
     #[test]
+    fn resolve_root_env_override() {
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/home/alice")
+            .with_dir("/home/alice/custom-memory");
+        let env = MockEnvironment::new()
+            .with_var("HOME", "/home/alice")
+            .with_var("ECC_PROJECT_MEMORY_ROOT", "/home/alice/custom-memory");
+
+        let result = resolve_project_memory_root(&env, &fs);
+        let safe = result.expect("should resolve");
+        assert_eq!(safe.full(), Path::new("/home/alice/custom-memory"));
+    }
+
+    #[test]
     fn rejects_root_outside_home() {
         let fs = InMemoryFileSystem::new()
             .with_dir("/home/alice")
