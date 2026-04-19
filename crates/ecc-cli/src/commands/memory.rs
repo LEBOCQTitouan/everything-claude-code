@@ -122,6 +122,26 @@ pub struct RestoreResult {
     pub errors: Vec<String>,
 }
 
+/// Validates that `trash_date` matches `^\d{4}-\d{2}-\d{2}$` (ISO 8601 date).
+///
+/// Returns an error if the format is invalid, preventing path traversal attacks.
+fn validate_trash_date(trash_date: &str) -> anyhow::Result<()> {
+    let valid = trash_date.len() == 10
+        && trash_date.as_bytes()[4] == b'-'
+        && trash_date.as_bytes()[7] == b'-'
+        && trash_date[..4].bytes().all(|b| b.is_ascii_digit())
+        && trash_date[5..7].bytes().all(|b| b.is_ascii_digit())
+        && trash_date[8..10].bytes().all(|b| b.is_ascii_digit());
+    if valid {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "invalid trash date {:?}: expected YYYY-MM-DD",
+            trash_date
+        ))
+    }
+}
+
 /// List or restore files from `<memory_root>/.trash/<trash_date>/`.
 ///
 /// Dry-run (apply=false): lists files in the trash directory without moving them.
@@ -132,6 +152,7 @@ pub fn handle_restore<F: ecc_ports::fs::FileSystem>(
     trash_date: &str,
     apply: bool,
 ) -> anyhow::Result<RestoreResult> {
+    validate_trash_date(trash_date)?;
     let trash_dir = memory_root.join(".trash").join(trash_date);
 
     let entries = if fs.exists(&trash_dir) {
