@@ -133,11 +133,10 @@ fn extract_hook_commands(settings: &serde_json::Value) -> Vec<String> {
                 None => continue,
             };
             for hook in inner {
-                if let Some(cmd) = hook.get("command").and_then(|c| c.as_str()) {
-                    if cmd.contains("ecc-hook") || cmd.contains("ecc hook") {
+                if let Some(cmd) = hook.get("command").and_then(|c| c.as_str())
+                    && (cmd.contains("ecc-hook") || cmd.contains("ecc hook")) {
                         commands.push(cmd.to_string());
                     }
-                }
             }
         }
     }

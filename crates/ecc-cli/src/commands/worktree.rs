@@ -76,8 +76,6 @@ fn resolve_dir(dir: Option<PathBuf>) -> anyhow::Result<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn status_exit_zero() {
         // Verify that the status function returns Ok (exit code 0 on success).

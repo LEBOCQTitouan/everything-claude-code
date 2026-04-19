@@ -678,13 +678,14 @@ mod artifacts {
 }
 
 #[cfg(test)]
-mod state {
+mod transition_record_tests {
     use super::*;
     use crate::workflow::concern::Concern;
     use crate::workflow::phase::Phase;
     use crate::workflow::timestamp::Timestamp;
     use crate::workflow::transition::Direction;
 
+    #[allow(dead_code)]
     fn make_state() -> WorkflowState {
         WorkflowState {
             phase: Phase::Plan,

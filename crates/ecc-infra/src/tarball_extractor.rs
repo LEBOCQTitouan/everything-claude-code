@@ -221,10 +221,10 @@ mod tests {
         // Pad to 512-byte boundary
         let padding = 512 - (content.len() % 512);
         if padding < 512 {
-            all_bytes.extend(std::iter::repeat(0u8).take(padding));
+            all_bytes.extend(std::iter::repeat_n(0u8, padding));
         }
         // Two end-of-archive blocks
-        all_bytes.extend(std::iter::repeat(0u8).take(1024));
+        all_bytes.extend(std::iter::repeat_n(0u8, 1024));
 
         let mut gz_writer = gz;
         std::io::Write::write_all(&mut gz_writer, &all_bytes).unwrap();

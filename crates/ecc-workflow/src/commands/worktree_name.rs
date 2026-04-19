@@ -14,7 +14,7 @@ pub fn run(concern: &str, feature: &str) -> WorkflowOutput {
 }
 
 #[cfg(test)]
-mod worktree_name {
+mod tests {
     use super::*;
 
     #[test]

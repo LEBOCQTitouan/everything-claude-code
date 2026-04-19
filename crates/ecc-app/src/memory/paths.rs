@@ -47,12 +47,12 @@ pub fn resolve_project_memory_root(
     fs: &dyn FileSystem,
 ) -> Result<SafePath, PathResolutionError> {
     let home = env.var("HOME").ok_or(PathResolutionError::HomeNotSet)?;
-    let home_canonical = fs
-        .canonicalize(Path::new(&home))
-        .map_err(|e| PathResolutionError::CanonicalizeFailed {
-            path: PathBuf::from(&home),
-            source: e,
-        })?;
+    let home_canonical =
+        fs.canonicalize(Path::new(&home))
+            .map_err(|e| PathResolutionError::CanonicalizeFailed {
+                path: PathBuf::from(&home),
+                source: e,
+            })?;
 
     let raw = env.var("ECC_PROJECT_MEMORY_ROOT").unwrap_or_else(|| {
         // Derive the project hash using the same algorithm as
@@ -65,12 +65,12 @@ pub fn resolve_project_memory_root(
         format!("{home}/.claude/projects/{project_hash}/memory")
     });
     let raw_path = PathBuf::from(&raw);
-    let canonical = fs
-        .canonicalize(&raw_path)
-        .map_err(|e| PathResolutionError::CanonicalizeFailed {
-            path: raw_path.clone(),
-            source: e,
-        })?;
+    let canonical =
+        fs.canonicalize(&raw_path)
+            .map_err(|e| PathResolutionError::CanonicalizeFailed {
+                path: raw_path.clone(),
+                source: e,
+            })?;
 
     if !canonical.starts_with(&home_canonical) {
         return Err(PathResolutionError::OutsideHome { path: canonical });
@@ -93,7 +93,9 @@ mod tests {
         let expected_hash_1 = "Users-alice-project-foo";
         let fs = InMemoryFileSystem::new()
             .with_dir("/home/alice")
-            .with_dir(&format!("/home/alice/.claude/projects/{expected_hash_1}/memory"));
+            .with_dir(format!(
+                "/home/alice/.claude/projects/{expected_hash_1}/memory"
+            ));
         let env = MockEnvironment::new()
             .with_var("HOME", "/home/alice")
             .with_var("CLAUDE_PROJECT_DIR", "/Users/alice/project/foo");
@@ -101,9 +103,7 @@ mod tests {
         let result = resolve_project_memory_root(&env, &fs);
         let safe = result.expect("should resolve");
         assert!(
-            safe.full()
-                .to_string_lossy()
-                .contains(expected_hash_1),
+            safe.full().to_string_lossy().contains(expected_hash_1),
             "expected path to contain hash {expected_hash_1}, got {:?}",
             safe.full()
         );
@@ -112,7 +112,9 @@ mod tests {
         let expected_hash_2 = "home-bob-repos-myapp";
         let fs2 = InMemoryFileSystem::new()
             .with_dir("/home/bob")
-            .with_dir(&format!("/home/bob/.claude/projects/{expected_hash_2}/memory"));
+            .with_dir(format!(
+                "/home/bob/.claude/projects/{expected_hash_2}/memory"
+            ));
         let env2 = MockEnvironment::new()
             .with_var("HOME", "/home/bob")
             .with_var("CLAUDE_PROJECT_DIR", "/home/bob/repos/myapp");
@@ -120,10 +122,7 @@ mod tests {
         let result2 = resolve_project_memory_root(&env2, &fs2);
         let safe2 = result2.expect("should resolve for vector 2");
         assert!(
-            safe2
-                .full()
-                .to_string_lossy()
-                .contains(expected_hash_2),
+            safe2.full().to_string_lossy().contains(expected_hash_2),
             "expected path to contain hash {expected_hash_2}, got {:?}",
             safe2.full()
         );
@@ -175,7 +174,10 @@ mod tests {
         let cli_result = resolve_project_memory_root(&env, &fs);
         assert!(cli_result.is_err(), "CLI must return Err on missing root");
         assert!(
-            matches!(cli_result, Err(PathResolutionError::CanonicalizeFailed { .. })),
+            matches!(
+                cli_result,
+                Err(PathResolutionError::CanonicalizeFailed { .. })
+            ),
             "expected CanonicalizeFailed, got {cli_result:?}"
         );
 
@@ -184,6 +186,9 @@ mod tests {
             .with_var("HOME", "/home/alice")
             .with_var("ECC_PROJECT_MEMORY_ROOT", "/home/alice/nonexistent");
         let hook_result: Option<SafePath> = resolve_project_memory_root(&env2, &fs).ok();
-        assert!(hook_result.is_none(), "hook pattern returns None on missing root");
+        assert!(
+            hook_result.is_none(),
+            "hook pattern returns None on missing root"
+        );
     }
 }

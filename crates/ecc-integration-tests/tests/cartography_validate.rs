@@ -260,7 +260,7 @@ fn coverage_completes_within_timeout() {
     // Add 500 source files
     for i in 0..500 {
         fs = fs.with_file(
-            &format!("/project/src/file_{i:03}.rs"),
+            format!("/project/src/file_{i:03}.rs"),
             &format!("// file {i}"),
         );
     }

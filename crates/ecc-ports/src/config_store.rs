@@ -38,6 +38,23 @@ pub enum ConfigError {
     Parse(String),
 }
 
+/// Port trait for reading and writing ECC configuration.
+///
+/// Production adapter: `FileConfigStore` in ecc-infra.
+/// Test double: `InMemoryConfigStore` in ecc-test-support.
+pub trait ConfigStore: Send + Sync {
+    /// Load the global configuration from `~/.ecc/config.toml`.
+    fn load_global(&self) -> Result<RawEccConfig, ConfigError>;
+
+    /// Load the project-local configuration from `.ecc/config.toml`.
+    ///
+    /// Returns `Ok(None)` when no local config file exists.
+    fn load_local(&self) -> Result<Option<RawEccConfig>, ConfigError>;
+
+    /// Persist the global configuration to `~/.ecc/config.toml`.
+    fn save_global(&self, config: &RawEccConfig) -> Result<(), ConfigError>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -56,21 +73,4 @@ mod tests {
         };
         assert_eq!(config.enabled, Some(true));
     }
-}
-
-/// Port trait for reading and writing ECC configuration.
-///
-/// Production adapter: `FileConfigStore` in ecc-infra.
-/// Test double: `InMemoryConfigStore` in ecc-test-support.
-pub trait ConfigStore: Send + Sync {
-    /// Load the global configuration from `~/.ecc/config.toml`.
-    fn load_global(&self) -> Result<RawEccConfig, ConfigError>;
-
-    /// Load the project-local configuration from `.ecc/config.toml`.
-    ///
-    /// Returns `Ok(None)` when no local config file exists.
-    fn load_local(&self) -> Result<Option<RawEccConfig>, ConfigError>;
-
-    /// Persist the global configuration to `~/.ecc/config.toml`.
-    fn save_global(&self, config: &RawEccConfig) -> Result<(), ConfigError>;
 }
