@@ -633,6 +633,57 @@ mod tests {
         );
     }
 
+    /// PC-015: mixed session (crate path + spec path) → delta written containing ONLY the crate
+    /// path; spec.md is filtered out by is_noise_path (AC-001.6).
+    #[test]
+    fn mixed_session_retains_signal_only() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "crates/ecc-domain/src/foo.rs\ndocs/specs/2026-04-19-slug/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "mixed-session-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+
+        // Delta MUST be written — there is a real (non-noise) changed file
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-mixed-session-001.json",
+        );
+        assert!(
+            fs.exists(delta_path),
+            "delta must be written when at least one non-noise path exists"
+        );
+
+        let content = fs.read_to_string(delta_path).expect("should read delta");
+        let delta: SessionDelta = serde_json::from_str(&content).expect("should parse delta JSON");
+
+        // Only the crate path survives — spec.md is noise and must be absent
+        assert_eq!(
+            delta.changed_files.len(),
+            1,
+            "only 1 signal file expected; got: {:?}",
+            delta.changed_files.iter().map(|f| &f.path).collect::<Vec<_>>()
+        );
+        assert_eq!(
+            delta.changed_files[0].path,
+            "crates/ecc-domain/src/foo.rs",
+            "the surviving path must be the crate source, not the spec"
+        );
+    }
+
     /// Only `.claude/` paths in git diff → passthrough, no delta written (self-referential filter).
     #[test]
     fn filters_out_dot_claude_paths() {
