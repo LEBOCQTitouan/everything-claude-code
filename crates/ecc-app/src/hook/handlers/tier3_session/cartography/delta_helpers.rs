@@ -1,6 +1,6 @@
 //! Helper functions for cartography hooks — corrupt-delta cleanup utility.
 //!
-//! The legacy `process_cartography` pipeline (agent invocation, delta collection)
+//! The legacy pipeline (agent invocation, delta collection)
 //! has moved to the doc-orchestrator pipeline
 //! (see `skills/cartography-processing/SKILL.md`).
 //! Only the `clean_corrupt_deltas` helper is retained here for use by `delta_writer`.
