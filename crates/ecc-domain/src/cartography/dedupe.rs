@@ -43,6 +43,17 @@ mod tests {
     }
 
     #[test]
+    fn hash_format_sha256_hex() {
+        let delta = make_delta("sess-1", vec![("foo.rs", "crate")]);
+        let h = canonical_hash(&delta);
+        assert_eq!(h.len(), 64, "SHA-256 hex digest must be 64 chars");
+        assert!(
+            h.chars().all(|c| c.is_ascii_hexdigit() && !c.is_uppercase()),
+            "hash must be lowercase hex, got: {h}"
+        );
+    }
+
+    #[test]
     fn hash_is_canonical_and_deterministic() {
         let a = make_delta(
             "sess-1",
