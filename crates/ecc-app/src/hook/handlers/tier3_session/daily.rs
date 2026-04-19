@@ -192,4 +192,49 @@ mod tests {
         assert_eq!(result.exit_code, 0);
         assert!(result.stderr.is_empty());
     }
+
+    /// PC-025: when all changed files are noise paths, `daily_summary` returns passthrough
+    /// without appending a daily entry (noise-only session skip).
+    #[test]
+    fn skips_append_on_noise_only_session() {
+        use ecc_ports::shell::CommandOutput;
+
+        let fs = InMemoryFileSystem::new();
+        // git diff returns only noise paths
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\ndocs/specs/2026-04-18-foo/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/home/user/myproject")
+            .with_home("/home/user");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = daily_summary("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No daily file should have been written — session was noise-only
+        let dir = std::path::Path::new(
+            "/home/user/.claude/projects/home-user-myproject/memory/daily",
+        );
+        let no_file_written = if fs.exists(dir) {
+            fs.read_dir(dir)
+                .map(|entries| entries.is_empty())
+                .unwrap_or(true)
+        } else {
+            true
+        };
+        assert!(
+            no_file_written,
+            "daily file must NOT be written when all changed files are noise paths"
+        );
+    }
 }
