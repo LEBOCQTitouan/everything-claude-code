@@ -232,6 +232,47 @@ mod tests {
         assert!(result.stderr.is_empty());
     }
 
+    /// PC-026: when changed files include at least one signal path (e.g. a crate source file),
+    /// `daily_summary` DOES append an entry to the daily file.
+    #[test]
+    fn appends_when_signal_present() {
+        use ecc_ports::shell::CommandOutput;
+
+        let fs = InMemoryFileSystem::new();
+        // git diff returns a mixed result: one noise path + one crate signal path
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "docs/specs/2026-04-18-foo/spec.md\ncrates/ecc-domain/src/lib.rs\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/home/user/myproject")
+            .with_home("/home/user");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = daily_summary("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+
+        // Daily file MUST be written because at least one signal path was present
+        let dir =
+            std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
+        assert!(fs.exists(dir), "daily dir should exist");
+        let entries = fs.read_dir(dir).expect("daily dir should be readable");
+        assert_eq!(entries.len(), 1, "exactly one daily file should be written");
+
+        let content = fs.read_to_string(&entries[0]).expect("should read file");
+        assert!(
+            content.contains("**session-end** Session complete"),
+            "daily file must contain session-end entry"
+        );
+    }
+
     /// PC-025: when all changed files are noise paths, `daily_summary` returns passthrough
     /// without appending a daily entry (noise-only session skip).
     #[test]
