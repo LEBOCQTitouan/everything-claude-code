@@ -49,6 +49,30 @@ pub fn stats(store: &dyn MemoryStore) -> Result<ecc_domain::memory::MemoryStats,
     store.stats().map_err(MemoryAppError::Store)
 }
 
+/// Delete all [`MemoryStore`] entries whose `source_path` equals `backlog_id`.
+///
+/// Returns the number of entries deleted.
+pub fn prune_by_backlog(
+    store: &dyn MemoryStore,
+    backlog_id: &str,
+) -> Result<u32, MemoryAppError> {
+    let all = store
+        .list_filtered(None, None, None)
+        .map_err(MemoryAppError::Store)?;
+
+    let to_delete: Vec<_> = all
+        .into_iter()
+        .filter(|e| e.source_path.as_deref() == Some(backlog_id))
+        .collect();
+
+    let mut count = 0u32;
+    for entry in to_delete {
+        store.delete(entry.id).map_err(MemoryAppError::Store)?;
+        count += 1;
+    }
+    Ok(count)
+}
+
 /// Promote an entry from episodic to semantic, boosting relevance 2x.
 ///
 /// Returns `AlreadySemantic` error if already at semantic tier.
