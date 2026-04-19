@@ -296,6 +296,43 @@ mod tests {
         assert!(matches!(result, Err(MemoryAppError::NotFound(_))));
     }
 
+    // PC-048: prune_by_backlog on mixed corpus returns count for target BL-ID only
+    #[test]
+    fn prune_by_backlog_mixed_corpus() {
+        let store = InMemoryMemoryStore::new();
+        // Seed 3 entries tagged BL-050 + 2 entries tagged BL-051
+        for i in 0..3 {
+            store
+                .insert(&create_entry_with_source(
+                    "BL-050",
+                    &format!("content-50-{i}"),
+                ))
+                .unwrap();
+        }
+        for i in 0..2 {
+            store
+                .insert(&create_entry_with_source(
+                    "BL-051",
+                    &format!("content-51-{i}"),
+                ))
+                .unwrap();
+        }
+
+        let count = prune_by_backlog(&store, "BL-050").unwrap();
+        assert_eq!(count, 3);
+
+        // Only BL-051 entries remain
+        let remaining = store.list_filtered(None, None, None).unwrap();
+        assert_eq!(remaining.len(), 2);
+        for entry in &remaining {
+            assert_eq!(
+                entry.source_path.as_deref(),
+                Some("BL-051"),
+                "remaining entry must be tagged BL-051"
+            );
+        }
+    }
+
     // PC-045: prune_by_backlog reuses existing MemoryStore trait methods only
     #[test]
     fn prune_by_backlog_no_new_port() {
