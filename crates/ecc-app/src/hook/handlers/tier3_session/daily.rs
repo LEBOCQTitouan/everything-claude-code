@@ -299,6 +299,49 @@ mod tests {
         );
     }
 
+    /// PC-117: when ECC_DAILY_SUMMARY_NOISE_FILTER=0 and all changed files are noise paths,
+    /// `daily_summary` DOES append an entry (soft-rollback knob disables the filter).
+    #[test]
+    fn noise_filter_env_disabled_appends() {
+        use ecc_ports::shell::CommandOutput;
+
+        let fs = InMemoryFileSystem::new();
+        // git diff returns only noise paths — would normally be skipped by the filter
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\ndocs/specs/2026-04-18-foo/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        // Disable the filter via env knob
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/home/user/myproject")
+            .with_home("/home/user")
+            .with_var("ECC_DAILY_SUMMARY_NOISE_FILTER", "0");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = daily_summary("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+
+        // Daily file MUST be written because the filter was disabled
+        let dir =
+            std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
+        assert!(fs.exists(dir), "daily dir should exist when filter is disabled");
+        let entries = fs.read_dir(dir).expect("daily dir should be readable");
+        assert_eq!(entries.len(), 1, "exactly one daily file should be written");
+
+        let content = fs.read_to_string(&entries[0]).expect("should read file");
+        assert!(
+            content.contains("**session-end** Session complete"),
+            "daily file must contain session-end entry when filter is disabled"
+        );
+    }
+
     /// PC-025: when all changed files are noise paths, `daily_summary` returns passthrough
     /// without appending a daily entry (noise-only session skip).
     #[test]
