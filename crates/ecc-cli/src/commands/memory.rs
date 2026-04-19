@@ -515,6 +515,99 @@ mod tests {
         }
     }
 
+    // PC-040: `ecc memory prune --orphaned-backlogs --apply` trashes orphaned files
+    #[test]
+    fn prune_orphaned_apply_trashes() {
+        use ecc_app::memory::file_prune::prune_orphaned_file_memories;
+        use ecc_domain::backlog::entry::{BacklogEntry, BacklogStatus};
+        use ecc_ports::fs::FileSystem as _;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/apply-root");
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root)
+            .with_file(root.join("project_bl010_some_feature.md"), "bl010 memory")
+            .with_file(root.join("project_bl020_another.md"), "bl020 memory")
+            .with_file(root.join("project_bl030_open_entry.md"), "bl030 memory")
+            .with_file(root.join("MEMORY.md"), "# Memory\n");
+
+        let backlog_entries = vec![
+            BacklogEntry {
+                id: "BL-010".to_string(),
+                title: "Some Feature".to_string(),
+                status: BacklogStatus::Implemented, // orphaned
+                created: "2026-01-01".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-020".to_string(),
+                title: "Another".to_string(),
+                status: BacklogStatus::Archived, // orphaned
+                created: "2026-01-02".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-030".to_string(),
+                title: "Open Entry".to_string(),
+                status: BacklogStatus::Open, // NOT orphaned
+                created: "2026-01-03".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+        ];
+
+        let report = prune_orphaned_file_memories(
+            &fs,
+            &root,
+            &backlog_entries,
+            "2026-04-18",
+            true, // --apply
+        );
+
+        // Two files were trashed
+        assert_eq!(report.trashed_files.len(), 2, "apply should trash 2 orphaned files");
+        assert_eq!(report.would_trash.len(), 0, "apply run must not populate would_trash");
+        assert!(report.errors.is_empty(), "no errors expected");
+
+        // Orphaned files must no longer exist at their original paths
+        assert!(
+            !fs.exists(&root.join("project_bl010_some_feature.md")),
+            "bl010 file must be moved from root"
+        );
+        assert!(
+            !fs.exists(&root.join("project_bl020_another.md")),
+            "bl020 file must be moved from root"
+        );
+
+        // Trashed files must exist under .trash/<today>/
+        assert!(
+            fs.exists(&root.join(".trash/2026-04-18/project_bl010_some_feature.md")),
+            "bl010 file must land in .trash/2026-04-18/"
+        );
+        assert!(
+            fs.exists(&root.join(".trash/2026-04-18/project_bl020_another.md")),
+            "bl020 file must land in .trash/2026-04-18/"
+        );
+
+        // Non-orphaned file must survive
+        assert!(
+            fs.exists(&root.join("project_bl030_open_entry.md")),
+            "bl030 open file must not be trashed"
+        );
+    }
+
     // PC-039: CLI `ecc memory prune --orphaned-backlogs` defaults to dry-run
     #[test]
     fn prune_orphaned_dry_run_default() {
