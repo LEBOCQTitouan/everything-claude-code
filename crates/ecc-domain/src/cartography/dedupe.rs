@@ -67,7 +67,7 @@ mod tests {
             project_type: ProjectType::Rust,
         };
         let actual = canonical_hash(&delta);
-        let expected = "TBD";
+        let expected = "ed97c4b74f0ca17abb8bbfe469ade4f9b7b1d8b5101f23cc89d921d1e42cd2bf";
         assert_eq!(
             actual,
             expected,
