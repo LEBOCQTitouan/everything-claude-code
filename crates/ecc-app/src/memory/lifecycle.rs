@@ -154,6 +154,14 @@ mod tests {
         )
     }
 
+    // PC-047: prune_by_backlog on an empty store returns Ok(0)
+    #[test]
+    fn prune_by_backlog_empty_store() {
+        let store = InMemoryMemoryStore::new();
+        let count = prune_by_backlog(&store, "BL-001").unwrap();
+        assert_eq!(count, 0);
+    }
+
     // PC-044: prune_by_backlog deletes all entries tagged with BL-ID and returns count
     #[test]
     fn prune_by_backlog_returns_count() {
