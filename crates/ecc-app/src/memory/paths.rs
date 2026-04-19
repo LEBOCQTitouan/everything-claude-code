@@ -55,7 +55,14 @@ pub fn resolve_project_memory_root(
         })?;
 
     let raw = env.var("ECC_PROJECT_MEMORY_ROOT").unwrap_or_else(|| {
-        format!("{home}/.claude/projects/default/memory")
+        // Derive the project hash using the same algorithm as
+        // `ecc-workflow/memory_write::resolve_project_memory_dir`:
+        // strip the leading '/' from the absolute path, then replace '/' with '-'.
+        let project_dir = env
+            .var("CLAUDE_PROJECT_DIR")
+            .unwrap_or_else(|| ".".to_string());
+        let project_hash = project_dir.trim_start_matches('/').replace('/', "-");
+        format!("{home}/.claude/projects/{project_hash}/memory")
     });
     let raw_path = PathBuf::from(&raw);
     let canonical = fs
