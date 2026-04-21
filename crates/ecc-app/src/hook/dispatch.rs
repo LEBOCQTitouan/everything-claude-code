@@ -198,6 +198,9 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
         "post:edit:newspaper-check" => handlers::post_edit_newspaper_check(stdin, ports),
         "pre:edit:stepdown-warning" => handlers::pre_edit_stepdown_warning(stdin, ports),
 
+        // PostToolUse heartbeat — refresh .ecc-session on every tool use (AC-002.2).
+        "post:tool-use:heartbeat" => handlers::post_tool_use_heartbeat(stdin, ports),
+
         // New event handlers
         "post:failure:error-context" => handlers::post_failure_error_context(stdin, ports),
         "pre:prompt:context-hydrate" => handlers::pre_prompt_context_hydrate(stdin, ports),

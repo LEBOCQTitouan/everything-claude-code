@@ -5,6 +5,7 @@
 pub mod tier0_pretool;
 mod tier1_simple;
 mod tier2_notify;
+mod tier2_post_tool_use;
 mod tier2_tools;
 mod tier3_session;
 
@@ -19,6 +20,7 @@ pub use tier1_simple::{
     stop_uncommitted_reminder, subagent_start_effort, suggest_compact,
 };
 pub use tier2_notify::stop_notify;
+pub use tier2_post_tool_use::post_tool_use_heartbeat;
 pub use tier2_tools::{
     post_edit_format, post_edit_typecheck, pre_bash_dev_server_block, quality_gate,
 };

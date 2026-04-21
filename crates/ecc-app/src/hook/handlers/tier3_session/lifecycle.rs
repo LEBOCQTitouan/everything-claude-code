@@ -3,6 +3,7 @@
 use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
+use crate::worktree::heartbeat;
 use ecc_domain::time::{datetime_from_epoch, format_date, format_time};
 use std::path::Path;
 
@@ -12,9 +13,46 @@ use super::helpers::{
     find_files_by_suffix, find_last_updated_line,
 };
 
+/// Write a heartbeat for the current worktree, fire-and-forget.
+///
+/// Reads `CLAUDE_PROJECT_DIR` from the environment as the worktree path.
+/// Reads `ECC_WORKTREE_LIVENESS_DISABLED` for the kill-switch.
+/// Any error is logged at WARN level and does NOT block the hook.
+fn fire_heartbeat(ports: &HookPorts<'_>) {
+    let disabled = ports.env.var("ECC_WORKTREE_LIVENESS_DISABLED").as_deref() == Some("1");
+
+    let Some(project_dir) = ports.env.var("CLAUDE_PROJECT_DIR") else {
+        return;
+    };
+    let worktree_path = Path::new(&project_dir);
+
+    // Use parent PID as the Claude Code PID (the process that spawned the hook).
+    // In production, `std::os::unix::process::parent_id()` gives the Claude Code PID.
+    // We use a fixed sentinel (0 is reserved, so use u32::MAX as "unknown") only
+    // when we genuinely cannot determine it — the liveness check validates PID ≥ 2.
+    #[cfg(unix)]
+    let pid = std::os::unix::process::parent_id();
+    #[cfg(not(unix))]
+    let pid = std::process::id(); // fallback for non-unix
+
+    let clock = ports.clock;
+    if let Err(e) = heartbeat::write_heartbeat(
+        ports.fs,
+        worktree_path,
+        pid,
+        || clock.now_epoch_secs(),
+        disabled,
+    ) {
+        tracing::warn!(error = ?e, "heartbeat write failed (non-blocking)");
+    }
+}
+
 /// session-start: load previous context, detect project type.
 pub fn session_start(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "session_start", "executing handler");
+
+    // Write heartbeat on session start (AC-002.1). Fire-and-forget.
+    fire_heartbeat(ports);
 
     // Best-effort gc: clean stale worktrees from previous sessions.
     // Errors are swallowed — gc must never block session start.
@@ -144,6 +182,9 @@ fn best_effort_gc(ports: &HookPorts<'_>) {
 /// session-end: persist session summary from transcript.
 pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "session_end", "executing handler");
+
+    // Write final heartbeat on session end (AC-002.3). Fire-and-forget.
+    fire_heartbeat(ports);
     let home = match ports.env.home_dir() {
         Some(h) => h,
         None => return HookResult::passthrough(stdin),
