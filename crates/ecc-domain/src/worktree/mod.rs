@@ -97,6 +97,18 @@ impl WorktreeName {
     pub fn as_str(&self) -> &str {
         &self.name
     }
+
+    /// Platform-normalized equality: case-insensitive on macOS (HFS+/APFS), case-sensitive elsewhere.
+    pub fn eq_platform(&self, other: &Self) -> bool {
+        #[cfg(target_os = "macos")]
+        {
+            self.name.to_lowercase() == other.name.to_lowercase()
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            self.name == other.name
+        }
+    }
 }
 
 /// Build a slug from a description: lowercase, `[a-z0-9-]` only, max 40 chars.
@@ -410,5 +422,40 @@ mod tests {
         assert_eq!(unprefixed.timestamp, prefixed.timestamp);
         assert_eq!(unprefixed.slug, prefixed.slug);
         assert_eq!(unprefixed.pid, prefixed.pid);
+    }
+
+    #[test]
+    fn eq_platform_case_normalized() {
+        // Two names that differ only in case.
+        let lower = WorktreeName {
+            name: "ecc-session-20260404-150000-my-feature-12345".to_owned(),
+        };
+        let upper = WorktreeName {
+            name: "ECC-SESSION-20260404-150000-MY-FEATURE-12345".to_owned(),
+        };
+
+        #[cfg(target_os = "macos")]
+        {
+            assert!(
+                lower.eq_platform(&upper),
+                "eq_platform must be case-insensitive on macOS"
+            );
+            assert!(
+                upper.eq_platform(&lower),
+                "eq_platform must be symmetric on macOS"
+            );
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            assert!(
+                !lower.eq_platform(&upper),
+                "eq_platform must be case-sensitive on non-macOS"
+            );
+            // Identical strings must still be equal.
+            assert!(
+                lower.eq_platform(&lower.clone()),
+                "eq_platform must return true for identical strings"
+            );
+        }
     }
 }
