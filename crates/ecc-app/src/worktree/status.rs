@@ -26,6 +26,9 @@ pub struct WorktreeStatusEntry {
     pub is_pushed: bool,
     /// Overall merge/staleness status.
     pub status: WorktreeStatus,
+    /// Liveness verdict for `--json` output (AC-005.5). `None` when liveness check
+    /// is not applicable (legacy path).
+    pub liveness_reason: Option<super::LivenessVerdict>,
 }
 
 /// Merge/staleness classification for a worktree.
@@ -98,6 +101,7 @@ pub fn status(
             has_stash,
             is_pushed,
             status: wt_status,
+            liveness_reason: None,
         });
     }
 
@@ -147,9 +151,10 @@ fn format_age(secs: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::worktree::LivenessVerdict;
     use ecc_ports::shell::CommandOutput;
     use ecc_ports::worktree::WorktreeInfo;
-    use ecc_test_support::{MockExecutor, MockWorktreeManager, TEST_CLOCK};
+    use ecc_test_support::{InMemoryFileSystem, MockExecutor, MockWorktreeManager, TEST_CLOCK};
     use std::path::Path;
 
     fn ok(stdout: &str) -> CommandOutput {
@@ -225,6 +230,7 @@ mod tests {
             has_stash: false,
             is_pushed: true,
             status: WorktreeStatus::Merged,
+            liveness_reason: None,
         };
         let table = format_status_table(&[entry]);
         let lines: Vec<&str> = table.lines().collect();
@@ -244,6 +250,108 @@ mod tests {
         assert_eq!(
             table, "Name\tBranch\tAge\tAhead\tClean\tStash\tPushed\tStatus",
             "header must match exactly"
+        );
+    }
+
+    // ── PC-044..047: LivenessChecker integration tests ───────────────────────
+
+    const NOW: u64 = 1_735_689_600; // matches TEST_CLOCK epoch
+    const HB_PID: u32 = 12345;
+
+    fn heartbeat_json(ts: u64) -> String {
+        format!(r#"{{"schema_version":1,"claude_code_pid":{HB_PID},"last_seen_unix_ts":{ts}}}"#)
+    }
+
+    /// PC-044: `status` shows `live` for fresh heartbeat + live PID (AC-005.2).
+    #[test]
+    fn shows_live() {
+        let fresh_ts = NOW - 60; // 60 seconds ago — well within 3600s TTL
+        let fs = InMemoryFileSystem::new().with_file(
+            &format!("/repo/{FRESH_SESSION}/.ecc-session"),
+            &heartbeat_json(fresh_ts),
+        );
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(FRESH_SESSION)]);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", &HB_PID.to_string()], ok("")) // PID alive
+            .on_args("kill", &["-0", "99999"], ok("")); // legacy kill -0 for is_worktree_stale
+
+        let entries = status(&mgr, &executor, &fs, Path::new("/repo"), &*TEST_CLOCK).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(
+            entries[0].liveness_reason,
+            Some(LivenessVerdict::Live),
+            "fresh heartbeat + live PID must yield liveness_reason=Live, got: {:?}",
+            entries[0].liveness_reason
+        );
+    }
+
+    /// PC-045: `status` shows `stale`/`dead` for stale heartbeat or dead PID (AC-005.3).
+    #[test]
+    fn shows_stale_or_dead() {
+        // Stale heartbeat (> 3600s) but PID alive → Stale verdict
+        let stale_ts = NOW - 3601;
+        let fs = InMemoryFileSystem::new().with_file(
+            &format!("/repo/{FRESH_SESSION}/.ecc-session"),
+            &heartbeat_json(stale_ts),
+        );
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(FRESH_SESSION)]);
+        let executor = MockExecutor::new()
+            .on_args("kill", &["-0", &HB_PID.to_string()], ok("")) // PID alive
+            .on_args("kill", &["-0", "99999"], ok(""));
+
+        let entries = status(&mgr, &executor, &fs, Path::new("/repo"), &*TEST_CLOCK).unwrap();
+        assert_eq!(entries.len(), 1);
+        let verdict = entries[0].liveness_reason;
+        assert!(
+            matches!(
+                verdict,
+                Some(LivenessVerdict::Stale) | Some(LivenessVerdict::Dead)
+            ),
+            "stale heartbeat must yield Stale or Dead verdict, got: {verdict:?}"
+        );
+    }
+
+    /// PC-046: `status` falls back to `kill -0` when no `.ecc-session` (AC-005.4).
+    /// When `.ecc-session` is missing, verdict is `MissingFile`.
+    #[test]
+    fn falls_back_to_kill_0() {
+        let fs = InMemoryFileSystem::new(); // no .ecc-session
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(FRESH_SESSION)]);
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
+
+        let entries = status(&mgr, &executor, &fs, Path::new("/repo"), &*TEST_CLOCK).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(
+            entries[0].liveness_reason,
+            Some(LivenessVerdict::MissingFile),
+            "missing .ecc-session must yield MissingFile verdict, got: {:?}",
+            entries[0].liveness_reason
+        );
+    }
+
+    /// PC-047: `status --json` emits `liveness_reason` field (AC-005.5).
+    /// Verifies that `format_status_json` serializes the `liveness_reason` field.
+    #[test]
+    fn json_emits_liveness_reason() {
+        let entry = WorktreeStatusEntry {
+            name: "ecc-session-20990101-000000-feat-123".to_owned(),
+            branch: "feat".to_owned(),
+            age_secs: 60,
+            commits_ahead: 0,
+            is_clean: true,
+            has_stash: false,
+            is_pushed: true,
+            status: WorktreeStatus::Merged,
+            liveness_reason: Some(LivenessVerdict::Live),
+        };
+        let json = format_status_json(&[entry]);
+        assert!(
+            json.contains("liveness_reason"),
+            "JSON output must contain 'liveness_reason' field, got: {json}"
+        );
+        assert!(
+            json.contains("Live"),
+            "JSON output must contain verdict 'Live', got: {json}"
         );
     }
 }

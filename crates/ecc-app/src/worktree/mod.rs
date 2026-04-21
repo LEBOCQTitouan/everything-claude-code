@@ -3,12 +3,14 @@
 //! Orchestrates [`ecc_domain::worktree`] through [`ecc_ports::shell::ShellExecutor`]
 //! and [`ecc_ports::worktree::WorktreeManager`].
 
+pub mod checker;
 pub mod gc;
 pub mod heartbeat;
 pub mod self_identity;
 pub mod shell_manager;
 pub mod status;
 
+pub use checker::{LivenessChecker, LivenessVerdict};
 pub use gc::{GcOptions, WorktreeGcResult, gc};
 pub use shell_manager::ShellWorktreeManager;
 pub use status::{WorktreeStatus, WorktreeStatusEntry, format_status_table, status};
