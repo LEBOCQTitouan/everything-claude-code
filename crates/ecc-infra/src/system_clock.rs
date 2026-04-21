@@ -6,6 +6,10 @@ use ecc_ports::clock::Clock;
 use std::time::SystemTime;
 
 /// Clock adapter that returns real system time.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::clock::Clock`
 pub struct SystemClock;
 
 impl Clock for SystemClock {

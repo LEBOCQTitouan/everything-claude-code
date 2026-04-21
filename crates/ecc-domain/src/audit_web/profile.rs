@@ -8,10 +8,15 @@ const CURRENT_PROFILE_VERSION: u32 = 1;
 
 /// Top-level profile persisted to `docs/audits/audit-web-profile.yaml`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AuditWebProfile {
+    /// The profile schema version.
     pub version: u32,
+    /// List of audit dimensions.
     pub dimensions: Vec<AuditDimension>,
+    /// Thresholds for ring placement decisions.
     pub thresholds: DimensionThreshold,
+    /// Optional list of improvement suggestions.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub improvement_history: Vec<ImprovementSuggestion>,
 }
@@ -19,6 +24,7 @@ pub struct AuditWebProfile {
 /// Thresholds that control which ring a technology is placed in during
 /// Phase 3 synthesis.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DimensionThreshold {
     /// Minimum strategic-fit score to place in Adopt ring (default: 4).
     pub adopt_min_fit: u8,
@@ -30,22 +36,33 @@ pub struct DimensionThreshold {
 
 /// A single improvement suggestion persisted to the profile.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImprovementSuggestion {
+    /// The text of the improvement suggestion.
     pub text: String,
+    /// Whether this suggestion has been accepted.
     pub accepted: bool,
+    /// ISO 8601 date when the suggestion was made.
     pub date: String,
 }
 
 /// Errors from profile parse/load operations.
 #[derive(Debug, thiserror::Error)]
 pub enum ProfileError {
+    /// The YAML is malformed and cannot be parsed.
     #[error("malformed YAML: {0}")]
     MalformedYaml(String),
+    /// The profile version is not supported by this ECC version.
     #[error(
         "unsupported profile version {version}. Current version is {current}. \
          Please upgrade your ECC installation."
     )]
-    UnsupportedVersion { version: u32, current: u32 },
+    UnsupportedVersion {
+        /// The version found in the profile.
+        version: u32,
+        /// The current supported version.
+        current: u32,
+    },
 }
 
 /// Parse a YAML string into an `AuditWebProfile`.

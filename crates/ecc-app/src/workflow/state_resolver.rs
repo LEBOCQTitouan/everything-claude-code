@@ -78,6 +78,41 @@ fn read_anchor(fs: &dyn FileSystem, project_dir: &Path) -> (Option<PathBuf>, Vec
 /// Returns `(state_dir, warnings)` where `state_dir` is the absolute path to
 /// the directory containing `state.json`, and `warnings` are any non-fatal
 /// issues encountered during resolution.
+///
+/// Flow/decision diagram — anchor-first chain with git + fallback:
+///
+/// <!-- keep in sync with: anchor_file_overrides_git_resolution -->
+/// ```text
+/// resolve_state_dir(env, git, fs)
+///        |
+///        v
+/// read project_dir from CLAUDE_PROJECT_DIR or cwd
+///        |
+///        v
+/// +------- read .state-dir anchor? -------+
+/// |  path valid + dir exists?             |
+/// +---------------------------------------+
+///        |--Y--> return anchor_dir (no git lookup)
+///        |--N-->
+///        v
+/// +------- git.git_dir(project_dir) ------+
+/// +---------------------------------------+
+///        |--Ok(git_dir)--> state = git_dir/ecc-workflow
+///        |--NotARepo  --> warn + state = project/.claude/workflow
+///        |--CmdFailed --> warn + state = project/.claude/workflow
+///        v
+/// +------- is_worktree path? -------------+
+/// +---------------------------------------+
+///        |--Y--> never fall back, return state_dir
+///        |--N-->
+///        v
+/// old exists and new doesn't? --Y--> return old_location (migrate)
+///                              --N--> return state_dir
+/// ```
+///
+/// # Pattern
+///
+/// Chain of Responsibility \[GoF\] — anchor -> git -> legacy fallback.
 pub fn resolve_state_dir(
     env: &dyn Environment,
     git: &dyn GitInfo,
@@ -147,6 +182,25 @@ pub fn resolve_state_dir(
 /// to the new location. The old file is preserved for rollback.
 ///
 /// Returns Ok(true) if migration occurred, Ok(false) if not needed.
+///
+/// Flow/decision diagram — three early exits before copy:
+///
+/// <!-- keep in sync with: migrate_copies_old_to_new -->
+/// ```text
+/// migrate_if_needed(old_dir, new_dir, fs)
+///        |
+///        v
+/// old_dir == new_dir?  --Y--> Ok(false)
+///                      --N-->
+///        v
+/// new/state.json exists? --Y--> Ok(false)
+///                        --N-->
+///        v
+/// old/state.json exists? --N--> Ok(false)
+///                        --Y-->
+///        v
+/// read old -> create new_dir -> write new -> Ok(true)
+/// ```
 pub fn migrate_if_needed(
     old_dir: &Path,
     new_dir: &Path,

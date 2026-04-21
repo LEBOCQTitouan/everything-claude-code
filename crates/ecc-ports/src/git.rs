@@ -24,6 +24,10 @@ impl fmt::Display for GitError {
 impl std::error::Error for GitError {}
 
 /// Port for querying git repository information.
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait GitInfo: Send + Sync {
     /// Return the git directory for the given working directory.
     ///

@@ -44,9 +44,10 @@ pub fn status(
     worktree_mgr: &dyn WorktreeManager,
     executor: &dyn ShellExecutor,
     project_dir: &Path,
+    clock: &dyn ecc_ports::clock::Clock,
 ) -> Result<Vec<WorktreeStatusEntry>, WorktreeGcError> {
     let entries = worktree_mgr.list_worktrees(project_dir)?;
-    let now = now_secs();
+    let now = now_secs(clock);
     let mut out = Vec::new();
 
     for entry in entries {
@@ -148,7 +149,7 @@ mod tests {
     use super::*;
     use ecc_ports::shell::CommandOutput;
     use ecc_ports::worktree::WorktreeInfo;
-    use ecc_test_support::{MockExecutor, MockWorktreeManager};
+    use ecc_test_support::{MockExecutor, MockWorktreeManager, TEST_CLOCK};
     use std::path::Path;
 
     fn ok(stdout: &str) -> CommandOutput {
@@ -180,7 +181,7 @@ mod tests {
             .with_pushed(false);
         let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
 
-        let entries = status(&mgr, &executor, Path::new("/repo")).unwrap();
+        let entries = status(&mgr, &executor, Path::new("/repo"), &*TEST_CLOCK).unwrap();
         assert_eq!(entries.len(), 1, "expected 1 status entry");
 
         let e = &entries[0];
@@ -208,7 +209,7 @@ mod tests {
         ]);
         let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
 
-        let entries = status(&mgr, &executor, Path::new("/repo")).unwrap();
+        let entries = status(&mgr, &executor, Path::new("/repo"), &*TEST_CLOCK).unwrap();
         assert_eq!(entries.len(), 1, "only session worktrees must appear");
         assert_eq!(entries[0].name, FRESH_SESSION);
     }

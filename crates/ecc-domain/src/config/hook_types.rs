@@ -9,11 +9,15 @@ use std::collections::BTreeMap;
 /// A single hook command within a hook entry.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct HookCommand {
+    /// Hook type (e.g., "command").
     #[serde(rename = "type")]
     pub hook_type: Option<String>,
+    /// The command to execute (single string or array of strings).
     pub command: Option<HookCommandValue>,
+    /// Whether the command should run asynchronously.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub r#async: Option<bool>,
+    /// Timeout in seconds for the command.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timeout: Option<serde_json::Number>,
 }
@@ -22,7 +26,9 @@ pub struct HookCommand {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum HookCommandValue {
+    /// A single command string.
     Single(String),
+    /// An array of command strings (e.g., script parts or multiple commands).
     Array(Vec<String>),
 }
 
@@ -56,15 +62,18 @@ impl HookCommandValue {
 /// A hook entry with an optional matcher and a list of hook commands.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct HookEntry {
+    /// Optional description of the hook entry.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Optional matcher (e.g., tool name to apply this hook to).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub matcher: Option<String>,
+    /// List of hook commands to execute.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hooks: Option<Vec<HookCommand>>,
 }
 
-/// Event name → list of hook entries (e.g., "PreToolUse" → [...]).
+/// Maps event names to hook entries (e.g., "PreToolUse" → [...]).
 pub type HooksMap = BTreeMap<String, Vec<HookEntry>>;
 
 #[cfg(test)]

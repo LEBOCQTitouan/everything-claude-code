@@ -1,15 +1,7 @@
 # ECC Merge Recovery
-<<<<<<< HEAD
-# Merge failed at: epoch:1776439470
-# Worktree: /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-bl-backlog-conformance-fix/crates/ecc-integration-tests
+# Merge failed at: epoch:1776511811
+# Worktree: /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-audit-fixes-2026-04-18/crates/ecc-integration-tests
 # Exit code: 2
 #
-# To retry: cd /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-bl-backlog-conformance-fix/crates/ecc-integration-tests && ecc-workflow merge
-=======
-# Merge failed at: epoch:1776454584
-# Worktree: /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-bl129-bidi-transitions/crates/ecc-integration-tests
-# Exit code: 2
-#
-# To retry: cd /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-bl129-bidi-transitions/crates/ecc-integration-tests && ecc-workflow merge
->>>>>>> d45397d8 (chore: update merge recovery marker)
+# To retry: cd /Users/titouanlebocq/code/everything-claude-code/.claude/worktrees/ecc-audit-fixes-2026-04-18/crates/ecc-integration-tests && ecc-workflow merge
 # To clean up: ecc worktree gc --force

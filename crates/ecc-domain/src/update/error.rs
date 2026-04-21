@@ -5,60 +5,118 @@ use thiserror::Error;
 /// Errors that can occur during the ECC update process.
 #[derive(Debug, Error)]
 pub enum UpdateError {
+    /// Platform or architecture combination not supported.
     #[error("Unsupported platform: {platform}/{arch}")]
     UnsupportedPlatform {
+        /// The detected platform.
         platform: Platform,
+        /// The detected architecture.
         arch: Architecture,
     },
 
+    /// The requested version was not found in the release repository.
     #[error("Version {version} not found")]
-    VersionNotFound { version: String },
+    VersionNotFound {
+        /// The version that was not found.
+        version: String,
+    },
 
+    /// The version string is invalid or unparseable.
     #[error("Invalid version: {raw}")]
-    InvalidVersion { raw: String },
+    InvalidVersion {
+        /// The raw version string.
+        raw: String,
+    },
 
+    /// Checksum verification of the downloaded binary failed.
     #[error("Checksum verification failed")]
     ChecksumMismatch,
 
+    /// Failed to swap the old binary with the new one.
     #[error("Binary swap failed: {reason}")]
-    SwapFailed { reason: String },
+    SwapFailed {
+        /// Details about why the swap failed.
+        reason: String,
+    },
 
+    /// Failed to restore the backup after an error.
     #[error("Backup restore failed: {reason}")]
-    BackupRestoreFailed { reason: String },
+    BackupRestoreFailed {
+        /// Details about why the restore failed.
+        reason: String,
+    },
 
+    /// Update completed partially, with some components failing.
     #[error("Partial update: {updated} updated, {failed} failed")]
-    PartialUpdate { updated: String, failed: String },
+    PartialUpdate {
+        /// Description of what was successfully updated.
+        updated: String,
+        /// Description of what failed.
+        failed: String,
+    },
 
+    /// Synchronizing configuration failed.
     #[error("Config sync failed: {reason}")]
-    ConfigSyncFailed { reason: String },
+    ConfigSyncFailed {
+        /// Details about why sync failed.
+        reason: String,
+    },
 
+    /// A network error occurred during the update.
     #[error("Network error: {reason}. Check your connection and retry.")]
-    NetworkError { reason: String },
+    NetworkError {
+        /// Details about the network error.
+        reason: String,
+    },
 
+    /// GitHub API rate limit was exceeded.
     #[error("GitHub API rate limited. Resets at {reset_time}. Set GITHUB_TOKEN for higher limits.")]
-    RateLimited { reset_time: String },
+    RateLimited {
+        /// ISO 8601 timestamp when the rate limit resets.
+        reset_time: String,
+    },
 
+    /// The download was interrupted before completion.
     #[error("Download interrupted. The original installation is untouched.")]
     DownloadInterrupted,
 
+    /// cosign binary is not available for signature verification.
     #[error("cosign not found. Install cosign for enhanced security verification.")]
     CosignUnavailable,
 
+    /// Permission denied when writing to a file or directory.
     #[error("Permission denied: cannot write to {path}. Reason: {reason}")]
-    PermissionDenied { path: String, reason: String },
+    PermissionDenied {
+        /// The path where write was denied.
+        path: String,
+        /// Reason for the permission denial.
+        reason: String,
+    },
 
+    /// An update is already in progress, preventing concurrent updates.
     #[error("Update already in progress: {reason}")]
-    UpdateLocked { reason: String },
+    UpdateLocked {
+        /// Details about the existing update.
+        reason: String,
+    },
 
+    /// Security verification of the update package failed.
     #[error("Security verification failed: {reason}")]
-    SecurityVerificationFailed { reason: String },
+    SecurityVerificationFailed {
+        /// Details about the verification failure.
+        reason: String,
+    },
 
+    /// Rollback failed after an update error, leaving the system in an inconsistent state.
     #[error(
         "Rollback failed after update error. Original error: {original}. Rollback error: {rollback}. Manual cleanup required for: {backup_paths:?}"
     )]
     RollbackFailed {
+        /// The original error that triggered the rollback.
         original: String,
+        /// The error encountered during rollback.
         rollback: String,
+        /// Backup paths that may need manual cleanup.
         backup_paths: Vec<PathBuf>,
     },
 }

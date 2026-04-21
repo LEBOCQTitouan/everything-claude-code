@@ -1,5 +1,22 @@
 use serde::Serialize;
 
+/// JSON envelope returned by every workflow subcommand.
+///
+/// Composition:
+///
+/// ```text
+/// +-- WorkflowOutput -----------------+
+/// |                                   |
+/// |  status : Status (Pass|Block|Warn)|
+/// |  message: String                  |
+/// |                                   |
+/// +-----------------------------------+
+///          |
+///          v
+///     Display -> JSON serialisation
+/// ```
+///
+/// Displayed as JSON, consumed by Claude Code hook protocol.
 #[derive(Debug, Clone, Serialize)]
 pub struct WorkflowOutput {
     pub status: Status,

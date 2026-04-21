@@ -317,6 +317,186 @@ pub fn format_json(report: &DiagnosticReport) -> String {
     serde_json::to_string_pretty(report).unwrap_or_default()
 }
 
+// ── Health checks ─────────────────────────────────────────────────────
+
+/// Result of a single health check.
+#[derive(Debug, Serialize)]
+pub struct HealthCheck {
+    /// Human-readable name of the check.
+    pub name: String,
+    /// Whether the check passed.
+    pub ok: bool,
+    /// Detail message (error reason on failure, "ok" on success).
+    pub detail: String,
+}
+
+/// Aggregated health report from [`gather_health`].
+#[derive(Debug, Serialize)]
+pub struct HealthReport {
+    /// Individual check results.
+    pub checks: Vec<HealthCheck>,
+    /// Whether all checks passed.
+    pub all_ok: bool,
+}
+
+/// Run health checks against the ECC installation.
+///
+/// Checks:
+/// - `.claude/` directory exists and is writable (temp file write/delete)
+/// - `state.json` is parseable (if present)
+/// - `.git` directory exists (git repo)
+/// - Data directory (`~/.ecc/`) exists
+pub fn gather_health(fs: &dyn FileSystem, env: &dyn Environment) -> HealthReport {
+    let mut checks = Vec::new();
+
+    let home = env.home_dir();
+
+    // Check 1: .claude/ writable
+    let claude_check = if let Some(ref h) = home {
+        let claude_dir = h.join(".claude");
+        if !fs.is_dir(&claude_dir) {
+            HealthCheck {
+                name: "claude_dir".into(),
+                ok: false,
+                detail: "~/.claude/ does not exist".into(),
+            }
+        } else {
+            let probe = claude_dir.join(".health-probe");
+            match fs.write(&probe, "health") {
+                Ok(()) => {
+                    let _ = fs.remove_file(&probe);
+                    HealthCheck {
+                        name: "claude_dir".into(),
+                        ok: true,
+                        detail: "writable".into(),
+                    }
+                }
+                Err(e) => HealthCheck {
+                    name: "claude_dir".into(),
+                    ok: false,
+                    detail: format!("not writable: {e}"),
+                },
+            }
+        }
+    } else {
+        HealthCheck {
+            name: "claude_dir".into(),
+            ok: false,
+            detail: "HOME not set".into(),
+        }
+    };
+    checks.push(claude_check);
+
+    // Check 2: state.json parseable (if present)
+    let state_check = if let Some(ref h) = home {
+        let state_path = h.join(".claude/workflow/state.json");
+        if !fs.is_file(&state_path) {
+            HealthCheck {
+                name: "state_file".into(),
+                ok: true,
+                detail: "no active workflow".into(),
+            }
+        } else {
+            match fs.read_to_string(&state_path) {
+                Ok(content) => match serde_json::from_str::<serde_json::Value>(&content) {
+                    Ok(_) => HealthCheck {
+                        name: "state_file".into(),
+                        ok: true,
+                        detail: "valid JSON".into(),
+                    },
+                    Err(e) => HealthCheck {
+                        name: "state_file".into(),
+                        ok: false,
+                        detail: format!("invalid JSON: {e}"),
+                    },
+                },
+                Err(e) => HealthCheck {
+                    name: "state_file".into(),
+                    ok: false,
+                    detail: format!("unreadable: {e}"),
+                },
+            }
+        }
+    } else {
+        HealthCheck {
+            name: "state_file".into(),
+            ok: false,
+            detail: "HOME not set".into(),
+        }
+    };
+    checks.push(state_check);
+
+    // Check 3: git repo
+    let git_check = if fs.is_dir(&std::path::PathBuf::from(".git"))
+        || fs.is_file(&std::path::PathBuf::from(".git"))
+    {
+        HealthCheck {
+            name: "git_repo".into(),
+            ok: true,
+            detail: "git repository detected".into(),
+        }
+    } else {
+        HealthCheck {
+            name: "git_repo".into(),
+            ok: false,
+            detail: "not a git repository".into(),
+        }
+    };
+    checks.push(git_check);
+
+    // Check 4: data directory
+    let data_check = if let Some(ref h) = home {
+        let data_dir = h.join(".ecc");
+        if fs.is_dir(&data_dir) {
+            HealthCheck {
+                name: "data_dir".into(),
+                ok: true,
+                detail: "~/.ecc/ exists".into(),
+            }
+        } else {
+            HealthCheck {
+                name: "data_dir".into(),
+                ok: true,
+                detail: "~/.ecc/ not created yet (ok for fresh install)".into(),
+            }
+        }
+    } else {
+        HealthCheck {
+            name: "data_dir".into(),
+            ok: false,
+            detail: "HOME not set".into(),
+        }
+    };
+    checks.push(data_check);
+
+    let all_ok = checks.iter().all(|c| c.ok);
+    HealthReport { checks, all_ok }
+}
+
+/// Format a [`HealthReport`] as human-readable output.
+pub fn format_health_human(report: &HealthReport) -> String {
+    let mut lines = Vec::new();
+    lines.push("Health Check".to_owned());
+    lines.push("─".repeat(40));
+    for check in &report.checks {
+        let mark = if check.ok { "✓" } else { "✗" };
+        lines.push(format!("  [{mark}] {}: {}", check.name, check.detail));
+    }
+    lines.push("─".repeat(40));
+    let summary = if report.all_ok {
+        "All checks passed"
+    } else {
+        "Some checks failed"
+    };
+    lines.push(summary.to_owned());
+    lines.join("\n")
+}
+
+/// Format a [`HealthReport`] as pretty-printed JSON.
+pub fn format_health_json(report: &HealthReport) -> String {
+    serde_json::to_string_pretty(report).unwrap_or_default()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -487,6 +667,84 @@ mod tests {
             "output must include 'Components:'"
         );
         assert!(output.contains("Config:"), "output must include 'Config:'");
+    }
+
+    #[test]
+    fn health_check_writable_dir() {
+        let fs = InMemoryFileSystem::new();
+        let env = MockEnvironment::new().with_home("/home/test");
+
+        let claude_dir = std::path::Path::new("/home/test/.claude");
+        fs.create_dir_all(claude_dir).unwrap();
+
+        let report = gather_health(&fs, &env);
+        let claude_check = report.checks.iter().find(|c| c.name == "claude_dir").unwrap();
+        assert!(claude_check.ok, "claude_dir check should pass for writable dir");
+    }
+
+    #[test]
+    fn health_check_missing_claude_dir() {
+        let fs = InMemoryFileSystem::new();
+        let env = MockEnvironment::new().with_home("/home/test");
+
+        let report = gather_health(&fs, &env);
+        let claude_check = report.checks.iter().find(|c| c.name == "claude_dir").unwrap();
+        assert!(!claude_check.ok, "claude_dir check should fail when missing");
+        assert!(!report.all_ok, "overall health should fail");
+    }
+
+    #[test]
+    fn health_check_valid_state_file() {
+        let fs = InMemoryFileSystem::new();
+        let env = MockEnvironment::new().with_home("/home/test");
+
+        let claude_dir = std::path::Path::new("/home/test/.claude");
+        fs.create_dir_all(&claude_dir.join("workflow")).unwrap();
+        let state_json = make_state_json("implement", "feat", false, false, false);
+        fs.write(&claude_dir.join("workflow/state.json"), &state_json)
+            .unwrap();
+
+        let report = gather_health(&fs, &env);
+        let state_check = report.checks.iter().find(|c| c.name == "state_file").unwrap();
+        assert!(state_check.ok, "state_file check should pass for valid JSON");
+    }
+
+    #[test]
+    fn health_check_corrupt_state_file() {
+        let fs = InMemoryFileSystem::new();
+        let env = MockEnvironment::new().with_home("/home/test");
+
+        let claude_dir = std::path::Path::new("/home/test/.claude");
+        fs.create_dir_all(&claude_dir.join("workflow")).unwrap();
+        fs.write(&claude_dir.join("workflow/state.json"), "not json{{{")
+            .unwrap();
+
+        let report = gather_health(&fs, &env);
+        let state_check = report.checks.iter().find(|c| c.name == "state_file").unwrap();
+        assert!(!state_check.ok, "state_file check should fail for corrupt JSON");
+    }
+
+    #[test]
+    fn health_report_format_human_contains_marks() {
+        let report = HealthReport {
+            checks: vec![
+                HealthCheck {
+                    name: "test_ok".into(),
+                    ok: true,
+                    detail: "passed".into(),
+                },
+                HealthCheck {
+                    name: "test_fail".into(),
+                    ok: false,
+                    detail: "broken".into(),
+                },
+            ],
+            all_ok: false,
+        };
+        let output = format_health_human(&report);
+        assert!(output.contains("[✓]"), "should contain check mark");
+        assert!(output.contains("[✗]"), "should contain cross mark");
+        assert!(output.contains("Some checks failed"), "should show failure summary");
     }
 
     #[test]

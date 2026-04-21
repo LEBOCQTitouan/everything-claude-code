@@ -92,7 +92,7 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     let session_id = ports
         .env
         .var("CLAUDE_SESSION_ID")
-        .unwrap_or_else(generate_fallback_session_id);
+        .unwrap_or_else(|| generate_fallback_session_id(ports.clock));
 
     // Classify changed files
     let changed_files: Vec<ChangedFile> = changed_lines
@@ -106,7 +106,7 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         })
         .collect();
 
-    let timestamp = super::super::epoch_secs();
+    let timestamp = super::super::epoch_secs(ports.clock);
 
     let delta = SessionDelta {
         session_id: session_id.clone(),
@@ -177,8 +177,8 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 }
 
 /// Generate a fallback session ID from timestamp + process ID.
-pub(super) fn generate_fallback_session_id() -> String {
-    let ts = super::super::epoch_secs();
+pub(super) fn generate_fallback_session_id(clock: &dyn ecc_ports::clock::Clock) -> String {
+    let ts = super::super::epoch_secs(clock);
     let pid = std::process::id();
     format!("session-{}-{}", ts, pid)
 }

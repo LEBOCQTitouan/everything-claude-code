@@ -6,14 +6,18 @@ use serde::Serialize;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DiagramTrigger {
+    /// Sequence diagram (multi-crate interactions).
     Sequence,
+    /// Flowchart diagram (enum state machines).
     Flowchart,
+    /// C4 diagram (new crate boundaries).
     C4,
 }
 
 /// Result of trigger evaluation.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct TriggerResult {
+    /// Diagrams that should be generated based on detected changes.
     pub triggers: Vec<DiagramTrigger>,
 }
 

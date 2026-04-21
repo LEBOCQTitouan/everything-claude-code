@@ -21,10 +21,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
+    /// No workflow in progress.
     Idle,
+    /// Planning/spec phase.
     Plan,
+    /// Solution/design phase.
     Solution,
+    /// Implementation phase.
     Implement,
+    /// Workflow completed.
     Done,
     /// Placeholder for unrecognized phase strings encountered during deserialization.
     /// Used by `Completion.phase` to preserve forward-compatibility.
@@ -53,7 +58,10 @@ impl fmt::Display for Phase {
 
 /// Parse error for unknown phase strings.
 #[derive(Debug, PartialEq, Eq)]
-pub struct UnknownPhase(pub String);
+pub struct UnknownPhase(
+    /// The unrecognized phase string.
+    pub String,
+);
 
 impl fmt::Display for UnknownPhase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

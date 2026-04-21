@@ -6,24 +6,33 @@ use serde::Serialize;
 /// A parsed File Changes entry from the design's File Changes table.
 #[derive(Clone, Debug)]
 pub struct FileChange {
+    /// Row number in the file changes table.
     pub number: u16,
+    /// File path being changed.
     pub file: String,
+    /// Type of change (Create, Modify, Delete, etc.).
     pub action: String,
+    /// AC ID(s) this change is specified by (space/comma-separated).
     pub spec_ref: String,
 }
 
 /// An ordering violation: `pc` must come after `depends_on` (they share a file).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OrderingViolation {
+    /// The PC that is out of order.
     pub pc: PcId,
+    /// The PC that must come before `pc`.
     pub depends_on: PcId,
+    /// Human-readable explanation of the violation.
     pub reason: String,
 }
 
 /// Result of an ordering check — may include warnings.
 #[derive(Debug)]
 pub struct OrderingResult {
+    /// Detected ordering violations (empty = valid order).
     pub violations: Vec<OrderingViolation>,
+    /// Non-fatal warnings (e.g., no file changes table found).
     pub warnings: Vec<String>,
 }
 

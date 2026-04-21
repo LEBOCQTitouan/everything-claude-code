@@ -3,6 +3,10 @@ use std::path::Path;
 use std::process::Command;
 
 /// Production shell executor backed by `std::process::Command`.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::shell::ShellExecutor`
 pub struct ProcessExecutor;
 
 impl ShellExecutor for ProcessExecutor {

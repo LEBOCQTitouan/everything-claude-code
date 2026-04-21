@@ -6,16 +6,22 @@ use std::sync::LazyLock;
 
 /// A single audit dimension — standard or custom — used in Phase 2 scanning.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AuditDimension {
+    /// Name of the dimension (e.g., "Security").
     pub name: String,
+    /// Query template with optional `{project}` placeholder.
     pub query_template: String,
+    /// Whether this dimension is active.
     pub enabled: bool,
+    /// True if this is a user-defined custom dimension.
     pub is_custom: bool,
 }
 
 /// Errors from dimension validation.
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum DimensionError {
+    /// Query template contains shell metacharacters or other unsafe characters.
     #[error(
         "query template contains disallowed characters. \
          Only alphanumeric, spaces, hyphens, underscores, dots, \

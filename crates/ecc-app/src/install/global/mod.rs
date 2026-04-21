@@ -16,6 +16,41 @@ use std::path::Path;
 /// Run a full global install of ECC configuration to `claude_dir`.
 ///
 /// 9-step flow: clean → detect → manifest → merge → hooks → deny → statusline → manifest → summary
+///
+/// Flow/decision diagram — sequential pipeline with error accumulation:
+///
+/// <!-- keep in sync with: install_first_time -->
+/// ```text
+/// install_global(ctx, ecc_root, claude_dir, version, now, opts)
+///        |
+///        v
+/// +---- step_clean (clean_all | clean | noop) ----+
+///        |
+///        v
+/// step_detect(ctx, claude_dir)
+///        |
+///        v
+/// existing_manifest = read_manifest(fs, claude_dir)
+///        |
+///        v
+/// combined = step_merge_artifacts(ctx, ecc_root, claude_dir)
+///        |
+///        v
+/// step_hooks_and_settings(...) --Err(e)--> combined.errors.push(e)
+///        |--Ok-->
+///        v
+/// step_write_manifest(..., existing_manifest, combined)
+///        |
+///        v
+/// summary = InstallSummary { success = errors.is_empty() }
+///        |
+///        v
+/// print_summary(terminal, summary) -> return summary
+/// ```
+///
+/// # Pattern
+///
+/// Pipeline \[Rust Idiom\] — 9 sequential steps, errors accumulated, never short-circuit.
 #[allow(clippy::too_many_arguments)]
 pub fn install_global(
     ctx: &InstallContext,

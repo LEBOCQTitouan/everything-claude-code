@@ -1,16 +1,25 @@
 /// Configuration for a package manager.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackageManagerConfig {
+    /// Name of the package manager (e.g., `npm`, `pnpm`).
     pub name: &'static str,
+    /// Lock file name for this package manager.
     pub lock_file: &'static str,
+    /// Command to install dependencies.
     pub install_cmd: &'static str,
+    /// Command prefix to run scripts.
     pub run_cmd: &'static str,
+    /// Command to execute a package binary.
     pub exec_cmd: &'static str,
+    /// Command to run tests.
     pub test_cmd: &'static str,
+    /// Command to build the project.
     pub build_cmd: &'static str,
+    /// Command to run the development server.
     pub dev_cmd: &'static str,
 }
 
+/// Configuration for npm package manager.
 pub const NPM: PackageManagerConfig = PackageManagerConfig {
     name: "npm",
     lock_file: "package-lock.json",
@@ -22,6 +31,7 @@ pub const NPM: PackageManagerConfig = PackageManagerConfig {
     dev_cmd: "npm run dev",
 };
 
+/// Configuration for pnpm package manager.
 pub const PNPM: PackageManagerConfig = PackageManagerConfig {
     name: "pnpm",
     lock_file: "pnpm-lock.yaml",
@@ -33,6 +43,7 @@ pub const PNPM: PackageManagerConfig = PackageManagerConfig {
     dev_cmd: "pnpm dev",
 };
 
+/// Configuration for yarn package manager.
 pub const YARN: PackageManagerConfig = PackageManagerConfig {
     name: "yarn",
     lock_file: "yarn.lock",
@@ -44,6 +55,7 @@ pub const YARN: PackageManagerConfig = PackageManagerConfig {
     dev_cmd: "yarn dev",
 };
 
+/// Configuration for bun package manager.
 pub const BUN: PackageManagerConfig = PackageManagerConfig {
     name: "bun",
     lock_file: "bun.lockb",
@@ -58,16 +70,19 @@ pub const BUN: PackageManagerConfig = PackageManagerConfig {
 /// All supported package managers.
 pub const ALL_CONFIGS: &[&PackageManagerConfig] = &[&NPM, &PNPM, &YARN, &BUN];
 
-/// Priority order for lock file detection.
+/// Priority order for lock file detection (pnpm and bun checked first).
 pub const DETECTION_PRIORITY: &[&PackageManagerConfig] = &[&PNPM, &BUN, &YARN, &NPM];
 
 /// Error type for package manager operations.
 #[derive(Debug, thiserror::Error)]
 pub enum PackageManagerError {
+    /// The script name is empty.
     #[error("Script name must be a non-empty string")]
     EmptyScriptName,
+    /// The script name contains unsafe characters.
     #[error("Script name contains unsafe characters: {0}")]
     UnsafeScriptName(String),
+    /// The arguments contain unsafe characters.
     #[error("Arguments contain unsafe characters: {0}")]
     UnsafeArgs(String),
 }
@@ -79,6 +94,14 @@ const SAFE_NAME_PATTERN: &str = r"^[@a-zA-Z0-9_./-]+$";
 const SAFE_ARGS_PATTERN: &str = r#"^[@a-zA-Z0-9\s_./:=,'"*+\-]+$"#;
 
 /// Look up a config by name.
+///
+/// # Arguments
+///
+/// * `name` — The package manager name (e.g., `npm`, `pnpm`).
+///
+/// # Returns
+///
+/// A reference to the config, or `None` if the name is not recognized.
 pub fn find_config(name: &str) -> Option<&'static PackageManagerConfig> {
     ALL_CONFIGS.iter().find(|c| c.name == name).copied()
 }
@@ -86,15 +109,26 @@ pub fn find_config(name: &str) -> Option<&'static PackageManagerConfig> {
 /// Detection source for a package manager result.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DetectionSource {
+    /// Detected from an environment variable.
     Environment,
+    /// Detected from a project configuration file.
     ProjectConfig,
+    /// Detected from package.json `packageManager` field.
     PackageJson,
+    /// Detected from lock file presence.
     LockFile,
+    /// Detected from global configuration.
     GlobalConfig,
+    /// Using the default package manager.
     Default,
 }
 
 impl DetectionSource {
+    /// Return the string representation of the detection source.
+    ///
+    /// # Returns
+    ///
+    /// A static string describing how the package manager was detected.
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Environment => "environment",
@@ -110,8 +144,11 @@ impl DetectionSource {
 /// Result of detecting the package manager.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackageManagerResult {
+    /// The name of the detected package manager.
     pub name: String,
+    /// The configuration for this package manager.
     pub config: &'static PackageManagerConfig,
+    /// How the package manager was detected.
     pub source: DetectionSource,
 }
 
@@ -126,6 +163,14 @@ static SAFE_ARGS_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
 });
 
 /// Validate a script name contains only safe characters.
+///
+/// # Arguments
+///
+/// * `name` — The script name to validate.
+///
+/// # Returns
+///
+/// `Ok(())` if valid, or `Err` with details about the validation failure.
 pub fn validate_script_name(name: &str) -> Result<(), PackageManagerError> {
     if name.is_empty() {
         return Err(PackageManagerError::EmptyScriptName);
@@ -137,6 +182,14 @@ pub fn validate_script_name(name: &str) -> Result<(), PackageManagerError> {
 }
 
 /// Validate command arguments contain only safe characters.
+///
+/// # Arguments
+///
+/// * `args` — The command arguments to validate.
+///
+/// # Returns
+///
+/// `Ok(())` if valid, or `Err` with details about the validation failure.
 pub fn validate_args(args: &str) -> Result<(), PackageManagerError> {
     if args.is_empty() {
         return Ok(());
@@ -148,6 +201,15 @@ pub fn validate_args(args: &str) -> Result<(), PackageManagerError> {
 }
 
 /// Get the command to run a script with the given package manager config.
+///
+/// # Arguments
+///
+/// * `config` — The package manager configuration.
+/// * `script` — The script name (e.g., `test`, `lint`).
+///
+/// # Returns
+///
+/// The full command to run, or an error if the script name is invalid.
 pub fn get_run_command(
     config: &PackageManagerConfig,
     script: &str,
@@ -164,6 +226,16 @@ pub fn get_run_command(
 }
 
 /// Get the command to execute a package binary.
+///
+/// # Arguments
+///
+/// * `config` — The package manager configuration.
+/// * `binary` — The binary name to execute (e.g., `jest`).
+/// * `args` — Optional arguments to pass to the binary.
+///
+/// # Returns
+///
+/// The full command to run, or an error if the binary or args are invalid.
 pub fn get_exec_command(
     config: &PackageManagerConfig,
     binary: &str,
@@ -182,6 +254,14 @@ pub fn get_exec_command(
 }
 
 /// Escape regex special characters in a string.
+///
+/// # Arguments
+///
+/// * `s` — The string to escape.
+///
+/// # Returns
+///
+/// The escaped string safe for use in a regex pattern.
 fn escape_regex(s: &str) -> String {
     let special = r".*+?^${}()|[]\";
     let mut escaped = String::with_capacity(s.len() * 2);
@@ -195,6 +275,14 @@ fn escape_regex(s: &str) -> String {
 }
 
 /// Generate a regex pattern that matches commands for all package managers.
+///
+/// # Arguments
+///
+/// * `action` — The action (e.g., `dev`, `install`, `test`, or a custom script name).
+///
+/// # Returns
+///
+/// A regex pattern that matches how this action is invoked in all supported package managers.
 pub fn get_command_pattern(action: &str) -> String {
     let trimmed = action.trim();
     let patterns = match trimmed {

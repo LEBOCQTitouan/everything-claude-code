@@ -1,6 +1,7 @@
 //! Hook dispatch use case — routes hookId to the appropriate handler.
 
 use ecc_ports::bypass_store::BypassStore;
+use ecc_ports::clock::Clock;
 use ecc_ports::cost_store::CostStore;
 use ecc_ports::env::Environment;
 use ecc_ports::fs::FileSystem;
@@ -76,6 +77,7 @@ pub struct HookPorts<'a> {
     pub shell: &'a dyn ShellExecutor,
     pub env: &'a dyn Environment,
     pub terminal: &'a dyn TerminalIO,
+    pub clock: &'a dyn Clock,
     pub cost_store: Option<&'a dyn CostStore>,
     pub bypass_store: Option<&'a dyn BypassStore>,
     pub metrics_store: Option<&'a dyn MetricsStore>,
@@ -83,17 +85,26 @@ pub struct HookPorts<'a> {
 
 impl<'a> HookPorts<'a> {
     /// Create a test-friendly HookPorts with all optional stores set to None.
+    ///
+    /// Uses a static fixed [`ecc_test_support::MockClock`] for the `clock` field
+    /// so callers do not need to supply one.
+    #[cfg(test)]
     pub fn test_default(
         fs: &'a dyn FileSystem,
         shell: &'a dyn ShellExecutor,
         env: &'a dyn Environment,
         terminal: &'a dyn TerminalIO,
     ) -> Self {
+        static TEST_CLOCK: std::sync::LazyLock<ecc_test_support::MockClock> =
+            std::sync::LazyLock::new(|| {
+                ecc_test_support::MockClock::fixed("2026-01-01T00:00:00Z", 1_735_689_600)
+            });
         Self {
             fs,
             shell,
             env,
             terminal,
+            clock: &*TEST_CLOCK,
             cost_store: None,
             bypass_store: None,
             metrics_store: None,

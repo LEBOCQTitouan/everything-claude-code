@@ -35,6 +35,10 @@ pub struct WorktreeInfo {
 }
 
 /// Port for querying and managing git worktrees.
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait WorktreeManager: Send + Sync {
     /// Return `true` if the worktree at `worktree_path` has uncommitted changes.
     fn has_uncommitted_changes(&self, worktree_path: &Path) -> Result<bool, WorktreeError>;

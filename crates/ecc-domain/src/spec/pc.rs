@@ -17,7 +17,10 @@ pub(crate) static SEPARATOR_RE: LazyLock<Regex> =
 
 /// A parsed Pass Condition identifier like `PC-003`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, PartialOrd, Ord)]
-pub struct PcId(pub u16);
+pub struct PcId(
+    /// The numeric component of the PC ID.
+    pub u16,
+);
 
 impl PcId {
     /// Parse a PC ID string like "PC-003" into a `PcId`.
@@ -46,19 +49,28 @@ impl fmt::Display for PcId {
 /// A parsed Pass Condition row from the design file.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct PassCondition {
+    /// The PC ID (e.g., PC-003).
     pub id: PcId,
+    /// Type classification (unit, integration, e2e, etc.).
     pub pc_type: String,
+    /// Human-readable description of what is being verified.
     pub description: String,
+    /// List of AC IDs that this PC verifies.
     pub verifies_acs: Vec<AcId>,
+    /// The shell command to execute for this PC.
     pub command: String,
+    /// Expected output or result status.
     pub expected: String,
 }
 
 /// Result of parsing PCs from a design file.
 #[derive(Debug)]
 pub struct PcReport {
+    /// Successfully parsed PassCondition entries.
     pub pcs: Vec<PassCondition>,
+    /// Parsing errors (malformed rows, duplicates, gaps).
     pub errors: Vec<String>,
+    /// Non-fatal warnings during parsing.
     pub warnings: Vec<String>,
 }
 

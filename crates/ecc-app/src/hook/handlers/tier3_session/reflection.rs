@@ -159,7 +159,7 @@ pub fn craft_velocity(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         warn!("Cannot create metrics dir: {}", e);
     }
 
-    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs(ports.clock)));
     let session_id = ports
         .env
         .var("CLAUDE_SESSION_ID")

@@ -9,6 +9,10 @@ use std::path::Path;
 use std::process::Command;
 
 /// Worktree manager that shells out to the `git` binary.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::worktree::WorktreeManager`
 pub struct OsWorktreeManager;
 
 impl WorktreeManager for OsWorktreeManager {

@@ -9,6 +9,10 @@ use std::time::Duration;
 /// Lock files live in `.claude/workflow/.locks/` under the repo root.
 /// The caller is responsible for resolving the repo root (especially from
 /// inside a worktree) before calling `acquire`.
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait FileLock: Send + Sync {
     /// Acquire an exclusive lock, blocking until available.
     ///

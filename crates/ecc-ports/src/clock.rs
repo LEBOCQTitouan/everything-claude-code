@@ -4,6 +4,10 @@
 ///
 /// Production code uses [`ecc_infra::system_clock::SystemClock`].
 /// Tests use [`ecc_test_support::mock_clock::MockClock`] for deterministic time.
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait Clock: Send + Sync {
     /// Return the current time as an ISO 8601 UTC string (e.g., "2026-04-01T10:00:00Z").
     fn now_iso8601(&self) -> String;

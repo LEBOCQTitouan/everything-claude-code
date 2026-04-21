@@ -54,9 +54,10 @@ pub fn run(args: BypassArgs) -> anyhow::Result<()> {
             }
             let clock = Arc::new(ecc_infra::system_clock::SystemClock);
             let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path, clock)?;
+            let grant_clock = ecc_infra::system_clock::SystemClock;
             let fs = ecc_infra::os_fs::OsFileSystem;
             let token =
-                ecc_app::bypass_mgmt::grant(&store, &fs, &home, &hook, &reason, &session_id)?;
+                ecc_app::bypass_mgmt::grant(&store, &fs, &home, &hook, &reason, &session_id, &grant_clock)?;
             println!(
                 "Bypass granted for hook '{}' in session '{}'",
                 token.hook_id, token.session_id

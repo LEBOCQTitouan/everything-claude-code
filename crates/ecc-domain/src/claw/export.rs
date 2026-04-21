@@ -3,8 +3,11 @@ use super::turn::{Turn, format_turns};
 /// Export format for session output.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExportFormat {
+    /// Markdown format with turns as sections.
     Markdown,
+    /// JSON format (relies on external serializer).
     Json,
+    /// Plain text format with minimal formatting.
     Text,
 }
 

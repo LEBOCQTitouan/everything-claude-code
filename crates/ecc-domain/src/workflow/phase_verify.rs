@@ -6,8 +6,11 @@ use std::fmt;
 /// Error returned when the current workflow phase does not match the expected phase.
 #[derive(Debug, PartialEq, Eq)]
 pub struct PhaseError {
+    /// The actual current phase.
     pub current: Phase,
+    /// The expected phase.
     pub expected: Phase,
+    /// Suggestion for what to do next.
     pub hint: String,
 }
 

@@ -1,6 +1,7 @@
 //! Lifecycle use cases: gc, stats, promote.
 
 use ecc_domain::memory::{MemoryEntry, MemoryId, MemoryTier};
+use ecc_ports::clock::Clock;
 use ecc_ports::memory_store::{MemoryStore, MemoryStoreError};
 
 use crate::memory::crud::MemoryAppError;
@@ -74,7 +75,7 @@ pub fn prune_by_backlog(store: &dyn MemoryStore, backlog_id: &str) -> Result<u32
 ///
 /// Returns `AlreadySemantic` error if already at semantic tier.
 /// Returns `NotFound` error if entry doesn't exist.
-pub fn promote(store: &dyn MemoryStore, id: MemoryId) -> Result<MemoryEntry, MemoryAppError> {
+pub fn promote(store: &dyn MemoryStore, id: MemoryId, clock: &dyn Clock) -> Result<MemoryEntry, MemoryAppError> {
     let entry = store.get(id).map_err(|e| match e {
         MemoryStoreError::NotFound(id) => MemoryAppError::NotFound(id),
         other => MemoryAppError::Store(other),
@@ -94,7 +95,7 @@ pub fn promote(store: &dyn MemoryStore, id: MemoryId) -> Result<MemoryEntry, Mem
         entry.session_id.clone(),
         entry.relevance_score * 2.0,
         entry.created_at.clone(),
-        crate::memory::crud::current_timestamp(),
+        crate::memory::crud::current_timestamp(clock),
         entry.stale,
         entry.related_work_items.clone(),
         entry.source_path.clone(),
@@ -108,7 +109,7 @@ pub fn promote(store: &dyn MemoryStore, id: MemoryId) -> Result<MemoryEntry, Mem
 mod tests {
     use super::*;
     use ecc_domain::memory::MemoryTier;
-    use ecc_test_support::InMemoryMemoryStore;
+    use ecc_test_support::{InMemoryMemoryStore, TEST_CLOCK};
 
     fn make_store() -> InMemoryMemoryStore {
         InMemoryMemoryStore::new()
@@ -261,7 +262,7 @@ mod tests {
             None,
         );
         let id = store.insert(&entry).unwrap();
-        let promoted = promote(&store, id).unwrap();
+        let promoted = promote(&store, id, &*TEST_CLOCK).unwrap();
         assert_eq!(promoted.tier, MemoryTier::Semantic);
         assert!((promoted.relevance_score - 2.0).abs() < f64::EPSILON);
     }
@@ -285,14 +286,14 @@ mod tests {
             None,
         );
         let id = store.insert(&entry).unwrap();
-        let result = promote(&store, id);
+        let result = promote(&store, id, &*TEST_CLOCK);
         assert!(matches!(result, Err(MemoryAppError::AlreadySemantic)));
     }
 
     #[test]
     fn test_promote_nonexistent_returns_not_found() {
         let store = make_store();
-        let result = promote(&store, MemoryId(999));
+        let result = promote(&store, MemoryId(999), &*TEST_CLOCK);
         assert!(matches!(result, Err(MemoryAppError::NotFound(_))));
     }
 

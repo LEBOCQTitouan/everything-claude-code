@@ -1,3 +1,29 @@
+//! Config audit: scoring, findings, hook classification.
+//!
+//! Cluster overview of the audit module's public types + pure functions.
+//!
+//! ```text
+//! +------------------ AuditReport -------------------+
+//! | score: i32      grade: String (A..F)             |
+//! | checks: Vec<AuditCheckResult>                    |
+//! +--------------------------------------------------+
+//!           |
+//!           v
+//! +----- AuditCheckResult -----+     +-- AuditFinding --+
+//! | name, passed: bool         |---> | severity:Severity|
+//! | findings: Vec<AuditFinding>|     | id, title, detail|
+//! +----------------------------+     | fix              |
+//!                                    +------------------+
+//! +----- ConfigAudit ---- (aggregates ArtifactAudit * 2 + HooksDiff)
+//! | agents, commands: ArtifactAudit  (matching, outdated, missing)
+//! | hooks: HooksDiff (stale, missing, matching, user_hooks)
+//! | has_differences: bool                                |
+//! +------------------------------------------------------+
+//! Pure fns: is_legacy_pattern, is_ecc_managed_hook[_typed],
+//!           compute_audit_score, exists_in_source[_typed],
+//!           exists_in_settings[_typed], parse_frontmatter.
+//! ```
+
 use std::collections::BTreeMap;
 
 // ---------------------------------------------------------------------------
@@ -5,77 +31,115 @@ use std::collections::BTreeMap;
 // ---------------------------------------------------------------------------
 
 /// Severity level for an audit finding.
+///
+/// State-transition ladder (highest impact -> lowest, used in scoring):
+///
+/// ```text
+///   [Critical] --20 pts--> [High] --10 pts--> [Medium] --5 pts--> [Low] --2 pts-->
+/// ```
+///
+/// Deduction magnitudes applied by [`compute_audit_score`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
+    /// Critical: immediate attention required.
     Critical,
+    /// High: significant issue that should be addressed soon.
     High,
+    /// Medium: issue that should be addressed during regular maintenance.
     Medium,
+    /// Low: minor issue with minimal impact.
     Low,
 }
 
 /// A single issue discovered during an audit check.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditFinding {
+    /// Unique identifier for the finding.
     pub id: String,
+    /// Severity of the finding.
     pub severity: Severity,
+    /// Short title of the issue.
     pub title: String,
+    /// Detailed description of the issue.
     pub detail: String,
+    /// Recommended fix for the issue.
     pub fix: String,
 }
 
 /// Result of a single named audit check (pass/fail with findings).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditCheckResult {
+    /// Name of the check.
     pub name: String,
+    /// True if the check passed, false otherwise.
     pub passed: bool,
+    /// Issues found by this check.
     pub findings: Vec<AuditFinding>,
 }
 
 /// Aggregated audit report with scored grade.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditReport {
+    /// Results from all audit checks.
     pub checks: Vec<AuditCheckResult>,
+    /// Numeric score (0-100).
     pub score: i32,
+    /// Letter grade (A-F).
     pub grade: String,
 }
 
 /// Hooks diff between settings and source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HooksDiff {
+    /// Hooks in settings that are outdated (source has been updated).
     pub stale: Vec<HookDiffEntry>,
+    /// Hooks in source that are missing from settings.
     pub missing: Vec<HookDiffEntry>,
+    /// Hooks that match between source and settings.
     pub matching: Vec<HookDiffEntry>,
+    /// Hooks in settings that are not ECC-managed.
     pub user_hooks: Vec<HookDiffEntry>,
 }
 
 /// A single hook entry in a diff comparison.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HookDiffEntry {
+    /// The hook event type (e.g., `pre-tool-use`).
     pub event: String,
+    /// The hook entry as a JSON value.
     pub entry: serde_json::Value,
 }
 
 /// A typed hook entry in a diff comparison (no serde_json::Value).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypedHookDiffEntry {
+    /// The hook event type (e.g., `pre-tool-use`).
     pub event: String,
+    /// The hook entry as a typed structure.
     pub entry: super::hook_types::HookEntry,
 }
 
 /// Audit summary for a single artifact type (agents, commands, etc.).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArtifactAudit {
+    /// Artifacts that match source and are up-to-date.
     pub matching: Vec<String>,
+    /// Artifacts that are installed but outdated.
     pub outdated: Vec<String>,
+    /// Artifacts in source but not installed.
     pub missing: Vec<String>,
 }
 
 /// Full configuration audit comparing installed artifacts and hooks against source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConfigAudit {
+    /// Audit results for agents.
     pub agents: ArtifactAudit,
+    /// Audit results for commands.
     pub commands: ArtifactAudit,
+    /// Hooks diff results.
     pub hooks: HooksDiff,
+    /// True if any differences were found.
     pub has_differences: bool,
 }
 
@@ -91,6 +155,14 @@ pub use super::ECC_PACKAGE_IDENTIFIERS;
 // ---------------------------------------------------------------------------
 
 /// Check if a command string matches legacy hook patterns.
+///
+/// # Arguments
+///
+/// * `cmd` — The command string to check.
+///
+/// # Returns
+///
+/// True if the command matches any known legacy pattern.
 pub fn is_legacy_pattern(cmd: &str) -> bool {
     // Old-style scripts/hooks/ direct paths
     if cmd.contains("scripts/hooks/") && !cmd.contains("run-with-flags-shell.sh") {
@@ -136,6 +208,15 @@ pub fn is_legacy_pattern(cmd: &str) -> bool {
 /// 2. Contain a known ECC package identifier
 /// 3. Match any entry in the provided source hooks
 /// 4. Match legacy patterns
+///
+/// # Arguments
+///
+/// * `entry` — The hook entry JSON value to check.
+/// * `source_hooks` — The source hooks to compare against.
+///
+/// # Returns
+///
+/// True if the hook is ECC-managed.
 pub fn is_ecc_managed_hook(entry: &serde_json::Value, source_hooks: &serde_json::Value) -> bool {
     let hooks = match entry.get("hooks").and_then(|h| h.as_array()) {
         Some(h) => h,
@@ -180,6 +261,15 @@ pub fn is_ecc_managed_hook(entry: &serde_json::Value, source_hooks: &serde_json:
 
 /// Check if an entry matches any hook in the source hooks by comparing
 /// their serialized `hooks` arrays.
+///
+/// # Arguments
+///
+/// * `entry` — The hook entry to match.
+/// * `source_hooks` — The source hooks to check against.
+///
+/// # Returns
+///
+/// True if the entry matches any source hook.
 fn matches_source_hook(entry: &serde_json::Value, source_hooks: &serde_json::Value) -> bool {
     let entry_key = match entry.get("hooks") {
         Some(h) => serde_json::to_string(h).unwrap_or_default(),
@@ -218,6 +308,14 @@ fn matches_source_hook(entry: &serde_json::Value, source_hooks: &serde_json::Val
 /// - 2 per low finding
 ///
 /// Grade: A (90+), B (80+), C (70+), D (60+), F (<60)
+///
+/// # Arguments
+///
+/// * `checks` — All audit check results.
+///
+/// # Returns
+///
+/// A tuple of (score, grade).
 pub fn compute_audit_score(checks: &[AuditCheckResult]) -> (i32, String) {
     let all_findings: Vec<&AuditFinding> = checks.iter().flat_map(|c| &c.findings).collect();
 
@@ -249,6 +347,14 @@ pub fn compute_audit_score(checks: &[AuditCheckResult]) -> (i32, String) {
 ///
 /// Delegates to the canonical `extract_frontmatter` in `config::validate`,
 /// converting the result to a `BTreeMap` (empty on missing frontmatter).
+///
+/// # Arguments
+///
+/// * `content` — The content to parse for frontmatter.
+///
+/// # Returns
+///
+/// A map of frontmatter keys and values.
 pub fn parse_frontmatter(content: &str) -> BTreeMap<String, String> {
     match super::validate::extract_frontmatter(content) {
         Some(map) => map.into_iter().collect(),
@@ -257,6 +363,15 @@ pub fn parse_frontmatter(content: &str) -> BTreeMap<String, String> {
 }
 
 /// Check if a typed hook entry is ECC-managed.
+///
+/// # Arguments
+///
+/// * `entry` — The typed hook entry to check.
+/// * `source_hooks` — The source hooks to compare against.
+///
+/// # Returns
+///
+/// True if the hook is ECC-managed.
 pub fn is_ecc_managed_hook_typed(
     entry: &super::hook_types::HookEntry,
     source_hooks: &super::hook_types::HooksMap,
@@ -298,6 +413,16 @@ pub fn is_ecc_managed_hook_typed(
 }
 
 /// Check if a typed hook entry exists in the source hooks.
+///
+/// # Arguments
+///
+/// * `event` — The hook event type.
+/// * `entry` — The hook entry to check.
+/// * `source_hooks` — The source hooks to search.
+///
+/// # Returns
+///
+/// True if the entry exists in the source hooks.
 pub fn exists_in_source_typed(
     event: &str,
     entry: &super::hook_types::HookEntry,
@@ -310,6 +435,16 @@ pub fn exists_in_source_typed(
 }
 
 /// Check if a typed source hook entry exists in the settings hooks.
+///
+/// # Arguments
+///
+/// * `event` — The hook event type.
+/// * `entry` — The hook entry to check.
+/// * `settings_hooks` — The settings hooks to search.
+///
+/// # Returns
+///
+/// True if the entry exists in the settings hooks.
 pub fn exists_in_settings_typed(
     event: &str,
     entry: &super::hook_types::HookEntry,
@@ -322,6 +457,16 @@ pub fn exists_in_settings_typed(
 }
 
 /// Check if a settings hook entry exists in the source hooks (by serialized hooks array).
+///
+/// # Arguments
+///
+/// * `event` — The hook event type.
+/// * `settings_entry` — The settings hook entry to check.
+/// * `source_hooks` — The source hooks to search.
+///
+/// # Returns
+///
+/// True if the entry exists in the source hooks.
 pub fn exists_in_source(
     event: &str,
     settings_entry: &serde_json::Value,
@@ -343,6 +488,16 @@ pub fn exists_in_source(
 }
 
 /// Check if a source hook entry exists in the settings hooks.
+///
+/// # Arguments
+///
+/// * `event` — The hook event type.
+/// * `source_entry` — The source hook entry to check.
+/// * `settings_hooks` — The settings hooks to search.
+///
+/// # Returns
+///
+/// True if the entry exists in the settings hooks.
 pub fn exists_in_settings(
     event: &str,
     source_entry: &serde_json::Value,

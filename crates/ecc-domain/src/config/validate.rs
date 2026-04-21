@@ -181,15 +181,20 @@ pub fn parse_tool_list(raw: &str) -> Vec<String> {
 /// Severity for convention lint findings.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LintSeverity {
+    /// Critical issue (convention violation).
     Error,
+    /// Informational warning.
     Warn,
 }
 
 /// A single convention lint finding.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LintFinding {
+    /// Severity level (Error or Warn).
     pub severity: LintSeverity,
+    /// File path where the finding occurred.
     pub file: String,
+    /// Description of the lint finding.
     pub message: String,
 }
 

@@ -9,6 +9,10 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Disk-backed cache store.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::cache_store::CacheStore`
 pub struct FileCacheStore {
     cache_dir: PathBuf,
 }

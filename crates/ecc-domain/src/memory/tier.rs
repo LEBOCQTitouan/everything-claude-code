@@ -6,6 +6,24 @@ use std::str::FromStr;
 use crate::memory::error::MemoryError;
 
 /// The three-tier memory classification model.
+///
+/// Tier diagram (shortest-lived at top, longest-lived at bottom):
+///
+/// ```text
+///   [Working]    <-- ephemeral session context
+///      |
+///      | consolidation (session end)
+///      v
+///   [Episodic]   <-- preserved session history
+///      |
+///      | distillation (periodic)
+///      v
+///   [Semantic]   <-- long-lived, refined knowledge
+/// ```
+///
+/// # Pattern
+///
+/// Hierarchical Memory Model \[DDD: Ubiquitous Language\].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum MemoryTier {
     /// Ephemeral context for the current session.

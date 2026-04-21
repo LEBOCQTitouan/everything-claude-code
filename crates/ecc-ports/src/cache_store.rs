@@ -25,6 +25,10 @@ pub enum CacheError {
 }
 
 /// Port trait for audit cache operations.
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait CacheStore: Send + Sync {
     /// Check if a valid (non-expired) cache entry exists for the key.
     fn check(&self, key: &str) -> Result<Option<CacheEntry>, CacheError>;

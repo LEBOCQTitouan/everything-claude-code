@@ -11,20 +11,31 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ElementType {
-    // Universal (language-agnostic)
+    /// A software module or package.
     Module,
+    /// An interface or protocol definition.
     Interface,
+    /// A configuration file or setting.
     Config,
+    /// An unknown or unclassified element type.
     Unknown,
-    // ECC-specific
+    /// An ECC slash command.
     Command,
+    /// An ECC agent.
     Agent,
+    /// An ECC skill.
     Skill,
+    /// An ECC hook.
     Hook,
+    /// An ECC rule file.
     Rule,
+    /// A Rust crate.
     Crate,
+    /// A hexagonal architecture port (trait interface).
     Port,
+    /// A hexagonal architecture adapter (implementation).
     Adapter,
+    /// A domain entity in the bounded context.
     DomainEntity,
 }
 
@@ -33,15 +44,25 @@ pub enum ElementType {
 /// All fields are serialisable; the struct is the canonical in-memory
 /// representation used by generators and validators.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ElementEntry {
+    /// Unique identifier for the element (e.g., "spec-dev", "ecc-domain").
     pub slug: String,
+    /// The type of element (agent, skill, command, etc.).
     pub element_type: ElementType,
+    /// One-line description of what this element does.
     pub purpose: String,
+    /// List of elements this one depends on.
     pub uses: Vec<String>,
+    /// List of elements that depend on this one.
     pub used_by: Vec<String>,
+    /// Workflow flows this element participates in.
     pub participating_flows: Vec<String>,
+    /// User journeys this element participates in.
     pub participating_journeys: Vec<String>,
+    /// Source file paths that define this element.
     pub sources: Vec<String>,
+    /// ISO 8601 date of the last update to this entry.
     pub last_updated: String,
 }
 

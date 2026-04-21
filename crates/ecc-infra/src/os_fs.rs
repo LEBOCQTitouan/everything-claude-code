@@ -3,6 +3,10 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 /// Production filesystem adapter backed by `std::fs`.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::fs::FileSystem`
 pub struct OsFileSystem;
 
 impl FileSystem for OsFileSystem {

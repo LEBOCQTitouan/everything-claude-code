@@ -18,6 +18,25 @@ use crate::time::utc_now_iso8601;
 /// If a previous state.json exists and its phase is not "done", it is archived to
 /// `.claude/workflow/archive/state-YYYYMMDD-HHMMSS.json` before the new state is written.
 /// Artifact files `implement-done.md` and `.tdd-state` are cleaned up on every init.
+///
+/// ```text
+/// acquire state lock
+///     |
+///     v
+/// archive previous state (skip if phase==done)
+///     |
+///     v
+/// cleanup artifact files (implement-done.md, .tdd-state)
+///     |
+///     v
+/// parse concern --> build WorkflowState { phase: Plan, ... }
+///     |
+///     v
+/// write_state_atomic --> write .state-dir anchor (best-effort)
+///     |
+///     v
+/// pass "Workflow initialized"
+/// ```
 pub fn run(concern: &str, feature: &str, project_dir: &Path, state_dir: &Path) -> WorkflowOutput {
     let result = with_state_lock(state_dir, || {
         // Archive stale state if present and not done

@@ -18,6 +18,7 @@ pub(super) fn make_ports<'a>(
         shell,
         env,
         terminal: term,
+        clock: &*ecc_test_support::TEST_CLOCK,
         cost_store: None,
         bypass_store: None,
         metrics_store: None,

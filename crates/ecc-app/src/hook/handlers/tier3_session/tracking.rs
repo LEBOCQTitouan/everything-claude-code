@@ -122,7 +122,7 @@ pub fn cost_tracker(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         .var("CLAUDE_SESSION_ID")
         .unwrap_or_else(|| "default".to_string());
 
-    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs()));
+    let timestamp = format_datetime(&datetime_from_epoch(epoch_secs(ports.clock)));
 
     // Try to persist via CostStore; fall back to JSONL otherwise.
     if let Some(store) = ports.cost_store {

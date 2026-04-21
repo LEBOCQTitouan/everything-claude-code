@@ -5,6 +5,17 @@ use std::fmt;
 use super::error::MetricsError;
 
 /// The type of harness operation that was measured.
+///
+/// Event-type fan-out (each variant maps to a distinct harness metric pipeline):
+///
+/// ```text
+///   [MetricEventType]
+///      |
+///      +--> HookExecution    --> hook success-rate SLO
+///      +--> PhaseTransition  --> phase-gate violation rate
+///      +--> AgentSpawn       --> agent recovery rate
+///      +--> CommitGate       --> commit atomicity score
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MetricEventType {
     /// A hook script execution.
@@ -42,6 +53,17 @@ impl MetricEventType {
 }
 
 /// The outcome of a harness operation.
+///
+/// Outcome diagram — status reported by a recorded metric event:
+///
+/// ```text
+///   [MetricOutcome]
+///      |
+///      +--> Success   (generic: hook/agent/gate passed)
+///      +--> Failure   (generic: error or non-zero exit)
+///      +--> Rejected  (phase-gate specific: validation blocked)
+///      +--> Passed    (commit-gate specific: gate check green)
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MetricOutcome {
     /// Operation completed successfully.

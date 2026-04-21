@@ -3,6 +3,22 @@
 //! Mirrors all ecc-workflow subcommands. Delegates to the ecc-workflow binary
 //! for behavioral parity during migration. After the cleanup PR, these will
 //! be implemented directly using port traits.
+//!
+//! # Subcommand families
+//!
+//! ```text
+//! [ecc workflow <sub>]
+//!   |
+//!   +-- state           : init, transition, status, reset, artifact, history
+//!   +-- gates           : phase-gate, stop-gate, grill-me-gate, scope-check
+//!   +-- doc gates       : doc-enforcement, doc-level-check, pass-condition,
+//!   |                     e2e-boundary-check
+//!   +-- tdd/implement   : tdd-enforcement, toolchain-persist
+//!   +-- planning        : wave-plan, worktree-name
+//!   +-- lifecycle       : merge, backlog, memory-write
+//! ```
+//!
+//! Every variant forwards to `ecc-workflow <sub> [...args]` via `std::process::Command`.
 
 use clap::{Args, Subcommand};
 use std::process::Command;

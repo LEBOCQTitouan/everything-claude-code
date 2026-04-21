@@ -8,6 +8,7 @@ use ecc_ports::memory_store::MemoryStore;
 
 use crate::memory::crud::{MemoryAppError, current_timestamp};
 use ecc_domain::time::is_leap_year;
+use ecc_ports::clock::Clock;
 
 /// Result of a consolidation run.
 #[derive(Debug)]
@@ -90,6 +91,7 @@ pub fn consolidate(
     max_entries: usize,
     now: &str,
     lock_held: bool,
+    clock: &dyn Clock,
 ) -> Result<ConsolidationResult, MemoryAppError> {
     if lock_held {
         return Ok(ConsolidationResult {
@@ -178,7 +180,7 @@ pub fn consolidate(
                 entry.session_id.clone(),
                 new_score,
                 entry.created_at.clone(),
-                current_timestamp(),
+                current_timestamp(clock),
                 entry.stale || needs_stale_update,
                 entry.related_work_items.clone(),
                 entry.source_path.clone(),
@@ -244,6 +246,7 @@ pub fn expire_working_memories(
     store: &dyn MemoryStore,
     max_age_hours: u64,
     now: &str,
+    clock: &dyn Clock,
 ) -> Result<ExpireResult, MemoryAppError> {
     let working_entries = store
         .list_filtered(Some(MemoryTier::Working), None, None)
@@ -272,7 +275,7 @@ pub fn expire_working_memories(
                 entry.session_id.clone(),
                 entry.relevance_score,
                 entry.created_at.clone(),
-                current_timestamp(),
+                current_timestamp(clock),
                 entry.stale,
                 entry.related_work_items.clone(),
                 entry.source_path.clone(),
@@ -296,7 +299,7 @@ mod tests {
     use super::*;
     use ecc_domain::memory::{MemoryEntry, MemoryId, MemoryTier};
     use ecc_ports::fs::FileSystem;
-    use ecc_test_support::{InMemoryFileSystem, InMemoryMemoryStore};
+    use ecc_test_support::{InMemoryFileSystem, InMemoryMemoryStore, TEST_CLOCK};
 
     fn make_store() -> InMemoryMemoryStore {
         InMemoryMemoryStore::new()
@@ -358,7 +361,7 @@ mod tests {
             false,
         );
 
-        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false).unwrap();
+        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false, &*TEST_CLOCK).unwrap();
         assert_eq!(result.merged_count, 1);
         assert!(!result.skipped);
 
@@ -387,7 +390,7 @@ mod tests {
             false,
         );
 
-        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false).unwrap();
+        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false, &*TEST_CLOCK).unwrap();
         assert_eq!(result.merged_count, 0, "short entries should not be merged");
 
         let remaining = store.list_filtered(None, None, None).unwrap();
@@ -408,7 +411,7 @@ mod tests {
             false,
         );
 
-        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false).unwrap();
+        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false, &*TEST_CLOCK).unwrap();
         assert!(
             result.stale_marked_count >= 1,
             "old entry should be marked stale"
@@ -431,7 +434,7 @@ mod tests {
             );
         }
 
-        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false).unwrap();
+        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false, &*TEST_CLOCK).unwrap();
         assert!(!result.skipped);
         let remaining = store.list_filtered(None, None, None).unwrap();
         assert!(
@@ -455,7 +458,7 @@ mod tests {
         );
 
         let before = store.get(id).unwrap().relevance_score;
-        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false).unwrap();
+        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", false, &*TEST_CLOCK).unwrap();
         let after = store.get(id).unwrap().relevance_score;
 
         assert!(result.scores_updated_count >= 1);
@@ -469,7 +472,7 @@ mod tests {
     #[test]
     fn consolidate_skips_when_lock_held() {
         let store = make_store();
-        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", true).unwrap();
+        let result = consolidate(&store, 100, "2026-03-01T00:00:00Z", true, &*TEST_CLOCK).unwrap();
         assert!(result.skipped);
         assert_eq!(result.merged_count, 0);
     }
@@ -490,7 +493,7 @@ mod tests {
             false,
         );
 
-        let result = expire_working_memories(&store, 24, "2026-01-03T00:00:00Z").unwrap();
+        let result = expire_working_memories(&store, 24, "2026-01-03T00:00:00Z", &*TEST_CLOCK).unwrap();
         assert_eq!(result.promoted_count, 1);
         assert_eq!(result.deleted_count, 0);
 
@@ -519,7 +522,7 @@ mod tests {
             false,
         );
 
-        let result = expire_working_memories(&store, 24, "2026-01-03T00:00:00Z").unwrap();
+        let result = expire_working_memories(&store, 24, "2026-01-03T00:00:00Z", &*TEST_CLOCK).unwrap();
         assert_eq!(result.deleted_count, 1);
         assert_eq!(result.promoted_count, 0);
 

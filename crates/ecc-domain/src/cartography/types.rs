@@ -8,17 +8,25 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ProjectType {
+    /// A Rust project.
     Rust,
+    /// A JavaScript project.
     Javascript,
+    /// A TypeScript project.
     Typescript,
+    /// A Python project.
     Python,
+    /// A Go project.
     Go,
+    /// A Java project.
     Java,
+    /// An unknown or unclassified project type.
     Unknown,
 }
 
 /// A single file changed in a session, with its classification.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ChangedFile {
     /// Relative path from project root.
     pub path: String,
@@ -28,21 +36,27 @@ pub struct ChangedFile {
 
 /// A session-scoped delta written by the stop:cartography hook.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionDelta {
+    /// The session ID during which changes were recorded.
     pub session_id: String,
-    /// Unix timestamp (seconds since epoch).
+    /// Unix timestamp (seconds since epoch) when the delta was recorded.
     pub timestamp: u64,
+    /// List of files that were changed during the session.
     pub changed_files: Vec<ChangedFile>,
+    /// The detected project type.
     pub project_type: ProjectType,
 }
 
 /// Metadata embedded in generated cartography documents.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CartographyMeta {
     /// Date of last update in YYYY-MM-DD format.
     pub last_updated: String,
     /// File paths that contributed to this cartography entry.
     pub sources: Vec<String>,
+    /// The session ID that generated this cartography entry.
     pub session_id: String,
 }
 

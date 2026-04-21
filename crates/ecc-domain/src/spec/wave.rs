@@ -11,20 +11,26 @@ use std::collections::HashMap;
 /// A single execution wave containing non-overlapping PCs.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Wave {
+    /// Wave sequence number (1-indexed).
     pub id: u16,
+    /// PC IDs in this wave (can execute in parallel).
     pub pc_ids: Vec<PcId>,
+    /// All files modified by PCs in this wave.
     pub files: Vec<String>,
 }
 
 /// Complete wave plan: all waves plus metadata.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct WavePlan {
+    /// All execution waves.
     pub waves: Vec<Wave>,
+    /// Total number of PCs in the plan.
     pub total_pcs: usize,
+    /// Maximum PCs allowed per wave.
     pub max_per_wave: usize,
 }
 
-/// Strips one leading and one trailing backtick from a string, then trims whitespace.
+/// Strip one leading and one trailing backtick from a string, then trim whitespace.
 pub fn strip_backticks(s: &str) -> String {
     let trimmed = s.trim();
     let stripped = trimmed.strip_prefix('`').unwrap_or(trimmed);

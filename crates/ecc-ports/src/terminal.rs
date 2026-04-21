@@ -1,4 +1,8 @@
 /// Port for terminal I/O (prompts, colored output, TTY detection).
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait TerminalIO: Send + Sync {
     /// Write text to stdout (no newline appended).
     fn stdout_write(&self, text: &str);

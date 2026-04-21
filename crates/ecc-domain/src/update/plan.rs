@@ -3,10 +3,15 @@ use crate::update::{ArtifactName, Version};
 /// Describes a planned update operation.
 #[derive(Debug, Clone)]
 pub struct UpdatePlan {
+    /// Current installed version.
     pub current_version: Version,
+    /// Target version to update to.
     pub target_version: Version,
+    /// The artifact being updated (binary name and platform).
     pub artifact_name: ArtifactName,
+    /// True if target version is older than current (downgrade).
     pub is_downgrade: bool,
+    /// True if current and target versions are the same.
     pub is_already_current: bool,
 }
 

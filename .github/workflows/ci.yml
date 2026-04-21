@@ -43,6 +43,14 @@ jobs:
       - name: Test
         run: cargo test
 
+      # BL-132 PC-021: --help smoke test (guards clap-derive diagram deny-list R-1)
+      # No untrusted input — all commands are static.
+      - name: --help smoke test (ecc-cli)
+        run: ./target/release/ecc --help | grep -q 'Usage:'
+
+      - name: --help smoke test (ecc-workflow)
+        run: cargo run -p ecc-workflow -- --help | grep -q 'Usage:'
+
       - name: Format check
         run: cargo fmt -- --check
 
@@ -67,6 +75,8 @@ jobs:
           ./target/release/ecc validate skills
           ./target/release/ecc validate rules
           ./target/release/ecc validate patterns
+          ./target/release/ecc validate claude-md counts
+          ./target/release/ecc validate claude-md markers --strict
 
       - name: Validate workflow templates
         run: |

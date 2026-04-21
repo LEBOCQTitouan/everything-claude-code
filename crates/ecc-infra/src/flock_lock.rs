@@ -15,6 +15,10 @@ use std::time::Duration;
 ///
 /// Each lock name maps to a zero-byte file in `.claude/workflow/.locks/`.
 /// Advisory locking only — does not prevent non-cooperative processes.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::lock::FileLock`
 pub struct FlockLock;
 
 impl FlockLock {

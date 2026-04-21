@@ -1,6 +1,10 @@
 use ecc_ports::terminal::{TerminalError, TerminalIO};
 
 /// Production terminal adapter using stdout/stderr and crossterm.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::terminal::TerminalIO`
 pub struct StdTerminal;
 
 impl TerminalIO for StdTerminal {

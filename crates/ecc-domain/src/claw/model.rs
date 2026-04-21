@@ -1,9 +1,22 @@
 /// Available Claude models for Claw sessions.
+///
+/// Selector diagram — routes `--model` flag (default = Sonnet):
+///
+/// ```text
+///   [ClawModel]
+///      |
+///      +--> Sonnet (default)  --> balanced cost/quality
+///      +--> Opus              --> max reasoning, higher cost
+///      +--> Haiku             --> fast + cheap mechanical work
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ClawModel {
+    /// Claude Sonnet (default, balanced performance).
     #[default]
     Sonnet,
+    /// Claude Opus (most capable).
     Opus,
+    /// Claude Haiku (fastest, most compact).
     Haiku,
 }
 

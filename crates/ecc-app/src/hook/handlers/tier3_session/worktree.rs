@@ -38,7 +38,7 @@ pub fn post_enter_worktree_session_log(stdin: &str, ports: &HookPorts<'_>) -> Ho
     if let Some(active) = session_files.first()
         && let Ok(content) = ports.fs.read_to_string(active)
     {
-        let timestamp = format_time(&datetime_from_epoch(epoch_secs()));
+        let timestamp = format_time(&datetime_from_epoch(epoch_secs(ports.clock)));
         let updated = format!(
             "{}\n[{}] [Worktree] Created: {}\n",
             content, timestamp, worktree_path

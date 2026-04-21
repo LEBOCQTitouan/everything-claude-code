@@ -7,13 +7,34 @@ use serde::Serialize;
 use crate::task::error::TaskError;
 
 /// The lifecycle status of a task (PC or Post-TDD entry).
+///
+/// State-transition diagram (TDD cycle + failure/retry + post-TDD skip):
+///
+/// ```text
+///   [Pending] --> [Red] --> [Green] --> [Done]
+///       |         |  ^       |
+///       |         v  |       v
+///       |       [Failed] <---+
+///       |         ^
+///       |         | (retry)
+///       +---------+
+///       |
+///       +--> [Done]  (post-TDD only: Pending may skip directly to Done)
+/// ```
+///
+/// `Done` is terminal. `Failed -> Red` is the retry arc.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TaskStatus {
+    /// Task not yet started.
     Pending,
+    /// Test written, failing (RED phase).
     Red,
+    /// Test passing (GREEN phase).
     Green,
+    /// Task completed and verified.
     Done,
+    /// Task execution failed (terminal state).
     Failed,
 }
 

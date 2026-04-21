@@ -1,6 +1,10 @@
 use std::path::Path;
 
 /// Port for executing shell commands.
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait ShellExecutor: Send + Sync {
     /// Run a command with arguments, capturing stdout, stderr, and exit code.
     fn run_command(&self, command: &str, args: &[&str]) -> Result<CommandOutput, ShellError>;

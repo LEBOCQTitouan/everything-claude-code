@@ -11,6 +11,14 @@ use super::transition::Direction;
 
 /// Deserializer for `Completion.phase` that falls back to [`Phase::Unknown`]
 /// for any string that is not a recognized phase value.
+///
+/// # Arguments
+///
+/// * `deserializer` — The serde deserializer.
+///
+/// # Returns
+///
+/// The deserialized phase, or `Phase::Unknown` if unrecognized.
 fn deserialize_phase_with_fallback<'de, D>(deserializer: D) -> Result<Phase, D::Error>
 where
     D: Deserializer<'de>,
@@ -21,21 +29,47 @@ where
 
 /// Toolchain commands used during this workflow run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Toolchain {
+    /// Test command (e.g., `cargo test`).
     pub test: Option<String>,
+    /// Lint command (e.g., `cargo clippy -- -D warnings`).
     pub lint: Option<String>,
+    /// Build command (e.g., `cargo build`).
     pub build: Option<String>,
 }
 
 /// Artifact timestamps and paths accumulated during the workflow.
+///
+/// Composition diagram — pairs each phase with its timestamp and path:
+///
+/// ```text
+/// +--------------- Artifacts ---------------+
+/// | plan:       Option<String> (timestamp)  |
+/// | solution:   Option<String> (timestamp)  |
+/// | implement:  Option<String> (timestamp)  |
+/// | campaign_path: Option<String>           |
+/// | spec_path:  Option<String>              |
+/// | design_path:Option<String>              |
+/// | tasks_path: Option<String>              |
+/// +-----------------------------------------+
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Artifacts {
+    /// ISO 8601 timestamp when the Plan phase completed.
     pub plan: Option<String>,
+    /// ISO 8601 timestamp when the Solution phase completed.
     pub solution: Option<String>,
+    /// ISO 8601 timestamp when the Implement phase completed.
     pub implement: Option<String>,
+    /// Path to the campaign artifacts file (if applicable).
     pub campaign_path: Option<String>,
+    /// Path to the spec file from the Plan phase.
     pub spec_path: Option<String>,
+    /// Path to the design file from the Solution phase.
     pub design_path: Option<String>,
+    /// Path to the tasks file from the Implement phase.
     pub tasks_path: Option<String>,
 }
 
@@ -46,6 +80,11 @@ impl Artifacts {
     /// - Plan maps to: `plan` timestamp, `spec_path`
     /// - Solution maps to: `solution` timestamp, `design_path`
     /// - Implement maps to: `implement` timestamp, `tasks_path`
+    ///
+    /// # Arguments
+    ///
+    /// * `from` — The starting phase (inclusive).
+    /// * `to` — The ending phase (inclusive).
     pub fn clear_artifacts_for_rollback(&mut self, from: Phase, to: Phase) {
         // Pipeline order encoded as indices: Plan=0, Solution=1, Implement=2
         let phase_index = |p: Phase| match p {
@@ -82,17 +121,25 @@ impl Artifacts {
 
 /// A single transition record appended to the workflow history.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TransitionRecord {
+    /// The phase being transitioned from.
     pub from: Phase,
+    /// The phase being transitioned to.
     pub to: Phase,
+    /// Whether this is a forward or backward transition.
     pub direction: Direction,
+    /// Justification for backward transitions (required for rollbacks).
     pub justification: Option<String>,
+    /// ISO 8601 timestamp of the transition.
     pub timestamp: String,
+    /// The actor who initiated the transition (e.g., `ecc-workflow`).
     pub actor: String,
 }
 
 /// A single completed phase record.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Completion {
     /// The phase that was completed. Unrecognized strings deserialize as [`Phase::Unknown`].
     #[serde(deserialize_with = "deserialize_phase_with_fallback")]
@@ -103,7 +150,7 @@ pub struct Completion {
     pub at: String,
 }
 
-/// The root aggregate for workflow state machine data.
+/// Default version number for the workflow state format.
 fn default_version() -> u32 {
     1
 }
@@ -112,17 +159,48 @@ fn default_version() -> u32 {
 ///
 /// Note: `deny_unknown_fields` must NEVER be added — forward compatibility
 /// requires ignoring unknown fields so older readers can parse newer state files.
+///
+/// Composition diagram (aggregate root + owned value objects):
+///
+/// ```text
+/// +---------------------- WorkflowState -----------------------+
+/// | phase: Phase           (current FSM state)                 |
+/// | concern: Concern       (dev | fix | refactor)              |
+/// | feature: String        (human feature label)               |
+/// | started_at: Timestamp  (session open ISO 8601)             |
+/// | toolchain: Toolchain   +--> { test, lint, build: Option<String> }
+/// | artifacts: Artifacts   +--> { plan, solution, implement, ...
+/// |                                campaign_path, spec_path,   |
+/// |                                design_path, tasks_path }   |
+/// | completed: Vec<Completion>                                 |
+/// | version: u32           (default = 1)                       |
+/// | history: Vec<TransitionRecord>                             |
+/// +------------------------------------------------------------+
+/// ```
+///
+/// # Pattern
+///
+/// Aggregate Root \[DDD\] — single write-through entry point for workflow state.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WorkflowState {
+    /// The current workflow phase.
     pub phase: Phase,
+    /// The type of concern (dev/fix/refactor).
     pub concern: Concern,
+    /// The feature being implemented.
     pub feature: String,
+    /// ISO 8601 timestamp when the workflow started.
     pub started_at: Timestamp,
+    /// Toolchain commands used.
     pub toolchain: Toolchain,
+    /// Timestamps and paths for produced artifacts.
     pub artifacts: Artifacts,
+    /// Phases that have been completed.
     pub completed: Vec<Completion>,
+    /// Format version of this state (defaults to 1).
     #[serde(default = "default_version")]
     pub version: u32,
+    /// Full history of all transitions (forward and backward).
     #[serde(default)]
     pub history: Vec<TransitionRecord>,
 }
@@ -130,6 +208,14 @@ pub struct WorkflowState {
 impl WorkflowState {
     /// Deserialize a `WorkflowState` from a JSON string, mapping parse errors to
     /// [`WorkflowError::InvalidState`] with a descriptive message.
+    ///
+    /// # Arguments
+    ///
+    /// * `json` — The JSON string to deserialize.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(WorkflowState)` on success, or `Err(WorkflowError::InvalidState)` on parse failure.
     pub fn from_json(json: &str) -> Result<Self, WorkflowError> {
         serde_json::from_str(json).map_err(|e| WorkflowError::InvalidState(e.to_string()))
     }

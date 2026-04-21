@@ -40,9 +40,13 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Fixed
 
+- **Full audit HIGH+MEDIUM remediation (2026-04-18)**: Fixed all actionable findings from full-2026-04-18 audit (grade B). US-001: Decomposed 2 oversized files (backlog.rs 1,467→4 files max 475, phase_gate.rs 959→3 files max 758). US-002: Replaced 18 swallowed `let _ =` errors with `tracing::warn!()` in delta_helpers.rs. US-003: Injected Clock port across 11 SystemTime::now() callsites in ecc-app (BL-133 debt resolved). US-004: Added `#[serde(deny_unknown_fields)]` to 20 Deserialize structs (10 forward-compat types excluded). US-005: Added `serial_test` to 3 env-dependent xtask tests. US-006: Enabled `#![warn(missing_docs)]` in ecc-domain, documented 718 pub items across 71 files. US-007: Added `--health` flag to `ecc status` (writable dir, state file, git repo, data dir checks).
+
 - **Shell-eval injection in slash-command templates (spec 2026-04-17)**: `/spec-dev`, `/spec-fix`, `/spec-refactor`, and `/project-foundation` no longer fail on argument strings containing shell metacharacters (`` ` ``, `"`, `$`, `\`, newline). Removed 7 `!`-prefix `$ARGUMENTS` lines across 4 templates; replaced with prose directing Claude to invoke the CLI via the Bash tool with env-var + stdin pattern. Added `--feature-stdin` flag on `ecc-workflow init` and `ecc-workflow worktree-name` (mirrored in `ecc workflow` delegator) for defense-in-depth: 64KB cap, UTF-8 validation, TTY rejection, single-trailing-LF strip. Added `ecc validate commands` rule preventing regression (pinned regex `^[[:space:]]*!.*\$ARGUMENTS`). Zero domain changes, zero data migration. 41 pass conditions, ~3000+ tests pass workspace-wide. (ADR 0066)
 
 ### Added
+
+- **`ecc validate claude-md markers` subcommand (spec 2026-04-18)**: New lint rule flags `TEMPORARY (BL-NNN)` warnings in `CLAUDE.md` and `AGENTS.md` whose backlog file (`docs/backlog/BL-NNN-*.md`) is missing on disk. Default WARN (exit 0), `--strict` upgrades to ERROR (exit 1) for CI. `--audit-report` emits a markdown table of all markers with resolution status. Hexagonal: new `TemporaryMarker` VO + `extract_temporary_markers` in `ecc-domain::docs::claude_md` (zero I/O), new `matches_backlog_filename` pure predicate in `ecc-domain::backlog::entry` (lifted from infra to preserve app→domain dependency direction), new `run_validate_temporary_markers` use case in `ecc-app::validate_claude_md` decomposed into `walk_marker_files`/`BacklogIndex`/`emit_diagnostics` helpers (top-level <30 LOC, SRP), restructured `CliValidateTarget::ClaudeMd` to use `Option<ClaudeMdSubcommand>` with `Counts`/`Markers`/`All` variants. Walker: hand-rolled on `FileSystem::read_dir`, depth cap 16, deny-list `.git/` `target/` `node_modules/` `.claude/worktrees/`, symlink-skip. Kill switch: `ECC_CLAUDE_MD_MARKERS_DISABLED=1` short-circuits exit 0 with stderr notice (emergency CI brake, AC-006.5). Control-byte sanitizer on emitted paths. 41 pass conditions, 39 ACs covered. Companion entry `BL-158` filed for frontmatter-aware v2 (tracks the presence-only governance loophole from decision #4). Adversary verdicts: spec PASS R2 87/100, solution PASS R2 84/100.
 
 - **Domain-specialized agent generator**: New `/generate-domain-agents` command analyzes `docs/domain/bounded-contexts.md` and source code to produce one domain agent per module in `agents/domain/`. Agents contain Domain Model, Error Catalogue, Test Patterns, Cross-Module Dependencies, and Naming Conventions sections. Pipeline commands gain Phase 0.7 domain context injection for automatic domain knowledge loading. Staleness detection via `--check-staleness` flag. `ecc validate agents` recurses into `agents/domain/`. New `domain-agents` discovery skill. (ADR 0066, ADR 0067)
 
@@ -66,7 +70,13 @@ Generated from git conventional commits. Grouped by type and version.
 
 ### Removed
 
+- **Stale `TEMPORARY (BL-150)` warning from CLAUDE.md (spec 2026-04-18, US-005)**: BL-150's worktree-GC fix shipped in an earlier release (see CHANGELOG entry above) but the warning comment was never removed. Deleted `CLAUDE.md:108`. The new `ecc validate claude-md markers --strict` CI gate (landing in the same spec) prevents this class of drift going forward.
+
 - **ECC_WORKFLOW_BYPASS env var (ADR-0056 finale)**: Deleted defunct `.envrc` and updated CLAUDE.md bypass documentation. The env var was already ignored by all Rust code; this completes the ADR-0056 deprecation.
+
+### Deprecated
+
+- **`ecc validate claude-md --counts` flag (spec 2026-04-18)**: Superseded by `ecc validate claude-md counts` (subcommand form). The legacy flag still works and dispatches identically, but emits `DEPRECATED: use 'ecc validate claude-md counts' (subcommand form); --counts will be removed in the next minor release.` on stderr when invoked. Scheduled for removal in the next minor release (ADR-free — semver-anchored deprecation per spec decision #14).
 
 ### Evaluated
 

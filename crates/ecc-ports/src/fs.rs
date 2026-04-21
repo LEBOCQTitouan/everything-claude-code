@@ -2,6 +2,10 @@ use std::path::{Path, PathBuf};
 
 /// Port for filesystem operations.
 /// Production: wraps `std::fs`. Tests: in-memory HashMap.
+///
+/// # Pattern
+///
+/// Port \[Hexagonal Architecture\]
 pub trait FileSystem: Send + Sync {
     /// Read the entire contents of a file as a UTF-8 string.
     fn read_to_string(&self, path: &Path) -> Result<String, FsError>;

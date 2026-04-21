@@ -9,7 +9,9 @@ pub const ECC_SECTION_FOOTER: &str = "# End ECC generated files";
 /// A gitignore entry with a pattern and a comment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GitignoreEntry {
+    /// The gitignore glob pattern.
     pub pattern: &'static str,
+    /// Explanation of why this file is ignored.
     pub comment: &'static str,
 }
 
@@ -68,10 +70,13 @@ pub const ECC_GITIGNORE_ENTRIES: &[GitignoreEntry] = &[
 /// Result of ensuring gitignore entries.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GitignoreResult {
+    /// Patterns successfully added to .gitignore.
     pub added: Vec<String>,
+    /// Patterns already present in .gitignore.
     pub already_present: Vec<String>,
+    /// True if the operation was skipped (e.g., no .gitignore file).
     pub skipped: bool,
-    /// Write error message, if the gitignore file could not be updated.
+    /// Error message if the gitignore file could not be updated.
     pub error: Option<String>,
 }
 

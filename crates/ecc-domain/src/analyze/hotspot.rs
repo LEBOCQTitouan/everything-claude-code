@@ -7,7 +7,9 @@ use super::error::AnalyzeError;
 /// A file with its change frequency.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hotspot {
+    /// File path.
     pub path: String,
+    /// Number of commits that changed this file.
     pub change_count: u32,
 }
 

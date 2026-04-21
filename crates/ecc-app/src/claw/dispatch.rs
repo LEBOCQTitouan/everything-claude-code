@@ -7,6 +7,30 @@ use ecc_domain::claw::command::ClawCommand;
 
 /// Dispatch a command to the appropriate handler.
 /// Exit is handled by the caller (REPL loop), not here.
+///
+/// Composition diagram — `ClawCommand` -> handler mapping:
+///
+/// ```text
+/// +----------- dispatch_command -----------+
+/// | Help        -> handle_help             |
+/// | Clear       -> handle_clear            |
+/// | History     -> handle_history          |
+/// | Sessions    -> handle_sessions         |
+/// | Model       -> handle_model            |
+/// | Load        -> handle_load             |
+/// | Branch      -> handle_branch           |
+/// | Search      -> handle_search           |
+/// | Compact     -> handle_compact          |
+/// | Export      -> handle_export           |
+/// | Metrics     -> handle_metrics          |
+/// | UserMessage -> handle_user_message     |
+/// | Exit        -> caller-handled (no-op)  |
+/// +----------------------------------------+
+/// ```
+///
+/// # Pattern
+///
+/// Command \[GoF\] — each `ClawCommand` variant routes to a handler function.
 pub fn dispatch_command(
     cmd: &ClawCommand,
     state: &mut ClawState,
@@ -52,6 +76,7 @@ mod tests {
             env,
             terminal: term,
             repl_input: input,
+            clock: &*ecc_test_support::TEST_CLOCK,
         }
     }
 

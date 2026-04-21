@@ -38,6 +38,21 @@ impl Handler for StartCartographyHandler {
 ///
 /// Handlers registered here take precedence over the match-based dispatch below.
 /// This is intentionally a function (not a static) so tests can call it directly.
+///
+/// Composition diagram — registry layout:
+///
+/// ```text
+/// +------------ HandlerRegistry --------------+
+/// | HashMap<&'static str, Box<dyn Handler>>   |
+/// |  "stop:cartography"  -> StopCartography   |
+/// |  "start:cartography" -> StartCartography  |
+/// |  (extend via m.insert for new handlers)   |
+/// +-------------------------------------------+
+/// ```
+///
+/// # Pattern
+///
+/// Registry \[Rust Idiom\] — dynamic dispatch via trait objects keyed by ID.
 pub fn build_handler_registry() -> HashMap<&'static str, Box<dyn Handler>> {
     let mut m: HashMap<&'static str, Box<dyn Handler>> = HashMap::new();
 
@@ -66,6 +81,47 @@ pub fn truncate_stdin(raw: &str) -> &str {
 ///
 /// If the hook is disabled by profile/env, returns a passthrough result.
 /// If the hook ID is unknown, returns a passthrough result with a stderr warning.
+///
+/// Flow/decision diagram — three-tier chain-of-responsibility resolution:
+///
+/// <!-- keep in sync with: dispatches_cartography_hooks -->
+/// ```text
+/// dispatch(ctx, ports)
+///        |
+///        v
+/// +-----------------------------+
+/// | ECC_WORKFLOW_BYPASS == "1"? |
+/// +-----------------------------+
+///        |--Y--> deprecation warn + passthrough (exit)
+///        |--N-->
+///        v
+/// +-----------------------------+
+/// | is_hook_enabled(id, prof.)? |
+/// +-----------------------------+
+///        |--N--> passthrough (disabled)
+///        |--Y-->
+///        v
+/// +----------- tier match ------------+
+/// | tier1: simple passthrough handlers|
+/// | tier2: tool-spawning handlers     |
+/// | tier3: session/file I/O handlers  |
+/// | unknown -> warn + passthrough     |
+/// +-----------------------------------+
+///        |
+///        v
+/// +-----------------------------+
+/// | result.exit_code == 2 ?     |
+/// +-----------------------------+
+///        |--Y--> apply_bypass_check()
+///        |--N-->
+///        v
+///   record metric (fire-and-forget) --> return
+/// ```
+///
+/// # Pattern
+///
+/// Chain of Responsibility \[GoF\] — tier1 -> tier2 -> tier3 handler lookup.
+/// Command \[GoF\] — each `HookContext` is a command routed to its handler.
 pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
     use ecc_domain::hook_runtime::profiles::{HookEnabledOptions, is_hook_enabled};
 
@@ -199,17 +255,11 @@ pub fn dispatch(ctx: &HookContext, ports: &HookPorts<'_>) -> HookResult {
 
     // Record hook execution metric (fire-and-forget)
     let metrics_disabled = ports.env.var("ECC_METRICS_DISABLED").as_deref() == Some("1");
-    let session_id =
-        crate::metrics_session::resolve_session_id(ports.env.var("CLAUDE_SESSION_ID").as_deref());
-    // TODO(BL-133): Replace with ports.clock.now_epoch_secs() when HookPorts gains Clock field
-    let timestamp = {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let secs = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        format!("{secs}")
-    };
+    let session_id = crate::metrics_session::resolve_session_id(
+        ports.env.var("CLAUDE_SESSION_ID").as_deref(),
+        ports.clock,
+    );
+    let timestamp = ports.clock.now_epoch_secs().to_string();
     let (outcome, error_message) = if result.exit_code == 0 {
         (ecc_domain::metrics::MetricOutcome::Success, None)
     } else {

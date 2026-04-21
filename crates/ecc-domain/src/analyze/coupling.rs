@@ -8,9 +8,13 @@ use std::collections::{HashMap, HashSet};
 /// A pair of files with their coupling score.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CouplingPair {
+    /// First file in the pair.
     pub file_a: String,
+    /// Second file in the pair.
     pub file_b: String,
+    /// Coupling ratio: `commits_together / max(commits_A, commits_B)` (0.0 to 1.0).
     pub coupling_ratio: f64,
+    /// Number of commits where both files changed together.
     pub commits_together: u32,
 }
 

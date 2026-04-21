@@ -4,12 +4,16 @@ pub const ARTIFACT_DIRS: &[&str] = &["agents", "commands", "skills", "rules", "t
 /// Report of what was removed, skipped, or errored during cleanup.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CleanReport {
+    /// Items successfully removed.
     pub removed: Vec<String>,
+    /// Items skipped (not found or protected).
     pub skipped: Vec<String>,
+    /// Error messages from failed removal attempts.
     pub errors: Vec<String>,
 }
 
 impl CleanReport {
+    /// Create a new empty clean report.
     pub fn new() -> Self {
         Self::default()
     }

@@ -7,6 +7,10 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Git info adapter that shells out to the `git` binary.
+///
+/// # Pattern
+///
+/// Adapter \[Hexagonal Architecture\] — implements `ecc_ports::git::GitInfo`
 pub struct OsGitInfo;
 
 impl GitInfo for OsGitInfo {

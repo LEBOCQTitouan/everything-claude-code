@@ -315,4 +315,72 @@ See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glo
 
 **Modified in:** `BL-152` — 2026-04-12
 
+### `ecc-domain::docs::claude_md` / `ecc-domain::backlog::entry` (spec 2026-04-18)
+
+**Purpose:** Domain-side primitives for the `ecc validate claude-md markers` lint. Extracts `TEMPORARY (BL-NNN)` markers and provides the backlog-filename matching predicate. Zero I/O, zero-dep pure functions.
+
+**Key Functions / Types:**
+- `TemporaryMarker { backlog_id: u32, line_number: usize, raw_text: String }` — value object representing a single warning comment in docs.
+- `extract_temporary_markers(content: &str) -> Vec<TemporaryMarker>` — regex-driven extractor `(?i)TEMPORARY\s*\(BL-0*(\d{1,6})\)` with fence-skipping; mirrors sibling `extract_claims`.
+- `matches_backlog_filename(filename: &str, id: u32) -> bool` — pure predicate handling `BL-{:03}` (≤999) and `BL-{id}` (≥1000) normalization. Lifted from `ecc-infra::fs_backlog` to preserve the app→domain dependency direction.
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-claude-md-temp-marker-lint/` — spec PASS 87/100, design PASS 84/100.
+
+**ADR Cross-Link:** None — all 15 decisions marked ADR-not-needed; choices visible in code/tests.
+
+**Design Rationale:** Cross-context ACL via primitive `u32`. `docs` context quotes a backlog identifier without importing `backlog`'s VO; `backlog` owns the authoritative presence check via a pure filename predicate. Keeps both contexts decoupled while enabling the lint to span them.
+
+**Modified in:** Spec 2026-04-18 — 2026-04-18
+
+### `ecc-app::validate_claude_md::run_validate_temporary_markers` (spec 2026-04-18)
+
+**Purpose:** Application orchestrator for the TEMPORARY-marker lint. Walks the project root for `CLAUDE.md`/`AGENTS.md`, extracts markers via domain, cross-references against a `HashSet<u32>` backlog index, emits diagnostics.
+
+**Key Functions / Types:**
+- `run_validate_temporary_markers(fs, terminal, project_root, disabled, strict, audit_report) -> bool` — top-level use case; decomposed into helpers to keep <50 LOC.
+- `walk_marker_files` — hand-rolled recursive walker; depth cap 16; deny-list `.git/`, `target/`, `node_modules/`, `.claude/worktrees/`; symlink-skip via `FileSystem::is_symlink`.
+- `BacklogIndex::load` / `BacklogIndex::contains(id: u32)` — lazy `HashSet<u32>` index built once from `docs/backlog/` via `extract_id_from_filename`; O(1) lookup.
+- `emit_diagnostics` — routes findings to stderr (WARN/ERROR) or stdout (audit-report table).
+- `sanitize_path_display` — strips control bytes (ANSI-escape injection guard) while preserving tab/newline.
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-claude-md-temp-marker-lint/` (US-001..US-004).
+
+**ADR Cross-Link:** N/A.
+
+**Design Rationale:** SRP decomposition per Round 1 design-review MEDIUM finding. Kill-switch env var read at CLI layer and threaded in as `disabled: bool` so app stays env-pure. Presence-only lookup is simple in v1; frontmatter-aware v2 tracked in BL-158.
+
+**Modified in:** Spec 2026-04-18 — 2026-04-18
+
+### `ecc-cli::commands::validate::ClaudeMdSubcommand` (spec 2026-04-18)
+
+**Purpose:** Restructures the `ecc validate claude-md` CLI from a single `--counts`-flag variant into a nested subcommand enum, with the legacy flag preserved as a deprecated alias.
+
+**Key Functions / Types:**
+- `ClaudeMdSubcommand = Counts | Markers { strict, audit_report } | All { strict, audit_report }` — nested clap subcommand.
+- `ClaudeMd { cmd: Option<ClaudeMdSubcommand>, counts: bool }` — parent variant with legacy-flag escape hatch that emits `DEPRECATED: use 'ecc validate claude-md counts' (subcommand form)` on stderr.
+- Kill-switch read: `std::env::var("ECC_CLAUDE_MD_MARKERS_DISABLED") == Ok("1".into())` — at CLI layer only, threaded into app as `disabled: bool`.
+
+**Spec Cross-Link:** Spec 2026-04-18 decisions #1 (subcommand shape), #13 (kill switch), #14 (semver-anchored deprecation).
+
+**ADR Cross-Link:** N/A.
+
+**Design Rationale:** Subcommand structure aligns with existing `ecc validate <target>` pattern (agents/commands/skills/hooks/rules are all subcommands). Adversary Round 1 flagged flag-stacking as code smell. Clap's `Option<Subcommand>` + sibling `#[arg(long)]` pattern accepted without conflict annotations (proven by PC-041 smoke test).
+
+**Modified in:** Spec 2026-04-18 — 2026-04-18
+
+### `ecc-infra::fs_backlog::find_entry_path` (spec 2026-04-18, REFACTOR)
+
+**Purpose:** Behavior-preserving refactor delegating filename-matching to the new domain predicate.
+
+**Key Functions / Types:**
+- `find_entry_path(fs, backlog_dir, id)` — now calls `matches_backlog_filename` for well-formed `BL-NNN` IDs; falls back to literal-string match for malformed IDs (preserves prior error semantics).
+
+**Spec Cross-Link:** Spec 2026-04-18 decision #10; AC-006.6 regression guard.
+
+**ADR Cross-Link:** N/A.
+
+**Design Rationale:** Prevents `ecc-app → ecc-infra` dependency leak when `run_validate_temporary_markers` needs filename matching. Domain owns the predicate; infra delegates. 126/126 ecc-infra tests pass post-refactor (PC-008..010 regression guard).
+
+**Modified in:** Spec 2026-04-18 — 2026-04-18
+
 <!-- END IMPLEMENT-GENERATED -->

@@ -92,6 +92,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn errors_when_not_installed() {
         // Use an empty PATH so cargo-mutants cannot be found
         let original_path = std::env::var("PATH").unwrap_or_default();

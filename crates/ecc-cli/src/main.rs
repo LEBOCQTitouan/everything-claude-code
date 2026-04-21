@@ -1,3 +1,29 @@
+//! `ecc` binary entrypoint: parses CLI args, initializes tracing, prunes old
+//! logs, and dispatches to the matching `commands::*::run` function.
+//!
+//! # Startup pipeline
+//!
+//! ```text
+//! [argv]
+//!   |
+//!   v
+//! [Cli::parse]  -- clap derive on ecc_cli::Cli
+//!   |
+//!   v
+//! [resolve_log_filter]  -- merges -v/-q flags, ECC_LOG, RUST_LOG, config
+//!   |
+//!   v
+//! [init_tracing]  -- stderr fmt layer + rolling JSON file under ~/.ecc/logs
+//!   |
+//!   v
+//! [auto_prune_logs]  -- non-fatal: drop DB rows + files > 30 days
+//!   |
+//!   v
+//! [match cli.command] --> commands::<sub>::run(args) -> anyhow::Result<()>
+//! ```
+//!
+//! Every subcommand arm is a 1:1 mapping — no business logic lives here.
+
 use clap::Parser;
 use ecc_cli::{Cli, Command, commands};
 

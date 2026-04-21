@@ -6,21 +6,32 @@ use std::path::PathBuf;
 /// Errors that can occur during backlog operations.
 #[derive(Debug, thiserror::Error)]
 pub enum BacklogError {
+    /// No frontmatter delimiter found in the markdown file.
     #[error("no frontmatter delimiter found")]
     NoFrontmatter,
 
+    /// YAML frontmatter could not be parsed.
     #[error("YAML parse error: {0}")]
     MalformedYaml(String),
 
+    /// The backlog directory does not exist.
     #[error("backlog directory not found: {0}")]
     DirectoryNotFound(PathBuf),
 
+    /// A query string was empty when it should not be.
     #[error("query must not be empty")]
     EmptyQuery,
 
+    /// An I/O error occurred at a specific path.
     #[error("I/O error at {path}: {message}")]
-    Io { path: String, message: String },
+    Io {
+        /// The file path where the error occurred.
+        path: String,
+        /// The error message.
+        message: String,
+    },
 
+    /// A reindex safety constraint was violated.
     #[error("reindex safety block: {0}")]
     SafetyBlock(String),
 }
@@ -29,15 +40,33 @@ pub enum BacklogError {
 pub const VALID_STATUSES: &[&str] = &["open", "in-progress", "implemented", "archived", "promoted"];
 
 /// Backlog entry status with typed variants and Unknown fallback.
+///
+/// State-transition diagram — forward lifecycle + side-arcs:
+///
+/// ```text
+///   [Open] --> [InProgress] --> [Implemented] --> [Promoted]
+///     |             |                 |
+///     v             v                 v
+///   [Archived]  [Archived]        [Archived]
+/// ```
+///
+/// `is_active()` returns `true` for `Open` and `InProgress` only.
+/// `Unknown(String)` is a forward-compat sentinel for future statuses.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum BacklogStatus {
+    /// Entry is open and ready to start.
     Open,
+    /// Entry is currently being worked on.
     #[serde(alias = "in-progress")]
     InProgress,
+    /// Entry is implemented and completed.
     Implemented,
+    /// Entry has been archived.
     Archived,
+    /// Entry has been promoted.
     Promoted,
+    /// A custom status that doesn't match the standard variants.
     #[serde(untagged)]
     Unknown(String),
 }
@@ -78,19 +107,29 @@ impl BacklogStatus {
 
 /// A parsed backlog entry from a BL-*.md file's YAML frontmatter.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct BacklogEntry {
+    /// Backlog entry ID, e.g., "BL-075".
     pub id: String,
+    /// Short title describing the work.
     pub title: String,
+    /// Current status (open, in-progress, implemented, archived, promoted).
     pub status: BacklogStatus,
+    /// ISO 8601 date when the entry was created.
     pub created: String,
+    /// Optional priority tier.
     #[serde(default)]
     pub tier: Option<String>,
+    /// Optional scope indicator (e.g., HIGH, MEDIUM, LOW).
     #[serde(default)]
     pub scope: Option<String>,
+    /// Optional target identifier (e.g., version, milestone).
     #[serde(default)]
     pub target: Option<String>,
+    /// Optional target command (e.g., /spec dev).
     #[serde(default)]
     pub target_command: Option<String>,
+    /// Optional list of tags for categorization.
     #[serde(default)]
     pub tags: Vec<String>,
 }
@@ -118,6 +157,19 @@ pub fn extract_id_from_filename(filename: &str) -> Option<u32> {
         return None;
     }
     digits.parse().ok()
+}
+
+/// Returns true if `filename` is the backlog file for the given numeric ID.
+///
+/// Uses `BL-{:03}` padding for IDs ≤ 999 and `BL-{id}` for IDs ≥ 1000.
+/// Matches both `BL-NNN.md` (no slug) and `BL-NNN-<slug>.md` (with slug).
+pub fn matches_backlog_filename(filename: &str, id: u32) -> bool {
+    let prefix = if id <= 999 {
+        format!("BL-{id:03}")
+    } else {
+        format!("BL-{id}")
+    };
+    filename == format!("{prefix}.md") || filename.starts_with(&format!("{prefix}-"))
 }
 
 /// Parse YAML frontmatter from markdown content.
@@ -409,7 +461,34 @@ mod tests {
         assert!(!result2.contains("\""));
     }
 
-    // PC-006: Does not modify status: lines in body after closing ---
+    // matches_backlog_filename tests
+
+    // PC-006: Predicate matches BL-{:03} for IDs ≤ 999
+    #[test]
+    fn matches_backlog_filename_padded() {
+        assert!(matches_backlog_filename("BL-001-foo.md", 1));
+        assert!(matches_backlog_filename("BL-100.md", 100));
+        assert!(matches_backlog_filename("BL-100-bar.md", 100));
+        assert!(matches_backlog_filename("BL-099-zzz.md", 99));
+        assert!(!matches_backlog_filename("BL-001-foo.md", 2));
+        assert!(!matches_backlog_filename("BL-100-foo.md", 1));
+        assert!(!matches_backlog_filename("foo.md", 1));
+        assert!(!matches_backlog_filename("BL-001.txt", 1));
+        assert!(!matches_backlog_filename("BL-001", 1));
+    }
+
+    // PC-007: Predicate matches BL-{id} for IDs ≥ 1000
+    #[test]
+    fn matches_backlog_filename_unpadded() {
+        assert!(matches_backlog_filename("BL-1000-foo.md", 1000));
+        assert!(matches_backlog_filename("BL-1000.md", 1000));
+        assert!(matches_backlog_filename("BL-9999-zzz.md", 9999));
+        assert!(matches_backlog_filename("BL-10000-foo.md", 10000));
+        assert!(!matches_backlog_filename("BL-100-foo.md", 1000));
+        assert!(!matches_backlog_filename("BL-1000-foo.md", 100));
+    }
+
+    // PC-006 (original numbering): Does not modify status: lines in body after closing ---
     #[test]
     fn replace_frontmatter_status_ignores_body_status() {
         let content = "---\nid: BL-001\nstatus: open\ncreated: 2026-01-01\n---\n\nstatus: this is in the body\n# Body";

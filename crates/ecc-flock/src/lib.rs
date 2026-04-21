@@ -39,6 +39,27 @@ impl std::error::Error for FlockError {}
 ///
 /// The lock is released and the file descriptor is closed when this guard
 /// is dropped.
+///
+/// # Pattern
+///
+/// RAII \[Rust Idiom\] — ownership of the `FlockGuard` corresponds 1:1 with
+/// ownership of the kernel flock. Dropping releases; forgetting leaks.
+///
+/// ```text
+/// +-------------------- FlockGuard --------------------+
+/// | lock_path : PathBuf   (absolute path to .lock file)|
+/// | fd        : i32       (open fd, flock LOCK_EX)     |
+/// +----------------------------------------------------+
+///          |                          |
+///          v                          v
+///      [Drop impl]              [into_raw_fd()]
+///      flock(LOCK_UN)           fd := -1, then
+///      close(fd)                mem::forget(self)
+/// ```
+///
+/// `into_raw_fd` transfers the lock out of RAII — the caller becomes
+/// responsible for `LOCK_UN` + `close`. The guard sets `fd = -1` before
+/// `forget` to make Drop a no-op and prevent double-close.
 pub struct FlockGuard {
     lock_path: PathBuf,
     fd: i32,
@@ -118,6 +139,31 @@ pub fn acquire(repo_root: &Path, name: &str) -> Result<FlockGuard, FlockError> {
 }
 
 /// Acquires an exclusive POSIX flock, retrying until `timeout` elapses.
+///
+/// Non-blocking retry loop: tries `LOCK_EX | LOCK_NB` every 50ms, returning
+/// [`FlockError::Timeout`] if the deadline passes before acquisition.
+///
+/// <!-- keep in sync with: acquire_with_timeout_succeeds_when_free -->
+/// ```text
+/// [open lock file] --err--> FlockError::AcquireFailed
+///        |
+///        v
+/// [flock LOCK_EX|LOCK_NB]
+///        |
+///   [ret == 0?] --Y--> [return FlockGuard]
+///        |
+///        N
+///        v
+///   [err == WouldBlock?] --N--> FlockError::AcquireFailed
+///        |
+///        Y
+///        v
+///   [deadline passed?] --Y--> FlockError::Timeout
+///        |
+///        N
+///        v
+///   [sleep 50ms] --> loop back to [flock LOCK_EX|LOCK_NB]
+/// ```
 pub fn acquire_with_timeout(
     repo_root: &Path,
     name: &str,

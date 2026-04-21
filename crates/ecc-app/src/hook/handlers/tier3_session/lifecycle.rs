@@ -115,7 +115,7 @@ fn best_effort_gc(ports: &HookPorts<'_>) {
     if let Some(dir) = toplevel {
         let project_dir = std::path::Path::new(&dir);
         let shell_mgr = crate::worktree::ShellWorktreeManager::new(ports.shell);
-        match crate::worktree::gc(&shell_mgr, ports.shell, project_dir, false) {
+        match crate::worktree::gc(&shell_mgr, ports.shell, project_dir, false, ports.clock) {
             Ok(result) => {
                 let removed = result.removed.len();
                 let skipped = result.skipped.len();
@@ -153,14 +153,14 @@ pub fn session_end(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
         warn!("Cannot create sessions dir: {}", e);
     }
 
-    let today = format_date(&datetime_from_epoch(epoch_secs()));
+    let today = format_date(&datetime_from_epoch(epoch_secs(ports.clock)));
     let short_id = ports
         .env
         .var("CLAUDE_SESSION_ID")
         .map(|s| if s.len() > 8 { s[..8].to_string() } else { s })
         .unwrap_or_else(|| "unknown".to_string());
     let session_file = sessions_dir.join(format!("{}-{}-session.tmp", today, short_id));
-    let current_time = format_time(&datetime_from_epoch(epoch_secs()));
+    let current_time = format_time(&datetime_from_epoch(epoch_secs(ports.clock)));
 
     // Try to extract summary from transcript
     let summary = transcript_path.as_deref().and_then(|tp| {

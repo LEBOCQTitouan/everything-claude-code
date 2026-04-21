@@ -3,18 +3,24 @@ use super::turn::{Role, Turn};
 /// Metrics for a Claw session.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionMetrics {
+    /// Total number of turns in the session.
     pub total_turns: usize,
+    /// Number of user turns.
     pub user_turns: usize,
+    /// Number of assistant turns.
     pub assistant_turns: usize,
+    /// Number of system turns.
     pub system_turns: usize,
+    /// Total character count across all turns.
     pub total_chars: usize,
+    /// Estimated token count (approximately 1 token per 4 characters).
     pub estimated_tokens: usize,
 }
 
-/// Approximate token count: ~4 characters per token.
+/// Approximate token count conversion: ~4 characters per token.
 const CHARS_PER_TOKEN: usize = 4;
 
-/// Compute metrics for a set of turns.
+/// Compute session metrics from a list of conversation turns.
 pub fn compute_metrics(turns: &[Turn]) -> SessionMetrics {
     let mut user_turns = 0;
     let mut assistant_turns = 0;
