@@ -56,32 +56,90 @@ impl<'a> ShellWorktreeManager<'a> {
 }
 
 impl WorktreeManager for ShellWorktreeManager<'_> {
-    fn has_uncommitted_changes(&self, _worktree_path: &Path) -> Result<bool, WorktreeError> {
-        Ok(false)
+    fn has_uncommitted_changes(&self, worktree_path: &Path) -> Result<bool, WorktreeError> {
+        let out = self
+            .shell
+            .run_command_in_dir("git", &["status", "--porcelain"], worktree_path)
+            .map_err(|e| WorktreeError::CommandFailed(e.to_string()))?;
+        if out.success() {
+            Ok(!out.stdout.is_empty())
+        } else {
+            Err(WorktreeError::CommandFailed(out.stderr))
+        }
     }
 
-    fn has_untracked_files(&self, _worktree_path: &Path) -> Result<bool, WorktreeError> {
-        Ok(false)
+    fn has_untracked_files(&self, worktree_path: &Path) -> Result<bool, WorktreeError> {
+        let out = self
+            .shell
+            .run_command_in_dir(
+                "git",
+                &["ls-files", "--others", "--exclude-standard"],
+                worktree_path,
+            )
+            .map_err(|e| WorktreeError::CommandFailed(e.to_string()))?;
+        if out.success() {
+            Ok(!out.stdout.is_empty())
+        } else {
+            Err(WorktreeError::CommandFailed(out.stderr))
+        }
     }
 
     fn unmerged_commit_count(
         &self,
-        _worktree_path: &Path,
-        _target_branch: &str,
+        worktree_path: &Path,
+        target_branch: &str,
     ) -> Result<u64, WorktreeError> {
-        Ok(0)
+        let range = format!("{target_branch}..HEAD");
+        let out = self
+            .shell
+            .run_command_in_dir("git", &["rev-list", "--count", &range], worktree_path)
+            .map_err(|e| WorktreeError::CommandFailed(e.to_string()))?;
+        if !out.success() {
+            return Err(WorktreeError::CommandFailed(out.stderr));
+        }
+        out.stdout
+            .trim()
+            .parse::<u64>()
+            .map_err(|e| WorktreeError::CommandFailed(format!("failed to parse count: {e}")))
     }
 
-    fn has_stash(&self, _worktree_path: &Path) -> Result<bool, WorktreeError> {
-        Ok(false)
+    /// Check whether the current stash list is non-empty.
+    ///
+    /// **Note**: `git stash` is repo-global, not worktree-scoped. This method
+    /// reports stash entries for the entire repository regardless of which
+    /// worktree path is supplied.
+    fn has_stash(&self, worktree_path: &Path) -> Result<bool, WorktreeError> {
+        let out = self
+            .shell
+            .run_command_in_dir("git", &["stash", "list"], worktree_path)
+            .map_err(|e| WorktreeError::CommandFailed(e.to_string()))?;
+        if out.success() {
+            Ok(!out.stdout.is_empty())
+        } else {
+            Err(WorktreeError::CommandFailed(out.stderr))
+        }
     }
 
     fn is_pushed_to_remote(
         &self,
-        _worktree_path: &Path,
-        _branch: &str,
+        worktree_path: &Path,
+        branch: &str,
     ) -> Result<bool, WorktreeError> {
-        Ok(true)
+        let range = format!("{branch}..origin/{branch}");
+        let out = self
+            .shell
+            .run_command_in_dir("git", &["rev-list", "--count", &range], worktree_path)
+            .map_err(|e| WorktreeError::CommandFailed(e.to_string()))?;
+        // Non-zero exit (e.g., remote not found) → treat as unpushed, not an error.
+        if !out.success() {
+            return Ok(false);
+        }
+        let count: u64 = out
+            .stdout
+            .trim()
+            .parse()
+            .map_err(|e| WorktreeError::CommandFailed(format!("failed to parse count: {e}")))?;
+        Ok(count == 0)
     }
 
     fn remove_worktree(&self, repo_root: &Path, worktree_path: &Path) -> Result<(), WorktreeError> {
