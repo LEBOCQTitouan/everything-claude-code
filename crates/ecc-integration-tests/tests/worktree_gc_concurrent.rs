@@ -63,6 +63,15 @@ fn write_live_heartbeat(worktree_path: &Path) {
         .expect("failed to write .ecc-session");
 }
 
+// ── helpers for valid session worktree names ─────────────────────────────────
+
+/// Build a valid session worktree name with a numeric PID suffix.
+fn session_name(slug: &str) -> String {
+    // Use current PID so it's guaranteed alive for heartbeat tests.
+    let pid = std::process::id();
+    format!("ecc-session-20200101-120000-{slug}-{pid}")
+}
+
 // ── PC-048: --force without --kill-live respects liveness ───────────────────
 
 /// AC-006.1: `--force` alone must NOT delete a live worktree.
@@ -72,10 +81,10 @@ fn force_respects_liveness() {
     let repo = init_git_repo();
     let repo_path = repo.path();
 
-    let wt_name = "ecc-session-20200101-120000-live-respects-liveness";
-    add_stale_session_worktree(repo_path, wt_name);
+    let wt_name = session_name("live-respects-liveness");
+    add_stale_session_worktree(repo_path, &wt_name);
 
-    let wt_path = repo_path.join(wt_name);
+    let wt_path = repo_path.join(&wt_name);
     write_live_heartbeat(&wt_path);
 
     // --force alone: liveness is respected, live worktree must NOT be deleted.
@@ -109,9 +118,9 @@ fn kill_live_prompts() {
     let repo = init_git_repo();
     let repo_path = repo.path();
 
-    let wt_name_no = "ecc-session-20200101-120000-live-prompt-no";
-    add_stale_session_worktree(repo_path, wt_name_no);
-    write_live_heartbeat(&repo_path.join(wt_name_no));
+    let wt_name_no = session_name("live-prompt-no");
+    add_stale_session_worktree(repo_path, &wt_name_no);
+    write_live_heartbeat(&repo_path.join(&wt_name_no));
 
     // Non-TTY (piped stdin) without --yes → must exit non-zero (AC-006.5 / non-TTY rejection).
     // This simulates what "n\n" response does in non-TTY: blocked by non-TTY guard.
@@ -129,7 +138,7 @@ fn kill_live_prompts() {
 
     // worktree must still exist
     assert!(
-        repo_path.join(wt_name_no).exists(),
+        repo_path.join(&wt_name_no).exists(),
         "worktree must NOT be deleted when non-TTY exits non-zero"
     );
 }
@@ -143,9 +152,9 @@ fn kill_live_yes_bypasses_prompt() {
     let repo = init_git_repo();
     let repo_path = repo.path();
 
-    let wt_name = "ecc-session-20200101-120000-live-yes-bypass";
-    add_stale_session_worktree(repo_path, wt_name);
-    write_live_heartbeat(&repo_path.join(wt_name));
+    let wt_name = session_name("live-yes-bypass");
+    add_stale_session_worktree(repo_path, &wt_name);
+    write_live_heartbeat(&repo_path.join(&wt_name));
 
     let mut cmd = ecc_cmd();
     cmd.args([
@@ -169,7 +178,7 @@ fn kill_live_yes_bypasses_prompt() {
 
     // The live worktree must be gone.
     assert!(
-        !repo_path.join(wt_name).exists(),
+        !repo_path.join(&wt_name).exists(),
         "live worktree must be deleted with --force --kill-live --yes. stdout={stdout} stderr={stderr}"
     );
 }
@@ -207,9 +216,9 @@ fn kill_live_non_tty_requires_yes() {
     let repo = init_git_repo();
     let repo_path = repo.path();
 
-    let wt_name = "ecc-session-20200101-120000-live-non-tty";
-    add_stale_session_worktree(repo_path, wt_name);
-    write_live_heartbeat(&repo_path.join(wt_name));
+    let wt_name = session_name("live-non-tty");
+    add_stale_session_worktree(repo_path, &wt_name);
+    write_live_heartbeat(&repo_path.join(&wt_name));
 
     // assert_cmd uses piped I/O → non-TTY. No --yes → must exit non-zero.
     let mut cmd = ecc_cmd();
@@ -230,7 +239,7 @@ fn kill_live_non_tty_requires_yes() {
 
     // Worktree must NOT be deleted.
     assert!(
-        repo_path.join(wt_name).exists(),
+        repo_path.join(&wt_name).exists(),
         "worktree must NOT be deleted when non-TTY guard rejects. stderr={stderr}"
     );
 }

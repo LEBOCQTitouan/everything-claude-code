@@ -4,6 +4,8 @@ use clap::{Args, Subcommand};
 use ecc_app::worktree;
 use ecc_infra::os_worktree::OsWorktreeManager;
 use ecc_infra::process_executor::ProcessExecutor;
+use std::io::BufRead as _;
+use std::io::IsTerminal as _;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -19,6 +21,15 @@ pub enum WorktreeAction {
         /// Remove worktrees without confirming liveness check
         #[arg(long)]
         force: bool,
+
+        /// Delete live worktrees. Requires --force. Asks for confirmation in TTY;
+        /// requires --yes in non-TTY contexts.
+        #[arg(long, requires = "force")]
+        kill_live: bool,
+
+        /// Bypass confirmation prompt for --kill-live. Required in non-TTY contexts.
+        #[arg(long)]
+        yes: bool,
 
         /// Project directory (defaults to current directory)
         #[arg(long)]
@@ -37,8 +48,37 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
     let worktree_mgr = OsWorktreeManager;
 
     match args.action {
-        WorktreeAction::Gc { force, dir } => {
+        WorktreeAction::Gc {
+            force,
+            kill_live,
+            yes,
+            dir,
+        } => {
             let project_dir = resolve_dir(dir)?;
+
+            // TTY-aware confirmation for --kill-live.
+            if kill_live {
+                if std::io::stdin().is_terminal() {
+                    if !yes {
+                        eprintln!("Delete live session worktrees? [y/N]");
+                        let mut input = String::new();
+                        std::io::BufReader::new(std::io::stdin())
+                            .read_line(&mut input)
+                            .ok();
+                        if !input.trim().eq_ignore_ascii_case("y") {
+                            eprintln!("Aborted");
+                            std::process::exit(1);
+                        }
+                    }
+                } else {
+                    // Non-TTY: --yes is required.
+                    if !yes {
+                        eprintln!("--kill-live in non-interactive context requires --yes");
+                        std::process::exit(1);
+                    }
+                }
+            }
+
             let clock = ecc_infra::system_clock::SystemClock;
             let fs = ecc_infra::os_fs::OsFileSystem;
             let result = worktree::gc(
@@ -48,6 +88,7 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
                 &project_dir,
                 worktree::GcOptions {
                     force,
+                    kill_live,
                     ..worktree::GcOptions::default()
                 },
                 &clock,

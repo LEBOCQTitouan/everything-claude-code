@@ -17,6 +17,10 @@ pub const SELF_SKIP_FALLBACK_DEFAULT_SECS: u64 = 3600;
 pub struct GcOptions {
     /// Override liveness check and remove unmerged worktrees.
     pub force: bool,
+    /// Delete live worktrees. Requires `force=true`.
+    /// When `false` (default), live worktrees are skipped with a diagnostic message.
+    /// When `true`, live worktrees are included in the deletion set.
+    pub kill_live: bool,
     /// The current session's worktree name, used for self-skip (AC-003.2).
     /// When `Some`, the named worktree is skipped unconditionally.
     /// When `None`, falls back to conservative skip of all young session worktrees
@@ -31,6 +35,7 @@ impl Default for GcOptions {
     fn default() -> Self {
         Self {
             force: false,
+            kill_live: false,
             self_skip: None,
             self_skip_fallback_secs: SELF_SKIP_FALLBACK_DEFAULT_SECS,
         }
@@ -98,8 +103,7 @@ pub fn gc(
 
         // AC-003.2: self-skip — unconditionally skip the current session's own worktree.
         if let Some(ref self_name) = options.self_skip {
-            let candidate =
-                WorktreeName::new(&worktree_name).unwrap_or_else(|_| self_name.clone());
+            let candidate = WorktreeName::new(&worktree_name).unwrap_or_else(|_| self_name.clone());
             if self_name.eq_platform(&candidate) {
                 tracing::debug!(
                     worktree = %worktree_name,
@@ -131,6 +135,8 @@ pub fn gc(
         // Consult the .ecc-session heartbeat before the stale-timer fallback.
         // On NotFound or malformed JSON → fall through to stale-timer logic (AC-001.4, AC-001.5).
         let session_path = worktree_path.join(".ecc-session");
+        // When kill_live=true and the worktree is live, we skip the stale-timer check entirely.
+        let mut force_delete_live = false;
         if let Ok(content) = fs.read_to_string(&session_path)
             && let Ok(record) = ecc_domain::worktree::liveness::LivenessRecord::parse(&content)
         {
@@ -140,17 +146,27 @@ pub fn gc(
                 .map(|o| o.success())
                 .unwrap_or(false);
             if ecc_domain::worktree::liveness::is_live(&record, now, pid_alive, TTL_DEFAULT_SECS) {
-                let secs_ago = now.saturating_sub(record.last_seen_unix_ts);
-                eprintln!(
-                    "Skipping {worktree_name}: active session detected (PID {}, last seen {secs_ago}s ago)",
-                    record.claude_code_pid
-                );
-                result.skipped.push(worktree_name);
-                continue;
+                if options.kill_live {
+                    tracing::warn!(
+                        worktree = %worktree_name,
+                        "GC: deleting live worktree (--force --kill-live)"
+                    );
+                    force_delete_live = true;
+                } else {
+                    let secs_ago = now.saturating_sub(record.last_seen_unix_ts);
+                    eprintln!(
+                        "Skipping {worktree_name}: active session detected (PID {}, last seen {secs_ago}s ago). Use --force --kill-live to override.",
+                        record.claude_code_pid
+                    );
+                    result.skipped.push(worktree_name);
+                    continue;
+                }
             }
         }
 
-        if !is_worktree_stale(executor, &parsed, now, worktree_path) {
+        // When force_delete_live=true, skip the stale-timer check: the worktree is
+        // explicitly targeted for deletion regardless of staleness.
+        if !force_delete_live && !is_worktree_stale(executor, &parsed, now, worktree_path) {
             result.skipped.push(worktree_name);
             continue;
         }
@@ -372,7 +388,10 @@ mod tests {
             &executor,
             &InMemoryFileSystem::new(),
             Path::new("/repo"),
-            GcOptions { force: true, ..GcOptions::default() },
+            GcOptions {
+                force: true,
+                ..GcOptions::default()
+            },
             &*TEST_CLOCK,
         )
         .unwrap();
