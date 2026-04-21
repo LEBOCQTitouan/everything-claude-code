@@ -4,6 +4,7 @@
 //! and [`ecc_ports::worktree::WorktreeManager`].
 
 pub mod gc;
+pub mod heartbeat;
 pub mod shell_manager;
 pub mod status;
 
