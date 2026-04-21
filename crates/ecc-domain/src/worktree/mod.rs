@@ -1,3 +1,5 @@
+pub mod liveness;
+
 /// Value object for worktree names used in session isolation.
 /// Format: `ecc-session-{YYYYMMDD-HHMMSS}-{slug}-{pid}`
 ///
