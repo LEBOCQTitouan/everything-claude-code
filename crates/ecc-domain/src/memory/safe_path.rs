@@ -17,10 +17,18 @@ pub struct SafePath {
 pub enum SafePathError {
     /// The child path does not start with the root, indicating a traversal attempt.
     #[error("path escapes root: {path:?} not under {root:?}")]
-    Escape { root: PathBuf, path: PathBuf },
+    Escape {
+        /// The root path that the child must reside under.
+        root: PathBuf,
+        /// The child path that escaped the root.
+        path: PathBuf,
+    },
     /// The path is structurally invalid.
     #[error("invalid path: {reason}")]
-    Invalid { reason: String },
+    Invalid {
+        /// Human-readable description of why the path is invalid.
+        reason: String,
+    },
 }
 
 impl SafePath {
