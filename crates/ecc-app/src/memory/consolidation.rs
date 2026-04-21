@@ -568,7 +568,7 @@ mod tests {
             let entry = MemoryEntry::new(
                 MemoryId(0),
                 MemoryTier::Episodic,
-                &format!("Entry {i}"),
+                format!("Entry {i}"),
                 "Content that goes here for the entry",
                 vec![],
                 None,

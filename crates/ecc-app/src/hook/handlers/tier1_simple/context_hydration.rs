@@ -652,7 +652,7 @@ mod tests {
     #[test]
     fn implement_context_includes_test_paths() {
         // Use absolute-style paths consistent with InMemoryFileSystem prefix matching
-        let fs = InMemoryFileSystem::new()
+        let _fs = InMemoryFileSystem::new()
             .with_file("/Cargo.toml", "[workspace]")
             .with_file(
                 "/state.json",
@@ -660,9 +660,9 @@ mod tests {
             )
             .with_file("/design.md", "# Design\n")
             .with_file("/crates/ecc-app/tests/integration_test.rs", "// test");
-        let shell = MockExecutor::new();
-        let env = MockEnvironment::new();
-        let term = BufferedTerminal::new();
+        let _shell = MockExecutor::new();
+        let _env = MockEnvironment::new();
+        let _term = BufferedTerminal::new();
 
         // We need to verify the build_implement_context function itself with a direct test
         // since the actual handler uses relative paths that won't work with in-memory FS.

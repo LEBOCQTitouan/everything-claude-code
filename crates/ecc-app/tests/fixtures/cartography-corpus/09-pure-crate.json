@@ -1,0 +1,8 @@
+{
+  "session_id": "fixture-09",
+  "timestamp": 1700000009,
+  "changed_files": [
+    {"path": "crates/foo/src/bar.rs", "classification": "source"}
+  ],
+  "project_type": "rust"
+}

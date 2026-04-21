@@ -61,6 +61,23 @@ fn check_sections(content: &str) -> Option<String> {
     }
 }
 
+/// Returns true if the section heading exists and is followed by at least one
+/// list item (`- `) or table row (`|`) before the next heading or end of file.
+fn has_section_with_content(content: &str, heading: &str) -> bool {
+    let Some(start) = content.find(heading) else {
+        return false;
+    };
+    let after = &content[start + heading.len()..];
+    // Look for the next heading or use entire remainder
+    let section_body = match after.find("\n## ") {
+        Some(end) => &after[..end],
+        None => after,
+    };
+    section_body
+        .lines()
+        .any(|line| line.trim_start().starts_with("- ") || line.trim_start().starts_with('|'))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -100,21 +117,4 @@ mod tests {
             "implement-done.md must NOT exist at .claude/workflow/ when using custom state_dir"
         );
     }
-}
-
-/// Returns true if the section heading exists and is followed by at least one
-/// list item (`- `) or table row (`|`) before the next heading or end of file.
-fn has_section_with_content(content: &str, heading: &str) -> bool {
-    let Some(start) = content.find(heading) else {
-        return false;
-    };
-    let after = &content[start + heading.len()..];
-    // Look for the next heading or use entire remainder
-    let section_body = match after.find("\n## ") {
-        Some(end) => &after[..end],
-        None => after,
-    };
-    section_body
-        .lines()
-        .any(|line| line.trim_start().starts_with("- ") || line.trim_start().starts_with('|'))
 }

@@ -2,7 +2,10 @@
 
 use clap::{Args, Subcommand};
 use ecc_app::memory::crud::{AddParams, MemoryAppError};
+use ecc_app::memory::paths::resolve_project_memory_root;
 use ecc_domain::memory::{MemoryId, MemoryTier};
+use ecc_infra::fs_backlog::FsBacklogRepository;
+use ecc_ports::backlog::BacklogEntryStore;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -91,6 +94,137 @@ pub enum MemoryAction {
     },
     /// Show memory store statistics
     Stats,
+    /// Prune orphaned memory files
+    Prune {
+        /// Scan project_bl<N>_*.md files and cross-reference against BACKLOG.md;
+        /// list files whose BL entry is implemented/archived (default: dry-run)
+        #[arg(long)]
+        orphaned_backlogs: bool,
+        /// Actually move files to trash (opt-in destructive)
+        #[arg(long)]
+        apply: bool,
+    },
+    /// Restore memory files from the trash directory for a given date
+    Restore {
+        /// Date of the trash directory (YYYY-MM-DD)
+        #[arg(long)]
+        trash: String,
+        /// Actually move files back to memory root (default: dry-run)
+        #[arg(long)]
+        apply: bool,
+    },
+}
+
+/// Result of a restore operation (dry-run or apply).
+pub struct RestoreResult {
+    /// Files that would be or were restored (apply=false: preview; apply=true: actually moved).
+    pub listed: Vec<std::path::PathBuf>,
+    /// Files that were moved back to the memory root (only populated when apply=true).
+    pub restored: Vec<std::path::PathBuf>,
+    /// Errors encountered when moving individual files.
+    pub errors: Vec<String>,
+}
+
+/// Validates that `trash_date` matches `^\d{4}-\d{2}-\d{2}$` (ISO 8601 date).
+///
+/// Returns an error if the format is invalid, preventing path traversal attacks.
+fn validate_trash_date(trash_date: &str) -> anyhow::Result<()> {
+    let valid = trash_date.len() == 10
+        && trash_date.as_bytes()[4] == b'-'
+        && trash_date.as_bytes()[7] == b'-'
+        && trash_date[..4].bytes().all(|b| b.is_ascii_digit())
+        && trash_date[5..7].bytes().all(|b| b.is_ascii_digit())
+        && trash_date[8..10].bytes().all(|b| b.is_ascii_digit());
+    if valid {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "invalid trash date {:?}: expected YYYY-MM-DD",
+            trash_date
+        ))
+    }
+}
+
+/// List or restore files from `<memory_root>/.trash/<trash_date>/`.
+///
+/// Dry-run (apply=false): lists files in the trash directory without moving them.
+/// Apply (apply=true): moves each file back to `memory_root`.
+pub fn handle_restore<F: ecc_ports::fs::FileSystem>(
+    fs: &F,
+    memory_root: &std::path::Path,
+    trash_date: &str,
+    apply: bool,
+) -> anyhow::Result<RestoreResult> {
+    validate_trash_date(trash_date)?;
+    let trash_dir = memory_root.join(".trash").join(trash_date);
+
+    let entries = if fs.exists(&trash_dir) {
+        fs.read_dir(&trash_dir)
+            .map_err(|e| anyhow::anyhow!("failed to read trash directory: {e}"))?
+    } else {
+        vec![]
+    };
+
+    let mut result = RestoreResult {
+        listed: entries.clone(),
+        restored: vec![],
+        errors: vec![],
+    };
+
+    if apply {
+        for src in &entries {
+            let file_name = match src.file_name() {
+                Some(n) => n,
+                None => continue,
+            };
+            let dest = memory_root.join(file_name);
+            match fs.copy(src, &dest) {
+                Ok(()) => {
+                    if let Err(e) = fs.remove_file(src) {
+                        result
+                            .errors
+                            .push(format!("failed to remove {}: {e}", src.display()));
+                    } else {
+                        result.restored.push(dest);
+                    }
+                }
+                Err(e) => {
+                    result
+                        .errors
+                        .push(format!("failed to restore {}: {e}", src.display()));
+                }
+            }
+        }
+    }
+
+    Ok(result)
+}
+
+/// Return today's date as `YYYY-MM-DD` using the system clock (UTC).
+fn today_date() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let days = secs / 86400;
+    let (year, month, day) = days_to_ymd(days);
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
+/// Convert days since Unix epoch (1970-01-01) to `(year, month, day)`.
+fn days_to_ymd(days: u64) -> (u64, u64, u64) {
+    let z = days as i64 + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    (y as u64, m, d)
 }
 
 fn open_store() -> anyhow::Result<ecc_infra::sqlite_memory::SqliteMemoryStore> {
@@ -258,6 +392,101 @@ pub fn run(args: MemoryArgs) -> anyhow::Result<()> {
                     "GC complete: {} stale entries deleted",
                     result.deleted_count
                 );
+            }
+        }
+
+        MemoryAction::Prune {
+            orphaned_backlogs,
+            apply,
+        } => {
+            if !orphaned_backlogs {
+                eprintln!("error: --orphaned-backlogs flag is required");
+                std::process::exit(1);
+            }
+
+            let fs = ecc_infra::os_fs::OsFileSystem;
+            let env = ecc_infra::os_env::OsEnvironment;
+            let safe_root = resolve_project_memory_root(&env, &fs)
+                .map_err(|e| anyhow::anyhow!("failed to resolve memory root: {e}"))?;
+            let memory_root = safe_root.full().to_path_buf();
+
+            let backlog_dir = PathBuf::from("docs/backlog");
+            let repo = FsBacklogRepository::new(&fs);
+            let backlog_entries = repo
+                .load_entries(&backlog_dir)
+                .map_err(|e| anyhow::anyhow!("failed to load backlog entries: {e}"))?;
+
+            let today = today_date();
+            let report = ecc_app::memory::file_prune::prune_orphaned_file_memories(
+                &fs,
+                &memory_root,
+                &backlog_entries,
+                &today,
+                apply,
+            );
+
+            if apply {
+                if report.trashed_files.is_empty() {
+                    println!("No orphaned memory files to prune.");
+                } else {
+                    println!("Pruned {} orphaned file(s):", report.trashed_files.len());
+                    for p in &report.trashed_files {
+                        println!("  trashed: {}", p.display());
+                    }
+                    if report.index_updated {
+                        println!("  MEMORY.md updated.");
+                    }
+                }
+            } else if report.would_trash.is_empty() {
+                println!("No orphaned memory files found (dry-run).");
+            } else {
+                println!(
+                    "Would prune {} orphaned file(s) (dry-run — use --apply to trash):",
+                    report.would_trash.len()
+                );
+                for p in &report.would_trash {
+                    println!("  would-trash: {}", p.display());
+                }
+            }
+
+            for e in &report.errors {
+                eprintln!("  error: {e}");
+            }
+
+            if !report.errors.is_empty() {
+                std::process::exit(1);
+            }
+        }
+
+        MemoryAction::Restore { trash, apply } => {
+            let fs = ecc_infra::os_fs::OsFileSystem;
+            let env = ecc_infra::os_env::OsEnvironment;
+            let safe_root = resolve_project_memory_root(&env, &fs)
+                .map_err(|e| anyhow::anyhow!("failed to resolve memory root: {e}"))?;
+            let memory_root = safe_root.full().to_path_buf();
+            let result = handle_restore(&fs, &memory_root, &trash, apply)?;
+            if apply {
+                if result.restored.is_empty() {
+                    println!("No files restored from trash/{trash}");
+                } else {
+                    println!(
+                        "Restored {} file(s) from trash/{trash}:",
+                        result.restored.len()
+                    );
+                    for p in &result.restored {
+                        println!("  {}", p.display());
+                    }
+                }
+                for e in &result.errors {
+                    eprintln!("  error: {e}");
+                }
+            } else if result.listed.is_empty() {
+                println!("No files in trash/{trash}");
+            } else {
+                println!("Files in trash/{trash} (dry-run — use --apply to restore):");
+                for p in &result.listed {
+                    println!("  {}", p.display());
+                }
             }
         }
 
@@ -497,6 +726,329 @@ mod tests {
                 _ => panic!("expected Export variant"),
             },
         }
+    }
+
+    // PC-040: `ecc memory prune --orphaned-backlogs --apply` trashes orphaned files
+    #[test]
+    fn prune_orphaned_apply_trashes() {
+        use ecc_app::memory::file_prune::prune_orphaned_file_memories;
+        use ecc_domain::backlog::entry::{BacklogEntry, BacklogStatus};
+        use ecc_ports::fs::FileSystem as _;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/apply-root");
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root)
+            .with_file(root.join("project_bl010_some_feature.md"), "bl010 memory")
+            .with_file(root.join("project_bl020_another.md"), "bl020 memory")
+            .with_file(root.join("project_bl030_open_entry.md"), "bl030 memory")
+            .with_file(root.join("MEMORY.md"), "# Memory\n");
+
+        let backlog_entries = vec![
+            BacklogEntry {
+                id: "BL-010".to_string(),
+                title: "Some Feature".to_string(),
+                status: BacklogStatus::Implemented, // orphaned
+                created: "2026-01-01".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-020".to_string(),
+                title: "Another".to_string(),
+                status: BacklogStatus::Archived, // orphaned
+                created: "2026-01-02".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-030".to_string(),
+                title: "Open Entry".to_string(),
+                status: BacklogStatus::Open, // NOT orphaned
+                created: "2026-01-03".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+        ];
+
+        let report = prune_orphaned_file_memories(
+            &fs,
+            &root,
+            &backlog_entries,
+            "2026-04-18",
+            true, // --apply
+        );
+
+        // Two files were trashed
+        assert_eq!(
+            report.trashed_files.len(),
+            2,
+            "apply should trash 2 orphaned files"
+        );
+        assert_eq!(
+            report.would_trash.len(),
+            0,
+            "apply run must not populate would_trash"
+        );
+        assert!(report.errors.is_empty(), "no errors expected");
+
+        // Orphaned files must no longer exist at their original paths
+        assert!(
+            !fs.exists(&root.join("project_bl010_some_feature.md")),
+            "bl010 file must be moved from root"
+        );
+        assert!(
+            !fs.exists(&root.join("project_bl020_another.md")),
+            "bl020 file must be moved from root"
+        );
+
+        // Trashed files must exist under .trash/<today>/
+        assert!(
+            fs.exists(&root.join(".trash/2026-04-18/project_bl010_some_feature.md")),
+            "bl010 file must land in .trash/2026-04-18/"
+        );
+        assert!(
+            fs.exists(&root.join(".trash/2026-04-18/project_bl020_another.md")),
+            "bl020 file must land in .trash/2026-04-18/"
+        );
+
+        // Non-orphaned file must survive
+        assert!(
+            fs.exists(&root.join("project_bl030_open_entry.md")),
+            "bl030 open file must not be trashed"
+        );
+    }
+
+    // PC-039: CLI `ecc memory prune --orphaned-backlogs` defaults to dry-run
+    #[test]
+    fn prune_orphaned_dry_run_default() {
+        use clap::Parser;
+
+        #[derive(Parser)]
+        struct Cli {
+            #[command(subcommand)]
+            cmd: CliCmd,
+        }
+
+        #[derive(clap::Subcommand)]
+        enum CliCmd {
+            Memory(MemoryArgs),
+        }
+
+        // Parse `ecc memory prune --orphaned-backlogs` (no --apply)
+        let cli = Cli::try_parse_from(["ecc", "memory", "prune", "--orphaned-backlogs"])
+            .expect("should parse prune subcommand");
+
+        match cli.cmd {
+            CliCmd::Memory(args) => match args.action {
+                MemoryAction::Prune {
+                    orphaned_backlogs,
+                    apply,
+                } => {
+                    assert!(orphaned_backlogs, "orphaned_backlogs flag must be true");
+                    assert!(!apply, "apply must default to false (dry-run by default)");
+                }
+                _ => panic!("expected Prune variant"),
+            },
+        }
+
+        // Verify dry-run semantics: without --apply, handler must scan and list
+        // would-be-trashed files but not modify the filesystem.
+        //
+        // We verify this via the prune_orphaned_backlogs app helper:
+        // supply 2 orphaned (implemented) + 1 non-orphaned (open) memory file,
+        // expect 2 listed in "would_trash", 0 actually trashed.
+        use ecc_app::memory::file_prune::prune_orphaned_file_memories;
+        use ecc_domain::backlog::entry::{BacklogEntry, BacklogStatus};
+        use ecc_ports::fs::FileSystem as _;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/root");
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root)
+            .with_file(root.join("project_bl010_some_feature.md"), "bl010 memory")
+            .with_file(root.join("project_bl020_another.md"), "bl020 memory")
+            .with_file(root.join("project_bl030_open_entry.md"), "bl030 memory")
+            .with_file(root.join("MEMORY.md"), "# Memory\n");
+
+        let backlog_entries = vec![
+            BacklogEntry {
+                id: "BL-010".to_string(),
+                title: "Some Feature".to_string(),
+                status: BacklogStatus::Implemented, // orphaned
+                created: "2026-01-01".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-020".to_string(),
+                title: "Another".to_string(),
+                status: BacklogStatus::Archived, // orphaned
+                created: "2026-01-02".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+            BacklogEntry {
+                id: "BL-030".to_string(),
+                title: "Open Entry".to_string(),
+                status: BacklogStatus::Open, // NOT orphaned
+                created: "2026-01-03".to_string(),
+                tier: None,
+                scope: None,
+                target: None,
+                target_command: None,
+                tags: vec![],
+            },
+        ];
+
+        let report = prune_orphaned_file_memories(
+            &fs,
+            &root,
+            &backlog_entries,
+            "2026-04-18",
+            false, // dry_run (no --apply)
+        );
+
+        assert_eq!(
+            report.would_trash.len(),
+            2,
+            "dry-run should list 2 orphaned files"
+        );
+        assert_eq!(
+            report.trashed_files.len(),
+            0,
+            "dry-run must not trash any files"
+        );
+        // Files still exist
+        assert!(
+            fs.exists(&root.join("project_bl010_some_feature.md")),
+            "bl010 file must survive dry-run"
+        );
+        assert!(
+            fs.exists(&root.join("project_bl020_another.md")),
+            "bl020 file must survive dry-run"
+        );
+        assert!(
+            fs.exists(&root.join("project_bl030_open_entry.md")),
+            "bl030 file must survive dry-run"
+        );
+    }
+
+    // PC-104: `handle_restore` rejects `trash_date` values not matching `^\d{4}-\d{2}-\d{2}$`
+    #[test]
+    fn restore_rejects_non_iso_date() {
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/sec-root");
+        let fs = InMemoryFileSystem::new().with_dir(&root);
+
+        let bad_dates = [
+            "../../etc",
+            "2026-04-19/../..",
+            "2026/04/19",
+            "not-a-date",
+            "",
+            "2026-4-19",   // not zero-padded
+            "2026-04-19a", // trailing junk
+        ];
+        for bad in bad_dates {
+            let result = handle_restore(&fs, &root, bad, false);
+            assert!(result.is_err(), "must reject trash_date: {bad:?}");
+        }
+
+        // Valid ISO date passes validation (may fail with dir not found, but not with invalid date)
+        let good = "2026-04-19";
+        let result = handle_restore(&fs, &root, good, false);
+        // Either Ok (empty dir) or Err — must not be an invalid-date error.
+        // The in-memory FS has no .trash dir, so it returns Ok with empty listed.
+        assert!(
+            result.is_ok(),
+            "valid date should not produce a validation error"
+        );
+    }
+
+    // PC-043: `ecc memory restore --trash <date>` lists trash files; `--apply` moves them back
+    #[test]
+    fn restore_lists_and_applies() {
+        use ecc_ports::fs::FileSystem as _;
+        use ecc_test_support::InMemoryFileSystem;
+        use std::path::PathBuf;
+
+        let root = PathBuf::from("/mem/restore-root");
+        let trash_date = "2026-04-19";
+        let trash_dir = root.join(".trash").join(trash_date);
+        let file_name = "project_bl001_foo.md";
+        let trashed_path = trash_dir.join(file_name);
+
+        let fs = InMemoryFileSystem::new()
+            .with_dir(&root)
+            .with_dir(&trash_dir)
+            .with_file(&trashed_path, "bl001 content");
+
+        // Dry-run: list files in trash, nothing moved
+        let result = handle_restore(&fs, &root, trash_date, false).expect("dry-run should succeed");
+        assert!(
+            result.listed.iter().any(|p| p.ends_with(file_name)),
+            "dry-run should list the trashed file"
+        );
+        assert!(
+            fs.exists(&trashed_path),
+            "file must still be in trash after dry-run"
+        );
+        assert!(
+            !fs.exists(&root.join(file_name)),
+            "file must not appear in root after dry-run"
+        );
+
+        // Apply: move file back to memory root
+        let result = handle_restore(&fs, &root, trash_date, true).expect("apply should succeed");
+        assert!(
+            result.restored.iter().any(|p| p.ends_with(file_name)),
+            "apply should report restored file"
+        );
+        assert!(
+            !fs.exists(&trashed_path),
+            "file must not remain in trash after apply"
+        );
+        assert!(
+            fs.exists(&root.join(file_name)),
+            "file must be back in memory root after apply"
+        );
+    }
+
+    // PC-107: CLI memory handlers (prune + restore) use SafePath boundary
+    #[test]
+    fn uses_safe_path() {
+        const SOURCE: &str = include_str!("memory.rs");
+        let production = SOURCE.split("#[cfg(test)]").next().unwrap_or(SOURCE);
+
+        // CLI handlers must call resolve_project_memory_root (which returns SafePath)
+        // OR use SafePath directly
+        let uses_resolver = production.contains("resolve_project_memory_root");
+        let uses_safe_path = production.contains("SafePath");
+
+        assert!(
+            uses_resolver || uses_safe_path,
+            "CLI memory handlers must go through SafePath boundary (resolve_project_memory_root or direct SafePath use)"
+        );
     }
 
     #[test]

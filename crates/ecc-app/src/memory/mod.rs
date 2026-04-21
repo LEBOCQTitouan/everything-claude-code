@@ -9,8 +9,11 @@
 
 pub mod consolidation;
 pub mod crud;
+pub mod file_prune;
 pub mod injection;
 pub mod lifecycle;
 pub mod migration;
+pub mod paths;
+pub mod trash_gc;
 
 pub use crud::{AddParams, MemoryAppError};

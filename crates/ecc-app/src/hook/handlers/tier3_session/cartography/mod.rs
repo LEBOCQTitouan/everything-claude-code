@@ -1,12 +1,17 @@
 //! Cartography hook handlers — stop:cartography writes session deltas,
 //! start:cartography processes them via the cartographer agent.
 
+pub mod dedupe_io;
 mod delta_helpers;
 mod delta_reminder;
 mod delta_writer;
 
 pub use delta_reminder::start_cartography;
 pub use delta_writer::stop_cartography;
+
+#[cfg(test)]
+#[path = "tests_helpers_err002.rs"]
+pub mod tests_helpers;
 
 #[cfg(test)]
 pub mod tests {

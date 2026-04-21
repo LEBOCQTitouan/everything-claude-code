@@ -45,6 +45,11 @@ pub trait FileSystem: Send + Sync {
     fn is_executable(&self, path: &Path) -> bool;
     /// Rename (move) a file or directory from `from` to `to`.
     fn rename(&self, from: &Path, to: &Path) -> Result<(), FsError>;
+    /// Canonicalize a path by resolving symlinks and `..` components.
+    ///
+    /// In-memory implementations may return the path as-is (already canonical).
+    /// Production implementations call `std::fs::canonicalize`.
+    fn canonicalize(&self, path: &Path) -> Result<PathBuf, std::io::Error>;
 }
 
 /// Errors that can occur during filesystem operations.

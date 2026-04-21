@@ -94,7 +94,7 @@ fn dev_switch_dry_run() {
 #[test]
 fn dev_switch_rollback_on_error() {
     let first_dir = MANAGED_DIRS[0];
-    let fs = InMemoryFileSystem::new().with_dir(&format!("/ecc/{first_dir}"));
+    let fs = InMemoryFileSystem::new().with_dir(format!("/ecc/{first_dir}"));
     let terminal = BufferedTerminal::new();
 
     let result = dev_switch(

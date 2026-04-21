@@ -255,25 +255,19 @@ fn expand_tracking_field(fs: &dyn ecc_ports::fs::FileSystem, agent_path: &Path, 
 /// resolve the preset via the tool manifest at `ecc_root/manifest/tool-manifest.yaml`,
 /// then rewrite the frontmatter replacing `tool-set: X` with `tools: [A, B, C]`.
 /// Uses atomic write (write to temp path, then rename). Skips symlinks.
-fn expand_agents_tool_sets(
-    fs: &dyn ecc_ports::fs::FileSystem,
-    dest_dir: &Path,
-    ecc_root: &Path,
-) {
+fn expand_agents_tool_sets(fs: &dyn ecc_ports::fs::FileSystem, dest_dir: &Path, ecc_root: &Path) {
     use ecc_domain::config::tool_manifest::ToolManifest;
 
     // Load the manifest; if missing or invalid, skip all expansion
     let manifest_path = ecc_root.join("manifest").join("tool-manifest.yaml");
     let manifest: ToolManifest = match fs.read_to_string(&manifest_path) {
-        Ok(content) => {
-            match ecc_domain::config::tool_manifest::parse_tool_manifest(&content) {
-                Ok(m) => m,
-                Err(e) => {
-                    tracing::debug!(error = %e, "tool manifest parse failed, skipping tool-set expansion");
-                    return;
-                }
+        Ok(content) => match ecc_domain::config::tool_manifest::parse_tool_manifest(&content) {
+            Ok(m) => m,
+            Err(e) => {
+                tracing::debug!(error = %e, "tool manifest parse failed, skipping tool-set expansion");
+                return;
             }
-        }
+        },
         Err(_) => {
             tracing::debug!("tool manifest not found, skipping tool-set expansion");
             return;
@@ -716,15 +710,14 @@ mod tests {
 
         with_tool_manifest(&fs, ecc_root);
 
-        let source_content = "---\nname: test-agent\nmodel: sonnet\ntool-set: readonly-analyzer\n---\n# Agent\n";
+        let source_content =
+            "---\nname: test-agent\nmodel: sonnet\ntool-set: readonly-analyzer\n---\n# Agent\n";
         fs.write(&dest_dir.join("test-agent.md"), source_content)
             .unwrap();
 
         expand_agents_tool_sets(&fs, dest_dir, ecc_root);
 
-        let result = fs
-            .read_to_string(&dest_dir.join("test-agent.md"))
-            .unwrap();
+        let result = fs.read_to_string(&dest_dir.join("test-agent.md")).unwrap();
 
         // The inline tools must exactly match the preset's members (Read, Grep, Glob)
         let expected_tools = ["Read", "Grep", "Glob"];
@@ -752,7 +745,8 @@ mod tests {
         with_tool_manifest(&fs, ecc_root);
 
         // Write a real agent file that will be expanded
-        let real_content = "---\nname: real-agent\nmodel: sonnet\ntool-set: readonly-analyzer\n---\n# Agent\n";
+        let real_content =
+            "---\nname: real-agent\nmodel: sonnet\ntool-set: readonly-analyzer\n---\n# Agent\n";
         fs.write(&dest_dir.join("real-agent.md"), real_content)
             .unwrap();
 
@@ -767,9 +761,7 @@ mod tests {
         expand_agents_tool_sets(&fs, dest_dir, ecc_root);
 
         // The real file should be expanded
-        let real_result = fs
-            .read_to_string(&dest_dir.join("real-agent.md"))
-            .unwrap();
+        let real_result = fs.read_to_string(&dest_dir.join("real-agent.md")).unwrap();
         assert!(
             !real_result.contains("tool-set:"),
             "real file should be expanded (no tool-set:); got:\n{real_result}"

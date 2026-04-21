@@ -2,6 +2,7 @@
 //!
 //! Each handler is a pure-ish function: `fn handle(stdin, ports) -> HookResult`
 
+pub mod tier0_pretool;
 mod tier1_simple;
 mod tier2_notify;
 mod tier2_tools;

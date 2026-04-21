@@ -7,6 +7,7 @@ use tracing::warn;
 
 use crate::hook::{HookPorts, HookResult};
 
+use super::dedupe_io::{self, DedupeOutcome};
 use super::delta_helpers::clean_corrupt_deltas;
 
 /// stop:cartography — detect changed files and write a pending delta.
@@ -50,15 +51,36 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     }
 
     // No changed files → passthrough, no delta written
-    let changed_lines: Vec<&str> = git_output
+    let raw_lines: Vec<&str> = git_output
         .stdout
         .lines()
         .map(str::trim)
         .filter(|l| !l.is_empty())
-        .filter(|l| !l.starts_with(".claude/"))
+        .collect();
+
+    if raw_lines.is_empty() {
+        tracing::debug!(
+            target: "cartography::filter",
+            "git diff empty — no delta written"
+        );
+        return HookResult::passthrough(stdin);
+    }
+
+    let changed_lines: Vec<&str> = raw_lines
+        .iter()
+        .copied()
+        .filter(|l| !ecc_domain::cartography::is_noise_path(l))
         .collect();
 
     if changed_lines.is_empty() {
+        if !raw_lines.is_empty() {
+            tracing::info!(
+                target: "cartography::filter",
+                paths_skipped = raw_lines.len(),
+                skipped = ?raw_lines,
+                "filter skipped all paths"
+            );
+        }
         return HookResult::passthrough(stdin);
     }
 
@@ -103,6 +125,32 @@ pub fn stop_cartography(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
 
     // Clean up any corrupt delta files
     clean_corrupt_deltas(ports, &cartography_dir);
+
+    // Deduplicate: skip write when the payload matches a recent delta, unless opted out.
+    let dedupe_enabled = ports
+        .env
+        .var("ECC_CARTOGRAPHY_DEDUPE")
+        .map(|v| v != "0")
+        .unwrap_or(true);
+
+    if dedupe_enabled {
+        let window: usize = ports
+            .env
+            .var("ECC_CARTOGRAPHY_DEDUPE_WINDOW")
+            .and_then(|v| v.parse::<usize>().ok())
+            .unwrap_or(20);
+        match dedupe_io::should_dedupe(ports.fs, &cartography_dir, &delta, window) {
+            DedupeOutcome::Duplicate(sid) => {
+                tracing::debug!(
+                    target: "cartography::dedupe",
+                    dup_of = %sid,
+                    "duplicate delta, skipping write"
+                );
+                return HookResult::passthrough(stdin);
+            }
+            _ => { /* Unique | LockBusy | WindowDisabled — proceed to write */ }
+        }
+    }
 
     // Serialize and write delta
     let delta_json = match serde_json::to_string_pretty(&delta) {
@@ -454,6 +502,532 @@ mod tests {
             let delta: SessionDelta = serde_json::from_str(&content).expect("new delta json");
             assert_eq!(delta.session_id, "new-session-001");
             assert_eq!(delta.project_type, ProjectType::Rust);
+        }
+    }
+
+    /// PC-010: workflow-only session (`.claude/workflow/` files only) → passthrough, no delta written.
+    #[test]
+    fn filters_workflow_only_session() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\n.claude/workflow/implement-done.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "workflow-only-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — all changed files are workflow noise
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-workflow-only-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "workflow-only paths must be filtered — no delta should be written"
+        );
+    }
+
+    /// PC-011: spec-only session (`docs/specs/<slug>/spec.md`, `design.md`, `tasks.md`) →
+    /// passthrough, no delta written.
+    #[test]
+    fn filters_spec_only_session() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "docs/specs/2026-04-19-foo/spec.md\ndocs/specs/2026-04-19-foo/design.md\ndocs/specs/2026-04-19-foo/tasks.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "spec-only-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — all changed files are spec noise
+        let delta_path =
+            std::path::Path::new("/project/.claude/cartography/pending-delta-spec-only-001.json");
+        assert!(
+            !fs.exists(delta_path),
+            "spec-only paths must be filtered — no delta should be written"
+        );
+    }
+
+    /// PC-012: backlog-only session (`docs/backlog/**`) → passthrough, no delta written.
+    #[test]
+    fn filters_backlog_only_session() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "docs/backlog/BACKLOG.md\ndocs/backlog/BL-001-foo.md\ndocs/backlog/.locks/BL-001.lock\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "backlog-only-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — all changed files are backlog noise
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-backlog-only-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "backlog-only paths must be filtered — no delta should be written"
+        );
+    }
+
+    /// PC-013: cartography-output-only session (`docs/cartography/**`) → passthrough, no delta
+    /// written (prevents self-ingestion feedback loops).
+    #[test]
+    fn filters_cartography_output_self_ingestion() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "docs/cartography/journeys/foo.md\ndocs/cartography/flows/bar.md\ndocs/cartography/elements/baz.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "cartography-self-ingestion-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — all changed files are docs/cartography/** noise
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-cartography-self-ingestion-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "docs/cartography/** paths must be filtered — no delta should be written (self-ingestion prevention)"
+        );
+    }
+
+    /// PC-014: Cargo.lock-only session → passthrough, no delta written (AC-001.5).
+    #[test]
+    fn filters_cargo_lock_only() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "Cargo.lock\n".to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "cargo-lock-only-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No delta should be written — Cargo.lock is noise
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-cargo-lock-only-001.json",
+        );
+        assert!(
+            !fs.exists(delta_path),
+            "Cargo.lock-only sessions must be filtered — no delta should be written"
+        );
+    }
+
+    /// PC-015: mixed session (crate path + spec path) → delta written containing ONLY the crate
+    /// path; spec.md is filtered out by is_noise_path (AC-001.6).
+    #[test]
+    fn mixed_session_retains_signal_only() {
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "crates/ecc-domain/src/foo.rs\ndocs/specs/2026-04-19-slug/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "mixed-session-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = stop_cartography("{}", &ports);
+
+        assert_eq!(result.exit_code, 0);
+
+        // Delta MUST be written — there is a real (non-noise) changed file
+        let delta_path = std::path::Path::new(
+            "/project/.claude/cartography/pending-delta-mixed-session-001.json",
+        );
+        assert!(
+            fs.exists(delta_path),
+            "delta must be written when at least one non-noise path exists"
+        );
+
+        let content = fs.read_to_string(delta_path).expect("should read delta");
+        let delta: SessionDelta = serde_json::from_str(&content).expect("should parse delta JSON");
+
+        // Only the crate path survives — spec.md is noise and must be absent
+        assert_eq!(
+            delta.changed_files.len(),
+            1,
+            "only 1 signal file expected; got: {:?}",
+            delta
+                .changed_files
+                .iter()
+                .map(|f| &f.path)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            delta.changed_files[0].path, "crates/ecc-domain/src/foo.rs",
+            "the surviving path must be the crate source, not the spec"
+        );
+    }
+
+    /// PC-017: clean working tree (git diff returns empty) → passthrough and emits debug event on
+    /// cartography::filter target indicating clean-tree skip.
+    #[test]
+    fn clean_tree_debug_log() {
+        use std::sync::{Arc, Mutex};
+        use tracing::subscriber::with_default;
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::registry::Registry;
+
+        #[derive(Clone, Default)]
+        struct CaptureLayer {
+            events: Arc<Mutex<Vec<(String, tracing::Level, String)>>>,
+        }
+
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                let meta = event.metadata();
+                self.events.lock().unwrap().push((
+                    meta.target().to_string(),
+                    *meta.level(),
+                    meta.name().to_string(),
+                ));
+            }
+        }
+
+        let layer = CaptureLayer::default();
+        let events = layer.events.clone();
+        let sub = Registry::default().with(layer);
+
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: String::new(), // empty — clean working tree
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "clean-tree-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        with_default(sub, || {
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+            assert_eq!(result.stdout, "{}");
+        });
+
+        // No delta should be written
+        let delta_path =
+            std::path::Path::new("/project/.claude/cartography/pending-delta-clean-tree-001.json");
+        assert!(
+            !fs.exists(delta_path),
+            "no delta should be written for clean working tree"
+        );
+
+        // A debug event on the cartography::filter target must have been emitted
+        let captured = events.lock().unwrap();
+        assert!(
+            captured.iter().any(|(target, level, _name)| {
+                target == "cartography::filter" && *level == tracing::Level::DEBUG
+            }),
+            "expected a DEBUG tracing event on target 'cartography::filter' for clean-tree skip, got: {captured:?}"
+        );
+    }
+
+    /// PC-016: all changed files are noise → passthrough and emits info event on cartography::filter
+    /// target with paths_skipped count.
+    #[test]
+    fn emits_filter_info_on_skip() {
+        use std::sync::{Arc, Mutex};
+        use tracing::subscriber::with_default;
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::registry::Registry;
+
+        #[derive(Clone, Default)]
+        struct CaptureLayer {
+            events: Arc<Mutex<Vec<(String, String)>>>,
+        }
+
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                let meta = event.metadata();
+                self.events
+                    .lock()
+                    .unwrap()
+                    .push((meta.target().to_string(), meta.name().to_string()));
+            }
+        }
+
+        let layer = CaptureLayer::default();
+        let events = layer.events.clone();
+        let sub = Registry::default().with(layer);
+
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\ndocs/specs/2026-04-18-foo/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "filter-skip-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        with_default(sub, || {
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+            assert_eq!(result.stdout, "{}");
+        });
+
+        let captured = events.lock().unwrap();
+        assert!(
+            captured
+                .iter()
+                .any(|(target, _)| target == "cartography::filter"),
+            "expected a tracing event with target 'cartography::filter', got: {captured:?}"
+        );
+    }
+
+    /// PC-021: when all changed files are noise (empty post-filter), stop_cartography skips write
+    /// WITHOUT computing any hash. Verified structurally: the filter-skip info event fires (on
+    /// cartography::filter target) and no dedupe event fires (cartography::dedupe target absent).
+    #[test]
+    fn empty_post_filter_no_hash() {
+        use std::sync::{Arc, Mutex};
+        use tracing::subscriber::with_default;
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::registry::Registry;
+
+        #[derive(Clone, Default)]
+        struct CaptureLayer {
+            events: Arc<Mutex<Vec<String>>>,
+        }
+
+        impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for CaptureLayer {
+            fn on_event(
+                &self,
+                event: &tracing::Event<'_>,
+                _ctx: tracing_subscriber::layer::Context<'_, S>,
+            ) {
+                let meta = event.metadata();
+                self.events.lock().unwrap().push(meta.target().to_string());
+            }
+        }
+
+        let layer = CaptureLayer::default();
+        let events = layer.events.clone();
+        let sub = Registry::default().with(layer);
+
+        let fs = InMemoryFileSystem::new().with_file("/project/Cargo.toml", "[workspace]");
+        // All changed files are noise paths
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\ndocs/specs/2026-04-18-foo/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/project")
+            .with_var("CLAUDE_SESSION_ID", "empty-post-filter-001");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        with_default(sub, || {
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+            assert_eq!(result.stdout, "{}");
+        });
+
+        let captured = events.lock().unwrap();
+
+        // Filter-skip event MUST be present — early return happened
+        assert!(
+            captured.iter().any(|t| t == "cartography::filter"),
+            "filter-skip event must fire on cartography::filter target, got: {captured:?}"
+        );
+
+        // No dedupe event must be present — hash was never computed
+        assert!(
+            !captured.iter().any(|t| t == "cartography::dedupe"),
+            "dedupe must NOT run when all paths are noise (hash must not be computed), got: {captured:?}"
+        );
+    }
+
+    /// PC-020: ECC_CARTOGRAPHY_DEDUPE=0 disables dedupe — duplicate payload still writes a new delta.
+    /// Without the env var (dedupe enabled), a duplicate payload must be suppressed (no write).
+    /// With ECC_CARTOGRAPHY_DEDUPE=0, dedupe is skipped and the new delta IS written.
+    #[test]
+    fn dedupe_opt_out_env() {
+        use ecc_domain::cartography::{ChangedFile, ProjectType, SessionDelta};
+
+        // Seed an existing delta with the same content that the incoming session will produce.
+        let existing_delta = SessionDelta {
+            session_id: "old-session-001".to_owned(),
+            timestamp: 1_000_000,
+            changed_files: vec![ChangedFile {
+                path: "crates/ecc-domain/src/lib.rs".to_owned(),
+                classification: "ecc-domain".to_owned(),
+            }],
+            project_type: ProjectType::Rust,
+        };
+        let existing_json = serde_json::to_string(&existing_delta).unwrap();
+
+        let git_output = CommandOutput {
+            stdout: "crates/ecc-domain/src/lib.rs\n".to_string(),
+            stderr: String::new(),
+            exit_code: 0,
+        };
+
+        // --- Part 1: dedupe ENABLED (no ECC_CARTOGRAPHY_DEDUPE env var) ---
+        // A duplicate payload must NOT be written.
+        {
+            let fs = InMemoryFileSystem::new()
+                .with_file("/project/Cargo.toml", "[workspace]")
+                .with_file(
+                    "/project/.claude/cartography/pending-delta-old-session-001.json",
+                    &existing_json,
+                );
+            let shell = MockExecutor::new().on_args(
+                "git",
+                &["diff", "--name-only", "HEAD"],
+                git_output.clone(),
+            );
+            let env = MockEnvironment::new()
+                .with_var("CLAUDE_PROJECT_DIR", "/project")
+                .with_var("CLAUDE_SESSION_ID", "new-session-dedup-enabled");
+            let term = BufferedTerminal::new();
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+
+            // With dedupe ENABLED, the duplicate delta must NOT be written
+            let dup_path = std::path::Path::new(
+                "/project/.claude/cartography/pending-delta-new-session-dedup-enabled.json",
+            );
+            assert!(
+                !fs.exists(dup_path),
+                "dedupe enabled: duplicate payload must be suppressed, no new delta written"
+            );
+        }
+
+        // --- Part 2: dedupe DISABLED via ECC_CARTOGRAPHY_DEDUPE=0 ---
+        // A duplicate payload MUST be written because dedupe is skipped.
+        {
+            let fs = InMemoryFileSystem::new()
+                .with_file("/project/Cargo.toml", "[workspace]")
+                .with_file(
+                    "/project/.claude/cartography/pending-delta-old-session-001.json",
+                    &existing_json,
+                );
+            let shell =
+                MockExecutor::new().on_args("git", &["diff", "--name-only", "HEAD"], git_output);
+            // ECC_CARTOGRAPHY_DEDUPE=0 disables dedupe entirely
+            let env = MockEnvironment::new()
+                .with_var("CLAUDE_PROJECT_DIR", "/project")
+                .with_var("CLAUDE_SESSION_ID", "new-session-dedupe-opt-out")
+                .with_var("ECC_CARTOGRAPHY_DEDUPE", "0");
+            let term = BufferedTerminal::new();
+            let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+            let result = stop_cartography("{}", &ports);
+            assert_eq!(result.exit_code, 0);
+
+            // A NEW pending-delta file must exist — dedupe was skipped
+            let new_delta_path = std::path::Path::new(
+                "/project/.claude/cartography/pending-delta-new-session-dedupe-opt-out.json",
+            );
+            assert!(
+                fs.exists(new_delta_path),
+                "dedupe opt-out must allow writing new delta even when content matches an existing one"
+            );
         }
     }
 

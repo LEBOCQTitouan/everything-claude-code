@@ -17,7 +17,8 @@ pub fn resolve_tool_manifest_path(root: &Path) -> PathBuf {
 
 /// Returns `true` if the path contains any `..` component.
 pub fn has_parent_traversal(path: &Path) -> bool {
-    path.components().any(|c| c == std::path::Component::ParentDir)
+    path.components()
+        .any(|c| c == std::path::Component::ParentDir)
 }
 
 #[cfg(test)]

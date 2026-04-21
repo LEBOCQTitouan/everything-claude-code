@@ -280,6 +280,9 @@ fn permission_denied_before_download() {
         fn rename(&self, _from: &Path, to: &Path) -> Result<(), FsError> {
             Err(FsError::PermissionDenied(to.to_path_buf()))
         }
+        fn canonicalize(&self, path: &Path) -> Result<std::path::PathBuf, std::io::Error> {
+            Ok(path.to_path_buf())
+        }
     }
 
     let fs = ReadOnlyFileSystem;

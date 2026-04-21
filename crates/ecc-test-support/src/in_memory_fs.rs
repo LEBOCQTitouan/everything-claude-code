@@ -28,8 +28,8 @@ impl InMemoryFileSystem {
     }
 
     /// Pre-populate a file for test setup.
-    pub fn with_file(self, path: &str, content: &str) -> Self {
-        let p = PathBuf::from(path);
+    pub fn with_file(self, path: impl AsRef<std::path::Path>, content: &str) -> Self {
+        let p = path.as_ref().to_path_buf();
         if let Some(parent) = p.parent() {
             self.dirs.lock().unwrap().insert(parent.to_path_buf(), ());
         }
@@ -41,8 +41,11 @@ impl InMemoryFileSystem {
     }
 
     /// Pre-populate a directory for test setup.
-    pub fn with_dir(self, path: &str) -> Self {
-        self.dirs.lock().unwrap().insert(PathBuf::from(path), ());
+    pub fn with_dir(self, path: impl AsRef<std::path::Path>) -> Self {
+        self.dirs
+            .lock()
+            .unwrap()
+            .insert(path.as_ref().to_path_buf(), ());
         self
     }
 
@@ -240,6 +243,20 @@ impl FileSystem for InMemoryFileSystem {
             self.dirs.lock().unwrap().insert(parent.to_path_buf(), ());
         }
         Ok(())
+    }
+
+    fn canonicalize(&self, path: &Path) -> Result<std::path::PathBuf, std::io::Error> {
+        // In-memory paths are already absolute and canonical,
+        // but must exist (as a file or directory) to canonicalize successfully.
+        let dirs = self.dirs.lock().unwrap();
+        let files = self.files.lock().unwrap();
+        if dirs.contains_key(path) || files.contains_key(path) {
+            return Ok(path.to_path_buf());
+        }
+        Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            format!("no such file or directory: {}", path.display()),
+        ))
     }
 }
 

@@ -38,6 +38,17 @@ impl Environment for OsEnvironment {
     }
 }
 
+fn home_dir_impl() -> Option<PathBuf> {
+    #[cfg(unix)]
+    {
+        std::env::var("HOME").ok().map(PathBuf::from)
+    }
+    #[cfg(windows)]
+    {
+        std::env::var("USERPROFILE").ok().map(PathBuf::from)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -59,16 +70,5 @@ mod tests {
             path.is_absolute(),
             "current_exe() must return an absolute path"
         );
-    }
-}
-
-fn home_dir_impl() -> Option<PathBuf> {
-    #[cfg(unix)]
-    {
-        std::env::var("HOME").ok().map(PathBuf::from)
-    }
-    #[cfg(windows)]
-    {
-        std::env::var("USERPROFILE").ok().map(PathBuf::from)
     }
 }

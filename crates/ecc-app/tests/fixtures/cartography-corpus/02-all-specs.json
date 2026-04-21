@@ -1,0 +1,10 @@
+{
+  "session_id": "fixture-02",
+  "timestamp": 1700000002,
+  "changed_files": [
+    {"path": "docs/specs/US-001.md", "classification": "docs"},
+    {"path": "docs/specs/US-002.md", "classification": "docs"},
+    {"path": "docs/specs/design-US-001.md", "classification": "docs"}
+  ],
+  "project_type": "rust"
+}

@@ -8,14 +8,20 @@ license.workspace = true
 [dependencies]
 ecc-domain = { workspace = true }
 ecc-ports = { workspace = true }
+ecc-flock = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 regex = { workspace = true }
 tracing = "0.1"
 rayon = { workspace = true }
 
 [dev-dependencies]
 ecc-test-support = { workspace = true }
+ecc-flock = { workspace = true }
+tempfile = "3"
 tracing-test = "0.1"
+tracing-subscriber = { version = "0.3", features = ["registry"] }
+serde-saphyr = { workspace = true }

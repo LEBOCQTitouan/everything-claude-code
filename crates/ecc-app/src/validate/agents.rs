@@ -45,7 +45,9 @@ pub(super) fn validate_agents(
         let domain_files = match fs.read_dir(&domain_dir) {
             Ok(f) => f,
             Err(e) => {
-                terminal.stderr_write(&format!("ERROR: Cannot read agents/domain/ directory: {e}\n"));
+                terminal.stderr_write(&format!(
+                    "ERROR: Cannot read agents/domain/ directory: {e}\n"
+                ));
                 return false;
             }
         };
@@ -576,9 +578,9 @@ mod tests {
         ));
         let stderr = t.stderr_output();
         assert!(
-            stderr
-                .iter()
-                .any(|s| s.contains("backlog.md") || s.contains("Missing required field") || s.contains("model")),
+            stderr.iter().any(|s| s.contains("backlog.md")
+                || s.contains("Missing required field")
+                || s.contains("model")),
             "expected error mentioning backlog.md or model field, got: {stderr:?}"
         );
     }

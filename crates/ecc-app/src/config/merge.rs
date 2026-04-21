@@ -229,6 +229,10 @@ mod tests {
         fn rename(&self, from: &Path, to: &Path) -> Result<(), FsError> {
             self.inner.rename(from, to)
         }
+
+        fn canonicalize(&self, path: &Path) -> Result<std::path::PathBuf, std::io::Error> {
+            self.inner.canonicalize(path)
+        }
     }
 
     // --- pre_scan_directory ---

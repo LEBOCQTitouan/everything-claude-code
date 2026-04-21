@@ -38,6 +38,43 @@ fn resolve_daily_dir(ports: &HookPorts<'_>) -> Option<PathBuf> {
 /// stop:daily-summary — append session summary to daily memory file.
 pub fn daily_summary(stdin: &str, ports: &HookPorts<'_>) -> HookResult {
     tracing::debug!(handler = "daily_summary", "executing handler");
+
+    // Noise filter: skip append when all changed files are noise (e.g. workflow, specs).
+    // Gate: ECC_DAILY_SUMMARY_NOISE_FILTER=0 disables the filter.
+    let filter_enabled = ports
+        .env
+        .var("ECC_DAILY_SUMMARY_NOISE_FILTER")
+        .map(|v| v != "0")
+        .unwrap_or(true);
+
+    if filter_enabled && let Some(project_dir) = ports.env.var("CLAUDE_PROJECT_DIR") {
+        let project_path = std::path::PathBuf::from(project_dir);
+        if let Ok(git_out) =
+            ports
+                .shell
+                .run_command_in_dir("git", &["diff", "--name-only", "HEAD"], &project_path)
+        {
+            let changed: Vec<&str> = git_out
+                .stdout
+                .lines()
+                .map(str::trim)
+                .filter(|l| !l.is_empty())
+                .collect();
+            if !changed.is_empty()
+                && changed
+                    .iter()
+                    .all(|p| ecc_domain::cartography::is_noise_path(p))
+            {
+                tracing::info!(
+                    target: "daily::filter",
+                    paths_skipped = changed.len(),
+                    "noise-only session — skipping daily append"
+                );
+                return HookResult::passthrough(stdin);
+            }
+        }
+    }
+
     let daily_dir = match resolve_daily_dir(ports) {
         Some(d) => d,
         None => return HookResult::passthrough(stdin),
@@ -192,5 +229,162 @@ mod tests {
         assert_eq!(result.stdout, "hello");
         assert_eq!(result.exit_code, 0);
         assert!(result.stderr.is_empty());
+    }
+
+    /// PC-026: when changed files include at least one signal path (e.g. a crate source file),
+    /// `daily_summary` DOES append an entry to the daily file.
+    #[test]
+    fn appends_when_signal_present() {
+        use ecc_ports::shell::CommandOutput;
+
+        let fs = InMemoryFileSystem::new();
+        // git diff returns a mixed result: one noise path + one crate signal path
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: "docs/specs/2026-04-18-foo/spec.md\ncrates/ecc-domain/src/lib.rs\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/home/user/myproject")
+            .with_home("/home/user");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = daily_summary("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+
+        // Daily file MUST be written because at least one signal path was present
+        let dir =
+            std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
+        assert!(fs.exists(dir), "daily dir should exist");
+        let entries = fs.read_dir(dir).expect("daily dir should be readable");
+        assert_eq!(entries.len(), 1, "exactly one daily file should be written");
+
+        let content = fs.read_to_string(&entries[0]).expect("should read file");
+        assert!(
+            content.contains("**session-end** Session complete"),
+            "daily file must contain session-end entry"
+        );
+    }
+
+    #[test]
+    fn reuses_domain_predicate() {
+        // Grep daily.rs source for the domain import; assert NO local
+        // re-implementation of noise-path matching.
+        const SOURCE: &str = include_str!("daily.rs");
+
+        // Must import is_noise_path from ecc-domain
+        assert!(
+            SOURCE.contains("ecc_domain::cartography::is_noise_path")
+                || SOURCE.contains("use ecc_domain::cartography::")
+                    && SOURCE.contains("is_noise_path"),
+            "daily.rs must import is_noise_path from ecc-domain"
+        );
+
+        // Must NOT define a local `fn is_noise` or `NOISE_PREFIXES` (forbids duplicate impl)
+        let production = SOURCE.split("#[cfg(test)]").next().unwrap_or(SOURCE);
+        assert!(
+            !production.contains("const NOISE_PREFIXES"),
+            "no local noise-prefix duplication"
+        );
+        assert!(
+            !production.contains("fn is_noise"),
+            "no local is_noise function"
+        );
+    }
+
+    /// PC-117: when ECC_DAILY_SUMMARY_NOISE_FILTER=0 and all changed files are noise paths,
+    /// `daily_summary` DOES append an entry (soft-rollback knob disables the filter).
+    #[test]
+    fn noise_filter_env_disabled_appends() {
+        use ecc_ports::shell::CommandOutput;
+
+        let fs = InMemoryFileSystem::new();
+        // git diff returns only noise paths — would normally be skipped by the filter
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\ndocs/specs/2026-04-18-foo/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        // Disable the filter via env knob
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/home/user/myproject")
+            .with_home("/home/user")
+            .with_var("ECC_DAILY_SUMMARY_NOISE_FILTER", "0");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = daily_summary("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+
+        // Daily file MUST be written because the filter was disabled
+        let dir =
+            std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
+        assert!(
+            fs.exists(dir),
+            "daily dir should exist when filter is disabled"
+        );
+        let entries = fs.read_dir(dir).expect("daily dir should be readable");
+        assert_eq!(entries.len(), 1, "exactly one daily file should be written");
+
+        let content = fs.read_to_string(&entries[0]).expect("should read file");
+        assert!(
+            content.contains("**session-end** Session complete"),
+            "daily file must contain session-end entry when filter is disabled"
+        );
+    }
+
+    /// PC-025: when all changed files are noise paths, `daily_summary` returns passthrough
+    /// without appending a daily entry (noise-only session skip).
+    #[test]
+    fn skips_append_on_noise_only_session() {
+        use ecc_ports::shell::CommandOutput;
+
+        let fs = InMemoryFileSystem::new();
+        // git diff returns only noise paths
+        let shell = MockExecutor::new().on_args(
+            "git",
+            &["diff", "--name-only", "HEAD"],
+            CommandOutput {
+                stdout: ".claude/workflow/state.json\ndocs/specs/2026-04-18-foo/spec.md\n"
+                    .to_string(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+        let env = MockEnvironment::new()
+            .with_var("CLAUDE_PROJECT_DIR", "/home/user/myproject")
+            .with_home("/home/user");
+        let term = BufferedTerminal::new();
+        let ports = HookPorts::test_default(&fs, &shell, &env, &term);
+
+        let result = daily_summary("{}", &ports);
+        assert_eq!(result.exit_code, 0);
+        assert_eq!(result.stdout, "{}");
+
+        // No daily file should have been written — session was noise-only
+        let dir =
+            std::path::Path::new("/home/user/.claude/projects/home-user-myproject/memory/daily");
+        let no_file_written = if fs.exists(dir) {
+            fs.read_dir(dir)
+                .map(|entries| entries.is_empty())
+                .unwrap_or(true)
+        } else {
+            true
+        };
+        assert!(
+            no_file_written,
+            "daily file must NOT be written when all changed files are noise paths"
+        );
     }
 }

@@ -134,6 +134,7 @@ mod tests {
         }
     }
 
+    #[allow(dead_code)]
     fn far_past() -> u64 {
         // 2020-01-01 epoch seconds
         1_577_836_800
@@ -149,7 +150,11 @@ mod tests {
         let recent_mtime = now_test() - 600; // 10 minutes ago
         let executor = MockExecutor::new()
             .on_args("kill", &["-0", "99999"], err_output(1)) // PID dead
-            .on_args("stat", &["-f", "%m", "/wt/.git"], ok(&recent_mtime.to_string()));
+            .on_args(
+                "stat",
+                &["-f", "%m", "/wt/.git"],
+                ok(&recent_mtime.to_string()),
+            );
         let parsed = stale_parsed();
         assert!(
             !is_worktree_stale(&executor, &parsed, now_test(), Path::new("/wt")),
@@ -162,7 +167,11 @@ mod tests {
         let old_mtime = now_test() - 7200; // 2 hours ago
         let executor = MockExecutor::new()
             .on_args("kill", &["-0", "99999"], err_output(1))
-            .on_args("stat", &["-f", "%m", "/wt/.git"], ok(&old_mtime.to_string()));
+            .on_args(
+                "stat",
+                &["-f", "%m", "/wt/.git"],
+                ok(&old_mtime.to_string()),
+            );
         let parsed = stale_parsed();
         assert!(
             is_worktree_stale(&executor, &parsed, now_test(), Path::new("/wt")),
@@ -173,8 +182,7 @@ mod tests {
     #[test]
     fn stat_failure_preserves_existing_behavior() {
         // Stat fails → recency guard not applied → falls back to PID+age
-        let executor = MockExecutor::new()
-            .on_args("kill", &["-0", "99999"], err_output(1));
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], err_output(1));
         // No stat mock → stat returns Err → fail-open
         let parsed = stale_parsed();
         assert!(
@@ -200,7 +208,11 @@ mod tests {
         let old_mtime = now_test() - 7200;
         let executor = MockExecutor::new()
             .on_args("kill", &["-0", "99999"], ok("")) // PID alive
-            .on_args("stat", &["-f", "%m", "/wt/.git"], ok(&old_mtime.to_string()));
+            .on_args(
+                "stat",
+                &["-f", "%m", "/wt/.git"],
+                ok(&old_mtime.to_string()),
+            );
         // PID alive → base_stale = false (age is also old but PID check short-circuits)
         // Actually: age_stale = true (2020 timestamp), pid_alive = true
         // base_stale = age_stale || !pid_alive = true || false = true

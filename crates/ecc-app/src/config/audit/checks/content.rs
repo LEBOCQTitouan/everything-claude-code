@@ -216,7 +216,7 @@ mod tests {
         let fs = InMemoryFileSystem::new();
         let fs = (0..6).fold(fs, |fs, i| {
             fs.with_file(
-                &format!("/agents/agent{i}.md"),
+                format!("/agents/agent{i}.md"),
                 "---\nskills: tdd-workflow\n---\n# Agent",
             )
         });

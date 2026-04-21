@@ -50,6 +50,27 @@ pub fn stats(store: &dyn MemoryStore) -> Result<ecc_domain::memory::MemoryStats,
     store.stats().map_err(MemoryAppError::Store)
 }
 
+/// Delete all [`MemoryStore`] entries whose `source_path` equals `backlog_id`.
+///
+/// Returns the number of entries deleted.
+pub fn prune_by_backlog(store: &dyn MemoryStore, backlog_id: &str) -> Result<u32, MemoryAppError> {
+    let all = store
+        .list_filtered(None, None, None)
+        .map_err(MemoryAppError::Store)?;
+
+    let to_delete: Vec<_> = all
+        .into_iter()
+        .filter(|e| e.source_path.as_deref() == Some(backlog_id))
+        .collect();
+
+    let mut count = 0u32;
+    for entry in to_delete {
+        store.delete(entry.id).map_err(MemoryAppError::Store)?;
+        count += 1;
+    }
+    Ok(count)
+}
+
 /// Promote an entry from episodic to semantic, boosting relevance 2x.
 ///
 /// Returns `AlreadySemantic` error if already at semantic tier.
@@ -111,6 +132,59 @@ mod tests {
             None,
         );
         store.insert(&entry).unwrap()
+    }
+
+    fn create_entry_with_source(
+        backlog_id: &str,
+        content: &str,
+    ) -> ecc_domain::memory::MemoryEntry {
+        ecc_domain::memory::MemoryEntry::new(
+            MemoryId(0),
+            MemoryTier::Episodic,
+            "Title",
+            content,
+            vec![],
+            None,
+            None,
+            1.0,
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:00:00Z",
+            false,
+            vec![],
+            Some(backlog_id.to_owned()),
+        )
+    }
+
+    // PC-047: prune_by_backlog on an empty store returns Ok(0)
+    #[test]
+    fn prune_by_backlog_empty_store() {
+        let store = InMemoryMemoryStore::new();
+        let count = prune_by_backlog(&store, "BL-001").unwrap();
+        assert_eq!(count, 0);
+    }
+
+    // PC-044: prune_by_backlog deletes all entries tagged with BL-ID and returns count
+    #[test]
+    fn prune_by_backlog_returns_count() {
+        let store = InMemoryMemoryStore::new();
+        store
+            .insert(&create_entry_with_source("BL-001", "content1"))
+            .unwrap();
+        store
+            .insert(&create_entry_with_source("BL-001", "content2"))
+            .unwrap();
+        store
+            .insert(&create_entry_with_source("BL-001", "content3"))
+            .unwrap();
+        store
+            .insert(&create_entry_with_source("BL-002", "other1"))
+            .unwrap();
+        store
+            .insert(&create_entry_with_source("BL-002", "other2"))
+            .unwrap();
+
+        let count = prune_by_backlog(&store, "BL-001").unwrap();
+        assert_eq!(count, 3, "returns count of deleted BL-001 entries");
     }
 
     // PC-038: App `gc` deletes stale entries >180 days
@@ -221,5 +295,67 @@ mod tests {
         let store = make_store();
         let result = promote(&store, MemoryId(999), &*TEST_CLOCK);
         assert!(matches!(result, Err(MemoryAppError::NotFound(_))));
+    }
+
+    // PC-048: prune_by_backlog on mixed corpus returns count for target BL-ID only
+    #[test]
+    fn prune_by_backlog_mixed_corpus() {
+        let store = InMemoryMemoryStore::new();
+        // Seed 3 entries tagged BL-050 + 2 entries tagged BL-051
+        for i in 0..3 {
+            store
+                .insert(&create_entry_with_source(
+                    "BL-050",
+                    &format!("content-50-{i}"),
+                ))
+                .unwrap();
+        }
+        for i in 0..2 {
+            store
+                .insert(&create_entry_with_source(
+                    "BL-051",
+                    &format!("content-51-{i}"),
+                ))
+                .unwrap();
+        }
+
+        let count = prune_by_backlog(&store, "BL-050").unwrap();
+        assert_eq!(count, 3);
+
+        // Only BL-051 entries remain
+        let remaining = store.list_filtered(None, None, None).unwrap();
+        assert_eq!(remaining.len(), 2);
+        for entry in &remaining {
+            assert_eq!(
+                entry.source_path.as_deref(),
+                Some("BL-051"),
+                "remaining entry must be tagged BL-051"
+            );
+        }
+    }
+
+    // PC-045: prune_by_backlog reuses existing MemoryStore trait methods only
+    #[test]
+    fn prune_by_backlog_no_new_port() {
+        const PORT_SOURCE: &str = include_str!("../../../ecc-ports/src/memory_store.rs");
+
+        let forbidden = [
+            concat!("fn prune_", "by_backlog"),
+            concat!("fn delete_", "by_backlog"),
+            concat!("fn list_", "by_backlog"),
+        ];
+        for pat in forbidden {
+            assert!(
+                !PORT_SOURCE.contains(pat),
+                "MemoryStore port has new backlog-specific method: {pat}"
+            );
+        }
+
+        // Sanity: the lifecycle function itself still works via existing methods
+        let store = InMemoryMemoryStore::new();
+        let entry = create_entry_with_source("BL-045", "sanity");
+        store.insert(&entry).unwrap();
+        let deleted = prune_by_backlog(&store, "BL-045").unwrap();
+        assert_eq!(deleted, 1);
     }
 }

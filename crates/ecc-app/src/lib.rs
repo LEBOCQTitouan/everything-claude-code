@@ -25,6 +25,7 @@ pub mod docs_update_summary;
 pub mod drift_check;
 pub mod hook;
 pub mod install;
+pub mod integration;
 pub mod log_mgmt;
 pub mod memory;
 pub mod merge;

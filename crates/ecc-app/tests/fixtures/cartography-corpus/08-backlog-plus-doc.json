@@ -1,0 +1,9 @@
+{
+  "session_id": "fixture-08",
+  "timestamp": 1700000008,
+  "changed_files": [
+    {"path": "docs/backlog/BL-050.md", "classification": "docs"},
+    {"path": "docs/ARCHITECTURE.md", "classification": "docs"}
+  ],
+  "project_type": "rust"
+}

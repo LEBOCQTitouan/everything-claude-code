@@ -304,12 +304,12 @@ fn no_element_dispatch_without_targets() {
 #[test]
 fn element_failure_resets() {
     let delta_json = make_element_delta_json("session-el-005", 1000);
-    let fs = InMemoryFileSystem::new().with_file(
+    let _fs = InMemoryFileSystem::new().with_file(
         "/project/.claude/cartography/pending-delta-session-el-005.json",
         &delta_json,
     );
     // cartographer agent succeeds, but element generator fails
-    let shell = MockExecutor::new()
+    let _shell = MockExecutor::new()
         .on_args(
             "git",
             &["status", "--porcelain", "docs/cartography/"],

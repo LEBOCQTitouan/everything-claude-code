@@ -149,4 +149,8 @@ impl FileSystem for OsFileSystem {
     fn rename(&self, from: &Path, to: &Path) -> Result<(), FsError> {
         std::fs::rename(from, to).map_err(|e| FsError::io(from, e))
     }
+
+    fn canonicalize(&self, path: &Path) -> Result<PathBuf, std::io::Error> {
+        std::fs::canonicalize(path)
+    }
 }

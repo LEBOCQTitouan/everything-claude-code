@@ -365,8 +365,9 @@ mod tests {
         assert!(result.is_ok(), "trend_summary failed: {:?}", result.err());
         let trend = result.unwrap();
         // Both snapshots are returned
-        assert!(trend.current.total_events >= 0);
-        assert!(trend.previous.total_events >= 0);
+        // total_events is u64 — always non-negative; verify snapshots are populated
+        let _ = trend.current.total_events;
+        let _ = trend.previous.total_events;
     }
 
     // PC-023: trend_summary with no events in previous period returns previous=None metrics

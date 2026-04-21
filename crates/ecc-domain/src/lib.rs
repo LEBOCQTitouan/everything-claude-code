@@ -8,6 +8,8 @@
 pub mod analyze;
 /// ANSI color codes and terminal formatting.
 pub mod ansi;
+/// Architecture analysis and bounded context mapping.
+pub mod architecture;
 /// Audit report web scraping and validation.
 pub mod audit_web;
 /// Backlog item management and tracking.

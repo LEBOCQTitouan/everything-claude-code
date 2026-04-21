@@ -9,7 +9,7 @@ mod status;
 
 pub use index::{parse_index_statuses, reindex};
 pub use migration::{MigrationReport, migrate_statuses};
-pub use status::{list_available, update_status};
+pub use status::{list_available, update_status, update_status_with_prune_hook};
 pub(crate) use status::collect_claimed_ids;
 
 use ecc_domain::backlog::entry::BacklogError;

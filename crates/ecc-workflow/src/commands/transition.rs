@@ -12,6 +12,346 @@ use crate::io::{read_state, with_state_lock, write_state_atomic};
 use crate::output::WorkflowOutput;
 use crate::time::utc_now_iso8601;
 
+/// Fire-and-forget helper: build and record a PhaseTransition metric event.
+///
+/// - If `disabled` is true, skips immediately.
+/// - If `store` is None, skips immediately.
+/// - On store error, logs a warning and returns without panicking.
+pub(crate) fn try_record_transition(
+    store: Option<&dyn MetricsStore>,
+    session_id: &str,
+    from: &str,
+    to: &str,
+    outcome: MetricOutcome,
+    rejection_reason: Option<String>,
+    disabled: bool,
+) {
+    use ecc_domain::metrics::MetricEvent;
+    let ts = utc_now_iso8601();
+    let event = match MetricEvent::phase_transition(
+        session_id.to_owned(),
+        ts,
+        from.to_owned(),
+        to.to_owned(),
+        outcome,
+        rejection_reason,
+    ) {
+        Ok(e) => e,
+        Err(e) => {
+            tracing::warn!("try_record_transition: failed to build event: {e}");
+            return;
+        }
+    };
+    if let Err(e) = ecc_app::metrics_mgmt::record_if_enabled(store, &event, disabled) {
+        tracing::warn!("try_record_transition: record_if_enabled failed: {e}");
+    }
+}
+
+/// Run the `transition` subcommand with an optional metrics store.
+///
+/// This is the primary entry point. [`run`] delegates here with `store = None`.
+/// Call this directly (e.g., from tests or main) when you need to inject a store.
+///
+/// # Flow
+///
+/// Steps: acquire lock → read state → resolve transition → write state → memory.
+///
+/// ```text
+/// acquire lock (with_state_lock)
+///     |
+///     v
+/// read state (read_state)
+///     |
+///     +--[missing]--> warn "not initialized"
+///     |
+///     v
+/// resolve transition (resolve_transition_by_name)
+///     |
+///     +--[illegal]--> record Rejected metric --> block
+///     |
+///     v
+/// apply artifact stamp (optional)
+///     |
+///     v
+/// write state (write_state_atomic)
+///     |
+///     +--[error]--> block "Failed to write state.json"
+///     |
+///     v
+/// record Success metric + write memory (best-effort)
+///     |
+///     v
+/// pass
+/// ```
+#[allow(dead_code)]
+pub fn run_with_store(
+    target: &str,
+    artifact: Option<&str>,
+    path: Option<&str>,
+    project_dir: &Path,
+    state_dir: &Path,
+    store: Option<&dyn MetricsStore>,
+) -> WorkflowOutput {
+    run_with_store_and_justify(target, artifact, path, project_dir, state_dir, store, None)
+}
+
+/// Full entry point with optional justification for backward transitions.
+pub fn run_with_store_and_justify(
+    target: &str,
+    artifact: Option<&str>,
+    path: Option<&str>,
+    project_dir: &Path,
+    state_dir: &Path,
+    store: Option<&dyn MetricsStore>,
+    justify: Option<&str>,
+) -> WorkflowOutput {
+    let target = target.to_owned();
+    let artifact = artifact.map(str::to_owned);
+    let path = path.map(str::to_owned);
+    let justify = justify.map(str::to_owned);
+
+    let metrics_disabled = std::env::var("ECC_METRICS_DISABLED").as_deref() == Ok("1");
+
+    let result = with_state_lock(state_dir, || {
+        let mut state = match read_state(state_dir) {
+            Ok(None) => {
+                return (
+                    WorkflowOutput::warn("No state.json found — workflow not initialized"),
+                    None,
+                    None::<(String, String, String, MetricOutcome, Option<String>)>,
+                );
+            }
+            Ok(Some(s)) => s,
+            Err(e) => {
+                return (
+                    WorkflowOutput::warn(format!("Failed to read state: {e}")),
+                    None,
+                    None,
+                );
+            }
+        };
+        let from = state.phase;
+        tracing::info!(from_phase = %from, target = %target, "transition: attempting phase change");
+        let target_phase = match target.parse::<Phase>() {
+            Ok(p) => p,
+            Err(e) => {
+                let reason = format!("Illegal transition: unknown phase: {}", e.0);
+                let feature = state.feature.clone();
+                let metric_info = Some((
+                    format!("workflow-{feature}"),
+                    from.to_string(),
+                    target.clone(),
+                    MetricOutcome::Rejected,
+                    Some(reason.clone()),
+                ));
+                return (WorkflowOutput::block(reason), None, metric_info);
+            }
+        };
+        let transition_result =
+            match resolve_transition_with_justification(from, target_phase, justify.as_deref()) {
+                Ok(r) => r,
+                Err(e) => {
+                    let reason = format!("Illegal transition: {e}");
+                    let feature = state.feature.clone();
+                    let metric_info = Some((
+                        format!("workflow-{feature}"),
+                        from.to_string(),
+                        target.clone(),
+                        MetricOutcome::Rejected,
+                        Some(reason.clone()),
+                    ));
+                    return (WorkflowOutput::block(reason), None, metric_info);
+                }
+            };
+        let to = transition_result.to;
+
+        // For backward transitions, clear artifacts for the rolled-back phases
+        if transition_result.direction == Direction::Backward {
+            state.artifacts.clear_artifacts_for_rollback(from, to);
+        }
+
+        // Record the transition in history
+        let record = TransitionRecord {
+            from,
+            to,
+            direction: transition_result.direction,
+            justification: justify.clone(),
+            timestamp: utc_now_iso8601(),
+            actor: "ecc-workflow".to_string(),
+        };
+        state.history.push(record);
+
+        state.phase = to;
+        if let Some(ref artifact_name) = artifact
+            && let Err(output) =
+                apply_artifact_stamp(&mut state, artifact_name, path.as_deref(), to)
+        {
+            return (output, None, None);
+        }
+        match write_state_atomic(state_dir, &state) {
+            Ok(()) => {
+                tracing::info!(from = %from, to = %to, feature = %state.feature, "workflow transition");
+                let memory_info = artifact
+                    .as_ref()
+                    .map(|a| (a.clone(), state.feature.clone(), state.concern));
+                let feature = state.feature.clone();
+                let metric_info = Some((
+                    format!("workflow-{feature}"),
+                    from.to_string(),
+                    to.to_string(),
+                    MetricOutcome::Success,
+                    None,
+                ));
+                (
+                    WorkflowOutput::pass(format!("Phase transition: {from} -> {to}")),
+                    memory_info,
+                    metric_info,
+                )
+            }
+            Err(e) => (
+                WorkflowOutput::block(format!("Failed to write state.json: {e}")),
+                None,
+                None,
+            ),
+        }
+    });
+
+    match result {
+        Ok((output, memory_info_opt, metric_info_opt)) => {
+            if let Some((session_id, from, to, outcome, rejection_reason)) = metric_info_opt {
+                try_record_transition(
+                    store,
+                    &session_id,
+                    &from,
+                    &to,
+                    outcome,
+                    rejection_reason,
+                    metrics_disabled,
+                );
+            }
+            match memory_info_opt {
+                Some((artifact_name, feature, concern)) => {
+                    write_memory_best_effort(&artifact_name, &feature, concern, project_dir, output)
+                }
+                None => output,
+            }
+        }
+        Err(e) => WorkflowOutput::block(format!("Lock error: {e}")),
+    }
+}
+
+/// Stamp artifact fields on `state` and validate the artifact name.
+///
+/// Returns `Err(WorkflowOutput)` if `artifact_name` is unknown.
+fn apply_artifact_stamp(
+    state: &mut ecc_domain::workflow::state::WorkflowState,
+    artifact_name: &str,
+    path: Option<&str>,
+    to: Phase,
+) -> Result<(), WorkflowOutput> {
+    let now = utc_now_iso8601();
+    match artifact_name {
+        "plan" => state.artifacts.plan = Some(now),
+        "solution" => state.artifacts.solution = Some(now),
+        "implement" => state.artifacts.implement = Some(now),
+        other => {
+            return Err(WorkflowOutput::block(format!(
+                "Unknown artifact '{other}' — expected plan, solution, or implement"
+            )));
+        }
+    }
+    if let Some(p) = path {
+        match artifact_name {
+            "plan" => state.artifacts.spec_path = Some(p.to_owned()),
+            "solution" => state.artifacts.design_path = Some(p.to_owned()),
+            "implement" => state.artifacts.tasks_path = Some(p.to_owned()),
+            _ => {}
+        }
+    }
+    if to == Phase::Done {
+        state.completed.push(Completion {
+            phase: Phase::from_str(artifact_name).unwrap_or(Phase::Unknown),
+            file: "implement-done.md".to_owned(),
+            at: utc_now_iso8601(),
+        });
+    }
+    Ok(())
+}
+
+/// Perform best-effort memory writes for a completed transition.
+///
+/// Collects failures into a warnings list (never blocks the transition).
+fn write_memory_best_effort(
+    artifact_name: &str,
+    feature: &str,
+    concern: Concern,
+    project_dir: &Path,
+    base_output: WorkflowOutput,
+) -> WorkflowOutput {
+    let wi_phase = match artifact_name {
+        "plan" => "plan",
+        "solution" => "solution",
+        "implement" => "implementation",
+        _ => artifact_name,
+    };
+    let concern_str = concern.to_string();
+    let mut warnings: Vec<String> = Vec::new();
+
+    if let Err(e) = crate::commands::memory_write::write_action(
+        artifact_name,
+        feature,
+        "success",
+        "[]",
+        project_dir,
+    ) {
+        warnings.push(format!("write_action failed: {e}"));
+    }
+    if let Err(e) =
+        crate::commands::memory_write::write_work_item(wi_phase, feature, &concern_str, project_dir)
+    {
+        warnings.push(format!("write_work_item failed: {e}"));
+    }
+    if let Err(e) =
+        crate::commands::memory_write::write_daily(wi_phase, feature, &concern_str, project_dir)
+    {
+        warnings.push(format!("write_daily failed: {e}"));
+    }
+    if let Err(e) = crate::commands::memory_write::write_memory_index(project_dir) {
+        warnings.push(format!("write_memory_index failed: {e}"));
+    }
+
+    if warnings.is_empty() {
+        base_output
+    } else {
+        let warn_text = warnings.join("; ");
+        WorkflowOutput::warn(format!("{} [warnings: {warn_text}]", base_output.message))
+    }
+}
+
+/// Run the `transition` subcommand: advance the workflow to the target phase.
+///
+/// Delegates to [`run_with_store_and_justify`] with `store = None`.
+/// Construct a [`SqliteMetricsStore`] in `main.rs` and call [`run_with_store_and_justify`] directly
+/// when metrics instrumentation is needed.
+pub fn run(
+    target: &str,
+    artifact: Option<&str>,
+    path: Option<&str>,
+    project_dir: &Path,
+    state_dir: &Path,
+    justify: Option<&str>,
+) -> WorkflowOutput {
+    run_with_store_and_justify(
+        target,
+        artifact,
+        path,
+        project_dir,
+        state_dir,
+        None,
+        justify,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use ecc_domain::workflow::{
@@ -507,337 +847,3 @@ mod tests {
     }
 }
 
-/// Fire-and-forget helper: build and record a PhaseTransition metric event.
-///
-/// - If `disabled` is true, skips immediately.
-/// - If `store` is None, skips immediately.
-/// - On store error, logs a warning and returns without panicking.
-pub(crate) fn try_record_transition(
-    store: Option<&dyn MetricsStore>,
-    session_id: &str,
-    from: &str,
-    to: &str,
-    outcome: MetricOutcome,
-    rejection_reason: Option<String>,
-    disabled: bool,
-) {
-    use ecc_domain::metrics::MetricEvent;
-    let ts = utc_now_iso8601();
-    let event = match MetricEvent::phase_transition(
-        session_id.to_owned(),
-        ts,
-        from.to_owned(),
-        to.to_owned(),
-        outcome,
-        rejection_reason,
-    ) {
-        Ok(e) => e,
-        Err(e) => {
-            tracing::warn!("try_record_transition: failed to build event: {e}");
-            return;
-        }
-    };
-    if let Err(e) = ecc_app::metrics_mgmt::record_if_enabled(store, &event, disabled) {
-        tracing::warn!("try_record_transition: record_if_enabled failed: {e}");
-    }
-}
-
-/// Run the `transition` subcommand with an optional metrics store.
-///
-/// This is the primary entry point. [`run`] delegates here with `store = None`.
-/// Call this directly (e.g., from tests or main) when you need to inject a store.
-///
-/// # Flow
-///
-/// Forward/backward transition steps: lock -> read -> resolve -> write -> memory.
-///
-/// <!-- keep in sync with: backward_impl_to_solution -->
-/// ```text
-/// lock --> state.json exists? --N--> warn "not initialized"
-///     |
-///     Y
-///     v
-/// resolve transition legal? --N--> Rejected metric --> block
-///     |
-///     Y
-///     v
-/// direction == backward? --Y--> clear rollback artifacts
-///     |
-///     v
-/// push TransitionRecord --> apply artifact stamp
-///     |
-///     v
-/// write_state_atomic --N--> block "Failed to write"
-///     |
-///     Y
-///     v
-/// record Success + memory writes --> pass
-/// ```
-#[allow(dead_code)]
-pub fn run_with_store(
-    target: &str,
-    artifact: Option<&str>,
-    path: Option<&str>,
-    project_dir: &Path,
-    state_dir: &Path,
-    store: Option<&dyn MetricsStore>,
-) -> WorkflowOutput {
-    run_with_store_and_justify(target, artifact, path, project_dir, state_dir, store, None)
-}
-
-/// Full entry point with optional justification for backward transitions.
-pub fn run_with_store_and_justify(
-    target: &str,
-    artifact: Option<&str>,
-    path: Option<&str>,
-    project_dir: &Path,
-    state_dir: &Path,
-    store: Option<&dyn MetricsStore>,
-    justify: Option<&str>,
-) -> WorkflowOutput {
-    let target = target.to_owned();
-    let artifact = artifact.map(str::to_owned);
-    let path = path.map(str::to_owned);
-    let justify = justify.map(str::to_owned);
-
-    let metrics_disabled = std::env::var("ECC_METRICS_DISABLED").as_deref() == Ok("1");
-
-    let result = with_state_lock(state_dir, || {
-        let mut state = match read_state(state_dir) {
-            Ok(None) => {
-                return (
-                    WorkflowOutput::warn("No state.json found — workflow not initialized"),
-                    None,
-                    None::<(String, String, String, MetricOutcome, Option<String>)>,
-                );
-            }
-            Ok(Some(s)) => s,
-            Err(e) => {
-                return (
-                    WorkflowOutput::warn(format!("Failed to read state: {e}")),
-                    None,
-                    None,
-                );
-            }
-        };
-        let from = state.phase;
-        tracing::info!(from_phase = %from, target = %target, "transition: attempting phase change");
-        let target_phase = match target.parse::<Phase>() {
-            Ok(p) => p,
-            Err(e) => {
-                let reason = format!("Illegal transition: unknown phase: {}", e.0);
-                let feature = state.feature.clone();
-                let metric_info = Some((
-                    format!("workflow-{feature}"),
-                    from.to_string(),
-                    target.clone(),
-                    MetricOutcome::Rejected,
-                    Some(reason.clone()),
-                ));
-                return (WorkflowOutput::block(reason), None, metric_info);
-            }
-        };
-        let transition_result =
-            match resolve_transition_with_justification(from, target_phase, justify.as_deref()) {
-                Ok(r) => r,
-                Err(e) => {
-                    let reason = format!("Illegal transition: {e}");
-                    let feature = state.feature.clone();
-                    let metric_info = Some((
-                        format!("workflow-{feature}"),
-                        from.to_string(),
-                        target.clone(),
-                        MetricOutcome::Rejected,
-                        Some(reason.clone()),
-                    ));
-                    return (WorkflowOutput::block(reason), None, metric_info);
-                }
-            };
-        let to = transition_result.to;
-
-        // For backward transitions, clear artifacts for the rolled-back phases
-        if transition_result.direction == Direction::Backward {
-            state.artifacts.clear_artifacts_for_rollback(from, to);
-        }
-
-        // Record the transition in history
-        let record = TransitionRecord {
-            from,
-            to,
-            direction: transition_result.direction,
-            justification: justify.clone(),
-            timestamp: utc_now_iso8601(),
-            actor: "ecc-workflow".to_string(),
-        };
-        state.history.push(record);
-
-        state.phase = to;
-        if let Some(ref artifact_name) = artifact
-            && let Err(output) =
-                apply_artifact_stamp(&mut state, artifact_name, path.as_deref(), to)
-        {
-            return (output, None, None);
-        }
-        match write_state_atomic(state_dir, &state) {
-            Ok(()) => {
-                tracing::info!(from = %from, to = %to, feature = %state.feature, "workflow transition");
-                let memory_info = artifact
-                    .as_ref()
-                    .map(|a| (a.clone(), state.feature.clone(), state.concern));
-                let feature = state.feature.clone();
-                let metric_info = Some((
-                    format!("workflow-{feature}"),
-                    from.to_string(),
-                    to.to_string(),
-                    MetricOutcome::Success,
-                    None,
-                ));
-                (
-                    WorkflowOutput::pass(format!("Phase transition: {from} -> {to}")),
-                    memory_info,
-                    metric_info,
-                )
-            }
-            Err(e) => (
-                WorkflowOutput::block(format!("Failed to write state.json: {e}")),
-                None,
-                None,
-            ),
-        }
-    });
-
-    match result {
-        Ok((output, memory_info_opt, metric_info_opt)) => {
-            if let Some((session_id, from, to, outcome, rejection_reason)) = metric_info_opt {
-                try_record_transition(
-                    store,
-                    &session_id,
-                    &from,
-                    &to,
-                    outcome,
-                    rejection_reason,
-                    metrics_disabled,
-                );
-            }
-            match memory_info_opt {
-                Some((artifact_name, feature, concern)) => {
-                    write_memory_best_effort(&artifact_name, &feature, concern, project_dir, output)
-                }
-                None => output,
-            }
-        }
-        Err(e) => WorkflowOutput::block(format!("Lock error: {e}")),
-    }
-}
-
-/// Stamp artifact fields on `state` and validate the artifact name.
-///
-/// Returns `Err(WorkflowOutput)` if `artifact_name` is unknown.
-fn apply_artifact_stamp(
-    state: &mut ecc_domain::workflow::state::WorkflowState,
-    artifact_name: &str,
-    path: Option<&str>,
-    to: Phase,
-) -> Result<(), WorkflowOutput> {
-    let now = utc_now_iso8601();
-    match artifact_name {
-        "plan" => state.artifacts.plan = Some(now),
-        "solution" => state.artifacts.solution = Some(now),
-        "implement" => state.artifacts.implement = Some(now),
-        other => {
-            return Err(WorkflowOutput::block(format!(
-                "Unknown artifact '{other}' — expected plan, solution, or implement"
-            )));
-        }
-    }
-    if let Some(p) = path {
-        match artifact_name {
-            "plan" => state.artifacts.spec_path = Some(p.to_owned()),
-            "solution" => state.artifacts.design_path = Some(p.to_owned()),
-            "implement" => state.artifacts.tasks_path = Some(p.to_owned()),
-            _ => {}
-        }
-    }
-    if to == Phase::Done {
-        state.completed.push(Completion {
-            phase: Phase::from_str(artifact_name).unwrap_or(Phase::Unknown),
-            file: "implement-done.md".to_owned(),
-            at: utc_now_iso8601(),
-        });
-    }
-    Ok(())
-}
-
-/// Perform best-effort memory writes for a completed transition.
-///
-/// Collects failures into a warnings list (never blocks the transition).
-fn write_memory_best_effort(
-    artifact_name: &str,
-    feature: &str,
-    concern: Concern,
-    project_dir: &Path,
-    base_output: WorkflowOutput,
-) -> WorkflowOutput {
-    let wi_phase = match artifact_name {
-        "plan" => "plan",
-        "solution" => "solution",
-        "implement" => "implementation",
-        _ => artifact_name,
-    };
-    let concern_str = concern.to_string();
-    let mut warnings: Vec<String> = Vec::new();
-
-    if let Err(e) = crate::commands::memory_write::write_action(
-        artifact_name,
-        feature,
-        "success",
-        "[]",
-        project_dir,
-    ) {
-        warnings.push(format!("write_action failed: {e}"));
-    }
-    if let Err(e) =
-        crate::commands::memory_write::write_work_item(wi_phase, feature, &concern_str, project_dir)
-    {
-        warnings.push(format!("write_work_item failed: {e}"));
-    }
-    if let Err(e) =
-        crate::commands::memory_write::write_daily(wi_phase, feature, &concern_str, project_dir)
-    {
-        warnings.push(format!("write_daily failed: {e}"));
-    }
-    if let Err(e) = crate::commands::memory_write::write_memory_index(project_dir) {
-        warnings.push(format!("write_memory_index failed: {e}"));
-    }
-
-    if warnings.is_empty() {
-        base_output
-    } else {
-        let warn_text = warnings.join("; ");
-        WorkflowOutput::warn(format!("{} [warnings: {warn_text}]", base_output.message))
-    }
-}
-
-/// Run the `transition` subcommand: advance the workflow to the target phase.
-///
-/// Delegates to [`run_with_store_and_justify`] with `store = None`.
-/// Construct a [`SqliteMetricsStore`] in `main.rs` and call [`run_with_store_and_justify`] directly
-/// when metrics instrumentation is needed.
-pub fn run(
-    target: &str,
-    artifact: Option<&str>,
-    path: Option<&str>,
-    project_dir: &Path,
-    state_dir: &Path,
-    justify: Option<&str>,
-) -> WorkflowOutput {
-    run_with_store_and_justify(
-        target,
-        artifact,
-        path,
-        project_dir,
-        state_dir,
-        None,
-        justify,
-    )
-}

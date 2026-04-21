@@ -1,0 +1,31 @@
+fixtures:
+  - file: 01-all-workflow.json
+    expected_write: false
+    expected_kept_paths: []
+  - file: 02-all-specs.json
+    expected_write: false
+    expected_kept_paths: []
+  - file: 03-all-backlog.json
+    expected_write: false
+    expected_kept_paths: []
+  - file: 04-all-cartography.json
+    expected_write: false
+    expected_kept_paths: []
+  - file: 05-cargo-lock-only.json
+    expected_write: false
+    expected_kept_paths: []
+  - file: 06-workflow-plus-crate.json
+    expected_write: true
+    expected_kept_paths: ["crates/ecc-domain/src/cartography.rs"]
+  - file: 07-spec-plus-crate.json
+    expected_write: true
+    expected_kept_paths: ["crates/ecc-app/src/cartography_service.rs"]
+  - file: 08-backlog-plus-doc.json
+    expected_write: true
+    expected_kept_paths: ["docs/ARCHITECTURE.md"]
+  - file: 09-pure-crate.json
+    expected_write: true
+    expected_kept_paths: ["crates/foo/src/bar.rs"]
+  - file: 10-pure-app.json
+    expected_write: true
+    expected_kept_paths: ["crates/ecc-app/src/foo.rs"]

@@ -8,12 +8,14 @@ pub fn binary_path() -> PathBuf {
     path
 }
 
+#[allow(dead_code)]
 pub fn valid_statuses() -> &'static [&'static str] {
     &["pass", "block", "warn"]
 }
 
 /// Parse stdout or stderr as JSON and verify the "status" field is in ["pass","block","warn"]
 /// and a "message" field is present.
+#[allow(dead_code)]
 pub fn assert_structured_json_output(output: &std::process::Output) {
     // At least one of stdout or stderr should be non-empty JSON
     let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
