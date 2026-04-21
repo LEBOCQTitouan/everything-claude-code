@@ -6,7 +6,7 @@ use ecc_ports::shell::ShellExecutor;
 use ecc_ports::worktree::WorktreeManager;
 use std::path::Path;
 
-use super::{WorktreeGcError, is_worktree_stale, now_secs};
+use super::{WorktreeGcError, compact_ts_to_secs, is_worktree_stale, now_secs};
 
 /// Conservative fallback window in seconds for self-skip when the resolver returns `None`.
 /// Default: 3600 (1 hour) — matches `TTL_DEFAULT_SECS` (AC-003.6).
@@ -95,6 +95,38 @@ pub fn gc(
         };
 
         let worktree_path = Path::new(&entry.path);
+
+        // AC-003.2: self-skip — unconditionally skip the current session's own worktree.
+        if let Some(ref self_name) = options.self_skip {
+            let candidate =
+                WorktreeName::new(&worktree_name).unwrap_or_else(|_| self_name.clone());
+            if self_name.eq_platform(&candidate) {
+                tracing::debug!(
+                    worktree = %worktree_name,
+                    "GC: skipping own worktree (self-skip)"
+                );
+                result.skipped.push(worktree_name);
+                continue;
+            }
+        } else {
+            // AC-003.3: conservative fallback — when resolver returned None, skip all
+            // session-prefixed worktrees that are younger than the fallback window.
+            // This protects the current session in environments where CLAUDE_PROJECT_DIR
+            // is not set or canonicalize fails.
+            let age_secs = compact_ts_to_secs(&parsed.timestamp)
+                .map(|ts| now.saturating_sub(ts))
+                .unwrap_or(u64::MAX);
+            if age_secs < options.self_skip_fallback_secs {
+                tracing::debug!(
+                    worktree = %worktree_name,
+                    age_secs,
+                    fallback_secs = options.self_skip_fallback_secs,
+                    "GC: skipping young session worktree (resolver=None fallback)"
+                );
+                result.skipped.push(worktree_name);
+                continue;
+            }
+        }
 
         // Consult the .ecc-session heartbeat before the stale-timer fallback.
         // On NotFound or malformed JSON → fall through to stale-timer logic (AC-001.4, AC-001.5).

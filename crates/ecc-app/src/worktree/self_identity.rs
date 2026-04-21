@@ -11,7 +11,7 @@
 
 use ecc_domain::worktree::WorktreeName;
 use ecc_ports::fs::FileSystem;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Resolve the current session's [`WorktreeName`] from `CLAUDE_PROJECT_DIR`.
 ///
@@ -37,10 +37,63 @@ pub fn current_worktree(
     claude_project_dir: Option<&Path>,
     fs: &dyn FileSystem,
 ) -> Option<WorktreeName> {
-    // RED stub: always returns None.
-    // GREEN will implement the full algorithm.
-    let _ = (claude_project_dir, fs);
+    let project_dir = claude_project_dir?;
+
+    // Step 2: canonicalize the project dir to defend against symlink attacks.
+    let canonical = fs.canonicalize(project_dir).ok()?;
+
+    // Step 3: inspect .git.
+    let dot_git = canonical.join(".git");
+    if fs.is_dir(&dot_git) {
+        // Main repo — not a worktree.
+        return None;
+    }
+
+    // .git must be a regular file containing "gitdir: <path>".
+    let content = fs.read_to_string(&dot_git).ok()?;
+    let gitdir_path = parse_gitdir_line(&content)?;
+
+    // Step 4: canonicalize the gitdir path (SEC-002).
+    let canonical_gitdir = fs.canonicalize(&gitdir_path).ok()?;
+
+    // Step 5: expect the path to end with `.git/worktrees/<name>`.
+    extract_worktree_name(&canonical_gitdir)
+}
+
+/// Parse the `gitdir: <path>` line from a `.git` file's content.
+/// Tolerates leading/trailing whitespace and CRLF (PC-076).
+fn parse_gitdir_line(content: &str) -> Option<PathBuf> {
+    for line in content.lines() {
+        let line = line.trim_end_matches('\r').trim();
+        if let Some(rest) = line.strip_prefix("gitdir:") {
+            let path_str = rest.trim();
+            if !path_str.is_empty() {
+                return Some(PathBuf::from(path_str));
+            }
+        }
+    }
     None
+}
+
+/// Extract the worktree name from a canonical gitdir path.
+///
+/// Expected form: `.../.git/worktrees/<name>`
+fn extract_worktree_name(canonical_gitdir: &Path) -> Option<WorktreeName> {
+    // The path must end with .git/worktrees/<name>.
+    // Components from the end: <name>, worktrees, .git
+    let mut components = canonical_gitdir.components().rev();
+    let name = components.next()?.as_os_str().to_str()?;
+    let worktrees = components.next()?.as_os_str().to_str()?;
+    let dot_git = components.next()?.as_os_str().to_str()?;
+
+    if worktrees != "worktrees" || dot_git != ".git" {
+        return None;
+    }
+
+    // Verify it's a valid session worktree name (has the expected parse structure).
+    WorktreeName::parse(name)?;
+    // Construct the WorktreeName value object.
+    WorktreeName::new(name).ok()
 }
 
 #[cfg(test)]
