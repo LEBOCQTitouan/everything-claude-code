@@ -7,7 +7,7 @@ pub mod gc;
 pub mod shell_manager;
 pub mod status;
 
-pub use gc::{WorktreeGcResult, gc};
+pub use gc::{GcOptions, WorktreeGcResult, gc};
 pub use shell_manager::ShellWorktreeManager;
 pub use status::{WorktreeStatus, WorktreeStatusEntry, format_status_table, status};
 

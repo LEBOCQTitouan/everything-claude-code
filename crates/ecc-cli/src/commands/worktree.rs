@@ -40,7 +40,15 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
         WorktreeAction::Gc { force, dir } => {
             let project_dir = resolve_dir(dir)?;
             let clock = ecc_infra::system_clock::SystemClock;
-            let result = worktree::gc(&worktree_mgr, &executor, &project_dir, force, &clock)?;
+            let fs = ecc_infra::os_fs::OsFileSystem;
+            let result = worktree::gc(
+                &worktree_mgr,
+                &executor,
+                &fs,
+                &project_dir,
+                worktree::GcOptions { force },
+                &clock,
+            )?;
 
             for name in &result.removed {
                 println!("Removed: {name}");
