@@ -46,7 +46,10 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
                 &executor,
                 &fs,
                 &project_dir,
-                worktree::GcOptions { force, ..worktree::GcOptions::default() },
+                worktree::GcOptions {
+                    force,
+                    ..worktree::GcOptions::default()
+                },
                 &clock,
             )?;
 
@@ -67,7 +70,8 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
         WorktreeAction::Status { dir } => {
             let project_dir = resolve_dir(dir)?;
             let clock = ecc_infra::system_clock::SystemClock;
-            let entries = worktree::status(&worktree_mgr, &executor, &project_dir, &clock)?;
+            let fs = ecc_infra::os_fs::OsFileSystem;
+            let entries = worktree::status(&worktree_mgr, &executor, &fs, &project_dir, &clock)?;
             let table = worktree::format_status_table(&entries);
             println!("{table}");
         }
@@ -90,12 +94,14 @@ mod tests {
     fn status_exit_zero() {
         // Verify that the status function returns Ok (exit code 0 on success).
         // Uses in-memory mock rather than real OsWorktreeManager to avoid I/O.
-        use ecc_test_support::{MockExecutor, MockWorktreeManager, TEST_CLOCK};
+        use ecc_test_support::{InMemoryFileSystem, MockExecutor, MockWorktreeManager, TEST_CLOCK};
         use std::path::Path;
 
         let mgr = MockWorktreeManager::new();
         let executor = MockExecutor::new();
-        let result = ecc_app::worktree::status(&mgr, &executor, Path::new("/repo"), &*TEST_CLOCK);
+        let fs = InMemoryFileSystem::new();
+        let result =
+            ecc_app::worktree::status(&mgr, &executor, &fs, Path::new("/repo"), &*TEST_CLOCK);
         assert!(
             result.is_ok(),
             "status must return Ok (exit code 0 on success)"

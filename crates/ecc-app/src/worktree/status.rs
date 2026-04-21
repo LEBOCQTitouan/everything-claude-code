@@ -1,11 +1,15 @@
 //! Worktree status use case — reports status of active `ecc-session-*` git worktrees.
 
 use ecc_domain::worktree::WorktreeName;
+use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
 use ecc_ports::worktree::WorktreeManager;
 use std::path::Path;
 
-use super::{WorktreeGcError, compact_ts_to_secs, is_worktree_stale, now_secs};
+use super::{
+    LivenessChecker, LivenessVerdict, WorktreeGcError, compact_ts_to_secs, gc::TTL_DEFAULT_SECS,
+    is_worktree_stale, now_secs,
+};
 
 /// A single row in the worktree status table.
 #[derive(Debug, Clone)]
@@ -43,14 +47,24 @@ pub enum WorktreeStatus {
 }
 
 /// Return status entries for all active `ecc-session-*` worktrees.
+///
+/// Uses [`LivenessChecker`] to populate `liveness_reason` on each entry
+/// (AC-005.1: single source of truth shared with GC).
 pub fn status(
     worktree_mgr: &dyn WorktreeManager,
     executor: &dyn ShellExecutor,
+    fs: &dyn FileSystem,
     project_dir: &Path,
     clock: &dyn ecc_ports::clock::Clock,
 ) -> Result<Vec<WorktreeStatusEntry>, WorktreeGcError> {
     let entries = worktree_mgr.list_worktrees(project_dir)?;
     let now = now_secs(clock);
+    let checker = LivenessChecker {
+        fs,
+        shell: executor,
+        now_fn: Box::new(move || now),
+        ttl_secs: TTL_DEFAULT_SECS,
+    };
     let mut out = Vec::new();
 
     for entry in entries {
@@ -82,7 +96,19 @@ pub fn status(
             .map(|ts| now.saturating_sub(ts))
             .unwrap_or(0);
 
-        let stale = is_worktree_stale(executor, &parsed, now, worktree_path);
+        // Consult LivenessChecker for the verdict (AC-005.1 — same logic as GC).
+        let liveness_reason = Some(checker.check(worktree_path));
+
+        // Legacy stale check for WorktreeStatus classification.
+        // MissingFile → fall back to kill -0 via is_worktree_stale (AC-005.4).
+        // Malformed → conservative stale (AC-005.4 fallback).
+        let stale = match liveness_reason {
+            Some(LivenessVerdict::Live) => false,
+            Some(LivenessVerdict::MissingFile) | Some(LivenessVerdict::Malformed) => {
+                is_worktree_stale(executor, &parsed, now, worktree_path)
+            }
+            _ => true, // Stale or Dead → consider stale for WorktreeStatus
+        };
 
         let wt_status = if commits_ahead > 0 {
             WorktreeStatus::Unmerged
@@ -101,11 +127,48 @@ pub fn status(
             has_stash,
             is_pushed,
             status: wt_status,
-            liveness_reason: None,
+            liveness_reason,
         });
     }
 
     Ok(out)
+}
+
+/// Format a slice of [`WorktreeStatusEntry`] as a JSON array.
+///
+/// Each entry includes all fields including `liveness_reason` (AC-005.5).
+pub fn format_status_json(entries: &[WorktreeStatusEntry]) -> String {
+    let items: Vec<String> = entries
+        .iter()
+        .map(|e| {
+            let status_str = match e.status {
+                WorktreeStatus::Merged => "merged",
+                WorktreeStatus::Unmerged => "unmerged",
+                WorktreeStatus::Stale => "stale",
+            };
+            let liveness_str = match e.liveness_reason {
+                Some(LivenessVerdict::Live) => "\"Live\"",
+                Some(LivenessVerdict::Stale) => "\"Stale\"",
+                Some(LivenessVerdict::Dead) => "\"Dead\"",
+                Some(LivenessVerdict::MissingFile) => "\"MissingFile\"",
+                Some(LivenessVerdict::Malformed) => "\"Malformed\"",
+                None => "null",
+            };
+            format!(
+                r#"{{"name":"{name}","branch":"{branch}","age_secs":{age},"commits_ahead":{ahead},"is_clean":{clean},"has_stash":{stash},"is_pushed":{pushed},"status":"{status}","liveness_reason":{liveness}}}"#,
+                name = e.name,
+                branch = e.branch,
+                age = e.age_secs,
+                ahead = e.commits_ahead,
+                clean = e.is_clean,
+                stash = e.has_stash,
+                pushed = e.is_pushed,
+                status = status_str,
+                liveness = liveness_str,
+            )
+        })
+        .collect();
+    format!("[{}]", items.join(","))
 }
 
 /// Format a slice of [`WorktreeStatusEntry`] as a tab-separated table.
@@ -186,7 +249,8 @@ mod tests {
             .with_pushed(false);
         let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
 
-        let entries = status(&mgr, &executor, Path::new("/repo"), &*TEST_CLOCK).unwrap();
+        let fs = InMemoryFileSystem::new();
+        let entries = status(&mgr, &executor, &fs, Path::new("/repo"), &*TEST_CLOCK).unwrap();
         assert_eq!(entries.len(), 1, "expected 1 status entry");
 
         let e = &entries[0];
@@ -213,8 +277,9 @@ mod tests {
             session_wt(FRESH_SESSION),
         ]);
         let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
+        let fs = InMemoryFileSystem::new();
 
-        let entries = status(&mgr, &executor, Path::new("/repo"), &*TEST_CLOCK).unwrap();
+        let entries = status(&mgr, &executor, &fs, Path::new("/repo"), &*TEST_CLOCK).unwrap();
         assert_eq!(entries.len(), 1, "only session worktrees must appear");
         assert_eq!(entries[0].name, FRESH_SESSION);
     }

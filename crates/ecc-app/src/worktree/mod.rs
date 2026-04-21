@@ -13,7 +13,9 @@ pub mod status;
 pub use checker::{LivenessChecker, LivenessVerdict};
 pub use gc::{GcOptions, WorktreeGcResult, gc};
 pub use shell_manager::ShellWorktreeManager;
-pub use status::{WorktreeStatus, WorktreeStatusEntry, format_status_table, status};
+pub use status::{
+    WorktreeStatus, WorktreeStatusEntry, format_status_json, format_status_table, status,
+};
 
 use ecc_domain::worktree::ParsedWorktreeName;
 use ecc_ports::shell::ShellExecutor;

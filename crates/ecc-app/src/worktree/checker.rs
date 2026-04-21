@@ -8,6 +8,7 @@
 //! Both `gc` and `status` share this struct so liveness logic lives in exactly
 //! one place (PC-043, PC-078).
 
+use ecc_domain::worktree::liveness::{LivenessRecord, is_live};
 use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
 use std::path::Path;
@@ -54,9 +55,30 @@ impl<'a> LivenessChecker<'a> {
     ///    - If live → `Live`
     ///    - Else if PID dead → `Dead`
     ///    - Else (heartbeat stale) → `Stale`
-    pub fn check(&self, _worktree_path: &Path) -> LivenessVerdict {
-        // RED stub: always returns MissingFile so that tests exercising Live/Stale/Dead fail.
-        LivenessVerdict::MissingFile
+    pub fn check(&self, worktree_path: &Path) -> LivenessVerdict {
+        let session_path = worktree_path.join(".ecc-session");
+        let content = match self.fs.read_to_string(&session_path) {
+            Ok(c) => c,
+            Err(_) => return LivenessVerdict::MissingFile,
+        };
+        let record = match LivenessRecord::parse(&content) {
+            Ok(r) => r,
+            Err(_) => return LivenessVerdict::Malformed,
+        };
+        let now = (self.now_fn)();
+        let pid_str = record.claude_code_pid.to_string();
+        let pid_alive = self
+            .shell
+            .run_command("kill", &["-0", &pid_str])
+            .map(|o| o.success())
+            .unwrap_or(false);
+        if is_live(&record, now, pid_alive, self.ttl_secs) {
+            LivenessVerdict::Live
+        } else if !pid_alive {
+            LivenessVerdict::Dead
+        } else {
+            LivenessVerdict::Stale
+        }
     }
 }
 
