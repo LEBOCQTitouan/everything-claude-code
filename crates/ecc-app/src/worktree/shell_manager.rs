@@ -22,6 +22,26 @@ impl<'a> ShellWorktreeManager<'a> {
         Self { shell }
     }
 
+    /// Run `git rev-list --count <range>` in `dir` and parse the numeric result.
+    ///
+    /// Returns `Err(WorktreeError::CommandFailed)` on non-zero exit or parse failure.
+    fn run_git_count(
+        shell: &dyn ShellExecutor,
+        dir: &Path,
+        range: &str,
+    ) -> Result<u64, WorktreeError> {
+        let out = shell
+            .run_command_in_dir("git", &["rev-list", "--count", range], dir)
+            .map_err(|e| WorktreeError::CommandFailed(e.to_string()))?;
+        if !out.success() {
+            return Err(WorktreeError::CommandFailed(out.stderr));
+        }
+        out.stdout
+            .trim()
+            .parse::<u64>()
+            .map_err(|e| WorktreeError::CommandFailed(format!("failed to parse count: {e}")))
+    }
+
     fn parse_porcelain(output: &str) -> Vec<WorktreeInfo> {
         let mut out = Vec::new();
         let mut cur_path: Option<String> = None;
@@ -90,17 +110,7 @@ impl WorktreeManager for ShellWorktreeManager<'_> {
         target_branch: &str,
     ) -> Result<u64, WorktreeError> {
         let range = format!("{target_branch}..HEAD");
-        let out = self
-            .shell
-            .run_command_in_dir("git", &["rev-list", "--count", &range], worktree_path)
-            .map_err(|e| WorktreeError::CommandFailed(e.to_string()))?;
-        if !out.success() {
-            return Err(WorktreeError::CommandFailed(out.stderr));
-        }
-        out.stdout
-            .trim()
-            .parse::<u64>()
-            .map_err(|e| WorktreeError::CommandFailed(format!("failed to parse count: {e}")))
+        Self::run_git_count(self.shell, worktree_path, &range)
     }
 
     /// Check whether the current stash list is non-empty.
@@ -126,20 +136,11 @@ impl WorktreeManager for ShellWorktreeManager<'_> {
         branch: &str,
     ) -> Result<bool, WorktreeError> {
         let range = format!("{branch}..origin/{branch}");
-        let out = self
-            .shell
-            .run_command_in_dir("git", &["rev-list", "--count", &range], worktree_path)
-            .map_err(|e| WorktreeError::CommandFailed(e.to_string()))?;
         // Non-zero exit (e.g., remote not found) → treat as unpushed, not an error.
-        if !out.success() {
-            return Ok(false);
+        match Self::run_git_count(self.shell, worktree_path, &range) {
+            Ok(count) => Ok(count == 0),
+            Err(_) => Ok(false),
         }
-        let count: u64 = out
-            .stdout
-            .trim()
-            .parse()
-            .map_err(|e| WorktreeError::CommandFailed(format!("failed to parse count: {e}")))?;
-        Ok(count == 0)
     }
 
     fn remove_worktree(&self, repo_root: &Path, worktree_path: &Path) -> Result<(), WorktreeError> {
