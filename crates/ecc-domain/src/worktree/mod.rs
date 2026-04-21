@@ -274,7 +274,7 @@ mod tests {
     fn assess_safety_is_pure() {
         // Verify that the worktree module source does not import I/O libs.
         // Check for `use std::process`, `use std::fs`, `use std::net` import patterns only.
-        let source = include_str!("worktree.rs");
+        let source = include_str!("mod.rs");
         for line in source.lines() {
             let trimmed = line.trim();
             if trimmed.starts_with("use ") || trimmed.starts_with("extern ") {
