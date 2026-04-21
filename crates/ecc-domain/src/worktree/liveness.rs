@@ -43,9 +43,16 @@ impl LivenessRecord {
     /// - [`LivenessParseError::UnsupportedSchemaVersion`] if schema_version != 1.
     /// - [`LivenessParseError::ReservedPid`] if claude_code_pid < 2.
     pub fn parse(json: &str) -> Result<Self, LivenessParseError> {
-        // Stub: always return an error so RED tests fail.
-        let _ = json;
-        Err(LivenessParseError::UnsupportedSchemaVersion(0))
+        let r: Self = serde_json::from_str(json)?;
+        if r.schema_version != 1 {
+            return Err(LivenessParseError::UnsupportedSchemaVersion(
+                r.schema_version,
+            ));
+        }
+        if r.claude_code_pid < MIN_VALID_PID {
+            return Err(LivenessParseError::ReservedPid(r.claude_code_pid));
+        }
+        Ok(r)
     }
 }
 
@@ -55,9 +62,10 @@ impl LivenessRecord {
 /// - `pid_alive` is `true`
 /// - `last_seen_unix_ts` is not more than `FUTURE_SKEW_TOLERANCE_SECS` ahead of `now`
 /// - `now - last_seen_unix_ts < threshold_secs` (heartbeat is fresh)
-pub fn is_live(_r: &LivenessRecord, _now: u64, _pid_alive: bool, _threshold_secs: u64) -> bool {
-    // Stub: always return false so RED tests fail.
-    false
+pub fn is_live(r: &LivenessRecord, now: u64, pid_alive: bool, threshold_secs: u64) -> bool {
+    pid_alive
+        && r.last_seen_unix_ts <= now.saturating_add(FUTURE_SKEW_TOLERANCE_SECS)
+        && now.saturating_sub(r.last_seen_unix_ts) < threshold_secs
 }
 
 #[cfg(test)]
