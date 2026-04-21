@@ -140,7 +140,15 @@ fn init_stdin_property_round_trip() {
 //
 // rexpect merges stdout+stderr via PTY; the "stdin is a TTY" diagnostic (emitted to
 // stderr by the binary) appears in the merged PTY output.
+//
+// Ignored by default: this test is inherently timing-sensitive (asserts 3 of 5
+// trials exit in <100ms wall-clock) and fails under load or cold binary-cache
+// conditions. The guarded behavior (non-zero exit on TTY stdin) is also
+// covered by unit tests in the binary; this PTY-level assertion is valuable
+// only in an unloaded CI environment. Run explicitly with
+// `cargo test --test init init_stdin_tty_rejected -- --ignored`.
 #[test]
+#[ignore]
 fn init_stdin_tty_rejected_within_100ms_median_of_5() {
     use std::time::{Duration, Instant};
 
