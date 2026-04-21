@@ -50,7 +50,6 @@ pub enum HeartbeatError {
 /// 6. Serialize `LivenessRecord` to JSON.
 /// 7. Write to `<worktree_path>/.ecc-session.tmp.<pid>`.
 /// 8. Atomic rename to `<worktree_path>/.ecc-session`.
-#[allow(unused_variables)]
 pub fn write_heartbeat(
     fs: &dyn FileSystem,
     worktree_path: &Path,
@@ -58,8 +57,51 @@ pub fn write_heartbeat(
     now_fn: impl FnOnce() -> u64,
     disabled: bool,
 ) -> Result<(), HeartbeatError> {
-    // RED stub — implementation pending.
-    Err(HeartbeatError::PathEscape("unimplemented".into()))
+    // AC-009.1 / PC-071: kill-switch short-circuit — must be first.
+    if disabled {
+        return Ok(());
+    }
+
+    // AC-002.10: reject `..` components BEFORE is_dir check (PC-035).
+    // This ensures traversal is caught even if the resolved path exists.
+    if worktree_path
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err(HeartbeatError::PathEscape("contains ..".into()));
+    }
+
+    // AC-002.6: path must exist and be a directory.
+    if !fs.is_dir(worktree_path) {
+        return Ok(());
+    }
+
+    // AC-002.10: reject symlinks on the worktree path itself (PC-034).
+    if fs.is_symlink(worktree_path) {
+        return Err(HeartbeatError::PathEscape(
+            worktree_path.display().to_string(),
+        ));
+    }
+
+    // SEC-001: now_fn() MUST be called AFTER all path validation (PC-033b).
+    let last_seen = now_fn();
+
+    let record = LivenessRecord {
+        schema_version: 1,
+        claude_code_pid,
+        last_seen_unix_ts: last_seen,
+    };
+    let json = serde_json::to_string(&record)?;
+
+    let target = worktree_path.join(".ecc-session");
+    let tmp = worktree_path.join(format!(".ecc-session.tmp.{claude_code_pid}"));
+
+    fs.write(&tmp, &json)
+        .map_err(|e| HeartbeatError::Fs(e.to_string()))?;
+    fs.rename(&tmp, &target)
+        .map_err(|e| HeartbeatError::Fs(e.to_string()))?;
+
+    Ok(())
 }
 
 #[cfg(test)]
