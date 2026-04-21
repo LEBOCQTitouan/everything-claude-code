@@ -13,6 +13,16 @@ use ecc_ports::fs::FileSystem;
 use ecc_ports::shell::ShellExecutor;
 use std::path::Path;
 
+/// Return the current Unix timestamp in seconds.
+///
+/// Used as the default `now_fn` for `LivenessChecker` in production paths.
+pub fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
 /// Outcome of a single liveness check for a worktree.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LivenessVerdict {

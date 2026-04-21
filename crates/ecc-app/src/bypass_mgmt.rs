@@ -104,10 +104,18 @@ pub fn prune(store: &dyn BypassStore, older_than_days: u64) -> Result<u64, Bypas
 }
 
 /// Garbage-collect stale bypass token files from ended sessions.
+///
+/// For each session token-dir that differs from the current session, the function
+/// consults [`crate::worktree::checker::LivenessChecker`] before deletion:
+/// if the sibling worktree (`<project_dir>/.claude/worktrees/<session>`) is live,
+/// the token-dir is preserved.
 pub fn gc(
     fs: &dyn FileSystem,
+    shell: &dyn ecc_ports::shell::ShellExecutor,
     home: &Path,
+    project_dir: &Path,
     current_session_id: &str,
+    ttl_secs: u64,
 ) -> Result<u64, BypassMgmtError> {
     let tokens_dir = home.join(".ecc").join("bypass-tokens");
     if !fs.exists(&tokens_dir) {
@@ -125,16 +133,37 @@ pub fn gc(
                 .unwrap_or_default()
                 .to_string_lossy()
                 .to_string();
-            if dir_name != current_session_id {
-                fs.remove_dir_all(&entry)
-                    .map_err(|e| BypassMgmtError::Io(e.to_string()))?;
-                removed += 1;
+            if dir_name == current_session_id {
+                continue;
             }
+
+            // NEW: consult LivenessChecker before deleting sibling's tokens.
+            let worktree_path = project_dir
+                .join(".claude")
+                .join("worktrees")
+                .join(&dir_name);
+            if fs.exists(&worktree_path) {
+                let checker = crate::worktree::checker::LivenessChecker {
+                    fs,
+                    shell,
+                    now_fn: Box::new(crate::worktree::checker::unix_now),
+                    ttl_secs,
+                };
+                if matches!(
+                    checker.check(&worktree_path),
+                    crate::worktree::checker::LivenessVerdict::Live
+                ) {
+                    continue; // preserve live sibling's tokens
+                }
+            }
+
+            fs.remove_dir_all(&entry)
+                .map_err(|e| BypassMgmtError::Io(e.to_string()))?;
+            removed += 1;
         }
     }
     Ok(removed)
 }
-
 
 /// Errors from bypass management operations.
 #[derive(Debug, thiserror::Error)]
@@ -185,7 +214,15 @@ mod tests {
     fn bypass_grant_without_reason_errors() {
         let store = InMemoryBypassStore::new();
         let fs = InMemoryFileSystem::new();
-        let result = grant(&store, &fs, Path::new("/home"), "hook", "", "session-1", &*TEST_CLOCK);
+        let result = grant(
+            &store,
+            &fs,
+            Path::new("/home"),
+            "hook",
+            "",
+            "session-1",
+            &*TEST_CLOCK,
+        );
         assert!(result.is_err());
     }
 
@@ -200,15 +237,146 @@ mod tests {
 
     #[test]
     fn bypass_gc_cleans_stale() {
+        use ecc_test_support::MockExecutor;
         let fs = InMemoryFileSystem::new()
             .with_dir("/home/.ecc/bypass-tokens")
             .with_dir("/home/.ecc/bypass-tokens/old-session")
             .with_dir("/home/.ecc/bypass-tokens/current-session")
             .with_file("/home/.ecc/bypass-tokens/old-session/hook.json", "{}");
+        let shell = MockExecutor::new();
 
-        let removed = gc(&fs, Path::new("/home"), "current-session").unwrap();
+        // No worktree dir exists for old-session → skip liveness check → delete.
+        let removed = gc(
+            &fs,
+            &shell,
+            Path::new("/home"),
+            Path::new("/project"),
+            "current-session",
+            3600,
+        )
+        .unwrap();
         assert_eq!(removed, 1);
         assert!(!fs.exists(Path::new("/home/.ecc/bypass-tokens/old-session")));
         assert!(fs.exists(Path::new("/home/.ecc/bypass-tokens/current-session")));
+    }
+
+    /// PC-053: `bypass::gc` consults `LivenessChecker::check` before deletion.
+    ///
+    /// Verifies that when a worktree dir exists for a sibling session the checker
+    /// is consulted. Here the `.ecc-session` file is missing so the verdict is
+    /// `MissingFile` (not `Live`), meaning the token-dir IS deleted.
+    #[test]
+    fn gc_consults_checker() {
+        use ecc_ports::shell::CommandOutput;
+        use ecc_test_support::MockExecutor;
+
+        // Worktree dir exists for "sibling" but has NO .ecc-session → MissingFile verdict.
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/home/.ecc/bypass-tokens")
+            .with_dir("/home/.ecc/bypass-tokens/sibling")
+            .with_dir("/home/.ecc/bypass-tokens/current-session")
+            .with_file("/home/.ecc/bypass-tokens/sibling/hook.json", "{}")
+            // worktree dir exists but no .ecc-session inside
+            .with_dir("/project/.claude/worktrees/sibling");
+
+        // MockExecutor: no kill responses needed (MissingFile short-circuits before kill -0).
+        let shell = MockExecutor::new();
+
+        let removed = gc(
+            &fs,
+            &shell,
+            Path::new("/home"),
+            Path::new("/project"),
+            "current-session",
+            3600,
+        )
+        .unwrap();
+
+        // MissingFile → not Live → token-dir must be deleted.
+        assert_eq!(removed, 1, "sibling with MissingFile verdict must be gc'd");
+        assert!(!fs.exists(Path::new("/home/.ecc/bypass-tokens/sibling")));
+    }
+
+    /// PC-054: Bypass-token preserved when sibling worktree is live.
+    ///
+    /// A sibling session with a fresh `.ecc-session` file and a live PID must
+    /// NOT have its token-dir deleted.
+    #[test]
+    fn preserves_live_sibling() {
+        use ecc_ports::shell::CommandOutput;
+        use ecc_test_support::MockExecutor;
+
+        const NOW: u64 = 1_735_689_600;
+        const PID: u32 = 99001;
+
+        let fresh_json = format!(
+            r#"{{"schema_version":1,"claude_code_pid":{PID},"last_seen_unix_ts":{}}}"#,
+            NOW - 60 // 60 seconds ago → fresh
+        );
+
+        let fs = InMemoryFileSystem::new()
+            .with_dir("/home/.ecc/bypass-tokens")
+            .with_dir("/home/.ecc/bypass-tokens/live-sibling")
+            .with_dir("/home/.ecc/bypass-tokens/current-session")
+            .with_file("/home/.ecc/bypass-tokens/live-sibling/hook.json", "{}")
+            .with_dir("/project/.claude/worktrees/live-sibling")
+            .with_file(
+                "/project/.claude/worktrees/live-sibling/.ecc-session",
+                &fresh_json,
+            );
+
+        // PID alive → kill -0 returns exit code 0.
+        let shell = MockExecutor::new().on_args(
+            "kill",
+            &["-0", &PID.to_string()],
+            CommandOutput {
+                stdout: String::new(),
+                stderr: String::new(),
+                exit_code: 0,
+            },
+        );
+
+        // We need to control "now" for the checker. The checker uses `unix_now`
+        // by default. We cannot inject it from outside without changing the
+        // signature further. For this test we rely on the fact that the
+        // heartbeat is < 3600s old from the actual wall-clock "now" to make
+        // the verdict Live.
+        //
+        // Since `NOW` is a fixed past value we cannot guarantee the wall-clock
+        // time. Instead, we write the `.ecc-session` with `last_seen_unix_ts`
+        // set to 60 seconds BEFORE the real system time so it is always fresh.
+        let real_now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let live_json = format!(
+            r#"{{"schema_version":1,"claude_code_pid":{PID},"last_seen_unix_ts":{}}}"#,
+            real_now - 60
+        );
+
+        let fs2 = InMemoryFileSystem::new()
+            .with_dir("/home/.ecc/bypass-tokens")
+            .with_dir("/home/.ecc/bypass-tokens/live-sibling")
+            .with_dir("/home/.ecc/bypass-tokens/current-session")
+            .with_file("/home/.ecc/bypass-tokens/live-sibling/hook.json", "{}")
+            .with_dir("/project/.claude/worktrees/live-sibling")
+            .with_file(
+                "/project/.claude/worktrees/live-sibling/.ecc-session",
+                &live_json,
+            );
+
+        let removed = gc(
+            &fs2,
+            &shell,
+            Path::new("/home"),
+            Path::new("/project"),
+            "current-session",
+            3600,
+        )
+        .unwrap();
+
+        // Live verdict → token-dir MUST be preserved.
+        assert_eq!(removed, 0, "live sibling's tokens must NOT be gc'd");
+        assert!(fs2.exists(Path::new("/home/.ecc/bypass-tokens/live-sibling")));
     }
 }

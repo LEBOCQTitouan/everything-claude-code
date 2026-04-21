@@ -56,8 +56,15 @@ pub fn run(args: BypassArgs) -> anyhow::Result<()> {
             let store = ecc_infra::sqlite_bypass_store::SqliteBypassStore::new(&db_path, clock)?;
             let grant_clock = ecc_infra::system_clock::SystemClock;
             let fs = ecc_infra::os_fs::OsFileSystem;
-            let token =
-                ecc_app::bypass_mgmt::grant(&store, &fs, &home, &hook, &reason, &session_id, &grant_clock)?;
+            let token = ecc_app::bypass_mgmt::grant(
+                &store,
+                &fs,
+                &home,
+                &hook,
+                &reason,
+                &session_id,
+                &grant_clock,
+            )?;
             println!(
                 "Bypass granted for hook '{}' in session '{}'",
                 token.hook_id, token.session_id
@@ -141,8 +148,14 @@ pub fn run(args: BypassArgs) -> anyhow::Result<()> {
         BypassAction::Gc => {
             let session_id =
                 std::env::var("CLAUDE_SESSION_ID").unwrap_or_else(|_| "current".to_string());
+            let project_dir = std::env::var("CLAUDE_PROJECT_DIR")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|_| std::env::current_dir().unwrap_or_else(|_| home.clone()));
             let fs = ecc_infra::os_fs::OsFileSystem;
-            let removed = ecc_app::bypass_mgmt::gc(&fs, &home, &session_id)?;
+            let shell = ecc_infra::process_executor::ProcessExecutor;
+            let ttl_secs = 3600u64;
+            let removed =
+                ecc_app::bypass_mgmt::gc(&fs, &shell, &home, &project_dir, &session_id, ttl_secs)?;
             println!("Cleaned up {removed} stale bypass token directories");
             Ok(())
         }
