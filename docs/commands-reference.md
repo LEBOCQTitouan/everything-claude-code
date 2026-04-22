@@ -78,6 +78,42 @@ Setting the environment variable `ECC_CLAUDE_MD_MARKERS_DISABLED=1` short-circui
 
 Walker details: depth cap 16, deny-list `.git/ target/ node_modules/ .claude/worktrees/`, symlink-skip, lexicographic cross-file order, line-number-ascending within-file order. All diagnostics pass through a control-byte sanitizer before emission.
 
+## ECC Worktree CLI Commands
+
+### `ecc worktree gc`
+
+Garbage-collects stale session worktrees. Consults `.ecc-session` heartbeat + `kill -0 <pid>` to skip live sibling sessions (BL-156). Self-skip via `CLAUDE_PROJECT_DIR` + `.git` walking prevents the SessionStart-triggered automatic GC from deleting its own worktree.
+
+Flags:
+
+- `--force`: bypass the 24h staleness threshold but PRESERVE liveness check (live worktrees still skipped with stderr `--force respects liveness; use --force --kill-live to override`).
+- `--force --kill-live`: explicit destructive override; deletes live worktrees after interactive confirmation. Requires both flags together (clap enforces).
+- `--yes`: bypass the `--force --kill-live` confirmation prompt. Required in non-TTY (scripts/CI); non-TTY without `--yes` exits non-zero.
+- `--dry-run`: preview only. Prints `WOULD DELETE: <name> (reason: ...)` to stdout. Makes zero destructive calls. Skips the `--kill-live` prompt entirely (pointless for non-destructive previews).
+- `--json` (with `--dry-run`): emit `[{name, action, reason}]` structured schema.
+
+Examples:
+
+```bash
+ecc worktree gc                                 # safe default: live sessions skipped
+ecc worktree gc --force                         # bypass 24h age threshold; live still skipped
+ecc worktree gc --force --kill-live             # interactive destructive override
+ecc worktree gc --force --kill-live --yes       # scripted destructive override
+ecc worktree gc --dry-run                       # preview plain text
+ecc worktree gc --dry-run --json                # preview JSON
+```
+
+#### Environment variables
+
+- `ECC_WORKTREE_LIVENESS_DISABLED=1`: disables BOTH read (GC consult) and write (hook heartbeat) paths. Falls back to BL-150 logic. Emits `WARN: worktree liveness check disabled via ECC_WORKTREE_LIVENESS_DISABLED` once per process. Emergency kill switch — do not rely on for normal operation.
+- `ECC_WORKTREE_LIVENESS_TTL_SECS`: heartbeat freshness window in seconds (default 3600 = 60 min). Malformed values (non-numeric, negative, zero) emit WARN + fall back to default; never panic, never silently use 0.
+- `ECC_WORKTREE_SELF_SKIP_FALLBACK_SECS`: fallback skip-young window when `current_worktree()` resolver returns `None` (default 3600). Same validation contract as above.
+- `CLAUDE_PROJECT_DIR`: used by the self-identity resolver to skip the current session's worktree. Canonicalize-guarded against symlink-based mis-attribution (SEC-002).
+
+### `ecc worktree status`
+
+Displays each session worktree's status (`live` / `stale` / `dead` / `missing_session_file` / `malformed`) using the same `LivenessChecker` helper as `ecc worktree gc`. `--json` emits a `liveness_reason` field per entry.
+
 ## ECC Memory Commands
 
 | Command | Purpose |
