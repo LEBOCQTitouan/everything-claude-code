@@ -161,7 +161,8 @@ mod tests {
         let wt_name = "ecc-session-20260101-000000-sec-99999";
         let wt_path = format!("/worktrees/{wt_name}");
         // The gitdir path is NOT registered in the FS → canonicalize will fail → None.
-        let unregistered_gitdir = "/nonexistent/.git/worktrees/ecc-session-20260101-000000-sec-99999";
+        let unregistered_gitdir =
+            "/nonexistent/.git/worktrees/ecc-session-20260101-000000-sec-99999";
         let dot_git_content = format!("gitdir: {unregistered_gitdir}\n");
 
         let fs = InMemoryFileSystem::new()
