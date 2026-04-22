@@ -210,15 +210,18 @@ fn kill_live_requires_force() {
 // ── PC-059: --dry-run --json emits [{name, action, reason}] ─────────────────
 
 /// AC-008.4: `--dry-run --json` emits a JSON array with `name`, `action`, `reason`.
+/// Uses a live heartbeat + --kill-live so force_delete_live=true, bypassing the recency guard.
 #[test]
 #[ignore] // Requires: git, real process
 fn dry_run_json_schema() {
     let repo = init_git_repo();
     let repo_path = repo.path();
 
-    // Create a stale session worktree (year 2020 timestamp, almost-certainly-dead PID).
-    let wt_name = "ecc-session-20200101-120000-dry-json-1";
-    add_stale_session_worktree(repo_path, wt_name);
+    // Use a live worktree with --kill-live so the GC targets it for deletion.
+    // This bypasses the recency guard (which would protect a just-created worktree).
+    let wt_name = session_name("dry-json");
+    add_stale_session_worktree(repo_path, &wt_name);
+    write_live_heartbeat(&repo_path.join(&wt_name));
 
     let mut cmd = ecc_cmd();
     cmd.args([
@@ -226,6 +229,8 @@ fn dry_run_json_schema() {
         "gc",
         "--dry-run",
         "--force",
+        "--kill-live",
+        "--yes",
         "--json",
         "--dir",
     ])
@@ -251,7 +256,7 @@ fn dry_run_json_schema() {
 
     assert!(
         !arr.is_empty(),
-        "--dry-run --json array must contain the stale worktree entry. stdout={stdout}"
+        "--dry-run --json array must contain the live worktree entry. stdout={stdout}"
     );
 
     let entry = &arr[0];

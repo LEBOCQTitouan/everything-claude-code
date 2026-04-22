@@ -31,6 +31,14 @@ pub enum WorktreeAction {
         #[arg(long)]
         yes: bool,
 
+        /// Preview mode: print what would be deleted without performing any destructive operations.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Emit output as JSON (use with --dry-run for machine-readable preview).
+        #[arg(long)]
+        json: bool,
+
         /// Project directory (defaults to current directory)
         #[arg(long)]
         dir: Option<PathBuf>,
@@ -52,12 +60,15 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
             force,
             kill_live,
             yes,
+            dry_run,
+            json,
             dir,
         } => {
             let project_dir = resolve_dir(dir)?;
 
             // TTY-aware confirmation for --kill-live.
-            if kill_live {
+            // Skipped entirely in dry-run mode (non-destructive, no prompt needed).
+            if kill_live && !dry_run {
                 if std::io::stdin().is_terminal() {
                     if !yes {
                         eprintln!("Delete live session worktrees? [y/N]");
@@ -89,10 +100,45 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
                 worktree::GcOptions {
                     force,
                     kill_live,
+                    dry_run,
                     ..worktree::GcOptions::default()
                 },
                 &clock,
             )?;
+
+            // AC-008.1: render dry-run preview output.
+            if dry_run {
+                if json {
+                    let rows: Vec<_> = result
+                        .would_delete
+                        .iter()
+                        .map(|w| {
+                            serde_json::json!({
+                                "name": w.name,
+                                "action": "would_delete",
+                                "reason": w.reason.as_str(),
+                            })
+                        })
+                        .collect();
+                    println!(
+                        "{}",
+                        serde_json::to_string(&rows)
+                            .map_err(|e| anyhow::anyhow!("JSON serialization failed: {e}"))?
+                    );
+                } else {
+                    for w in &result.would_delete {
+                        println!(
+                            "WOULD DELETE: {} (reason: {})",
+                            w.name,
+                            w.reason.as_str()
+                        );
+                    }
+                    if result.would_delete.is_empty() {
+                        println!("No ECC session worktrees would be deleted.");
+                    }
+                }
+                return Ok(());
+            }
 
             for name in &result.removed {
                 println!("Removed: {name}");

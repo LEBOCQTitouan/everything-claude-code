@@ -222,6 +222,24 @@ pub fn gc(
             continue;
         }
 
+        // Determine the deletion reason for dry-run preview.
+        let deletion_reason = if force_delete_live {
+            DeletionReason::KillLive
+        } else if force {
+            DeletionReason::Forced
+        } else {
+            DeletionReason::Stale
+        };
+
+        // AC-008.2: dry-run — record what would be deleted, skip destructive calls.
+        if options.dry_run {
+            result.would_delete.push(WouldDelete {
+                name: worktree_name,
+                reason: deletion_reason,
+            });
+            continue;
+        }
+
         // Remove via port methods.
         match worktree_mgr.remove_worktree(project_dir, worktree_path) {
             Ok(()) => {
