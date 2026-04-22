@@ -58,6 +58,8 @@ comms/
 # ECC (Everything Claude Code) generated files
 # ECC installation manifest
 .claude/.ecc-manifest.json
+# Worktree liveness heartbeat file (ephemeral, per-session)
+.ecc-session
 # Generated architecture docs (regeneratable via /update-codemaps)
 docs/CODEMAPS/
 # Autonomous loop plans (ephemeral)
