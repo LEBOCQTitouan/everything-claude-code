@@ -526,6 +526,7 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber 0.3.23",
+ "tracing-test 0.2.6",
  "walkdir",
 ]
 
@@ -585,6 +586,7 @@ dependencies = [
  "assert_cmd",
  "ecc-app",
  "ecc-domain",
+ "ecc-infra",
  "ecc-ports",
  "ecc-test-support",
  "predicates",
@@ -2186,7 +2188,18 @@ dependencies = [
  "lazy_static",
  "tracing-core",
  "tracing-subscriber 0.2.25",
- "tracing-test-macro",
+ "tracing-test-macro 0.1.0",
+]
+
+[[package]]
+name = "tracing-test"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19a4c448db514d4f24c5ddb9f73f2ee71bfb24c526cf0c570ba142d1119e0051"
+dependencies = [
+ "tracing-core",
+ "tracing-subscriber 0.3.23",
+ "tracing-test-macro 0.2.6",
 ]
 
 [[package]]
@@ -2198,6 +2211,16 @@ dependencies = [
  "lazy_static",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "tracing-test-macro"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad06847b7afb65c7866a36664b75c40b895e318cea4f71299f013fb22965329d"
+dependencies = [
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]
