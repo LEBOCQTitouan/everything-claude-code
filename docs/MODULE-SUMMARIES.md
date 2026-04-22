@@ -383,4 +383,242 @@ See also: [Architecture](ARCHITECTURE.md) | [API Surface](API-SURFACE.md) | [Glo
 
 **Modified in:** Spec 2026-04-18 — 2026-04-18
 
+### `ecc-domain::worktree::liveness` (BL-156)
+
+**Purpose:** Pure domain model for worktree liveness detection — encodes PID + heartbeat timestamp into a `LivenessRecord` value object and provides an `is_live()` predicate for safety assessment.
+
+**Key Functions / Types:**
+- `LivenessRecord { pid: u32, heartbeat_ms: u64 }` — immutable VO capturing process identity and last heartbeat (canonical source of truth for liveness state)
+- `is_live(record, now_ms, ttl_secs)` — pure function: returns `true` iff (now_ms - heartbeat_ms) < (ttl_secs * 1000), enabling caller-configurable liveness windows
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — PID + heartbeat hybrid replaces brittle PID-only heuristic (BL-150)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Separates liveness state representation (domain) from I/O mechanics (app writes heartbeat, infra reads flock). Pure `is_live()` function enables testing without mocks. TTL parameterization allows operators to tune GC behavior without code changes per D-3 (hexagonal ports). LivenessRecord immutability enforces snapshot semantics — single point-in-time assessment.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-domain::worktree` (BL-156)
+
+**Purpose:** Extended worktree domain module — adds platform-aware naming equality.
+
+**Key Functions / Types:**
+- `WorktreeName::eq_platform(other, platform)` — normalized equality predicate accounting for platform-specific path canonicalization (e.g. case-insensitive comparison on macOS)
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — AC-005 (self-skip correctness on case-insensitive filesystems)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** macOS HFS+ and Windows NTFS are case-insensitive; Linux ext4 is case-sensitive. `eq_platform()` abstracts the comparison into a single domain function rather than embedding OS-specific logic in GC orchestrator. Ensures self-skip check correctly identifies current worktree on all platforms per D-3.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::worktree::liveness_checker` (BL-156)
+
+**Purpose:** Application orchestrator for consulting LivenessRecord — reads heartbeat flock file via port, constructs LivenessRecord, and calls domain `is_live()` predicate.
+
+**Key Functions / Types:**
+- `LivenessChecker { fs: port, shell: port, project_dir, ttl }` — orchestrator struct coupling filesystem and shell ports with operational parameters
+- `check(name)` → `(is_live, reason)` — consults flock, constructs record, calls domain `is_live()`, returns liveness + human-readable reason for audit logging
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — SOLID-002 (Single Responsibility); orchestration decoupled from domain/infra
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Separates orchestration (app: read flock, call domain) from domain logic (is_live predicate) from I/O (infra: flock read). Dependency injection of ports + TTL enables testing with mock filesystem and shell. Audit-trail reasoning string improves debuggability of GC decisions.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::worktree::current_worktree` (BL-156)
+
+**Purpose:** Application resolver that identifies the currently-active worktree using process context and filesystem paths.
+
+**Key Functions / Types:**
+- `current_worktree(fs, shell, project_dir)` → `Option<WorktreeName>` — resolves identity of invoking worktree via git rev-parse + pathname canonicalization; returns None if not in a worktree
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — AC-003 (self-skip prevents GC of invoking worktree)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Decouples process identity detection (app) from domain naming rules (WorktreeName) and I/O (FileSystem + ShellExecutor ports). Testing with mock ports enables verification of self-skip logic without touching git. Avoids hardcoding PWD or environment assumptions.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::worktree::gc` (BL-156)
+
+**Purpose:** Enhanced GC orchestrator with liveness consultation, self-skip logic, and extended options.
+
+**Key Functions / Types:**
+- `GcOptions { kill_live, dry_run, self_skip, liveness_disabled, ttl }` — new bitfield-like options enabling operator control over GC behavior (kill live worktrees, dry-run simulation, self-skip, disable liveness check, configurable TTL)
+- `run(options, current_name)` — consults LivenessChecker, skips self if name matches via `WorktreeName::eq_platform()`, filters by liveness state per options, accumulates reasons for audit trail
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — AC-001..006 (liveness consultation, self-skip, kill-live override, dry-run, TTL, disabled flag)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Extends BL-094 GC with PID + heartbeat liveness detection replacing brittle `ps aux` heuristic. LivenessChecker abstraction keeps orchestrator focused on sequencing (ask liveness, filter, accumulate reasons) without flock parsing details. Self-skip logic prevents operator from accidentally deleting invoking worktree via platform-aware name equality. Options structure enables test-driven control flow validation without shell mocking.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::worktree::shell_manager` (BL-156)
+
+**Purpose:** Shell query implementation for git operations — converts abstract operations (uncommitted changes, stash presence, push status) into concrete git commands.
+
+**Key Functions / Types:**
+- `rev_list_count(branch, upstream)` → `u32` — `git rev-list --count BRANCH..UPSTREAM` (unpushed commit count)
+- `status_porcelain()` → `bool` — `git status --porcelain` (has uncommitted changes)
+- `ls_files_others()` → `bool` — `git ls-files --others --exclude-standard` (has untracked files)
+- `stash_list()` → `bool` — `git stash list` (has stash entries)
+- All methods delegate to ShellExecutor port for testability
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — re-implementation replacing incomplete stubs with complete git command suite
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** BL-094 introduced stubs; BL-156 supplies full implementations enabling accurate safety assessment. Each query maps to a single git command with well-defined output semantics (exit code = boolean, --porcelain avoids parsing variability). Port-based design allows mock shell for testing without spawning git.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::worktree::status` (BL-156)
+
+**Purpose:** Status orchestrator with liveness context — queries worktree state and enriches output with liveness reason.
+
+**Key Functions / Types:**
+- `run(name)` → `WorktreeStatus { ... liveness_reason: String }` — extends prior status struct with audit-trail reasoning for liveness decision
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — U-004 (audit trail for liveness assessment)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Operator visibility into liveness reasoning (e.g. "heartbeat stale by 45 minutes, TTL 30 minutes = NOT LIVE") supports debugging GC decisions without requiring log analysis.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::worktree::heartbeat` (BL-156)
+
+**Purpose:** Orchestrator for heartbeat lifecycle management — writes/updates liveness records via flock mutual exclusion.
+
+**Key Functions / Types:**
+- `write_heartbeat(fs, name, ttl)` — acquires flock, writes/updates LivenessRecord with current timestamp and PID, releases lock atomically
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — AC-002 (continuous heartbeat write on session activity)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Heartbeat update is idempotent — multiple writes of the same timestamp + PID are safe. Flock coordination ensures concurrent GC processes never corrupt the record. Orchestrator level keeps details away from domain pure functions.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::bypass_mgmt` (BL-156)
+
+**Purpose:** Extended bypass orchestrator consulting liveness state — refactored to accept shell and project_dir parameters, enabling LivenessChecker construction.
+
+**Key Functions / Types:**
+- `run(fs, shell, project_dir, ttl)` — new signature threading shell and project_dir to enable liveness checks during bypass evaluation
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — integration point with liveness decision flow
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Bypass system must respect liveness state to prevent reuse-after-GC scenarios. Threaded shell+project_dir parameters preserve testability; test doubles can provide mock implementations without touching real shell.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::hook::handlers::tier2_post_tool_use` (BL-156)
+
+**Purpose:** Post-tool-use hook handler — writes heartbeat on every tool execution to maintain continuous liveness signal.
+
+**Key Functions / Types:**
+- `handle(fs, name)` — calls `write_heartbeat()` with current timestamp + PID, logs outcome
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — AC-002 (continuous heartbeat on session activity)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness), ADR-0053 (Handler Trait Dispatch)
+
+**Design Rationale:** PostToolUse is the highest-frequency hook — updates heartbeat on every tool call. Ensures GC process observes continuous activity during long-running agent sessions (typically 15-30 minutes). TTL default (30 min) plus heartbeat cadence (per tool, ~seconds) yields robust false-negative prevention.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-app::hook::handlers::tier3_session::lifecycle` (BL-156)
+
+**Purpose:** Session lifecycle hook — coordinates heartbeat on session start + stop; threads current worktree identity into GC.
+
+**Key Functions / Types:**
+- `SessionStart` handler — writes heartbeat on session entry
+- `SessionStop` handler — cleanup + final heartbeat write
+- `session_gc()` — passes `current_worktree()` result to GC as `self_skip` parameter
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — AC-002 (session-boundary liveness markers), AC-003 (self-skip)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness), ADR-0053 (Handler Trait Dispatch)
+
+**Design Rationale:** SessionStart heartbeat anchors liveness interval; SessionStop ensures GC process sees final activity timestamp. current_worktree() resolver decouples identity detection from hook logic, improving testability. Session lifecycle provides natural points to write heartbeat without adding per-command overhead outside of tool execution.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-ports::FileSystem::canonicalize` (BL-156)
+
+**Purpose:** Filesystem port extension — provides canonical path resolution for cross-platform name equality checks.
+
+**Key Functions / Types:**
+- `canonicalize(path)` → `Result<PathBuf>` — resolves symlinks and normalizes case per filesystem (NTFS → uppercase, HFS+ → case-insensitive Unicode norm, ext4 → case-sensitive)
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — AC-005 (self-skip correctness on case-insensitive filesystems)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Platform-aware canonicalization enables `WorktreeName::eq_platform()` domain function to perform correct identity comparison across OS variants without hardcoding OS-specific path logic in app layer.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-infra::os_fs::canonicalize` (BL-156)
+
+**Purpose:** Production filesystem adapter — implements canonical path resolution using std::fs::canonicalize and platform-specific case handling.
+
+**Key Functions / Types:**
+- `canonicalize(path)` — delegates to std::fs::canonicalize + platform-specific case normalization
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — AC-005 (self-skip on case-insensitive filesystems)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Production adapter for FileSystem port. std::fs::canonicalize resolves symlinks; additional case normalization for macOS HFS+ ensures consistent comparison results.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-cli::commands::worktree` (BL-156)
+
+**Purpose:** CLI worktree command enhancements — adds --dry-run, --kill-live, --yes flags and TTL configuration for GC; env var overrides + TTY prompt.
+
+**Key Functions / Types:**
+- `--dry-run` flag — simulate GC without mutations
+- `--kill-live` flag — remove worktrees with active heartbeats (override liveness protection)
+- `--yes` flag — skip TTY confirmation prompt
+- `parse_u64_env_secs(name)` helper — parse duration from environment variable (e.g. ECC_WORKTREE_GC_TTL)
+- TTY prompt → "Remove N worktrees? [y/N]" for safety
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — U-001 (operator control via flags), U-002 (env var overrides)
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Flags provide operator control over GC behavior without requiring code recompilation. Env var precedence (ECC_WORKTREE_GC_TTL) supports automation (CI, cron). TTY prompt prevents accidental mass deletion; --yes allows safe automation on headless systems.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
+### `ecc-cli::commands::bypass` (BL-156)
+
+**Purpose:** CLI bypass command refactor — plumbs new `bypass::gc` arguments (shell, project_dir, ttl).
+
+**Key Functions / Types:**
+- Threaded shell + project_dir into `bypass_mgmt::run()` for liveness-aware bypass evaluation
+
+**Spec Cross-Link:** `docs/specs/2026-04-18-safe-worktree-gc-flock/spec.md` — integration with bypass system
+
+**ADR Cross-Link:** ADR 0068 (pid-heartbeat-liveness)
+
+**Design Rationale:** Bypass system needs liveness context to prevent re-entry after GC. Shell and project_dir parameters enable LivenessChecker construction within bypass evaluator. CLI remains thin — delegates to app orchestrator.
+
+**Modified in:** `BL-156` (safe-worktree-gc-flock-pid-heartbeat) — 2026-04-21
+
 <!-- END IMPLEMENT-GENERATED -->
