@@ -8,6 +8,21 @@ Generated from git conventional commits. Grouped by type and version.
 
 ## Unreleased
 
+### Fixed
+
+- **Data-loss risk in parallel Claude Code sessions (BL-156)**: `ecc worktree gc` no longer deletes worktrees actively in use by sibling sessions. New PID + heartbeat liveness mechanism replaces the brittle BL-150 PID-only heuristic that was silently defeated by `ShellWorktreeManager` stub returns (`unmerged_commit_count → Ok(0)`). BL-150's `unwrap_or(u64::MAX)` fail-safe at `gc.rs:66` now actually fires, because `ShellWorktreeManager` invokes real git (`rev-list --count`, `status --porcelain`, `ls-files --others`, `stash list`, `rev-list ..origin/branch`). `current_worktree` resolver + self-skip prevents the SessionStart-triggered GC from deleting its own worktree. Adversary verdicts: spec PASS R2 87/100, solution R2 79/100. See ADR 0068.
+
+### Added
+
+- **`.ecc-session` heartbeat file (BL-156)**: written atomically (tmpfile + rename) by SessionStart/PostToolUse/Stop hooks; contains `{schema_version, claude_code_pid, last_seen_unix_ts}`. `ecc worktree gc` and `ecc worktree status` both consult via the shared `LivenessChecker`. Added to root `.gitignore`. Canonicalize + symlink-escape guard on write.
+- **`ecc worktree gc --dry-run`**: previews what would be deleted without destructive calls. `--dry-run --json` emits `[{name, action, reason}]` schema.
+- **`ecc worktree gc --force --kill-live`**: explicit destructive override for live worktrees. Requires interactive `y/N` confirmation, or `--yes` in scripts. Non-TTY without `--yes` exits non-zero (AC-006.5).
+- **`bypass::gc` liveness integration (US-007)**: bypass-token cleanup consults the same `LivenessChecker`, preserving tokens when a sibling worktree is live.
+- **`ECC_WORKTREE_LIVENESS_DISABLED=1` kill switch**: disables both read (GC consult) and write (hook heartbeat) paths; falls back to BL-150 logic. Emits `WARN: worktree liveness check disabled via ECC_WORKTREE_LIVENESS_DISABLED` once per process.
+- **`ECC_WORKTREE_LIVENESS_TTL_SECS` / `ECC_WORKTREE_SELF_SKIP_FALLBACK_SECS`**: tunable thresholds (default 3600s). Malformed values emit WARN + fall back to default; never panic, never silently use 0.
+- **`ecc worktree status --json` `liveness_reason` field**: `"live" | "stale_heartbeat" | "dead_pid" | "missing_session_file" | "malformed"` for operator scriptability.
+- **`LivenessChecker` struct** in `ecc-app::worktree::checker`: shared liveness-verdict helper consumed by `gc`, `status`, and `bypass_mgmt`. `Send + Sync`. Closure-based `now_fn` (no new `Clock` port introduced).
+
 ### Changed
 
 - **Cartography write-time noise filter expanded** — deltas with only `.claude/workflow/`, `.claude/cartography/`, `.claude/worktrees/`, `docs/specs/`, `docs/backlog/`, `docs/cartography/`, or `Cargo.lock` changes are no longer written. Introduces `ecc-domain::cartography::is_noise_path` pure predicate with ASCII-lowercase prefix match.
