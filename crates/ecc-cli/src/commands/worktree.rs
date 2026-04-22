@@ -46,7 +46,7 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
                 &executor,
                 &fs,
                 &project_dir,
-                worktree::GcOptions { force },
+                worktree::GcOptions { force, ..worktree::GcOptions::default() },
                 &clock,
             )?;
 

@@ -5,6 +5,7 @@
 
 pub mod gc;
 pub mod heartbeat;
+pub mod self_identity;
 pub mod shell_manager;
 pub mod status;
 

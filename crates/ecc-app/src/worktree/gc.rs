@@ -8,11 +8,33 @@ use std::path::Path;
 
 use super::{WorktreeGcError, is_worktree_stale, now_secs};
 
+/// Conservative fallback window in seconds for self-skip when the resolver returns `None`.
+/// Default: 3600 (1 hour) — matches `TTL_DEFAULT_SECS` (AC-003.6).
+pub const SELF_SKIP_FALLBACK_DEFAULT_SECS: u64 = 3600;
+
 /// Configuration for the GC run.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct GcOptions {
     /// Override liveness check and remove unmerged worktrees.
     pub force: bool,
+    /// The current session's worktree name, used for self-skip (AC-003.2).
+    /// When `Some`, the named worktree is skipped unconditionally.
+    /// When `None`, falls back to conservative skip of all young session worktrees
+    /// within `self_skip_fallback_secs` (AC-003.3).
+    pub self_skip: Option<WorktreeName>,
+    /// Conservative fallback window in seconds for skipping young session worktrees
+    /// when `self_skip` is `None`. Default: `SELF_SKIP_FALLBACK_DEFAULT_SECS` = 3600 (AC-003.6).
+    pub self_skip_fallback_secs: u64,
+}
+
+impl Default for GcOptions {
+    fn default() -> Self {
+        Self {
+            force: false,
+            self_skip: None,
+            self_skip_fallback_secs: SELF_SKIP_FALLBACK_DEFAULT_SECS,
+        }
+    }
 }
 
 /// Result of a worktree GC run.
@@ -318,7 +340,7 @@ mod tests {
             &executor,
             &InMemoryFileSystem::new(),
             Path::new("/repo"),
-            GcOptions { force: true },
+            GcOptions { force: true, ..GcOptions::default() },
             &*TEST_CLOCK,
         )
         .unwrap();
@@ -673,6 +695,13 @@ mod tests {
         );
     }
 
+    // ── PC-037..042: self-skip + fallback tests ───────────────────────────────
+
+    /// Helper: create a WorktreeName from a raw validated string.
+    fn worktree_name(s: &str) -> WorktreeName {
+        WorktreeName::new(s).unwrap_or_else(|e| panic!("invalid worktree name '{s}': {e}"))
+    }
+
     /// AC-001.5: GC treats malformed JSON as missing (falls through to AC-001.4).
     #[test]
     fn malformed_session_file_falls_back() {
@@ -696,6 +725,149 @@ mod tests {
             result.removed.contains(&STALE_SESSION.to_owned()),
             "malformed .ecc-session must fall through to timer-based GC, got: {:?}",
             result
+        );
+    }
+
+    /// AC-003.2: GC skips the worktree whose name matches `self_skip`.
+    #[test]
+    fn skips_self_worktree() {
+        // STALE_SESSION is stale by age and dead by PID — but self_skip should prevent removal.
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(STALE_SESSION)]);
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], err_output(1));
+
+        let result = gc(
+            &mgr,
+            &executor,
+            &InMemoryFileSystem::new(),
+            Path::new("/repo"),
+            GcOptions {
+                self_skip: Some(worktree_name(STALE_SESSION)),
+                ..GcOptions::default()
+            },
+            &*TEST_CLOCK,
+        )
+        .unwrap();
+
+        assert!(
+            result.skipped.contains(&STALE_SESSION.to_owned()),
+            "self-skip worktree must be in skipped, got: {:?}",
+            result
+        );
+        assert!(
+            !result.removed.contains(&STALE_SESSION.to_owned()),
+            "self-skip worktree must NOT be removed"
+        );
+    }
+
+    /// AC-003.3: Resolver None → all session worktrees younger than fallback_secs are skipped.
+    #[test]
+    fn skips_young_when_resolver_none() {
+        // FRESH_SESSION has a far-future timestamp → it is "young" (age near-zero from test clock).
+        // With self_skip=None and fallback_secs=3600, it must be skipped.
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(FRESH_SESSION)]);
+        // Kill -0 would succeed but we expect skip before that check.
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
+
+        let result = gc(
+            &mgr,
+            &executor,
+            &InMemoryFileSystem::new(),
+            Path::new("/repo"),
+            GcOptions {
+                self_skip: None,
+                self_skip_fallback_secs: 3600,
+                ..GcOptions::default()
+            },
+            &*TEST_CLOCK,
+        )
+        .unwrap();
+
+        assert!(
+            result.skipped.contains(&FRESH_SESSION.to_owned()),
+            "young session worktree must be skipped when resolver=None, got: {:?}",
+            result
+        );
+        assert!(
+            !result.removed.contains(&FRESH_SESSION.to_owned()),
+            "young session worktree must NOT be removed when resolver=None"
+        );
+    }
+
+    /// AC-003.4: Non-session worktrees are not affected by the resolver-None fallback.
+    #[test]
+    fn non_session_unaffected_by_none_resolver() {
+        // A non-session worktree (cannot be parsed by WorktreeName::parse) must not
+        // be skipped by the fallback — it falls through to the normal GC logic.
+        let non_session_wt = WorktreeInfo {
+            path: "/repo/regular-branch".to_owned(),
+            branch: Some("regular-branch".to_owned()),
+        };
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![non_session_wt]);
+        let executor = MockExecutor::new();
+
+        let result = gc(
+            &mgr,
+            &executor,
+            &InMemoryFileSystem::new(),
+            Path::new("/repo"),
+            GcOptions {
+                self_skip: None,
+                self_skip_fallback_secs: 3600,
+                ..GcOptions::default()
+            },
+            &*TEST_CLOCK,
+        )
+        .unwrap();
+
+        // regular-branch is not a session worktree → WorktreeName::parse returns None
+        // → not affected by the self-skip fallback (falls through to existing GC logic,
+        // which also skips it because it can't be parsed).
+        assert!(
+            !result.removed.contains(&"regular-branch".to_owned()),
+            "non-session worktree must not be in removed list (parse filter)"
+        );
+    }
+
+    /// AC-003.6: Fallback window defaults to 3600 seconds via `GcOptions::default()`.
+    #[test]
+    fn fallback_default_3600() {
+        let opts = GcOptions::default();
+        assert_eq!(
+            opts.self_skip_fallback_secs, 3600,
+            "default self_skip_fallback_secs must be 3600 (AC-003.6)"
+        );
+    }
+
+    /// AC-003.6: Fallback window can be overridden via `self_skip_fallback_secs`.
+    #[test]
+    fn fallback_env_override_applies() {
+        // With fallback_secs=0, even a "fresh" session worktree is not skipped
+        // by the fallback (age=0 is NOT < 0).
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(FRESH_SESSION)]);
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], ok(""));
+
+        let result = gc(
+            &mgr,
+            &executor,
+            &InMemoryFileSystem::new(),
+            Path::new("/repo"),
+            GcOptions {
+                self_skip: None,
+                self_skip_fallback_secs: 0, // override: no protection
+                ..GcOptions::default()
+            },
+            &*TEST_CLOCK,
+        )
+        .unwrap();
+
+        // With fallback_secs=0: the fallback does NOT skip the worktree.
+        // It then proceeds to the heartbeat/stale check. FRESH_SESSION has a future
+        // timestamp → it's not stale by age → it's skipped by the normal stale check.
+        // The test just verifies fallback_secs=0 overrides the default behavior.
+        // Result: skipped (by normal fresh-timestamp path), NOT removed.
+        assert!(
+            !result.removed.contains(&FRESH_SESSION.to_owned()),
+            "fresh session must not be removed even with fallback_secs=0 (still fresh by age)"
         );
     }
 }

@@ -45,6 +45,15 @@ impl std::fmt::Display for WorktreeNameError {
 }
 
 impl WorktreeName {
+    /// Construct a `WorktreeName` from a validated string.
+    ///
+    /// Returns `Err` if the name fails the allowlist check (`[a-zA-Z0-9/_-]`, max 255 bytes).
+    pub fn new(name: impl Into<String>) -> Result<Self, WorktreeNameError> {
+        let name = name.into();
+        Self::validate(&name)?;
+        Ok(Self { name })
+    }
+
     /// Generate a new worktree name from concern, feature description, and PID.
     pub fn generate(concern: &str, feature: &str, pid: u32) -> Result<Self, WorktreeNameError> {
         let _ = concern; // concern reserved for future use
