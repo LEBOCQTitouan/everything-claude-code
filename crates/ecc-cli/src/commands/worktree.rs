@@ -90,6 +90,25 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
                 }
             }
 
+            // AC-009.1: kill switch — suppress liveness read AND write paths.
+            let liveness_disabled =
+                std::env::var("ECC_WORKTREE_LIVENESS_DISABLED").as_deref() == Ok("1");
+            if liveness_disabled {
+                // Emit once per process to stderr so integration tests can assert on it.
+                eprintln!(
+                    "ecc: worktree liveness check disabled (ECC_WORKTREE_LIVENESS_DISABLED=1)"
+                );
+                tracing::warn!(
+                    "worktree liveness check disabled via ECC_WORKTREE_LIVENESS_DISABLED"
+                );
+            }
+
+            // AC-009.2: validate TTL env var; fall back to default on malformed input.
+            let _ttl = parse_u64_env_secs("ECC_WORKTREE_LIVENESS_TTL_SECS", 3600);
+            // AC-009.3: validate self-skip fallback env var.
+            let _self_skip_fallback =
+                parse_u64_env_secs("ECC_WORKTREE_SELF_SKIP_FALLBACK_SECS", 3600);
+
             let clock = ecc_infra::system_clock::SystemClock;
             let fs = ecc_infra::os_fs::OsFileSystem;
             let result = worktree::gc(
@@ -127,11 +146,7 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
                     );
                 } else {
                     for w in &result.would_delete {
-                        println!(
-                            "WOULD DELETE: {} (reason: {})",
-                            w.name,
-                            w.reason.as_str()
-                        );
+                        println!("WOULD DELETE: {} (reason: {})", w.name, w.reason.as_str());
                     }
                     if result.would_delete.is_empty() {
                         println!("No ECC session worktrees would be deleted.");
@@ -228,22 +243,37 @@ mod tests {
         // SAFETY: single-threaded test; no other threads read this env var.
         unsafe { std::env::set_var(key, "abc") };
         let result = parse_u64_env_secs(key, default);
-        assert_eq!(result, default, "non-numeric 'abc' must return default {default}");
-        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for 'abc'");
+        assert_eq!(
+            result, default,
+            "non-numeric 'abc' must return default {default}"
+        );
+        assert!(
+            logs_contain("invalid env var value; using default"),
+            "must emit WARN for 'abc'"
+        );
 
         // Negative sentinel (parse::<u64>() rejects "-1") → default
         // SAFETY: same test, single-threaded.
         unsafe { std::env::set_var(key, "-1") };
         let result = parse_u64_env_secs(key, default);
-        assert_eq!(result, default, "'-1' must return default (u64 parse failure)");
-        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for '-1'");
+        assert_eq!(
+            result, default,
+            "'-1' must return default (u64 parse failure)"
+        );
+        assert!(
+            logs_contain("invalid env var value; using default"),
+            "must emit WARN for '-1'"
+        );
 
         // Zero → default (u64 parses but n > 0 fails)
         // SAFETY: same test, single-threaded.
         unsafe { std::env::set_var(key, "0") };
         let result = parse_u64_env_secs(key, default);
         assert_eq!(result, default, "'0' must return default (n > 0 guard)");
-        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for '0'");
+        assert!(
+            logs_contain("invalid env var value; using default"),
+            "must emit WARN for '0'"
+        );
 
         // SAFETY: cleanup.
         unsafe { std::env::remove_var(key) };
@@ -260,22 +290,34 @@ mod tests {
         // SAFETY: single-threaded test; no other threads read this env var.
         unsafe { std::env::set_var(key, "abc") };
         let result = parse_u64_env_secs(key, default);
-        assert_eq!(result, default, "non-numeric 'abc' must return default {default}");
-        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for 'abc'");
+        assert_eq!(
+            result, default,
+            "non-numeric 'abc' must return default {default}"
+        );
+        assert!(
+            logs_contain("invalid env var value; using default"),
+            "must emit WARN for 'abc'"
+        );
 
         // "-1" → default (u64 parse failure)
         // SAFETY: same test, single-threaded.
         unsafe { std::env::set_var(key, "-1") };
         let result = parse_u64_env_secs(key, default);
         assert_eq!(result, default, "'-1' must return default");
-        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for '-1'");
+        assert!(
+            logs_contain("invalid env var value; using default"),
+            "must emit WARN for '-1'"
+        );
 
         // Zero → default (n > 0 guard)
         // SAFETY: same test, single-threaded.
         unsafe { std::env::set_var(key, "0") };
         let result = parse_u64_env_secs(key, default);
         assert_eq!(result, default, "'0' must return default");
-        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for '0'");
+        assert!(
+            logs_contain("invalid env var value; using default"),
+            "must emit WARN for '0'"
+        );
 
         // SAFETY: cleanup.
         unsafe { std::env::remove_var(key) };

@@ -45,7 +45,10 @@ fn ecc_cmd() -> Command {
 /// Uses a stale timestamp (year 2020) so the age check marks it old.
 /// PID in the name is `999999` — almost certainly dead.
 fn add_stale_session_worktree(repo_path: &Path, name: &str) {
-    run_git(repo_path, &["worktree", "add", "--orphan", "-b", name, name]);
+    run_git(
+        repo_path,
+        &["worktree", "add", "--orphan", "-b", name, name],
+    );
 }
 
 /// Write a "live" `.ecc-session` heartbeat file into the worktree.
@@ -56,11 +59,9 @@ fn write_live_heartbeat(worktree_path: &Path) {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    let json = format!(
-        r#"{{"schema_version":1,"claude_code_pid":{pid},"last_seen_unix_ts":{now}}}"#
-    );
-    std::fs::write(worktree_path.join(".ecc-session"), json)
-        .expect("failed to write .ecc-session");
+    let json =
+        format!(r#"{{"schema_version":1,"claude_code_pid":{pid},"last_seen_unix_ts":{now}}}"#);
+    std::fs::write(worktree_path.join(".ecc-session"), json).expect("failed to write .ecc-session");
 }
 
 // ── helpers for valid session worktree names ─────────────────────────────────
@@ -157,15 +158,8 @@ fn kill_live_yes_bypasses_prompt() {
     write_live_heartbeat(&repo_path.join(&wt_name));
 
     let mut cmd = ecc_cmd();
-    cmd.args([
-        "worktree",
-        "gc",
-        "--force",
-        "--kill-live",
-        "--yes",
-        "--dir",
-    ])
-    .arg(repo_path);
+    cmd.args(["worktree", "gc", "--force", "--kill-live", "--yes", "--dir"])
+        .arg(repo_path);
     let output = cmd.output().expect("ecc command failed to run");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -245,10 +239,8 @@ fn dry_run_json_schema() {
         "--dry-run --json must exit 0. stdout={stdout} stderr={stderr}"
     );
 
-    let parsed: serde_json::Value =
-        serde_json::from_str(stdout.trim()).unwrap_or_else(|e| {
-            panic!("--dry-run --json must emit valid JSON: {e}. stdout={stdout}")
-        });
+    let parsed: serde_json::Value = serde_json::from_str(stdout.trim())
+        .unwrap_or_else(|e| panic!("--dry-run --json must emit valid JSON: {e}. stdout={stdout}"));
 
     let arr = parsed
         .as_array()
@@ -399,15 +391,17 @@ fn ecc_session_gitignored() {
 
     // Add .ecc-session to .gitignore in the temp repo.
     let gitignore_path = repo_path.join(".gitignore");
-    std::fs::write(&gitignore_path, ".ecc-session\n")
-        .expect("failed to write .gitignore");
+    std::fs::write(&gitignore_path, ".ecc-session\n").expect("failed to write .gitignore");
     run_git(repo_path, &["add", ".gitignore"]);
     run_git(repo_path, &["commit", "-m", "add .gitignore"]);
 
     // Create a .ecc-session file in the repo root.
     let session_file = repo_path.join(".ecc-session");
-    std::fs::write(&session_file, r#"{"schema_version":1,"claude_code_pid":12345,"last_seen_unix_ts":9999999999}"#)
-        .expect("failed to write .ecc-session");
+    std::fs::write(
+        &session_file,
+        r#"{"schema_version":1,"claude_code_pid":12345,"last_seen_unix_ts":9999999999}"#,
+    )
+    .expect("failed to write .ecc-session");
 
     // git status --porcelain must NOT list .ecc-session.
     let output = std::process::Command::new("git")
