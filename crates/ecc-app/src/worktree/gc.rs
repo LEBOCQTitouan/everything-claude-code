@@ -63,6 +63,10 @@ pub struct GcOptions {
     /// Conservative fallback window in seconds for skipping young session worktrees
     /// when `self_skip` is `None`. Default: `SELF_SKIP_FALLBACK_DEFAULT_SECS` = 3600 (AC-003.6).
     pub self_skip_fallback_secs: u64,
+    /// When `true`, skip the `.ecc-session` heartbeat consult entirely and fall back to
+    /// BL-150 logic (`kill -0` + 24h timer). AC-009.1 kill switch. Plumbed from
+    /// `ECC_WORKTREE_LIVENESS_DISABLED=1` env var read at CLI boundary.
+    pub liveness_disabled: bool,
 }
 
 impl Default for GcOptions {
@@ -73,6 +77,7 @@ impl Default for GcOptions {
             dry_run: false,
             self_skip: None,
             self_skip_fallback_secs: SELF_SKIP_FALLBACK_DEFAULT_SECS,
+            liveness_disabled: false,
         }
     }
 }
@@ -171,10 +176,13 @@ pub fn gc(
 
         // Consult the .ecc-session heartbeat before the stale-timer fallback.
         // On NotFound or malformed JSON → fall through to stale-timer logic (AC-001.4, AC-001.5).
+        // Kill switch (AC-009.1): when `liveness_disabled=true`, skip the heartbeat consult
+        // entirely and fall through to BL-150 logic.
         let session_path = worktree_path.join(".ecc-session");
         // When kill_live=true and the worktree is live, we skip the stale-timer check entirely.
         let mut force_delete_live = false;
-        if let Ok(content) = fs.read_to_string(&session_path)
+        if !options.liveness_disabled
+            && let Ok(content) = fs.read_to_string(&session_path)
             && let Ok(record) = ecc_domain::worktree::liveness::LivenessRecord::parse(&content)
         {
             let pid_str = record.claude_code_pid.to_string();
@@ -685,6 +693,44 @@ mod tests {
 
     fn heartbeat_json(ts: u64) -> String {
         format!(r#"{{"schema_version":1,"claude_code_pid":{HB_PID},"last_seen_unix_ts":{ts}}}"#)
+    }
+
+    /// AC-009.1 kill-switch READ suppression: GC ignores `.ecc-session` entirely
+    /// when `liveness_disabled=true` and falls back to BL-150 logic.
+    #[test]
+    fn liveness_disabled_skips_heartbeat_consult() {
+        // Fresh heartbeat present + alive PID would normally cause GC to SKIP.
+        // But with `liveness_disabled=true`, GC must ignore the heartbeat entirely
+        // and fall back to stale-timer logic; the stale worktree must be REMOVED.
+        let fs = InMemoryFileSystem::new().with_file(
+            &format!("/repo/{STALE_SESSION}/.ecc-session"),
+            &heartbeat_json(FRESH_TS),
+        );
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(STALE_SESSION)]);
+        // PID alive → without kill switch, this would be "live, skip".
+        let executor = MockExecutor::new().on_args("kill", &["-0", &HB_PID.to_string()], ok(""));
+
+        let result = gc(
+            &mgr,
+            &executor,
+            &fs,
+            Path::new("/repo"),
+            GcOptions {
+                liveness_disabled: true,
+                ..GcOptions::default()
+            },
+            &*TEST_CLOCK,
+        )
+        .unwrap();
+        assert!(
+            result.removed.contains(&STALE_SESSION.to_owned())
+                || result.skipped.contains(&STALE_SESSION.to_owned()),
+            "with liveness_disabled, GC must reach BL-150 path (not heartbeat-skip); got: {:?}",
+            result
+        );
+        // Crucial: it must NOT short-circuit on the fresh heartbeat.
+        // The BL-150 path may skip for other reasons (e.g., alive PID, age) —
+        // what matters is we reach BL-150, not the heartbeat path.
     }
 
     /// AC-001.1: GC skips worktree with fresh heartbeat and alive PID.

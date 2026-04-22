@@ -3,9 +3,20 @@
 //!
 //! # Security (SEC-001)
 //!
-//! `now_fn()` is invoked **after** `canonicalize` (path validation) to prevent
-//! a TOCTOU window where a symlink could be swapped between clock-read and
-//! write. PC-033b verifies this ordering via a counting mock.
+//! `now_fn()` is invoked **after** the path-validation guards (syntactic `..`
+//! component check + leaf-symlink check via `FileSystem::is_symlink`) to
+//! prevent a TOCTOU window where a clock value is captured before the target
+//! path is validated. PC-033b verifies this ordering via a counting mock.
+//!
+//! # Scope of traversal guard
+//!
+//! The guard is **syntactic + leaf-only**: rejects `..` components in the
+//! supplied `worktree_path` and rejects a symlinked leaf directory. It does
+//! NOT canonicalize the full path chain, so a pre-existing symlink on an
+//! intermediate ancestor directory (outside this function's control) is not
+//! detected. Callers must only pass worktree paths originating from trusted
+//! sources — hook handlers sourced from `CLAUDE_PROJECT_DIR` + the self-identity
+//! resolver, both of which canonicalize upstream (see `self_identity.rs`).
 
 use ecc_domain::worktree::liveness::LivenessRecord;
 use ecc_ports::fs::FileSystem;

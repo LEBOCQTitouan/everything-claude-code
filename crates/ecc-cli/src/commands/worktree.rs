@@ -120,6 +120,7 @@ pub fn run(args: WorktreeArgs) -> anyhow::Result<()> {
                     force,
                     kill_live,
                     dry_run,
+                    liveness_disabled,
                     ..worktree::GcOptions::default()
                 },
                 &clock,
