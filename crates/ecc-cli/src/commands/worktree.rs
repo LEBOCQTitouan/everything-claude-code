@@ -175,6 +175,28 @@ fn resolve_dir(dir: Option<PathBuf>) -> anyhow::Result<PathBuf> {
     }
 }
 
+/// Parse a `u64` environment variable representing seconds.
+///
+/// Returns `default` if the variable is absent, non-numeric, zero, or negative.
+/// Emits a [`tracing::warn!`] when the value is present but invalid.
+fn parse_u64_env_secs(key: &str, default: u64) -> u64 {
+    match std::env::var(key) {
+        Ok(v) => match v.parse::<u64>() {
+            Ok(n) if n > 0 => n,
+            _ => {
+                tracing::warn!(
+                    key = %key,
+                    value = %v,
+                    default,
+                    "invalid env var value; using default"
+                );
+                default
+            }
+        },
+        Err(_) => default,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -193,5 +215,69 @@ mod tests {
             result.is_ok(),
             "status must return Ok (exit code 0 on success)"
         );
+    }
+
+    // PC-061: Malformed ECC_WORKTREE_LIVENESS_TTL_SECS logs WARN + uses default (AC-009.2)
+    #[test]
+    #[tracing_test::traced_test]
+    fn invalid_ttl_env_warns_and_defaults() {
+        let key = "ECC_WORKTREE_LIVENESS_TTL_SECS";
+        let default = 3600u64;
+
+        // Non-numeric value → default
+        // SAFETY: single-threaded test; no other threads read this env var.
+        unsafe { std::env::set_var(key, "abc") };
+        let result = parse_u64_env_secs(key, default);
+        assert_eq!(result, default, "non-numeric 'abc' must return default {default}");
+        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for 'abc'");
+
+        // Negative sentinel (parse::<u64>() rejects "-1") → default
+        // SAFETY: same test, single-threaded.
+        unsafe { std::env::set_var(key, "-1") };
+        let result = parse_u64_env_secs(key, default);
+        assert_eq!(result, default, "'-1' must return default (u64 parse failure)");
+        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for '-1'");
+
+        // Zero → default (u64 parses but n > 0 fails)
+        // SAFETY: same test, single-threaded.
+        unsafe { std::env::set_var(key, "0") };
+        let result = parse_u64_env_secs(key, default);
+        assert_eq!(result, default, "'0' must return default (n > 0 guard)");
+        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for '0'");
+
+        // SAFETY: cleanup.
+        unsafe { std::env::remove_var(key) };
+    }
+
+    // PC-062: Malformed ECC_WORKTREE_SELF_SKIP_FALLBACK_SECS logs WARN + uses default (AC-009.3)
+    #[test]
+    #[tracing_test::traced_test]
+    fn invalid_fallback_env_warns_and_defaults() {
+        let key = "ECC_WORKTREE_SELF_SKIP_FALLBACK_SECS";
+        let default = 3600u64;
+
+        // Non-numeric value → default
+        // SAFETY: single-threaded test; no other threads read this env var.
+        unsafe { std::env::set_var(key, "abc") };
+        let result = parse_u64_env_secs(key, default);
+        assert_eq!(result, default, "non-numeric 'abc' must return default {default}");
+        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for 'abc'");
+
+        // "-1" → default (u64 parse failure)
+        // SAFETY: same test, single-threaded.
+        unsafe { std::env::set_var(key, "-1") };
+        let result = parse_u64_env_secs(key, default);
+        assert_eq!(result, default, "'-1' must return default");
+        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for '-1'");
+
+        // Zero → default (n > 0 guard)
+        // SAFETY: same test, single-threaded.
+        unsafe { std::env::set_var(key, "0") };
+        let result = parse_u64_env_secs(key, default);
+        assert_eq!(result, default, "'0' must return default");
+        assert!(logs_contain("invalid env var value; using default"), "must emit WARN for '0'");
+
+        // SAFETY: cleanup.
+        unsafe { std::env::remove_var(key) };
     }
 }

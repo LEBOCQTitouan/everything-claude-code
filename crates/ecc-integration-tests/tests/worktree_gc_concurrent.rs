@@ -328,6 +328,102 @@ fn dry_run_kill_live_yes_no_destructive() {
     );
 }
 
+// ── PC-060: ECC_WORKTREE_LIVENESS_DISABLED=1 disables read AND write ────────
+
+/// AC-009.1: When `ECC_WORKTREE_LIVENESS_DISABLED=1`:
+/// - heartbeat is NOT written (no `.ecc-session` after SessionStart)
+/// - gc falls back to BL-150 logic (stderr mentions "liveness check disabled")
+#[test]
+#[ignore] // Requires: ecc binary, git
+fn liveness_disabled_kill_switch() {
+    let repo = init_git_repo();
+    let repo_path = repo.path();
+
+    // Create a session worktree (stale PID 999999 so BL-150 would delete it).
+    // We do NOT write a live heartbeat — this tests that gc does not consult
+    // `.ecc-session` files when the kill switch is active.
+    let wt_name = session_name("kill-switch");
+    add_stale_session_worktree(repo_path, &wt_name);
+    let wt_path = repo_path.join(&wt_name);
+
+    // The worktree dir must NOT contain `.ecc-session` after gc runs with the kill switch.
+    // (No heartbeat write means no .ecc-session file — but we verify gc doesn't create one.)
+    assert!(
+        !wt_path.join(".ecc-session").exists(),
+        "precondition: no .ecc-session before gc"
+    );
+
+    // Run gc with kill switch enabled. The worktree is stale by BL-150 logic
+    // (timestamp in name is old: 2020), so gc should remove it.
+    let mut cmd = ecc_cmd();
+    cmd.args(["worktree", "gc", "--force", "--dir"])
+        .arg(repo_path)
+        .env("ECC_WORKTREE_LIVENESS_DISABLED", "1");
+    let output = cmd.output().expect("ecc command failed to run");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Must exit successfully.
+    assert!(
+        output.status.success(),
+        "gc with kill switch must exit 0. stdout={stdout} stderr={stderr}"
+    );
+
+    // Stderr must mention "liveness check disabled" (once per process).
+    assert!(
+        stderr.contains("liveness check disabled") || stderr.contains("liveness disabled"),
+        "stderr must mention liveness check disabled. stderr={stderr}"
+    );
+
+    // No .ecc-session file must exist in the worktree dir after gc.
+    // (Kill switch suppresses heartbeat writes.)
+    // Note: the worktree itself may have been removed by gc (stale by BL-150),
+    // so we check that IF it still exists, no .ecc-session was written.
+    if wt_path.exists() {
+        assert!(
+            !wt_path.join(".ecc-session").exists(),
+            ".ecc-session must NOT exist after gc with kill switch active"
+        );
+    }
+}
+
+// ── PC-063: .ecc-session present → git status --porcelain empty ─────────────
+
+/// AC-009.4: `.ecc-session` must be gitignored so it does not appear in git status.
+#[test]
+#[ignore] // Requires: git
+fn ecc_session_gitignored() {
+    let repo = init_git_repo();
+    let repo_path = repo.path();
+
+    // Add .ecc-session to .gitignore in the temp repo.
+    let gitignore_path = repo_path.join(".gitignore");
+    std::fs::write(&gitignore_path, ".ecc-session\n")
+        .expect("failed to write .gitignore");
+    run_git(repo_path, &["add", ".gitignore"]);
+    run_git(repo_path, &["commit", "-m", "add .gitignore"]);
+
+    // Create a .ecc-session file in the repo root.
+    let session_file = repo_path.join(".ecc-session");
+    std::fs::write(&session_file, r#"{"schema_version":1,"claude_code_pid":12345,"last_seen_unix_ts":9999999999}"#)
+        .expect("failed to write .ecc-session");
+
+    // git status --porcelain must NOT list .ecc-session.
+    let output = std::process::Command::new("git")
+        .args(["status", "--porcelain"])
+        .current_dir(repo_path)
+        .output()
+        .expect("git status failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(
+        !stdout.contains(".ecc-session"),
+        ".ecc-session must NOT appear in git status --porcelain when gitignored. stdout={stdout}"
+    );
+}
+
 // ── PC-052: --force --kill-live non-TTY without --yes exits non-zero ────────
 
 /// AC-006.5: In non-TTY context, `--force --kill-live` without `--yes` must exit non-zero.

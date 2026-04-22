@@ -33,3 +33,4 @@ tempfile = "3"
 ecc-test-support = { workspace = true }
 regex = { workspace = true }
 walkdir = { workspace = true }
+tracing-test = "0.2"
