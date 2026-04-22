@@ -207,6 +207,122 @@ fn kill_live_requires_force() {
     );
 }
 
+// ── PC-059: --dry-run --json emits [{name, action, reason}] ─────────────────
+
+/// AC-008.4: `--dry-run --json` emits a JSON array with `name`, `action`, `reason`.
+#[test]
+#[ignore] // Requires: git, real process
+fn dry_run_json_schema() {
+    let repo = init_git_repo();
+    let repo_path = repo.path();
+
+    // Create a stale session worktree (year 2020 timestamp, almost-certainly-dead PID).
+    let wt_name = "ecc-session-20200101-120000-dry-json-1";
+    add_stale_session_worktree(repo_path, wt_name);
+
+    let mut cmd = ecc_cmd();
+    cmd.args([
+        "worktree",
+        "gc",
+        "--dry-run",
+        "--force",
+        "--json",
+        "--dir",
+    ])
+    .arg(repo_path);
+    let output = cmd.output().expect("ecc command failed to run");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    assert!(
+        output.status.success(),
+        "--dry-run --json must exit 0. stdout={stdout} stderr={stderr}"
+    );
+
+    let parsed: serde_json::Value =
+        serde_json::from_str(stdout.trim()).unwrap_or_else(|e| {
+            panic!("--dry-run --json must emit valid JSON: {e}. stdout={stdout}")
+        });
+
+    let arr = parsed
+        .as_array()
+        .expect("--dry-run --json must emit a JSON array");
+
+    assert!(
+        !arr.is_empty(),
+        "--dry-run --json array must contain the stale worktree entry. stdout={stdout}"
+    );
+
+    let entry = &arr[0];
+    assert!(
+        entry.get("name").is_some(),
+        "JSON entry must have 'name' field. entry={entry}"
+    );
+    assert!(
+        entry.get("action").is_some(),
+        "JSON entry must have 'action' field. entry={entry}"
+    );
+    assert!(
+        entry.get("reason").is_some(),
+        "JSON entry must have 'reason' field. entry={entry}"
+    );
+    assert_eq!(
+        entry["action"].as_str(),
+        Some("would_delete"),
+        "action must be 'would_delete'. entry={entry}"
+    );
+}
+
+// ── PC-073: --dry-run --force --kill-live --yes previews live, no destruction ─
+
+/// AC-008.3 + AC-006.3: `--dry-run --force --kill-live --yes` previews live worktrees
+/// with no confirmation prompt and no destructive calls.
+#[test]
+#[ignore] // Requires: git, real process
+fn dry_run_kill_live_yes_no_destructive() {
+    let repo = init_git_repo();
+    let repo_path = repo.path();
+
+    let wt_name = session_name("dry-kl-yes");
+    add_stale_session_worktree(repo_path, &wt_name);
+    write_live_heartbeat(&repo_path.join(&wt_name));
+
+    let mut cmd = ecc_cmd();
+    cmd.args([
+        "worktree",
+        "gc",
+        "--dry-run",
+        "--force",
+        "--kill-live",
+        "--yes",
+        "--dir",
+    ])
+    .arg(repo_path);
+    let output = cmd.output().expect("ecc command failed to run");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    // Must exit 0 (no prompt, dry-run is non-destructive).
+    assert!(
+        output.status.success(),
+        "--dry-run --force --kill-live --yes must exit 0. stdout={stdout} stderr={stderr}"
+    );
+
+    // The live worktree must still exist (no destructive calls).
+    assert!(
+        repo_path.join(&wt_name).exists(),
+        "live worktree must NOT be deleted in dry-run. stdout={stdout} stderr={stderr}"
+    );
+
+    // stdout must mention the worktree (WOULD DELETE output).
+    assert!(
+        stdout.contains("WOULD DELETE") || stdout.contains(&wt_name),
+        "dry-run output must mention the would-delete worktree. stdout={stdout} stderr={stderr}"
+    );
+}
+
 // ── PC-052: --force --kill-live non-TTY without --yes exits non-zero ────────
 
 /// AC-006.5: In non-TTY context, `--force --kill-live` without `--yes` must exit non-zero.

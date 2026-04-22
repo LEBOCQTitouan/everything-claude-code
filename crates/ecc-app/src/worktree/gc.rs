@@ -12,6 +12,37 @@ use super::{WorktreeGcError, compact_ts_to_secs, is_worktree_stale, now_secs};
 /// Default: 3600 (1 hour) — matches `TTL_DEFAULT_SECS` (AC-003.6).
 pub const SELF_SKIP_FALLBACK_DEFAULT_SECS: u64 = 3600;
 
+/// Reason a worktree would be deleted in a dry-run preview.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DeletionReason {
+    /// Worktree is stale (age > 24h or PID dead).
+    Stale,
+    /// Worktree is forced via `--force` (unmerged commits override).
+    Forced,
+    /// Worktree is live but `--force --kill-live` was specified.
+    KillLive,
+}
+
+impl DeletionReason {
+    /// Convert to a human-readable string for display.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            DeletionReason::Stale => "stale",
+            DeletionReason::Forced => "forced",
+            DeletionReason::KillLive => "kill-live",
+        }
+    }
+}
+
+/// A worktree that would be deleted in a dry-run preview.
+#[derive(Debug, Clone)]
+pub struct WouldDelete {
+    /// Worktree name.
+    pub name: String,
+    /// Reason for deletion.
+    pub reason: DeletionReason,
+}
+
 /// Configuration for the GC run.
 #[derive(Debug, Clone)]
 pub struct GcOptions {
@@ -21,6 +52,9 @@ pub struct GcOptions {
     /// When `false` (default), live worktrees are skipped with a diagnostic message.
     /// When `true`, live worktrees are included in the deletion set.
     pub kill_live: bool,
+    /// Preview mode: print what would be deleted without actually deleting (AC-008.1).
+    /// When `true`, no destructive operations are performed (AC-008.2).
+    pub dry_run: bool,
     /// The current session's worktree name, used for self-skip (AC-003.2).
     /// When `Some`, the named worktree is skipped unconditionally.
     /// When `None`, falls back to conservative skip of all young session worktrees
@@ -36,6 +70,7 @@ impl Default for GcOptions {
         Self {
             force: false,
             kill_live: false,
+            dry_run: false,
             self_skip: None,
             self_skip_fallback_secs: SELF_SKIP_FALLBACK_DEFAULT_SECS,
         }
@@ -51,6 +86,8 @@ pub struct WorktreeGcResult {
     pub skipped: Vec<String>,
     /// Removal failures (name + error message).
     pub errors: Vec<String>,
+    /// Worktrees that would be deleted (populated only when `dry_run=true`).
+    pub would_delete: Vec<WouldDelete>,
 }
 
 /// Liveness TTL: 60 minutes in seconds (Decision #12).
@@ -919,6 +956,134 @@ mod tests {
         assert!(
             !result.removed.contains(&FRESH_SESSION.to_owned()),
             "fresh session must not be removed even with fallback_secs=0 (still fresh by age)"
+        );
+    }
+
+    // ── PC-056..058: --dry-run preview tests ─────────────────────────────────
+
+    /// AC-008.1: `--dry-run` populates `would_delete` with stale worktrees.
+    #[test]
+    fn dry_run_prints_would_delete() {
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(STALE_SESSION)]);
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], err_output(1));
+
+        let result = gc(
+            &mgr,
+            &executor,
+            &InMemoryFileSystem::new(),
+            Path::new("/repo"),
+            GcOptions {
+                dry_run: true,
+                force: true, // force to skip unmerged check
+                ..GcOptions::default()
+            },
+            &*TEST_CLOCK,
+        )
+        .unwrap();
+
+        assert!(
+            result.removed.is_empty(),
+            "dry_run must not remove any worktree, got removed={:?}",
+            result.removed
+        );
+        assert_eq!(
+            result.would_delete.len(),
+            1,
+            "dry_run must produce 1 would_delete entry, got: {:?}",
+            result.would_delete
+        );
+        assert_eq!(
+            result.would_delete[0].name, STALE_SESSION,
+            "would_delete name must match stale session"
+        );
+    }
+
+    /// AC-008.2: `--dry-run` makes zero destructive calls (remove_worktree never called).
+    #[test]
+    fn dry_run_no_side_effects() {
+        // MockWorktreeManager with remove_succeeds=false: if remove_worktree is called,
+        // it returns Err → which would show up in result.errors.
+        // Dry-run must produce zero errors (i.e., remove_worktree never called).
+        let mgr = MockWorktreeManager::new()
+            .with_worktrees(vec![session_wt(STALE_SESSION)])
+            .with_remove_succeeds(false); // would fail if called
+        let executor = MockExecutor::new().on_args("kill", &["-0", "99999"], err_output(1));
+
+        let result = gc(
+            &mgr,
+            &executor,
+            &InMemoryFileSystem::new(),
+            Path::new("/repo"),
+            GcOptions {
+                dry_run: true,
+                force: true,
+                ..GcOptions::default()
+            },
+            &*TEST_CLOCK,
+        )
+        .unwrap();
+
+        assert!(
+            result.errors.is_empty(),
+            "dry_run must make zero destructive calls (no errors expected), got: {:?}",
+            result.errors
+        );
+        assert!(
+            result.removed.is_empty(),
+            "dry_run must not populate removed, got: {:?}",
+            result.removed
+        );
+        assert_eq!(
+            result.would_delete.len(),
+            1,
+            "dry_run must produce would_delete entry, got: {:?}",
+            result.would_delete
+        );
+    }
+
+    /// AC-008.3: `--dry-run --force --kill-live` includes live worktrees in preview.
+    #[test]
+    fn dry_run_kill_live_preview() {
+        // A live worktree (fresh heartbeat + alive PID).
+        let fs = InMemoryFileSystem::new().with_file(
+            &format!("/repo/{STALE_SESSION}/.ecc-session"),
+            &heartbeat_json(FRESH_TS),
+        );
+        let mgr = MockWorktreeManager::new().with_worktrees(vec![session_wt(STALE_SESSION)]);
+        let executor =
+            MockExecutor::new().on_args("kill", &["-0", &HB_PID.to_string()], ok(""));
+
+        let result = gc(
+            &mgr,
+            &executor,
+            &fs,
+            Path::new("/repo"),
+            GcOptions {
+                dry_run: true,
+                force: true,
+                kill_live: true,
+                ..GcOptions::default()
+            },
+            &*TEST_CLOCK,
+        )
+        .unwrap();
+
+        assert!(
+            result.removed.is_empty(),
+            "dry_run must not remove live worktree, got removed={:?}",
+            result.removed
+        );
+        assert_eq!(
+            result.would_delete.len(),
+            1,
+            "dry_run --kill-live must include live worktree in preview, got: {:?}",
+            result.would_delete
+        );
+        assert_eq!(
+            result.would_delete[0].reason,
+            DeletionReason::KillLive,
+            "reason must be KillLive for live worktree, got: {:?}",
+            result.would_delete[0].reason
         );
     }
 }
