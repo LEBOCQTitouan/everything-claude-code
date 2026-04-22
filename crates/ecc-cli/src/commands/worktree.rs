@@ -215,6 +215,8 @@ fn parse_u64_env_secs(key: &str, default: u64) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn status_exit_zero() {
         // Verify that the status function returns Ok (exit code 0 on success).
