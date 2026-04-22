@@ -130,7 +130,7 @@
 | BL-128 | Token optimization wave 5 — local LLM offload for mechanical agents | — | MEDIUM | /spec-dev | implemented | 2026-04-06 |
 | BL-129 | Bidirectional pipeline transitions with justification logging | — | HIGH | /spec-refactor | implemented | 2026-04-07 |
 | BL-130 | US/epic-level sub-tracking within /implement pipeline | — | MEDIUM | /spec-dev | open | 2026-04-07 |
-| BL-132 | Full ASCII diagram sweep of all 9 ECC crates | 5 | HIGH | direct edit | in-progress | 2026-04-08 |
+| BL-132 | Full ASCII diagram sweep of all 9 ECC crates | 5 | HIGH | direct edit | open | 2026-04-08 |
 | BL-133 | Migrate workspace to Rust 2024 edition | — | MEDIUM | /spec-dev | implemented | 2026-04-09 |
 | BL-134 | Audit CLAUDE.md for LLM-generated content | — | LOW | direct edit | implemented | 2026-04-09 |
 | BL-135 | Add cargo-llvm-cov coverage gate to CI | — | LOW | direct edit | implemented | 2026-04-09 |
@@ -151,7 +151,7 @@
 | BL-153 | Redact or truncate feature field in tracing::info! to prevent log-injection amplification | — | MEDIUM | direct edit | open | 2026-04-17 |
 | BL-154 | Widen ecc validate commands rule to catch backtick-embedded !$ARGUMENTS inline-code patterns | — | LOW | direct edit | open | 2026-04-17 |
 | BL-155 | Add Foundation variant to Concern domain enum for /project-foundation workflow | — | MEDIUM | /spec-dev | open | 2026-04-17 |
-| BL-156 | Safe worktree GC — skip active session worktrees | — | MEDIUM | /spec-fix | open | 2026-04-18 |
+| BL-156 | Safe worktree GC — skip active session worktrees | — | MEDIUM | /spec-fix | implemented | 2026-04-18 |
 | BL-157 | Tech Debt Registry linked to Backlog | — | HIGH | /spec | open | 2026-04-18 |
 | BL-158 | Frontmatter-aware TEMPORARY marker validation (v2) | 6 | MEDIUM | /spec-dev | open | 2026-04-18 |
 
@@ -243,7 +243,6 @@ BL-156 → BL-097 (reuses transient lock-file pattern for session liveness)
 
 - **Total:** 152
 - **Open:** 11
-- **In-progress:** 1
-- **Implemented:** 132
+- **Implemented:** 133
 - **Archived:** 7
 - **2026-03-28:** 1

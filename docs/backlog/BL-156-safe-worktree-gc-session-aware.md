@@ -1,7 +1,7 @@
 ---
 id: BL-156
 title: Safe worktree GC — skip active session worktrees
-status: open
+status: implemented
 created: 2026-04-18
 promoted_to: ""
 tags: [worktree, gc, session-safety, cli, concurrency]
